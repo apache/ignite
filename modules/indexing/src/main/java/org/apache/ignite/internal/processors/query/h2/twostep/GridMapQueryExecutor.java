@@ -42,6 +42,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
@@ -489,6 +490,14 @@ public class GridMapQueryExecutor {
                                 null
                             ),
                             qryInfo
+                        );
+
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
+                            qryInfo.plan(),
+                            sql,
+                            schemaName,
+                            false,
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
                         );
 
                         if (evt) {
@@ -988,7 +997,7 @@ public class GridMapQueryExecutor {
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
-                loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), res.columnCount()),
+                loc ? null : toMessages(rows, res.columnCount()),
                 loc ? rows : null,
                 last);
 

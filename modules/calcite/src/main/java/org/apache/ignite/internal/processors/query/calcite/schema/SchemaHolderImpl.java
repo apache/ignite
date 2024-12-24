@@ -40,6 +40,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -368,6 +369,26 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
+    @Override public void onViewCreated(String schemaName, String viewName, String viewSql) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.addView(viewName, viewSql);
+
+        rebuild();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onViewDropped(String schemaName, String viewName) {
+        IgniteSchema schema = igniteSchemas.get(schemaName);
+
+        if (schema != null) {
+            schema.removeView(viewName);
+
+            rebuild();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public SchemaPlus schema(@Nullable String schema) {
         return schema != null ? calciteSchema.getSubSchema(schema) : calciteSchema;
     }
@@ -385,10 +406,14 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** */
     private void rebuild() {
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
+
         newCalciteSchema.add("UUID", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(UUID.class));
         newCalciteSchema.add("OTHER", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(Object.class));
-        newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
-        igniteSchemas.forEach(newCalciteSchema::add);
+        newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));
+
+        for (IgniteSchema schema : igniteSchemas.values())
+            schema.register(newCalciteSchema);
+
         calciteSchema = newCalciteSchema;
     }
 }

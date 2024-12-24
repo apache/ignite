@@ -52,7 +52,7 @@ import org.apache.ignite.cluster.ClusterNode;
  *         if (useAvg) {
  *             double load = metrics.getAverageActiveJobs() + metrics.getAverageWaitingJobs();
  *
- *             if (load > 0) {
+ *             if (load &gt; 0) {
  *                 return load;
  *             }
  *         }

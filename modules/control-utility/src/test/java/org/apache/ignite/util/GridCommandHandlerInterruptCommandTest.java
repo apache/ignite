@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Assume;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 
 /**
@@ -66,7 +67,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_GRID_CLIENT_CMD_HND));
 
         super.beforeTest();
 
@@ -236,8 +237,20 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         CountDownLatch startTaskLatch = waitForTaskEvent(ignite, IDLE_VERIFY_TASK_V2);
 
         LogListener lnsrValidationCancelled = LogListener.matches("The check procedure was cancelled.").build();
+        LogListener lnsrIdleVerifyStart = LogListener.matches("Idle verify procedure has started").build();
+        LogListener lnsrIdleVerifyFinish = LogListener.matches("Idle verify procedure has finished").build();
 
         lnsrLog.registerListener(lnsrValidationCancelled);
+        lnsrLog.registerListener(lnsrIdleVerifyStart);
+        lnsrLog.registerListener(lnsrIdleVerifyFinish);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+
+        assertTrue(lnsrIdleVerifyStart.check());
+        assertTrue(lnsrIdleVerifyFinish.check());
+
+        lnsrIdleVerifyStart.reset();
+        lnsrIdleVerifyFinish.reset();
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
             assertSame(EXIT_CODE_UNEXPECTED_ERROR, execute("--cache", "idle_verify")));
@@ -251,6 +264,8 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         assertTrue(GridTestUtils.waitForCondition(() ->
             ignite.compute().activeTaskFutures().isEmpty(), 30_000));
 
+        assertTrue(lnsrIdleVerifyStart.check());
+        assertTrue(lnsrIdleVerifyFinish.check());
         assertFalse(lnsrValidationCancelled.check());
     }
 

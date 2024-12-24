@@ -132,6 +132,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FILE_MAX_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
+import static org.apache.ignite.internal.processors.platform.client.ClientRequestHandler.DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker.DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
@@ -372,10 +373,6 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Partition map exchange merge delay in milliseconds",
         type = Long.class, defaults = "" + DFLT_EXCHANGE_MERGE_DELAY)
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
-
-    /** PME-free switch explicitly disabled. */
-    @SystemProperty("Disables PME-free switch")
-    public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
 
     /**
      * Name of the system property defining name of command line program.
@@ -664,13 +661,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
-     * @deprecated This property is ignored and will be deleted in future releases.
-     */
-    @Deprecated
-    @SystemProperty("This option is ignored and will be deleted in future releases")
-    public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
-
-    /**
      * Property allowing to skip configuration consistency checks.
      */
     @SystemProperty("Skip configuration consistency checks")
@@ -915,6 +905,21 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
         type = String.class)
     public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
+
+    /**
+     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
+     * current JVM it is running in.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(
+        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
+            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
+            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
+            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
+            " serialization mechanisms",
+        defaults = "true"
+    )
+    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
 
     /**
      * If set to {@code true}, then default selected keys set is used inside
@@ -1303,6 +1308,17 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "JVM pause detector last events count", type = Integer.class,
         defaults = "" + DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT)
     public static final String IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT";
+
+    /**
+     *  Timeout in milliseconds that determines how long Ignite will synchronously wait for asynchronous thin client
+     *  requests to complete before releasing the thread.
+     */
+    @SystemProperty(
+        value = "Timeout in milliseconds that determines how long Ignite will synchronously wait for" +
+            " asynchronous thin client requests to complete before releasing the thread",
+        type = Long.class,
+        defaults = "" + DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS)
+    public static final String IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT = "IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT";
 
     /**
      * Default value is {@code false}.
@@ -1698,7 +1714,7 @@ public final class IgniteSystemProperties {
     /**
      * Flag to disable memory optimization:
      *  BitSets instead of HashSets to store partitions.
-     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     *  When number of backups per partion is &gt; IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */

@@ -717,7 +717,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             isolation,
             createTtl,
             accessTtl,
-            CU.empty0(),
             skipStore,
             keepBinary);
 

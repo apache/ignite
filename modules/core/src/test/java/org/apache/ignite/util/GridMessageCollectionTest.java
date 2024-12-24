@@ -23,9 +23,9 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.Test;
@@ -39,24 +39,19 @@ import static org.junit.Assert.assertNull;
  *
  */
 public class GridMessageCollectionTest {
-    /** */
-    private byte proto;
-
     /**
-     * @param proto Protocol version.
      * @return Writer.
      */
-    protected MessageWriter writer(byte proto) {
-        return new DirectMessageWriter(proto);
+    protected MessageWriter writer() {
+        return new DirectMessageWriter();
     }
 
     /**
      * @param msgFactory Message factory.
-     * @param proto Protocol version.
      * @return Writer.
      */
-    protected MessageReader reader(MessageFactory msgFactory, byte proto) {
-        return new DirectMessageReader(msgFactory, proto);
+    protected MessageReader reader(MessageFactory msgFactory) {
+        return new DirectMessageReader(msgFactory);
     }
 
     /**
@@ -72,10 +67,6 @@ public class GridMessageCollectionTest {
         assertNull(um0);
         assertEquals(3, um3.uuids().size());
 
-        proto = 2;
-        doTestMarshal(um0, um1, um2, um3);
-
-        proto = 1;
         doTestMarshal(um0, um1, um2, um3);
     }
 
@@ -113,7 +104,7 @@ public class GridMessageCollectionTest {
     private void doTestMarshal(Message m) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        m.writeTo(buf, writer(proto));
+        m.writeTo(buf, writer());
 
         buf.flip();
 
@@ -124,12 +115,12 @@ public class GridMessageCollectionTest {
 
         assertEquals(m.directType(), type);
 
-        IgniteMessageFactory msgFactory =
-                new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
+        MessageFactory msgFactory =
+                new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         Message mx = msgFactory.create(type);
 
-        mx.readFrom(buf, reader(msgFactory, proto));
+        mx.readFrom(buf, reader(msgFactory));
 
         assertEquals(m, mx);
     }

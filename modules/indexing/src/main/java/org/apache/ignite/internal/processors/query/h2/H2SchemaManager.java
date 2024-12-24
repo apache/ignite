@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -221,6 +222,12 @@ public class H2SchemaManager implements SchemaChangeListener {
 
     /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schema, String name, boolean deterministic, Method method) {
+        if (!Modifier.isStatic(method.getModifiers())) {
+            log.warning("Skip creating SQL function '" + name + "' in H2 engine because it is not static.");
+
+            return;
+        }
+
         try {
             createSqlFunction(schema, name, deterministic,
                 method.getDeclaringClass().getName() + '.' + method.getName());
@@ -381,6 +388,30 @@ public class H2SchemaManager implements SchemaChangeListener {
 
         if (tbl != null)
             tbl.markRebuildFromHashInProgress(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onViewCreated(String schemaName, String viewName, String viewSql) {
+        try (H2PooledConnection conn = connMgr.connection(schemaName)) {
+            try (Statement s = conn.connection().createStatement()) {
+                s.execute("CREATE OR REPLACE VIEW \"" + viewName + "\" AS " + viewSql);
+            }
+        }
+        catch (SQLException e) {
+            throw new IgniteException("Failed to create view: " + viewName, e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onViewDropped(String schemaName, String viewName) {
+        try (H2PooledConnection conn = connMgr.connection(schemaName)) {
+            try (Statement s = conn.connection().createStatement()) {
+                s.execute("DROP VIEW IF EXISTS \"" + viewName + "\"");
+            }
+        }
+        catch (SQLException e) {
+            throw new IgniteException("Failed to drop view: " + viewName, e);
+        }
     }
 
     /**

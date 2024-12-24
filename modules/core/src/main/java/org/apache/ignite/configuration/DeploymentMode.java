@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  *    &lt;!-- User version. --&gt;
  *    &lt;bean id="userVersion" class="java.lang.String"&gt;
  *        &lt;constructor-arg value="0"/&gt;
- *    &lt;/bean>
+ *    &lt;/bean&gt;
  * </pre>
  * By default, all ignite startup scripts ({@code ignite.sh} or {@code ignite.bat})
  * pick up user version from {@code IGNITE_HOME/config/userversion} folder. Usually, it

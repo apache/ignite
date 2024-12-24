@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
@@ -160,44 +159,30 @@ public class DistributedTransactionConfiguration {
                 }
 
                 @Override public void onReadyToWrite() {
-                    if (ReadableDistributedMetaStorage.isSupported(ctx)) {
-                        setDefaultValue(
-                                longOperationsDumpTimeout,
-                                dfltLongOpsDumpTimeout,
-                                log);
-                        setDefaultValue(
-                                longTransactionTimeDumpThreshold,
-                                dfltLongTransactionTimeDumpThreshold,
-                                log);
-                        setDefaultValue(
-                                transactionTimeDumpSamplesCoefficient,
-                                dfltTransactionTimeDumpSamplesCoefficient,
-                                log);
-                        setDefaultValue(
-                                longTransactionTimeDumpSamplesPerSecondLimit,
-                                dfltLongTransactionTimeDumpSamplesPerSecondLimit,
-                                log);
-                        setDefaultValue(
-                                collisionsDumpInterval,
-                                dfltCollisionsDumpInterval,
-                                log);
-                        setDefaultValue(
-                                txOwnerDumpRequestsAllowed,
-                                dfltTxOwnerDumpRequestsAllowed,
-                                log);
-                    }
-                    else {
-                        log.warning("Distributed metastorage is not supported. " +
-                            "All distributed transaction configuration parameters are unavailable. " +
-                            "Default values will be set.");
-
-                        longOperationsDumpTimeout.localUpdate(dfltLongOpsDumpTimeout);
-                        longTransactionTimeDumpThreshold.localUpdate(dfltLongTransactionTimeDumpThreshold);
-                        transactionTimeDumpSamplesCoefficient.localUpdate(dfltTransactionTimeDumpSamplesCoefficient);
-                        longTransactionTimeDumpSamplesPerSecondLimit.localUpdate(dfltLongTransactionTimeDumpSamplesPerSecondLimit);
-                        collisionsDumpInterval.localUpdate(dfltCollisionsDumpInterval);
-                        txOwnerDumpRequestsAllowed.localUpdate(dfltTxOwnerDumpRequestsAllowed);
-                    }
+                    setDefaultValue(
+                            longOperationsDumpTimeout,
+                            dfltLongOpsDumpTimeout,
+                            log);
+                    setDefaultValue(
+                            longTransactionTimeDumpThreshold,
+                            dfltLongTransactionTimeDumpThreshold,
+                            log);
+                    setDefaultValue(
+                            transactionTimeDumpSamplesCoefficient,
+                            dfltTransactionTimeDumpSamplesCoefficient,
+                            log);
+                    setDefaultValue(
+                            longTransactionTimeDumpSamplesPerSecondLimit,
+                            dfltLongTransactionTimeDumpSamplesPerSecondLimit,
+                            log);
+                    setDefaultValue(
+                            collisionsDumpInterval,
+                            dfltCollisionsDumpInterval,
+                            log);
+                    setDefaultValue(
+                            txOwnerDumpRequestsAllowed,
+                            dfltTxOwnerDumpRequestsAllowed,
+                            log);
                 }
             }
         );

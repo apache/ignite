@@ -29,20 +29,22 @@ import org.apache.ignite.spi.systemview.view.sql.SqlViewView;
 public class SqlViewViewWalker implements SystemViewRowAttributeWalker<SqlViewView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "name", String.class);
-        v.accept(1, "schema", String.class);
-        v.accept(2, "description", String.class);
+        v.accept(0, "schema", String.class);
+        v.accept(1, "name", String.class);
+        v.accept(2, "sql", String.class);
+        v.accept(3, "description", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(SqlViewView row, AttributeWithValueVisitor v) {
-        v.accept(0, "name", String.class, row.name());
-        v.accept(1, "schema", String.class, row.schema());
-        v.accept(2, "description", String.class, row.description());
+        v.accept(0, "schema", String.class, row.schema());
+        v.accept(1, "name", String.class, row.name());
+        v.accept(2, "sql", String.class, row.sql());
+        v.accept(3, "description", String.class, row.description());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 3;
+        return 4;
     }
 }

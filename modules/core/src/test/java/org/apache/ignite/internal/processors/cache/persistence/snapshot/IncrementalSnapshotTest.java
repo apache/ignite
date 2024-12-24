@@ -25,6 +25,7 @@ import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -438,6 +439,42 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, singleton(DEFAULT_CACHE_NAME), 1).get();
 
         assertCacheKeys(srv.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** */
+    @Test
+    public void testDefaultConsistentId() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        cache.put(1, 1);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        cache.put(2, 2);
+
+        ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME)).get(getTestTimeout());
+
+        assertEquals(1, cache.size());
+
+        ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME), 1).get(getTestTimeout());
+
+        assertEquals(2, cache.size());
     }
 
     /** */

@@ -118,6 +118,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             qctx,
             null,
             null,
+            null,
             nodeId,
             nodeId,
             null,
@@ -126,6 +127,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
+            null,
             null
         ) {
             @Override public ColocationGroup group(long srcId) {
@@ -200,9 +202,9 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     @Test
     public void testIndexCountRewriter() {
         IgniteIndexCount idxCnt = new IgniteIndexCount(cluster, cluster.traitSet(),
-            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX, false);
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX, false, 0);
 
-        checkCollectNode(relImplementor.visit(idxCnt));
+        checkCollectNode(relImplementor.visit(idxCnt), false);
 
         tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 2);
 
@@ -215,15 +217,22 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         tbl.markIndexRebuildInProgress(true);
 
-        checkCollectNode(relImplementor.visit(idxCnt));
+        checkCollectNode(relImplementor.visit(idxCnt), false);
+
+        // Check not-null filter.
+        idxCnt = new IgniteIndexCount(cluster, cluster.traitSet(),
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX, true, 2);
+
+        checkCollectNode(relImplementor.visit(idxCnt), true);
     }
 
     /** */
-    private void checkCollectNode(Node<Object[]> node) {
+    private void checkCollectNode(Node<Object[]> node, boolean hasFilter) {
         assertTrue(node instanceof CollectNode);
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
         assertNull(node.sources().get(0).sources());
+        assertEquals(hasFilter, ((ScanNode<?>)node.sources().get(0)).filter() != null);
         assertEquals(tbl.getRowType(tf), node.sources().get(0).rowType());
     }
 

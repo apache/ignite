@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -179,7 +178,6 @@ public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexin
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setSqlConnectorConfiguration(sqlCfg);
-        cfg.setMarshaller(new BinaryMarshaller());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));

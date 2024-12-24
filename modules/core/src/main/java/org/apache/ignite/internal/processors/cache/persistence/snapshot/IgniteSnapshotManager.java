@@ -92,7 +92,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -185,7 +184,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -204,8 +202,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
@@ -327,6 +323,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
     @Deprecated
     private static final String SNP_RUNNING_KEY = "snapshot-running";
+
+    /** Snapshot operation start log message. */
+    private static final String SNAPSHOT_STARTED_MSG = "Cluster-wide snapshot operation started: ";
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -486,7 +485,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
-        marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
@@ -1080,6 +1079,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
+                clusterSnpReq.startTime(),
                 markWalFut.result()
             );
 
@@ -1225,6 +1225,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
+                    clusterSnpReq.startTime(),
                     comprGrpIds,
                     blts,
                     res.parts(),
@@ -2171,9 +2172,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-            if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
-                throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
-
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
@@ -2289,25 +2287,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
-            startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
-                snpFut0.rqId,
-                cctx.localNodeId(),
-                name,
-                snpPath,
-                grps,
-                bltNodeIds,
-                incremental,
-                incIdx,
-                onlyPrimary,
-                dump,
-                compress,
-                encrypt
-            ));
+            SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
+                    snpFut0.rqId,
+                    cctx.localNodeId(),
+                    name,
+                    snpPath,
+                    grps,
+                    bltNodeIds,
+                    incremental,
+                    incIdx,
+                    onlyPrimary,
+                    dump,
+                    compress,
+                    encrypt
+            );
 
-            String msg =
-                "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
-                    (incremental ? "" : (", incremental=true, incrementIndex=" + incIdx)) +
-                ']';
+            startSnpProc.start(snpFut0.rqId, snpOpReq);
+
+            String msg = SNAPSHOT_STARTED_MSG + snpOpReq;
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
 
@@ -2531,9 +2528,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']');
         }
 
-        if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
-            throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
-
         RemoteSnapshotFilesRecevier fut =
             new RemoteSnapshotFilesRecevier(this, rmtNodeId, reqId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
 
@@ -2591,7 +2585,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(
+        GridKernalContext ctx,
         String grpName,
         int partId,
         FilePageStore pageStore
@@ -3141,7 +3136,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir.get(0))) {
                 StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
                     snpDataFile,
-                    MarshallerUtils.jdkMarshaller(cctx.kernalContext().igniteInstanceName()),
+                    cctx.kernalContext().marshallerContext().jdkMarshaller(),
                     cctx.kernalContext().config()
                 );
 

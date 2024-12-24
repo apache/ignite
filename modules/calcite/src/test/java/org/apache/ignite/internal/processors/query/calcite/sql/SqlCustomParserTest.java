@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,12 +27,16 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
+import org.apache.calcite.sql.ddl.SqlCreateView;
+import org.apache.calcite.sql.ddl.SqlDropView;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -685,6 +690,93 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         assertEquals("test", dropUser.user().getSimple());
 
         assertParserThrows("drop user test with password 'asd'", SqlParseException.class);
+    }
+
+    /**
+     * Tests that CREATE OR REPLACE is not allowed for CREATE TABLE/INDEX/USER.
+     */
+    @Test
+    public void invalidCreateOrReplace() {
+        assertParserThrows("create or replace table my_table(id int, val varchar)", SqlParseException.class,
+            "Unsupported clause 'REPLACE'");
+
+        assertParserThrows("create or replace index my_index on my_table(id)", SqlParseException.class,
+            "Unsupported clause 'REPLACE'");
+
+        assertParserThrows("create or replace user test with password 'asd'", SqlParseException.class,
+            "Unsupported clause 'REPLACE'");
+    }
+
+    /**
+     * Create view.
+     */
+    @Test
+    public void createView() throws SqlParseException {
+        SqlCreateView createView = parse("create view my_view as select * from my_table");
+
+        assertThat(createView.name.names, is(ImmutableList.of("MY_VIEW")));
+        assertThat(createView.getReplace(), is(false));
+        assertThat(createView.query, instanceOf(SqlSelect.class));
+        assertThat(((SqlSelect)createView.query).getFrom().toString(), is("MY_TABLE"));
+        assertThat(((SqlSelect)createView.query).getSelectList().toString(), is("*"));
+
+        createView = parse("create or replace view my_view as select * from my_table");
+
+        assertThat(createView.name.names, is(ImmutableList.of("MY_VIEW")));
+        assertThat(createView.getReplace(), is(true));
+
+        createView = parse("create view my_schema.my_view as select * from my_table");
+
+        assertThat(createView.name.names, is(ImmutableList.of("MY_SCHEMA", "MY_VIEW")));
+        assertThat(createView.getReplace(), is(false));
+
+        assertParserThrows("create view my_view as unexpected", SqlParseException.class);
+        assertParserThrows("create view my_view(id, name) as select * from my_table", SqlParseException.class);
+        assertParserThrows("create view as select * from my_table", SqlParseException.class);
+
+        createView = parse("create view \"my.schema\".\"my.view\" as select * from my_table");
+
+        assertThat(createView.name.names, is(ImmutableList.of("my.schema", "my.view")));
+
+        createView = parse("create view my_view as select /*+ FORCE_INDEX(my_idx) */ * from my_table");
+
+        assertThat(createView.name.names, is(ImmutableList.of("MY_VIEW")));
+        assertThat(createView.query, instanceOf(SqlSelect.class));
+
+        SqlSelect select = (SqlSelect)createView.query;
+
+        assertThat(select.getHints().size(), is(1));
+        assertThat(select.getHints().get(0), instanceOf(SqlHint.class));
+
+        SqlHint hint = (SqlHint)select.getHints().get(0);
+
+        assertThat(hint.getName(), is("FORCE_INDEX"));
+        assertThat(hint.getOptionList(), is(Collections.singletonList("MY_IDX")));
+    }
+
+    /**
+     * Drop view.
+     */
+    @Test
+    public void dropView() throws SqlParseException {
+        SqlDropView dropView = parse("drop view my_view");
+
+        assertThat(dropView.name.names, is(ImmutableList.of("MY_VIEW")));
+        assertThat(dropView.ifExists, is(false));
+
+        dropView = parse("drop view my_schema.my_view");
+
+        assertThat(dropView.name.names, is(ImmutableList.of("MY_SCHEMA", "MY_VIEW")));
+        assertThat(dropView.ifExists, is(false));
+
+        dropView = parse("drop view if exists my_view");
+
+        assertThat(dropView.name.names, is(ImmutableList.of("MY_VIEW")));
+        assertThat(dropView.ifExists, is(true));
+
+        dropView = parse("drop view \"my.schema\".\"my.view\"");
+
+        assertThat(dropView.name.names, is(ImmutableList.of("my.schema", "my.view")));
     }
 
     /**

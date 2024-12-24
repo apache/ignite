@@ -79,8 +79,6 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(null);
-
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setCompactFooter(false);

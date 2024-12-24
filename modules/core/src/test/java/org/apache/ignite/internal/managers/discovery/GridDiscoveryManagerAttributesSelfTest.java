@@ -22,10 +22,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -38,7 +36,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Tests for node attributes consistency checks.
  */
-public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
+public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
 
@@ -48,18 +46,12 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** */
     private static boolean p2pEnabled;
 
-    /** */
-    private static boolean binaryMarshallerEnabled;
-
     /** Security enabled. */
     private static boolean secEnabled;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (binaryMarshallerEnabled)
-            cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
@@ -184,8 +176,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     public void testUseStringSerVer2() throws Exception {
         String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
-        binaryMarshallerEnabled = true;
-
         try {
             doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
             doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
@@ -198,8 +188,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, old);
             else
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
-
-            binaryMarshallerEnabled = false;
         }
     }
 
@@ -398,26 +386,5 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         boolean isClientCfg = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
 
         assertEquals(isClientCfg, isClientDiscovery);
-    }
-
-    /**
-     *
-     */
-    public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-            return cfg;
-        }
-    }
-
-    /**
-     *
-     */
-    public static class ClientDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        // No-op.
     }
 }

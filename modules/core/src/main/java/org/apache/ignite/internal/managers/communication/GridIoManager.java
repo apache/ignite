@@ -81,7 +81,6 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -128,6 +127,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -149,8 +149,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
-import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -210,10 +208,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * <h3>File-based communication</h3>
  * <p>
  * Sending or receiving binary data (represented by a <em>File</em>) over a <em>SocketChannel</em> is only
- * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used and
- * both local and remote nodes are {@link IgniteFeatures#CHANNEL_COMMUNICATION CHANNEL_COMMUNICATION} feature
- * support. To ensue that the remote node satisfies all conditions the {@link #fileTransmissionSupported(ClusterNode)}
- * method must be called prior to data sending.
+ * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used.
  * <p>
  * It is possible to receive a set of files on a particular topic (any of {@link GridTopic}) on the remote node.
  * A transmission handler for desired topic must be registered prior to opening transmission sender to it.
@@ -257,16 +252,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
 
     /** Empty array of message factories. */
-    public static final MessageFactory[] EMPTY = {};
+    public static final MessageFactoryProvider[] EMPTY = {};
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
-
-    /** Direct protocol version attribute name. */
-    public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
-
-    /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 4;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -430,8 +419,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(DIRECT_PROTO_VER_ATTR, DIRECT_PROTO_VER);
-
         MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
 
         if (formatterExt != null && formatterExt.length > 0) {
@@ -443,39 +430,36 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) throws IgniteCheckedException {
+                @Override public MessageWriter writer(UUID rmtNodeId) {
                     assert rmtNodeId != null;
 
-                    return new DirectMessageWriter(U.directProtocolVersion(ctx, rmtNodeId));
+                    return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
-                    throws IgniteCheckedException {
-
-                    return new DirectMessageReader(msgFactory,
-                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : DIRECT_PROTO_VER);
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                    return new DirectMessageReader(msgFactory);
                 }
             };
         }
 
-        MessageFactory[] msgs = ctx.plugins().extensions(MessageFactory.class);
+        MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
         if (msgs == null)
             msgs = EMPTY;
 
-        List<MessageFactory> compMsgs = new ArrayList<>();
+        List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
         compMsgs.add(new GridIoMessageFactory());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
-            MessageFactory f = compType.messageFactory();
+            MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null)
                 compMsgs.add(f);
         }
 
         if (!compMsgs.isEmpty())
-            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
 
@@ -1959,19 +1943,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * This method must be used prior to opening a {@link TransmissionSender} by calling
-     * {@link #openTransmissionSender(UUID, Object)} to ensure that remote and local nodes
-     * are fully support direct {@link SocketChannel} connection to transfer data.
-     *
-     * @param node Remote node to check.
-     * @return {@code true} if a file can be sent over socket channel directly.
-     */
-    public boolean fileTransmissionSupported(ClusterNode node) {
-        return ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi) &&
-            nodeSupports(node, CHANNEL_COMMUNICATION);
-    }
-
-    /**
      * @param nodeId Destination node to connect to.
      * @param topic Topic to send the request to.
      * @param initMsg Channel initialization message.
@@ -2775,7 +2746,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param rctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptReceiver(ReceiverContext rctx, Exception ex) {
+    private void interruptReceiver(@Nullable ReceiverContext rctx, Exception ex) {
         if (rctx == null)
             return;
 

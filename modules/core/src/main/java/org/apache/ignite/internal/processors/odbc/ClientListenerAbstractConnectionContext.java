@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,6 +38,9 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
  * Base connection context.
  */
 public abstract class ClientListenerAbstractConnectionContext implements ClientListenerConnectionContext {
+    /** Transaciton id that mean no transaction. */
+    public static final int NONE_TX = 0;
+
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -60,6 +65,9 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * Used by the running query view to display query initiator.
      */
     private String clientDesc;
+
+    /** Tx id. */
+    private final AtomicInteger txIdSeq = new AtomicInteger();
 
     /**
      * Constructor.
@@ -123,6 +131,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
+        cleanupTxs();
+
         if (ctx.security().enabled())
             ctx.security().onSessionExpired(secCtx.subject().id());
     }
@@ -148,6 +158,39 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     public String clientDescriptor() {
         return clientDesc;
     }
+
+    /**
+     * Next transaction id for this connection.
+     */
+    public int nextTxId() {
+        int txId = txIdSeq.incrementAndGet();
+
+        return txId == NONE_TX ? txIdSeq.incrementAndGet() : txId;
+    }
+
+    /**
+     * Transaction context by transaction id.
+     *
+     * @param txId Tx ID.
+     */
+    public abstract @Nullable ClientTxContext txContext(int txId);
+
+    /**
+     * Add new transaction context to connection.
+     *
+     * @param txCtx Tx context.
+     */
+    public abstract void addTxContext(ClientTxContext txCtx);
+
+    /**
+     * Remove transaction context from connection.
+     *
+     * @param txId Tx ID.
+     */
+    public abstract void removeTxContext(int txId);
+
+    /** */
+    protected abstract void cleanupTxs();
 
     /** {@inheritDoc} */
     @Override public Map<String, String> attributes() {

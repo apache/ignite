@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest;
+import org.apache.ignite.internal.processors.security.SecurityContextInternalFuturePropagationTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCreateDestroyCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.security.client.ThinClientPermissio
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cluster.ActivationOnJoinWithoutPermissionsWithPersistenceTest;
 import org.apache.ignite.internal.processors.security.cluster.ClusterNodeOperationPermissionTest;
 import org.apache.ignite.internal.processors.security.cluster.ClusterStatePermissionTest;
 import org.apache.ignite.internal.processors.security.cluster.NodeJoinPermissionsTest;
@@ -140,7 +142,9 @@ import org.junit.runners.Suite;
     ServiceStaticConfigTest.class,
     ClusterNodeOperationPermissionTest.class,
     NodeSecurityContextPropagationTest.class,
-    NodeJoinPermissionsTest.class
+    NodeJoinPermissionsTest.class,
+    ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
+    SecurityContextInternalFuturePropagationTest.class,
 })
 public class SecurityTestSuite {
     /** */

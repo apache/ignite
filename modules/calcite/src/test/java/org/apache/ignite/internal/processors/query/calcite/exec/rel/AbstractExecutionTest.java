@@ -298,6 +298,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 .logger(log)
                 .build(),
             taskExecutor(nodeId),
+            null,
             qryId,
             nodeId,
             nodeId,
@@ -307,7 +308,8 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
-            ImmutableMap.of()
+            ImmutableMap.of(),
+            null
         );
     }
 
