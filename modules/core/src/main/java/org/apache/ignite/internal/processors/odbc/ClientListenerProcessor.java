@@ -184,12 +184,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         ? this::onOutboundMessageOffered
                         : null;
 
+                Predicate<Byte> newConnectionEnabled = connectionEnabledPredicate();
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, connectionEnabledPredicate()))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, newConnectionEnabled))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())

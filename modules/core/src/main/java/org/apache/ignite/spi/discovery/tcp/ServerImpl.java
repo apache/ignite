@@ -79,7 +79,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
@@ -180,6 +179,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_CO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
@@ -329,7 +329,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             2000,
             new LinkedBlockingQueue<>());
 
-        List<DistributedBooleanProperty> props = DistributedConfigurationUtils.newConnectionEnabledProperty(
+        List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
             ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
             log,
             "ClientNode",
@@ -4424,7 +4424,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err = node.isClient() ? ensureJoinAllowed(node) : null;
+                IgniteNodeValidationResult err = ensureJoinAllowed(node);
 
                 if (err == null)
                     err = spi.getSpiContext().validateNode(node);
@@ -6451,7 +6451,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             ? clientConnectionEnabled
             : serverConnectionEnabled;
 
-        if (enabled != null && enabled.get() == Boolean.FALSE)
+        if (enabled != null && !enabled.get())
             return new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
 
         return null;
