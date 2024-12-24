@@ -203,9 +203,6 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
             checkEvents(cli, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
             checkEvents(cli, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
-            checkEvents(cli, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-            checkEvents(cli, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
-
             checkEvents(cli, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
             checkEvents(cli, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
 
@@ -341,9 +338,6 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
 
         checkEvents(ignite, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
         checkEvents(ignite, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-        checkEvents(ignite, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-        checkEvents(ignite, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
         checkEvents(ignite, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);

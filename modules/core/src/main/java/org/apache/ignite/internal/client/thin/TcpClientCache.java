@@ -123,9 +123,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** JCache adapter. */
     private final Cache<K, V> jCacheAdapter;
 
-    /** Exception thrown when a non-transactional ClientCache clear operation is invoked within a transaction. */
-    public static final String NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
-        "non-transactional ClientCache clear operation within a transaction.";
+    /** Exception thrown when a non-transactional ClientCache operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional ClientCache %s operation within a transaction.";
 
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
@@ -555,11 +555,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
+
         ch.request(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAllAsync"));
+
         return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
@@ -728,7 +734,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      */
     @Override public void clear() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
 
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
@@ -745,7 +751,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clearAsync"));
 
         return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
@@ -1366,7 +1372,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
-            checkTxClearOperation(op);
+            checkTxClearOperation(op, false);
 
             try {
                 return tx.clientChannel().service(op, payloadWriter, payloadReader);
@@ -1395,7 +1401,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
-            checkTxClearOperation(op);
+            checkTxClearOperation(op, true);
 
             CompletableFuture<T> fut = new CompletableFuture<>();
 
@@ -1420,9 +1426,10 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** */
-    private void checkTxClearOperation(ClientOperation op) {
+    private void checkTxClearOperation(ClientOperation op, boolean async) {
         if (op == ClientOperation.CACHE_CLEAR_KEY || op == ClientOperation.CACHE_CLEAR_KEYS)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE,
+                async ? "clearAsync" : "clear"));
     }
 
     /**
