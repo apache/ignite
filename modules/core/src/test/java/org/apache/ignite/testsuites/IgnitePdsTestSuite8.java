@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.CircledRebalanceTest;
+import org.apache.ignite.internal.processors.cache.ConnectionEnabledPropertyTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheRebalanceWithRemovedWalSegment;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.SupplyPartitionHistoricallyWithReorderedUpdates;
 import org.apache.ignite.internal.processors.cache.expiry.ActivationOnExpirationTimeoutTest;
@@ -104,6 +105,8 @@ public class IgnitePdsTestSuite8 {
 
         GridTestUtils.addTestIfNeeded(suite, PagesPossibleCorruptionDiagnosticTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MaintenancePersistenceTaskTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, ConnectionEnabledPropertyTest.class, ignoredTests);
 
         return suite;
     }

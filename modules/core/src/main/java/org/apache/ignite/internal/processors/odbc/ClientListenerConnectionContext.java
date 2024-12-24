@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
+
 /**
  * SQL listener connection context.
  */
@@ -88,4 +90,13 @@ public interface ClientListenerConnectionContext {
      * Connection attributes.
      */
     Map<String, String> attributes();
+
+    /**
+     * @return {@code True} if client is management.
+     */
+    default boolean isManagementClient() {
+        Map<String, String> attrs = attributes();
+
+        return attrs != null && Boolean.parseBoolean(attrs.get(MANAGEMENT_CLIENT_ATTR));
+    }
 }

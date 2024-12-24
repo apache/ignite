@@ -82,6 +82,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -177,6 +178,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
@@ -297,6 +300,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Client node connection allowed property. */
+    private DistributedBooleanProperty clientConnectionEnabled;
+
+    /** Server node connection allowed property. */
+    private DistributedBooleanProperty serverConnectionEnabled;
+
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
      */
@@ -319,6 +328,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             utilityPoolSize,
             2000,
             new LinkedBlockingQueue<>());
+
+        List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
+            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
+            log,
+            "ClientNode",
+            "ServerNode"
+        );
+
+        clientConnectionEnabled = props.get(0);
+        serverConnectionEnabled = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -4405,9 +4424,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err;
+                IgniteNodeValidationResult err = ensureJoinEnabled(node);
 
-                err = spi.getSpiContext().validateNode(node);
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node);
 
                 if (err == null) {
                     try {
@@ -6420,6 +6440,21 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public String toString() {
             return String.format("%s, nextNode=[%s]", super.toString(), next);
         }
+    }
+
+    /**
+     * @param node Node to connect.
+     * @return {@code null} if connection allowed, error otherwise.
+     */
+    private IgniteNodeValidationResult ensureJoinEnabled(TcpDiscoveryNode node) {
+        DistributedBooleanProperty enabled = node.isClient()
+            ? clientConnectionEnabled
+            : serverConnectionEnabled;
+
+        if (enabled != null && !enabled.get())
+            return new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
+
+        return null;
     }
 
     /**

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplem
 import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcConnectionEnabledPropertyTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInfoTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
@@ -62,6 +63,7 @@ import org.junit.runners.Suite;
 
     JdbcThinTransactionalSelfTest.class,
     JdbcSetClientInfoTest.class,
+    JdbcConnectionEnabledPropertyTest.class
 })
 public class IgniteCalciteTestSuite {
 }

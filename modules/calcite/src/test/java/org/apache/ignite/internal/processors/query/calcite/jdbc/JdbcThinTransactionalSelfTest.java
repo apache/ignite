@@ -49,7 +49,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /** */
 public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+    public static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
