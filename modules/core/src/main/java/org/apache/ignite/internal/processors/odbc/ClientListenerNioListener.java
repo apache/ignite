@@ -108,7 +108,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private final ClientListenerMetrics metrics;
 
     /**
-     * If return {@code true} for connection type then proptocol connection allowed by administrator.
+     * If return {@code true} then specifi protocol connections enabled.
      * Predicate checks distributed property value.
      *
      * @see ClientListenerNioListener#ODBC_CLIENT
