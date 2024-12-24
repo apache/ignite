@@ -145,10 +145,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      * @return Idle verify job result constructed from results of remote executions.
      */
     public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
+        System.out.println("results = " + results);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> ex = new HashMap<>();
 
         for (ComputeJobResult res : results) {
+
             if (res.getException() != null) {
                 ex.put(res.getNode(), res.getException());
 
@@ -237,7 +239,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 try {
                     if (isCancelled()) {
                         cancelFuts(i, partHashCalcFuts);
-
+                        System.out.println("VerifyBackupPartitionsJobV2.execute");
                         throw new IgniteException("Task was cancelled");
                     }
 
@@ -279,7 +281,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             if (!F.isEmpty(exceptions))
                 throw new IdleVerifyException(exceptions);
 
-            return isCancelled() ? null : res;
+            return res;
         }
 
         private static void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {

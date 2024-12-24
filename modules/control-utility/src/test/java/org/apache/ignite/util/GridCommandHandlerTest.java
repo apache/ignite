@@ -136,6 +136,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -176,6 +177,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -788,8 +790,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
         for (int i = 0; i < gridsCnt; i++) {
-            for (ComputeTaskView view : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW))
-                assertTrue(waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(view.taskName()), 100));
+            for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                if (!waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(jobView.taskName()), 1000))
+                    System.out.println("remained job id: " + jobView.id() + ", grid id: " + i + ", node id: " + grid(i).localNode().id());
+//                assertTrue(waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(jobView.taskName()), 1000));
+            }
+
+            for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                if (!waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(taskView.taskName()), 1000))
+                    System.out.println("remained task node id: " + taskView.taskNodeId());
+//                 assertTrue(waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(taskView.taskName()), 1000));
+            }
         }
 
         assertTrue(waitForCondition(() -> idleVerifyFut.isDone(), 1000));

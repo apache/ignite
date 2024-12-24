@@ -535,6 +535,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sysCancel {@code True} if job has been cancelled from system and no response needed.
      */
     private void cancelJob(GridJobWorker job, boolean sysCancel) {
+        System.out.println("GridJobProcessor.cancelJob on node " + ctx.config().getNodeId());
+
         boolean isCancelled = job.isCancelled();
 
         // We don't increment number of cancelled jobs if it
@@ -799,8 +801,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                 }
                 for (GridJobWorker job : activeJobs.values()) {
-                    if (idsMatch.test(job))
+                    if (idsMatch.test(job)) {
+                        System.out.println("ids match for active job: " + job);
+
                         cancelActiveJob(job, sys);
+                    }
                 }
             }
             else {
@@ -852,7 +857,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sys Flag indicating whether this is a system cancel.
      */
     private void cancelActiveJob(GridJobWorker job, boolean sys) {
-        if (removeFromActive(job)) {
+        System.out.println("cancelActiveJob, node id = : " + job.getTaskNode().id());
+
+        boolean removedFromActive = removeFromActive(job);
+        System.out.println("removedFromActive = " + removedFromActive);
+        if (removedFromActive) {
             cancelledJobs.put(job.getJobId(), job);
 
             if (finishedJobs.contains(job.getJobId()))
@@ -869,6 +878,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return {@code True} if job actually removed.
      */
     private boolean removeFromActive(GridJobWorker job) {
+        System.out.println("removeFromActive, node id = " + job.getTaskNode().id());
+
         boolean res = activeJobs.remove(job.getJobId(), job);
 
         if (res)
@@ -1189,6 +1200,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("TooBroadScope")
     public void processJobExecuteRequest(ClusterNode node, final GridJobExecuteRequest req) {
+        System.out.println("processJobExecuteRequest, node id = " + node.id());
+
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 

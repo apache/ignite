@@ -108,18 +108,19 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
                 tasksCnt.incrementAndGet();
             });
 
-//            F.iterator(
-//                ignite.context().systemView().view(JOBS_VIEW),
-//                ComputeJobView::sessionId,
-//                true,
-//                jobView -> {
-//                    log.info("jobView.taskClassName(): " + jobView.taskClassName() + ", jobView.taskName(): " + jobView.taskName());
-//                    return jobView.taskClassName().equals(taskCls.getName());
-//                }
-//            ).forEach(sesId -> {
-//                ignite.context().job().cancelJob(sesId, null, false);
-//                jobsCnt.incrementAndGet();
-//            });
+            F.iterator(
+                ignite.context().systemView().view(JOBS_VIEW),
+                ComputeJobView::sessionId,
+                true,
+                jobView -> {
+                    log.info("jobView.taskClassName(): " + jobView.taskClassName() + ", jobView.taskName(): " + jobView.taskName());
+                    return jobView.taskClassName().equals(taskCls.getName());
+                }
+            ).forEach(sesId -> {
+                ignite.context().job().cancelJob(sesId, null, false);
+
+                jobsCnt.incrementAndGet();
+            });
 
             log.info(taskCls.getName() + " found jobs: " + jobsCnt + ", found tasks: " + tasksCnt);
         }
