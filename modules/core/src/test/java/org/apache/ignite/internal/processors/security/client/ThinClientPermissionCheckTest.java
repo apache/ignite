@@ -391,13 +391,13 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     @Test
     public void testConnectAsManagementClient() throws Exception {
         Runnable clientCanConnect = () -> {
-            try(IgniteClient cli = startClient(CLIENT)) {
+            try (IgniteClient cli = startClient(CLIENT)) {
                 assertNotNull("Cach query from CLIENT", cli.cacheNames());
             }
         };
 
         Runnable adminCanConnect = () -> {
-            try(IgniteClient cli = startClient(ADMIN)) {
+            try (IgniteClient cli = startClient(ADMIN)) {
                 assertNotNull("Cach query from CLIENT", cli.cacheNames());
             }
         };
@@ -417,14 +417,14 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             }
         };
 
-        Runnable checkDefault = () -> {
+        Runnable checkDflt = () -> {
             clientCanConnect.run();
             adminCanConnect.run();
 
             withUserAttrsCheck.run();
         };
 
-        checkDefault.run();
+        checkDflt.run();
 
         assertTrue(grid(0).context().distributedMetastorage().read(toMetaStorageKey(THIN_CONN_ENABLED_PROP)));
 
@@ -442,7 +442,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             grid(0).context().distributedMetastorage().write(toMetaStorageKey(THIN_CONN_ENABLED_PROP), true);
         }
 
-        checkDefault.run();
+        checkDflt.run();
     }
 
     /**

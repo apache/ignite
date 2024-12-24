@@ -95,8 +95,8 @@ public interface ClientListenerConnectionContext {
      * @return {@code True} if client is management.
      */
     default boolean isManagementClient() {
-        Map<String, String> attributes = attributes();
+        Map<String, String> attrs = attributes();
 
-        return attributes != null && Boolean.parseBoolean(attributes.get(MANAGEMENT_CLIENT_ATTR));
+        return attrs != null && Boolean.parseBoolean(attrs.get(MANAGEMENT_CLIENT_ATTR));
     }
 }

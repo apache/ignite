@@ -33,6 +33,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.toMetaStorageKey;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
+/** */
 @RunWith(Parameterized.class)
 public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
     /** */
