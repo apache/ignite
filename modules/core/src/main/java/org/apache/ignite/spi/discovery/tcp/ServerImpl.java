@@ -4424,7 +4424,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err = ensureJoinAllowed(node);
+                IgniteNodeValidationResult err = ensureJoinEnabled(node);
 
                 if (err == null)
                     err = spi.getSpiContext().validateNode(node);
@@ -6446,7 +6446,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param node Node to connect.
      * @return {@code null} if connection allowed, error otherwise.
      */
-    private IgniteNodeValidationResult ensureJoinAllowed(TcpDiscoveryNode node) {
+    private IgniteNodeValidationResult ensureJoinEnabled(TcpDiscoveryNode node) {
         DistributedBooleanProperty enabled = node.isClient()
             ? clientConnectionEnabled
             : serverConnectionEnabled;
