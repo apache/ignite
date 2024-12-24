@@ -35,7 +35,6 @@ public class JdbcConnectionEnabledPropertyTest extends GridCommonAbstractTest {
     /** */
     private static final String JDBC_CONN_ENABLED_PROP = "newJdbcConnectionsEnabled";
 
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
