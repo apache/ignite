@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxPreloadAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -32,11 +31,6 @@ public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setMarshaller(null);
     }
 
     /** {@inheritDoc} */

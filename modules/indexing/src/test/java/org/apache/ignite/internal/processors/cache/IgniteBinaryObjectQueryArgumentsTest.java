@@ -82,8 +82,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration(getCacheConfigurations());
 
-        cfg.setMarshaller(null);
-
         return cfg;
     }
 

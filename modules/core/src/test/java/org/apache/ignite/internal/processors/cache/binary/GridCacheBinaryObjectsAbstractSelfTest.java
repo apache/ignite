@@ -56,7 +56,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -76,6 +75,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -108,7 +108,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         binKeysCacheCfg.setName("BinKeysCache");
 
         cfg.setCacheConfiguration(cacheCfg, binKeysCacheCfg);
-        cfg.setMarshaller(new BinaryMarshaller());
 
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 

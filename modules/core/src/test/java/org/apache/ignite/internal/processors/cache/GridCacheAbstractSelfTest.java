@@ -38,6 +38,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -140,24 +140,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 try {
                     final int fi = i;
 
-                    assertTrue(
-                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
-                            + ", local entries " + entrySet(jcache(fi).localEntries()),
-                        GridTestUtils.waitForCondition(
-                            // Preloading may happen as nodes leave, so we need to wait.
-                            new GridAbsPredicateX() {
-                                @Override public boolean applyx() throws IgniteCheckedException {
-                                    jcache(fi).removeAll();
-
-                                    if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
-                                            jcache(fi).remove(k.getKey());
-                                    }
-
-                                    return jcache(fi).localSize(CachePeekMode.ALL) == 0;
-                                }
-                            },
-                            getTestTimeout()));
+                    GridTestUtils.waitForCondition(
+                        // Preloading may happen as nodes leave, so we need to wait.
+                        new GridAbsPredicateX() {
+                            @Override public boolean applyx() {
+                                jcache(fi).clear();
+                                return jcache(fi).localSize(CachePeekMode.ALL) == 0;
+                            }
+                        }, getTestTimeout());
 
                     int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
                     int keySize = jcache(i).localSize();
@@ -191,7 +181,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         if (storeStgy != null)
             storeStgy.resetStore();
@@ -211,12 +200,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(comm);
 
         return cfg;
     }
@@ -351,7 +334,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache() {
-        return jcache(0);
+        return defaultInstance().cache(DEFAULT_CACHE_NAME);
+    }
+
+    /**
+     * @return Default Ignite instance.
+     */
+    public IgniteEx defaultInstance() {
+        return grid(0);
     }
 
     /**

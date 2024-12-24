@@ -65,7 +65,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -200,7 +199,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final CountDownLatch leaveLatch = new CountDownLatch(1);
 
     /** */
-    private final ScheduledExecutorService executorService;
+    private final ScheduledExecutorService executorSrvc;
 
     /** */
     private MessageWorker msgWorker;
@@ -221,7 +220,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         String instanceName = adapter.ignite() == null || adapter.ignite().name() == null
             ? "client-node" : adapter.ignite().name();
 
-        executorService = Executors.newSingleThreadScheduledExecutor(
+        executorSrvc = Executors.newSingleThreadScheduledExecutor(
             new IgniteThreadFactory(instanceName, "tcp-discovery-exec"));
     }
 
@@ -307,9 +306,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         sockReader = new SocketReader();
         sockReader.start();
 
-        if (spi.ipFinder.isShared() && spi.isForceServerMode())
-            registerLocalNodeAddress();
-
         msgWorker = new MessageWorker(log);
 
         new IgniteSpiThread(msgWorker.igniteInstanceName(), msgWorker.name(), log) {
@@ -318,7 +314,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
-        executorService.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
+        executorSrvc.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
 
         try {
             joinLatch.await();
@@ -369,7 +365,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         while (!U.join(sockReader, log, 200))
             U.interrupt(sockReader);
 
-        executorService.shutdownNow();
+        executorSrvc.shutdownNow();
 
         spi.printStopInfo();
     }
@@ -382,11 +378,6 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        return IgniteFeatures.allNodesSupports(upcast(rmtNodes.values()), feature);
     }
 
     /** {@inheritDoc} */
@@ -435,7 +426,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     final GridFutureAdapter<Boolean> finalFut = fut;
 
-                    executorService.schedule(() -> {
+                    executorSrvc.schedule(() -> {
                         if (pingFuts.remove(nodeId, finalFut)) {
                             if (ClientImpl.this.state == DISCONNECTED)
                                 finalFut.onDone(new IgniteClientDisconnectedCheckedException(null,
@@ -785,11 +776,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     );
 
                     msg = joinReqMsg;
-
-                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
-                    // The only way to know is passing flag directly with handshake response.
-                    if (!res.isDiscoveryDataPacketCompression())
-                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
                 }
                 else
                     msg = new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId);
@@ -2144,7 +2130,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.joinTimeout > 0) {
                 final int joinCnt0 = joinCnt;
 
-                executorService.schedule(() -> {
+                executorSrvc.schedule(() -> {
                     queue.add(new JoinTimeout(joinCnt0));
                 }, spi.joinTimeout, MILLISECONDS);
             }
@@ -2746,7 +2732,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     private static class JoinTimeout {
         /** */
-        private int joinCnt;
+        private final int joinCnt;
 
         /**
          * @param joinCnt Join count to compare.

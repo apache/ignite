@@ -74,14 +74,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getConnectionsPerNode();
 
     /**
-     * @deprecated This property will be removed in future releases.
-     * @return Ignored value.
-     */
-    @MXBeanDescription("This property will be removed in future releases.")
-    @Deprecated
-    public int getSharedMemoryPort();
-
-    /**
      * Gets maximum number of local ports tried if all previously
      * tried ports are occupied.
      *

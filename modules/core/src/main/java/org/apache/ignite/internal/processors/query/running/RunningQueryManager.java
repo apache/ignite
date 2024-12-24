@@ -43,6 +43,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.SqlPlanHistoryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.systemview.view.SqlPlanHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +98,12 @@ public class RunningQueryManager {
     /** */
     public static final String SQL_QRY_HIST_VIEW_DESC = "SQL queries history.";
 
+    /** */
+    public static final String SQL_PLAN_HIST_VIEW = metricName("sql", "plans", "history");
+
+    /** */
+    public static final String SQL_PLAN_HIST_VIEW_DESC = "SQL plans history.";
+
     /** Undefined query ID value. */
     public static final long UNDEFINED_QUERY_ID = 0L;
 
@@ -116,6 +124,12 @@ public class RunningQueryManager {
 
     /** Query history tracker. */
     private volatile QueryHistoryTracker qryHistTracker;
+
+    /** Sql plan history size. */
+    private final int planHistSz;
+
+    /** Sql plan history tracker. */
+    private volatile SqlPlanHistoryTracker planHistTracker;
 
     /** Number of successfully executed queries. */
     private final LongAdderMetric successQrsCnt;
@@ -185,6 +199,10 @@ public class RunningQueryManager {
 
         heavyQrysTracker = ctx.query().moduleEnabled() ? new HeavyQueriesTracker(ctx) : null;
 
+        planHistSz = ctx.config().getSqlConfiguration().getSqlPlanHistorySize();
+
+        planHistTracker = new SqlPlanHistoryTracker(planHistSz);
+
         ctx.systemView().registerView(SQL_QRY_VIEW, SQL_QRY_VIEW_DESC,
             new SqlQueryViewWalker(),
             runs.values(),
@@ -194,6 +212,11 @@ public class RunningQueryManager {
             new SqlQueryHistoryViewWalker(),
             qryHistTracker.queryHistory().values(),
             SqlQueryHistoryView::new);
+
+        ctx.systemView().registerView(SQL_PLAN_HIST_VIEW, SQL_PLAN_HIST_VIEW_DESC,
+            new SqlPlanHistoryViewWalker(),
+            () -> planHistTracker.sqlPlanHistory().entrySet(),
+            SqlPlanHistoryView::new);
 
         MetricRegistryImpl userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
 
@@ -464,6 +487,11 @@ public class RunningQueryManager {
     /** */
     public HeavyQueriesTracker heavyQueriesTracker() {
         return heavyQrysTracker;
+    }
+
+    /** */
+    public SqlPlanHistoryTracker planHistoryTracker() {
+        return planHistTracker;
     }
 
     /**
@@ -821,6 +849,13 @@ public class RunningQueryManager {
      */
     public void resetQueryHistoryMetrics() {
         qryHistTracker = new QueryHistoryTracker(histSz);
+    }
+
+    /**
+     * Reset SQL plan history.
+     */
+    public void resetPlanHistoryMetrics() {
+        planHistTracker = new SqlPlanHistoryTracker(planHistSz);
     }
 
     /** {@inheritDoc} */

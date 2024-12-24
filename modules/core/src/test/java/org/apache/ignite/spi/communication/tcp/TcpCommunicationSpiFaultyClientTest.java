@@ -92,7 +92,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         }
 
         spi.setIdleConnectionTimeout(100);
-        spi.setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientReconnectDisabled(true);
 

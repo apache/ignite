@@ -51,12 +51,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridCachePluginContext;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
@@ -82,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
@@ -1502,8 +1499,6 @@ public class ClusterCachesInfo {
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
 
-        validateNoNewCachesWithNewFormat(cachesData);
-
         // CacheGroup configurations that were created from local node configuration.
         Map<Integer, CacheGroupDescriptor> locCacheGrps = new HashMap<>(registeredCacheGroups());
 
@@ -1524,40 +1519,6 @@ public class ClusterCachesInfo {
 
         if (cachesOnDisconnect == null || cachesOnDisconnect.clusterActive())
             initStartCachesForLocalJoin(false, disconnectedState());
-    }
-
-    /**
-     * Validates that joining node doesn't have newly configured caches
-     * in case when there is no cluster-wide support of SPLITTED_CACHE_CONFIGURATIONS.
-     *
-     * If validation is failed that caches will be destroyed cluster-wide and node joining process will be failed.
-     *
-     * @param clusterWideCacheData Cluster wide cache data.
-     */
-    public void validateNoNewCachesWithNewFormat(CacheNodeCommonDiscoveryData clusterWideCacheData) {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
-
-        boolean allowSplitCacheConfigurations = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
-
-        if (!allowSplitCacheConfigurations) {
-            List<String> cachesToDestroy = new ArrayList<>();
-
-            for (DynamicCacheDescriptor cacheDescriptor : registeredCaches().values()) {
-                CacheData clusterCacheData = clusterWideCacheData.caches().get(cacheDescriptor.cacheName());
-
-                // Node spawned new cache.
-                if (clusterCacheData.receivedFrom().equals(cacheDescriptor.receivedFrom()))
-                    cachesToDestroy.add(cacheDescriptor.cacheName());
-            }
-
-            if (!cachesToDestroy.isEmpty()) {
-                ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
-
-                throw new IllegalStateException(
-                    "Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy
-                );
-            }
-        }
     }
 
     /**
@@ -2540,7 +2501,7 @@ public class ClusterCachesInfo {
 
                     if (dsCfgBytes instanceof byte[]) {
                         try {
-                            DataStorageConfiguration crdDsCfg = new JdkMarshaller().unmarshal(
+                            DataStorageConfiguration crdDsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal(
                                 (byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
 
                             return CU.isPersistentCache(startedCacheCfg, crdDsCfg);

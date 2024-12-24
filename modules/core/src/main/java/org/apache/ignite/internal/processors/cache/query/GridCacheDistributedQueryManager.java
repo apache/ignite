@@ -244,8 +244,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (sndNode == null)
             return null;
 
-        GridCacheQueryAdapter<?> qry =
-            new GridCacheQueryAdapter<>(
+        CacheQuery<?> qry =
+            new CacheQuery<>(
                 cctx,
                 req.type(),
                 log,
@@ -263,7 +263,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.includeMetaData(),
                 req.keepBinary(),
                 req.taskHash(),
-                req.isDataPageScanEnabled()
+                req.isDataPageScanEnabled(),
+                req.skipKeys()
             );
 
         return new GridCacheQueryInfo(
@@ -541,7 +542,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
+    @Override public GridCloseableIterator scanQueryDistributed(final CacheQuery qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert qry.type() == GridCacheQueryType.SCAN : qry;
 

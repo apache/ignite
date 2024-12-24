@@ -70,9 +70,6 @@ public class TcpCommunicationConfiguration implements Serializable {
     /** Local port range. */
     private int locPortRange = DFLT_PORT_RANGE;
 
-    /** This field is ignored and will be removed in future releases. */
-    private int shmemPort = -1;
-
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
 
@@ -123,9 +120,6 @@ public class TcpCommunicationConfiguration implements Serializable {
 
     /** Bound port. */
     private int boundTcpPort = -1;
-
-    /** Bound port for shared memory server. */
-    private int boundTcpShmemPort = -1;
 
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
@@ -211,21 +205,6 @@ public class TcpCommunicationConfiguration implements Serializable {
      */
     public void localPortRange(int locPortRange) {
         this.locPortRange = locPortRange;
-    }
-
-    /**
-     * @deprecated This property is ignored and will be removed in future releases.
-     */
-    @Deprecated
-    public int shmemPort() {
-        return shmemPort;
-    }
-
-    /**
-     * @deprecated This property is ignored and will be removed in future releases.
-     */
-    @Deprecated
-    public void shmemPort(int shmemPort) {
     }
 
     /**
@@ -464,21 +443,6 @@ public class TcpCommunicationConfiguration implements Serializable {
      */
     public void boundTcpPort(int boundTcpPort) {
         this.boundTcpPort = boundTcpPort;
-    }
-
-    /**
-     * @deprecated This property is deprecated and will be removed in future releases.
-     */
-    @Deprecated
-    public int boundTcpShmemPort() {
-        return boundTcpShmemPort;
-    }
-
-    /**
-     * @deprecated Setter is ignored.
-     */
-    public void boundTcpShmemPort(int boundTcpShmemPort) {
-        // No-op.
     }
 
     /**

@@ -110,9 +110,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
         cfg.setGridLogger(new GridStringLogger());
 
         return cfg;
@@ -1893,7 +1890,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             assertNotNull(propsResult);
 
-            assertTrue(propsResult.isEmpty());
+            assertFalse(propsResult.isEmpty());
 
             conn.close();
 
