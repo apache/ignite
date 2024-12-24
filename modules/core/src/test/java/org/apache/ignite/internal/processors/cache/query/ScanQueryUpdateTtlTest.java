@@ -32,6 +32,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -76,6 +77,8 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
 
             assertTrue("Each key must be sent only once", CheckingCommunicationSpi.keyCnt.values().stream().allMatch(c -> c == 1));
 
+            // Check here for (EXPIRE_ENTRIES_FLUSH_CNT + 1) since CacheExpiryPolicy::readyToFlush method
+            // checks as (entries.size() > EXPIRE_ENTRIES_FLUSH_CNT) before flush.
             assertTrue("Single GridCacheTtlUpdateRequest must be sent with no more then maximum allowed keys " +
                     "[maxAllowed=" + (EXPIRE_ENTRIES_FLUSH_CNT + 1) +
                     ", maxActual=" + CheckingCommunicationSpi.maxKeyBatchCnt + "]",
@@ -91,7 +94,7 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
         private static int maxKeyBatchCnt = 0;
 
         /** */
-        private static Map<KeyCacheObject, Integer> keyCnt = new ConcurrentHashMap<>(KEYS);
+        private static final Map<KeyCacheObject, Integer> keyCnt = new ConcurrentHashMap<>(U.capacity(KEYS));
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)

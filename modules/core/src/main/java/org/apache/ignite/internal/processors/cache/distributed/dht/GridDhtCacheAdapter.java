@@ -1367,15 +1367,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (!F.isEmpty(expiryPlc.entries())) {
             Map<KeyCacheObject, GridCacheVersion> entries = Map.copyOf(expiryPlc.entries());
 
-            assert entries != null && !entries.isEmpty();
-
             Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrs =
                 expiryPlc.readers() != null ? Map.copyOf(expiryPlc.readers()) : null;
 
             ctx.closures().runLocalSafe(new GridPlainRunnable() {
                 @SuppressWarnings({"ForLoopReplaceableByForEach"})
                 @Override public void run() {
-
                     Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();
 
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
