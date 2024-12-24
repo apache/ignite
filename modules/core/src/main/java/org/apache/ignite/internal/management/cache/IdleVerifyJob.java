@@ -68,8 +68,6 @@ class IdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT
 
     /** {@inheritDoc} */
     @Override protected ResultT run(CacheIdleVerifyCommandArg arg) throws IgniteException {
-        System.out.println("IdleVerifyJob.run");
-        System.out.println("fut = " + fut);
         try {
             if (fut == null) {
                 fut = ignite.context().task().execute(taskCls, arg, options(ignite.cluster().forServers().nodes()));
@@ -83,10 +81,6 @@ class IdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT
                 }
             }
 
-            fut.listen(() -> {
-                System.out.println("future is done");
-            });
-
             return fut.get();
         }
         catch (IgniteCheckedException e) {
@@ -96,8 +90,6 @@ class IdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        System.out.println("IdleVerifyJob.cancel on node: " + ignite.cluster().localNode().id());
-
         log.warning("Idle verify was cancelled.");
 
         super.cancel();
