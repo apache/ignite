@@ -242,7 +242,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     @Test
-    public void testtestWrongParametersNumberInSeveralQueries() {
+    public void testWrongParametersNumberInSeveralQueries() {
         assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?");
         assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?", 1);
         assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?", 1);
