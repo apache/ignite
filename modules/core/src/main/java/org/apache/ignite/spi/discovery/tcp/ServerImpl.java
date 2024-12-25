@@ -4206,7 +4206,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (isLocalNodeCoordinator()) {
                 TcpDiscoveryNode existingNode = ring.node(node.id());
 
-
                 if (existingNode != null) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
