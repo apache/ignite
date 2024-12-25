@@ -115,7 +115,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @see ClientListenerNioListener#JDBC_CLIENT
      * @see ClientListenerNioListener#THIN_CLIENT
      */
-    private final Predicate<Byte> newConnectionEnabled;
+    private final Predicate<Byte> newConnEnabled;
 
     /**
      * Constructor.
@@ -124,14 +124,14 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param busyLock Shutdown busy lock.
      * @param cliConnCfg Client connector configuration.
      * @param metrics Client listener metrics.
-     * @param newConnectionEnabled Predicate to check if connection of specified type enabled.
+     * @param newConnEnabled Predicate to check if connection of specified type enabled.
      */
     public ClientListenerNioListener(
         GridKernalContext ctx,
         GridSpinBusyLock busyLock,
         ClientConnectorConfiguration cliConnCfg,
         ClientListenerMetrics metrics,
-        Predicate<Byte> newConnectionEnabled
+        Predicate<Byte> newConnEnabled
     ) {
         assert cliConnCfg != null;
 
@@ -147,7 +147,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
 
         this.metrics = metrics;
-        this.newConnectionEnabled = newConnectionEnabled;
+        this.newConnEnabled = newConnEnabled;
     }
 
     /** {@inheritDoc} */
@@ -559,7 +559,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @throws IgniteCheckedException If failed.
      */
     private void ensureConnectionAllowed(ClientListenerConnectionContext connCtx) throws IgniteCheckedException {
-        boolean isControlUtility = connCtx.clientType() == THIN_CLIENT && connCtx.isManagementClient();
+        boolean isControlUtility = connCtx.clientType() == THIN_CLIENT && connCtx.managementClient();
 
         if (nodeInRecoveryMode()) {
             if (!isControlUtility)
@@ -568,7 +568,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             return;
         }
 
-        // If security enabled then only admin allowed to connect as management
+        // If security enabled then only admin allowed to connect as management.
         if (isControlUtility) {
             if (connCtx.securityContext() != null) {
                 try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
@@ -584,7 +584,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             return;
         }
 
-        if (!newConnectionEnabled.test(connCtx.clientType()))
+        if (!newConnEnabled.test(connCtx.clientType()))
             throw new IgniteAccessControlException(CONN_DISABLED_BY_ADMIN_ERR_MSG);
     }
 }

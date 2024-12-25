@@ -179,7 +179,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_CO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
-import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.asBoolean;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
@@ -302,10 +301,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         new ConcurrentHashMap<>();
 
     /** Client node connection allowed property. */
-    private DistributedBooleanProperty clientConnectionEnabled;
+    private final DistributedBooleanProperty cliConnEnabled;
 
     /** Server node connection allowed property. */
-    private DistributedBooleanProperty serverConnectionEnabled;
+    private final DistributedBooleanProperty srvConnEnabled;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -337,8 +336,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             "ServerNode"
         );
 
-        clientConnectionEnabled = props.get(0);
-        serverConnectionEnabled = props.get(1);
+        cliConnEnabled = props.get(0);
+        srvConnEnabled = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -6448,7 +6447,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code null} if connection allowed, error otherwise.
      */
     private IgniteNodeValidationResult ensureJoinEnabled(TcpDiscoveryNode node) {
-        return asBoolean(node.isClient() ? clientConnectionEnabled : serverConnectionEnabled)
+        return (node.isClient() ? cliConnEnabled : srvConnEnabled).getOrDefault(true)
             ? null
             : new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
     }

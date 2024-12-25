@@ -677,7 +677,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
-        return new GridInternalSubscriptionProcessor(this);
+        return null;
     }
 
     /** {@inheritDoc} */

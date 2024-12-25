@@ -69,7 +69,6 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.asBoolean;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -185,14 +184,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         ? this::onOutboundMessageOffered
                         : null;
 
-                Predicate<Byte> newConnectionEnabled = connectionEnabledPredicate();
+                Predicate<Byte> newConnEnabled = connectionEnabledPredicate();
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, newConnectionEnabled))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, newConnEnabled))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -265,7 +264,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      * @see ClientListenerNioListener#THIN_CLIENT
      */
     private Predicate<Byte> connectionEnabledPredicate() {
-        Map<Byte, DistributedBooleanProperty> allowConnMap = new HashMap<>();
+        Map<Byte, DistributedBooleanProperty> сonnEnabledMap = new HashMap<>();
 
         List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
             ctx.internalSubscriptionProcessor(),
@@ -275,15 +274,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             "Thin"
         );
 
-        allowConnMap.put(ODBC_CLIENT, props.get(0));
-        allowConnMap.put(JDBC_CLIENT, props.get(1));
-        allowConnMap.put(THIN_CLIENT, props.get(2));
+        сonnEnabledMap.put(ODBC_CLIENT, props.get(0));
+        сonnEnabledMap.put(JDBC_CLIENT, props.get(1));
+        сonnEnabledMap.put(THIN_CLIENT, props.get(2));
 
         return type -> {
             assert type != null : "Connection type is null";
-            assert allowConnMap.containsKey(type) : "Unknown connection type: " + type;
+            assert сonnEnabledMap.containsKey(type) : "Unknown connection type: " + type;
 
-            return asBoolean(allowConnMap.get(type));
+            return сonnEnabledMap.get(type).getOrDefault(true);
         };
     }
 

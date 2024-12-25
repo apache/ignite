@@ -51,7 +51,7 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
     }
 
     /** {@inheritDoc} */
-    @Override public void testConnectAsManagementClient() throws Exception {
+    @Override public void testConnectAsManagementClient() {
         // No-op.
     }
 }

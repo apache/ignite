@@ -390,7 +390,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testConnectAsManagementClient() throws Exception {
-        Runnable clientCanConnect = () -> {
+        Runnable cliCanConnect = () -> {
             try (IgniteClient cli = startClient(CLIENT)) {
                 assertNotNull("Cach query from CLIENT", cli.cacheNames());
             }
@@ -418,7 +418,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         };
 
         Runnable checkDflt = () -> {
-            clientCanConnect.run();
+            cliCanConnect.run();
             adminCanConnect.run();
 
             withUserAttrsCheck.run();
