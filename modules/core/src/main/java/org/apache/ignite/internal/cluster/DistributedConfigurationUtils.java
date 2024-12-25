@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
 
@@ -134,5 +135,13 @@ public final class DistributedConfigurationUtils {
         });
 
         return props;
+    }
+
+    /**
+     * @param prop Property to get value from.
+     * @return Property value. Default {@code true}.
+     */
+    public static boolean asBoolean(@Nullable DistributedBooleanProperty prop) {
+        return prop != null ? prop.getOrDefault(true) : Boolean.TRUE;
     }
 }

@@ -89,17 +89,11 @@ public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
         // Two iteration to check successfull restart when newServerNodeConnectionsEnabled=false.
         for (int i = 0; i < 2; i++) {
             try (IgniteEx srv = startGrid(0)) {
-                if (i == 0) {
-                    assertTrue(srv.context().distributedMetastorage().read(toMetaStorageKey(SRV_CONN_ENABLED_PROP)));
-                    assertTrue(srv.context().distributedMetastorage().read(toMetaStorageKey(CLI_CONN_ENABLED_PROP)));
-                }
-                else {
-                    assertFalse(srv.context().distributedMetastorage().read(toMetaStorageKey(SRV_CONN_ENABLED_PROP)));
-                    assertFalse(srv.context().distributedMetastorage().read(toMetaStorageKey(CLI_CONN_ENABLED_PROP)));
-                }
-
                 srv.cluster().state(ClusterState.ACTIVE);
 
+                assertTrue(srv.context().distributedMetastorage().read(toMetaStorageKey(SRV_CONN_ENABLED_PROP)));
+                assertTrue(srv.context().distributedMetastorage().read(toMetaStorageKey(CLI_CONN_ENABLED_PROP)));
+
                 srv.context().distributedMetastorage().write(toMetaStorageKey(SRV_CONN_ENABLED_PROP), true);
                 srv.context().distributedMetastorage().write(toMetaStorageKey(CLI_CONN_ENABLED_PROP), true);
 
@@ -125,9 +119,6 @@ public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
 
                 srvCanJoin.run();
                 cliCanJoin.run();
-
-                srv.context().distributedMetastorage().write(toMetaStorageKey(SRV_CONN_ENABLED_PROP), false);
-                srv.context().distributedMetastorage().write(toMetaStorageKey(CLI_CONN_ENABLED_PROP), false);
             }
         }
     }

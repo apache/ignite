@@ -69,6 +69,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.asBoolean;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -282,9 +283,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             assert type != null : "Connection type is null";
             assert allowConnMap.containsKey(type) : "Unknown connection type: " + type;
 
-            Boolean val = allowConnMap.get(type).get();
-
-            return val == null || val;
+            return asBoolean(allowConnMap.get(type));
         };
     }
 

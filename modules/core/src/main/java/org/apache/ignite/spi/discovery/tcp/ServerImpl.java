@@ -179,6 +179,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_CO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.asBoolean;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
@@ -6447,14 +6448,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code null} if connection allowed, error otherwise.
      */
     private IgniteNodeValidationResult ensureJoinEnabled(TcpDiscoveryNode node) {
-        DistributedBooleanProperty enabled = node.isClient()
-            ? clientConnectionEnabled
-            : serverConnectionEnabled;
-
-        if (enabled != null && !enabled.get())
-            return new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
-
-        return null;
+        return asBoolean(node.isClient() ? clientConnectionEnabled : serverConnectionEnabled)
+            ? null
+            : new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
     }
 
     /**
