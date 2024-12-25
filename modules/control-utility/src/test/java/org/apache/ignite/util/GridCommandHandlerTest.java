@@ -84,6 +84,7 @@ import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
@@ -135,6 +136,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -174,6 +177,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -781,9 +786,33 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
 
+        doSleep(1000);
+
         assertFalse(idleVerifyFut.isDone());
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        for (int i = 0; i < gridsCnt; i++) {
+            int finalI = i;
+
+            waitForCondition(() -> {
+                for (ComputeTaskView taskView : grid(finalI).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
+                        return false;
+                }
+
+                return true;
+            }, 1000);
+
+            waitForCondition(() -> {
+                for (ComputeJobView jobView : grid(finalI).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
+                        return false;
+                }
+
+                return true;
+            }, 1000);
+        }
 
         idleVerifyFut.get(getTestTimeout());
 
