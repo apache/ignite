@@ -126,7 +126,12 @@ public final class DistributedConfigurationUtils {
 
         subscriptionProcessor.registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
             @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                props.forEach(dispatcher::registerProperty);
+                props.forEach(p -> {
+                    if (dispatcher.property(p.getName()) != null)
+                        return;
+
+                    dispatcher.registerProperty(p);
+                });
             }
 
             @Override public void onReadyToWrite() {
