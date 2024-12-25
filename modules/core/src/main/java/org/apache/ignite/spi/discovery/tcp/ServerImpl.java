@@ -4206,6 +4206,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (isLocalNodeCoordinator()) {
                 TcpDiscoveryNode existingNode = ring.node(node.id());
 
+
                 if (existingNode != null) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
@@ -4322,7 +4323,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (spi.nodeAuth != null) {
+                IgniteNodeValidationResult err = ensureJoinEnabled(node);
+
+                if (spi.nodeAuth != null && err == null) {
                     // Authenticate node first.
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
@@ -4423,8 +4426,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
                 }
-
-                IgniteNodeValidationResult err = ensureJoinEnabled(node);
 
                 if (err == null)
                     err = spi.getSpiContext().validateNode(node);
