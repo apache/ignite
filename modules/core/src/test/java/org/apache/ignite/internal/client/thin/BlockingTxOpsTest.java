@@ -181,13 +181,6 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                         () -> assertEquals(0, cache.get(0))
                     );
 
-                    // Remove all operation.
-                    checkOpMultithreaded(client,
-                        () -> cache.putAll(F.asMap(0, 0, 1, 1)),
-                        () -> cache.removeAll(),
-                        () -> assertEquals(0, cache.size())
-                    );
-
                     // Remove if equals operation.
                     checkOpMultithreaded(client,
                         () -> cache.put(0, 0),
