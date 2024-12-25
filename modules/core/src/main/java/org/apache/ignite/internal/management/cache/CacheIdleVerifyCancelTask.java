@@ -89,12 +89,6 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
          * @param taskCls Job class.
          */
         private void cancelJob(Class<?> taskCls) {
-            F.iterator(ignite.context().systemView().view(TASKS_VIEW),
-                ComputeTaskView::sessionId,
-                true,
-                taskView -> taskView.taskClassName().equals(taskCls.getName())
-            ).forEach(sesId -> ignite.context().job().cancelJob(sesId, null, false));
-
             F.iterator(
                 ignite.context().systemView().view(JOBS_VIEW),
                 ComputeJobView::sessionId,

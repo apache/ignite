@@ -136,6 +136,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -763,6 +764,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.cluster().state(ACTIVE);
 
+        ListeningTestLogger logger = new ListeningTestLogger(log);
+
+        LogListener idleVerifyCancelListener = LogListener.matches("Idle verify was cancelled.").build();
+
+        LogListener verifyBackupCancelListener = LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build();
+
+        logger.registerListener(idleVerifyCancelListener);
+
+        logger.registerListener(verifyBackupCancelListener);
+
         IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
         for (int i = 0; i < 10000; i++)
@@ -775,6 +786,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
         idleVerifyFut.get(getTestTimeout());
+
+        assertTrue(idleVerifyCancelListener.check());
+
+        assertTrue(verifyBackupCancelListener.check());
     }
 
     /**
