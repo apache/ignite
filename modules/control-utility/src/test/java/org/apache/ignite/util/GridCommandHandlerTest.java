@@ -225,6 +225,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected static File customDiagnosticDir;
 
+    /** */
+    protected ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -239,6 +242,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.cleanPersistenceDir();
 
         cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setGridLogger(listeningLog);
+
+        return cfg;
     }
 
     /**
@@ -769,15 +781,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.cluster().state(ACTIVE);
 
-        ListeningTestLogger logger = new ListeningTestLogger(log);
-
         LogListener idleVerifyCancelListener = LogListener.matches("Idle verify was cancelled.").build();
 
         LogListener verifyBackupCancelListener = LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build();
 
-        logger.registerListener(idleVerifyCancelListener);
+        listeningLog.registerListener(idleVerifyCancelListener);
 
-        logger.registerListener(verifyBackupCancelListener);
+        listeningLog.registerListener(verifyBackupCancelListener);
 
         IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
