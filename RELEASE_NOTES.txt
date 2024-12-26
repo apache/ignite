@@ -55,7 +55,7 @@ Ignite:
 * Fixed node failure on timeout objects intersection.
 * Fixed node failure when a runtime exception occurs on snapshot start stage.
 * Fixed node join failure when index creation is in progress and caches have the same deploymentId.
-* Fixed notification message when Ignite Statistics usage state changes.
+* Fixed log message when Ignite Statistics usage state changes.
 * Fixed pending tree redundant cleanup on entries expiration.
 * Fixed redundant lambda object allocation in ClockPageReplacementFlags.
 * Fixed removal of required affinity assignment instance from affinity cache.
