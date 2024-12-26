@@ -106,7 +106,6 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         marsh.setBinaryContext(ctx, cfg);
 
-
         GridSessionCheckpointSelfTest.spi = spi;
 
         checkCheckpoints(cfg);
