@@ -169,8 +169,8 @@ Ignite .NET:
 * Fixed platform cache update for negative cache ID.
 * Improved thin client service invocation performance by sending requests directly to the nodes where the service is deployed.
 
-JDBC/ODBC:
-* Added support for stream APIs for BLOB.
+JDBC:
+* Added BLOB and stream APIs support.
 
 Apache Ignite In-Memory Distributed Database 2.16.0
 -----------------------------------------------------------
