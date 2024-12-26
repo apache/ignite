@@ -1140,11 +1140,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return obj instanceof BinaryObject;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
-        return marsh instanceof BinaryMarshaller;
-    }
-
     /**
      * Get affinity key field.
      *
@@ -1208,12 +1203,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
 
-        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
-            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
-
-        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName());
-
-        AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
+        boolean storeVal = !ccfg.isCopyOnRead();
+        boolean binaryEnabled = !GridCacheUtils.isSystemCache(ccfg.getName());
 
         AffinityKeyMapper dfltAffMapper = binaryEnabled ?
             new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
@@ -1227,13 +1218,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
-            ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),
+            false,
             binaryEnabled
         );
     }
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException {
+        if (!ctx.binaryEnabled() || binaryMarsh == null)
+            return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
+
         byte[] arr = binaryMarsh.marshal(val, false);
 
         assert arr.length > 0;
@@ -1244,12 +1238,29 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
+        if (!ctx.binaryEnabled() || binaryMarsh == null)
+            return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
+
         return binaryMarsh.unmarshal(bytes, clsLdr);
     }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, @Nullable GridCacheContext cctx,
         Object obj, boolean userObj) {
+        if (!ctx.binaryEnabled()) {
+            if (obj instanceof KeyCacheObject) {
+                KeyCacheObject key = (KeyCacheObject)obj;
+
+                if (key.partition() == -1)
+                    // Assume all KeyCacheObjects except BinaryObject can not be reused for another cache.
+                    key.partition(partition(ctx, cctx, key));
+
+                return (KeyCacheObject)obj;
+            }
+
+            return toCacheKeyObject0(ctx, cctx, obj, userObj);
+        }
+
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
@@ -1296,6 +1307,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj, boolean failIfUnregistered) {
+        if (!ctx.binaryEnabled()) {
+            if (obj == null || obj instanceof CacheObject)
+                return (CacheObject)obj;
+
+            return toCacheObject0(obj, userObj);
+        }
+
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
 
@@ -1441,6 +1459,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
+        if (!ctx.cacheObjectContext().binaryEnabled())
+            return obj;
+
         if (obj instanceof BinaryObjectOffheapImpl)
             return ((BinaryObjectOffheapImpl)obj).heapCopy();
 

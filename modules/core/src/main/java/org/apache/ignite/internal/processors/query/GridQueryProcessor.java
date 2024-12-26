@@ -1392,13 +1392,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             Collection<QueryEntity> qryEntities = schema.entities();
 
             if (!F.isEmpty(qryEntities)) {
-                boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
-                if (binaryEnabled) {
-                    for (QueryEntity qryEntity : qryEntities) {
-                        registerTypeLocally(qryEntity.findKeyType(), platformOnly);
-                        registerTypeLocally(qryEntity.findValueType(), platformOnly);
-                    }
+                for (QueryEntity qryEntity : qryEntities) {
+                    registerTypeLocally(qryEntity.findKeyType(), platformOnly);
+                    registerTypeLocally(qryEntity.findValueType(), platformOnly);
                 }
             }
         }

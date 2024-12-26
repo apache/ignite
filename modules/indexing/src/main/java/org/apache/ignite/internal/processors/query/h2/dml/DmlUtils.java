@@ -552,20 +552,16 @@ public class DmlUtils {
      */
     public static CacheOperationContext setKeepBinaryContext(GridCacheContext<?, ?> cctx) {
         CacheOperationContext opCtx = cctx.operationContextPerCall();
+        CacheOperationContext newOpCtx = null;
 
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
+        if (opCtx == null)
+            // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+            newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null, null);
+        else if (!opCtx.isKeepBinary())
+            newOpCtx = opCtx.keepBinary();
 
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
+        if (newOpCtx != null)
+            cctx.operationContextPerCall(newOpCtx);
 
         return opCtx;
     }

@@ -882,7 +882,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         assert key != null;
 
                         if (initPda) {
-                            if (rcvr != null)
+                            if (cacheObjCtx.addDeploymentInfo())
+                                jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
+                                    entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
+                                    rcvr);
+                            else if (rcvr != null)
                                 jobPda = new DataStreamerPda(rcvr);
 
                             initPda = false;

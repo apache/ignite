@@ -51,4 +51,14 @@ public class CacheQueryObjectValueContext implements CacheObjectValueContext {
     @Override public boolean storeValue() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return ctx.config().isPeerClassLoadingEnabled() && !binaryEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean binaryEnabled() {
+        return ctx.config().getMarshaller() instanceof BinaryMarshaller;
+    }
 }
