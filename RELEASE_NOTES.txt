@@ -71,7 +71,6 @@ Ignite:
 * Moved Ignite sources to Java 11.
 * Optimized UUID serialization for communication messages.
 * Optimized entries expiration for persistent caches.
-* Refactored errors output of the control utility.
 * Updated Jetty dependency version to 9.4.55.
 * Updated Netty dependency version to 4.1.101.Final.
 * Updated PostgreSQL JDBC dependency version to 42.7.3.
@@ -146,6 +145,7 @@ Control utility:
 * Fixed Idle Verify hanging when invoked on an inactive cluster.
 * Fixed Idle verify check failing when debug logging level is set.
 * Fixed NPE in the cache distribution command.
+* Fixed errors output.
 * Fixed partition column output of the cache distribution command.
 * Fixed permissions required by the consistency repair command.
 * Removed ADMIN_OPS permissions check for cache operations.
