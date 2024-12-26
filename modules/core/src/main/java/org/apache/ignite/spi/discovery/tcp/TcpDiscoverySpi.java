@@ -130,9 +130,7 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * TcpDiscoverySpi starts in client mode as well. In this case node does not take its place in the ring,
  * but it connects to random node in the ring (IP taken from IP finder configured) and
  * use it as a router for discovery traffic.
- * Therefore slow client node or its shutdown will not affect whole cluster. If TcpDiscoverySpi
- * needs to be started in server mode regardless of {@link IgniteConfiguration#clientMode},
- * {@link #forceSrvMode} should be set to true.
+ * Therefore slow client node or its shutdown will not affect whole cluster.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
@@ -191,7 +189,6 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * <li>Thread priority for threads started by SPI (see {@link #setThreadPriority(int)})</li>
  * <li>IP finder clean frequency (see {@link #setIpFinderCleanFrequency(long)})</li>
  * <li>Statistics print frequency (see {@link #setStatisticsPrintFrequency(long)}</li>
- * <li>Force server mode (see {@link #setForceServerMode(boolean)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
@@ -445,9 +442,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected TcpDiscoveryImpl impl;
 
     /** */
-    private boolean forceSrvMode;
-
-    /** */
     private boolean clientReconnectDisabled;
 
     /** */
@@ -562,36 +556,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             throw new IllegalStateException("TcpDiscoverySpi has not started.");
 
         return impl instanceof ClientImpl;
-    }
-
-    /**
-     * If {@code true} TcpDiscoverySpi will started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}
-     *
-     * @return forceServerMode flag.
-     * @deprecated Will be removed at 3.0.
-     */
-    @Deprecated
-    public boolean isForceServerMode() {
-        return forceSrvMode;
-    }
-
-    /**
-     * Sets force server mode flag.
-     * <p>
-     * If {@code true} TcpDiscoverySpi is started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}.
-     *
-     * @param forceSrvMode forceServerMode flag.
-     * @return {@code this} for chaining.
-     * @deprecated Will be removed at 3.0.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
-        this.forceSrvMode = forceSrvMode;
-
-        return this;
     }
 
     /**
@@ -2263,7 +2227,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         initFailureDetectionTimeout();
 
-        if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
+        if (Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
             if (ackTimeout == 0)
                 ackTimeout = DFLT_ACK_TIMEOUT_CLIENT;
 
