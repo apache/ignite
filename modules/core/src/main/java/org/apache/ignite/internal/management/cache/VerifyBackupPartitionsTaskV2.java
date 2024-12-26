@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -89,6 +90,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
+
+    public static Supplier<ForkJoinPool> poolSupplier = ForkJoinPool::commonPool;
 
     /** Injected logger. */
     @LoggerResource
@@ -357,8 +360,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
                 List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
 
+                ForkJoinPool pool = poolSupplier.get();
+
                 for (GridDhtLocalPartition part : parts)
-                    partHashCalcFutures.add(calculatePartitionHashAsync(grpCtx, part));
+                    partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part));
             }
 
             return partHashCalcFutures;
@@ -497,10 +502,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
          * @param part Local partition.
          */
         private Future<Map<PartitionKeyV2, PartitionHashRecordV2>> calculatePartitionHashAsync(
+            final ForkJoinPool pool,
             final CacheGroupContext gctx,
             final GridDhtLocalPartition part
         ) {
-            return ForkJoinPool.commonPool().submit(() -> {
+            return pool.submit(() -> {
                 Map<PartitionKeyV2, PartitionHashRecordV2> res = emptyMap();
 
                 if (!part.reserve())
