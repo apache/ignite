@@ -5,7 +5,8 @@ Apache Ignite In-Memory Distributed Database 2.17.0
 -----------------------------------------------------------
 
 (!) WARNINGS:
-* Control utility now uses thin client protocol by default (configured on a node via ClientConnectorConfiguration). Connection via REST protocol (ConnectorConfiguration) was deprecated for removal in future releases.
+* Control utility now uses thin client protocol by default (configured on a node via ClientConnectorConfiguration). Connection via Binary-REST protocol (ConnectorConfiguration) was deprecated for removal in future releases.
+* Ignite sources moved to Java 11.
 * Removed deprecated authorization methods from Security Context.
 * Removed deprecated TcpCommunicationSpi shared memory port configuration.
 
@@ -13,7 +14,6 @@ Ignite:
 * Added 'keepRaw' parameter to DumpReaderConfiguration.
 * Added IndexQuery events.
 * Added TLSv1_3 to o.a.i.client.SslProtocol.
-* Added ability to create user defined SQL views.
 * Added address information to ClientConnectionException.
 * Added check for SSL errors on TcpDiscovery writing failures.
 * Added configuration for distributed properties default values.
@@ -24,8 +24,6 @@ Ignite:
 * Added proper logging of default pageSize.
 * Added query thread pool metrics to log file.
 * Added snapshot creation time into the snapshot view.
-* Added starting square bracket in default log4j2 pattern.
-* Added support of OR operator with dynamic parameters for index scans.
 * Fixed CDC error with Ignite to Ignite streamer in case BinaryConfiguration is specified in configuration.
 * Fixed ClusterPartitionsCountByState metric failure if topology is not initialized.
 * Fixed IgniteCache.removeAsync(key,val) failure inside an optimistic transaction.
@@ -48,27 +46,27 @@ Ignite:
 * Fixed iterator for local IndexQuery.
 * Fixed lambda serialization issues in code deployment for Java 21.
 * Fixed local class deployments cache cleanup on reconnect.
+* Fixed log message when Ignite Statistics usage state changes.
 * Fixed logging of reduced cache entries for distributed long running operations.
 * Fixed long JVM pause detector.
 * Fixed node crashing if a snapshot restore was canceled due to network issues.
-* Fixed node fails while checking security permission for activation during join.
+* Fixed node failure while checking security permission for activation during join.
 * Fixed node failure on timeout objects intersection.
 * Fixed node failure when a runtime exception occurs on snapshot start stage.
 * Fixed node join failure when index creation is in progress and caches have the same deploymentId.
-* Fixed log message when Ignite Statistics usage state changes.
 * Fixed pending tree redundant cleanup on entries expiration.
 * Fixed redundant lambda object allocation in ClockPageReplacementFlags.
 * Fixed removal of required affinity assignment instance from affinity cache.
 * Fixed sending a stack trace to a thin client if task fails in map phase.
 * Fixed server node fail when node service filter class is unknown.
 * Fixed service descriptor when deployment failed.
+* Fixed starting square bracket in default log4j2 pattern.
 * Fixed warnings about closed socket.
 * Fixed wrong old index size in the defragmentation procedure.
 * Forbid a non-transactional IgniteCache#clear() inside a transaction.
-* Implemented custom metrics.
+* Implemented custom user defined metrics.
 * Implemented transaction aware SQL and Scan queries.
 * Improved check of previous node on new incoming server connection.
-* Moved Ignite sources to Java 11.
 * Optimized UUID serialization for communication messages.
 * Optimized entries expiration for persistent caches.
 * Updated Jetty dependency version to 9.4.55.
@@ -87,7 +85,7 @@ Ignite:
 * Updated zookeeper dependency version to 3.8.4.
 
 SQL:
-* Added logging of the IdleVerify command.
+* Added ability to create user defined SQL views.
 * Added long queries tracking for DML operations.
 * Fixed AssertionError due to cache size overflow.
 * Fixed absence of warnings for long running queries with lazy flag.
@@ -105,6 +103,7 @@ SQL Calcite:
 * Added support for SQL hints at tables.
 * Added support for bitwise aggregates (BIT_AND, BIT_OR, BIT_XOR).
 * Added support for bitwise operations (BITAND, BITOR, BITXOR).
+* Added support of OR operator with dynamic parameters for index scans.
 * Allowed grouping by alias and ordinal value.
 * Fixed 'typeof' function behavior when operand throws an error (it fails now).
 * Fixed NVL/DECODE failure when used with parameters of different data types.
@@ -140,7 +139,8 @@ Control utility:
 * Added a flag to ignore existed caches to the cache create command.
 * Added ability to view cache data in JSON format.
 * Added histogram bounds to the metric command output.
-* Added support for the thin client connection to the control utility and deprecate legacy REST connection.
+* Added logging of the IdleVerify command.
+* Added support for the thin client connection to the control utility and deprecate legacy Binary-REST connection.
 * Fixed CDC resend of replicated entries.
 * Fixed Idle Verify hanging when invoked on an inactive cluster.
 * Fixed Idle verify check failing when debug logging level is set.
