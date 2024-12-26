@@ -22,7 +22,7 @@ Ignite:
 * Added logging for CDC mode switching.
 * Added operation time metrics for putAllConflict, removeAllConflict operations.
 * Added proper logging of default pageSize.
-* Added query thread pool metrics to log file.
+* Added query thread pool metrics to the log file.
 * Added snapshot creation time into the snapshot view.
 * Fixed CDC error with Ignite to Ignite streamer in case BinaryConfiguration is specified in configuration.
 * Fixed ClusterPartitionsCountByState metric failure if topology is not initialized.
