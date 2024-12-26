@@ -342,18 +342,9 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
         assert paramsBytes != null;
 
-        try {
-            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller)
-                // To avoid deserializing of enum types.
-                params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
-            else
-                params = U.unmarshal(m, paramsBytes, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
     }
 
     /** {@inheritDoc} */

@@ -37,14 +37,4 @@ public interface CacheObjectValueContext {
      * @return {@code True} if should store unmarshalled value in cache.
      */
     public boolean storeValue();
-
-    /**
-     * @return {@code True} if deployment info should be associated with the objects of this cache.
-     */
-    public boolean addDeploymentInfo();
-
-    /**
-     * @return Binary enabled flag.
-     */
-    public boolean binaryEnabled();
 }
