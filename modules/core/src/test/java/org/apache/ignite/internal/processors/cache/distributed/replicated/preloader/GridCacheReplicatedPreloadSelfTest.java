@@ -43,7 +43,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -121,9 +120,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         if (disableP2p)
             cfg.setPeerClassLoadingEnabled(false);
 
-        if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || useExtClassLoader ||
-            cfg.getMarshaller() instanceof BinaryMarshaller)
-            cfg.setClassLoader(getExternalClassLoader());
+        cfg.setClassLoader(getExternalClassLoader());
 
         if (cutromEvt) {
             int[] evts = new int[EVTS_ALL.length + 1];
@@ -320,8 +317,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assert v2 != null;
             assert v2.toString().equals(v1.toString());
             assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
-                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
 
             Object e1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestEnumValue").getEnumConstants()[0];
 
@@ -329,19 +324,15 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Object e2 = cache2.get(2);
 
-            if (g1.configuration().getMarshaller() instanceof BinaryMarshaller) {
-                BinaryObject enumObj = (BinaryObject)cache2.withKeepBinary().get(2);
+            BinaryObject enumObj = (BinaryObject)cache2.withKeepBinary().get(2);
 
-                assertEquals(0, enumObj.enumOrdinal());
-                assertTrue(enumObj.type().isEnum());
-                assertTrue(enumObj instanceof BinaryEnumObjectImpl);
-            }
+            assertEquals(0, enumObj.enumOrdinal());
+            assertTrue(enumObj.type().isEnum());
+            assertTrue(enumObj instanceof BinaryEnumObjectImpl);
 
             assert e2 != null;
             assert e2.toString().equals(e1.toString());
             assert !e2.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert e2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
-                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
 
             stopGrid(1);
 
@@ -358,8 +349,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assert v3 != null;
             assert v3.toString().equals(v1.toString());
             assert !v3.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v3.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
-                grid(3).configuration().getMarshaller() instanceof BinaryMarshaller;
         }
         finally {
             stopAllGrids();
