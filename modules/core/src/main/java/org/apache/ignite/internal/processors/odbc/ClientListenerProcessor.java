@@ -264,7 +264,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      * @see ClientListenerNioListener#THIN_CLIENT
      */
     private Predicate<Byte> connectionEnabledPredicate() {
-        Map<Byte, DistributedBooleanProperty> сonnEnabledMap = new HashMap<>();
+        Map<Byte, DistributedBooleanProperty> connEnabledMap = new HashMap<>();
 
         List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
             ctx.internalSubscriptionProcessor(),
@@ -274,15 +274,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             "Thin"
         );
 
-        сonnEnabledMap.put(ODBC_CLIENT, props.get(0));
-        сonnEnabledMap.put(JDBC_CLIENT, props.get(1));
-        сonnEnabledMap.put(THIN_CLIENT, props.get(2));
+        connEnabledMap.put(ODBC_CLIENT, props.get(0));
+        connEnabledMap.put(JDBC_CLIENT, props.get(1));
+        connEnabledMap.put(THIN_CLIENT, props.get(2));
 
         return type -> {
             assert type != null : "Connection type is null";
-            assert сonnEnabledMap.containsKey(type) : "Unknown connection type: " + type;
+            assert connEnabledMap.containsKey(type) : "Unknown connection type: " + type;
 
-            return сonnEnabledMap.get(type).getOrDefault(true);
+            return connEnabledMap.get(type).getOrDefault(true);
         };
     }
 
