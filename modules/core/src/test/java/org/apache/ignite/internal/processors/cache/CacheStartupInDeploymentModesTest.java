@@ -22,7 +22,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -95,8 +94,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         checkTopology(2);
 
         assertEquals(mode, ignite(0).configuration().getDeploymentMode());
-
-        assert ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
 
         IgniteCache rCache = ignite(0).cache(REPLICATED_CACHE);
 

@@ -47,6 +47,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -333,7 +334,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private Marshaller marsh;
+    private Marshaller marsh = new BinaryMarshaller();
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -1417,9 +1418,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public IgniteConfiguration setMarshaller(Marshaller marsh) {
-        this.marsh = marsh;
-
-        return this;
+        throw new UnsupportedOperationException("Explicit set of marshaller are not supported.");
     }
 
     /**

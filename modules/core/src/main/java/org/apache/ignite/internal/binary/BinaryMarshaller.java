@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
@@ -38,35 +37,6 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     /** */
     @GridToStringExclude
     private GridBinaryMarshaller impl;
-
-    /**
-     * Checks whether {@code BinaryMarshaller} is able to work on the current JVM.
-     * <p>
-     * As long as {@code BinaryMarshaller} uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure marshaller could work properly.
-     * <p>
-     * Result of this method is automatically checked in constructor.
-     *
-     * @return {@code true} if {@code BinaryMarshaller} can work on the current JVM or
-     *      {@code false} if it can't.
-     */
-    @SuppressWarnings({"TypeParameterExtendsFinalClass", "ErrorNotRethrown"})
-    public static boolean available() {
-        try {
-            Class<? extends Unsafe> unsafeCls = Unsafe.class;
-
-            unsafeCls.getMethod("allocateInstance", Class.class);
-            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-
-            return true;
-        }
-        catch (Exception ignored) {
-            return false;
-        }
-        catch (NoClassDefFoundError ignored) {
-            return false;
-        }
-    }
 
     /**
      * Sets {@link BinaryContext}.

@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.marshaller.optimized;
+package org.apache.ignite.internal;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,9 +25,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -39,18 +35,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest {
+public class NodeFailoverTest extends GridCommonAbstractTest {
     /** */
     private boolean cache;
-
-    /** */
-    private String workDir;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setWorkDirectory(workDir);
 
         if (cache) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -124,63 +115,6 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
         Ignite ignite = startGrid(2); // Check can start one more cache node.
 
         assertNotNull(ignite.cache(DEFAULT_CACHE_NAME));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRestartAllNodes() throws Exception {
-        cache = true;
-
-        String home = U.getIgniteHome();
-
-        String[] workDirs = new String[3];
-
-        for (int i = 0; i < 3; i++) {
-            workDirs[i] = home + "/work/marshallerTestNode_" + i;
-
-            File file = new File(workDirs[i]);
-
-            if (file.exists())
-                assert U.delete(file);
-        }
-
-        try {
-            for (int i = 0; i < workDirs.length; i++) {
-                workDir = workDirs[i];
-
-                startGrid(i);
-            }
-
-            Marshaller marsh = ignite(0).configuration().getMarshaller();
-
-            TestClass1 obj = new TestClass1();
-
-            obj.val = 111;
-
-            byte[] bytes = marsh.marshal(obj);
-
-            stopAllGrids();
-
-            for (int i = 0; i < workDirs.length; i++) {
-                workDir = workDirs[i];
-
-                startGrid(i);
-            }
-
-            for (int i = 0; i < 3; i++) {
-                marsh = ignite(i).configuration().getMarshaller();
-
-                TestClass1 obj0 = marsh.unmarshal(bytes, null);
-
-                assertEquals(111, obj0.val);
-            }
-        }
-        finally {
-            for (String dir : workDirs)
-                assert U.delete(new File(dir));
-        }
     }
 
     /** {@inheritDoc} */
