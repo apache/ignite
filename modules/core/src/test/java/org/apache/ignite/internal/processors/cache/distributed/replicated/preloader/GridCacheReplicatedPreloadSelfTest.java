@@ -80,9 +80,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean extClassloadingAtCfg = false;
 
-    /** */
-    private volatile boolean useExtClassLoader = false;
-
     /** Disable p2p. */
     private volatile boolean disableP2p = false;
 
@@ -362,7 +359,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     public void testExternalClassesAtConfiguration() throws Exception {
         try {
             extClassloadingAtCfg = true;
-            useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
 
@@ -404,7 +400,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            useExtClassLoader = false;
         }
     }
 
@@ -415,7 +410,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     public void testExternalClassesAtConfigurationDynamicStart() throws Exception {
         try {
             extClassloadingAtCfg = false;
-            useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
@@ -440,7 +434,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            useExtClassLoader = false;
         }
     }
 
@@ -451,7 +444,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     public void testExternalClassesAtConfigurationDynamicStart2() throws Exception {
         try {
             extClassloadingAtCfg = false;
-            useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
@@ -476,7 +468,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            useExtClassLoader = false;
         }
     }
 
@@ -486,7 +477,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     @Test
     public void testExternalClassesAtMessage() throws Exception {
         try {
-            useExtClassLoader = true;
             disableP2p = true;
 
             final Class cls = (Class)getExternalClassLoader().
@@ -528,7 +518,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         }
         finally {
-            useExtClassLoader = false;
             disableP2p = false;
         }
     }
@@ -554,7 +543,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void testExternalClassesAtEvent0(boolean p2p) throws Exception {
         try {
-            useExtClassLoader = true;
             cutromEvt = true;
 
             if (p2p)
@@ -581,7 +569,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             latch.await();
         }
         finally {
-            useExtClassLoader = false;
             cutromEvt = false;
 
             if (p2p)
