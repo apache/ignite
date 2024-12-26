@@ -12,8 +12,8 @@ Apache Ignite In-Memory Distributed Database 2.17.0
 
 Ignite:
 * Added 'keepRaw' parameter to `DumpReaderConfiguration`.
-* Added `IndexQuery` events.
 * Added TLSv1_3 to `o.a.i.client.SslProtocol`.
+* Added `IndexQuery` events.
 * Added address information to `ClientConnectionException`.
 * Added check for SSL errors on TcpDiscovery writing failures.
 * Added configuration for distributed properties default values.
@@ -25,10 +25,10 @@ Ignite:
 * Added query thread pool metrics to the log file.
 * Added snapshot creation time into the snapshot view.
 * Fixed CDC error with Ignite to Ignite streamer in case `BinaryConfiguration` is specified in the configuration.
-* Fixed `ClusterPartitionsCountByState` metric failure if topology is not initialized.
-* Fixed `IgniteCache.removeAsync(key,val)` failure inside an optimistic transaction.
 * Fixed NPE on the 'TransactionsHoldingLockNumber' metric if transaction is not initialized.
 * Fixed OOM crash on unstable topology.
+* Fixed `ClusterPartitionsCountByState` metric failure if topology is not initialized.
+* Fixed `IgniteCache.removeAsync(key,val)` failure inside an optimistic transaction.
 * Fixed an assertion error on `IgniteCache#get`.
 * Fixed assertion during `RotatedIdPartRecord` read from WAL.
 * Fixed backward connection check with loopback address.
@@ -57,6 +57,7 @@ Ignite:
 * Fixed pending tree redundant cleanup on entries expire.
 * Fixed redundant lambda object allocation in `ClockPageReplacementFlags`.
 * Fixed removal of required affinity assignment instance from affinity cache.
+* Fixed security context propagation for async transactional operations.
 * Fixed sending a stack trace to a thin client if a task fails in the map phase.
 * Fixed server node fail when node service filter class is unknown.
 * Fixed service descriptor when deployment failed.
@@ -72,20 +73,20 @@ Ignite:
 * Optimized entries expiration for persistent caches.
 * Removed deprecated `TcpCommunicationSpi` shared memory port configuration.
 * Removed deprecated authorization methods from Security Context.
+* Updated JTidy dependency version to 1.0.5.
+* Updated Janino dependency version to 3.1.12.
 * Updated Jetty dependency version to 9.4.55.
+* Updated Jetty dependency version to 9.4.56.v20240826.
+* Updated Log4j2 dependency version to 2.22.0.
 * Updated Netty dependency version to 4.1.101.Final.
+* Updated OpenCensus dependency version to 0.31.1.
 * Updated PostgreSQL JDBC dependency version to 42.7.3.
+* Updated Snappy dependency version to 1.1.10.7.
 * Updated Spring dependency version to 5.3.39.
+* Updated ZooKeeper dependency version to 3.8.4.
 * Updated commons-io dependency version to 2.17.0.
 * Updated grpc-context version to 1.62.2.
-* Updated Janino dependency version to 3.1.12.
-* Updated Jetty dependency version to 9.4.56.v20240826.
 * Updated json-path dependency version to 2.9.0.
-* Updated JTidy dependency version to 1.0.5.
-* Updated Log4j2 dependency version to 2.22.0.
-* Updated OpenCensus dependency version to 0.31.1.
-* Updated Snappy dependency version to 1.1.10.7.
-* Updated ZooKeeper dependency version to 3.8.4.
 
 SQL:
 * Added ability to create user defined SQL views.
