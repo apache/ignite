@@ -50,9 +50,9 @@ Ignite:
 * Fixed logging of reduced cache entries for distributed long running operations.
 * Fixed long JVM pause detector.
 * Fixed node crashing if a snapshot restore was canceled due to network issues.
-* Fixed node failure while checking security permission for activation during join.
 * Fixed node failure on timeout objects intersection.
 * Fixed node failure when a runtime exception occurs on snapshot start stage.
+* Fixed node failure while checking security permission for activation during join.
 * Fixed node join failure when index creation is in progress and caches have the same deploymentId.
 * Fixed pending tree redundant cleanup on entries expiration.
 * Fixed redundant lambda object allocation in ClockPageReplacementFlags.
@@ -67,8 +67,11 @@ Ignite:
 * Implemented custom user defined metrics.
 * Implemented transaction aware SQL and Scan queries.
 * Improved check of previous node on new incoming server connection.
+* Moved Ignite sources to Java 11.
 * Optimized UUID serialization for communication messages.
 * Optimized entries expiration for persistent caches.
+* Removed deprecated TcpCommunicationSpi shared memory port configuration.
+* Removed deprecated authorization methods from Security Context.
 * Updated Jetty dependency version to 9.4.55.
 * Updated Netty dependency version to 4.1.101.Final.
 * Updated PostgreSQL JDBC dependency version to 42.7.3.
