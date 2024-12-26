@@ -5,7 +5,7 @@ Apache Ignite In-Memory Distributed Database 2.17.0
 -----------------------------------------------------------
 
 (!) WARNINGS:
-* Control utility now uses thin client protocol by default (configured on a node via ClientConnectorConfiguration). Connection via REST protocol (ConnectorConfiguration) was deprecated.
+* Control utility now uses thin client protocol by default (configured on a node via ClientConnectorConfiguration). Connection via REST protocol (ConnectorConfiguration) was deprecated for removal in future releases.
 * Removed deprecated authorization methods from Security Context.
 * Removed deprecated TcpCommunicationSpi shared memory port configuration.
 
