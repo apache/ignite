@@ -50,8 +50,6 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller());
-
         cfg.setWorkDirectory(workDir);
 
         if (cache) {

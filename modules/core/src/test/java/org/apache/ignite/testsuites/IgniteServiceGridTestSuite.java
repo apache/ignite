@@ -40,12 +40,8 @@ import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelf
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallInterceptorTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
@@ -101,12 +97,8 @@ import org.junit.runners.Suite;
     ServiceDeploymentOnActivationTest.class,
     ServiceDeploymentOutsideBaselineTest.class,
 
-    IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class,
-    IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class,
-    IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class,
-    IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
-    IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class,
-    IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class,
+    IgniteServiceDeploymentClassLoadingTest.class,
+    IgniteServiceDeployment2ClassLoadersTest.class,
     IgniteServiceDeploymentFailureTest.class,
 
     GridServiceDeploymentExceptionPropagationTest.class,
