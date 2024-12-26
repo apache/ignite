@@ -8,7 +8,7 @@ Apache Ignite In-Memory Distributed Database 2.17.0
 * Control utility now uses thin client protocol by default (configured on a node via `ClientConnectorConfiguration`). Connection via Binary-REST protocol (`ConnectorConfiguration`) was deprecated for removal in future releases.
 * Ignite sources were moved to Java 11.
 * Removed deprecated authorization methods from Security Context.
-* Removed deprecated TcpCommunicationSpi shared memory port configuration.
+* Removed deprecated `TcpCommunicationSpi` shared memory port configuration.
 
 Ignite:
 * Added 'keepRaw' parameter to `DumpReaderConfiguration`.
@@ -21,7 +21,7 @@ Ignite:
 * Added libs to the OpenCensus module to make Prometheus metrics work from the box without building any extra libs.
 * Added logging for CDC mode switching.
 * Added operation time metrics for `putAllConflict` and `removeAllConflict` operations.
-* Added proper logging of default pageSize.
+* Added proper logging of default page size.
 * Added query thread pool metrics to the log file.
 * Added snapshot creation time into the snapshot view.
 * Fixed CDC error with Ignite to Ignite streamer in case `BinaryConfiguration` is specified in the configuration.
@@ -70,7 +70,7 @@ Ignite:
 * Moved Ignite sources to Java 11.
 * Optimized UUID serialization for communication messages.
 * Optimized entries expiration for persistent caches.
-* Removed deprecated TcpCommunicationSpi shared memory port configuration.
+* Removed deprecated `TcpCommunicationSpi` shared memory port configuration.
 * Removed deprecated authorization methods from Security Context.
 * Updated Jetty dependency version to 9.4.55.
 * Updated Netty dependency version to 4.1.101.Final.
@@ -115,12 +115,12 @@ SQL Calcite:
 * Fixed column nullability check for data types with precision or scale.
 * Fixed compiled expression cache key for correlated variable (to avoid cache collisions for correlated variables with different data types).
 * Fixed complex key index scans (binary objects comparison).
-* Fixed correlated nested loop LEFT join failure.
-* Fixed default TIMESTAMP precision.
-* Fixed error message for unsupported 'FORMAT' in 'CAST'.
+* Fixed correlated nested loop `LEFT` join failure.
+* Fixed default `TIMESTAMP` precision.
+* Fixed error message for unsupported `FORMAT` in `CAST`.
 * Fixed expand star for system fields.
-* Fixed failure in COUNT(DISTINCT) operation.
-* Fixed failure on 'CREATE TABLE' DDL with Calcite engine when 'DEFAULT' column value is `NULL`.
+* Fixed failure in `COUNT`(`DISTINCT`) operation.
+* Fixed failure on `CREATE TABLE` DDL with Calcite engine when `DEFAULT` column value is NULL`.
 * Fixed failure on sensitive information hiding for DDL statements.
 * Fixed implicit conversion to `DECIMAL` for some functions.
 * Fixed incorrect error for `TIME* WITH TIME ZONE` types.
