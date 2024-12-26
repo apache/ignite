@@ -26,7 +26,7 @@ namespace ignite
     {
         DataBuffer::DataBuffer() :
             position(0),
-            length(0),
+            endPos(0),
             data()
         {
             // No-op.
@@ -34,15 +34,15 @@ namespace ignite
 
         DataBuffer::DataBuffer(const impl::interop::SP_ConstInteropMemory& data0) :
             position(0),
-            length(data0.Get()->Length()),
+            endPos(data0.Get()->Length()),
             data(data0)
         {
             // No-op.
         }
 
-        DataBuffer::DataBuffer(const impl::interop::SP_ConstInteropMemory& data0, int32_t pos, int32_t len) :
+        DataBuffer::DataBuffer(const impl::interop::SP_ConstInteropMemory& data0, int32_t pos, int32_t end) :
             position(pos),
-            length(len),
+            endPos(end),
             data(data0)
         {
             // No-op.
@@ -75,7 +75,7 @@ namespace ignite
             if (!data.IsValid())
                 return 0;
 
-            return length - position;
+            return endPos - position;
         }
 
         bool DataBuffer::IsEmpty() const
@@ -94,11 +94,12 @@ namespace ignite
         void DataBuffer::Advance(int32_t val)
         {
             position += val;
+            endPos;
         }
 
         impl::interop::InteropInputStream DataBuffer::GetInputStream() const
         {
-            impl::interop::InteropInputStream stream = impl::interop::InteropInputStream(data.Get(), length);
+            impl::interop::InteropInputStream stream = impl::interop::InteropInputStream(data.Get(), endPos);
             stream.Position(position);
 
             return stream;
@@ -109,11 +110,11 @@ namespace ignite
             if (IsEmpty())
                 return DataBuffer();
 
-            impl::interop::SP_InteropMemory mem(new impl::interop::InteropUnpooledMemory(length));
-            mem.Get()->Length(length);
-            std::memcpy(mem.Get()->Data(), data.Get()->Data() + position, length);
+            impl::interop::SP_InteropMemory mem(new impl::interop::InteropUnpooledMemory(endPos));
+            mem.Get()->Length(endPos);
+            std::memcpy(mem.Get()->Data(), data.Get()->Data() + position, endPos);
 
-            return DataBuffer(mem, 0, length);
+            return DataBuffer(mem, 0, endPos);
         }
 
         void DataBuffer::Skip(int32_t bytes)
