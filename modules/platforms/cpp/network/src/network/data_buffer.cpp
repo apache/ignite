@@ -94,7 +94,6 @@ namespace ignite
         void DataBuffer::Advance(int32_t val)
         {
             position += val;
-            endPos;
         }
 
         impl::interop::InteropInputStream DataBuffer::GetInputStream() const
