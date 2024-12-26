@@ -32,6 +32,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.toMetaStorageKey;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
@@ -91,6 +92,14 @@ public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
             try (IgniteEx srv = startGrid(0)) {
                 srv.cluster().state(ClusterState.ACTIVE);
 
+                if (persistence && i == 1) {
+                    assertFalse(srv.context().distributedMetastorage().read(toMetaStorageKey(SRV_CONN_ENABLED_PROP)));
+                    assertFalse(srv.context().distributedMetastorage().read(toMetaStorageKey(CLI_CONN_ENABLED_PROP)));
+
+                    srv.context().distributedMetastorage().write(toMetaStorageKey(SRV_CONN_ENABLED_PROP), true);
+                    srv.context().distributedMetastorage().write(toMetaStorageKey(CLI_CONN_ENABLED_PROP), true);
+                }
+
                 assertTrue(srv.context().distributedMetastorage().read(toMetaStorageKey(SRV_CONN_ENABLED_PROP)));
                 assertTrue(srv.context().distributedMetastorage().read(toMetaStorageKey(CLI_CONN_ENABLED_PROP)));
 
@@ -119,6 +128,21 @@ public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
 
                 srvCanJoin.run();
                 cliCanJoin.run();
+
+                if (persistence) {
+                    srv.context().distributedMetastorage().write(toMetaStorageKey(SRV_CONN_ENABLED_PROP), false);
+                    srv.context().distributedMetastorage().write(toMetaStorageKey(CLI_CONN_ENABLED_PROP), false);
+
+                    assertTrue(waitForCondition(() -> {
+                        try {
+                            return !srv.context().distributedMetastorage().<Boolean>read(toMetaStorageKey(SRV_CONN_ENABLED_PROP)) &&
+                                !srv.context().distributedMetastorage().<Boolean>read(toMetaStorageKey(CLI_CONN_ENABLED_PROP));
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }, 30_000));
+                }
             }
         }
     }
