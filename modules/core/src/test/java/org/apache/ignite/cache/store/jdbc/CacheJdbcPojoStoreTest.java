@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.BinaryTest;
 import org.apache.ignite.cache.store.jdbc.model.BinaryTestKey;
@@ -65,9 +66,6 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
     /** Person count. */
     protected static final int PERSON_CNT = 100000;
-
-    /** Ignite. */
-    private Ignite ig;
 
     /**
      * @throws Exception If failed.
@@ -279,10 +277,6 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         U.closeQuiet(conn);
 
         super.beforeTest();
-
-        Ignite ig = U.field(store, "ignite");
-
-        this.ig = ig;
     }
 
     /**
@@ -664,25 +658,5 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             U.closeQuiet(stmt);
             U.closeQuiet(conn);
         }
-    }
-
-    /**
-     * @param obj Object.
-     */
-    private Object wrap(Object obj) throws IllegalAccessException {
-        Class<?> cls = obj.getClass();
-
-        BinaryObjectBuilder builder = ig.binary().builder(cls.getName());
-
-        for (Field f : cls.getDeclaredFields()) {
-            if (f.getName().contains("serialVersionUID"))
-                continue;
-
-            f.setAccessible(true);
-
-            builder.setField(f.getName(), f.get(obj));
-        }
-
-        return builder.build();
     }
 }
