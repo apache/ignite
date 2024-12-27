@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -40,21 +39,6 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
  */
 @SuppressWarnings("unchecked")
 public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBinaryArraysTest {
-    /** */
-    protected final Marshaller marsh;
-
-    /**
-     *
-     */
-    IgniteCacheAbstractSqlDmlQuerySelfTest() {
-        try {
-            marsh = IgniteTestResources.getMarshaller();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -86,6 +70,18 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBin
         ignite(0).cache("S2P-bin").put("SecondKey", createBinPerson(2, "Joe", "Black"));
         ignite(0).cache("S2P-bin").put("k3", createBinPerson(3, "Sylvia", "Green"));
         ignite(0).cache("S2P-bin").put("f0u4thk3y", createBinPerson(4, "Jane", "Silver"));
+    }
+
+    /**
+     * Create person.
+     *
+     * @param id ID.
+     * @param name Name.
+     * @param secondName Second name.
+     * @return Person.
+     */
+    Object createPerson(int id, String name, String secondName) {
+        return createBinPerson(id, name, secondName);
     }
 
     /**

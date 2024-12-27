@@ -33,12 +33,8 @@ public class IgniteCacheReadThroughEvictionsVariationsSuite {
             .withBasicCacheParams()
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 /** {@inheritDoc} */
-                @SuppressWarnings("RedundantIfStatement")
                 @Override public boolean apply(IgniteConfiguration cfg) {
-                    if (cfg.isPeerClassLoadingEnabled())
-                        return false;
-
-                    return true;
+                    return !cfg.isPeerClassLoadingEnabled();
                 }
             })
             .skipWaitPartitionMapExchange()

@@ -221,7 +221,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 if (personCache.getName().equals(meta.cacheName())) {
                     assertEquals("Invalid types size", 1, types.size());
                     assert types.contains("Person");
-
                     assert Object.class.getName().equals(meta.keyClass("Person"));
                     assert Object.class.getName().equals(meta.valueClass("Person"));
 
@@ -268,7 +267,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 else if (orgCache.getName().equals(meta.cacheName())) {
                     assertEquals("Invalid types size", 1, types.size());
                     assert types.contains("Organization");
-
                     assert Object.class.getName().equals(meta.valueClass("Organization"));
                     assert String.class.getName().equals(meta.keyClass("Organization"));
 

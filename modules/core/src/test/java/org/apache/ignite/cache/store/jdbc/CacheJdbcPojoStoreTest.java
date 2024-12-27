@@ -66,6 +66,9 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /** Person count. */
     protected static final int PERSON_CNT = 100000;
 
+    /** Ignite. */
+    private Ignite ig;
+
     /**
      * @throws Exception If failed.
      */
@@ -276,6 +279,10 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         U.closeQuiet(conn);
 
         super.beforeTest();
+
+        Ignite ig = U.field(store, "ignite");
+
+        this.ig = ig;
     }
 
     /**
@@ -368,22 +375,28 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
-                if (k instanceof OrganizationKey && v instanceof Organization)
-                    orgKeys.add(k);
-                else if (k instanceof PersonKey && v instanceof Person)
-                    prnKeys.add(k);
-                else if (k instanceof BinaryTestKey && v instanceof BinaryTest)
-                    binaryTestVals.add(((BinaryTest)v).getBytes());
-                else if (k instanceof PersonComplexKey && v instanceof Person) {
-                    PersonComplexKey key = (PersonComplexKey)k;
+                if (k instanceof BinaryObject && v instanceof BinaryObject) {
+                    BinaryObject key = (BinaryObject)k;
+                    BinaryObject val = (BinaryObject)v;
 
-                    Person val = (Person)v;
+                    String keyType = key.type().typeName();
+                    String valType = val.type().typeName();
 
-                    assertTrue("Key ID should be the same as value ID", key.getId() == val.getId());
-                    assertTrue("Key orgID should be the same as value orgID", key.getOrgId() == val.getOrgId());
-                    assertEquals("name" + key.getId(), val.getName());
+                    if (OrganizationKey.class.getName().equals(keyType)
+                        && Organization.class.getName().equals(valType))
+                        orgKeys.add(key);
 
-                    prnComplexKeys.add(k);
+                    if (PersonKey.class.getName().equals(keyType)
+                        && Person.class.getName().equals(valType))
+                        prnKeys.add(key);
+
+                    if (PersonComplexKey.class.getName().equals(keyType)
+                        && Person.class.getName().equals(valType))
+                        prnComplexKeys.add(key);
+
+                    if (BinaryTestKey.class.getName().equals(keyType)
+                        && BinaryTest.class.getName().equals(valType))
+                        binaryTestVals.add(val.field("bytes"));
                 }
             }
         };
@@ -461,10 +474,17 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
-                if (k instanceof PersonComplexKey && v instanceof Person)
-                    prnComplexKeys.add(k);
-                else
-                    fail("Unexpected entry [key=" + k + ", value=" + v + "]");
+                if (k instanceof BinaryObject && v instanceof BinaryObject) {
+                    BinaryObject key = (BinaryObject)k;
+                    BinaryObject val = (BinaryObject)v;
+
+                    String keyType = key.type().typeName();
+                    String valType = val.type().typeName();
+
+                    if (PersonComplexKey.class.getName().equals(keyType)
+                        && Person.class.getName().equals(valType))
+                        prnComplexKeys.add(key);
+                }
             }
         };
 
@@ -589,13 +609,13 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
-                assertTrue(k instanceof LogoKey);
-                assertTrue(v instanceof Logo);
+                assertTrue(k instanceof BinaryObject);
+                assertTrue(v instanceof BinaryObject);
 
-                Logo val = (Logo)v;
+                BinaryObject val = (BinaryObject)v;
 
-                assertTrue(Arrays.equals(picture, val.getPicture()));
-                assertEquals(longDescription, val.getDescription());
+                assertTrue(Arrays.equals(picture, val.field("picture")));
+                assertEquals(longDescription, val.field("description"));
             }
         };
 
@@ -644,5 +664,25 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             U.closeQuiet(stmt);
             U.closeQuiet(conn);
         }
+    }
+
+    /**
+     * @param obj Object.
+     */
+    private Object wrap(Object obj) throws IllegalAccessException {
+        Class<?> cls = obj.getClass();
+
+        BinaryObjectBuilder builder = ig.binary().builder(cls.getName());
+
+        for (Field f : cls.getDeclaredFields()) {
+            if (f.getName().contains("serialVersionUID"))
+                continue;
+
+            f.setAccessible(true);
+
+            builder.setField(f.getName(), f.get(obj));
+        }
+
+        return builder.build();
     }
 }

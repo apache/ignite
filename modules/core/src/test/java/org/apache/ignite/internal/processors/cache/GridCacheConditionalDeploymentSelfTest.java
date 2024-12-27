@@ -106,15 +106,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     @Test
     public void testAddedDeploymentInfo() throws Exception {
         GridCacheContext<?, ?> ctx = cacheContext();
-        assertFalse(ctx.deploymentEnabled());
-    }
 
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
-    public void testAddedDeploymentInfo2() throws Exception {
-        GridCacheContext<?, ?> ctx = cacheContext();
         assertFalse(ctx.deploymentEnabled());
     }
 

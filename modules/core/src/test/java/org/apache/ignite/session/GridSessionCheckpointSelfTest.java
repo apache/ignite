@@ -93,6 +93,14 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         cfg.setCheckpointSpi(spi);
 
+        BinaryMarshaller marsh = (BinaryMarshaller)cfg.getMarshaller();
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
+
+        marsh.setContext(new MarshallerContextTestImpl(null));
+
+        marsh.setBinaryContext(ctx, cfg);
+
         GridSessionCheckpointSelfTest.spi = spi;
 
         checkCheckpoints(cfg);
