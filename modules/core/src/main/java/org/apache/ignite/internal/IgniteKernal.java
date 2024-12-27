@@ -1558,9 +1558,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
-
-        if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
-            perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
     }
 
     /**
@@ -1654,15 +1651,14 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
-        if (cfg.getMarshaller() instanceof BinaryMarshaller) {
-            add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
-                BinaryConfiguration.DFLT_COMPACT_FOOTER :
-                cfg.getBinaryConfiguration().isCompactFooter());
+        add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
+            BinaryConfiguration.DFLT_COMPACT_FOOTER :
+            cfg.getBinaryConfiguration().isCompactFooter());
 
-            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
-                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
-                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
-        }
+        add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+            getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                BinaryUtils.USE_STR_SERIALIZATION_VER_2));
+
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_IGNITE_INSTANCE_NAME, igniteInstanceName);

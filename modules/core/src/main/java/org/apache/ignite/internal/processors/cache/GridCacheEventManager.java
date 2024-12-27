@@ -307,9 +307,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false, null);
             }
             catch (Exception e) {
-                if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
-                    throw e;
-
                 if (log.isDebugEnabled())
                     log.debug("Failed to unmarshall cache object value for the event notification: " + e);
 

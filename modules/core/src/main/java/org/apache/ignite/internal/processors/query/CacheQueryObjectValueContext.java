@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
 /**
@@ -54,11 +53,11 @@ public class CacheQueryObjectValueContext implements CacheObjectValueContext {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return ctx.config().isPeerClassLoadingEnabled() && !binaryEnabled();
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean binaryEnabled() {
-        return ctx.config().getMarshaller() instanceof BinaryMarshaller;
+        return true;
     }
 }

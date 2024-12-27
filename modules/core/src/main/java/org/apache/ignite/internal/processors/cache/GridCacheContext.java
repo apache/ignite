@@ -384,7 +384,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.locStartTopVer = locStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
+        this.depEnabled = false;
 
         /*
          * Managers in starting order!

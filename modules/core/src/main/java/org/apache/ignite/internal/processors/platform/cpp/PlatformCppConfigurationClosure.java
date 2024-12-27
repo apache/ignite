@@ -79,9 +79,6 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             cppCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
                 BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof BinaryMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
-                " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
 
         BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
 
