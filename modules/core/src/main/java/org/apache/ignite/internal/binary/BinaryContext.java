@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.NotNull;
@@ -163,7 +164,7 @@ public class BinaryContext {
     private BinaryMetadataHandler metaHnd;
 
     /** Actual marshaller. */
-    private BinaryMarshaller marsh;
+    private Marshaller marsh;
 
     /** */
     private MarshallerContext marshCtx;
@@ -292,7 +293,7 @@ public class BinaryContext {
     /**
      * @return Marshaller.
      */
-    public BinaryMarshaller marshaller() {
+    public Marshaller marshaller() {
         return marsh;
     }
 
@@ -1611,40 +1612,6 @@ public class BinaryContext {
             }
             else if (!other.canOverride)
                 throw new BinaryObjectException("Duplicate explicit class definition in configuration: " + clsName);
-        }
-    }
-
-    /**
-     * Type id wrapper.
-     */
-    static class Type {
-        /** Type id */
-        private final int id;
-
-        /** Whether the following type is registered in a cache or not */
-        private final boolean registered;
-
-        /**
-         * @param id Id.
-         * @param registered Registered.
-         */
-        public Type(int id, boolean registered) {
-            this.id = id;
-            this.registered = registered;
-        }
-
-        /**
-         * @return Type ID.
-         */
-        public int id() {
-            return id;
-        }
-
-        /**
-         * @return Registered flag value.
-         */
-        public boolean registered() {
-            return registered;
         }
     }
 }
