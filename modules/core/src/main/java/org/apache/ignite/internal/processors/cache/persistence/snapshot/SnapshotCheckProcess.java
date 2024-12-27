@@ -182,8 +182,8 @@ public class SnapshotCheckProcess {
 
             ClusterNode node = kctx.cluster().get().node(nodeId);
 
-            incResp.incremenlatSnapshotResults().forEach((consId, res) -> reduced.computeIfAbsent(node, nid -> new ArrayList<>())
-                .add(res));
+            // Incremental snapshot result.
+            incResp.result().forEach((consId, res) -> reduced.computeIfAbsent(node, nid -> new ArrayList<>()).add(res));
 
             if (F.isEmpty(incResp.exceptions()))
                 continue;
@@ -223,7 +223,8 @@ public class SnapshotCheckProcess {
 
                 UUID nodeId = respEntry.getKey();
 
-                nodeResp.customHandlersResults().forEach((consId, respPerConsIdMap) -> {
+                // Custom handlers' results.
+                nodeResp.result().forEach((consId, respPerConsIdMap) -> {
                     // Reduced map of the handlers results per snapshot part's consistent id for certain node.
                     Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdResultMap
                         = reduced.computeIfAbsent(kctx.cluster().get().node(nodeId), n -> new HashMap<>());
@@ -265,7 +266,8 @@ public class SnapshotCheckProcess {
                 if (!F.isEmpty(resp.exceptions()))
                     errors0.putIfAbsent(node, asException(F.firstValue(resp.exceptions())));
 
-                resp.partitionsHashes().forEach((consId, partsMapPerConsId) -> {
+                // Partitions hashes.
+                resp.result().forEach((consId, partsMapPerConsId) -> {
                     // Reduced node's hashes on certain responded node for certain consistent id.
                     Map<PartitionKeyV2, List<PartitionHashRecordV2>> nodeHashes = reduced.computeIfAbsent(node, map -> new HashMap<>());
 
@@ -513,10 +515,10 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !F.isEmpty(nodeRes.metas())) {
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !F.isEmpty(nodeRes.result())) {
                     assert nodeRes != null;
 
-                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas());
+                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.result());
                 }
             });
 
@@ -691,15 +693,15 @@ public class SnapshotCheckProcess {
     }
 
     /** A DTO base to transfer node's results for the both phases. */
-    private abstract static class AbstractSnapshotCheckResponse implements Serializable {
+    private abstract static class AbstractSnapshotCheckResponse<T> implements Serializable {
         /** The result. */
-        protected Object result;
+        protected T result;
 
         /** Exceptions per snapshot part's consistent id. */
-        @Nullable private Map<String, Throwable> exceptions;
+        @Nullable private final Map<String, Throwable> exceptions;
 
         /** */
-        private AbstractSnapshotCheckResponse(Object result, @Nullable Map<String, Throwable> exceptions) {
+        private AbstractSnapshotCheckResponse(T result, @Nullable Map<String, Throwable> exceptions) {
             assert result instanceof Serializable : "Snapshot check result is not serializable.";
             assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";
 
@@ -708,13 +710,18 @@ public class SnapshotCheckProcess {
         }
 
         /** @return Exceptions per snapshot part's consistent id. */
-        protected @Nullable Map<String, Throwable> exceptions() {
+        @Nullable Map<String, Throwable> exceptions() {
             return exceptions;
+        }
+
+        /** @return Certain phase's and process' result. */
+        T result() {
+            return result;
         }
     }
 
     /** A DTO to transfer snapshot metadatas result for phase 1. */
-    private static final class SnapshotCheckMetasResponse extends AbstractSnapshotCheckResponse {
+    private static final class SnapshotCheckMetasResponse extends AbstractSnapshotCheckResponse<List<SnapshotMetadata>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -722,15 +729,11 @@ public class SnapshotCheckProcess {
         private SnapshotCheckMetasResponse(List<SnapshotMetadata> result) {
             super(result, null);
         }
-
-        /** @return All the snapshot metadatatas found on this node. */
-        private List<SnapshotMetadata> metas() {
-            return (List<SnapshotMetadata>)result;
-        }
     }
 
-    /** A DTO to transfer partitionw hashes resultw for phase 2. */
-    private static final class SnapshotCheckPartitionsHashesResponse extends AbstractSnapshotCheckResponse {
+    /** A DTO to transfer partition hashes result for phase 2. */
+    private static final class SnapshotCheckPartitionsHashesResponse
+        extends AbstractSnapshotCheckResponse<Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -744,11 +747,6 @@ public class SnapshotCheckProcess {
         ) {
             super(result, exceptions);
         }
-
-        /** @return Partitions hashes per snapshot part's consistent id. */
-        private Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> partitionsHashes() {
-            return (Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>>)result;
-        }
     }
 
     /**
@@ -756,7 +754,8 @@ public class SnapshotCheckProcess {
      *
      * @see IgniteSnapshotManager#handlers().
      */
-    private static final class SnapshotCheckCustomHandlersResponse extends AbstractSnapshotCheckResponse {
+    private static final class SnapshotCheckCustomHandlersResponse
+        extends AbstractSnapshotCheckResponse<Map<String, Map<String, SnapshotHandlerResult<Object>>>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -770,15 +769,11 @@ public class SnapshotCheckProcess {
         ) {
             super(result, exceptions);
         }
-
-        /** @return Handlers results per snapshot part's consistent id: consistent id -> handler name -> handler result. */
-        private Map<String, Map<String, SnapshotHandlerResult<Object>>> customHandlersResults() {
-            return (Map<String, Map<String, SnapshotHandlerResult<Object>>>)result;
-        }
     }
 
     /** A DTO used to transfer incremental snapshot check result for phase 2. */
-    private static final class SnapshotCheckIncrementalResponse extends AbstractSnapshotCheckResponse {
+    private static final class SnapshotCheckIncrementalResponse
+        extends AbstractSnapshotCheckResponse<Map<String, IncrementalSnapshotCheckResult>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -791,11 +786,6 @@ public class SnapshotCheckProcess {
             Map<String, Throwable> exceptions
         ) {
             super(result, exceptions);
-        }
-
-        /** @return Incremental snapshot check results per snapshot part's consistent id. */
-        private Map<String, IncrementalSnapshotCheckResult> incremenlatSnapshotResults() {
-            return (Map<String, IncrementalSnapshotCheckResult>)result;
         }
     }
 }

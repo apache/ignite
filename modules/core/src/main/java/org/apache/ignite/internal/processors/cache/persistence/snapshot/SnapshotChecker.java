@@ -639,8 +639,18 @@ public class SnapshotChecker {
     ) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashesRes = new HashMap<>();
 
-        results.forEach((node, partsHashes) -> partsHashes.forEach((partKey, partHashLst) -> hashesRes.computeIfAbsent(partKey,
-            k -> new ArrayList<>()).addAll(partHashLst)));
+        // Iterate over node's results.
+        for (Map.Entry<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> nodeHashes : results.entrySet()) {
+            Map<PartitionKeyV2, List<PartitionHashRecordV2>> nodePartsHashes = nodeHashes.getValue();
+
+            // Iterate over partitions hashes related to the certain node.
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes : nodePartsHashes.entrySet()) {
+                PartitionKeyV2 partKey = partHashes.getKey();
+                List<PartitionHashRecordV2> hashes = partHashes.getValue();
+
+                hashesRes.computeIfAbsent(partKey, k -> new ArrayList<>()).addAll(hashes);
+            }
+        }
 
         if (results.size() != ex.size())
             return new IdleVerifyResultV2(hashesRes, ex);
