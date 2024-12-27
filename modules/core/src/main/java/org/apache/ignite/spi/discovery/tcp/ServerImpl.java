@@ -174,7 +174,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
@@ -4486,60 +4485,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
 
                                     onException("Failed to send hash ID resolver validation failed message to node " +
-                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                                }
-                            }
-                        }
-                    );
-
-                    // Ignore join request.
-                    msg.spanContainer().span()
-                        .addLog(() -> "Ignored")
-                        .setStatus(SpanStatus.ABORTED)
-                        .end();
-
-                    return;
-                }
-
-                final String locMarsh = locNode.attribute(ATTR_MARSHALLER);
-                final String rmtMarsh = node.attribute(ATTR_MARSHALLER);
-
-                if (!F.eq(locMarsh, rmtMarsh)) {
-                    utilityPool.execute(
-                        new Runnable() {
-                            @Override public void run() {
-                                String errMsg = "Local node's marshaller differs from remote node's marshaller " +
-                                    "(to make sure all nodes in topology have identical marshaller, " +
-                                    "configure marshaller explicitly in configuration) " +
-                                    "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
-                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                                LT.warn(log, errMsg);
-
-                                // Always output in debug.
-                                if (log.isDebugEnabled())
-                                    log.debug(errMsg);
-
-                                try {
-                                    String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
-                                        "(to make sure all nodes in topology have identical marshaller, " +
-                                        "configure marshaller explicitly in configuration) " +
-                                        "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
-                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                        ", rmtNodeId=" + locNode.id() + ']';
-
-                                    trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                                }
-                                catch (IgniteSpiException e) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to send marshaller check failed message to node " +
-                                            "[node=" + node + ", err=" + e.getMessage() + ']');
-
-                                    onException("Failed to send marshaller check failed message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']', e);
                                 }
                             }

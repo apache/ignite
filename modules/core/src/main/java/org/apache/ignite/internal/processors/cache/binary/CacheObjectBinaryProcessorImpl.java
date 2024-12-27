@@ -156,7 +156,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     private BinaryContext binaryCtx;
 
     /** */
-    private Marshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private GridBinaryMarshaller binaryMarsh;

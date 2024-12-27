@@ -55,7 +55,6 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.checkIfNoLocalhost;
 import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.getPortList;
 
@@ -220,7 +219,7 @@ public class IgniteNode implements BenchmarkServer {
 
         ignite = IgniteSpring.start(c, appCtx);
 
-        BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
+        BenchmarkUtils.println("Configured marshaller: " + ignite.configuration().getMarshaller().getClass());
     }
 
     /**
