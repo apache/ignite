@@ -83,11 +83,11 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
 
     /**
      * @param top Partition topology.
-     * @param p Partition ID.
+     * @param partId Partition ID.
      * @return Partition.
      */
-    private static GridDhtLocalPartition partition(GridDhtPartitionTopology top, int p) {
-        return top.localPartition(p, NONE, false);
+    private static GridDhtLocalPartition partition(GridDhtPartitionTopology top, int partId) {
+        return top.localPartition(partId, NONE, false);
     }
 
     /**
@@ -102,7 +102,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     public PartitionReservation reservePartitions(
         @Nullable List<Integer> cacheIds,
         AffinityTopologyVersion reqTopVer,
-        final int[] explicitParts,
+        int[] explicitParts,
         UUID nodeId,
         long reqId
     ) throws IgniteCheckedException {
@@ -154,7 +154,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     public PartitionReservation reservePartitions(
         GridCacheContext<?, ?> cctx,
         AffinityTopologyVersion reqTopVer,
-        final int[] explicitParts,
+        int[] explicitParts,
         UUID nodeId,
         String qryInfo
     ) throws IgniteCheckedException {
@@ -179,17 +179,17 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     private @Nullable String reservePartitions(
         List<GridReservable> reserved,
         GridCacheContext<?, ?> cctx,
-        Collection<Integer> partIds,
+        @Nullable Collection<Integer> explicitParts,
         AffinityTopologyVersion topVer,
         UUID nodeId,
         String qryInfo
     ) throws IgniteCheckedException {
         // For replicated cache topology version does not make sense.
-        final PartitionReservationKey grpKey = new PartitionReservationKey(cctx.name(), cctx.isReplicated() ? null : topVer);
+        PartitionReservationKey grpKey = new PartitionReservationKey(cctx.name(), cctx.isReplicated() ? null : topVer);
 
         GridReservable r = reservations.get(grpKey);
 
-        if (partIds == null && r != null)  // Try to reserve group partition if any and no explicits.
+        if (explicitParts == null && r != null)  // Try to reserve group partition if any and no explicits.
             return groupPartitionReservation(reserved, r, cctx, topVer, nodeId, qryInfo);
         else { // Try to reserve partitions one by one.
             int partsCnt = cctx.affinity().partitions();
@@ -237,7 +237,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                 }
             }
             else { // Reserve primary partitions for partitioned cache (if no explicit given).
-                Collection<Integer> partIds0 = partIds != null ? partIds
+                Collection<Integer> partIds = explicitParts != null ? explicitParts
                     : cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
                 int reservedCnt = 0;
@@ -247,7 +247,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                 top.readLock();
 
                 try {
-                    for (int partId : partIds0) {
+                    for (int partId : partIds) {
                         GridDhtLocalPartition part = partition(top, partId);
 
                         GridDhtPartitionState partState = part != null ? part.state() : null;
@@ -303,9 +303,9 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                 }
 
                 MTC.span().addLog(() -> "Cache partitions were reserved [cache=" + cctx.name() +
-                    ", partitions=" + partIds0 + ", topology=" + topVer + ']');
+                    ", partitions=" + partIds + ", topology=" + topVer + ']');
 
-                if (partIds == null && reservedCnt > 0) {
+                if (explicitParts == null && reservedCnt > 0) {
                     // We reserved all the primary partitions for cache, attempt to add group reservation.
                     GridDhtPartitionsReservation grp = new GridDhtPartitionsReservation(topVer, cctx, "SQL");
 
@@ -349,8 +349,10 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
      * @param cctx Cache context.
      * @param part Partition.
      */
-    private static void failQueryOnLostData(GridCacheContext<?, ?> cctx, GridDhtLocalPartition part)
-        throws IgniteCheckedException {
+    private static void failQueryOnLostData(
+        GridCacheContext<?, ?> cctx,
+        GridDhtLocalPartition part
+    ) throws IgniteCheckedException {
         throw new CacheInvalidStateException("Failed to execute query because cache partition has been " +
             "lost [cacheName=" + cctx.name() + ", part=" + part + ']');
     }
@@ -358,7 +360,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     /**
      * Cleanup group reservations cache on change affinity version.
      */
-    @Override public void onDoneAfterTopologyUnlock(final GridDhtPartitionsExchangeFuture fut) {
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         try {
             // Must not do anything at the exchange thread. Dispatch to the management thread pool.
             ctx.closure().runLocal(

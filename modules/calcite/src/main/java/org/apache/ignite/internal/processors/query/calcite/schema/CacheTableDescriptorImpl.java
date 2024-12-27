@@ -587,7 +587,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 assignments0.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
         }
 
-        return ColocationGroup.forCacheAssignment(assignments0);
+        return ColocationGroup.forAssignments(assignments0);
     }
 
     /** */
