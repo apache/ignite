@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
