@@ -567,18 +567,25 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.groupId());
         List<UUID> nodes0;
 
-        if (!top.rebalanceFinished(topVer)) {
-            nodes0 = new ArrayList<>(nodes.size());
+        top.readLock();
 
-            int parts = top.partitions();
+        try {
+            if (!top.rebalanceFinished(topVer)) {
+                nodes0 = new ArrayList<>(nodes.size());
 
-            for (ClusterNode node : nodes) {
-                if (isOwner(node.id(), top, parts))
-                    nodes0.add(node.id());
+                int parts = top.partitions();
+
+                for (ClusterNode node : nodes) {
+                    if (isOwner(node.id(), top, parts))
+                        nodes0.add(node.id());
+                }
             }
+            else
+                nodes0 = Commons.transform(nodes, ClusterNode::id);
         }
-        else
-            nodes0 = Commons.transform(nodes, ClusterNode::id);
+        finally {
+            top.readUnlock();
+        }
 
         return ColocationGroup.forNodes(nodes0);
     }
