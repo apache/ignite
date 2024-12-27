@@ -245,10 +245,14 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         private final RowHandler<Row> handler;
 
         /** */
+        private GroupKey.Builder grpKeyBld;
+
+        /** */
         private Grouping(byte grpId, ImmutableBitSet grpFields) {
             this.grpId = grpId;
             this.grpFields = grpFields;
 
+            grpKeyBld = GroupKey.builder(grpFields.cardinality());
             handler = context().rowHandler();
 
             init();
@@ -293,14 +297,20 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private void addOnMapper(Row row) {
-            GroupKey.Builder b = GroupKey.builder(grpFields.cardinality());
-
             for (Integer field : grpFields)
-                b.add(handler.get(field, row));
+                grpKeyBld.add(handler.get(field, row));
 
-            GroupKey grpKey = b.build();
+            GroupKey grpKey = grpKeyBld.build();
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
+            List<AccumulatorWrapper<Row>> wrappers = groups.get(grpKey);
+
+            if (wrappers == null) {
+                groups.put(grpKey, (wrappers = create(grpKey)));
+
+                grpKeyBld = GroupKey.builder(grpFields.cardinality());
+            }
+            else
+                grpKeyBld.clear();
 
             for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
