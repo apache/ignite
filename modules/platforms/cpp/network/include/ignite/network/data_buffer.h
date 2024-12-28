@@ -48,9 +48,9 @@ namespace ignite
              *
              * @param data Data.
              * @param pos Start of data.
-             * @param len Length.
+             * @param end End of the data.
              */
-            DataBuffer(const impl::interop::SP_ConstInteropMemory& data, int32_t pos, int32_t len);
+            DataBuffer(const impl::interop::SP_ConstInteropMemory& data, int32_t pos, int32_t end);
 
             /**
              * Destructor.
@@ -127,8 +127,8 @@ namespace ignite
             /** Position in current data. */
             int32_t position;
 
-            /** Data length. */
-            int32_t length;
+            /** End position. */
+            int32_t endPos;
 
             /** Data */
             impl::interop::SP_ConstInteropMemory data;
