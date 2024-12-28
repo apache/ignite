@@ -552,7 +552,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return super.deriveType(scope, expr);
     }
 
-    /** @return A derived type or {@code null} if unale to determine. */
+    /** @return A derived type or {@code null} if unable to determine. */
     @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node) {
         RelDataType type = getValidatedNodeTypeIfKnown(node);
 
