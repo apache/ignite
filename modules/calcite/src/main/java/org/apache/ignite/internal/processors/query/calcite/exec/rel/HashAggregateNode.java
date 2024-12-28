@@ -263,7 +263,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
             // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
             // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
             if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE))
-                groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
+                groups.put(GroupKey.EMPTY_GRP_KEY, create());
         }
 
         /** */
@@ -302,15 +302,18 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
             GroupKey grpKey = grpKeyBld.build();
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.get(grpKey);
+            List<AccumulatorWrapper<Row>> wrappers = groups.compute(grpKey, (k, v) -> {
+                if (v == null) {
+                    grpKeyBld = GroupKey.builder(grpFields.cardinality());
 
-            if (wrappers == null) {
-                groups.put(grpKey, (wrappers = create(grpKey)));
+                    return create();
+                }
+                else {
+                    grpKeyBld.clear();
 
-                grpKeyBld = GroupKey.builder(grpFields.cardinality());
-            }
-            else
-                grpKeyBld.clear();
+                    return v;
+                }
+            });
 
             for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
@@ -325,7 +328,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
             GroupKey grpKey = (GroupKey)handler.get(1, row);
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, (k) -> create());
             Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])handler.get(2, row) : null;
 
             for (int i = 0; i < wrappers.size(); i++) {
@@ -398,7 +401,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         }
 
         /** */
-        private List<AccumulatorWrapper<Row>> create(GroupKey key) {
+        private List<AccumulatorWrapper<Row>> create() {
             if (accFactory == null)
                 return Collections.emptyList();
 
