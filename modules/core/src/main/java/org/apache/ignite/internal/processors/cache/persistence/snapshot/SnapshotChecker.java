@@ -637,7 +637,7 @@ public class SnapshotChecker {
         Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results,
         Map<ClusterNode, Exception> ex
     ) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashesRes = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
         // Iterate over node's results.
         for (Map.Entry<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> nodeHashes : results.entrySet()) {
@@ -648,12 +648,12 @@ public class SnapshotChecker {
                 PartitionKeyV2 partKey = partHashes.getKey();
                 List<PartitionHashRecordV2> hashes = partHashes.getValue();
 
-                hashesRes.computeIfAbsent(partKey, k -> new ArrayList<>()).addAll(hashes);
+                clusterHashes.computeIfAbsent(partKey, k -> new ArrayList<>()).addAll(hashes);
             }
         }
 
         if (results.size() != ex.size())
-            return new IdleVerifyResultV2(hashesRes, ex);
+            return new IdleVerifyResultV2(clusterHashes, ex);
         else
             return new IdleVerifyResultV2(ex);
     }
