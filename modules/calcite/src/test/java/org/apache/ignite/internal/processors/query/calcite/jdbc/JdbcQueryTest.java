@@ -120,23 +120,22 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void testOtherType() throws Exception {
         List<Object> values = new ArrayList<>();
 
-//        values.add("str");
-//        values.add(11);
-//        values.add(2);
-//        values.add(5);
-//        values.add(7);
-//        values.add(101.1);
-//        values.add(202.2d);
-//        values.add(new byte[] {1, 2, 3});
-//        values.add(UUID.randomUUID());
-//        values.add(new ObjectToStore(1, "noname", 22.2));
+        values.add("str");
+        values.add(11);
+        values.add(2);
+        values.add(5);
+        values.add(7);
+        values.add(101.1);
+        values.add(202.2d);
+        values.add(new byte[] {1, 2, 3});
+        values.add(UUID.randomUUID());
+        values.add(new ObjectToStore(1, "noname", 22.2));
 
         Map<String, Object> map = new HashMap<>();
-//        map.put("a", "bb");
-//        map.put("vvv", "zzz");
-//        map.put("111", "222");
-//        map.put("lst", Stream.of("abc", 1, null, 20.f).collect(Collectors.toSet()));
-        map.put("lst", Stream.of().collect(Collectors.toSet()));
+        map.put("a", "bb");
+        map.put("vvv", "zzz");
+        map.put("111", "222");
+        map.put("lst", Stream.of("abc", 1, null, 20.f).collect(Collectors.toSet()));
         values.add(map);
 
         List<Object> lst = new ArrayList<>();
@@ -145,7 +144,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         lst.add(3.3d);
         lst.add("str");
         lst.add(map);
-        //values.add(lst);
+        values.add(lst);
 
         stmt.execute("CREATE TABLE tbl(id INT, oth OTHER, primary key(id))");
 
