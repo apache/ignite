@@ -549,13 +549,13 @@ There are basically two strategies to choose from when it comes to CDC replicati
 
 * Strategies include `Active-Passive` and `Active-Active` replication regimes. You can read it as 'from one cluster to another only' and 'from one cluster to another and vice versa'.
 
-The former strategy implies that only one cluster would be activly used for data consumption from the outside user application, while the other one consumes data through CDC.
+The former strategy implies that only one cluster would be actively used for data consumption from the outside user application, while the other one consumes data through CDC.
 
 The latter approach allows users to use both cluster simultaneously, meanwhile the CDC clients transfer the updates between them. For that strategy to work, the user should configure conflict resolver.
 
 * To make things work you have two independent tools to configure:
 
-** Thin/Thick clients for connection to destination clusters - responsible for 'put' opertaions on the destination cluster.
+** Thin/Thick clients for connection to destination clusters - responsible for 'put' operations on the destination cluster.
 
 ** Ignite/Kafka driven middleman data transport - You can pass data through Kafka topics, or you can use Ignite out of the box solution.
 
@@ -563,11 +563,11 @@ Basically, you can combine them any way you want to meet your project goals.
 
 === CDC example manager
 
-`ignite-cdc-ext` ships with CDC example manager `cdc-start-up.sh` alongside `kafka-to-ignite.sh`. You can find it under '../examples/config/cdc-start-up/' directory.
+`ignite-cdc-ext` ships with CDC example manager `cdc-start-up.sh` alongside `kafka-to-ignite.sh`. You can find it under '$IGNITE_HOME/examples/config/cdc-start-up/' directory.
 
 You can use this script to start all kinds of replication strategies without any additional configuration.
 
-The script will use predefined configuration '.xml' files from '../examples/config/cdc-start-up/' directory. Feel free to examine them as you try the manager out.
+The script will use predefined configuration '.xml' files from '$IGNITE_HOME/examples/config/cdc-start-up/' directory. Feel free to examine them as you try the manager out.
 
 NOTE: Use `--help` to explore the manager capabilities
 
@@ -589,6 +589,8 @@ There are currently 2 examples for 2 clusters, that you can run sumalteniously. 
 
 NOTE: All properties files are preconfigured to work out of the box.
 
+To start a single node for each cluster type the following commands in different terminals:
+
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
@@ -600,7 +602,7 @@ NOTE: All properties files are preconfigured to work out of the box.
 
 ** There are 5 options you can specify CDC client mode from. Take a look at `--help` command output to learn about them.
 
-** You can optionaly activate both clusters at CDC client start-up with `--activate-cluster`. You need this for data persistance at source and destination clusters. You can also use `control.sh` capabilities to activate clusters manually.
+** You can optionally activate both clusters at CDC client start-up with `--activate-cluster`. You need this for data persistance at source and destination clusters. You can also use `control.sh` capabilities to activate clusters manually.
 
 NOTE: Start both clusters (as in previous example with Ignite nodes) before starting CDC client.
 
