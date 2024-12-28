@@ -556,6 +556,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node) {
         RelDataType type = getValidatedNodeTypeIfKnown(node);
 
+        // Do not clarify the widest type for any value.
         if (type instanceof OtherType)
             return type;
 
