@@ -334,7 +334,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private Marshaller marsh;
+    private Marshaller marsh = new BinaryMarshaller();
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;

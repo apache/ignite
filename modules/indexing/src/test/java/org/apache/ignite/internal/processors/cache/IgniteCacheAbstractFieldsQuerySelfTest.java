@@ -276,6 +276,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assertEquals("Fields: " + fields, 2, fields.size());
 
                     assert Integer.class.getName().equals(fields.get("ID"));
+
                     assert String.class.getName().equals(fields.get("NAME"));
                 }
                 else if (intCache.getName().equals(meta.cacheName())) {

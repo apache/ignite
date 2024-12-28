@@ -32,10 +32,6 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  * <li>Default binary marshaller. For more information, see {@link IgniteBinary}.</li>
  * </ul>
- * <p>
- * <p>Usage of other marshallers</p>
- *
- *
  */
 public interface Marshaller {
     /**

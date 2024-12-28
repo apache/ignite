@@ -37,7 +37,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
  */
-public class IgniteServiceDeploymentClassLoadingTest extends GridCommonAbstractTest {
+public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 

@@ -89,7 +89,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBin
      * @param secondName Second name.
      * @return Person.
      */
-    protected Object createBinPerson(int id, String name, String secondName) {
+    private Object createBinPerson(int id, String name, String secondName) {
         BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
 
         bldr.setField("id", id);

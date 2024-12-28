@@ -47,10 +47,10 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(2, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createBinPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createBinPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(1));
     }
 
@@ -72,13 +72,13 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(3, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createBinPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("k3", createBinPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
             leftovers.get(1));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createBinPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
     }
 

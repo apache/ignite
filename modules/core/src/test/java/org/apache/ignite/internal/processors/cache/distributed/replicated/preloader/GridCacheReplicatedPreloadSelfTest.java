@@ -78,16 +78,16 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     private int batchSize = 4096;
 
     /** */
-    private volatile boolean extClassloadingAtCfg;
+    private volatile boolean extClassloadingAtCfg = false;
 
     /** Disable p2p. */
-    private volatile boolean disableP2p;
+    private volatile boolean disableP2p = false;
 
     /** */
     private static volatile CountDownLatch latch;
 
     /** */
-    private static boolean cutromEvt;
+    private static boolean cutromEvt = false;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

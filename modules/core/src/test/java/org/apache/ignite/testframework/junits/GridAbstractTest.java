@@ -106,10 +106,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -2071,18 +2069,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @param marshaller Marshaller to get checkpoint path for.
      * @return Path for specific marshaller.
      */
     @SuppressWarnings({"IfMayBeConditional"})
-    protected String getDefaultCheckpointPath(Marshaller marshaller) {
-        if (marshaller == null)
-            marshaller = new BinaryMarshaller();
-
-        if (marshaller instanceof JdkMarshaller)
-            return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
-        else
-            return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
+    protected String getDefaultCheckpointPath() {
+        return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + BinaryMarshaller.class.getSimpleName() + '/';
     }
 
     /**
@@ -2162,7 +2153,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         Collection<String> paths = new ArrayList<>();
 
-        paths.add(getDefaultCheckpointPath(cfg.getMarshaller()));
+        paths.add(getDefaultCheckpointPath());
 
         cpSpi.setDirectoryPaths(paths);
 
