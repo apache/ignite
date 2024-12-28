@@ -102,7 +102,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** Dynamic parameters. */
-    private final @Nullable Object[] parameters;
+    @Nullable private final Object[] parameters;
 
     /**
      * Creates a validator.
@@ -541,7 +541,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (inferDynamicParamType(inferredType, node))
+        if (node instanceof SqlDynamicParam && deriveDynamicParameterType((SqlDynamicParam)node) != null)
             return;
 
         if (node instanceof SqlCall) {
@@ -590,18 +590,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
-        if (expr instanceof SqlDynamicParam && parameters != null)
-            return deriveDynamicParamType((SqlDynamicParam)expr);
-        else
-            return super.deriveType(scope, expr);
+        if (expr instanceof SqlDynamicParam) {
+            RelDataType type = deriveDynamicParameterType((SqlDynamicParam)expr);
+
+            if (type != null)
+                return type;
+        }
+
+        return super.deriveType(scope, expr);
     }
 
     /** */
-    private RelDataType deriveDynamicParamType(SqlDynamicParam node) {
-        assert parameters != null;
-
-        if (node.getIndex() >= parameters.length)
-            return unknownType;
+    @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node) {
+        if (parameters == null || node.getIndex() >= parameters.length)
+            return null;
 
         Object val = parameters[node.getIndex()];
 
@@ -612,40 +614,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         setValidatedNodeType(node, type);
 
         return type;
-    }
-
-    /**
-     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
-     * is actual to {@link #parameters}.
-     *
-     * @return {@code True} if a new type was set. {@code False} otherwise.
-     */
-    private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
-        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
-            return false;
-
-        Object val = parameters[((SqlDynamicParam)node).getIndex()];
-
-        if (val == null) {
-            if (inferredType.equals(unknownType)) {
-                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
-
-                return true;
-            }
-
-            return false;
-        }
-
-        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
-
-        assert !unknownType.equals(valType);
-
-        if (unknownType.equals(inferredType) || valType.getFamily().equals(inferredType.getFamily()))
-            setValidatedNodeType(node, valType);
-        else
-            setValidatedNodeType(node, inferredType);
-
-        return true;
     }
 
     /** {@inheritDoc} */
