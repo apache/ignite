@@ -206,11 +206,9 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            if (!partitionAware) {
-                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+            Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
 
-                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
-            }
+            GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
 
             // Recover after fail.
             cachePut(cache, 0, 0);
