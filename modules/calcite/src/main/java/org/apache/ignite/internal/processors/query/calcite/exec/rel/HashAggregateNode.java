@@ -332,10 +332,10 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
             GroupKey grpKey = (GroupKey)handler.get(1, row);
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, (k) -> create());
+            List<AccumulatorWrapper<Row>> wrappers = groups.get(grpKey);
             Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])handler.get(2, row) : null;
 
-            for (int i = 0; i < wrappers.size(); i++) {
+            for (int i = 0; i < F.size(wrappers); i++) {
                 AccumulatorWrapper<Row> wrapper = wrappers.get(i);
                 Accumulator<Row> accum = accums[i];
 
