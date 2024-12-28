@@ -551,6 +551,14 @@ public class GridMapQueryExecutor {
                         assert !qry.isPartitioned();
 
                         qryResults.closeResult(qryIdx);
+
+                        if (qryResults.isAllClosed()) {
+                            nodeRess.remove(qryResults.queryRequestId(), segmentId, qryResults);
+
+                            // Clear context, release reservations
+                            if (qryResults.isLazy())
+                                qryResults.releaseQueryContext();
+                        }
                     }
 
                     qryIdx++;
