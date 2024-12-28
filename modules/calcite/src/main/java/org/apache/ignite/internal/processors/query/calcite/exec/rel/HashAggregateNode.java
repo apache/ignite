@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -252,12 +253,17 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         private final BiFunction<GroupKey, List<AccumulatorWrapper<Row>>, List<AccumulatorWrapper<Row>>> getOrCreateGroup;
 
         /** */
+        private final Function<GroupKey, List<AccumulatorWrapper<Row>>> createGroup;
+
+        /** */
         private Grouping(byte grpId, ImmutableBitSet grpFields) {
             this.grpId = grpId;
             this.grpFields = grpFields;
 
             grpKeyBld = GroupKey.builder(grpFields.cardinality());
             handler = context().rowHandler();
+
+            createGroup = (k) -> create();
 
             getOrCreateGroup = (k, v) -> {
                 if (v == null) {
@@ -332,10 +338,10 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
             GroupKey grpKey = (GroupKey)handler.get(1, row);
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.get(grpKey);
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, createGroup);
             Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])handler.get(2, row) : null;
 
-            for (int i = 0; i < F.size(wrappers); i++) {
+            for (int i = 0; i < wrappers.size(); i++) {
                 AccumulatorWrapper<Row> wrapper = wrappers.get(i);
                 Accumulator<Row> accum = accums[i];
 
