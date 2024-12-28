@@ -334,7 +334,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private Marshaller marsh = new BinaryMarshaller();
+    private Marshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -1418,7 +1418,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public IgniteConfiguration setMarshaller(Marshaller marsh) {
-        throw new UnsupportedOperationException("Explicit set of marshaller are not supported.");
+        return this;
     }
 
     /**
