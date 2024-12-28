@@ -257,7 +257,7 @@ public class CacheGroupContext {
 
         ioPlc = cacheType.ioPolicy();
 
-        depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
+        depEnabled = false;
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
         

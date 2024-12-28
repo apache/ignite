@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -129,11 +128,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             dotNetCfg.warnings(Collections.singleton("Marshaller is automatically set to " +
                 BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof BinaryMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
-                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
-
-        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
     }
 
     /**
