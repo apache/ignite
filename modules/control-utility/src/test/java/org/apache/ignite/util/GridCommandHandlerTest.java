@@ -40,6 +40,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
@@ -97,6 +100,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -134,7 +138,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -172,6 +179,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -218,13 +227,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected static File customDiagnosticDir;
 
+    /** */
+    protected ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        initDiagnosticDir();
+        cleanPersistenceDir();
 
-        cleanDiagnosticDir();
+        initDiagnosticDir();
     }
 
     /** {@inheritDoc} */
@@ -232,6 +244,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.cleanPersistenceDir();
 
         cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setGridLogger(listeningLog);
+
+        return cfg;
     }
 
     /**
@@ -745,6 +766,187 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testIdleVerifyCancelCommandOnCheckpoint() throws Exception {
+        final int gridsCnt = 4;
+
+        IgniteEx srv = startGrids(gridsCnt);
+
+        srv.cluster().state(ACTIVE);
+
+        CountDownLatch beforeCancelLatch = new CountDownLatch(1);
+
+        CountDownLatch afterCancelLatch = new CountDownLatch(1);
+
+        GridCacheDatabaseSharedManager dbMgr =
+            (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
+
+        dbMgr.addCheckpointListener(new CheckpointListener() {
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                if (ctx.progress().reason().equals("VerifyBackupPartitions"))
+                    beforeCancelLatch.countDown();
+            }
+
+            @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
+                if (ctx.progress().reason().equals("VerifyBackupPartitions"))
+                    try {
+                        afterCancelLatch.await();
+                    } catch (InterruptedException e) {
+                        throw new IgniteInterruptedCheckedException(e);
+                    }
+            }
+
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+
+            }
+        });
+
+        LogListener idleVerifyCancelListener = LogListener.matches("Idle verify was cancelled.").build();
+
+        LogListener verifyBackupCancelListener = LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build();
+
+        listeningLog.registerListener(idleVerifyCancelListener);
+
+        listeningLog.registerListener(verifyBackupCancelListener);
+
+        IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
+
+        for (int i = 0; i < 10000; i++)
+            cache.put(i, i);
+
+        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
+
+        beforeCancelLatch.await();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        afterCancelLatch.countDown();
+
+        for (int i = 0; i < gridsCnt; i++) {
+            int finalI = i;
+
+            waitForCondition(() -> {
+                for (ComputeTaskView taskView : grid(finalI).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
+                        return false;
+                }
+
+                return true;
+            }, 1000);
+
+            waitForCondition(() -> {
+                for (ComputeJobView jobView : grid(finalI).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
+                        return false;
+                }
+
+                return true;
+            }, 1000);
+        }
+
+        idleVerifyFut.get(getTestTimeout());
+
+        assertTrue(idleVerifyCancelListener.check());
+
+        assertTrue(verifyBackupCancelListener.check());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testIdleVerifyTrackedForkJoinPool() throws Exception {
+        final int gridsCnt = 4;
+
+        IgniteEx srv = startGrids(gridsCnt);
+
+        srv.cluster().state(ACTIVE);
+
+        LogListener idleVerifyCancelListener = LogListener.matches("Idle verify was cancelled.").build();
+
+        LogListener verifyBackupCancelListener = LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build();
+
+        listeningLog.registerListener(idleVerifyCancelListener);
+
+        listeningLog.registerListener(verifyBackupCancelListener);
+
+        IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
+
+        for (int i = 0; i < 10000; i++)
+            cache.put(i, i);
+
+        CountDownLatch beforeCancelLatch = new CountDownLatch(1);
+        CountDownLatch afterCancelLatch = new CountDownLatch(1);
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool() {
+            @Override public <T> ForkJoinTask<T> submit(ForkJoinTask<T> task) {
+                System.out.println("GridCommandHandlerTest.submit");
+
+                beforeCancelLatch.countDown();
+
+                ForkJoinTask<T> submitted = super.submit(task);
+
+                try {
+                    afterCancelLatch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                return submitted;
+            }
+        };
+
+        VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
+
+        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
+
+        doSleep(1000);
+
+        assertFalse(idleVerifyFut.isDone());
+
+        beforeCancelLatch.await();
+
+        System.out.println("reached execute cancel");
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        afterCancelLatch.countDown();
+
+        for (int i = 0; i < gridsCnt; i++) {
+            int finalI = i;
+
+            waitForCondition(() -> {
+                for (ComputeTaskView taskView : grid(finalI).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
+                        return false;
+                }
+
+                return true;
+            }, 1000);
+
+            waitForCondition(() -> {
+                for (ComputeJobView jobView : grid(finalI).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
+                        return false;
+                }
+
+                return true;
+            }, 1000);
+        }
+
+        idleVerifyFut.get(getTestTimeout());
+
+        assertTrue(idleVerifyCancelListener.check());
+
+        assertTrue(verifyBackupCancelListener.check());
     }
 
     /**

@@ -1133,8 +1133,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         int cnt = 0;
 
         for (GridJobWorker jobWorker : activeJobs.values()) {
-            assert !jobWorker.isInternal();
-
             cnt++;
 
             if (!jobWorker.held()) {
@@ -1364,10 +1362,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             // This is an internal job and can be executed inside busy lock
                             // since job is expected to be short.
                             // This is essential for proper stop without races.
-                            job.run();
+                            if (onBeforeActivateJob(job)) {
+                                job.run();
 
-                            // No execution outside lock.
-                            job = null;
+                                removeFromActive(job);
+
+                                // No execution outside lock.
+                                job = null;
+                            }
                         }
                         else if (jobAlwaysActivate) {
                             if (onBeforeActivateJob(job)) {
