@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -248,12 +249,28 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         private GroupKey.Builder grpKeyBld;
 
         /** */
+        private final BiFunction<GroupKey, List<AccumulatorWrapper<Row>>, List<AccumulatorWrapper<Row>>> getOrCreateGroup;
+
+        /** */
         private Grouping(byte grpId, ImmutableBitSet grpFields) {
             this.grpId = grpId;
             this.grpFields = grpFields;
 
             grpKeyBld = GroupKey.builder(grpFields.cardinality());
             handler = context().rowHandler();
+
+            getOrCreateGroup = (k, v) -> {
+                if (v == null) {
+                    grpKeyBld = GroupKey.builder(grpFields.cardinality());
+
+                    return create();
+                }
+                else {
+                    grpKeyBld.clear();
+
+                    return v;
+                }
+            };
 
             init();
         }
@@ -300,20 +317,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
             for (Integer field : grpFields)
                 grpKeyBld.add(handler.get(field, row));
 
-            GroupKey grpKey = grpKeyBld.build();
-
-            List<AccumulatorWrapper<Row>> wrappers = groups.compute(grpKey, (k, v) -> {
-                if (v == null) {
-                    grpKeyBld = GroupKey.builder(grpFields.cardinality());
-
-                    return create();
-                }
-                else {
-                    grpKeyBld.clear();
-
-                    return v;
-                }
-            });
+            List<AccumulatorWrapper<Row>> wrappers = groups.compute(grpKeyBld.build(), getOrCreateGroup);
 
             for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
