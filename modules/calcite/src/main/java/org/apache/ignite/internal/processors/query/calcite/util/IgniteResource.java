@@ -80,4 +80,8 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
+
+    /** */
+    @Resources.BaseMessage("Wrong number of query parameters. Expected: {0}, provided: {1}.")
+    Resources.ExInst<SqlValidatorException> unexpectedParameter(int expected, int provided);
 }
