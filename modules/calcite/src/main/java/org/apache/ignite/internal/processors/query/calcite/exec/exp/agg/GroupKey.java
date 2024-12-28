@@ -91,5 +91,12 @@ public class GroupKey {
 
             return new GroupKey(fields);
         }
+
+        /** */
+        public void clear() {
+            Arrays.fill(fields, null);
+
+            idx = 0;
+        }
     }
 }
