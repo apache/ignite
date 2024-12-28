@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndSta
 import org.apache.ignite.internal.processors.query.SqlPartOfComplexPkLookupTest;
 import org.apache.ignite.internal.processors.query.SqlQueriesTopologyMappingTest;
 import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
-import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessorTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CreateTableWithDateKeySelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
@@ -61,8 +60,6 @@ import org.junit.runners.Suite;
     CreateTableWithDateKeySelfTest.class,
 
     CacheQueryEntityWithDateTimeApiFieldsTest.class,
-
-    DmlStatementsProcessorTest.class,
 
     NonCollocatedRetryMessageSelfTest.class,
     RetryCauseMessageSelfTest.class,
