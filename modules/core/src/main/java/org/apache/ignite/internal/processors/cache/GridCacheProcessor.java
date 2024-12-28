@@ -3548,11 +3548,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             };
 
         try {
-            if (ccfg != null && ccfg.isEncryptionEnabled()) {
-                ctx.encryption().checkEncryptedCacheSupported();
-
+            if (ccfg != null && ccfg.isEncryptionEnabled())
                 return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
-            }
 
             return startCacheClsr.apply(Collections.EMPTY_SET, null);
         }
