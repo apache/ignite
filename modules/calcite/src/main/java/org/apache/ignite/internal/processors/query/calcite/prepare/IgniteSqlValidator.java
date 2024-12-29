@@ -577,7 +577,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam && unknownType.equals(inferredType) && deriveDynamicParameterType((SqlDynamicParam)node) != null)
+        if (node instanceof SqlDynamicParam && unknownType.equals(inferredType)
+            && deriveDynamicParameterType((SqlDynamicParam)node) != null)
             return;
 
         if (node instanceof SqlCall) {
