@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  *
@@ -32,9 +31,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 public class CachePartitionPartialCountersMap implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final IgniteProductVersion PARTIAL_COUNTERS_MAP_SINCE = IgniteProductVersion.fromString("2.1.4");
 
     /** */
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
