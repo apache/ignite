@@ -177,9 +177,9 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
         checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemove(5));
 
-        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, cache -> putAllConflict(Collections.singletonMap(6, 1)));
+        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, putAllConflict(Collections.singletonMap(6, 1)));
 
-        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, cache -> removeAllConflict(Collections.singleton(6)));
+        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, removeAllConflict(Collections.singleton(6)));
     }
 
     /** Checks cache operation. */
@@ -210,7 +210,6 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         assertEquals(1, ops.get());
     }
 
-
     /**
      * Cache {@link TcpClientCache#putAllConflict} operation perfomed
      * @param map {@link Map} with entries for cache put all.
@@ -221,7 +220,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
         GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
 
-        map.forEach((key, value) -> drMap.put(key, new T3<>(value, confl, null)));
+        map.forEach((key, value) -> drMap.put(key, new T3<>(value, confl, CU.EXPIRE_TIME_ETERNAL)));
 
         return cache -> ((TcpClientCache<Object, Object>)cache).putAllConflict(drMap);
     }
