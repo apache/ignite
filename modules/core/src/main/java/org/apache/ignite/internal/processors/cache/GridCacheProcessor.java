@@ -3136,9 +3136,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if (!cachesInfo.isMergeConfigSupports(node))
-            return null;
-
         String validationRes = cachesInfo.validateJoiningNodeData(discoData, node.isClient());
 
         if (validationRes != null)
