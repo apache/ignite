@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
@@ -82,9 +81,6 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 @GridInternal
 public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
-    /** First version of Ignite that is capable of executing Idle Verify V2. */
-    public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
-
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
