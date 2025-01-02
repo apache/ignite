@@ -82,19 +82,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    void createCaches() {
-        ignite(0).getOrCreateCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class,
-            String.class));
-        ignite(0).getOrCreateCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
-        ignite(0).getOrCreateCache(cacheConfig("K2P", true, false, Key.class, Person.class));
-        ignite(0).getOrCreateCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
-        ignite(0).getOrCreateCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
-        ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
-    }
-
-    /**
-     *
-     */
     final void createBinaryCaches() {
         ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
 

@@ -1521,20 +1521,16 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** */
     private void initializeMarshaller() {
-        Marshaller marsh = ctx.config().getMarshaller();
+        if (!BinaryMarshaller.available()) {
+            String errMsg = "Standard BinaryMarshaller can't be used on this JVM. " +
+                "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.";
 
-        if (marsh == null) {
-            if (!BinaryMarshaller.available()) {
-                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+            U.warn(log, errMsg);
 
-                marsh = ctx.marshallerContext().jdkMarshaller();
-            }
-            else
-                marsh = new BinaryMarshaller();
-
-            ctx.config().setMarshaller(marsh);
+            throw new IgniteException(errMsg);
         }
+
+        Marshaller marsh = ctx.config().getMarshaller();
 
         marsh.setContext(ctx.marshallerContext());
 
@@ -1558,9 +1554,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
-
-        if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
-            perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
     }
 
     /**

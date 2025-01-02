@@ -20,13 +20,20 @@ package org.apache.ignite.internal.marshaller.optimized;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
@@ -34,11 +41,56 @@ import org.junit.Test;
  * Optimized marshaller self test.
  */
 @GridCommonTest(group = "Marshaller")
-public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
+public class OptimizedMarshallerSelfTest extends GridCommonAbstractTest implements Serializable {
+    private static Marshaller marsh;
+
     /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new OptimizedMarshaller(false);
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        marsh = marshaller();
     }
+
+    /** */
+    protected Marshaller marshaller() {
+        Marshaller marsh = new OptimizedMarshaller(false);
+
+        marsh.setContext(new MarshallerContextTestImpl());
+
+        return marsh;
+    }
+
+    /** Closure job. */
+    protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
+        @Override public void apply(String s) {
+            // No-op.
+        }
+    };
+
+    /** Closure job. */
+    protected IgniteClosure<String, String> c2 = new IgniteClosure<String, String>() {
+        @Override public String apply(String s) {
+            return s;
+        }
+    };
+
+    /** Argument producer. */
+    protected IgniteOutClosure<String> c3 = new IgniteOutClosure<String>() {
+        @Nullable @Override public String apply() {
+            return null;
+        }
+    };
+
+    /** Reducer. */
+    protected IgniteReducer<String, Object> c4 = new IgniteReducer<String, Object>() {
+        @Override public boolean collect(String e) {
+            return true;
+        }
+
+        @Nullable @Override public Object reduce() {
+            return null;
+        }
+    };
 
     /**
      * @throws Exception If failed.
@@ -47,7 +99,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     public void testTestMarshalling() throws Exception {
         final String msg = "PASSED";
 
-        byte[] buf = marshal(new IgniteRunnable() {
+        byte[] buf = marsh.marshal(new IgniteRunnable() {
             @Override public void run() {
                 c1.apply(msg);
                 c2.apply(msg);
@@ -59,7 +111,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             }
         });
 
-        Runnable r = unmarshal(buf);
+        Runnable r = marsh.unmarshal(buf, null);
 
         assertNotNull(r);
 
@@ -77,7 +129,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
 
         sl.link(sl);
 
-        SelfLink sl1 = unmarshal(marshal(sl));
+        SelfLink sl1 = marsh.unmarshal(marsh.marshal(sl), null);
 
         assert sl1.link() == sl1;
     }
@@ -95,7 +147,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
 
                     arr[0] = (byte)200;
 
-                    unmarshal(arr);
+                    marsh.unmarshal(arr, null);
 
                     return null;
                 }
@@ -112,10 +164,91 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     public void testNested() throws Exception {
         NestedTestObject obj = new NestedTestObject("String", 100);
 
-        NestedTestObject newObj = unmarshal(marshal(obj));
+        NestedTestObject newObj = marsh.unmarshal(marsh.marshal(obj), null);
 
         assertEquals("String", newObj.str);
         assertEquals(100, newObj.val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOptimizedMarshaller() throws Exception {
+        marsh.unmarshal(marsh.marshal(new TestClass()), null);
+
+        TestClass2 val = marsh.unmarshal(marsh.marshal(new TestClass2()), null);
+
+        assertNull(val.field3);
+    }
+
+    /**
+     * Test class with serialPersistentFields fields.
+     */
+    private static class TestClass implements Serializable {
+        private static final long serialVersionUID = 0L;
+
+        /** For serialization compatibility. */
+        private static final ObjectStreamField[] serialPersistentFields = {
+            new ObjectStreamField("field1", Integer.TYPE),
+            new ObjectStreamField("field2", Integer.TYPE)
+        };
+
+        /**
+         * @param s Object output stream.
+         */
+        private void writeObject(ObjectOutputStream s) throws IOException {
+            s.putFields().put("field1", 1);
+            s.putFields().put("field2", 2);
+            s.writeFields();
+
+            s.writeObject(null);
+        }
+
+        /**
+         * @param s Object input stream.
+         */
+        private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+            s.defaultReadObject();
+
+            s.readObject();
+        }
+    }
+
+    /**
+     * Test class with serialPersistentFields fields.
+     */
+    private static class TestClass2 implements Serializable {
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private Integer field3 = 1;
+
+        /** For serialization compatibility. */
+        private static final ObjectStreamField[] serialPersistentFields = {
+            new ObjectStreamField("field1", Integer.TYPE),
+            new ObjectStreamField("field2", Integer.TYPE)
+        };
+
+        /**
+         * @param s Object output stream.
+         */
+        private void writeObject(ObjectOutputStream s) throws IOException {
+            s.putFields().put("field1", 1);
+            s.putFields().put("field2", 2);
+            s.writeFields();
+
+            s.writeObject(null);
+        }
+
+        /**
+         * @param s Object input stream.
+         */
+        private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+            s.defaultReadObject();
+
+            s.readObject();
+        }
     }
 
     /**
@@ -140,7 +273,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
         /** */
         private void writeObject(ObjectOutputStream out) throws IOException {
             try {
-                byte[] arr = marshal(str);
+                byte[] arr = marsh.marshal(str);
 
                 out.writeInt(arr.length);
                 out.write(arr);
@@ -159,7 +292,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
 
                 in.read(arr);
 
-                str = unmarshal(arr);
+                str = marsh.unmarshal(arr, null);
 
                 val = in.readInt();
             }
