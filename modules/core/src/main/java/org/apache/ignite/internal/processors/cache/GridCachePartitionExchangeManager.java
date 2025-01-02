@@ -147,7 +147,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.thread.IgniteThread;
@@ -216,9 +215,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private final int DIAGNOSTIC_WARN_LIMIT =
         IgniteSystemProperties.getInteger(IGNITE_DIAGNOSTIC_WARN_LIMIT, DFLT_DIAGNOSTIC_WARN_LIMIT);
-
-    /** */
-    private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
 
     /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -935,17 +931,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         return NONE;
-    }
-
-    /**
-     * @param ver Node version.
-     * @return Supported exchange protocol version.
-     */
-    public static int exchangeProtocolVersion(IgniteProductVersion ver) {
-        if (ver.compareToIgnoreTimestamp(EXCHANGE_PROTOCOL_2_SINCE) >= 0)
-            return 2;
-
-        return 1;
     }
 
     /**
@@ -2734,7 +2719,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     ClusterNode node = evt.eventNode();
 
-                    if (!curFut.context().supportsMergeExchanges(node)) {
+                    if (!curFut.context().supportsMergeExchanges()) {
                         if (log.isInfoEnabled())
                             log.info("Stop merge, node does not support merge: " + node);
 
