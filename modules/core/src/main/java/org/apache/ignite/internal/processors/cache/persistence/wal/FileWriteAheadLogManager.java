@@ -552,6 +552,42 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         return size;
                     }
                 });
+
+                final File walCdcDir0 = walCdcDir;
+
+                if (metrics != null) {
+                    metrics.setCdcWalTotalSizeProvider(new CO<Long>() {
+                        /** {@inheritDoc} */
+                        @Override public Long apply() {
+                            long size = 0;
+
+                            if (isArchiverEnabled()) {
+                                File[] cdcFiles = walCdcDir0.listFiles();
+
+                                if (cdcFiles == null)
+                                    return size;
+
+                                for (File f : cdcFiles)
+                                    size += f.length();
+                            }
+
+                            return size;
+                        }
+                    });
+
+                    metrics.setCdcWalArchiveSegmentsProvider(new CO<Integer>() {
+                        /** {@inheritDoc} */
+                        @Override public Integer apply() {
+                            if (isArchiverEnabled()) {
+                                File[] cdcFiles = walCdcDir0.listFiles();
+
+                                return cdcFiles == null ? 0 : cdcFiles.length;
+                            }
+
+                            return 0;
+                        }
+                    });
+                }
             }
 
             segmentAware = new SegmentAware(

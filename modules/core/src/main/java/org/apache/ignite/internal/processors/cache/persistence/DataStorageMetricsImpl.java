@@ -111,6 +111,12 @@ public class DataStorageMetricsImpl {
     private volatile IgniteOutClosure<Long> walSizeProvider;
 
     /** */
+    private volatile IgniteOutClosure<Integer> cdcWalArchiveSegmentsProvider;
+
+    /** */
+    private volatile IgniteOutClosure<Long> cdcWalTotalSizeProvider;
+
+    /** */
     private final AtomicLongMetric lastWalSegmentRollOverTime;
 
     /** */
@@ -271,9 +277,17 @@ public class DataStorageMetricsImpl {
             this::walArchiveSegments,
             "Current number of WAL segments in the WAL archive.");
 
+        mreg.register("CdcWalArchiveSegments",
+            this::cdcWalArchiveSegments,
+            "Current number of WAL segments to be processed by CDC clients in the CDC WAL archive.");
+
         mreg.register("WalTotalSize",
             this::walTotalSize,
             "Total size in bytes for storage wal files.");
+
+        mreg.register("CdcWalTotalSize",
+            this::cdcWalTotalSize,
+            "Total size in bytes for storage wal files in the CDC WAL archive.");
 
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
 
@@ -362,6 +376,16 @@ public class DataStorageMetricsImpl {
         return walMgr == null ? 0 : walMgr.walArchiveSegments();
     }
 
+    /** @return Current number of WAL segments in the WAL archive. */
+    private int cdcWalArchiveSegments() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteOutClosure<Integer> cdcWalArchiveSegments = this.cdcWalArchiveSegmentsProvider;
+
+        return cdcWalArchiveSegments != null ? cdcWalArchiveSegments.apply() : 0;
+    }
+
     /**
      * @return The average WAL fsync duration in microseconds over the last time interval.
      */
@@ -385,6 +409,16 @@ public class DataStorageMetricsImpl {
         IgniteOutClosure<Long> walSize = this.walSizeProvider;
 
         return walSize != null ? walSize.apply() : 0;
+    }
+
+    /** @return Total size in bytes for storage wal files in the CDC WAL archive. */
+    private long cdcWalTotalSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteOutClosure<Long> cdcWalTotalSize = this.cdcWalTotalSizeProvider;
+
+        return cdcWalTotalSize != null ? cdcWalTotalSize.apply() : 0;
     }
 
     /**
@@ -619,6 +653,20 @@ public class DataStorageMetricsImpl {
      */
     public void setWalSizeProvider(IgniteOutClosure<Long> walSizeProvider) {
         this.walSizeProvider = walSizeProvider;
+    }
+
+    /**
+     * @param cdcWalArchiveSegmentsProvider Current number of WAL segments provider for CDC WAL archive.
+     */
+    public void setCdcWalArchiveSegmentsProvider(IgniteOutClosure<Integer> cdcWalArchiveSegmentsProvider) {
+        this.cdcWalArchiveSegmentsProvider = cdcWalArchiveSegmentsProvider;
+    }
+
+    /**
+     * @param cdcWalTotalSizeProvider Wal size provider for CDC WAL archive.
+     */
+    public void setCdcWalTotalSizeProvider(IgniteOutClosure<Long> cdcWalTotalSizeProvider) {
+        this.cdcWalTotalSizeProvider = cdcWalTotalSizeProvider;
     }
 
     /**

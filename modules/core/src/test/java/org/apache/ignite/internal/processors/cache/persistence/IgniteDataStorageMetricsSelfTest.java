@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -125,7 +126,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
-                .setName(PERSISTENCE_REGION_1))
+                .setName(PERSISTENCE_REGION_1)
+                .setCdcEnabled(true))
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setMaxSize(maxRegionSize)
@@ -538,6 +540,16 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             totalSize += walMgr.totalSize(walFiles(router.getWalArchiveDir()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
+
+        if (router.hasArchive()) {
+            long totalCdcArchiveSize = walMgr.totalSize(walFiles(walMgr.walCdcDirectory()));
+
+            assertEquals(totalCdcArchiveSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("CdcWalTotalSize").value());
+
+            long cdcWalArchiveSegments = walFiles(walMgr.walCdcDirectory()).length;
+
+            assertEquals(cdcWalArchiveSegments, dsMetricRegistry(igniteEx).<IntGauge>findMetric("CdcWalArchiveSegments").value());
+        }
     }
 
     /**
