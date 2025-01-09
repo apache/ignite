@@ -76,13 +76,13 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
  * <br>
- * Result: {@link IdleVerifyResultV2} with conflict partitions.
+ * Result: {@link IdleVerifyResult} with conflict partitions.
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
  */
 @GridInternal
-public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
+public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResult> {
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
@@ -111,13 +111,13 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
         for (ClusterNode node : subgrid)
-            jobs.put(new VerifyBackupPartitionsJobV2(arg), node);
+            jobs.put(new VerifyBackupPartitionsJob(arg), node);
 
         return jobs;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override public IdleVerifyResult reduce(List<ComputeJobResult> results) throws IgniteException {
         return reduce0(results);
     }
 
@@ -134,7 +134,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 superRes = ComputeJobResultPolicy.WAIT;
 
                 if (log != null) {
-                    log.warning("VerifyBackupPartitionsJobV2 failed on node " +
+                    log.warning("VerifyBackupPartitionsJob failed on node " +
                         "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
                 }
             }
@@ -150,7 +150,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      * @param results Received results of broadcast remote requests.
      * @return Idle verify job result constructed from results of remote executions.
      */
-    public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
+    public static IdleVerifyResult reduce0(List<ComputeJobResult> results) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> ex = new HashMap<>();
 
@@ -171,15 +171,15 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
 
         if (results.size() != ex.size())
-            return new IdleVerifyResultV2(clusterHashes, ex);
+            return new IdleVerifyResult(clusterHashes, ex);
         else
-            return new IdleVerifyResultV2(ex);
+            return new IdleVerifyResult(ex);
     }
 
     /**
      * Job that collects update counters and hashes of local partitions.
      */
-    private static class VerifyBackupPartitionsJobV2 extends ComputeJobAdapter {
+    private static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -200,7 +200,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         /**
          * @param arg Argument.
          */
-        public VerifyBackupPartitionsJobV2(CacheIdleVerifyCommandArg arg) {
+        public VerifyBackupPartitionsJob(CacheIdleVerifyCommandArg arg) {
             this.arg = arg;
         }
 
