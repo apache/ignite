@@ -228,6 +228,8 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** */
     public ColocationGroup finalizeMapping() {
+        System.err.println("TEST | finalizeMapping, assign. cnt: " + (assignments==null ? 0 : assignments.size()));
+
         if (assignments == null)
             return this;
 
@@ -240,6 +242,8 @@ public class ColocationGroup implements MarshalableMessage {
                 nodes.add(first);
             assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
         }
+
+        System.err.println("TEST | finalizeMapping, assign. cnt: " + (assignments==null ? 0 : assignments.size()));
 
         return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments, primaryAssignment);
     }

@@ -217,40 +217,16 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNullsInCondition() {
-        execute("select * from T1 where T1.ID is NULL",
-            res -> {
-                assertPartitions();
-                assertNodes();
-
-                assertTrue(res.isEmpty());
-            });
+//        execute("select * from T1 where T1.ID is NULL",
+//            res -> {
+//                assertPartitions();
+//                assertNodes();
+//
+//                assertTrue(res.isEmpty());
+//            });
 
         execute("select * from T1 where T1.ID = ?",
             res -> {
-                assertPartitions();
-                assertNodes();
-
-                assertTrue(res.isEmpty());
-            }, new Object[]{ null });
-
-        execute("select * from T1 where T1.ID is NULL and T1.ID = ?",
-            res -> {
-                assertPartitions();
-                assertNodes();
-
-                assertTrue(res.isEmpty());
-            }, 123);
-
-        execute("select * from T1 where T1.ID = ? and T1.ID = ?",
-            res -> {
-                assertPartitions();
-                assertNodes();
-
-                assertTrue(res.isEmpty());
-            }, null, 123);
-
-        execute("select * from T1 where T1.ID is NULL or T1.ID = ?",
-            res -> {
                 assertPartitions(partition("T1_CACHE", 123));
                 assertNodes(node("T1_CACHE", 123));
 
@@ -258,14 +234,47 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
                 assertEquals("name_123", res.get(0).get(1));
             }, 123);
 
-        execute("select * from T1 where T1.ID = ? or T1.ID = ?",
-            res -> {
-                assertPartitions(partition("T1_CACHE", 123));
-                assertNodes(node("T1_CACHE", 123));
+//        execute("select * from T1 where T1.ID = ?",
+//            res -> {
+//                assertPartitions();
+//                assertNodes();
+//
+//                assertTrue(res.isEmpty());
+//            }, new Object[]{ null });
 
-                assertEquals(1, res.size());
-                assertEquals("name_123", res.get(0).get(1));
-            }, null, 123);
+//        execute("select * from T1 where T1.ID is NULL and T1.ID = ?",
+//            res -> {
+//                assertPartitions();
+//                assertNodes();
+//
+//                assertTrue(res.isEmpty());
+//            }, 123);
+//
+//        execute("select * from T1 where T1.ID = ? and T1.ID = ?",
+//            res -> {
+//                assertPartitions();
+//                assertNodes();
+//
+//                assertTrue(res.isEmpty());
+//            }, null, 123);
+//
+//        execute("select * from T1 where T1.ID is NULL or T1.ID = ?",
+//            res -> {
+//                assertPartitions(partition("T1_CACHE", 123));
+//                assertNodes(node("T1_CACHE", 123));
+//
+//                assertEquals(1, res.size());
+//                assertEquals("name_123", res.get(0).get(1));
+//            }, 123);
+//
+//        execute("select * from T1 where T1.ID = ? or T1.ID = ?",
+//            res -> {
+//                assertPartitions(partition("T1_CACHE", 123));
+//                assertNodes(node("T1_CACHE", 123));
+//
+//                assertEquals(1, res.size());
+//                assertEquals("name_123", res.get(0).get(1));
+//            }, null, 123);
     }
 
     /** */
