@@ -647,7 +647,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     ComputeTaskView t = tasks.iterator().next();
 
-                    assertEquals("Execting to see " + (internal ? "internal" : "user") + " task", internal, t.internal());
+                    assertEquals("Expecting to see " + (internal ? "internal" : "user") + " task", internal, t.internal());
                     assertNull(t.affinityCacheName());
                     assertEquals(-1, t.affinityPartitionId());
                     assertTrue(t.taskClassName().startsWith(getClass().getName()));
@@ -674,12 +674,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt; i++) {
             SystemView<ComputeJobView> jobs = grid(i).context().systemView().view(JOBS_VIEW);
 
-            assertTrue("Execting to see " + (internal ? "internal" : "user") + " job", jobs.size() > 0);
+            assertTrue("Expecting to see " + (internal ? "internal" : "user") + " job", jobs.size() > 0);
 
             ComputeJobView job = jobs.iterator().next();
 
             assertEquals(sesId, job.sessionId());
-            assertEquals("Execting to see " + (internal ? "internal" : "user") + " job", internal, job.isInternal());
+            assertEquals("Expecting to see " + (internal ? "internal" : "user") + " job", internal, job.isInternal());
         }
 
         releaseJobLatch.countDown();
