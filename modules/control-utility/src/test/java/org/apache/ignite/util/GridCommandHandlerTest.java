@@ -802,7 +802,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (ctx.progress().reason().equals("VerifyBackupPartitions"))
                     try {
                         afterCancelLatch.await();
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         throw new IgniteInterruptedCheckedException(e);
                     }
             }
@@ -815,13 +816,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }
         });
 
-        LogListener idleVerifyCancelListener = LogListener.matches("Idle verify was cancelled.").build();
-
-        LogListener verifyBackupCancelListener = LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build();
-
-        listeningLog.registerListener(idleVerifyCancelListener);
-
-        listeningLog.registerListener(verifyBackupCancelListener);
+        List<LogListener> listeners = registerIdleVerifyCancelListeners();
 
         IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
@@ -836,33 +831,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         afterCancelLatch.countDown();
 
-        for (int i = 0; i < gridsCnt; i++) {
-            int finalI = i;
-
-            waitForCondition(() -> {
-                for (ComputeTaskView taskView : grid(finalI).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
-                        return false;
-                }
-
-                return true;
-            }, 1000);
-
-            waitForCondition(() -> {
-                for (ComputeJobView jobView : grid(finalI).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
-                        return false;
-                }
-
-                return true;
-            }, 1000);
-        }
+        checkSystemViewsNoIdleVerify(gridsCnt);
 
         idleVerifyFut.get(getTestTimeout());
 
-        assertTrue(idleVerifyCancelListener.check());
-
-        assertTrue(verifyBackupCancelListener.check());
+        for (LogListener listener : listeners)
+            assertTrue(listener.check());
     }
 
     /**
@@ -876,13 +850,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.cluster().state(ACTIVE);
 
-        LogListener idleVerifyCancelListener = LogListener.matches("Idle verify was cancelled.").build();
-
-        LogListener verifyBackupCancelListener = LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build();
-
-        listeningLog.registerListener(idleVerifyCancelListener);
-
-        listeningLog.registerListener(verifyBackupCancelListener);
+        List<LogListener> listeners = registerIdleVerifyCancelListeners();
 
         IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
@@ -900,7 +868,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                 try {
                     afterCancelLatch.await();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
 
@@ -922,6 +891,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         afterCancelLatch.countDown();
 
+        checkSystemViewsNoIdleVerify(gridsCnt);
+
+        idleVerifyFut.get(getTestTimeout());
+
+        for (LogListener listener : listeners)
+            assertTrue(listener.check());
+    }
+
+    /**
+     * @param gridsCnt Grids count.
+     */
+    private void checkSystemViewsNoIdleVerify(int gridsCnt) throws IgniteInterruptedCheckedException {
         for (int i = 0; i < gridsCnt; i++) {
             int finalI = i;
 
@@ -943,12 +924,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 return true;
             }, 1000);
         }
+    }
 
-        idleVerifyFut.get(getTestTimeout());
+    /**
+     *
+     */
+    private List<LogListener> registerIdleVerifyCancelListeners() {
+        List<LogListener> listeners = new ArrayList<>();
 
-        assertTrue(idleVerifyCancelListener.check());
+        listeners.add(LogListener.matches("Idle verify was cancelled.").build());
 
-        assertTrue(verifyBackupCancelListener.check());
+        listeners.add(LogListener.matches("Cancel request sent to VerifyBackupPartitionsJobV2.").build());
+
+        for (LogListener listener : listeners)
+            listeningLog.registerListener(listener);
+
+        return listeners;
     }
 
     /**

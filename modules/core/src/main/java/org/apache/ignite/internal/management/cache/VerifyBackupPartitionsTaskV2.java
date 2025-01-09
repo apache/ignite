@@ -91,6 +91,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
 
+    /** */
     public static Supplier<ForkJoinPool> poolSupplier = ForkJoinPool::commonPool;
 
     /** Injected logger. */
@@ -211,14 +212,14 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             }
             catch (IgniteInterruptedCheckedException e) {
                 if (isCancelled())
-                    throw new IgniteException("Task was cancelled", e);
+                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.", e);
 
                 throw new IgniteException(
-                    "Failed to wait for checkpoint before executing verify backup partitions task", e);
+                    "Failed to wait for checkpoint before executing " + getClass().getSimpleName() + ".", e);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(
-                    "Failed to wait for checkpoint before executing verify backup partitions task", e);
+                    "Failed to wait for checkpoint before executing " + getClass().getSimpleName() + ".", e);
             }
 
             Set<Integer> grpIds = getGroupIds();
@@ -246,7 +247,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                     if (isCancelled()) {
                         cancelFuts(i, partHashCalcFuts);
 
-                        throw new IgniteException(this.getClass().getSimpleName() + " was cancelled");
+                        throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
                     }
 
                     Map<PartitionKeyV2, PartitionHashRecordV2> partHash = fut.get(100, TimeUnit.MILLISECONDS);
@@ -300,7 +301,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
         /** {@inheritDoc} */
         @Override public void cancel() {
-            log.warning("Cancel request sent to VerifyBackupPartitionsJobV2.");
+            log.warning("Cancel request sent to " + getClass().getSimpleName() + ".");
 
             super.cancel();
         }

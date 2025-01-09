@@ -29,11 +29,9 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
-import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 
 /**
  * Task that cancels idle_verify command.

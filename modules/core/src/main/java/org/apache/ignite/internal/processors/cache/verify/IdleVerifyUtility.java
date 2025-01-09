@@ -299,7 +299,7 @@ public class IdleVerifyUtility {
 
         while (it.hasNextX()) {
             if (Thread.currentThread().isInterrupted())
-                throw new IgniteInterruptedCheckedException("Interrupted due to job cancel");
+                throw new IgniteInterruptedCheckedException("Interrupted due to job cancel.");
 
             CacheDataRow row = it.nextX();
 
