@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -892,9 +893,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         CountDownLatch afterCancelLatch = new CountDownLatch(1);
 
         ForkJoinPool forkJoinPool = new ForkJoinPool() {
-            @Override public <T> ForkJoinTask<T> submit(ForkJoinTask<T> task) {
-                System.out.println("GridCommandHandlerTest.submit");
-
+            @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
                 beforeCancelLatch.countDown();
 
                 ForkJoinTask<T> submitted = super.submit(task);
@@ -918,8 +917,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(idleVerifyFut.isDone());
 
         beforeCancelLatch.await();
-
-        System.out.println("reached execute cancel");
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
