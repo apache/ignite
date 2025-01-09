@@ -1459,7 +1459,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         if (job != null)
-            runSync(job);
+            job.run();
     }
 
     /**

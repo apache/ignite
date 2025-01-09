@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
@@ -42,12 +45,20 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
@@ -277,15 +288,37 @@ class KillCommandsTests {
             return 1;
         });
 
+        doCancelComputeTask(srvs, qryCanceler, fut, false);
+
+        assertTrue(fut.isCancelled());
+
+        computeLatch = new CountDownLatch(1);
+
+        ComputeTaskFuture<Integer> fut2 = cli.compute().executeAsync(new InternalTask(), null);
+
+        doCancelComputeTask(srvs, qryCanceler, fut2, true);
+
+        assertTrue(fut2.isCancelled());
+    }
+
+    private static void doCancelComputeTask(
+        List<IgniteEx> srvs,
+        Consumer<String> qryCanceler,
+        IgniteFuture<?> fut,
+        boolean internal
+    ) throws IgniteInterruptedCheckedException {
         try {
             String[] id = new String[1];
 
             boolean res = waitForCondition(() -> {
                 for (IgniteEx srv : srvs) {
-                    List<List<?>> tasks = execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+                    List<List<?>> tasks = execute(srv, "SELECT SESSION_ID, IS_INTERNAL TASK_NAME FROM SYS.JOBS");
 
-                    if (tasks.size() == 1)
+                    if (tasks.size() == 1) {
                         id[0] = (String)tasks.get(0).get(0);
+
+                        assertEquals(internal, tasks.get(0).get(1));
+                    }
                     else
                         return false;
                 }
@@ -575,6 +608,53 @@ class KillCommandsTests {
         /** {@inheritDoc} */
         @Override public void doTheJob() {
             // No-op.
+        }
+    }
+
+    /** */
+    @GridInternal
+    private static class InternalTask implements ComputeTask<Void, Integer> {
+        /** {@inheritDoc} */
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg) throws IgniteException {
+            return subgrid.stream().collect(Collectors.toMap(k -> new InternalJob(), Function.identity()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+            return ComputeJobResultPolicy.WAIT;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteException {
+            results.forEach(obj -> {
+                assertTrue(obj.isCancelled());
+                assertTrue(obj.getData());
+            });
+
+            return 1;
+        }
+
+        /** */
+        private static class InternalJob implements ComputeJob {
+            /** */
+            private boolean canceled;
+
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                canceled = true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object execute() throws IgniteException {
+                try {
+                    computeLatch.await(30_000, TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+
+                return canceled;
+            }
         }
     }
 }

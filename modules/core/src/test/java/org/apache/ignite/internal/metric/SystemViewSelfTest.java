@@ -218,7 +218,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     private static CountDownLatch jobStartedLatch;
 
     /** */
-    private static CountDownLatch releaseJobLatch;;
+    private static CountDownLatch releaseJobLatch;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -618,12 +618,13 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         doTestComputeTask(true);
     }
 
+    /** */
     private void doTestComputeTask(boolean internal) throws Exception {
         int gridCnt = 3;
+
         IgniteEx g1 = startGrids(gridCnt);
 
         try {
-
             IgniteCache<Integer, Integer> cache = g1.createCache("test-cache");
 
             cache.put(1, 1);
@@ -2665,7 +2666,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @GridInternal
-    private static class InternalTask extends UserTask {
+    public static class InternalTask extends UserTask {
         // No-op.
     }
 }
