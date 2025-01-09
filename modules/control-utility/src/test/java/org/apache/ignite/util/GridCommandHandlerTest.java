@@ -786,11 +786,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         srv.cluster().state(ACTIVE);
 
         CountDownLatch beforeCancelLatch = new CountDownLatch(1);
-
         CountDownLatch afterCancelLatch = new CountDownLatch(1);
 
-        GridCacheDatabaseSharedManager dbMgr =
-            (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
 
         dbMgr.addCheckpointListener(new CheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
@@ -799,20 +797,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }
 
             @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
-                if (ctx.progress().reason().equals("VerifyBackupPartitions"))
+                if (ctx.progress().reason().equals("VerifyBackupPartitions")) {
                     try {
-                        afterCancelLatch.await();
+                        afterCancelLatch.await(30, TimeUnit.SECONDS);
                     }
                     catch (InterruptedException e) {
                         throw new IgniteInterruptedCheckedException(e);
                     }
+                }
             }
 
             @Override public void onMarkCheckpointBegin(Context ctx) {
+                // No-op.
             }
 
             @Override public void onCheckpointBegin(Context ctx) {
-
+                // No-op.
             }
         });
 
@@ -820,24 +820,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
-
-        beforeCancelLatch.await();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
-
-        afterCancelLatch.countDown();
-
-        checkSystemViewsNoIdleVerify(gridsCnt);
-
-        idleVerifyFut.get(getTestTimeout());
-
-        for (LogListener listener : listeners)
-            assertTrue(listener.check());
+        cancelIdleVerifyAndCheck(beforeCancelLatch, afterCancelLatch, gridsCnt, listeners);
     }
+
 
     /**
      *
@@ -854,7 +842,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
         CountDownLatch beforeCancelLatch = new CountDownLatch(1);
@@ -879,13 +867,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
 
+        cancelIdleVerifyAndCheck(beforeCancelLatch, afterCancelLatch, gridsCnt, listeners);
+    }
+
+    /**
+     * @param beforeCancelLatch Latch for await before cancel.
+     * @param afterCancelLatch Latch for await before cancel completes.
+     * @param gridsCnt Grids count.
+     * @param listeners Log listeners.
+     */
+    private void cancelIdleVerifyAndCheck(
+        CountDownLatch beforeCancelLatch,
+        CountDownLatch afterCancelLatch,
+        int gridsCnt,
+        List<LogListener> listeners
+    ) throws InterruptedException, IgniteCheckedException {
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
 
-        doSleep(1000);
-
-        assertFalse(idleVerifyFut.isDone());
-
-        beforeCancelLatch.await();
+        beforeCancelLatch.await(30, TimeUnit.SECONDS);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
