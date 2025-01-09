@@ -301,6 +301,7 @@ class KillCommandsTests {
         assertTrue(fut2.isCancelled());
     }
 
+    /** */
     private static void doCancelComputeTask(
         List<IgniteEx> srvs,
         Consumer<String> qryCanceler,
