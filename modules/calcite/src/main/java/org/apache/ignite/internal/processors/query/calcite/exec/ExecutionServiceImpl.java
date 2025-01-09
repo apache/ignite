@@ -653,8 +653,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .flatMap(f -> f.mapping().nodeIds().stream())
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-        System.err.println("TEST | fragments cnt: " + fragments.size());
-
         // Start remote execution.
         for (int i = 1; i < fragments.size(); i++) {
             fragment = fragments.get(i);
@@ -663,8 +661,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 execPlan.mapping(fragment),
                 execPlan.target(fragment),
                 execPlan.remotes(fragment));
-
-            System.err.println("TEST | nodes cnt of fragment idx" + i + ": " + fragmentDesc.nodeIds().size());
 
             Throwable ex = null;
             byte[] parametersMarshalled = null;
