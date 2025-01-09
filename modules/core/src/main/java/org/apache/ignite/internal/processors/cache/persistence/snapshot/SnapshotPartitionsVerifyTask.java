@@ -29,7 +29,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,7 +78,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         }
 
         /** {@inheritDoc} */
-        @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
+        @Override public Map<PartitionKeyV2, PartitionHashRecord> execute() throws IgniteException {
             GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
 
             if (log.isInfoEnabled()) {

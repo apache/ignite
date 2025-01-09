@@ -988,7 +988,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     private void assertSort(int expectedPartsCount, String output) {
         Pattern partIdPattern = Pattern.compile(".*partId=([0-9]*)");
-        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecordV2 \\[isPrimary=true");
+        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecord \\[isPrimary=true");
 
         Matcher partIdMatcher = partIdPattern.matcher(output);
         Matcher primaryMatcher = primaryPattern.matcher(output);

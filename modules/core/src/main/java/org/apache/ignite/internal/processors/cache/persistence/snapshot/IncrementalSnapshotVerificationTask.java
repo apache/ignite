@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -69,7 +69,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
 
         List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecord>> partHashes = new HashMap<>();
         Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
 
         Map<ClusterNode, Exception> errors = new HashMap<>();
@@ -92,7 +92,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             if (!F.isEmpty(res.partiallyCommittedTxs()))
                 partiallyCommittedTxs.put(nodeRes.getNode(), res.partiallyCommittedTxs());
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry: res.partHashRes().entrySet())
+            for (Map.Entry<PartitionKeyV2, PartitionHashRecord> entry: res.partHashRes().entrySet())
                 partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
 
             if (log.isDebugEnabled())
@@ -328,10 +328,10 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         Function.identity()
                     ));
 
-                Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes = partMap.entrySet().stream()
+                Map<PartitionKeyV2, PartitionHashRecord> partHashRes = partMap.entrySet().stream()
                     .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        e -> new PartitionHashRecordV2(
+                        e -> new PartitionHashRecord(
                             e.getKey(),
                             false,
                             consId,

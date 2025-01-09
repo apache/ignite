@@ -281,7 +281,7 @@ public class IdleVerifyUtility {
      * @throws IgniteCheckedException If fails.
      * @return Map of calculated partition.
      */
-    public static @Nullable PartitionHashRecordV2 calculatePartitionHash(
+    public static @Nullable PartitionHashRecord calculatePartitionHash(
         PartitionKeyV2 partKey,
         Object updCntr,
         Object consId,
@@ -292,14 +292,14 @@ public class IdleVerifyUtility {
         @Nullable BooleanSupplier cancelled
     ) throws IgniteCheckedException {
         if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-            return new PartitionHashRecordV2(partKey,
+            return new PartitionHashRecord(partKey,
                 isPrimary,
                 consId,
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                    PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
+                    PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
             );
         }
@@ -321,13 +321,13 @@ public class IdleVerifyUtility {
             ctx.update(row.key(), row.value(), row.version());
         }
 
-        return new PartitionHashRecordV2(
+        return new PartitionHashRecord(
             partKey,
             isPrimary,
             consId,
             updCntr,
             partSize,
-            PartitionHashRecordV2.PartitionState.OWNING,
+            PartitionHashRecord.PartitionState.OWNING,
             ctx
         );
     }

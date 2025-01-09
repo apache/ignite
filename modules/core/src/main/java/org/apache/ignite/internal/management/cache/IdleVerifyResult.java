@@ -32,7 +32,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -53,19 +53,19 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts = new HashMap<>();
+    private Map<PartitionKeyV2, List<PartitionHashRecord>> cntrConflicts = new HashMap<>();
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
+    private Map<PartitionKeyV2, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions = new HashMap<>();
+    private Map<PartitionKeyV2, List<PartitionHashRecord>> movingPartitions = new HashMap<>();
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions = new HashMap<>();
+    private Map<PartitionKeyV2, List<PartitionHashRecord>> lostPartitions = new HashMap<>();
 
     /** Transaction hashes conflicts. */
     @GridToStringInclude
@@ -96,7 +96,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @param txHashConflicts Transaction hashes conflicts.
      */
     public IdleVerifyResult(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
         @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
     ) {
@@ -111,23 +111,23 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @param exceptions Exceptions on each cluster node.
      */
     public IdleVerifyResult(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes,
         Map<ClusterNode, Exception> exceptions
     ) {
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
             Integer partVerHash = null;
             Object updateCntr = null;
 
-            for (PartitionHashRecordV2 record : e.getValue()) {
-                if (record.partitionState() == PartitionHashRecordV2.PartitionState.MOVING) {
+            for (PartitionHashRecord record : e.getValue()) {
+                if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
                     movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
                         .add(record);
 
                     continue;
                 }
 
-                if (record.partitionState() == PartitionHashRecordV2.PartitionState.LOST) {
+                if (record.partitionState() == PartitionHashRecord.PartitionState.LOST) {
                     lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
                         .add(record);
 
@@ -191,28 +191,28 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     /**
      * @return Counter conflicts.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> counterConflicts() {
+    public Map<PartitionKeyV2, List<PartitionHashRecord>> counterConflicts() {
         return cntrConflicts;
     }
 
     /**
      * @return Hash conflicts.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts() {
+    public Map<PartitionKeyV2, List<PartitionHashRecord>> hashConflicts() {
         return hashConflicts;
     }
 
     /**
      * @return Moving partitions.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions() {
+    public Map<PartitionKeyV2, List<PartitionHashRecord>> movingPartitions() {
         return Collections.unmodifiableMap(movingPartitions);
     }
 
     /**
      * @return Lost partitions.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions() {
+    public Map<PartitionKeyV2, List<PartitionHashRecord>> lostPartitions() {
         return lostPartitions;
     }
 
@@ -244,7 +244,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             else
                 printConflicts(printer);
 
-            Map<PartitionKeyV2, List<PartitionHashRecordV2>> moving = movingPartitions();
+            Map<PartitionKeyV2, List<PartitionHashRecord>> moving = movingPartitions();
 
             if (!moving.isEmpty())
                 printer.accept("Possible results are not full due to rebalance still in progress." + nl());
@@ -287,13 +287,13 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      */
     private void printSkippedPartitions(
         Consumer<String> printer,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> map,
+        Map<PartitionKeyV2, List<PartitionHashRecord>> map,
         String partitionState
     ) {
         if (!F.isEmpty(map)) {
             printer.accept("Verification was skipped for " + map.size() + " " + partitionState + " partitions:\n");
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : map.entrySet()) {
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : map.entrySet()) {
                 printer.accept("Skipped partition: " + entry.getKey() + "\n");
 
                 printer.accept("Partition instances: " + entry.getValue() + "\n");
@@ -321,7 +321,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
             printer.accept("Update counter conflicts:" + nl());
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : counterConflicts().entrySet()) {
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : counterConflicts().entrySet()) {
                 printer.accept("Conflict partition: " + entry.getKey() + nl());
 
                 printer.accept("Partition instances: " + entry.getValue() + nl());
@@ -335,7 +335,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
             printer.accept("Hash conflicts:" + nl());
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : hashConflicts().entrySet()) {
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : hashConflicts().entrySet()) {
                 printer.accept("Conflict partition: " + entry.getKey() + nl());
 
                 printer.accept("Partition instances: " + entry.getValue() + nl());
