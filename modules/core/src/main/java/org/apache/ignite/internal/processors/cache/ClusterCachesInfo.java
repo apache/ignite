@@ -54,7 +54,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -115,9 +113,6 @@ public class ClusterCachesInfo {
 
     /** Representation of null for restarting caches map */
     private static final IgniteUuid NULL_OBJECT = new IgniteUuid();
-
-    /** Version since which merge of config is supports. */
-    private static final IgniteProductVersion V_MERGE_CONFIG_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** */
     private final GridKernalContext ctx;
@@ -1634,7 +1629,7 @@ public class ClusterCachesInfo {
     private void updateRegisteredCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
         Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
         //Skip merge of config if least one conflict was found.
-        if (!hasSchemaPatchConflict && isMergeConfigSupports(ctx.discovery().localNode())) {
+        if (!hasSchemaPatchConflict) {
             boolean isClusterActive = ctx.state().clusterState().active();
 
             //Merge of config for cluster only for inactive grid.
@@ -2181,8 +2176,6 @@ public class ClusterCachesInfo {
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
 
-        boolean isMergeCfgSupport = isMergeConfigSupports(null);
-
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
@@ -2200,7 +2193,7 @@ public class ClusterCachesInfo {
 
                 registerNewCache(joinData, nodeId, cacheInfo);
             }
-            else if (!active && isMergeCfgSupport) {
+            else if (!active) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
                 QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData());
@@ -2334,30 +2327,6 @@ public class ClusterCachesInfo {
                 assert old == null : old;
             }
         }
-    }
-
-    /**
-     * @return {@code true} if grid supports merge of config and {@code False} otherwise.
-     */
-    public boolean isMergeConfigSupports(ClusterNode joiningNode) {
-        DiscoCache discoCache = ctx.discovery().discoCache();
-
-        if (discoCache == null)
-            return true;
-
-        if (joiningNode != null && joiningNode.version().compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
-            return false;
-
-        Collection<ClusterNode> nodes = discoCache.allNodes();
-
-        for (ClusterNode node : nodes) {
-            IgniteProductVersion ver = node.version();
-
-            if (ver.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
-                return false;
-        }
-
-        return true;
     }
 
     /**
