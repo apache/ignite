@@ -342,6 +342,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
         syncRunningJobs = new ConcurrentHashMap<>();
+
         activeJobs = initJobsMap(jobAlwaysActivate);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
@@ -379,7 +380,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 Arrays.asList(activeJobs, syncRunningJobs, passiveJobs, cancelledJobs),
             ConcurrentMap::entrySet,
             (map, e) -> {
-                ComputeJobState state = map == activeJobs ? ComputeJobState.ACTIVE :
+                ComputeJobState state = (map == activeJobs || map == syncRunningJobs) ? ComputeJobState.ACTIVE :
                     (map == passiveJobs ? ComputeJobState.PASSIVE : ComputeJobState.CANCELED);
 
                 return new ComputeJobView(e.getKey(), e.getValue(), state);
@@ -432,6 +433,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
+        syncRunningJobs = new ConcurrentHashMap<>();
+
         activeJobs = initJobsMap(jobAlwaysActivate);
 
         activeJobsMetric.reset();
@@ -802,9 +805,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             cancelPassiveJob(job);
                     }
                 }
+
                 for (GridJobWorker job : activeJobs.values()) {
                     if (idsMatch.test(job))
                         cancelActiveJob(job, sys);
+                }
+
+                for (GridJobWorker job : syncRunningJobs.values()) {
+                    if (idsMatch.test(job))
+                        cancelJob(job, sys);
                 }
             }
             else {
@@ -817,8 +826,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 GridJobWorker activeJob = activeJobs.get(jobId);
 
-                if (activeJob != null && idsMatch.test(activeJob))
+                if (activeJob != null && idsMatch.test(activeJob)) {
                     cancelActiveJob(activeJob, sys);
+
+                    return;
+                }
+
+                activeJob = syncRunningJobs.get(jobId);
+
+                if (activeJob != null && idsMatch.test(activeJob))
+                    cancelJob(activeJob, sys);
             }
         }
         finally {
