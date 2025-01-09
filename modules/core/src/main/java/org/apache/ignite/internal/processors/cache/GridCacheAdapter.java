@@ -288,6 +288,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
+    /** {@code True} if attempted to use partition preloading on not mapped node. */
+    private volatile boolean partPreloadNotMappedWarned;
+
     /** Active. */
     private volatile boolean active;
 
@@ -1143,8 +1146,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         @Nullable ClusterNode targetNode = ctx.affinity().primaryByPartition(part, ctx.topology().readyTopologyVersion());
 
-        if (targetNode == null)
+        if (targetNode == null) {
+            if (!partPreloadNotMappedWarned) {
+                U.warn(log(), "Attempting to execute partition preloading task on not mapped node");
+
+                partPreloadNotMappedWarned = true;
+            }
+
             return new GridFinishedFuture<>();
+        }
 
         return ctx.closures().affinityRun(
             Collections.singleton(name()),
