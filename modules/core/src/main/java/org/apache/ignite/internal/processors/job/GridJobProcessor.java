@@ -181,6 +181,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> syncRunningJobs;
+
+    /** */
     private volatile ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
@@ -338,6 +341,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
+        syncRunningJobs = new ConcurrentHashMap<>();
         activeJobs = initJobsMap(jobAlwaysActivate);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
@@ -371,8 +375,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
         ctx.systemView().registerInnerCollectionView(JOBS_VIEW, JOBS_VIEW_DESC,
             new ComputeJobViewWalker(),
             passiveJobs == null ?
-                Arrays.asList(activeJobs, cancelledJobs) :
-                Arrays.asList(activeJobs, passiveJobs, cancelledJobs),
+                Arrays.asList(activeJobs, syncRunningJobs, cancelledJobs) :
+                Arrays.asList(activeJobs, syncRunningJobs, passiveJobs, cancelledJobs),
             ConcurrentMap::entrySet,
             (map, e) -> {
                 ComputeJobState state = map == activeJobs ? ComputeJobState.ACTIVE :
@@ -1364,7 +1368,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             // This is an internal job and can be executed inside busy lock
                             // since job is expected to be short.
                             // This is essential for proper stop without races.
-                            job.run();
+                            runSync(job);
 
                             // No execution outside lock.
                             job = null;
@@ -1438,7 +1442,24 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         if (job != null)
+            runSync(job);
+    }
+
+    /**
+     * Adds job to {@link #syncRunningJobs} while run to provide info in system view.
+     * @param job Job to add in system view and run synchronously.
+     */
+    private void runSync(GridJobWorker job) {
+        IgniteUuid jobId = job.getJobId();
+
+        syncRunningJobs.put(jobId, job);
+
+        try {
             job.run();
+        }
+        finally {
+            syncRunningJobs.remove(jobId);
+        }
     }
 
     /**
