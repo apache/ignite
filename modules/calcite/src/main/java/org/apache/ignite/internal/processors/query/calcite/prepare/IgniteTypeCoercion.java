@@ -72,8 +72,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         RelDataType leftType = validator.deriveType(scope, call.operand(0));
         RelDataType rightType = validator.deriveType(scope, call.operand(1));
 
-        // Do not create additional CAST node for NULL'ed right value. Any type may get NULL value if is nullable.
-        if (leftType.equals(rightType) || (rightType.getFamily() == SqlTypeFamily.NULL && leftType.isNullable()))
+        if (leftType.equals(rightType))
             return super.binaryComparisonCoercion(binding);
         else {
             // Find the least restrictive type among the operand types
