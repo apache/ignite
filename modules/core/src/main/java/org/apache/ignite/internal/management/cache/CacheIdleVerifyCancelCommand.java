@@ -25,6 +25,8 @@ import org.apache.ignite.internal.management.api.NoArg;
 
 /**
  * Cancels idle_verify command.
+ *
+ * @see CacheIdleVerifyCommand
  */
 public class CacheIdleVerifyCancelCommand implements ComputeCommand<NoArg, Void> {
     /** {@inheritDoc} */

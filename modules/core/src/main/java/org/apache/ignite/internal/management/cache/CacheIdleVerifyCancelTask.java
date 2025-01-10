@@ -34,7 +34,10 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 
 /**
- * Task that cancels idle_verify command.
+ * Task that cancels jobs started by idle_verify command.
+ *
+ * @see IdleVerifyTaskV2
+ * @see VerifyBackupPartitionsTaskV2
  */
 public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
     /** */
@@ -51,7 +54,10 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
     }
 
     /**
-     * Job that cancels idle_verify command.
+     * Job that cancels jobs started by idle_verify command.
+     *
+     * @see IdleVerifyTaskV2
+     * @see VerifyBackupPartitionsTaskV2
      */
     private class CacheIdleVerifyCancelJob extends VisorJob<NoArg, Void> {
         /** */

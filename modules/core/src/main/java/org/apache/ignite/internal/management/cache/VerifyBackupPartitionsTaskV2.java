@@ -91,7 +91,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
 
-    /** */
+    /** Shared for tests. */
     public static Supplier<ForkJoinPool> poolSupplier = ForkJoinPool::commonPool;
 
     /** Injected logger. */
@@ -212,8 +212,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(
-                    "Failed to wait for checkpoint before executing " + getClass().getSimpleName() + ".", e);
+                    "Failed to wait for checkpoint before executing verify backup partitions task", e);
             }
+
             if (isCancelled())
                 throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
 
@@ -287,7 +288,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
 
         /**
+         * Cancels futures from given index.
          *
+         * @param i Index to start with.
+         * @param partHashCalcFuts Partitions hash calculation futures to cancel.
          */
         private static void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
             for (int j = i + 1; j < partHashCalcFuts.size(); j++)
@@ -494,6 +498,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
 
         /**
+         * @param pool Pool for task submitting.
          * @param gctx Group context.
          * @param part Local partition.
          */

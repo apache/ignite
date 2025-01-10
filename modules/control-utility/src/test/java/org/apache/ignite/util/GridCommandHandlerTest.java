@@ -829,6 +829,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         });
     }
 
+    /**
+     * Wrapper for tests for idle verify cancel command.
+     *
+     * @param prepare Prepares the test using beforeCancelLatch and afterCancelLatch.
+    */
     private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare) throws Exception {
         final int gridsCnt = 4;
 
@@ -871,10 +876,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(waitForCondition(() -> {
             for (int i = 0; i < gridsCnt; i++) {
                 for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName())) {
-                        System.out.println("taskView = " + taskView);
+                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
                         return false;
-                    }
                 }
             }
 
@@ -884,10 +887,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(waitForCondition(() -> {
             for (int i = 0; i < gridsCnt; i++) {
                 for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName())) {
-                        System.out.println("taskView = " + jobView);
+                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
                         return false;
-                    }
                 }
             }
 
