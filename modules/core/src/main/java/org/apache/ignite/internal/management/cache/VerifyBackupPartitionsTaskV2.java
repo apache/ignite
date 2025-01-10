@@ -236,15 +236,15 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             long lastProgressLogTs = U.currentTimeMillis();
 
             for (int i = 0; i < partHashCalcFuts.size(); ) {
+                if (isCancelled()) {
+                    cancelFuts(i, partHashCalcFuts);
+
+                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
+                }
+
                 Future<Map<PartitionKeyV2, PartitionHashRecordV2>> fut = partHashCalcFuts.get(i);
 
                 try {
-                    if (isCancelled()) {
-                        cancelFuts(i, partHashCalcFuts);
-
-                        throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-                    }
-
                     Map<PartitionKeyV2, PartitionHashRecordV2> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
                     res.putAll(partHash);

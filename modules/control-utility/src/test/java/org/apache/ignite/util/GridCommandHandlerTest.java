@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -774,32 +775,37 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testIdleVerifyCancelCommandOnCheckpoint() throws Exception {
         doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
+            G.allGrids().forEach(grid -> {
+                if (grid.configuration().isClientMode())
+                    return;
 
-            dbMgr.addCheckpointListener(new CheckpointListener() {
-                @Override public void beforeCheckpointBegin(Context ctx) {
-                    if (ctx.progress().reason().equals("VerifyBackupPartitions"))
-                        beforeCancelLatch.countDown();
-                }
+                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)grid).context().cache().context().database();
 
-                @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
-                    if (ctx.progress().reason().equals("VerifyBackupPartitions")) {
-                        try {
-                            assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                        }
-                        catch (InterruptedException e) {
-                            throw new IgniteInterruptedCheckedException(e);
+                dbMgr.addCheckpointListener(new CheckpointListener() {
+                    @Override public void beforeCheckpointBegin(Context ctx) {
+                        if (Objects.equals(ctx.progress().reason(),"VerifyBackupPartitions"))
+                            beforeCancelLatch.countDown();
+                    }
+
+                    @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
+                        if (Objects.equals(ctx.progress().reason(),"VerifyBackupPartitions")) {
+                            try {
+                                assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                            }
+                            catch (InterruptedException e) {
+                                throw new IgniteInterruptedCheckedException(e);
+                            }
                         }
                     }
-                }
 
-                @Override public void onMarkCheckpointBegin(Context ctx) {
-                    // No-op.
-                }
+                    @Override public void onMarkCheckpointBegin(Context ctx) {
+                        // No-op.
+                    }
 
-                @Override public void onCheckpointBegin(Context ctx) {
-                    // No-op.
-                }
+                    @Override public void onCheckpointBegin(Context ctx) {
+                        // No-op.
+                    }
+                });
             });
         });
     }
