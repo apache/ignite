@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -774,69 +775,77 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testIdleVerifyCancelCommandOnCheckpoint() throws Exception {
-        final int gridsCnt = 4;
+        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
 
-        IgniteEx srv = startGrids(gridsCnt);
+            dbMgr.addCheckpointListener(new CheckpointListener() {
+                @Override public void beforeCheckpointBegin(Context ctx) {
+                    if (ctx.progress().reason().equals("VerifyBackupPartitions"))
+                        beforeCancelLatch.countDown();
+                }
 
-        srv.cluster().state(ACTIVE);
-
-        CountDownLatch beforeCancelLatch = new CountDownLatch(1);
-        CountDownLatch afterCancelLatch = new CountDownLatch(1);
-
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
-
-        dbMgr.addCheckpointListener(new CheckpointListener() {
-            @Override public void beforeCheckpointBegin(Context ctx) {
-                if (ctx.progress().reason().equals("VerifyBackupPartitions"))
-                    beforeCancelLatch.countDown();
-            }
-
-            @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
-                if (ctx.progress().reason().equals("VerifyBackupPartitions")) {
-                    try {
-                        afterCancelLatch.await(30, TimeUnit.SECONDS);
-                    }
-                    catch (InterruptedException e) {
-                        throw new IgniteInterruptedCheckedException(e);
+                @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
+                    if (ctx.progress().reason().equals("VerifyBackupPartitions")) {
+                        try {
+                            assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                        }
+                        catch (InterruptedException e) {
+                            throw new IgniteInterruptedCheckedException(e);
+                        }
                     }
                 }
-            }
 
-            @Override public void onMarkCheckpointBegin(Context ctx) {
-                // No-op.
-            }
+                @Override public void onMarkCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
 
-            @Override public void onCheckpointBegin(Context ctx) {
-                // No-op.
-            }
+                @Override public void onCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+            });
         });
-
-        List<LogListener> listeners = registerIdleVerifyCancelListeners();
-
-        IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
-
-        cancelIdleVerifyAndCheck(beforeCancelLatch, afterCancelLatch, gridsCnt, listeners);
     }
 
-
-    /**
-     *
-     */
+    /** */
     @Test
     public void testIdleVerifyTrackedForkJoinPool() throws Exception {
+        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+            ForkJoinPool forkJoinPool = new ForkJoinPool() {
+                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                    beforeCancelLatch.countDown();
+
+                    ForkJoinTask<T> submitted = super.submit(task);
+
+                    try {
+                        assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return submitted;
+                }
+            };
+
+            VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
+
+        });
+    }
+
+    private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare) throws Exception {
         final int gridsCnt = 4;
 
         IgniteEx srv = startGrids(gridsCnt);
 
         srv.cluster().state(ACTIVE);
+
+        CountDownLatch beforeCancelLatch = new CountDownLatch(1);
+        CountDownLatch afterCancelLatch = new CountDownLatch(1);
+
+        prepare.accept(beforeCancelLatch, afterCancelLatch);
 
         List<LogListener> listeners = registerIdleVerifyCancelListeners();
 
@@ -845,46 +854,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        CountDownLatch beforeCancelLatch = new CountDownLatch(1);
-        CountDownLatch afterCancelLatch = new CountDownLatch(1);
-
-        ForkJoinPool forkJoinPool = new ForkJoinPool() {
-            @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                beforeCancelLatch.countDown();
-
-                ForkJoinTask<T> submitted = super.submit(task);
-
-                try {
-                    afterCancelLatch.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-                return submitted;
-            }
-        };
-
-        VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
-
-        cancelIdleVerifyAndCheck(beforeCancelLatch, afterCancelLatch, gridsCnt, listeners);
-    }
-
-    /**
-     * @param beforeCancelLatch Latch for await before cancel.
-     * @param afterCancelLatch Latch for await before cancel completes.
-     * @param gridsCnt Grids count.
-     * @param listeners Log listeners.
-     */
-    private void cancelIdleVerifyAndCheck(
-        CountDownLatch beforeCancelLatch,
-        CountDownLatch afterCancelLatch,
-        int gridsCnt,
-        List<LogListener> listeners
-    ) throws InterruptedException, IgniteCheckedException {
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
 
-        beforeCancelLatch.await(30, TimeUnit.SECONDS);
+        assertTrue(beforeCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
@@ -892,7 +864,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         checkSystemViewsNoIdleVerify(gridsCnt);
 
-        idleVerifyFut.get(getTestTimeout());
+        idleVerifyFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         for (LogListener listener : listeners)
             assertTrue(listener.check());
@@ -902,27 +874,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param gridsCnt Grids count.
      */
     private void checkSystemViewsNoIdleVerify(int gridsCnt) throws IgniteInterruptedCheckedException {
-        for (int i = 0; i < gridsCnt; i++) {
-            int finalI = i;
-
-            waitForCondition(() -> {
-                for (ComputeTaskView taskView : grid(finalI).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
+        assertTrue(waitForCondition(() -> {
+            for (int i = 0; i < gridsCnt; i++) {
+                for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName())) {
+                        System.out.println("taskView = " + taskView);
                         return false;
+                    }
                 }
+            }
 
-                return true;
-            }, 1000);
+            return true;
+        }, getTestTimeout()));
 
-            waitForCondition(() -> {
-                for (ComputeJobView jobView : grid(finalI).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
+        assertTrue(waitForCondition(() -> {
+            for (int i = 0; i < gridsCnt; i++) {
+                for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName())) {
+                        System.out.println("taskView = " + jobView);
                         return false;
+                    }
                 }
+            }
 
-                return true;
-            }, 1000);
-        }
+            return true;
+        }, getTestTimeout()));
     }
 
     /**

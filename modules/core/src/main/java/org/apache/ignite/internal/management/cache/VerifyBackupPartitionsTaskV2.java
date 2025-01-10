@@ -221,6 +221,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 throw new IgniteException(
                     "Failed to wait for checkpoint before executing " + getClass().getSimpleName() + ".", e);
             }
+            if (isCancelled())
+                throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
 
             Set<Integer> grpIds = getGroupIds();
 
