@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.List;
-
+import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
@@ -40,11 +40,14 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VI
  * @see VerifyBackupPartitionsTaskV2
  */
 public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
-    /** Tasks to cancel. */
-    public static final List<Class<?>> TASKS_TO_CANCEL = List.of(IdleVerifyTaskV2.class, VerifyBackupPartitionsTaskV2.class);
-
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Jobs started by tasks must be canceled. */
+    public static final Set<String> TASKS_TO_CANCEL = Set.of(
+        IdleVerifyTaskV2.class.getName(),
+        VerifyBackupPartitionsTaskV2.class.getName()
+    );
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, Void> job(NoArg arg) {
@@ -70,37 +73,25 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
         @LoggerResource
         private IgniteLogger log;
 
-        /**
-         * Auto-injected grid instance.
-         */
+        /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
-        /**
-         * @param debug Debug flag.
-         */
+        /** @param debug Debug flag. */
         public CacheIdleVerifyCancelJob(boolean debug) {
             super(new NoArg(), debug);
         }
 
         /** {@inheritDoc} */
         @Override protected Void run(NoArg arg) {
-            for (Class<?> task : TASKS_TO_CANCEL)
-                cancelJob(task);
-
-            return null;
-        }
-
-        /**
-         * @param taskCls Task class.
-         */
-        private void cancelJob(Class<?> taskCls) {
             F.iterator(
                 ignite.context().systemView().view(JOBS_VIEW),
                 ComputeJobView::sessionId,
                 true,
-                jobView -> jobView.taskClassName().equals(taskCls.getName())
+                jobView -> TASKS_TO_CANCEL.contains(jobView.taskClassName())
             ).forEach(sesId -> ignite.context().job().cancelJob(sesId, null, false));
+
+            return null;
         }
     }
 }
