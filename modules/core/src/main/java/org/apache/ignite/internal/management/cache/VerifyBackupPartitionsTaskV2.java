@@ -546,11 +546,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                             "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                     }
                 }
-                catch (IgniteInterruptedCheckedException e) {
-                    U.warn(log, "Interrupted while calculate partition hash [grpId=" + gctx.groupId() +
-                        ", partId=" + part.id() + "]", e);
-                    throw e;
-                }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Can't calculate partition hash [grpId=" + gctx.groupId() +
                         ", partId=" + part.id() + "]", e);
