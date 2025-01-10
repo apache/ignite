@@ -91,6 +91,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
 
+    /** */
+    public static final String CACL_PART_HASH_ERR_MSG = "Can't calculate partition hash";
+
+    /** Checkpoint reason. */
+    public static final String CP_REASON = "VerifyBackupPartitions";
+
     /** Shared for tests. */
     public static Supplier<ForkJoinPool> poolSupplier = ForkJoinPool::commonPool;
 
@@ -208,7 +214,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 throw new IgniteException(IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
 
             try {
-                ignite.context().cache().context().database().waitForCheckpoint("VerifyBackupPartitions");
+                ignite.context().cache().context().database().waitForCheckpoint(CP_REASON);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(
@@ -290,19 +296,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         /**
          * Cancels futures from given index.
          *
-         * @param i Index to start with.
+         * @param start Index to start from.
          * @param partHashCalcFuts Partitions hash calculation futures to cancel.
          */
-        private void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
-            for (int j = i; j < partHashCalcFuts.size(); j++)
-                partHashCalcFuts.get(j).cancel(false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            log.warning("Cancel request sent to " + getClass().getSimpleName() + ".");
-
-            super.cancel();
+        private void cancelFuts(int start, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
+            for (int i = start; i < partHashCalcFuts.size(); i++)
+                partHashCalcFuts.get(i).cancel(false);
         }
 
         /**
@@ -540,7 +539,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
                         gctx.offheap().partitionIterator(part.id()),
-                        cancelled);
+                        cancelled
+                    );
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
@@ -554,11 +554,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Can't calculate partition hash [grpId=" + gctx.groupId() +
-                        ", partId=" + part.id() + "]", e);
+                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
 
-                    throw new IgniteException("Can't calculate partition hash [grpId=" + gctx.groupId() +
-                        ", partId=" + part.id() + "]", e);
+                    U.error(log, msg, e);
+
+                    throw new IgniteException(msg, e);
                 }
                 finally {
                     part.release();
