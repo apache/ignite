@@ -210,13 +210,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             try {
                 ignite.context().cache().context().database().waitForCheckpoint("VerifyBackupPartitions");
             }
-            catch (IgniteInterruptedCheckedException e) {
-                if (isCancelled())
-                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.", e);
-
-                throw new IgniteException(
-                    "Failed to wait for checkpoint before executing " + getClass().getSimpleName() + ".", e);
-            }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(
                     "Failed to wait for checkpoint before executing " + getClass().getSimpleName() + ".", e);
