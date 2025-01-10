@@ -960,7 +960,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     private void checkSystemViewsNoIdleVerify(int gridsCnt) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
-            for (Class<?> task : CacheIdleVerifyCancelTask.tasksToCancel) {
+            for (Class<?> task : CacheIdleVerifyCancelTask.TASKS_TO_CANCEL) {
                 for (int i = 0; i < gridsCnt; i++) {
                     for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
                         if (task.getName().equals(taskView.taskName()))
@@ -973,7 +973,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }, getTestTimeout()));
 
         assertTrue(waitForCondition(() -> {
-            for (Class<?> task : CacheIdleVerifyCancelTask.tasksToCancel) {
+            for (Class<?> task : CacheIdleVerifyCancelTask.TASKS_TO_CANCEL) {
                 for (int i = 0; i < gridsCnt; i++) {
                     for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
                         if (task.getName().equals(jobView.taskName()))
