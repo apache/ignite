@@ -808,7 +808,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     }
                 });
             });
-        });
+        }, false);
     }
 
     /** */
@@ -833,74 +833,89 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             };
 
             VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
-        });
+        }, false);
     }
 
     /** */
     @Test
     public void testIdleVerifyTrackedForkJoinPoolForRunnable() throws Exception {
-        // Can't place assert insie pool, because exceptions from task ignored.
-        AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
-        AtomicBoolean eCatched = new AtomicBoolean(false);
+        for (boolean checkCrc : new boolean[] {false, true}) {
+            // Can't place assert insie pool, because exceptions from task ignored.
+            AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
+            AtomicBoolean eCatched = new AtomicBoolean(false);
 
-        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
-            ForkJoinPool forkJoinPool = new ForkJoinPool() {
-                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                    return super.submit(new Callable<T>() {
-                        @Override public T call() throws Exception {
-                            beforeCancelLatch.countDown();
+            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+                ForkJoinPool forkJoinPool = new ForkJoinPool() {
+                    @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                        return super.submit(new Callable<T>() {
+                            @Override public T call() throws Exception {
+                                beforeCancelLatch.countDown();
 
-                            try {
-                                assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                            }
-                            catch (InterruptedException ignored) {
-                                interruptedOnCancel.set(false);
-                            }
+                                try {
+                                    assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException ignored) {
+                                    interruptedOnCancel.set(false);
+                                }
 
-                            try {
-                                // Call must fail.
-                                T res = task.call();
+                                try {
+                                    // Call must fail.
+                                    T res = task.call();
 
-                                interruptedOnCancel.set(false);
-
-                                return res;
-                            }
-                            catch (IgniteException e) {
-                                if (!e.getMessage().startsWith("Can't calculate partition hash"))
                                     interruptedOnCancel.set(false);
 
-                                eCatched.set(true);
+                                    return res;
+                                }
+                                catch (IgniteException e) {
+                                    String expMsg = checkCrc
+                                        ? "CRC check of partition failed"
+                                        : "Can't calculate partition hash";
 
-                                throw e;
+                                    if (!e.getMessage().startsWith(expMsg))
+                                        interruptedOnCancel.set(false);
+
+                                    eCatched.set(true);
+
+                                    throw e;
+                                }
+                                catch (Throwable e) {
+                                    interruptedOnCancel.set(false);
+
+                                    throw e;
+                                }
                             }
-                            catch (Throwable e) {
-                                interruptedOnCancel.set(false);
+                        });
+                    }
+                };
 
-                                throw e;
-                            }
-                        }
-                    });
-                }
-            };
+                VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
+            }, checkCrc);
 
-            VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
-        });
+            assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
+            assertTrue("Task must fail with expected exception", eCatched.get());
 
-        assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
-        assertTrue("Task must fail with expected exception", eCatched.get());
+            eCatched.set(false);
+        }
     }
 
     /**
      * Wrapper for tests for idle verify cancel command.
      *
      * @param prepare Prepares the test using beforeCancelLatch and afterCancelLatch.
+     * @param checkCrc If {@code true} then run idle verify with --check-crc argument.
     */
-    private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare) throws Exception {
+    private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare, boolean checkCrc) throws Exception {
         final int gridsCnt = 4;
 
-        IgniteEx srv = startGrids(gridsCnt);
+        IgniteEx srv;
 
-        srv.cluster().state(ACTIVE);
+        if (G.allGrids().isEmpty()) {
+            srv = startGrids(gridsCnt);
+
+            srv.cluster().state(ACTIVE);
+        }
+        else
+            srv = grid(0);
 
         CountDownLatch beforeCancelLatch = new CountDownLatch(1);
         CountDownLatch afterCancelLatch = new CountDownLatch(1);
@@ -909,12 +924,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         List<LogListener> listeners = registerIdleVerifyCancelListeners();
 
-        IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
+        IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            .setBackups(3)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(3)));
 
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
+        for (int part = 0; part < 3; part++) {
+            for (Integer key : partitionKeys(cache, part, 3, 0)) {
+                cache.put(key, key);
+            }
+        }
 
-        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
+        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> {
+            if (checkCrc)
+                execute("--cache", "idle_verify", "--check-crc");
+            else
+                execute("--cache", "idle_verify");
+        });
 
         assertTrue(beforeCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
