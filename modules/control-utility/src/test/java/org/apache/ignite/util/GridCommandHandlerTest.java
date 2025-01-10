@@ -779,16 +779,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (grid.configuration().isClientMode())
                     return;
 
-                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)grid).context().cache().context().database();
+                GridCacheDatabaseSharedManager dbMgr =
+                    (GridCacheDatabaseSharedManager)((IgniteEx)grid).context().cache().context().database();
 
                 dbMgr.addCheckpointListener(new CheckpointListener() {
                     @Override public void beforeCheckpointBegin(Context ctx) {
-                        if (Objects.equals(ctx.progress().reason(),"VerifyBackupPartitions"))
+                        if (Objects.equals(ctx.progress().reason(), "VerifyBackupPartitions"))
                             beforeCancelLatch.countDown();
                     }
 
                     @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
-                        if (Objects.equals(ctx.progress().reason(),"VerifyBackupPartitions")) {
+                        if (Objects.equals(ctx.progress().reason(), "VerifyBackupPartitions")) {
                             try {
                                 assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
                             }
