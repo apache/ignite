@@ -396,6 +396,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private final PageHandler<Get, Result> search;
 
     /**
+     *
      */
     public class Search extends GetPageHandler<Get> {
         /** {@inheritDoc} */

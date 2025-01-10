@@ -826,7 +826,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             };
 
             VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
-
         });
     }
 
