@@ -237,19 +237,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                                         // No-op.
                                     }
                                 }
-                            });
+                            }, null);
                         }
 
                         if (partId == INDEX_PARTITION) {
                             if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX, null);
 
                             return null;
                         }
 
                         if (grpId == MetaStorage.METASTORAGE_CACHE_ID) {
                             if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
+                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA, null);
 
                             return null;
                         }
@@ -292,7 +292,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             false,
                             size,
                             skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
+                            null
+                        );
 
                         assert hash != null : "OWNING must have hash: " + key;
 

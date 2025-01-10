@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
@@ -292,8 +293,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
          * @param i Index to start with.
          * @param partHashCalcFuts Partitions hash calculation futures to cancel.
          */
-        private static void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
-            for (int j = i + 1; j < partHashCalcFuts.size(); j++)
+        private void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
+            for (int j = i; j < partHashCalcFuts.size(); j++)
                 partHashCalcFuts.get(j).cancel(false);
         }
 
@@ -362,7 +363,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 ForkJoinPool pool = poolSupplier.get();
 
                 for (GridDhtLocalPartition part : parts)
-                    partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part));
+                    partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));
             }
 
             return partHashCalcFutures;
@@ -500,11 +501,13 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
          * @param pool Pool for task submitting.
          * @param gctx Group context.
          * @param part Local partition.
+         * @param cancelled Supplier of cancelled status.
          */
         private Future<Map<PartitionKeyV2, PartitionHashRecordV2>> calculatePartitionHashAsync(
             final ForkJoinPool pool,
             final CacheGroupContext gctx,
-            final GridDhtLocalPartition part
+            final GridDhtLocalPartition part,
+            final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
                 Map<PartitionKeyV2, PartitionHashRecordV2> res = emptyMap();
@@ -520,8 +523,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         FilePageStoreManager pageStoreMgr =
                             (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
-                        checkPartitionsPageCrcSum(() -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
-                            part.id(), FLAG_DATA);
+                        checkPartitionsPageCrcSum(
+                            () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
+                            part.id(),
+                            FLAG_DATA,
+                            cancelled
+                        );
                     }
 
                     PartitionKeyV2 key = new PartitionKeyV2(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
@@ -532,7 +539,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
-                        gctx.offheap().partitionIterator(part.id()));
+                        gctx.offheap().partitionIterator(part.id()),
+                        cancelled);
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);

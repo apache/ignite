@@ -836,6 +836,60 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         });
     }
 
+    /** */
+    @Test
+    public void testIdleVerifyTrackedForkJoinPoolForRunnable() throws Exception {
+        // Can't place assert insie pool, because exceptions from task ignored.
+        AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
+        AtomicBoolean eCatched = new AtomicBoolean(false);
+
+        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+            ForkJoinPool forkJoinPool = new ForkJoinPool() {
+                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                    return super.submit(new Callable<T>() {
+                        @Override public T call() throws Exception {
+                            beforeCancelLatch.countDown();
+
+                            try {
+                                assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                            }
+                            catch (InterruptedException ignored) {
+                                interruptedOnCancel.set(false);
+                            }
+
+                            try {
+                                // Call must fail.
+                                T res = task.call();
+
+                                interruptedOnCancel.set(false);
+
+                                return res;
+                            }
+                            catch (IgniteException e) {
+                                if (!e.getMessage().startsWith("Can't calculate partition hash"))
+                                    interruptedOnCancel.set(false);
+
+                                eCatched.set(true);
+
+                                throw e;
+                            }
+                            catch (Throwable e) {
+                                interruptedOnCancel.set(false);
+
+                                throw e;
+                            }
+                        }
+                    });
+                }
+            };
+
+            VerifyBackupPartitionsTaskV2.poolSupplier = () -> forkJoinPool;
+        });
+
+        assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
+        assertTrue("Task must fail with expected exception", eCatched.get());
+    }
+
     /**
      * Wrapper for tests for idle verify cancel command.
      *
