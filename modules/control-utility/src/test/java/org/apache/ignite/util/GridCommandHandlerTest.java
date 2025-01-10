@@ -85,9 +85,9 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCancelTask;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
-import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
@@ -874,10 +874,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     private void checkSystemViewsNoIdleVerify(int gridsCnt) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
-            for (int i = 0; i < gridsCnt; i++) {
-                for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(taskView.taskName()))
-                        return false;
+            for (Class<?> task : CacheIdleVerifyCancelTask.tasksToCancel) {
+                for (int i = 0; i < gridsCnt; i++) {
+                    for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                        if (task.getName().equals(taskView.taskName()))
+                            return false;
+                    }
                 }
             }
 
@@ -885,10 +887,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }, getTestTimeout()));
 
         assertTrue(waitForCondition(() -> {
-            for (int i = 0; i < gridsCnt; i++) {
-                for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
-                    if (IdleVerifyTaskV2.class.getName().equals(jobView.taskName()))
-                        return false;
+            for (Class<?> task : CacheIdleVerifyCancelTask.tasksToCancel) {
+                for (int i = 0; i < gridsCnt; i++) {
+                    for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                        if (task.getName().equals(jobView.taskName()))
+                            return false;
+                    }
                 }
             }
 

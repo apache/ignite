@@ -40,6 +40,9 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VI
  * @see VerifyBackupPartitionsTaskV2
  */
 public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
+    /** Tasks to cancel */
+    public static final List<Class<?>> tasksToCancel = List.of(IdleVerifyTaskV2.class, VerifyBackupPartitionsTaskV2.class);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,15 +85,14 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
 
         /** {@inheritDoc} */
         @Override protected Void run(NoArg arg) {
-            cancelJob(IdleVerifyTaskV2.class);
-
-            cancelJob(VerifyBackupPartitionsTaskV2.class);
+            for (Class<?> task : tasksToCancel)
+                cancelJob(task);
 
             return null;
         }
 
         /**
-         * @param taskCls Job class.
+         * @param taskCls Task class.
          */
         private void cancelJob(Class<?> taskCls) {
             F.iterator(
