@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -70,6 +69,9 @@ public class IdleVerifyUtility {
     /** Cluster not idle message. */
     public static final String GRID_NOT_IDLE_MSG =
         "Cluster not idle. Modifications found in caches or groups: ";
+
+    /** */
+    public static final String CRC_CHECK_ERR_MSG = "CRC check of partition failed";
 
     /**
      * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
@@ -132,7 +134,7 @@ public class IdleVerifyUtility {
             }
         }
         catch (Throwable e) {
-            String msg0 = "CRC check of partition failed [partId=" + partId +
+            String msg0 = CRC_CHECK_ERR_MSG + " [partId=" + partId +
                 ", grpName=" + (pageStore == null ? "" : cacheGroupName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
                 ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
 
@@ -309,7 +311,7 @@ public class IdleVerifyUtility {
 
         while (it.hasNextX()) {
             if (cancelled != null && cancelled.getAsBoolean())
-                throw new IgniteInterruptedCheckedException("Caclulate partition hash cancelled.");
+                throw new IgniteCheckedException("Caclulate partition hash cancelled.");
 
             CacheDataRow row = it.nextX();
 
