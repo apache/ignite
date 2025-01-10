@@ -49,7 +49,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
 
-        <revision>2.17.0-SNAPSHOT</revision>
+        <revision>2.18.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -392,6 +392,10 @@
                             <group>
                                 <title>Development Utils</title>
                                 <packages>org.apache.ignite.development.utils*</packages>
+                            </group>
+                            <group>
+                                <title>SessionContext API</title>
+                                <packages>org.apache.ignite.session</packages>
                             </group>
                         </groups>
                     </configuration>

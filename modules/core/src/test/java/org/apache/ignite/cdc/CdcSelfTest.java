@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,8 +81,10 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
+import static org.apache.ignite.internal.cdc.CdcMain.SEGMENT_CONSUMING_TIME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
@@ -290,6 +293,13 @@ public class CdcSelfTest extends AbstractCdcTest {
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
 
         checkMetrics(cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
+
+        // Metric check awaits the CDC consumer to finish.
+        long[] segmentConsumingTime = ((MetricRegistry)getFieldValue(cdcMain, "mreg"))
+            .<HistogramMetric>findMetric(SEGMENT_CONSUMING_TIME).value();
+
+        assertFalse(F.isEmpty(segmentConsumingTime));
+        assertTrue(Arrays.stream(segmentConsumingTime).sum() > 0);
 
         rmvFut.cancel();
 

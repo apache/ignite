@@ -21,15 +21,22 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Additional commands provider for control utility.
@@ -37,6 +44,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class CommandsProviderExtImpl implements CommandsProvider {
     /** */
     public static final Command<?, ?> TEST_COMMAND = new TestCommandCommand();
+
+    /** */
+    public static final Command<?, ?> TEST_COMPUTE_COMMAND = new TestComputeCommand();
 
     /** */
     public static final String TEST_COMMAND_OUTPUT = "Test command executed";
@@ -49,7 +59,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
 
     /** {@inheritDoc} */
     @Override public Collection<Command<?, ?>> commands() {
-        return Collections.singleton(TEST_COMMAND);
+        return F.asList(TEST_COMMAND, TEST_COMPUTE_COMMAND);
     }
 
     /** */
@@ -65,7 +75,8 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         }
 
         /** {@inheritDoc} */
-        @Override public Void execute(GridClient cli, Ignite ignite, TestCommandCommandArg arg, Consumer<String> printer) {
+        @Override public Void execute(@Nullable GridClient cli, @Nullable IgniteClient client, @Nullable Ignite ignite,
+            TestCommandCommandArg arg, Consumer<String> printer) {
             printer.accept(TEST_COMMAND_OUTPUT + ": " + arg.testPrint);
 
             return null;
@@ -99,6 +110,57 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         /** */
         public String testPrint() {
             return testPrint;
+        }
+    }
+
+    /** */
+    private static class TestComputeCommand implements ComputeCommand<TestCommandCommandArg, String> {
+        /** {@inheritDoc} */
+        @Override public Class<? extends VisorMultiNodeTask<TestCommandCommandArg, String, ?>> taskClass() {
+            return TestTask.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void printResult(TestCommandCommandArg arg, String res, Consumer<String> printer) {
+            printer.accept(res);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return "Test compute command.";
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<? extends TestCommandCommandArg> argClass() {
+            return TestCommandCommandArg.class;
+        }
+    }
+
+    /** */
+    @GridInternal
+    public static class TestTask extends VisorOneNodeTask<TestCommandCommandArg, String> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override protected TestJob job(TestCommandCommandArg arg) {
+            return new TestJob(arg, debug);
+        }
+
+        /** */
+        private static class TestJob extends VisorJob<TestCommandCommandArg, String> {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            /** */
+            protected TestJob(TestCommandCommandArg arg, boolean debug) {
+                super(arg, debug);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected String run(TestCommandCommandArg arg) {
+                return arg.testPrint();
+            }
         }
     }
 }

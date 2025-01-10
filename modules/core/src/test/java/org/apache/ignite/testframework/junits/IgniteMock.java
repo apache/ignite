@@ -18,12 +18,14 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -140,7 +143,11 @@ public class IgniteMock implements IgniteEx {
         this.staticCfg = staticCfg;
 
         try {
-            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null, null);
+            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null, null) {
+                @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+                    return new GridInternalSubscriptionProcessor(this);
+                }
+            };
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -600,6 +607,11 @@ public class IgniteMock implements IgniteEx {
     /** {@inheritDoc} */
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
         return NoopTracingConfigurationManager.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return null;
     }
 
     /** {@inheritDoc} */

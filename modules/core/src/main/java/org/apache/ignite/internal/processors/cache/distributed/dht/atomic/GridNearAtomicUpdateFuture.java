@@ -110,6 +110,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
      * @param remapCnt Maximum number of retries.
+     * @param appAttrs Application attributes.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -128,7 +129,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(
             cctx,
@@ -143,7 +145,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             skipStore,
             keepBinary,
             recovery,
-            remapCnt);
+            remapCnt,
+            appAttrs);
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
@@ -668,7 +671,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
                         reqState.resetLocalMapping();
 
-                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+                    cctx.io().send(req.nodeId(), wrapWithApplicationAttributes(req), cctx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
@@ -688,13 +691,14 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (locUpdate != null) {
-            cache.updateAllAsyncInternal(cctx.localNode(), locUpdate,
-                (req, res) -> {
+            cache.updateAllAsyncInternal(cctx.localNode(), locUpdate, new UpdateReplyClosureContextAware() {
+                @Override void apply0(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                     if (syncMode != FULL_ASYNC)
                         onPrimaryResponse(res.nodeId(), res, false);
                     else if (res.remapTopologyVersion() != null)
                         ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
-                });
+                }
+            });
         }
 
         if (syncMode == FULL_ASYNC)

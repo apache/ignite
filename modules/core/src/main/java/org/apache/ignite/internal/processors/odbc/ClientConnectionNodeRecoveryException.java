@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Tests for local cache.
+ * Indicates that node is unavailable due to recovery mode.
  */
-public class GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest
-    extends GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest {
+public class ClientConnectionNodeRecoveryException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
+    public ClientConnectionNodeRecoveryException(String msg) {
+        super(msg);
     }
 }

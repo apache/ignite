@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 /** */
 public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
     /** {@inheritDoc} */
-    @Override protected MessageFactory messageFactory() {
+    @Override protected MessageFactoryProvider messageFactory() {
         return new GridIoMessageFactory();
     }
 

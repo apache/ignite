@@ -43,7 +43,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -87,8 +85,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
-import static org.apache.ignite.internal.IgniteFeatures.CACHE_GROUP_KEY_CHANGE;
-import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
@@ -139,11 +135,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements EncryptionCacheKeyProvider,
     MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption, PartitionsExchangeAware {
-    /**
-     * Cache encryption introduced in this Ignite version.
-     */
-    private static final IgniteProductVersion CACHE_ENCRYPTION_SINCE = IgniteProductVersion.fromString("2.7.0");
-
     /** Prefix for a master key name. */
     public static final String MASTER_KEY_NAME_PREFIX = "encryption-master-key-name";
 
@@ -453,12 +444,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Master key digest differs! Node join is rejected.");
         }
 
-        if (!IgniteFeatures.nodeSupports(node, CACHE_GROUP_KEY_CHANGE)) {
-            return new IgniteNodeValidationResult(ctx.localNodeId(),
-                "Joining node doesn't support multiple encryption keys for single group [node=" + node.id() + "]",
-                "Joining node doesn't support multiple encryption keys for single group.");
-        }
-
         if (F.isEmpty(nodeEncKeys.knownKeys)) {
             U.quietAndInfo(log, "Joining node doesn't have stored group keys [node=" + node.id() + "]");
 
@@ -670,11 +655,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode()) {
             return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client nodes can not " +
                 "perform this operation."));
-        }
-
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE)) {
-            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
-                "the master key change process."));
         }
 
         // WAL is unavailable for write on the inactive cluster. Master key change will not be logged and group keys
@@ -1350,22 +1330,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
-        }
-    }
-
-    /**
-     * Checks cache encryption supported by all nodes in cluster.
-     *
-     * @throws IgniteCheckedException If check fails.
-     */
-    public void checkEncryptedCacheSupported() throws IgniteCheckedException {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
-
-        for (ClusterNode node : nodes) {
-            if (CACHE_ENCRYPTION_SINCE.compareTo(node.version()) > 0) {
-                throw new IgniteCheckedException("All nodes in cluster should be 2.7.0 or greater " +
-                    "to create encrypted cache! [nodeId=" + node.id() + "]");
-            }
         }
     }
 

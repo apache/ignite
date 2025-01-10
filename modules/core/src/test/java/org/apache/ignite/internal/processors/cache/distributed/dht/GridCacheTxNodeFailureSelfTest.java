@@ -75,12 +75,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        BanningCommunicationSpi commSpi = new BanningCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
+        cfg.setCommunicationSpi(new BanningCommunicationSpi());
 
         return cfg;
     }

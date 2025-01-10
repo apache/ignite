@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -539,6 +540,14 @@ public class GridReduceQueryExecutor {
                                 null
                             ),
                             qryInfo
+                        );
+
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
+                            qryInfo.plan(),
+                            qry.originalSql(),
+                            schemaName,
+                            qry.isLocal(),
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
                         );
 
                         resIter = new H2FieldsIterator(

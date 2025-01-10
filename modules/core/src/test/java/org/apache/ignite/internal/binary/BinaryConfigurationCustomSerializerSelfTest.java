@@ -52,8 +52,6 @@ public class BinaryConfigurationCustomSerializerSelfTest extends GridCommonAbstr
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         BinaryConfiguration binaryCfg = new BinaryConfiguration();
 
         BinaryTypeConfiguration btc = new BinaryTypeConfiguration("org.MyClass");

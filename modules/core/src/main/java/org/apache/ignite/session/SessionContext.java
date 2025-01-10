@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures;
+package org.apache.ignite.session;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.resources.SessionContextProviderResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
+ * Provides access to attributes set with {@link Ignite#withApplicationAttributes}.
  *
+ * @see SessionContextProviderResource
  */
-public class IgniteClientDiscoveryDataStructuresTest extends IgniteClientDataStructuresAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected boolean clientDiscovery() {
-        return true;
-    }
+public interface SessionContext {
+    /**
+     * @param name Attribute name.
+     * @return Attribute value, or {@code null} if not specified.
+     */
+    public @Nullable String getAttribute(String name);
 }

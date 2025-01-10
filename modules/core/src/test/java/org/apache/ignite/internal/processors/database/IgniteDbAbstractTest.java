@@ -136,8 +136,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (!client)
             cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
-        cfg.setMarshaller(null);
-
         configure(cfg);
 
         return cfg;
