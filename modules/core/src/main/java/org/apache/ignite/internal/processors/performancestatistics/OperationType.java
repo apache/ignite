@@ -96,7 +96,7 @@ public enum OperationType {
     /** Cache put all conflict. */
     CACHE_PUT_ALL_CONFLICT(22),
 
-    /** Cache put all conflict. */
+    /** Cache remove all conflict. */
     CACHE_REMOVE_ALL_CONFLICT(23),
 
     /** Version. */
