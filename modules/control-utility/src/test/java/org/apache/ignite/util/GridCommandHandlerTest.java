@@ -172,8 +172,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.management.cache.CacheIdleVerifyCancelTask.TASKS_TO_CANCEL;
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.CACL_PART_HASH_ERR_MSG;
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.CP_REASON;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CACL_PART_HASH_ERR_MSG;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CP_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
@@ -843,7 +843,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 }
             };
 
-            VerifyBackupPartitionsTaskV2.poolSupplier = () -> pool;
+            VerifyBackupPartitionsTask.poolSupplier = () -> pool;
         }, false);
     }
 
@@ -895,7 +895,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     }
                 };
 
-                VerifyBackupPartitionsTaskV2.poolSupplier = () -> pool;
+                VerifyBackupPartitionsTask.poolSupplier = () -> pool;
             }, checkCrc);
 
             assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
