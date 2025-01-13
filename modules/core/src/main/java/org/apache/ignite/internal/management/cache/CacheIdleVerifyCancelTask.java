@@ -36,8 +36,8 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VI
 /**
  * Task that cancels jobs started by idle_verify command.
  *
- * @see IdleVerifyTaskV2
- * @see VerifyBackupPartitionsTaskV2
+ * @see IdleVerifyTask
+ * @see VerifyBackupPartitionsTask
  */
 public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
     /** */
@@ -45,8 +45,8 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
 
     /** Jobs started by tasks must be canceled. */
     public static final Set<String> TASKS_TO_CANCEL = Set.of(
-        IdleVerifyTaskV2.class.getName(),
-        VerifyBackupPartitionsTaskV2.class.getName()
+        IdleVerifyTask.class.getName(),
+        VerifyBackupPartitionsTask.class.getName()
     );
 
     /** {@inheritDoc} */
@@ -62,8 +62,8 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
     /**
      * Job that cancels jobs started by idle_verify command.
      *
-     * @see IdleVerifyTaskV2
-     * @see VerifyBackupPartitionsTaskV2
+     * @see IdleVerifyTask
+     * @see VerifyBackupPartitionsTask
      */
     private class CacheIdleVerifyCancelJob extends VisorJob<NoArg, Void> {
         /** */
