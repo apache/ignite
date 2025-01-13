@@ -30,6 +30,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -88,6 +90,15 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
+
+    /** */
+    public static final String CACL_PART_HASH_ERR_MSG = "Can't calculate partition hash";
+
+    /** Checkpoint reason. */
+    public static final String CP_REASON = "VerifyBackupPartitions";
+
+    /** Shared for tests. */
+    public static Supplier<ForkJoinPool> poolSupplier = ForkJoinPool::commonPool;
 
     /** Injected logger. */
     @LoggerResource
@@ -203,12 +214,15 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 throw new IgniteException(IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
 
             try {
-                ignite.context().cache().context().database().waitForCheckpoint("VerifyBackupPartitions");
+                ignite.context().cache().context().database().waitForCheckpoint(CP_REASON);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(
                     "Failed to wait for checkpoint before executing verify backup partitions task", e);
             }
+
+            if (isCancelled())
+                throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
 
             Set<Integer> grpIds = getGroupIds();
 
@@ -229,6 +243,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             long lastProgressLogTs = U.currentTimeMillis();
 
             for (int i = 0; i < partHashCalcFuts.size(); ) {
+                if (isCancelled()) {
+                    cancelFuts(i, partHashCalcFuts);
+
+                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
+                }
+
                 Future<Map<PartitionKeyV2, PartitionHashRecordV2>> fut = partHashCalcFuts.get(i);
 
                 try {
@@ -247,8 +267,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         continue;
                     }
 
-                    for (int j = i + 1; j < partHashCalcFuts.size(); j++)
-                        partHashCalcFuts.get(j).cancel(false);
+                    cancelFuts(i, partHashCalcFuts);
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
@@ -272,6 +291,17 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 throw new IdleVerifyException(exceptions);
 
             return res;
+        }
+
+        /**
+         * Cancels futures from given index.
+         *
+         * @param start Index to start from.
+         * @param partHashCalcFuts Partitions hash calculation futures to cancel.
+         */
+        private void cancelFuts(int start, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
+            for (int i = start; i < partHashCalcFuts.size(); i++)
+                partHashCalcFuts.get(i).cancel(false);
         }
 
         /**
@@ -329,8 +359,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
                 List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
 
+                ForkJoinPool pool = poolSupplier.get();
+
                 for (GridDhtLocalPartition part : parts)
-                    partHashCalcFutures.add(calculatePartitionHashAsync(grpCtx, part));
+                    partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));
             }
 
             return partHashCalcFutures;
@@ -465,14 +497,18 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
 
         /**
+         * @param pool Pool for task submitting.
          * @param gctx Group context.
          * @param part Local partition.
+         * @param cancelled Supplier of cancelled status.
          */
         private Future<Map<PartitionKeyV2, PartitionHashRecordV2>> calculatePartitionHashAsync(
+            final ForkJoinPool pool,
             final CacheGroupContext gctx,
-            final GridDhtLocalPartition part
+            final GridDhtLocalPartition part,
+            final BooleanSupplier cancelled
         ) {
-            return ForkJoinPool.commonPool().submit(() -> {
+            return pool.submit(() -> {
                 Map<PartitionKeyV2, PartitionHashRecordV2> res = emptyMap();
 
                 if (!part.reserve())
@@ -486,8 +522,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         FilePageStoreManager pageStoreMgr =
                             (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
-                        checkPartitionsPageCrcSum(() -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
-                            part.id(), FLAG_DATA);
+                        checkPartitionsPageCrcSum(
+                            () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
+                            part.id(),
+                            FLAG_DATA,
+                            cancelled
+                        );
                     }
 
                     PartitionKeyV2 key = new PartitionKeyV2(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
@@ -498,7 +538,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
-                        gctx.offheap().partitionIterator(part.id()));
+                        gctx.offheap().partitionIterator(part.id()),
+                        cancelled
+                    );
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
@@ -512,11 +554,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Can't calculate partition hash [grpId=" + gctx.groupId() +
-                        ", partId=" + part.id() + "]", e);
+                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
 
-                    throw new IgniteException("Can't calculate partition hash [grpId=" + gctx.groupId() +
-                        ", partId=" + part.id() + "]", e);
+                    U.error(log, msg, e);
+
+                    throw new IgniteException(msg, e);
                 }
                 finally {
                     part.release();
