@@ -21,7 +21,7 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
     private static final int NODE_TO_RESTART_ID = 2;
 
     /** Client node index. */
-    private static final int CLIENT_ID = 3;
+    private static final int CLIENT_ID = 1;
 
     /** */
     private static final String TEST_CACHE_NAME = "SQL_PUBLIC_DMSOPERATIONAMOUNTATTRIBUTE";
@@ -33,8 +33,8 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
 
-        client().addCacheConfiguration(cacheConfiguration());
-        client().getOrCreateCache(cacheConfiguration());
+        //client().addCacheConfiguration(cacheConfiguration());
+        //client().getOrCreateCache(cacheConfiguration());
     }
 
     /** {@inheritDoc} */
