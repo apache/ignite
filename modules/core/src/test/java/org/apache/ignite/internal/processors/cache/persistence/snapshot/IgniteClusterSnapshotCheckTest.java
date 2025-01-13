@@ -53,9 +53,9 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -128,7 +128,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -152,7 +152,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(part0.toString(), part0.toFile().exists());
         assertTrue(part0.toFile().delete());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -176,7 +176,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(dir.toString(), dir.toFile().exists());
         assertTrue(U.delete(dir));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -219,7 +219,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -295,7 +295,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             pageStore.finishRecover();
         }
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -344,7 +344,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -368,7 +368,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
 
         assertEquals("Check must be disabled", 0, res.exceptions().size());
 
@@ -476,7 +476,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -503,9 +503,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         arg.cacheFilter(CacheFilterEnum.USER);
         arg.checkCrc(true);
 
-        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
+        IdleVerifyResult idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
 
-        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
+        IdleVerifyResult snpVerifyRes = ignite.compute().execute(
             new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
@@ -711,10 +711,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTaskV2 {
+    private class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTask {
         /** {@inheritDoc} */
-        @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-            IdleVerifyResultV2 res = super.reduce(results);
+        @Override public @Nullable IdleVerifyResult reduce(List<ComputeJobResult> results) throws IgniteException {
+            IdleVerifyResult res = super.reduce(results);
 
             saveHashes(TestVisorBackupPartitionsTask.class, results);
 
