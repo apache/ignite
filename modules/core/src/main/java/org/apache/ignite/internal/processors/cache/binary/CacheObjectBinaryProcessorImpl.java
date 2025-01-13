@@ -53,7 +53,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -1684,11 +1683,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (oldHld.removing())
             throw new IgniteException("Failed to remove metadata, type is being removed: " + typeId);
-
-        if (!IgniteFeatures.allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.REMOVE_METADATA)) {
-            throw new IgniteException("Failed to remove metadata, " +
-                "all cluster nodes must support the remove type feature");
-        }
 
         try {
             GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataRemove(typeId);

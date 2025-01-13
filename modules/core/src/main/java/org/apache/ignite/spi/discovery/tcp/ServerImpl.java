@@ -75,7 +75,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -83,6 +82,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -173,13 +173,13 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.IgniteFeatures.TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
@@ -296,13 +296,15 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
-    /** */
-    private volatile boolean nodeCompactRepresentationSupported =
-        true; //assume that local node supports this feature
-
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
+
+    /** Client node connection allowed property. */
+    private final DistributedBooleanProperty cliConnEnabled;
+
+    /** Server node connection allowed property. */
+    private final DistributedBooleanProperty srvConnEnabled;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -326,6 +328,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             utilityPoolSize,
             2000,
             new LinkedBlockingQueue<>());
+
+        List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
+            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
+            log,
+            "ClientNode",
+            "ServerNode"
+        );
+
+        cliConnEnabled = props.get(0);
+        srvConnEnabled = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -368,12 +380,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return upcast(ring.visibleRemoteNodes());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        // It is ok to see visible node without order here because attributes are available when node is created.
-        return IgniteFeatures.allNodesSupports(upcast(ring.allNodes()), feature);
     }
 
     /** {@inheritDoc} */
@@ -699,35 +705,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         UUID creatorNodeId,
         UUID failedNodeId
     ) {
-        TcpDiscoveryStatusCheckMessage msg;
+        TcpDiscoveryNode crd = resolveCoordinator();
 
-        if (nodeCompactRepresentationSupported) {
-            TcpDiscoveryNode crd = resolveCoordinator();
+        if (creatorNode == null)
+            return new TcpDiscoveryStatusCheckMessage(creatorNodeId, null, failedNodeId);
 
-            if (creatorNode == null)
-                msg = new TcpDiscoveryStatusCheckMessage(creatorNodeId, null, failedNodeId);
-            else {
-                msg = new TcpDiscoveryStatusCheckMessage(
-                    creatorNode.id(),
-                    spi.getEffectiveNodeAddresses(creatorNode, crd != null && U.sameMacs(creatorNode, crd)),
-                    failedNodeId
-                );
-            }
-        }
-        else {
-            if (creatorNode == null) {
-                TcpDiscoveryNode node = ring.node(creatorNodeId);
-
-                if (node == null)
-                    return null;
-                else
-                    msg = new TcpDiscoveryStatusCheckMessage(node, failedNodeId);
-            }
-            else
-                msg = new TcpDiscoveryStatusCheckMessage(creatorNode, failedNodeId);
-        }
-
-        return msg;
+        return new TcpDiscoveryStatusCheckMessage(
+            creatorNode.id(),
+            spi.getEffectiveNodeAddresses(creatorNode, crd != null && U.sameMacs(creatorNode, crd)),
+            failedNodeId
+        );
     }
 
     /**
@@ -741,14 +728,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         UUID creatorNodeId,
         TcpDiscoveryNode node
     ) {
-        TcpDiscoveryDuplicateIdMessage msg;
-
-        if (nodeCompactRepresentationSupported)
-            msg = new TcpDiscoveryDuplicateIdMessage(creatorNodeId, node.id());
-        else
-            msg = new TcpDiscoveryDuplicateIdMessage(creatorNodeId, node);
-
-        return msg;
+        return new TcpDiscoveryDuplicateIdMessage(creatorNodeId, node.id());
     }
 
     /**
@@ -1501,11 +1481,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
 
-                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
-                    // The only way to know is passing flag directly with handshake response.
-                    if (!res.isDiscoveryDataPacketCompression())
-                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
-
                     synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
@@ -2059,6 +2034,50 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
         else if (log.isDebugEnabled())
             log.debug("Received metrics from unknown node: " + nodeId);
+    }
+
+    /**
+     * @throws IgniteSpiException If failed.
+     */
+    private final void registerLocalNodeAddress() throws IgniteSpiException {
+        long spiJoinTimeout = spi.getJoinTimeout();
+
+        // Make sure address registration succeeded.
+        // ... but limit it if join timeout is configured.
+        long startNanos = spiJoinTimeout > 0 ? System.nanoTime() : 0;
+
+        while (true) {
+            try {
+                spi.ipFinder.initializeLocalAddresses(
+                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
+
+                // Success.
+                break;
+            }
+            catch (IllegalStateException e) {
+                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
+                    locNode.socketAddresses(), e);
+            }
+            catch (IgniteSpiException e) {
+                LT.error(log, e, "Failed to register local node address in IP finder on start " +
+                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
+                    "change 'reconnectDelay' to configure the frequency of retries).");
+            }
+
+            if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
+                throw new IgniteSpiException(
+                    "Failed to register local addresses with IP finder within join timeout " +
+                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
+                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
+                        "[joinTimeout=" + spiJoinTimeout + ']');
+
+            try {
+                U.sleep(spi.getReconnectDelay());
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteSpiException("Thread has been interrupted.", e);
+            }
+        }
     }
 
     /**
@@ -4303,7 +4322,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (spi.nodeAuth != null) {
+                IgniteNodeValidationResult err = ensureJoinEnabled(node);
+
+                if (spi.nodeAuth != null && err == null) {
                     // Authenticate node first.
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
@@ -4405,9 +4426,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err;
-
-                err = spi.getSpiContext().validateNode(node);
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node);
 
                 if (err == null) {
                     try {
@@ -5119,14 +5139,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // Make all preceding nodes and local node visible.
                                 n.visible(true);
-
-                                if (nodeCompactRepresentationSupported) {
-                                    nodeCompactRepresentationSupported =
-                                        nodeSupports(
-                                            n,
-                                            TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION
-                                        );
-                                }
                             }
 
                             joiningNodes.clear();
@@ -5216,12 +5228,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (log.isDebugEnabled())
                 log.debug("Node to finish add: " + node);
-
-            //we will need to recalculate this value since the topology changed
-            if (nodeCompactRepresentationSupported) {
-                nodeCompactRepresentationSupported =
-                    nodeSupports(node, TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION);
-            }
 
             boolean locNodeCoord = isLocalNodeCoordinator();
 
@@ -5482,12 +5488,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(leavingNodeId)) {
-                //we will need to recalculate this value since the topology changed
-                if (!nodeCompactRepresentationSupported) {
-                    nodeCompactRepresentationSupported =
-                        allNodesSupport(TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION);
-                }
-
                 TcpDiscoveryNode leftNode = ring.removeNode(leavingNodeId);
 
                 interruptPing(leavingNode);
@@ -5695,12 +5695,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified()) {
-                //we will need to recalculate this value since the topology changed
-                if (!nodeCompactRepresentationSupported) {
-                    nodeCompactRepresentationSupported =
-                        allNodesSupport(TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION);
-                }
-
                 failedNode = ring.removeNode(failedNodeId);
 
                 interruptPing(failedNode);
@@ -6449,6 +6443,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * @param node Node to connect.
+     * @return {@code null} if connection allowed, error otherwise.
+     */
+    private IgniteNodeValidationResult ensureJoinEnabled(TcpDiscoveryNode node) {
+        return (node.isClient() ? cliConnEnabled : srvConnEnabled).getOrDefault(true)
+            ? null
+            : new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
+    }
+
+    /**
      * Creates proper timeout helper taking in account current send state and ring state.
      *
      * @param sndState Current connection recovering state. Ignored if {@code null}.
@@ -6793,8 +6797,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
-
-                    res.setDiscoveryDataPacketCompression(allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION));
 
                     if (req.client())
                         res.clientAck(true);

@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.compute.ComputeJobContext;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.JobContextResource;
@@ -37,15 +36,6 @@ import org.junit.Test;
  * Tests handling of job result serialization error.
  */
 public class GridClosureSerializationTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(null);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();

@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
@@ -54,7 +53,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
@@ -263,14 +261,6 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
             marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
 
         super.injectResources(ignite);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        if (locNode == null)
-            return false;
-
-        return allNodesSupports(singleton(locNode), feature);
     }
 
     /** {@inheritDoc} */

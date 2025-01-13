@@ -62,7 +62,6 @@ public class IgniteCacheMultiClientsStartTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketWriteTimeout(200);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
 

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Objects;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
-import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;

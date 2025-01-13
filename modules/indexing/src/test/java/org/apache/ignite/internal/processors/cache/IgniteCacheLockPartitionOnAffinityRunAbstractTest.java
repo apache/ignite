@@ -36,13 +36,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -107,10 +105,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
 
         // Enables template with default test configuration
         cfg.setCacheConfiguration(F.concat(cfg.getCacheConfiguration(), cacheConfiguration(igniteInstanceName).setName("*")));
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         // TODO remove key configuration when https://issues.apache.org/jira/browse/IGNITE-5795 is fixed.
         cfg.setCacheKeyConfiguration(new CacheKeyConfiguration(Person.Key.class.getName(), "orgId"));

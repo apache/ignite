@@ -92,6 +92,8 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
 
         startGrids(GRIDS_COUNT);
 
+        startGrid(CLI_IDX);
+
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
