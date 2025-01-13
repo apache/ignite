@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -804,13 +805,22 @@ public class GridNioServerWrapper {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        get().register(directType, supplier);
+                    }
+
                     @Nullable @Override public Message create(short type) {
-                        if (impl == null)
+                        return get().create(type);
+                    }
+
+                    private MessageFactory get() {
+                        if (impl == null) {
                             impl = stateProvider.getSpiContext().messageFactory();
 
-                        assert impl != null;
+                            assert impl != null;
+                        }
 
-                        return impl.create(type);
+                        return impl;
                     }
                 };
 

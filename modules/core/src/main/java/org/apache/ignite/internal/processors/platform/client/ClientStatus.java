@@ -40,6 +40,9 @@ public final class ClientStatus {
     /** Invalid node status. */
     public static final int INVALID_NODE_STATE = 10;
 
+    /** Node in recovery mode. */
+    public static final int NODE_IN_RECOVERY_MODE = 11;
+
     /** Functionality is disabled. */
     public static final int FUNCTIONALITY_DISABLED = 100;
 
