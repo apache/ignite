@@ -40,7 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
@@ -237,19 +237,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                                         // No-op.
                                     }
                                 }
-                            });
+                            }, null);
                         }
 
                         if (partId == INDEX_PARTITION) {
                             if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX, null);
 
                             return null;
                         }
 
                         if (grpId == MetaStorage.METASTORAGE_CACHE_ID) {
                             if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
+                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA, null);
 
                             return null;
                         }
@@ -292,7 +292,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             false,
                             size,
                             skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
+                            null
+                        );
 
                         assert hash != null : "OWNING must have hash: " + key;
 
@@ -449,7 +451,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
         }
 
-        IdleVerifyResultV2 verifyResult = new IdleVerifyResultV2(clusterHashes, errs);
+        IdleVerifyResult verifyResult = new IdleVerifyResult(clusterHashes, errs);
 
         if (errs.isEmpty() && !verifyResult.hasConflicts())
             return;
