@@ -61,12 +61,6 @@ public class ExchangeLatchManager {
     /** Version since latch management is available. */
     private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
 
-    /**
-     * Exchange latch V2 protocol introduces following optimization: Joining nodes are explicitly excluded from possible
-     * latch participants.
-     */
-    public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.5.3");
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -305,10 +299,7 @@ public class ExchangeLatchManager {
             .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
             .collect(Collectors.toList());
 
-        if (canSkipJoiningNodes(topVer))
-            return excludeJoinedNodes(participantNodes, topVer);
-
-        return participantNodes;
+        return excludeJoinedNodes(participantNodes, topVer);
     }
 
     /**
@@ -342,23 +333,7 @@ public class ExchangeLatchManager {
         if (applicableNodes.isEmpty())
             return null;
 
-        if (canSkipJoiningNodes(topVer))
-            applicableNodes = excludeJoinedNodes(applicableNodes, topVer);
-
-        return applicableNodes.get(0);
-    }
-
-    /**
-     * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
-     *
-     * @param topVer Topology version.
-     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
-     */
-    public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> applicableNodes = aliveNodesForTopologyVer(topVer);
-
-        return applicableNodes.stream()
-            .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
+        return excludeJoinedNodes(applicableNodes, topVer).get(0);
     }
 
     /**
