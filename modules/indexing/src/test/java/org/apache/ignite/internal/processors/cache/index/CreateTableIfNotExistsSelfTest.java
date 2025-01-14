@@ -6,6 +6,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -26,9 +27,13 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
     /** */
     private static final String TEST_CACHE_NAME = "SQL_PUBLIC_DMSOPERATIONAMOUNTATTRIBUTE";
 
+    public static volatile boolean TEST;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        cleanPersistenceDir();
 
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
@@ -39,7 +44,7 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        execute("DROP TABLE IF EXISTS PUBLIC.SQL_PUBLIC_DMSOPERATIONAMOUNTATTRIBUTE");
+        execute("DROP TABLE IF EXISTS PUBLIC." + TEST_CACHE_NAME);
 
         super.afterTest();
     }
@@ -50,6 +55,8 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
      */
     @Test
     public void testCreateTableIfNotExists() throws Exception {
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
         execute(
             "CREATE TABLE IF NOT EXISTS DmsOperationAmountAttribute " +
                 "(objectId VARCHAR PRIMARY KEY, version BIGINT, dateTime TIMESTAMP, amount DECIMAL, " +
@@ -57,14 +64,16 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
                 "payerId VARCHAR, payerTin VARCHAR, receiverId VARCHAR, receiverTin VARCHAR, receiverAccount VARCHAR, " +
                 "payerAccount VARCHAR) " +
                 "WITH \"VALUE_TYPE=ru.sbrf.pprb.compliance.database.entities.cumulative.DmsOperationAmountAttribute, " +
-                "CACHE_NAME=SQL_PUBLIC_DMSOPERATIONAMOUNTATTRIBUTE, " +
+                "CACHE_NAME=" + TEST_CACHE_NAME + ", " +
                 "BACKUPS=1, " +
                 "WRITE_SYNCHRONIZATION_MODE=PRIMARY_SYNC\""
         );
 
         execute("SELECT * FROM PUBLIC.DMSOPERATIONAMOUNTATTRIBUTE");
 
-        restartNode(NODE_TO_RESTART_ID);
+        TEST = true;
+
+        restartNode(NODE_TO_RESTART_ID, false);
 
 //        execute(
 //            "CREATE TABLE IF NOT EXISTS DmsOperationAmountAttribute " +
@@ -78,9 +87,14 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
 //                "WRITE_SYNCHRONIZATION_MODE=PRIMARY_SYNC\""
 //        );
 
-        Thread.sleep(1000);
+        //Thread.sleep(1000);
 
-        execute("SELECT * FROM PUBLIC.DMSOPERATIONAMOUNTATTRIBUTE");
+        for (int i = 0; i < 10; ++i) {
+            execute("INSERT INTO DMSOPERATIONAMOUNTATTRIBUTE VALUES('" + i + "', 1, null, null, null, null, null, null, null, null, " +
+                "null, null, null, null, null)");
+        }
+
+        execute("SELECT * FROM DMSOPERATIONAMOUNTATTRIBUTE");
     }
 
     /**
@@ -102,10 +116,10 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
     /**
      * @param idx Index.
      */
-    private void restartNode(int idx) throws Exception {
+    private void restartNode(int idx, boolean includeCaches) throws Exception {
         grid(idx).close();
 
-        Ignition.start(serverConfiguration(idx));
+        Ignition.start(serverConfiguration(idx, includeCaches));
     }
 
     /**
@@ -116,10 +130,10 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
      */
     private List<IgniteConfiguration> configurations() throws Exception {
         return Arrays.asList(
-            serverConfiguration(0),
-            serverConfiguration(1),
-            serverConfiguration(2),
-            clientConfiguration(3)
+            serverConfiguration(0, true),
+            serverConfiguration(1, true),
+            serverConfiguration(2, true)
+            //clientConfiguration(3)
         );
     }
 
@@ -130,7 +144,7 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration serverConfiguration(int idx) throws Exception {
+    private IgniteConfiguration serverConfiguration(int idx, boolean includeCaches) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
         DataRegionConfiguration dataRegionConfiguration = new DataRegionConfiguration()
@@ -143,7 +157,8 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(dataRegionConfiguration));
 
-        cfg.setCacheConfiguration(cacheConfiguration());
+//        if(includeCaches)
+//            cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
     }
@@ -166,10 +181,10 @@ public class CreateTableIfNotExistsSelfTest extends AbstractSchemaSelfTest {
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(TEST_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg.setBackups(1);
+        ccfg.setBackups(2);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        ccfg.setStatisticsEnabled(true);
+        //ccfg.setStatisticsEnabled(true);
 
         return ccfg;
     }
