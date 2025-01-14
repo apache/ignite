@@ -444,8 +444,7 @@ public class GridDhtPartitionSupplier {
             if (grp.shared().kernalContext().isStopping())
                 return;
 
-            // Sending supply messages with error requires new protocol.
-            boolean sendErrMsg = demanderNode.version().compareTo(GridDhtPartitionSupplyMessageV2.AVAILABLE_SINCE) >= 0;
+            boolean sendErrMsg = true;
 
             if (t instanceof IgniteSpiException) {
                 if (log.isDebugEnabled())
