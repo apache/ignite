@@ -146,7 +146,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -198,9 +197,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Maximum number of retries when topology changes. */
     public static final int MAX_RETRIES =
         IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, DFLT_CACHE_RETRIES_COUNT);
-
-    /** Minimum version supporting partition preloading. */
-    private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Exception thrown when a non-transactional IgniteCache clear operation is invoked within a transaction. */
     public static final String NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
@@ -292,8 +288,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
-    /** {@code True} if attempted to use partition preloading on outdated node. */
-    private volatile boolean partPreloadBadVerWarned;
+    /** {@code True} if attempted to use partition preloading on not mapped node. */
+    private volatile boolean partPreloadNotMappedWarned;
 
     /** Active. */
     private volatile boolean active;
@@ -1125,7 +1121,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.grid().transactions().tx() != null)
             throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
@@ -1150,13 +1146,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         @Nullable ClusterNode targetNode = ctx.affinity().primaryByPartition(part, ctx.topology().readyTopologyVersion());
 
-        if (targetNode == null || targetNode.version().compareTo(PRELOAD_PARTITION_SINCE) < 0) {
-            if (!partPreloadBadVerWarned) {
-                U.warn(log(), "Attempting to execute partition preloading task on outdated or not mapped node " +
-                    "[targetNodeVer=" + (targetNode == null ? "NA" : targetNode.version()) +
-                    ", minSupportedNodeVer=" + PRELOAD_PARTITION_SINCE + ']');
+        if (targetNode == null) {
+            if (!partPreloadNotMappedWarned) {
+                U.warn(log(), "Attempting to execute partition preloading task on not mapped node");
 
-                partPreloadBadVerWarned = true;
+                partPreloadNotMappedWarned = true;
             }
 
             return new GridFinishedFuture<>();
@@ -4016,7 +4010,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param readers Whether to clear readers.
      */
     private boolean clearLocally0(K key, boolean readers) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.grid().transactions().tx() != null)
             throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());

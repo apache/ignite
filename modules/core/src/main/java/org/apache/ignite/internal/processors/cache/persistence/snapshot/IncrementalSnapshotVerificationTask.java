@@ -39,7 +39,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
@@ -127,8 +127,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         return new SnapshotPartitionsVerifyTaskResult(
             metas,
             errors.isEmpty() ?
-                new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
-                : new IdleVerifyResultV2(errors));
+                new IdleVerifyResult(partHashes, txHashConflicts, partiallyCommittedTxs)
+                : new IdleVerifyResult(errors));
     }
 
     /** {@inheritDoc} */
