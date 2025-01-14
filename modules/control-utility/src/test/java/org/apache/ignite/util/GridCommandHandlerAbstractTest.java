@@ -77,7 +77,6 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHEC
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
@@ -531,8 +530,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
 
     /** */
     protected String connectorPort(IgniteEx srv) {
-        return srv.localNode().attribute(commandHandler.equals(CLI_GRID_CLIENT_CMD_HND)
-            ? ATTR_REST_TCP_PORT
-            : CLIENT_LISTENER_PORT).toString();
+        return srv.localNode().attribute(CLIENT_LISTENER_PORT).toString();
     }
 }

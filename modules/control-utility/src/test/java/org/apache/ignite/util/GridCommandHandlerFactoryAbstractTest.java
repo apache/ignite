@@ -76,9 +76,6 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     public static final String JMX_CMD_HND = "jmx";
 
     /** @see CliCommandHandler */
-    public static final String CLI_GRID_CLIENT_CMD_HND = "cli_GridClient";
-
-    /** @see CliCommandHandler */
     public static final String CLI_CMD_HND = "cli";
 
     /** */
@@ -125,7 +122,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** */
     protected boolean cliCommandHandler() {
-        return commandHandler.equals(CLI_CMD_HND) || commandHandler.equals(CLI_GRID_CLIENT_CMD_HND);
+        return commandHandler.equals(CLI_CMD_HND);
     }
 
     /** */
@@ -343,8 +340,6 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     protected int commandHandlerExtraLines() {
         return CLI_CMD_HND.equals(commandHandler)
             ? 11
-            : CLI_GRID_CLIENT_CMD_HND.equals(commandHandler)
-                ? 12 // Deprecation message.
-                : 0;
+            : 0;
     }
 }
