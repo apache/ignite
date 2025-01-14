@@ -43,6 +43,9 @@ Arguments: --cache help --yes
         USER                                                            - User.
         ALL                                                             - All.
 
+  Cancels idle_verify command:
+    control.(sh|bat) --cache idle_verify --cancel
+
   Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches:
     control.(sh|bat) --cache list regexPattern [nodeId] [--config] [--output-format multi-line] [--groups|--seq]
 

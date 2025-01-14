@@ -699,7 +699,7 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 1:
-                writeUuidRaw(val.globalId());
+                writeLong(val.globalId().getMostSignificantBits());
 
                 if (!lastFinished)
                     return;
@@ -707,6 +707,14 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 2:
+                writeLong(val.globalId().getLeastSignificantBits());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 3:
                 writeLong(val.localId());
 
                 if (!lastFinished)
@@ -1249,7 +1257,7 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 1:
-                readUuidRaw();
+                uuidMost = readLong();
 
                 if (!lastFinished)
                     return null;
@@ -1257,6 +1265,14 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 2:
+                uuidLeast = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 3:
                 uuidLocId = readLong();
 
                 if (!lastFinished)

@@ -26,15 +26,15 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task to verify checksums of backup partitions.
  */
 @GridInternal
-public class IdleVerifyTaskV2 extends VisorOneNodeTask<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
+public class IdleVerifyTask extends VisorOneNodeTask<CacheIdleVerifyCommandArg, IdleVerifyResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheIdleVerifyCommandArg, IdleVerifyResultV2> job(CacheIdleVerifyCommandArg arg) {
+    @Override protected VisorJob<CacheIdleVerifyCommandArg, IdleVerifyResult> job(CacheIdleVerifyCommandArg arg) {
         if (!ignite.context().state().publicApiActiveState(true))
-            throw new IgniteException(VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+            throw new IgniteException(VerifyBackupPartitionsTask.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
 
-        return new IdleVerifyJob<>(arg, debug, VerifyBackupPartitionsTaskV2.class);
+        return new IdleVerifyJob<>(arg, debug, VerifyBackupPartitionsTask.class);
     }
 }
