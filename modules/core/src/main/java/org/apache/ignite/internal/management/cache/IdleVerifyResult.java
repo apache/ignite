@@ -45,9 +45,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
 /**
- * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
+ * Encapsulates result of {@link VerifyBackupPartitionsTask}.
  */
-public class IdleVerifyResultV2 extends VisorDataTransferObject {
+public class IdleVerifyResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,20 +82,20 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * Default constructor for Externalizable.
      */
-    public IdleVerifyResultV2() {
+    public IdleVerifyResult() {
     }
 
     /**
      * @param exceptions Occurred exceptions.
      */
-    public IdleVerifyResultV2(Map<ClusterNode, Exception> exceptions) {
+    public IdleVerifyResult(Map<ClusterNode, Exception> exceptions) {
         this.exceptions = exceptions;
     }
 
     /**
      * @param txHashConflicts Transaction hashes conflicts.
      */
-    public IdleVerifyResultV2(
+    public IdleVerifyResult(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
         @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
@@ -110,7 +110,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @param clusterHashes Map of cluster partition hashes.
      * @param exceptions Exceptions on each cluster node.
      */
-    public IdleVerifyResultV2(
+    public IdleVerifyResult(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         Map<ClusterNode, Exception> exceptions
     ) {
@@ -390,12 +390,12 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IdleVerifyResultV2 v2 = (IdleVerifyResultV2)o;
+        IdleVerifyResult v = (IdleVerifyResult)o;
 
-        return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
-            Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
-            Objects.equals(exceptions, v2.exceptions) && Objects.equals(txHashConflicts, v2.txHashConflicts) &&
-            Objects.equals(partiallyCommittedTxs, v2.partiallyCommittedTxs);
+        return Objects.equals(cntrConflicts, v.cntrConflicts) && Objects.equals(hashConflicts, v.hashConflicts) &&
+            Objects.equals(movingPartitions, v.movingPartitions) && Objects.equals(lostPartitions, v.lostPartitions) &&
+            Objects.equals(exceptions, v.exceptions) && Objects.equals(txHashConflicts, v.txHashConflicts) &&
+            Objects.equals(partiallyCommittedTxs, v.partiallyCommittedTxs);
     }
 
     /** {@inheritDoc} */
@@ -412,6 +412,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IdleVerifyResultV2.class, this);
+        return S.toString(IdleVerifyResult.class, this);
     }
 }

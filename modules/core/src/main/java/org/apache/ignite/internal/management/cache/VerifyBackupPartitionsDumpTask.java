@@ -64,7 +64,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
     public static final String IDLE_DUMP_FILE_PREFIX = "idle-dump-";
 
     /** Delegate for map execution */
-    private final VerifyBackupPartitionsTaskV2 delegate = new VerifyBackupPartitionsTaskV2();
+    private final VerifyBackupPartitionsTask delegate = new VerifyBackupPartitionsTask();
 
     /** */
     private CacheIdleVerifyDumpCommandArg taskArg;
@@ -172,7 +172,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
      */
     private String writeHashes(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
-        IdleVerifyResultV2 conflictRes,
+        IdleVerifyResult conflictRes,
         int skippedRecords
     ) throws IgniteException {
         String wd = ignite.configuration().getWorkDirectory();
@@ -204,7 +204,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
     /** */
     private void writeResult(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
-        IdleVerifyResultV2 conflictRes,
+        IdleVerifyResult conflictRes,
         int skippedRecords,
         PrintWriter writer
     ) {
