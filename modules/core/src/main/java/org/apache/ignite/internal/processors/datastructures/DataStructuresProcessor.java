@@ -93,7 +93,6 @@ import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.systemview.view.datastructures.AtomicLongView;
 import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
 import org.apache.ignite.spi.systemview.view.datastructures.AtomicSequenceView;
@@ -196,10 +195,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** */
     private static final String SEQUENCES_VIEW_DESC = "Data structure atomic sequences";
-
-    /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
-    private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
-        IgniteProductVersion.fromString("2.7.0");
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -1775,8 +1770,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
         final boolean collocated = isCollocated(cfg);
-        final boolean separated = !collocated &&
-            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, ctx.grid().cluster().nodes());
+        final boolean separated = !collocated;
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
