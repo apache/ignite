@@ -586,18 +586,13 @@ public class CommandHandlerParsingTest {
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = parseArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
-                "--ping-timeout", "40000", name));
+            args = parseArgs(asList("--port", "12345", "--host", "test-host", name));
 
             assertEquals(cmd.getClass(), args.command().getClass());
             assertEquals("test-host", args.host());
             assertEquals(12345, args.port());
-            assertEquals(5000, args.pingInterval());
-            assertEquals(40000, args.pingTimeout());
 
             assertParseArgsThrows("Can't parse number 'wrong-port'", "--port", "wrong-port", name);
-            assertParseArgsThrows("Invalid value for --ping-interval: -10", "--ping-interval", "-10", name);
-            assertParseArgsThrows("Invalid value for --ping-timeout: -20", "--ping-timeout", "-20", name);
         });
     }
 

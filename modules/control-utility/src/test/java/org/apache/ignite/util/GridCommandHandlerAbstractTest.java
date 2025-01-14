@@ -49,7 +49,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
@@ -184,8 +183,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         for (File f : logDir.listFiles(n -> n.getName().startsWith(CacheIdleVerifyCommand.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
-        GridClientFactory.stopAll(false);
-
         stopAllGrids(true);
 
         cleanPersistenceDir();
@@ -206,8 +203,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         testOut.reset();
 
         encryptionEnabled = false;
-
-        GridClientFactory.stopAll(false);
     }
 
     /** {@inheritDoc} */

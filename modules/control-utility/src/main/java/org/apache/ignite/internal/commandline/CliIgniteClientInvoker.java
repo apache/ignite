@@ -20,15 +20,13 @@ package org.apache.ignite.internal.commandline;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandInvoker;
-import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -53,8 +51,8 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientNode defaultNode() {
-        return CommandUtils.clusterToClientNode(igniteClient().cluster().forOldest().node());
+    @Override protected ClusterNode defaultNode() {
+        return igniteClient().cluster().forOldest().node();
     }
 
     /** {@inheritDoc} */
@@ -78,11 +76,7 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
 
     /** {@inheritDoc} */
     @Override public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
-        return ((BeforeNodeStartCommand<A, R>)cmd).execute(new GridClientNodeStateBeforeStart() {
-            @Override public void stopWarmUp() {
-                ((TcpIgniteClient)igniteClient()).stopWarmUp();
-            }
-        }, arg, printer);
+        return ((BeforeNodeStartCommand<A, R>)cmd).execute((TcpIgniteClient)igniteClient(), arg, printer);
     }
 
     /** {@inheritDoc} */

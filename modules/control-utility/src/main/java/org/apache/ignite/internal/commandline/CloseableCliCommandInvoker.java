@@ -30,8 +30,8 @@ public interface CloseableCliCommandInvoker extends AutoCloseable {
     /** @see CommandInvoker#prepare(Consumer) */
     boolean prepare(Consumer<String> printer) throws Exception;
 
-    /** @see CommandInvoker#invoke(Consumer, boolean) */
-    <R> R invoke(Consumer<String> printer, boolean verbose) throws Exception;
+    /** @see #invoke(Consumer) */
+    <R> R invoke(Consumer<String> printer) throws Exception;
 
     /** */
     <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception;

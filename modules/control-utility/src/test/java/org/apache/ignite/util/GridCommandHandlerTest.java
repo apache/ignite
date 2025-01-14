@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -83,9 +82,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.impl.GridClientImpl;
-import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
@@ -121,6 +117,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -166,7 +163,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -307,36 +303,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         if (cliCommandHandler())
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
-    }
-
-    /**
-     * Test clients leakage.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientsLeakage() throws Exception {
-        Assume.assumeTrue(cliCommandHandler());
-
-        startGrids(1);
-
-        Map<UUID, GridClientImpl> clnts = U.field(GridClientFactory.class, "openClients");
-
-        Map<UUID, GridClientImpl> clntsBefore = new HashMap<>(clnts);
-
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
-
-        Map<UUID, GridClientImpl> clntsAfter1 = new HashMap<>(clnts);
-
-        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter1));
-
-        stopAllGrids();
-
-        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute("--set-state", "ACTIVE"));
-
-        Map<UUID, GridClientImpl> clntsAfter2 = new HashMap<>(clnts);
-
-        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
     }
 
     /** */
