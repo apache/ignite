@@ -444,14 +444,12 @@ public class GridDhtPartitionSupplier {
             if (grp.shared().kernalContext().isStopping())
                 return;
 
-            boolean sendErrMsg = true;
+            boolean skipErrMsg = t instanceof IgniteSpiException;
 
-            if (t instanceof IgniteSpiException) {
+            if (skipErrMsg) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (current node is stopping?) ["
                         + supplyRoutineInfo(topicId, nodeId, demandMsg) + ", msg=" + t.getMessage() + ']');
-
-                sendErrMsg = false;
             }
             else
                 U.error(log, "Failed to continue supplying ["
@@ -466,7 +464,7 @@ public class GridDhtPartitionSupplier {
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + ']', t1);
             }
 
-            if (!sendErrMsg)
+            if (skipErrMsg)
                 return;
 
             boolean fallbackToFullRebalance = X.hasCause(t, IgniteHistoricalIteratorException.class);
