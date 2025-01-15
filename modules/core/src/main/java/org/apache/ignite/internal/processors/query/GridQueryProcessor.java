@@ -1693,8 +1693,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else if (op instanceof SchemaAddQueryEntityOperation) {
             if (cacheNames.contains(op.cacheName()))
-                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_SUPPORTS_SQL,
-                    op.cacheName());
+                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, op.cacheName());
         }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
@@ -1743,8 +1742,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (op instanceof SchemaAddQueryEntityOperation) {
             if (cacheSupportSql(desc.cacheConfiguration()))
-                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_SUPPORTS_SQL,
-                    desc.cacheName());
+                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, desc.cacheName());
 
             return new T2<>(nop, err);
         }
