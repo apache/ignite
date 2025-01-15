@@ -27,12 +27,15 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -47,6 +50,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
@@ -135,6 +139,38 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     }
 
     /** */
+    @Test
+    public void testServiceCancel() throws Exception {
+        String srvcName = "testService";
+        Collection<String> cmdArgs = asList("--kill", "service", srvcName);
+
+        Ignite ignite = startGrid(
+            0,
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, servicePermission(srvcName, SERVICE_CANCEL))
+        );
+
+        ServiceConfiguration srvcCfg = new ServiceConfiguration();
+
+        srvcCfg.setName(srvcName);
+        srvcCfg.setMaxPerNodeCount(1);
+        srvcCfg.setTotalCount(1);
+        srvcCfg.setService(new ServicesTest.TestService());
+
+        ignite.services().deploy(srvcCfg);
+
+        Collection<ServiceDescriptor> svcs = ignite.services().serviceDescriptors();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(1, svcs.size());
+
+        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+
+        svcs = ignite.services().serviceDescriptors();
+        assertEquals(0, svcs.size());
+    }
+
+    /** */
     protected IgniteEx startGrid(int idx, TestSecurityData... userData) throws Exception {
         String login = getTestIgniteInstanceName(idx);
 
@@ -183,6 +219,14 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         return SecurityPermissionSetBuilder.create()
             .defaultAllowAll(false)
             .appendCachePermissions(DEFAULT_CACHE_NAME, perms)
+            .build();
+    }
+
+    /** */
+    private SecurityPermissionSet servicePermission(String name, SecurityPermission... perms) {
+        return SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendServicePermissions(name, perms)
             .build();
     }
 
