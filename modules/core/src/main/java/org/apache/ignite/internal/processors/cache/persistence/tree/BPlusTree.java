@@ -5724,8 +5724,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             for (int idx = startIdx; idx < cnt; idx++) {
                 if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx)) {
-                    rows = GridArrays.set(rows, resCnt++, rowFactory == null ? getRow(io, pageAddr, idx, x) :
-                        rowFactory.create(BPlusTree.this, io, pageAddr, idx));
+                    T row;
+
+                    if (rowFactory != null)
+                        row = rowFactory.create(BPlusTree.this, io, pageAddr, idx);
+                    else if (c != null && c.lastRow() != null)
+                        row = c.lastRow();
+                    else
+                        row = getRow(io, pageAddr, idx, x);
+
+                    rows = GridArrays.set(rows, resCnt++, row);
                 }
             }
 
@@ -5938,7 +5946,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          *
          * @return Last row that was analyzed or {@code null}.
          */
-        public default L lastRow() {
+        public default T lastRow() {
             return null;
         }
     }

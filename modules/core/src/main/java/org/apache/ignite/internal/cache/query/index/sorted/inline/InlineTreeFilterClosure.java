@@ -38,6 +38,9 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
     /** */
     private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
 
+    /** */
+    private IndexRow lastRow;
+
     /** Constructor. */
     public InlineTreeFilterClosure(IndexingQueryCacheFilter cacheFilter,
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter) {
@@ -56,10 +59,18 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
         if (!val)
             return false;
 
-        if (rowFilter != null)
+        if (rowFilter != null) {
             val = rowFilter.apply(tree, io, pageAddr, idx);
 
+            lastRow = rowFilter.lastRow();
+        }
+
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexRow lastRow() {
+        return lastRow;
     }
 
     /**
