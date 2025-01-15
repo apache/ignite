@@ -1770,13 +1770,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
         final boolean collocated = isCollocated(cfg);
-        final boolean separated = !collocated;
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
-                return cctx.dataStructures().set(name, collocated, create, separated);
+                return cctx.dataStructures().set(name, collocated, create, !collocated);
             }
-        }, cfg, name, grpName, SET, create, separated);
+        }, cfg, name, grpName, SET, create, !collocated);
     }
 
     /**
