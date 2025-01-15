@@ -57,10 +57,10 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
 
     /** {@inheritDoc} */
     @Override protected GridClientNode defaultNode() {
-        String[] address = cfg.getAddresses()[0].split(":");
+        String[] addr = cfg.getAddresses()[0].split(":");
 
-        String host = address[0];
-        String port = address[1];
+        String host = addr[0];
+        String port = addr[1];
 
         Collection<ClusterNode> nodes = igniteClient().cluster().nodes();
 
