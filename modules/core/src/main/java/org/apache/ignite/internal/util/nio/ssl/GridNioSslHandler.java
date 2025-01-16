@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -109,17 +110,19 @@ class GridNioSslHandler extends ReentrantLock {
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param handshake is handshake required.
-     * @param encBuf encoded buffer to be used.
+     * @param sslMeta SSL meta.
      * @throws SSLException If exception occurred when starting SSL handshake.
      */
-    GridNioSslHandler(GridNioSslFilter parent,
+    GridNioSslHandler(
+        GridNioSslFilter parent,
         GridNioSession ses,
         SSLEngine engine,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
         boolean handshake,
-        ByteBuffer encBuf) throws SSLException {
+        GridSslMeta sslMeta
+    ) throws SSLException {
         assert parent != null;
         assert ses != null;
         assert engine != null;
@@ -145,32 +148,21 @@ class GridNioSslHandler extends ReentrantLock {
         // Allocate a little bit more so SSL engine would not return buffer overflow status.
         int netBufSize = sslEngine.getSession().getPacketBufferSize() + 50;
 
-        outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
-
-        outNetBuf.order(order);
-
-        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
-
-        inNetBuf.order(order);
-
-        if (encBuf != null) {
-            encBuf.flip();
-
-            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by sslEngine at BlockingSslHandler.
-        }
+        outNetBuf = createBuffer(netBufSize, null);
 
         // Initially buffer is empty.
         outNetBuf.position(0);
         outNetBuf.limit(0);
 
-        int appBufSize = Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2);
+        inNetBuf = createBuffer(netBufSize, sslMeta.encodedBuffer());
 
-        appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
-
-        appBuf.order(order);
+        appBuf = createBuffer(
+            Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2),
+            sslMeta.decodedBuffer()
+        );
 
         if (log.isDebugEnabled())
-            log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');
+            log.debug("Started SSL session [netBufSize=" + outNetBuf.capacity() + ", appBufSize=" + appBuf.capacity() + ']');
     }
 
     /**
@@ -680,6 +672,21 @@ class GridNioSslHandler extends ReentrantLock {
         cp.flip();
 
         return cp;
+    }
+
+    /** */
+    private ByteBuffer createBuffer(int size, @Nullable ByteBuffer init) {
+        if (init != null)
+            size = Math.max(size, init.remaining());
+
+        appBuf = directBuf ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+
+        appBuf.order(order);
+
+        if (init != null)
+            appBuf.put(init);
+
+        return appBuf;
     }
 
     /**
