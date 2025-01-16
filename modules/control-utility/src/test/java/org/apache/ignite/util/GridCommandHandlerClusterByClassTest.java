@@ -1250,7 +1250,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * @return Build matcher for dump file name.
      */
-    @NotNull private Matcher dumpFileNameMatcher() {
+    @NotNull static Matcher dumpFileNameMatcher() {
         Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getSimpleName()
             + " successfully written output to '(.*)'");
         return fileNamePattern.matcher(testOut.toString());

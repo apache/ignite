@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 
 /**
  * Adapter of new management API command for {@code control.sh} execution flow.
@@ -52,7 +54,16 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
 
     /** {@inheritDoc} */
     @Override protected ClusterNode defaultNode() {
-        return igniteClient().cluster().forOldest().node();
+        String[] addr = cfg.getAddresses()[0].split(":");
+
+        String host = addr[0];
+        String port = addr[1];
+
+        Collection<ClusterNode> nodes = igniteClient().cluster().nodes();
+
+        return F.find(nodes, U.oldest(nodes, null), node ->
+            (node.hostNames().contains(host) || node.addresses().contains(host))
+                && port.equals(node.attribute(CLIENT_LISTENER_PORT).toString()));
     }
 
     /** {@inheritDoc} */
