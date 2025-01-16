@@ -1840,7 +1840,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        locCfg.cacheData().config(),
+                        desc.cacheConfiguration(),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
