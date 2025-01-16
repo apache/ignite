@@ -259,18 +259,16 @@ public class CommandHandler {
 
             while (true) {
                 try (
-                    CloseableCliCommandInvoker invoker =
+                    CliIgniteClientInvoker<A> invoker =
                          new CliIgniteClientInvoker<>(args.command(), args.commandArg(), clientConfiguration(args))
                 ) {
                     if (!invoker.prepare(logger::info))
                         return EXIT_CODE_OK;
 
-                    if (!args.autoConfirmation()) {
-                        if (!confirm(invoker.confirmationPrompt())) {
-                            logger.info("Operation cancelled.");
+                    if (!args.autoConfirmation() && !confirm(invoker.confirmationPrompt())) {
+                        logger.info("Operation cancelled.");
 
-                            return EXIT_CODE_OK;
-                        }
+                        return EXIT_CODE_OK;
                     }
 
                     logger.info("Command [" + cmdName + "] started");

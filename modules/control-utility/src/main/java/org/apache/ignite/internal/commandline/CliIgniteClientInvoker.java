@@ -30,7 +30,6 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
@@ -38,7 +37,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor
 /**
  * Adapter of new management API command for {@code control.sh} execution flow.
  */
-public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements CloseableCliCommandInvoker {
+public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements AutoCloseable {
     /** Client configuration. */
     private final ClientConfiguration cfg;
 
@@ -67,7 +66,7 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable IgniteClient igniteClient() {
+    @Override protected IgniteClient igniteClient() {
         if (client == null) {
             if (cmd instanceof BeforeNodeStartCommand) {
                 cfg.setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()));
@@ -81,12 +80,12 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt() {
+    public String confirmationPrompt() {
         return cmd.confirmationPrompt(arg);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
+    public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
         return ((BeforeNodeStartCommand<A, R>)cmd).execute((TcpIgniteClient)igniteClient(), arg, printer);
     }
 
