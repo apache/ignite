@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
