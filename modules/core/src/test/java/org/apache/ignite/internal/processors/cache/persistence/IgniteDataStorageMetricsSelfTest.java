@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -542,13 +541,10 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
 
         if (router.hasArchive()) {
-            long totalCdcArchiveSize = walMgr.totalSize(walFiles(walMgr.walCdcDirectory()));
-
-            assertEquals(totalCdcArchiveSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("CdcWalTotalSize").value());
-
             long cdcWalArchiveSegments = walFiles(walMgr.walCdcDirectory()).length;
 
-            assertEquals(cdcWalArchiveSegments, dsMetricRegistry(igniteEx).<IntGauge>findMetric("CdcWalArchiveSegments").value());
+            // Count of segments = LastArchivedSegmentIndex + 1
+            assertEquals(cdcWalArchiveSegments, dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value() + 1);
         }
     }
 
