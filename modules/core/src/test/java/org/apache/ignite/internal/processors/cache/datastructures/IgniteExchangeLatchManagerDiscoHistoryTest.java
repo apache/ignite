@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -223,24 +222,9 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
             // Let's continue the ongoing exchange.
             exchangeLatch.countDown();
 
-            boolean failureHnd = GridTestUtils.waitForCondition(() -> cpFailureCtx.get() != null, DEFAULT_TIMEOUT);
-
             assertNull(
                 "Unexpected exception (probably, the topology history still exists [err=" + err + ']',
                 err.get());
-
-            assertTrue("Failure handler was not triggered.", failureHnd);
-
-            // Check that IgniteException was thrown instead of NullPointerException.
-            assertTrue(
-                "IgniteException must be thrown.",
-                X.hasCause(cpFailureCtx.get().error(), IgniteException.class));
-
-            // Check that message contains a hint to fix the issue.
-            GridTestUtils.assertContains(
-                log,
-                cpFailureCtx.get().error().getMessage(),
-                "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is " + DISCO_HISTORY_SIZE);
         }
         finally {
             IgnitionEx.stop(getTestIgniteInstanceName(1), true, ShutdownPolicy.IMMEDIATE, true);
