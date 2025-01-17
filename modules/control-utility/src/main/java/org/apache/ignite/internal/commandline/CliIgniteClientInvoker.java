@@ -79,12 +79,12 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
         return client;
     }
 
-    /** {@inheritDoc} */
+    /** @return Message text to show user for. {@code null} means that confirmantion is not required. */
     public String confirmationPrompt() {
         return cmd.confirmationPrompt(arg);
     }
 
-    /** {@inheritDoc} */
+    /** */
     public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
         return ((BeforeNodeStartCommand<A, R>)cmd).execute((TcpIgniteClient)igniteClient(), arg, printer);
     }
