@@ -1511,13 +1511,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
 
             if (total > safeToUse) {
-                String reasonMsg = 4L << 30 < (long)(ram * 0.2) ?
-                    "Nodes started on local machine require more than 80% of physical RAM. " :
-                    "Nodes started on local machine left less than 4GB of physical RAM free for direct buffering, OS needs.";
-
-                U.quietAndWarn(log, reasonMsg + "This may lead to significant slowdown due to swapping, or even " +
+                U.quietAndWarn(log, "Nodes started on local machine requested more physical RAM, than" +
+                    "is needed for safe usage. This may lead to significant slowdown due to swapping, or even " +
                     "JVM/Ignite crash with OutOfMemoryError (please decrease JVM heap size, data region size or " +
-                    "checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" + (ram >> 20) +
+                    "checkpoint buffer size) [requested=" + (total >> 20) + "MB, available=" + (ram >> 20) +
                     "MB, safeToUse=" + (safeToUse >> 20) + "MB]");
             }
         }
