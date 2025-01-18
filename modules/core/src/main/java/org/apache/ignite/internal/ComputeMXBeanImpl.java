@@ -29,7 +29,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
-
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
