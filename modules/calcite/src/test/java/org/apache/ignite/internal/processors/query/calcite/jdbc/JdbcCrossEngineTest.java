@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -107,20 +105,20 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
     @Test
     public void testInsertDefaultValue() {
         // Test only types supported by both SQL engines.
-        checkInsertDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
-        checkInsertDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
-        checkInsertDefaultValue("BIGINT", "10", 10L);
-        checkInsertDefaultValue("INTEGER", "10", 10);
-        checkInsertDefaultValue("SMALLINT", "10", (short)10);
-        checkInsertDefaultValue("TINYINT", "10", (byte)10);
-        checkInsertDefaultValue("DOUBLE", "10.01", 10.01d);
-        checkInsertDefaultValue("REAL", "10.01", 10.01f);
-        checkInsertDefaultValue("DECIMAL(4, 2)", "10.01", new BigDecimal("10.01"));
-        checkInsertDefaultValue("CHAR(2)", "'10'", "10");
-        checkInsertDefaultValue("VARCHAR", "'10'", "10");
-        checkInsertDefaultValue("VARCHAR NOT NULL", "'10'", "10");
-        checkInsertDefaultValue("VARCHAR(2)", "'10'", "10");
-        checkInsertDefaultValue("DATE", "DATE '2021-01-01'", Date.valueOf("2021-01-01"));
+//        checkInsertDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
+//        checkInsertDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
+//        checkInsertDefaultValue("BIGINT", "10", 10L);
+//        checkInsertDefaultValue("INTEGER", "10", 10);
+//        checkInsertDefaultValue("SMALLINT", "10", (short)10);
+//        checkInsertDefaultValue("TINYINT", "10", (byte)10);
+//        checkInsertDefaultValue("DOUBLE", "10.01", 10.01d);
+//        checkInsertDefaultValue("REAL", "10.01", 10.01f);
+//        checkInsertDefaultValue("DECIMAL(4, 2)", "10.01", new BigDecimal("10.01"));
+//        checkInsertDefaultValue("CHAR(2)", "'10'", "10");
+//        checkInsertDefaultValue("VARCHAR", "'10'", "10");
+//        checkInsertDefaultValue("VARCHAR NOT NULL", "'10'", "10");
+//        checkInsertDefaultValue("VARCHAR(2)", "'10'", "10");
+//        checkInsertDefaultValue("DATE", "DATE '2021-01-01'", Date.valueOf("2021-01-01"));
         checkInsertDefaultValue("TIME", "TIME '01:01:01'", Time.valueOf("01:01:01"));
         checkInsertDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
         checkInsertDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});

@@ -205,13 +205,10 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testOldDates() {
-//        assertQuery("SELECT DATE '1582-10-05' + INTERVAL 1 DAYS").returns(java.sql.Date.valueOf("1582-10-06")).check();
-//        assertQuery("SELECT TIMESTAMP '1582-10-05 00:00:00' + INTERVAL 1 DAYS").returns(Timestamp.valueOf("1582-10-06 00:00:00")).check();
-
         assertQuery("SELECT DATE '1582-10-01' + INTERVAL 1 DAYS").returns(java.sql.Date.valueOf("1582-10-02")).check();
         assertQuery("SELECT TIMESTAMP '1582-10-01 00:00:00' + INTERVAL 1 DAYS").returns(Timestamp.valueOf(("1582-10-02 00:00:00"))).check();
+        assertQuery("SELECT TIMESTAMP '903-05-03 01:02:03'").returns(java.sql.Timestamp.valueOf("0903-05-03 01:02:03")).check();
     }
-
 
     /** */
     @Test

@@ -30,7 +30,6 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -427,28 +426,27 @@ public class TypeUtils {
         return time + tz.getOffset(time);
     }
 
-
     /** */
     public static Object fromInternal(DataContext ctx, @Nullable Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class && (val instanceof Integer || val instanceof Long)) {
-            ZonedDateTime locDate = LocalDate.ofEpochDay(((Number)val).longValue()).atStartOfDay(((TimeZone)DataContext.Variable.TIME_ZONE.get(ctx)).toZoneId());
+            ZoneId zoneId = ((TimeZone)DataContext.Variable.TIME_ZONE.get(ctx)).toZoneId();
 
-            return Date.valueOf(locDate.toLocalDate());
-        } else if (storageType == LocalDate.class && val instanceof Integer)
+            return Date.valueOf(LocalDate.ofEpochDay(((Number)val).longValue()).atStartOfDay(zoneId).toLocalDate());
+        }
+        else if (storageType == LocalDate.class && val instanceof Integer)
             return LocalDate.ofEpochDay((Integer)val).atStartOfDay(((TimeZone)DataContext.Variable.TIME_ZONE.get(ctx)).toZoneId());
-        else if (storageType == java.sql.Time.class && val instanceof Integer) {
-            ZonedDateTime locDate = LocalDate.ofEpochDay((Integer)val).atStartOfDay(((TimeZone)DataContext.Variable.TIME_ZONE.get(ctx)).toZoneId());
-
-            return Time.valueOf(locDate.toLocalTime());
-        } else if (storageType == LocalTime.class && val instanceof Integer)
+        else if (storageType == java.sql.Time.class && val instanceof Integer)
+            return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
+        else if (storageType == LocalTime.class && val instanceof Integer)
             return Instant.ofEpochMilli((Integer)val).atZone(ZoneOffset.UTC).toLocalTime();
         else if (storageType == Timestamp.class && val instanceof Long) {
             LocalDateTime locDate = LocalDateTime.ofInstant(Instant.ofEpochMilli((Long)val), ZoneOffset.UTC);
 
             return Timestamp.valueOf(locDate);
-        }else if (storageType == LocalDateTime.class && val instanceof Long)
+        }
+        else if (storageType == LocalDateTime.class && val instanceof Long)
             return LocalDateTime.ofInstant(Instant.ofEpochMilli((Long)val), ZoneOffset.UTC);
         else if (storageType == Duration.class && val instanceof Long)
             return Duration.ofMillis((Long)val);
