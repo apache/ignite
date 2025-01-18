@@ -63,7 +63,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @return Affinity nodes for this cache.
      */
     public Collection<ClusterNode> affinityNodes() {
-        return grid(0).cluster().nodes();
+        return defaultInstance().cluster().nodes();
     }
 
     /**
@@ -81,7 +81,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteCache<Object, Object> c0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> c0 = defaultInstance().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> c1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         c0.putAll(putMap);
@@ -109,7 +109,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        IgniteCache<Object, Object> prj0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> prj0 = defaultInstance().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> prj1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         prj0.putAll(putMap);
@@ -144,7 +144,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         final int size = 10;
 
-        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache0 = defaultInstance().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
@@ -283,8 +283,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < 10_000 && keys.size() < 5; i++) {
             String key = String.valueOf(i);
 
-            if (ignite(0).affinity(DEFAULT_CACHE_NAME).isPrimary(ignite0.localNode(), key) &&
-                ignite(0).affinity(DEFAULT_CACHE_NAME).isBackup(ignite1.localNode(), key)) {
+            if (defaultInstance().affinity(DEFAULT_CACHE_NAME).isPrimary(ignite0.localNode(), key) &&
+                defaultInstance().affinity(DEFAULT_CACHE_NAME).isBackup(ignite1.localNode(), key)) {
                 keys.add(key);
 
                 cache0.put(key, val++);
@@ -351,7 +351,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (!isMultiJvm())
             info("All affinity nodes: " + affinityNodes());
 
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = defaultInstance().cache(DEFAULT_CACHE_NAME);
 
         info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 

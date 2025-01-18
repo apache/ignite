@@ -35,7 +35,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
@@ -126,8 +125,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
             cfg.setMetricsUpdateFrequency(1000);
         }
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClientMode("client".equals(gridName) || getTestIgniteInstanceIndex(gridName) >= GRID_CNT);
 

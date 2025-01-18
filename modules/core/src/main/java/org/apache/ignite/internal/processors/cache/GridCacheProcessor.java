@@ -72,7 +72,6 @@ import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteTransactionsEx;
@@ -85,7 +84,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
@@ -599,7 +597,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
-        transactions = new IgniteTransactionsImpl(sharedCtx, null, false);
+        transactions = new IgniteTransactionsImpl(sharedCtx, null, false, null);
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
@@ -3119,7 +3117,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        cachesInfo.collectGridNodeData(dataBag, backwardCompatibleSplitter());
+        cachesInfo.collectGridNodeData(dataBag, splitter());
     }
 
     /** {@inheritDoc} */
@@ -3138,9 +3136,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if (!cachesInfo.isMergeConfigSupports(node))
-            return null;
-
         String validationRes = cachesInfo.validateJoiningNodeData(discoData, node.isClient());
 
         if (validationRes != null)
@@ -3550,11 +3545,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             };
 
         try {
-            if (ccfg != null && ccfg.isEncryptionEnabled()) {
-                ctx.encryption().checkEncryptedCacheSupported();
-
+            if (ccfg != null && ccfg.isEncryptionEnabled())
                 return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
-            }
 
             return startCacheClsr.apply(Collections.EMPTY_SET, null);
         }
@@ -4689,7 +4681,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         DynamicCacheChangeRequest req = DynamicCacheChangeRequest.addTemplateRequest(ctx, cacheCfg,
-            backwardCompatibleSplitter().split(cacheCfg));
+            splitter().split(cacheCfg));
 
         TemplateConfigurationFuture fut = new TemplateConfigurationFuture(req.cacheName(), req.deploymentId());
 
@@ -5147,7 +5139,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     req.deploymentId(desc.deploymentId());
 
-                    T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(desc);
+                    T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter().split(desc);
 
                     req.startCacheConfiguration(splitCfg.get1());
                     req.cacheConfigurationEnrichment(splitCfg.get2());
@@ -5165,7 +5157,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.deploymentId(IgniteUuid.randomUuid());
 
-                T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(cfg);
+                T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter().split(cfg);
 
                 req.startCacheConfiguration(splitCfg.get1());
                 req.cacheConfigurationEnrichment(splitCfg.get2());
@@ -5196,7 +5188,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             req.deploymentId(desc.deploymentId());
 
-            T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(ccfg);
+            T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter().split(ccfg);
 
             req.startCacheConfiguration(splitCfg.get1());
             req.cacheConfigurationEnrichment(splitCfg.get2());
@@ -5308,33 +5300,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param oldFormat Old format.
-     */
-    private CacheConfigurationSplitter splitter(boolean oldFormat) {
-        // Requesting splitter with old format support is rare operation.
-        // It's acceptable to allocate it every time by request.
-        return oldFormat ? new CacheConfigurationSplitterOldFormat(enricher) : splitter;
-    }
-
-    /**
      * @return By default it returns splitter without old format configuration support.
      */
     public CacheConfigurationSplitter splitter() {
-        return splitter(false);
-    }
-
-    /**
-     * If not all nodes in cluster support splitted cache configurations it returns old format splitter.
-     * In other case it returns default splitter.
-     *
-     * @return Cache configuration splitter with or without old format support depending on cluster state.
-     */
-    private CacheConfigurationSplitter backwardCompatibleSplitter() {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
-
-        boolean oldFormat = !spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
-
-        return splitter(oldFormat);
+        return splitter;
     }
 
     /**
@@ -5751,6 +5720,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If there is an error when stopping warm-up.
      */
     public boolean stopWarmUp() throws IgniteCheckedException {
+        if (!ctx.recoveryMode())
+            throw new IgniteException("Node has already started.");
+
         if (recovery.stopWarmUp.compareAndSet(false, true)) {
             WarmUpStrategy strat = recovery.curWarmUpStrat;
 

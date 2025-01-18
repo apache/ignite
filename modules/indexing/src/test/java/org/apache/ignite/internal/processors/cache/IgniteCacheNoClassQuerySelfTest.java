@@ -25,7 +25,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,8 +40,6 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"deprecation"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

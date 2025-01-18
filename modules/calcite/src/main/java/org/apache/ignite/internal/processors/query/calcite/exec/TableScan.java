@@ -20,23 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -66,11 +63,8 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         /** */
         private GridCursor<? extends CacheDataRow> cur;
 
-        /**
-         * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
-         * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
-         */
-        private IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges;
+        /** Transaction changes. */
+        private final TransactionChanges<CacheDataRow> txChanges;
 
         /** */
         private Iterator<CacheDataRow> txIter = Collections.emptyIterator();
@@ -80,19 +74,20 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         /** */
         private IteratorImpl() {
-            assert reserved != null;
+            assert reservedParts != null;
 
-            parts = new ArrayDeque<>(reserved);
+            parts = new ArrayDeque<>(reservedParts);
 
-            if (!F.isEmpty(ectx.getQryTxEntries())) {
-                txChanges = ectx.transactionChanges(
+            txChanges = F.isEmpty(ectx.getQryTxEntries())
+                ? TransactionChanges.empty()
+                : ectx.transactionChanges(
                     cctx.cacheId(),
                     // All partitions scaned for replication cache.
                     // See TableScan#reserve.
                     cctx.isReplicated() ? null : TableScan.this.parts,
-                    Function.identity()
+                    Function.identity(),
+                    null
                 );
-            }
         }
 
         /** {@inheritDoc} */
@@ -136,13 +131,12 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
                     cur = part.dataStore().cursor(cctx.cacheId());
 
-                    if (txChanges != null) {
-                        // This call will change `txChanges.get1()` content.
+                    if (!txChanges.changedKeysEmpty()) {
+                        // This call will change `txChanges` content.
                         // Removing found key from set more efficient so we break some rules here.
-                        if (!F.isEmpty(txChanges.get1()))
-                            cur = new KeyFilteringCursor<>(cur, txChanges.get1(), CacheSearchRow::key);
+                        cur = new KeyFilteringCursor<>(cur, txChanges, CacheSearchRow::key);
 
-                        txIter = F.iterator0(txChanges.get2(), true, e -> e.key().partition() == part.id());
+                        txIter = F.iterator0(txChanges.newAndUpdatedEntries(), true, e -> e.key().partition() == part.id());
                     }
                 }
 

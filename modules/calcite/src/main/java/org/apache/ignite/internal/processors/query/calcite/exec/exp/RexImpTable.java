@@ -135,6 +135,9 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MICROS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MILLIS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_SECONDS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_BASE64;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_CHAR;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_DATE;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_TIMESTAMP;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MICROS;
@@ -409,6 +412,9 @@ public class RexImpTable {
         defineMethod(DATE, "date", NullPolicy.STRICT);
         defineMethod(DATETIME, "datetime", NullPolicy.STRICT);
         defineMethod(TIME, "time", NullPolicy.STRICT);
+        defineReflective(TO_CHAR, BuiltInMethod.TO_CHAR.method);
+        defineReflective(TO_DATE, BuiltInMethod.TO_DATE.method);
+        defineReflective(TO_TIMESTAMP, BuiltInMethod.TO_TIMESTAMP.method);
 
         map.put(IS_NULL, new IsNullImplementor());
         map.put(IS_NOT_NULL, new IsNotNullImplementor());
@@ -574,17 +580,22 @@ public class RexImpTable {
     }
 
     /** */
+    public void define(SqlOperator operator, RexCallImplementor implementor) {
+        map.put(operator, implementor);
+    }
+
+    /** */
     private void defineMethod(SqlOperator operator, String functionName, NullPolicy nullPolicy) {
         map.put(operator, new MethodNameImplementor(functionName, nullPolicy, false));
     }
 
     /** */
-    private void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
+    public void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
         map.put(operator, new MethodImplementor(method, nullPolicy, false));
     }
 
     /** */
-    private ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
+    public ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
         final ReflectiveImplementor implementor = new ReflectiveImplementor(ImmutableList.copyOf(methods));
         map.put(operator, implementor);
         return implementor;
@@ -2507,7 +2518,7 @@ public class RexImpTable {
     }
 
     /** */
-    private static RexCallImplementor createRexCallImplementor(
+    public static RexCallImplementor createRexCallImplementor(
         final NotNullImplementor implementor,
         final NullPolicy nullPolicy,
         final boolean harmonize) {

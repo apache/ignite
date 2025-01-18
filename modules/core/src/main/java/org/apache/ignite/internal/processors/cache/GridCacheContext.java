@@ -24,9 +24,11 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +38,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
@@ -60,6 +64,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -83,9 +88,11 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dum
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -105,7 +112,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
-import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -113,6 +119,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.session.SessionContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
@@ -430,6 +438,14 @@ public class GridCacheContext<K, V> implements Externalizable {
             locMacs = localNode().attribute(ATTR_MACS);
 
             assert locMacs != null;
+        }
+
+        try {
+            if (cacheCfg.getInterceptor() != null)
+                ctx.resource().injectToUdf(cacheCfg.getInterceptor(), new SessionContextProviderImpl(this));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to inject resources to CacheInterceptor", e);
         }
     }
 
@@ -1367,41 +1383,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     private boolean nearContext() {
         return isDht() || (isDhtAtomic() && dht().near() != null);
-    }
-
-    /**
-     * Creates Runnable that can be executed safely in a different thread inheriting
-     * the same thread local projection as for the current thread. If no projection is
-     * set for current thread then there's no need to create new object and method simply
-     * returns given Runnable.
-     *
-     * @param r Runnable.
-     * @return Runnable that can be executed in a different thread with the same
-     *      projection as for current thread.
-     */
-    public Runnable projectSafe(final Runnable r) {
-        assert r != null;
-
-        // Have to get operation context per call used by calling thread to use it in a new thread.
-        final CacheOperationContext opCtx = operationContextPerCall();
-
-        if (opCtx == null)
-            return r;
-
-        return new GPR() {
-            @Override public void run() {
-                CacheOperationContext old = operationContextPerCall();
-
-                operationContextPerCall(opCtx);
-
-                try {
-                    r.run();
-                }
-                finally {
-                    operationContextPerCall(old);
-                }
-            }
-        };
     }
 
     /**
@@ -2350,6 +2331,53 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dumpLsnr = dumpEntryChangeLsnr;
     }
 
+    /**
+     * @param part Partition.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @see ExecutionContext#transactionChanges(int, int[], Function)
+     */
+    public TransactionChanges<Object> transactionChanges(Integer part) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return TransactionChanges.empty();
+
+        IgniteInternalTx tx = tm().tx();
+
+        if (tx == null)
+            return TransactionChanges.empty();
+
+        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>();
+        List<Object> newAndUpdatedRows = new ArrayList<>();
+
+        for (IgniteTxEntry e : tx.writeEntries()) {
+            if (e.cacheId() != cacheId)
+                continue;
+
+            int epart = e.key().partition();
+
+            assert epart != -1;
+
+            if (part != null && epart != part)
+                continue;
+
+            changedKeys.add(e.key());
+
+            CacheObject val = e.value();
+
+            boolean hasEntryProcessors = !F.isEmpty(e.entryProcessors());
+
+            if (hasEntryProcessors)
+                val = e.applyEntryProcessors(val);
+
+            // Mix only updated or inserted entries. In case val == null entry removed.
+            if (val != null)
+                newAndUpdatedRows.add(hasEntryProcessors ? F.t(e.key(), val) : e);
+        }
+
+        return new TransactionChanges<>(changedKeys, newAndUpdatedRows);
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, igniteInstanceName());
@@ -2388,6 +2416,46 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         finally {
             stash.remove();
+        }
+    }
+
+    /** SessionContext provider to UDF. */
+    private static final class SessionContextProviderImpl implements SessionContextProvider, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Emtpy session context. */
+        private static final SessionContext EMPTY = (attrName) -> null;
+
+        /** Cache context. */
+        private final GridCacheContext<?, ?> ctx;
+
+        /** */
+        SessionContextProviderImpl(GridCacheContext<?, ?> ctx) {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SessionContext getSessionContext() {
+            if (ctx.transactional()) {
+                IgniteInternalTx tx = ctx.cache().context().tm().tx();
+
+                if (tx != null) {
+                    if (tx.applicationAttributes() == null)
+                        return EMPTY;
+
+                    return new SessionContextImpl(tx.applicationAttributes());
+                }
+            }
+
+            // It works for transactional caches also. For example, CacheInterceptor#onGet invoked out of the scope of
+            // a transaction context.
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            if (opCtx == null || opCtx.applicationAttributes() == null)
+                return EMPTY;
+
+            return new SessionContextImpl(opCtx.applicationAttributes());
         }
     }
 

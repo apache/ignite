@@ -72,8 +72,6 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
                 .setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true));
 
-        cfg.setMarshaller(null);
-
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
         binCfg.setCompactFooter(false);
