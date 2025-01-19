@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -38,8 +39,8 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
     /** */
     private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
 
-    /** */
-    private IndexRow lastRow;
+    /** Last index row analyzed by {@link #rowFilter}. */
+    private @Nullable IndexRow lastRow;
 
     /** Constructor. */
     public InlineTreeFilterClosure(IndexingQueryCacheFilter cacheFilter,
@@ -69,7 +70,7 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
     }
 
     /** {@inheritDoc} */
-    @Override public IndexRow lastRow() {
+    @Override public @Nullable IndexRow lastRow() {
         return lastRow;
     }
 
