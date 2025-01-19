@@ -20,7 +20,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +74,7 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
@@ -712,7 +715,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case INTERVAL_MONTH:
                 value2 = literal.getValueAs(Integer.class);
                 javaCls = int.class;
-                break;
+            break;
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
             case INTERVAL_DAY:

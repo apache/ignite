@@ -28,7 +28,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -53,6 +52,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
@@ -427,27 +427,23 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object fromInternal(DataContext ctx, @Nullable Object val, Type storageType) {
+    public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
-        else if (storageType == java.sql.Date.class && (val instanceof Integer || val instanceof Long)) {
-            ZoneId zoneId = ((TimeZone)DataContext.Variable.TIME_ZONE.get(ctx)).toZoneId();
-
-            return Date.valueOf(LocalDate.ofEpochDay(((Number)val).longValue()).atStartOfDay(zoneId).toLocalDate());
-        }
+        else if (storageType == java.sql.Date.class && val instanceof Integer)
+            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == LocalDate.class && val instanceof Integer)
-            return LocalDate.ofEpochDay((Integer)val).atStartOfDay(((TimeZone)DataContext.Variable.TIME_ZONE.get(ctx)).toZoneId());
+            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY)).toLocalDate();
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
         else if (storageType == LocalTime.class && val instanceof Integer)
             return Instant.ofEpochMilli((Integer)val).atZone(ZoneOffset.UTC).toLocalTime();
-        else if (storageType == Timestamp.class && val instanceof Long) {
-            LocalDateTime locDate = LocalDateTime.ofInstant(Instant.ofEpochMilli((Long)val), ZoneOffset.UTC);
-
-            return Timestamp.valueOf(locDate);
-        }
+        else if (storageType == Timestamp.class && val instanceof Long)
+        return new Timestamp(fromLocalTs(ctx, (Long)val));
         else if (storageType == LocalDateTime.class && val instanceof Long)
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli((Long)val), ZoneOffset.UTC);
+            return new Timestamp(fromLocalTs(ctx, (Long)val)).toLocalDateTime();
+        else if (storageType == java.util.Date.class && val instanceof Long)
+            return new java.util.Date(fromLocalTs(ctx, (Long)val));
         else if (storageType == Duration.class && val instanceof Long)
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
@@ -538,4 +534,15 @@ public class TypeUtils {
 
         return rexBuilder.makeLiteral(dfltVal, type, true);
     }
+
+    /** */
+    public static RexLiteral warapDateStringLiteral(RexLiteral lit) {
+        assert lit.getValue() instanceof DateString;
+
+        return lit;
+    }
+
+//    public static class IgniteDateLiteral extends RexLiteral {
+//
+//    }
 }

@@ -137,7 +137,6 @@ public class DateValueUtils {
     public static long defaultTzMillisFromUtc(long utcMillis) {
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return utcMillis - DEFAULT_TZ.getOffset(utcMillis - DEFAULT_TZ.getOffset(utcMillis));
-
     }
 
     /** */
