@@ -1969,9 +1969,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return;
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || performanceStatsEnabled) ? System.nanoTime() : 0L;
+        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -1988,7 +1988,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (statsEnabled)
             metrics0().addPutAllConflictTimeNanos(System.nanoTime() - start);
 
-        if (performanceStatsEnabled)
+        if (perfStatsEnabled)
             writeStatistics(OperationType.CACHE_PUT_ALL_CONFLICT, start);
     }
 
@@ -1999,9 +1999,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<Object>();
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || performanceStatsEnabled) ? System.nanoTime() : 0L;
+        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2018,7 +2018,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (statsEnabled)
             fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
 
-        if (performanceStatsEnabled)
+        if (perfStatsEnabled)
             fut.listen(() -> writeStatistics(OperationType.CACHE_PUT_ALL_CONFLICT, start));
 
         return fut;
@@ -2877,9 +2877,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<Object>();
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || performanceStatsEnabled) ? System.nanoTime() : 0L;
+        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2896,7 +2896,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (statsEnabled)
             fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
 
-        if (performanceStatsEnabled)
+        if (perfStatsEnabled)
             fut.listen(() -> writeStatistics(OperationType.CACHE_REMOVE_ALL_CONFLICT, start));
 
         return fut;
