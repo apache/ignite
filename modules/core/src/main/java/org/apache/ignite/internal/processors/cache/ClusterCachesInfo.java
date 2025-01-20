@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1887,16 +1888,10 @@ public class ClusterCachesInfo {
      * @see #updateRegisteredCaches
      */
     private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> locCfg, CacheConfiguration<?, ?> gridCfg) {
-        // The entities are suppesed to get merged.
-        locCfg.setQueryEntities(gridCfg.getQueryEntities());
-        locCfg.setSqlSchema(gridCfg.getSqlSchema());
-        locCfg.setSqlFunctionClasses(gridCfg.getSqlFunctionClasses());
-        locCfg.setSqlEscapeAll(gridCfg.isSqlEscapeAll());
+        for (CacheEntryListenerConfiguration lsnrCfg : locCfg.getCacheEntryListenerConfigurations())
+            gridCfg.addCacheEntryListenerConfiguration(lsnrCfg);
 
-        assert locCfg.isSqlOnheapCacheEnabled() == gridCfg.isSqlOnheapCacheEnabled();
-        assert locCfg.getSqlOnheapCacheMaxSize() == gridCfg.getSqlOnheapCacheMaxSize();
-
-        return locCfg;
+        return gridCfg;
     }
 
     /**
