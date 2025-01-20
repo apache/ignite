@@ -52,7 +52,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
@@ -439,7 +438,7 @@ public class TypeUtils {
         else if (storageType == LocalTime.class && val instanceof Integer)
             return Instant.ofEpochMilli((Integer)val).atZone(ZoneOffset.UTC).toLocalTime();
         else if (storageType == Timestamp.class && val instanceof Long)
-        return new Timestamp(fromLocalTs(ctx, (Long)val));
+            return new Timestamp(fromLocalTs(ctx, (Long)val));
         else if (storageType == LocalDateTime.class && val instanceof Long)
             return new Timestamp(fromLocalTs(ctx, (Long)val)).toLocalDateTime();
         else if (storageType == java.util.Date.class && val instanceof Long)
@@ -534,15 +533,4 @@ public class TypeUtils {
 
         return rexBuilder.makeLiteral(dfltVal, type, true);
     }
-
-    /** */
-    public static RexLiteral warapDateStringLiteral(RexLiteral lit) {
-        assert lit.getValue() instanceof DateString;
-
-        return lit;
-    }
-
-//    public static class IgniteDateLiteral extends RexLiteral {
-//
-//    }
 }

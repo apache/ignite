@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
@@ -204,25 +205,42 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     @Test
-    public void testOldLiterals() {
-        sql(client, "CREATE TABLE T1(ID INTEGER PRIMARY KEY, DT DATE)");
-        // Insert wiht dynamic param.
-        sql(client, "INSERT INTO T1 VALUES(?, ?)", 1, java.sql.Date.valueOf("1582-10-04"));
-        // Insert the same with literal.
-        sql(client, "INSERT INTO T1 VALUES(2, DATE '1582-10-04')");
+    public void testOldDateLiterals() {
+        assertQuery("SELECT DATE '1582-10-20'").returns(java.sql.Date.valueOf("1582-10-20")).check();
+        assertQuery("SELECT DATE '1582-10-15'").returns(java.sql.Date.valueOf("1582-10-15")).check();
+        assertQuery("SELECT DATE '1582-10-01'").returns(java.sql.Date.valueOf("1582-10-01")).check();
+        assertQuery("SELECT DATE '1582-09-30'").returns(java.sql.Date.valueOf("1582-09-30")).check();
+        assertQuery("SELECT DATE '1000-01-01'").returns(java.sql.Date.valueOf("1000-01-01")).check();
+        assertQuery("SELECT DATE '0550-05-05'").returns(java.sql.Date.valueOf("0550-05-05")).check();
 
-        // Check equal results
+        assertQuery("SELECT TIMESTAMP '1582-10-20 17:12:47.111'").returns(java.sql.Timestamp.valueOf("1582-10-20 17:12:47.111")).check();
+        assertQuery("SELECT TIMESTAMP '1582-10-15 00:00:00.001'").returns(java.sql.Timestamp.valueOf("1582-10-15 00:00:00.001")).check();
+        assertQuery("SELECT TIMESTAMP '1582-10-01 01:01:15.555'").returns(java.sql.Timestamp.valueOf("1582-10-01 01:01:15.555")).check();
+        assertQuery("SELECT TIMESTAMP '1582-09-30 23:23:59.999'").returns(java.sql.Timestamp.valueOf("1582-09-30 23:23:59.999")).check();
+        assertQuery("SELECT TIMESTAMP '1000-01-01 23:23:59.999'").returns(java.sql.Timestamp.valueOf("1000-01-01 23:23:59.999")).check();
+        assertQuery("SELECT TIMESTAMP '0550-05-05 04:04:31.015'").returns(java.sql.Timestamp.valueOf("0550-05-05 04:04:31.015")).check();
+    }
+
+    /** */
+    @Test
+    public void testOldDateLiteralsWithTable() {
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+
+        sql(client, "CREATE TABLE T1(ID INTEGER PRIMARY KEY, DT DATE, TS TIMESTAMP)");
+
+        sql(client, "INSERT INTO T1 VALUES(?, ?, ? )", 1, java.sql.Date.valueOf("1582-10-04"),
+            java.sql.Timestamp.valueOf("1582-10-04 15:31:47.381"));
+        sql(client, "INSERT INTO T1 VALUES(2, DATE '1582-10-04', TIMESTAMP '1582-10-04 15:31:47.381')");
+
         assertQuery("SELECT DT from T1 WHERE ID=1").returns(java.sql.Date.valueOf("1582-10-04")).check();
         assertQuery("SELECT DT from T1 WHERE ID=2").returns(java.sql.Date.valueOf("1582-10-04")).check();
         assertQuery("SELECT DT + INTERVAL 1 DAYS from T1 WHERE ID=1").returns(java.sql.Date.valueOf("1582-10-05")).check();
         assertQuery("SELECT DT + INTERVAL 1 DAYS from T1 WHERE ID=2").returns(java.sql.Date.valueOf("1582-10-05")).check();
 
-        assertQuery("SELECT DATE '1582-10-15'").returns(java.sql.Date.valueOf("1582-10-15")).check();
-
-        assertQuery("SELECT DATE '1582-10-04'").returns(java.sql.Date.valueOf("1582-10-04")).check();
-        assertQuery("SELECT DATE '1582-10-01' + INTERVAL 1 DAYS").returns(java.sql.Date.valueOf("1582-10-02")).check();
-//        assertQuery("SELECT TIMESTAMP '1582-10-04 15:31:47.381'").returns(Timestamp.valueOf(("1582-10-04 15:31:47.381"))).check();
-//        assertQuery("SELECT TIMESTAMP '903-05-03 01:02:03'").returns(java.sql.Timestamp.valueOf("0903-05-03 01:02:03")).check();
+        assertQuery("SELECT TS from T1 WHERE ID=1").returns(java.sql.Timestamp.valueOf("1582-10-04 15:31:47.381")).check();
+        assertQuery("SELECT TS from T1 WHERE ID=2").returns(java.sql.Timestamp.valueOf("1582-10-04 15:31:47.381")).check();
+        assertQuery("SELECT TS + INTERVAL 1 DAYS from T1 WHERE ID=1").returns(java.sql.Timestamp.valueOf("1582-10-05 15:31:47.381")).check();
+        assertQuery("SELECT TS + INTERVAL 1 DAYS from T1 WHERE ID=2").returns(java.sql.Timestamp.valueOf("1582-10-05 15:31:47.381")).check();
     }
 
     /** */

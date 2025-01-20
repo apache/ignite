@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.rel.type.RelDataType;
@@ -69,6 +69,11 @@ public class IgniteRexBuilder extends RexBuilder {
                 return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
         }
 
+        // Adjust temporal literals so that dates before 15.10.1582 will match internal long representation.
+        // RexLiteral#RexLiteral(Class) uses DateTimeUtils#ymdToUnixDate(int year, int month, int day) which directly
+        // calculates epoch days. We use internal new Date(long) and new Timestampt(long) in TypeUtils#fromInternal(...) and
+        // and Date#getTime() in TypeUtils#toInternal(...). Classic temporal types recalculate the long value before
+        // Gregorian calendar. DateTimeUtils does not. This causes about +10 days from old dates literals with.
         if(o instanceof DateString)
             o = fixOldDateLiteralValue((DateString)o);
         else if (o instanceof TimestampString)
@@ -78,33 +83,40 @@ public class IgniteRexBuilder extends RexBuilder {
     }
 
     /** */
-    private TimestampString fixOldTimestampLiteralValue(TimestampString tsLiteral) {
-        Instant inst = Instant.ofEpochMilli(tsLiteral.getMillisSinceEpoch());
-
-        LocalDateTime locDateTime = LocalDateTime.ofInstant(inst, ZoneOffset.UTC);
-
-        if (beforeGregorian(locDateTime.toLocalDate())) {
-
-        }
-
-        return tsLiteral;
-    }
-
-    /** */
     private DateString fixOldDateLiteralValue(DateString dateLiteral) {
-        LocalDate d = LocalDate.ofEpochDay(dateLiteral.getDaysSinceEpoch());
+        LocalDate locDate = LocalDate.ofEpochDay(dateLiteral.getDaysSinceEpoch());
 
-        if (beforeGregorian(d)) {
-            int oldEpochDays = (int)(java.sql.Date.valueOf(d).getTime() / DateTimeUtils.MILLIS_PER_DAY);
+        if (beforeGregorian(locDate)) {
+            int recalculatedEpochDays = (int)(java.sql.Date.valueOf(locDate).getTime() / DateTimeUtils.MILLIS_PER_DAY);
 
-            assert oldEpochDays != dateLiteral.getDaysSinceEpoch();
+            locDate = LocalDate.ofEpochDay(recalculatedEpochDays);
 
-            d = LocalDate.ofEpochDay(oldEpochDays);
-
-            dateLiteral = new DateString(d.getYear(), d.getMonthValue(), d.getDayOfMonth());
+            dateLiteral = new DateString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
         }
 
         return dateLiteral;
+    }
+
+    /** */
+    private TimestampString fixOldTimestampLiteralValue(TimestampString tsLiteral) {
+        long epochDirectMillis = tsLiteral.getMillisSinceEpoch();
+
+        LocalDate locDate = LocalDate.ofInstant(Instant.ofEpochMilli(epochDirectMillis), ZoneOffset.UTC);
+
+        if (beforeGregorian(locDate)) {
+            int recalculatedEpochDays = (int)(java.sql.Date.valueOf(locDate).getTime() / DateTimeUtils.MILLIS_PER_DAY);
+
+            locDate = LocalDate.ofEpochDay(recalculatedEpochDays);
+
+            long timeMillisLeft = epochDirectMillis - recalculatedEpochDays * DateTimeUtils.MILLIS_PER_DAY;
+
+            LocalTime locTime = LocalTime.ofInstant(Instant.ofEpochMilli(timeMillisLeft), ZoneOffset.UTC);
+
+            tsLiteral = new TimestampString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth(),
+                locTime.getHour(), locTime.getMinute(), locTime.getSecond()).withMillis(1000 + (int)(timeMillisLeft % 1000L));
+        }
+
+        return tsLiteral;
     }
 
     /** */
