@@ -34,7 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -282,7 +282,7 @@ public class IdleVerifyUtility {
      * @return Map of calculated partition.
      */
     public static @Nullable PartitionHashRecord calculatePartitionHash(
-        PartitionKeyV2 partKey,
+        PartitionKey partKey,
         Object updCntr,
         Object consId,
         GridDhtPartitionState state,

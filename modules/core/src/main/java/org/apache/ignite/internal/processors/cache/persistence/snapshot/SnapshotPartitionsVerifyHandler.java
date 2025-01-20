@@ -41,7 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
-public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecord>> {
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKey, PartitionHashRecord>> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -113,7 +113,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         if (!opCtx.snapshotDirectory().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());
 
@@ -183,14 +183,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private Map<PartitionKeyV2, PartitionHashRecord> checkSnapshotFiles(
+    private Map<PartitionKey, PartitionHashRecord> checkSnapshotFiles(
         SnapshotHandlerContext opCtx,
         Map<Integer, File> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
         boolean punchHoleEnabled
     ) throws IgniteCheckedException {
-        Map<PartitionKeyV2, PartitionHashRecord> res = new ConcurrentHashMap<>();
+        Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
@@ -283,7 +283,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         // Snapshot partitions must always be in OWNING state.
                         // There is no `primary` partitions for snapshot.
-                        PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+                        PartitionKey key = new PartitionKey(grpId, partId, grpName);
 
                         PartitionHashRecord hash = calculatePartitionHash(key,
                             updateCntr,
@@ -359,7 +359,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private Map<PartitionKeyV2, PartitionHashRecord> checkDumpFiles(
+    private Map<PartitionKey, PartitionHashRecord> checkDumpFiles(
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
@@ -392,7 +392,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     private PartitionHashRecord calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
         if (skipHash()) {
             return new PartitionHashRecord(
-                new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                new PartitionKey(CU.cacheId(grpName), part, grpName),
                 false,
                 cctx.localNode().consistentId(),
                 null,
@@ -419,7 +419,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 }
 
                 return new PartitionHashRecord(
-                    new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                    new PartitionKey(CU.cacheId(grpName), part, grpName),
                     false,
                     cctx.localNode().consistentId(),
                     null,
@@ -436,18 +436,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecord>>> results) throws IgniteCheckedException {
-        Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
+        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
+        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> errs = new HashMap<>();
 
-        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecord>> res : results) {
+        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
             if (res.error() != null) {
                 errs.put(res.node(), res.error());
 
                 continue;
             }
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecord> entry : res.data().entrySet())
+            for (Map.Entry<PartitionKey, PartitionHashRecord> entry : res.data().entrySet())
                 clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
         }
 

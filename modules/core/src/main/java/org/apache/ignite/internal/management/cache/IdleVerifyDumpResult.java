@@ -34,12 +34,12 @@ public class IdleVerifyDumpResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster hashes. */
-    private Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes;
+    private Map<PartitionKey, List<PartitionHashRecord>> clusterHashes;
 
     /**
      * @param clusterHashes Cluster hashes.
      */
-    public IdleVerifyDumpResult(Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes) {
+    public IdleVerifyDumpResult(Map<PartitionKey, List<PartitionHashRecord>> clusterHashes) {
         this.clusterHashes = clusterHashes;
     }
 
@@ -63,7 +63,7 @@ public class IdleVerifyDumpResult extends VisorDataTransferObject {
     /**
      * @return Cluster hashes.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes() {
+    public Map<PartitionKey, List<PartitionHashRecord>> clusterHashes() {
         return clusterHashes;
     }
 

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -53,13 +53,13 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx)
+    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx)
         throws IgniteCheckedException {
         // Return null not to check partitions at all if the streamer warning is detected.
         if (opCtx.streamerWarning())
             return null;
 
-        Map<PartitionKeyV2, PartitionHashRecord> res = super.invoke(opCtx);
+        Map<PartitionKey, PartitionHashRecord> res = super.invoke(opCtx);
 
         assert res != null;
 
@@ -69,7 +69,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     /** {@inheritDoc} */
     @Override public void complete(
         String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecord>>> results
+        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results
     ) throws IgniteCheckedException {
         Exception err = results.stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().orElse(null);
 
@@ -81,9 +81,9 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
             return;
 
         Set<Integer> wrnGrps = new HashSet<>();
-        Map<PartitionKeyV2, PartitionHashRecord> total = new HashMap<>();
+        Map<PartitionKey, PartitionHashRecord> total = new HashMap<>();
 
-        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecord>> result : results) {
+        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> result : results) {
             result.data().forEach((part, val) -> {
                 PartitionHashRecord other = total.putIfAbsent(part, val);
 

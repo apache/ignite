@@ -53,19 +53,19 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecord>> cntrConflicts = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = new HashMap<>();
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecord>> movingPartitions = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = new HashMap<>();
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKeyV2, List<PartitionHashRecord>> lostPartitions = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = new HashMap<>();
 
     /** Transaction hashes conflicts. */
     @GridToStringInclude
@@ -96,7 +96,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @param txHashConflicts Transaction hashes conflicts.
      */
     public IdleVerifyResult(
-        Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes,
+        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
         @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
     ) {
@@ -111,10 +111,10 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @param exceptions Exceptions on each cluster node.
      */
     public IdleVerifyResult(
-        Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes,
+        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes,
         Map<ClusterNode, Exception> exceptions
     ) {
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
+        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
             Integer partVerHash = null;
             Object updateCntr = null;
@@ -191,28 +191,28 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     /**
      * @return Counter conflicts.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecord>> counterConflicts() {
+    public Map<PartitionKey, List<PartitionHashRecord>> counterConflicts() {
         return cntrConflicts;
     }
 
     /**
      * @return Hash conflicts.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecord>> hashConflicts() {
+    public Map<PartitionKey, List<PartitionHashRecord>> hashConflicts() {
         return hashConflicts;
     }
 
     /**
      * @return Moving partitions.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecord>> movingPartitions() {
+    public Map<PartitionKey, List<PartitionHashRecord>> movingPartitions() {
         return Collections.unmodifiableMap(movingPartitions);
     }
 
     /**
      * @return Lost partitions.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecord>> lostPartitions() {
+    public Map<PartitionKey, List<PartitionHashRecord>> lostPartitions() {
         return lostPartitions;
     }
 
@@ -244,7 +244,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             else
                 printConflicts(printer);
 
-            Map<PartitionKeyV2, List<PartitionHashRecord>> moving = movingPartitions();
+            Map<PartitionKey, List<PartitionHashRecord>> moving = movingPartitions();
 
             if (!moving.isEmpty())
                 printer.accept("Possible results are not full due to rebalance still in progress." + nl());
@@ -287,13 +287,13 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      */
     private void printSkippedPartitions(
         Consumer<String> printer,
-        Map<PartitionKeyV2, List<PartitionHashRecord>> map,
+        Map<PartitionKey, List<PartitionHashRecord>> map,
         String partitionState
     ) {
         if (!F.isEmpty(map)) {
             printer.accept("Verification was skipped for " + map.size() + " " + partitionState + " partitions:\n");
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : map.entrySet()) {
+            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : map.entrySet()) {
                 printer.accept("Skipped partition: " + entry.getKey() + "\n");
 
                 printer.accept("Partition instances: " + entry.getValue() + "\n");
@@ -314,14 +314,14 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             + (partiallyCommittedTxs == null ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
             + "]" + nl());
 
-        Set<PartitionKeyV2> allConflicts = new HashSet<>();
+        Set<PartitionKey> allConflicts = new HashSet<>();
 
         if (!F.isEmpty(counterConflicts())) {
             allConflicts.addAll(counterConflicts().keySet());
 
             printer.accept("Update counter conflicts:" + nl());
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : counterConflicts().entrySet()) {
+            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : counterConflicts().entrySet()) {
                 printer.accept("Conflict partition: " + entry.getKey() + nl());
 
                 printer.accept("Partition instances: " + entry.getValue() + nl());
@@ -335,7 +335,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
             printer.accept("Hash conflicts:" + nl());
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : hashConflicts().entrySet()) {
+            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : hashConflicts().entrySet()) {
                 printer.accept("Conflict partition: " + entry.getKey() + nl());
 
                 printer.accept("Partition instances: " + entry.getValue() + nl());
@@ -364,9 +364,9 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         Map<String, TreeSet<Integer>> conflictsSummary = allConflicts.stream()
             .collect(Collectors.groupingBy(
-                PartitionKeyV2::groupName,
+                PartitionKey::groupName,
                 Collectors.mapping(
-                    PartitionKeyV2::partitionId,
+                    PartitionKey::partitionId,
                     Collectors.toCollection(TreeSet::new))));
 
         for (Map.Entry<String, TreeSet<Integer>> grpConflicts : conflictsSummary.entrySet()) {

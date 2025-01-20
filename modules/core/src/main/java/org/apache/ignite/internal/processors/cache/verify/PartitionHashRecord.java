@@ -22,7 +22,7 @@ import java.io.ObjectOutput;
 import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -43,7 +43,7 @@ public class PartitionHashRecord extends VisorDataTransferObject {
 
     /** Partition key. */
     @GridToStringExclude
-    private PartitionKeyV2 partKey;
+    private PartitionKey partKey;
 
     /** Is primary flag. */
     private boolean isPrimary;
@@ -110,7 +110,7 @@ public class PartitionHashRecord extends VisorDataTransferObject {
      * @param ctx Verify partition data.
      */
     public PartitionHashRecord(
-        PartitionKeyV2 partKey,
+        PartitionKey partKey,
         boolean isPrimary,
         Object consistentId,
         Object updateCntr,
@@ -141,7 +141,7 @@ public class PartitionHashRecord extends VisorDataTransferObject {
     /**
      * @return Partition key.
      */
-    public PartitionKeyV2 partitionKey() {
+    public PartitionKey partitionKey() {
         return partKey;
     }
 
@@ -244,7 +244,7 @@ public class PartitionHashRecord extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
-        partKey = (PartitionKeyV2)in.readObject();
+        partKey = (PartitionKey)in.readObject();
         isPrimary = in.readBoolean();
         consistentId = in.readObject();
         partHash = in.readInt();

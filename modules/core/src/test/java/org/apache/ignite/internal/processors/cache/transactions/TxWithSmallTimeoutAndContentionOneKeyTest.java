@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -229,10 +229,10 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @param conflicts Conflicts map.
      * @param sb String builder.
      */
-    private void buildConflicts(String msg, SB sb, Map<PartitionKeyV2, List<PartitionHashRecord>> conflicts) {
+    private void buildConflicts(String msg, SB sb, Map<PartitionKey, List<PartitionHashRecord>> conflicts) {
         sb.a(msg);
 
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecord>> entry : conflicts.entrySet()) {
+        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : conflicts.entrySet()) {
             sb.a(entry.getKey()).a("\n");
 
             for (PartitionHashRecord rec : entry.getValue())

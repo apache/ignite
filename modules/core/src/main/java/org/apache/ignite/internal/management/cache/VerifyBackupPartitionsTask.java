@@ -151,7 +151,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
      * @return Idle verify job result constructed from results of remote executions.
      */
     public static IdleVerifyResult reduce0(List<ComputeJobResult> results) {
-        Map<PartitionKeyV2, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
+        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> ex = new HashMap<>();
 
         for (ComputeJobResult res : results) {
@@ -161,9 +161,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 continue;
             }
 
-            Map<PartitionKeyV2, PartitionHashRecord> nodeHashes = res.getData();
+            Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecord> e : nodeHashes.entrySet()) {
+            for (Map.Entry<PartitionKey, PartitionHashRecord> e : nodeHashes.entrySet()) {
                 List<PartitionHashRecord> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
 
                 records.add(e.getValue());
@@ -205,7 +205,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /** {@inheritDoc} */
-        @Override public Map<PartitionKeyV2, PartitionHashRecord> execute() throws IgniteException {
+        @Override public Map<PartitionKey, PartitionHashRecord> execute() throws IgniteException {
             if (!ignite.context().state().publicApiActiveState(true))
                 throw new IgniteException(IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
 
@@ -229,10 +229,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            List<Future<Map<PartitionKeyV2, PartitionHashRecord>>> partHashCalcFuts =
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts =
                 calcPartitionHashAsync(grpIds);
 
-            Map<PartitionKeyV2, PartitionHashRecord> res = new HashMap<>();
+            Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
             List<IgniteException> exceptions = new ArrayList<>();
 
@@ -245,10 +245,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
                 }
 
-                Future<Map<PartitionKeyV2, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
+                Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
                 try {
-                    Map<PartitionKeyV2, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
+                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
                     res.putAll(partHash);
 
@@ -295,7 +295,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @param start Index to start from.
          * @param partHashCalcFuts Partitions hash calculation futures to cancel.
          */
-        private void cancelFuts(int start, List<Future<Map<PartitionKeyV2, PartitionHashRecord>>> partHashCalcFuts) {
+        private void cancelFuts(int start, List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts) {
             for (int i = start; i < partHashCalcFuts.size(); i++)
                 partHashCalcFuts.get(i).cancel(false);
         }
@@ -342,10 +342,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /** */
-        private List<Future<Map<PartitionKeyV2, PartitionHashRecord>>> calcPartitionHashAsync(
+        private List<Future<Map<PartitionKey, PartitionHashRecord>>> calcPartitionHashAsync(
             Set<Integer> grpIds
         ) {
-            List<Future<Map<PartitionKeyV2, PartitionHashRecord>>> partHashCalcFutures = new ArrayList<>();
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFutures = new ArrayList<>();
 
             for (Integer grpId : grpIds) {
                 CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
@@ -498,14 +498,14 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @param part Local partition.
          * @param cancelled Supplier of cancelled status.
          */
-        private Future<Map<PartitionKeyV2, PartitionHashRecord>> calculatePartitionHashAsync(
+        private Future<Map<PartitionKey, PartitionHashRecord>> calculatePartitionHashAsync(
             final ForkJoinPool pool,
             final CacheGroupContext gctx,
             final GridDhtLocalPartition part,
             final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
-                Map<PartitionKeyV2, PartitionHashRecord> res = emptyMap();
+                Map<PartitionKey, PartitionHashRecord> res = emptyMap();
 
                 if (!part.reserve())
                     return res;
@@ -526,7 +526,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         );
                     }
 
-                    PartitionKeyV2 key = new PartitionKeyV2(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
+                    PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
                     PartitionHashRecord hash = calculatePartitionHash(key,
                         updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
