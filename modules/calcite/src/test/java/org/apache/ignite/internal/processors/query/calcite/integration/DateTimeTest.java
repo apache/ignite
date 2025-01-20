@@ -213,12 +213,18 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
         assertQuery("SELECT DATE '1000-01-01'").returns(java.sql.Date.valueOf("1000-01-01")).check();
         assertQuery("SELECT DATE '0550-05-05'").returns(java.sql.Date.valueOf("0550-05-05")).check();
 
-        assertQuery("SELECT TIMESTAMP '1582-10-20 17:12:47.111'").returns(java.sql.Timestamp.valueOf("1582-10-20 17:12:47.111")).check();
-        assertQuery("SELECT TIMESTAMP '1582-10-15 00:00:00.001'").returns(java.sql.Timestamp.valueOf("1582-10-15 00:00:00.001")).check();
-        assertQuery("SELECT TIMESTAMP '1582-10-01 01:01:15.555'").returns(java.sql.Timestamp.valueOf("1582-10-01 01:01:15.555")).check();
-        assertQuery("SELECT TIMESTAMP '1582-09-30 23:23:59.999'").returns(java.sql.Timestamp.valueOf("1582-09-30 23:23:59.999")).check();
-        assertQuery("SELECT TIMESTAMP '1000-01-01 23:23:59.999'").returns(java.sql.Timestamp.valueOf("1000-01-01 23:23:59.999")).check();
-        assertQuery("SELECT TIMESTAMP '0550-05-05 04:04:31.015'").returns(java.sql.Timestamp.valueOf("0550-05-05 04:04:31.015")).check();
+        assertQuery("SELECT TIMESTAMP '1582-10-20 17:12:47.111'").returns(Timestamp.valueOf("1582-10-20 17:12:47.111"))
+            .check();
+        assertQuery("SELECT TIMESTAMP '1582-10-15 00:00:00.001'").returns(Timestamp.valueOf("1582-10-15 00:00:00.001"))
+            .check();
+        assertQuery("SELECT TIMESTAMP '1582-10-01 01:01:15.555'").returns(Timestamp.valueOf("1582-10-01 01:01:15.555"))
+            .check();
+        assertQuery("SELECT TIMESTAMP '1582-09-30 23:23:59.999'").returns(Timestamp.valueOf("1582-09-30 23:23:59.999"))
+            .check();
+        assertQuery("SELECT TIMESTAMP '1000-01-01 23:23:59.999'").returns(Timestamp.valueOf("1000-01-01 23:23:59.999"))
+            .check();
+        assertQuery("SELECT TIMESTAMP '0550-05-05 04:04:31.015'").returns(Timestamp.valueOf("0550-05-05 04:04:31.015"))
+            .check();
     }
 
     /** */
@@ -234,13 +240,17 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertQuery("SELECT DT from T1 WHERE ID=1").returns(java.sql.Date.valueOf("1582-10-04")).check();
         assertQuery("SELECT DT from T1 WHERE ID=2").returns(java.sql.Date.valueOf("1582-10-04")).check();
-        assertQuery("SELECT DT + INTERVAL 1 DAYS from T1 WHERE ID=1").returns(java.sql.Date.valueOf("1582-10-05")).check();
-        assertQuery("SELECT DT + INTERVAL 1 DAYS from T1 WHERE ID=2").returns(java.sql.Date.valueOf("1582-10-05")).check();
+        assertQuery("SELECT DT + INTERVAL 1 DAYS from T1 WHERE ID=1").returns(java.sql.Date.valueOf("1582-10-05"))
+            .check();
+        assertQuery("SELECT DT + INTERVAL 1 DAYS from T1 WHERE ID=2").returns(java.sql.Date.valueOf("1582-10-05"))
+            .check();
 
-        assertQuery("SELECT TS from T1 WHERE ID=1").returns(java.sql.Timestamp.valueOf("1582-10-04 15:31:47.381")).check();
-        assertQuery("SELECT TS from T1 WHERE ID=2").returns(java.sql.Timestamp.valueOf("1582-10-04 15:31:47.381")).check();
-        assertQuery("SELECT TS + INTERVAL 1 DAYS from T1 WHERE ID=1").returns(java.sql.Timestamp.valueOf("1582-10-05 15:31:47.381")).check();
-        assertQuery("SELECT TS + INTERVAL 1 DAYS from T1 WHERE ID=2").returns(java.sql.Timestamp.valueOf("1582-10-05 15:31:47.381")).check();
+        assertQuery("SELECT TS from T1 WHERE ID=1").returns(Timestamp.valueOf("1582-10-04 15:31:47.381")).check();
+        assertQuery("SELECT TS from T1 WHERE ID=2").returns(Timestamp.valueOf("1582-10-04 15:31:47.381")).check();
+        assertQuery("SELECT TS + INTERVAL 1 DAYS from T1 WHERE ID=1").returns(Timestamp.valueOf("1582-10-05 15:31:47.381"))
+            .check();
+        assertQuery("SELECT TS + INTERVAL 1 DAYS from T1 WHERE ID=2").returns(Timestamp.valueOf("1582-10-05 15:31:47.381"))
+            .check();
     }
 
     /** */

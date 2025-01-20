@@ -74,7 +74,7 @@ public class IgniteRexBuilder extends RexBuilder {
         // calculates epoch days. We use internal new Date(long) and new Timestampt(long) in TypeUtils#fromInternal(...) and
         // and Date#getTime() in TypeUtils#toInternal(...). Classic temporal types recalculate the long value before
         // Gregorian calendar. DateTimeUtils does not. This causes about +10 days from old dates literals with.
-        if(o instanceof DateString)
+        if (o instanceof DateString)
             o = fixOldDateLiteralValue((DateString)o);
         else if (o instanceof TimestampString)
             o = fixOldTimestampLiteralValue((TimestampString)o);
