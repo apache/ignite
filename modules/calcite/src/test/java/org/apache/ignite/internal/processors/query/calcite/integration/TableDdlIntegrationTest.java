@@ -63,9 +63,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     private boolean persistence = true;
 
     /** */
-    private int nodesCnt = 1;
-
-    /** */
     private CacheConfiguration<?, ?>[] cacheConfigurations;
 
     /** {@inheritDoc} */
@@ -79,11 +76,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             cfg.setCacheConfiguration(cacheConfigurations);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int nodeCount() {
-        return nodesCnt;
     }
 
     /**
@@ -1029,36 +1021,44 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void testNonPersistentRejoinWithDynamicTablesOverPredefinedCaches() throws Exception {
         stopAllGrids();
 
-        persistence = false;
-        nodesCnt = 3;
+        try {
+            persistence = false;
 
-        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("TEST_CACHE")
-            .setBackups(1)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+            CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("TEST_CACHE")
+                .setBackups(1)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
-        cacheConfigurations = new CacheConfiguration<?, ?>[]{cacheCfg};
+            cacheConfigurations = new CacheConfiguration<?, ?>[] {cacheCfg};
 
-        client = startGrids(3);
+            client = startGrids(3);
 
-        sql("CREATE TABLE IF NOT EXISTS TEST_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=TEST_CACHE\"");
+            sql("CREATE TABLE IF NOT EXISTS TEST_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=TEST_CACHE\"");
 
-        assertEquals(0, sql("SELECT * FROM TEST_TBL").size());
+            assertEquals(0, sql("SELECT * FROM TEST_TBL").size());
 
-        int testGrid = 2;
+            int testGrid = 2;
 
-        stopGrid(testGrid);
-        startGrid(testGrid);
+            stopGrid(testGrid);
+            startGrid(testGrid);
 
-        awaitPartitionMapExchange();
+            awaitPartitionMapExchange();
 
-        for (int i = 0; i < 100; ++i)
-            assertEquals(1, sql("INSERT INTO TEST_TBL VALUES(" + (i + 1) + ", '" + (i + 1000) + "')").size());
+            for (int i = 0; i < 100; ++i)
+                assertEquals(1, sql("INSERT INTO TEST_TBL VALUES(" + (i + 1) + ", '" + (i + 1000) + "')").size());
 
-        assertEquals(100, grid(testGrid).cache("TEST_CACHE").size());
+            assertEquals(100, grid(testGrid).cache("TEST_CACHE").size());
 
-        assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
+            assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
+        }
+        finally {
+            persistence = true;
+
+            afterTestsStopped();
+
+            beforeTestsStarted();
+        }
     }
 
     /** */
