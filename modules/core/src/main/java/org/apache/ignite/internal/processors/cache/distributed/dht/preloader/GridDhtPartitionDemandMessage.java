@@ -93,33 +93,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * @param cp Message to copy from.
-     */
-    public GridDhtPartitionDemandMessage(GridDhtPartitionDemandLegacyMessage cp) {
-        grpId = cp.groupId();
-        rebalanceId = cp.updateSequence();
-        topic = cp.topic();
-        timeout = cp.timeout();
-        workerId = cp.workerId();
-        topVer = cp.topologyVersion();
-
-        IgniteDhtDemandedPartitionsMap partMap = new IgniteDhtDemandedPartitionsMap();
-
-        if (cp.partitions() != null) {
-            for (Integer p : cp.partitions()) {
-                if (cp.isHistorical(p))
-                    partMap.addHistorical(p, 0, cp.partitionCounter(p), cp.partitions().size());
-                else
-                    partMap.addFull(p);
-            }
-        }
-
-        partMap.historicalMap().trim();
-
-        parts = partMap;
-    }
-
-    /**
      * Empty constructor required for {@link Externalizable}.
      */
     public GridDhtPartitionDemandMessage() {
