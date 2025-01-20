@@ -602,15 +602,13 @@ To start a single node for each cluster type the following commands in different
 
 ** There are 5 options you can specify CDC client mode from. Take a look at `--help` command output to learn about them.
 
-** You can optionally activate both clusters at CDC client start-up with `--activate-cluster`. You need this for data persistance at source and destination clusters. You can also use `control.sh` capabilities to activate clusters manually.
-
 NOTE: Start both clusters (as in previous example with Ignite nodes) before starting CDC client.
 
 Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes and one thin CDC client for Ignite-to-Ignite replication from cluster 1 to cluster 2 (Run the commands independently):
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-client --ignite-to-ignite-thin --activate-cluster cluster-1
+./cdc-start-up.sh --cdc-client --ignite-to-ignite-thin cluster-1
 ```
 
 NOTE: Make sure clusters fully started up before starting CDC client.
@@ -619,7 +617,7 @@ Here is an example on how to start Active-Active inter-cluster communication wit
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-client --ignite-to-ignite --activate-cluster cluster-1
+./cdc-start-up.sh --cdc-client --ignite-to-ignite cluster-1
 ./cdc-start-up.sh --cdc-client --ignite-to-ignite cluster-2
 ```
 
@@ -645,7 +643,7 @@ Here is an example on how to start Active-Passive inter-cluster communication wi
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-client --ignite-to-kafka --activate-cluster cluster-1
+./cdc-start-up.sh --cdc-client --ignite-to-kafka cluster-1
 ./cdc-start-up.sh --cdc-client --kafka-to-ignite-thin cluster-2
 ```
 
@@ -654,7 +652,7 @@ Here is an example on how to start Active-Passive inter-cluster communication wi
 ./cdc-start-up.sh --check-cdc --key 11006 --value 1 --version 1 --cluster 1
 ```
 
-The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transfered.
+The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transferred.
 
 NOTE: To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system.
 
