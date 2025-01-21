@@ -1881,20 +1881,24 @@ public class ClusterCachesInfo {
     }
 
     /**
-     * Merges local cache configuration with the received. Local cache can contain local cache listeners while remote
-     * an remote one can bring new schema for a non-persistent node.
+     * Merges local and received cache configurations.
      *
      * @param loc Local cache configuration.
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see #updateRegisteredCaches
-     * @see CacheConfiguration#writeReplace()
      */
     private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
-        for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
-            received.addCacheEntryListenerConfiguration(lsnrCfg);
+        // Schema is supposed to get merged earlier.
+        loc.setQueryEntities(received.getQueryEntities());
+        loc.setSqlSchema(received.getSqlSchema());
+        loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
+        loc.setSqlEscapeAll(received.isSqlEscapeAll());
 
-        return received;
+        assert loc.isSqlOnheapCacheEnabled() == received.isSqlOnheapCacheEnabled();
+        assert loc.getSqlOnheapCacheMaxSize() == received.getSqlOnheapCacheMaxSize();
+
+        return loc;
     }
 
     /**
