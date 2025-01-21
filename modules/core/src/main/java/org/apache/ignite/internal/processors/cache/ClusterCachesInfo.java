@@ -1839,7 +1839,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        mergeConfigs(locCfg.cacheData().config(), cfg),
+                        mergeConfigurations(locCfg.cacheData().config(), cfg),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
@@ -1881,8 +1881,7 @@ public class ClusterCachesInfo {
     }
 
     /**
-     * Merges local cache configuration with the received. Local cache can contain cache listeners while a remote one
-     * can bring schema changes.
+     * Merges local and received cache configurations.
      *
      * @param loc Local cache configuration.
      * @param received Cache configuration received from the cluster.
@@ -1891,7 +1890,7 @@ public class ClusterCachesInfo {
      * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
      * @see CacheConfiguration#writeReplace()
      */
-    private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+    private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
             received.addCacheEntryListenerConfiguration(lsnrCfg);
 
