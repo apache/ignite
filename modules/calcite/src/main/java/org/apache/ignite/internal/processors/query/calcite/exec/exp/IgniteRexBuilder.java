@@ -80,9 +80,9 @@ public class IgniteRexBuilder extends RexBuilder {
         // and `Date#getTime()` in `TypeUtils#toInternal(...)`. Classic temporal types process the long value differently
         // for dates before Gregorian calendar. `DateTimeUtils` does not. This may cause +several weeks for old date literals.
         if (o instanceof DateString)
-            o = advanceOldDateLiteralValue((DateString)o);
+            o = fixOldDateLiteralValue((DateString)o);
         else if (o instanceof TimestampString)
-            o = advanceOldDateLiteralValue((TimestampString)o);
+            o = fixOldDateLiteralValue((TimestampString)o);
 
         return super.makeLiteral(o, type, typeName);
     }
@@ -97,13 +97,17 @@ public class IgniteRexBuilder extends RexBuilder {
      * @see Date#normalize(BaseCalendar.Date)
      * @see Date#getCalendarSystem(int)
      */
-    private DateString advanceOldDateLiteralValue(DateString lit) {
+    private DateString fixOldDateLiteralValue(DateString lit) {
         LocalDate locDate = LocalDate.ofEpochDay(lit.getDaysSinceEpoch());
 
         if (beforeGregorian(locDate)) {
             locDate = recalculateLocalDate(locDate);
 
-            lit = new DateString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
+            return new DateString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth()) {
+                @Override public String toString() {
+                    return "Before-Gregorian-adopt='" + super.toString() + "', original='" + lit + '\'';
+                }
+            };
         }
 
         return lit;
@@ -119,7 +123,7 @@ public class IgniteRexBuilder extends RexBuilder {
      * @see Date#normalize(BaseCalendar.Date)
      * @see Date#getCalendarSystem(int)
      */
-    private TimestampString advanceOldDateLiteralValue(TimestampString lit) {
+    private TimestampString fixOldDateLiteralValue(TimestampString lit) {
         long epochMillis = lit.getMillisSinceEpoch();
         long epochSeconds = epochMillis / 1000L;
 
@@ -133,8 +137,14 @@ public class IgniteRexBuilder extends RexBuilder {
 
             LocalTime locTime = locDateTime.toLocalTime();
 
-            lit = new TimestampString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth(),
+            TimestampString lit0 = new TimestampString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth(),
                 locTime.getHour(), locTime.getMinute(), locTime.getSecond()).withMillis((int)U.nanosToMillis(locTime.getNano()));
+
+            return new TimestampString(lit0.toString()) {
+                @Override public String toString(int precision) {
+                    return "Before-Gregorian-adopt='" + super.toString() + "', original='" + lit + '\'';
+                }
+            };
         }
 
         return lit;
