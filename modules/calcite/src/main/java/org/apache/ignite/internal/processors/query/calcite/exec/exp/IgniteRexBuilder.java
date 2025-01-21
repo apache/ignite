@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.util.Date;
+import java.util.TimeZone;
+import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -35,6 +39,7 @@ import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** */
@@ -69,58 +74,74 @@ public class IgniteRexBuilder extends RexBuilder {
                 return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
         }
 
-        // Adjust temporal literals so that dates before 15.10.1582 will match internal long representation.
-        // RexLiteral#RexLiteral(Class) uses DateTimeUtils#ymdToUnixDate(int year, int month, int day) which directly
-        // calculates epoch days. We use internal new Date(long) and new Timestampt(long) in TypeUtils#fromInternal(...) and
-        // and Date#getTime() in TypeUtils#toInternal(...). Classic temporal types recalculate the long value before
-        // Gregorian calendar. DateTimeUtils does not. This causes about +10 days from old dates literals with.
+        // Adjust temporal literals so that dates before 15.10.1582 would match internal long representation.
+        // `RexLiteral#getValueAs(Class type)` uses `DateTimeUtils#ymdToUnixDate(int year, int month, int day)` directly
+        // calculating epoch days. We use `new Date(long)` and `new Timestampt(long)` in `TypeUtils#fromInternal(...)` and
+        // and `Date#getTime()` in `TypeUtils#toInternal(...)`. Classic temporal types process the long value differently
+        // for dates before Gregorian calendar. `DateTimeUtils` does not. This may cause +several weeks for old date literals.
         if (o instanceof DateString)
-            o = fixOldDateLiteralValue((DateString)o);
+            o = advanceOldDateLiteralValue((DateString)o);
         else if (o instanceof TimestampString)
-            o = fixOldTimestampLiteralValue((TimestampString)o);
+            o = advanceOldDateLiteralValue((TimestampString)o);
 
         return super.makeLiteral(o, type, typeName);
     }
 
-    /** */
-    private DateString fixOldDateLiteralValue(DateString dateLiteral) {
-        LocalDate locDate = LocalDate.ofEpochDay(dateLiteral.getDaysSinceEpoch());
+    /**
+     * Changes string value of the literal to make the internal representation match the passed value before 15-10-1582.
+     *
+     * @see RexLiteral#getValueAs(Class)
+     * @see DateTimeUtils#ymdToUnixDate(int, int, int)
+     * @see TypeUtils#toLong(Date, TimeZone)
+     * @see TypeUtils#fromInternal(DataContext, Object, Type)
+     * @see Date#normalize(BaseCalendar.Date)
+     * @see Date#getCalendarSystem(int)
+     */
+    private DateString advanceOldDateLiteralValue(DateString lit) {
+        LocalDate locDate = LocalDate.ofEpochDay(lit.getDaysSinceEpoch());
 
         if (beforeGregorian(locDate)) {
-            int recalculatedEpochDays = (int)(java.sql.Date.valueOf(locDate).getTime() / DateTimeUtils.MILLIS_PER_DAY);
+            locDate = recalculateLocalDate(locDate);
 
-            locDate = LocalDate.ofEpochDay(recalculatedEpochDays);
-
-            dateLiteral = new DateString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
+            lit = new DateString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
         }
 
-        return dateLiteral;
+        return lit;
+    }
+
+    /**
+     * Changes string value of the literal to make the internal representation match the passed value before 15-10-1582.
+     *
+     * @see RexLiteral#getValueAs(Class)
+     * @see DateTimeUtils#ymdToUnixDate(int, int, int)
+     * @see TypeUtils#toLong(Date, TimeZone)
+     * @see TypeUtils#fromInternal(DataContext, Object, Type)
+     * @see Date#normalize(BaseCalendar.Date)
+     * @see Date#getCalendarSystem(int)
+     */
+    private TimestampString advanceOldDateLiteralValue(TimestampString lit) {
+        long epochMillis = lit.getMillisSinceEpoch();
+        long epochSeconds = epochMillis / 1000L;
+
+        LocalDateTime locDateTime = LocalDateTime.ofEpochSecond(epochSeconds, 0, ZoneOffset.UTC)
+            .plusNanos((int)U.millisToNanos(epochMillis - epochSeconds * 1000L));
+
+        LocalDate locDate = locDateTime.toLocalDate();
+
+        if (beforeGregorian(locDate)) {
+            locDate = recalculateLocalDate(locDate);
+
+            LocalTime locTime = locDateTime.toLocalTime();
+
+            lit = new TimestampString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth(),
+                locTime.getHour(), locTime.getMinute(), locTime.getSecond()).withMillis((int)U.nanosToMillis(locTime.getNano()));
+        }
+
+        return lit;
     }
 
     /** */
-    private TimestampString fixOldTimestampLiteralValue(TimestampString tsLiteral) {
-        long epochDirectMillis = tsLiteral.getMillisSinceEpoch();
-
-        LocalDate locDate = LocalDate.ofInstant(Instant.ofEpochMilli(epochDirectMillis), ZoneOffset.UTC);
-
-        if (beforeGregorian(locDate)) {
-            int recalculatedEpochDays = (int)(java.sql.Date.valueOf(locDate).getTime() / DateTimeUtils.MILLIS_PER_DAY);
-
-            locDate = LocalDate.ofEpochDay(recalculatedEpochDays);
-
-            long timeMillisLeft = epochDirectMillis - recalculatedEpochDays * DateTimeUtils.MILLIS_PER_DAY;
-
-            LocalTime locTime = LocalTime.ofInstant(Instant.ofEpochMilli(timeMillisLeft), ZoneOffset.UTC);
-
-            tsLiteral = new TimestampString(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth(),
-                locTime.getHour(), locTime.getMinute(), locTime.getSecond()).withMillis(1000 + (int)(timeMillisLeft % 1000L));
-        }
-
-        return tsLiteral;
-    }
-
-    /** */
-    private boolean beforeGregorian(LocalDate date) {
+    private static boolean beforeGregorian(LocalDate date) {
         if (date.getYear() > 1582)
             return false;
 
@@ -128,5 +149,12 @@ public class IgniteRexBuilder extends RexBuilder {
             return true;
 
         return date.getMonthValue() < 10 || (date.getMonthValue() == 10 && date.getDayOfMonth() < 15);
+    }
+
+    /** */
+    private static LocalDate recalculateLocalDate(LocalDate date) {
+        int recalculatedEpochDays = (int)(java.sql.Date.valueOf(date).getTime() / DateTimeUtils.MILLIS_PER_DAY);
+
+        return LocalDate.ofEpochDay(recalculatedEpochDays);
     }
 }
