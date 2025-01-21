@@ -1018,7 +1018,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
     /** */
     @Test
-    public void testNonPersistentRejoinWithDynamicTablesOverPredefinedCaches() throws Exception {
+    public void testNonPersistentRejoinsWithDynamicTablesOverPredefinedCaches() throws Exception {
         stopAllGrids();
 
         try {
