@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import javax.cache.configuration.CacheEntryListenerConfiguration;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1839,7 +1838,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        mergeConfigs(locCfg.cacheData().config(), cfg),
+                        mergeConfigurations(locCfg.cacheData().config(), cfg),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
@@ -1887,8 +1886,9 @@ public class ClusterCachesInfo {
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see #updateRegisteredCaches
+     * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
      */
-    private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+    private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         // Schema is supposed to get merged earlier.
         loc.setQueryEntities(received.getQueryEntities());
         loc.setSqlSchema(received.getSqlSchema());
