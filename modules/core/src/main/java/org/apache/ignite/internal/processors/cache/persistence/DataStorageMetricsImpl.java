@@ -369,11 +369,11 @@ public class DataStorageMetricsImpl {
     /** @return Last archived file absolute index, 0-based. */
     private long lastArchivedSegment() {
         if (!metricsEnabled)
-            return 0;
+            return -1;
 
         IgniteWriteAheadLogManager walMgr = this.wal;
 
-        return walMgr == null ? 0 : walMgr.lastArchivedSegment();
+        return walMgr == null ? -1 : walMgr.lastArchivedSegment();
     }
 
     /**

@@ -540,12 +540,16 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
 
+        long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
+
         if (router.hasArchive()) {
             long cdcWalArchiveSegments = walFiles(walMgr.walCdcDirectory()).length;
 
             // Count of segments = LastArchivedSegmentIndex + 1
-            assertEquals(cdcWalArchiveSegments, dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value() + 1);
+            assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);
         }
+        else
+            assertEquals(-1, lastArchivedSegIdx);
     }
 
     /**
