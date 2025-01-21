@@ -1882,13 +1882,13 @@ public class ClusterCachesInfo {
 
     /**
      * Merges local cache configuration with the received. Local cache can contain cache listeners while a remote one
-     * can bring new schema for a non-persistent node.
+     * can bring schema changes.
      *
      * @param loc Local cache configuration.
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see #updateRegisteredCaches
-     * @see CacheConfiguration#writeReplace()
+     * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
      */
     private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
