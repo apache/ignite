@@ -5724,14 +5724,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             for (int idx = startIdx; idx < cnt; idx++) {
                 if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx)) {
-                    T row;
+                    T row = null;
 
                     if (rowFactory != null)
                         row = rowFactory.create(BPlusTree.this, io, pageAddr, idx);
-                    else if (c != null && c.lastRow() != null)
-                        row = c.lastRow();
-                    else
-                        row = getRow(io, pageAddr, idx, x);
+                    else {
+                        if (c != null)
+                            row = c.lastRow();
+
+                        if (row == null)
+                            row = getRow(io, pageAddr, idx, x);
+                    }
 
                     rows = GridArrays.set(rows, resCnt++, row);
                 }

@@ -57,14 +57,13 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
 
         boolean val = cacheFilter == null || applyFilter((InlineIO)io, pageAddr, idx);
 
-        if (!val)
-            return false;
-
-        if (rowFilter != null) {
+        if (val && rowFilter != null) {
             val = rowFilter.apply(tree, io, pageAddr, idx);
 
             lastRow = rowFilter.lastRow();
         }
+        else
+            lastRow = null;
 
         return val;
     }
