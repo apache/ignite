@@ -221,7 +221,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
 
         IgniteEx ignite0 = startGrid(0);
 
-        long ram  = ignite0.localNode().attribute(ATTR_PHY_RAM);
+        long ram = ignite0.localNode().attribute(ATTR_PHY_RAM);
 
         IgniteEx ignite1 = startGridWithMaxedRamUsage(1, ram);
 
