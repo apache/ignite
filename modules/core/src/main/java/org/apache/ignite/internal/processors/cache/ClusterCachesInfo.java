@@ -1882,16 +1882,19 @@ public class ClusterCachesInfo {
 
     /**
      * Merges local cache configuration with the received. Local cache can contain local cache listeners while remote
-     * cache configuration can bring new schema for a non-persistent node.
+     * an remote one can bring new schema for a non-persistent node.
      *
+     * @param loc Local cache configuration.
+     * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see #updateRegisteredCaches
+     * @see CacheConfiguration#writeReplace()
      */
-    private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> locCfg, CacheConfiguration<?, ?> gridCfg) {
-        for (CacheEntryListenerConfiguration lsnrCfg : locCfg.getCacheEntryListenerConfigurations())
-            gridCfg.addCacheEntryListenerConfiguration(lsnrCfg);
+    private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+        for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
+            received.addCacheEntryListenerConfiguration(lsnrCfg);
 
-        return gridCfg;
+        return received;
     }
 
     /**
