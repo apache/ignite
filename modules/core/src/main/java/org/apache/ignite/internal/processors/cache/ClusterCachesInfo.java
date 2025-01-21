@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1880,23 +1881,20 @@ public class ClusterCachesInfo {
     }
 
     /**
-     * Merges local cache configuration with the received. Local cache can contain local cache listeners while remote
-     * cache configuration can bring new schema for a non-persistent node.
+     * Merges local cache configuration with the received. Local cache can contain cache listeners while a remote one
+     * can bring new schema for a non-persistent node.
      *
+     * @param loc Local cache configuration.
+     * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see #updateRegisteredCaches
+     * @see CacheConfiguration#writeReplace()
      */
-    private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> locCfg, CacheConfiguration<?, ?> gridCfg) {
-        // The entities are suppesed to get merged.
-        locCfg.setQueryEntities(gridCfg.getQueryEntities());
-        locCfg.setSqlSchema(gridCfg.getSqlSchema());
-        locCfg.setSqlFunctionClasses(gridCfg.getSqlFunctionClasses());
-        locCfg.setSqlEscapeAll(gridCfg.isSqlEscapeAll());
+    private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+        for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
+            received.addCacheEntryListenerConfiguration(lsnrCfg);
 
-        assert locCfg.isSqlOnheapCacheEnabled() == gridCfg.isSqlOnheapCacheEnabled();
-        assert locCfg.getSqlOnheapCacheMaxSize() == gridCfg.getSqlOnheapCacheMaxSize();
-
-        return locCfg;
+        return received;
     }
 
     /**
