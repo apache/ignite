@@ -1889,6 +1889,7 @@ public class ClusterCachesInfo {
      * @see #registerReceivedCaches
      * @see #updateRegisteredCaches
      * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     * @see CacheConfiguration#writeReplace()
      */
     private CacheConfiguration<?, ?> mergeConfigs(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
