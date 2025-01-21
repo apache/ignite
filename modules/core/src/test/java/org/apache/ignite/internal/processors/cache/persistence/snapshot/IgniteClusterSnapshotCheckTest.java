@@ -54,7 +54,7 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -105,7 +105,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
-    private final Map<Class<?>, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> jobResults = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Map<PartitionKey, List<PartitionHashRecord>>> jobResults = new ConcurrentHashMap<>();
 
     /** Partition id used for tests. */
     private static final int PART_ID = 0;
@@ -520,8 +520,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             )
         ).idleVerifyResult();
 
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
+        Map<PartitionKey, List<PartitionHashRecord>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
+        Map<PartitionKey, List<PartitionHashRecord>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
 
         assertFalse(F.isEmpty(idleVerifyHashes));
         assertFalse(F.isEmpty(snpCheckHashes));
@@ -630,13 +630,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @param results Results of compute.
      */
     private void saveHashes(Class<?> cls, List<ComputeJobResult> results) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes = new HashMap<>();
+        Map<PartitionKey, List<PartitionHashRecord>> hashes = new HashMap<>();
 
         for (ComputeJobResult job : results) {
             if (job.getException() != null)
                 continue;
 
-            job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
+            job.<Map<PartitionKey, PartitionHashRecord>>getData().forEach((k, v) ->
                 hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
         }
 
