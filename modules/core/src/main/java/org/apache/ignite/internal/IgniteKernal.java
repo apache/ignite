@@ -1479,45 +1479,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /**
      * Checks whether physical RAM is not exceeded.
      */
-    @SuppressWarnings("ConstantConditions")
     private void checkPhysicalRam() {
-        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+        String ramUsageMsg = ctx.getRamUsageMsg();
 
-        if (ram != -1) {
-            String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
-
-            long totalHeap = 0;
-            long totalOffheap = 0;
-
-            for (ClusterNode node : ctx.discovery().allNodes()) {
-                if (macs.equals(node.attribute(ATTR_MACS))) {
-                    long heap = node.metrics().getHeapMemoryMaximum();
-                    Long offheap = node.<Long>attribute(ATTR_OFFHEAP_SIZE);
-
-                    if (heap != -1)
-                        totalHeap += heap;
-
-                    if (offheap != null)
-                        totalOffheap += offheap;
-                }
-            }
-
-            long total = totalHeap + totalOffheap;
-
-            if (total < 0)
-                total = Long.MAX_VALUE;
-
-            // 4GB or 20% of available memory is expected to be used by OS and user applications
-            long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
-
-            if (total > safeToUse) {
-                U.quietAndWarn(log, "The total amount of RAM configured for nodes running on the local host exceeds " +
-                    "the recommended maximum value. This may lead to significant slowdown due to swapping, or even " +
-                    "JVM/Ignite crash with OutOfMemoryError (please decrease JVM heap size, data region size or " +
-                    "checkpoint buffer size) [configured=" + (total >> 20) + "MB, available=" + (ram >> 20) +
-                    "MB, recommended=" + (safeToUse >> 20) + "MB]");
-            }
-        }
+        if (ramUsageMsg != null)
+            U.quietAndWarn(log, ramUsageMsg);
     }
 
     /** */

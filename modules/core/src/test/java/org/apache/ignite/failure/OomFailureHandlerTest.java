@@ -24,6 +24,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -35,13 +37,26 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Out of memory error failure handler test.
  */
 public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
+    /** Listener log messages. */
+    private static final ListeningTestLogger srvTestLog = new ListeningTestLogger(log);
+
+    /** Oom failure logger message. */
+    private static final String OOM_ON_RAM_FAILURE_LOG_MSG = "The total amount of RAM configured for nodes running on " +
+        "the local host exceeds the recommended maximum value. This may lead to significant slowdown due to swapping, " +
+        "or even JVM/Ignite crash with OutOfMemoryError (please decrease JVM heap size, data region size or checkpoint " +
+        "buffer size) ";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -53,6 +68,8 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
         );
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        cfg.setGridLogger(srvTestLog);
 
         return cfg;
     }
@@ -72,19 +89,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        try {
-            IgniteFuture<Boolean> res = ignite0.compute(ignite0.cluster().forNodeId(ignite1.cluster().localNode().id()))
-                .callAsync(new IgniteCallable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        throw new OutOfMemoryError();
-                    }
-                });
-
-            res.get();
-        }
-        catch (Throwable ignore) {
-            // Expected.
-        }
+        computeWithOomError(ignite0, ignite1);
 
         assertFailureState(ignite0, ignite1);
     }
@@ -204,11 +209,71 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     }
 
     /**
+     * Test OOME with maxed RAM usage in configuration.
+     */
+    @Test
+    public void testConfigurationOomError() throws Exception {
+        LogListener logLsnr0 = LogListener.matches(OOM_ON_RAM_FAILURE_LOG_MSG)
+            .times(2)
+            .build();
+
+        srvTestLog.registerListener(logLsnr0);
+
+        IgniteEx ignite0 = startGrid(0);
+
+        long ram  = ignite0.localNode().attribute(ATTR_PHY_RAM);
+
+        IgniteEx ignite1 = startGridWithMaxedRamUsage(1, ram);
+
+        computeWithOomError(ignite0, ignite1);
+
+        assertFailureState(ignite0, ignite1);
+
+        assertTrue(waitForCondition(logLsnr0::check, getTestTimeout()));
+    }
+
+    /**
+     * @param idx int - Ignite instance index.
+     * @param ram long - available RAM.
+     * @return {@link IgniteEx} started with maxed RAM usage in configuration.
+     */
+    private IgniteEx startGridWithMaxedRamUsage(int idx, long ram) throws Exception {
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
+
+        IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize((long)(0.9 * ram))));
+
+        return (IgniteEx)startGrid(igniteInstanceName, optimize(cfg), null);
+    }
+
+    /**
+     * @param ignite0 instance that starts compute.
+     * @param ignite1 instance that handles compute and throws {@link OutOfMemoryError}.
+     */
+    private void computeWithOomError(IgniteEx ignite0, IgniteEx ignite1) {
+        try {
+            IgniteFuture<Boolean> res = ignite0.compute(ignite0.cluster().forNodeId(ignite1.cluster().localNode().id()))
+                .callAsync(new IgniteCallable<Boolean>() {
+                    @Override public Boolean call() throws Exception {
+                        throw new OutOfMemoryError();
+                    }
+                });
+
+            res.get();
+        }
+        catch (Throwable ignore) {
+            // Expected.
+        }
+    }
+
+    /**
      * @param igniteWork Working ignite instance.
      * @param igniteFail Failed ignite instance.
      */
     private static void assertFailureState(Ignite igniteWork, Ignite igniteFail) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return dummyFailureHandler(igniteFail).failure();
             }

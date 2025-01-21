@@ -30,6 +30,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
@@ -179,8 +180,16 @@ public class FailureProcessor extends GridProcessorAdapter {
                 "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
         }
 
-        if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
+        if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class)) {
             reserveBuf = null;
+
+            if (ctx instanceof GridKernalContextImpl) {
+                String ramMsg = ((GridKernalContextImpl)ctx).getRamUsageMsg();
+
+                if (ramMsg != null)
+                    log.error(ramMsg);
+            }
+        }
 
         CorruptedDataStructureException corruptedDataStructureEx =
             X.cause(failureCtx.error(), CorruptedDataStructureException.class);
