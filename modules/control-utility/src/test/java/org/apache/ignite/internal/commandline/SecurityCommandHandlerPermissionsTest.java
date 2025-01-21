@@ -144,11 +144,8 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         String srvcName = "testService";
         Collection<String> cmdArgs = asList("--kill", "service", srvcName);
 
-        Ignite ignite = startGrid(
-            0,
-            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
-            userData(TEST_LOGIN, servicePermission(srvcName, SERVICE_CANCEL))
-        );
+        Ignite ignite = startGrid(0, userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, servicePermission(srvcName, SERVICE_CANCEL)));
 
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
