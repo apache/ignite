@@ -44,7 +44,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests the case when regular communications messages are sent along with the last handshake messages and SSL is enabled.
- * It asserts that if not all received by network bytes were processed by {@link BlockingSslHandler} during the handshake
+ * It asserts that if not all received by network bytes are processed by {@link BlockingSslHandler} during the handshake
  * phase, then all remaining bytes are properly copied to {@code GridNioSslHandler}, which replaces
  * {@link BlockingSslHandler} after the handshake phase.
  * The steps that can lead to mentioned above conditions:
@@ -59,7 +59,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * contains all bytes related to {@link RecoveryLastReceivedMessage} and only half of the MESSAGE bytes.
  * <p>
  * 4. Node A decodes {@link RecoveryLastReceivedMessage} from the received network packet and finishes the handshake.
- * But the MESSAGE cannot be processed because not enough bytes were received to decode it.
+ * But the MESSAGE cannot be processed because not enough bytes were received. So we must save remaining bytes from the
+ * first network packet, wait for the next network packet and finish MESSAGE deserialization.
  *
  */
 public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
