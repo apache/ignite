@@ -679,14 +679,14 @@ class GridNioSslHandler extends ReentrantLock {
         if (init != null)
             size = Math.max(size, init.remaining());
 
-        appBuf = directBuf ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+        ByteBuffer buf = directBuf ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
 
-        appBuf.order(order);
+        buf.order(order);
 
         if (init != null)
-            appBuf.put(init);
+            buf.put(init);
 
-        return appBuf;
+        return buf;
     }
 
     /**
