@@ -488,7 +488,7 @@ public class GridDhtPartitionSupplier {
                     errMsg = supplyMsg;
                 }
                 else {
-                    errMsg = new GridDhtPartitionSupplyMessageV2(
+                    errMsg = new GridDhtPartitionSupplyErrorMessage(
                         demandMsg.rebalanceId(),
                         grp.groupId(),
                         demandMsg.topologyVersion(),

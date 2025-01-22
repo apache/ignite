@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Supply message with supplier error transfer support.
  */
-public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessage {
+public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
     /**
      * Default constructor.
      */
-    public GridDhtPartitionSupplyMessageV2() {
+    public GridDhtPartitionSupplyErrorMessage() {
     }
 
     /**
@@ -54,7 +54,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
      * @param addDepInfo Add dep info.
      * @param err Supply process error.
      */
-    public GridDhtPartitionSupplyMessageV2(
+    public GridDhtPartitionSupplyErrorMessage(
         long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
@@ -129,7 +129,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionSupplyMessageV2.class);
+        return reader.afterMessageRead(GridDhtPartitionSupplyErrorMessage.class);
     }
 
     /** {@inheritDoc} */
