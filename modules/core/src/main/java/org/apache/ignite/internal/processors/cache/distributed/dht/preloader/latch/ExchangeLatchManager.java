@@ -59,9 +59,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Class is responsible to create and manage instances of distributed latches {@link Latch}.
  */
 public class ExchangeLatchManager {
-    /** Version since latch management is available. */
-    private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
-
     /**
      * Exchange latch V2 protocol introduces following optimization: Joining nodes are explicitly excluded from possible
      * latch participants.
