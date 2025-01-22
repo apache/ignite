@@ -83,8 +83,8 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
             // Force connection to be established.
             sendMessage(from, to, createMessage());
 
-            GridNioRecoveryDescriptor fromDesc = extractDescriptor(from);
-            GridNioRecoveryDescriptor toDesc = extractDescriptor(to);
+            GridNioRecoveryDescriptor fromDesc = extractRecoveryDescriptor(from);
+            GridNioRecoveryDescriptor toDesc = extractRecoveryDescriptor(to);
 
             // Stores multiple dummy messages in a recovery descriptor. When the connection is restored, they will be
             // written to the network buffer along with the last handshake message.
@@ -92,6 +92,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
             for (int j = 0; j < 50; j++)
                 toDesc.add(new GridNioServer.WriteRequestImpl(toDesc.session(), createMessage(), false, null));
 
+            // Close connection to re-initiate handshake between nodes.
             fromDesc.session().close();
         }
 
@@ -99,7 +100,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
     }
 
     /** */
-    public GridNioRecoveryDescriptor extractDescriptor(ClusterNode node) throws Exception {
+    public GridNioRecoveryDescriptor extractRecoveryDescriptor(ClusterNode node) throws Exception {
         CommunicationSpi<Message> spi = spis.get(node.id());
 
         GridNioServerWrapper wrapper = U.field(spi, "nioSrvWrapper");
