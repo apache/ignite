@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -24,6 +27,8 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStartCommandArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStopCommandArg;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -65,7 +70,22 @@ public class PerformanceStatisticsTask extends VisorOneNodeTask<IgniteDataTransf
         @Override protected String run(IgniteDataTransferObject arg) throws IgniteException {
             try {
                 if (arg instanceof PerformanceStatisticsStartCommandArg) {
-                    ignite.context().performanceStatistics().startCollectStatistics();
+                    PerformanceStatisticsStartCommandArg startCmdArg = (PerformanceStatisticsStartCommandArg)arg;
+
+                    PerformanceStatisticsProcessor performanceStatisticsProc = ignite.context().performanceStatistics();
+                    GridSystemViewManager sysViewMgr = ignite.context().systemView();
+
+                    List<String> views;
+
+                    if (startCmdArg.allSystemViews()) {
+                        views = new ArrayList<>();
+                        sysViewMgr.forEach(view -> views.add(view.name()));
+                    }
+                    else if (startCmdArg.systemViews() != null) views = List.of(startCmdArg.systemViews());
+                    else views = Collections.emptyList();
+
+                    performanceStatisticsProc.addSystemViews(views);
+                    performanceStatisticsProc.startCollectStatistics();
 
                     return "Started.";
                 }
