@@ -239,10 +239,10 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             return new Function<Row, Row>() {
                 final RowHandler<Row> hnd = ctx.rowHandler();
 
-                final RowHandler.RowFactory<Row> rowFac = hnd.factory(ctx.getTypeFactory(), inputRowType);
+                final Row out = hnd.factory(ctx.getTypeFactory(), inputRowType).create();
 
                 @Override public Row apply(Row in) {
-                    Row out = rowFac.create();
+                    hnd.reset(out);
 
                     for (int i = 0; i < hnd.columnCount(in); ++i) {
                         Object val = hnd.get(i, in);

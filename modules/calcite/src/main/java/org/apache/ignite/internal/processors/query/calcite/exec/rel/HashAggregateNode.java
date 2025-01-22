@@ -302,6 +302,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
             List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
 
+            // TODO
             for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
         }
