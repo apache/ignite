@@ -99,10 +99,12 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
     }
 
     /** */
-    public GridNioRecoveryDescriptor extractDescriptor(ClusterNode node) {
+    public GridNioRecoveryDescriptor extractDescriptor(ClusterNode node) throws Exception {
         CommunicationSpi<Message> spi = spis.get(node.id());
 
         GridNioServerWrapper wrapper = U.field(spi, "nioSrvWrapper");
+
+        assertTrue(waitForCondition(() -> !wrapper.recoveryDescs().values().isEmpty(), getTestTimeout()));
 
         return wrapper.recoveryDescs().values().stream().findFirst().get();
     }
