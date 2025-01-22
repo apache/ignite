@@ -23,6 +23,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -35,23 +38,29 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
  */
 public class ExpiredEntriesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
-    @Test
-    public void testExpiration() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         CacheConfiguration<Integer, Developer> cacheCfg = new CacheConfiguration<Integer, Developer>()
             .setIndexedTypes(Integer.class, Developer.class)
             .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 1)));
 
-        IgniteCache<Integer, Developer> cache1 = client.getOrCreateCache(new CacheConfiguration<>(cacheCfg)
+        client.createCache(new CacheConfiguration<>(cacheCfg)
             .setName("CACHE1")
             .setEagerTtl(false)
         );
 
-        IgniteCache<Integer, Developer> cache2 = client.getOrCreateCache(new CacheConfiguration<>(cacheCfg)
+        client.createCache(new CacheConfiguration<>(cacheCfg)
             .setName("CACHE2")
             .setEagerTtl(true)
         );
 
         awaitPartitionMapExchange();
+    }
+
+    /** */
+    @Test
+    public void testExpiration() throws Exception {
+        IgniteCache<Integer, Developer> cache1 = client.cache("CACHE1");
+        IgniteCache<Integer, Developer> cache2 = client.cache("CACHE2");
 
         for (int i = 0; i < 100; i++) {
             cache1.put(i, new Developer("dev" + i, i));
@@ -69,6 +78,30 @@ public class ExpiredEntriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         checkExpiration("CACHE1", false);
         checkExpiration("CACHE2", true);
+    }
+
+    /** Validate that check of expiry policy doesn't require additional page read. */
+    @Test
+    public void testIndexScanReadPageOnce() {
+        for (String cacheName: F.asList("CACHE1", "CACHE2")) {
+            IgniteCache<Integer, Developer> cache = client.cache(cacheName);
+
+            ExpiryPolicy expPlc = new CreatedExpiryPolicy(new Duration(TimeUnit.DAYS, 1));
+
+            int key = primaryKey(grid(0).cache(cacheName));
+
+            cache.withExpiryPolicy(expPlc).put(key, new Developer("dev0", 0));
+
+            IoStatisticsHolder statHld = grid(0).cachex(cacheName).context().group().statisticsHolderData();
+
+            long before = statHld.logicalReads();
+
+            assertQuery("SELECT /*+ FORCE_INDEX(DEVELOPER_DEPID_IDX) */ name, depId FROM " + cacheName + ".DEVELOPER where depId=0")
+                .matches(QueryChecker.containsIndexScan(cacheName, "DEVELOPER", "DEVELOPER_DEPID_IDX"))
+                .check();
+
+            assertEquals(1, statHld.logicalReads() - before);
+        }
     }
 
     /** */

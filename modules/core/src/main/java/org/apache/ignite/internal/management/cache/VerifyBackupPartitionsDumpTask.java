@@ -37,7 +37,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -90,28 +90,28 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
 
     /** {@inheritDoc} */
     @Override public @Nullable String reduce(List<ComputeJobResult> results) throws IgniteException {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
+        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null)
                 continue;
 
-            Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
+            Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
+            for (Map.Entry<PartitionKey, PartitionHashRecord> e : nodeHashes.entrySet()) {
                 clusterHashes
                     .computeIfAbsent(e.getKey(), k -> new ArrayList<>())
                     .add(e.getValue());
             }
         }
 
-        Comparator<PartitionHashRecordV2> recordComp = buildRecordComparator().reversed();
+        Comparator<PartitionHashRecord> recordComp = buildRecordComparator().reversed();
 
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions = new LinkedHashMap<>();
+        Map<PartitionKey, List<PartitionHashRecord>> partitions = new LinkedHashMap<>();
 
         int skippedRecords = 0;
 
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
+        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : clusterHashes.entrySet()) {
             if (needToAdd(entry.getValue())) {
                 entry.getValue().sort(recordComp);
 
@@ -138,11 +138,11 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
      * @param records records to check.
      * @return {@code true} if this records should be add to result and {@code false} otherwise.
      */
-    private boolean needToAdd(List<PartitionHashRecordV2> records) {
+    private boolean needToAdd(List<PartitionHashRecord> records) {
         if (records.isEmpty() || (taskArg != null && !taskArg.skipZeros()))
             return true;
 
-        PartitionHashRecordV2 record = records.get(0);
+        PartitionHashRecord record = records.get(0);
 
         if (record.size() != 0)
             return true;
@@ -171,7 +171,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
      * @throws IgniteException If failed to write the file.
      */
     private String writeHashes(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
+        Map<PartitionKey, List<PartitionHashRecord>> partitions,
         IdleVerifyResult conflictRes,
         int skippedRecords
     ) throws IgniteException {
@@ -203,7 +203,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
 
     /** */
     private void writeResult(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
+        Map<PartitionKey, List<PartitionHashRecord>> partitions,
         IdleVerifyResult conflictRes,
         int skippedRecords,
         PrintWriter writer
@@ -245,13 +245,13 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
             long binary = 0;
             long regular = 0;
 
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : partitions.entrySet()) {
+            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : partitions.entrySet()) {
                 writer.write("Partition: " + entry.getKey() + "\n");
 
                 writer.write("Partition instances: " + entry.getValue() + "\n");
 
                 if (!entry.getValue().isEmpty()) {
-                    PartitionHashRecordV2 rec = entry.getValue().get(0);
+                    PartitionHashRecord rec = entry.getValue().get(0);
 
                     cf += rec.compactFooterKeys();
                     noCf += rec.noCompactFooterKeys();
@@ -272,9 +272,9 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
     }
 
     /**
-     * @return Comparator for {@link PartitionHashRecordV2}.
+     * @return Comparator for {@link PartitionHashRecord}.
      */
-    private Comparator<PartitionHashRecordV2> buildRecordComparator() {
+    private Comparator<PartitionHashRecord> buildRecordComparator() {
         return (o1, o2) -> {
             int compare = Boolean.compare(o1.isPrimary(), o2.isPrimary());
 
@@ -286,9 +286,9 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
     }
 
     /**
-     * @return Comparator for {@link PartitionKeyV2}.
+     * @return Comparator for {@link PartitionKey}.
      */
-    private Comparator<PartitionKeyV2> buildPartitionKeyComparator() {
+    private Comparator<PartitionKey> buildPartitionKeyComparator() {
         return (o1, o2) -> {
             int compare = Integer.compare(o1.groupId(), o2.groupId());
 
