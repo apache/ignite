@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,13 +36,39 @@ import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
 import org.apache.ignite.spi.communication.TestVolatilePayloadMessage;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
+import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
-/** */
+/**
+ * Tests the case when regular communications messages are sent along with the last handshake messages and SSL is enabled.
+ * It asserts that if not all received by network bytes were processed by {@link BlockingSslHandler} during the handshake
+ * phase, then all remaining bytes are properly copied to {@code GridNioSslHandler}, which replaces
+ * {@link BlockingSslHandler} after the handshake phase.
+ * The steps that can lead to mentioned above conditions:
+ * <p>
+ * 1. Node B sends a MESSAGE to Node A and stores it in the local recovery descriptor until an acknowledgment is received
+ * from Node A.
+ * <p>
+ * 2. Node A, for whatever reason, reestablishes connection with node B and starts handshake negotiation.
+ * <p>
+ * 3. Node B during the final phase of handshake sends {@link RecoveryLastReceivedMessage} and resends not acknowledged
+ * MESSAGE from step 1. But all sent bytes are divided into two network packets. Let's assume that the first packet
+ * contains all bytes related to {@link RecoveryLastReceivedMessage} and only half of the MESSAGE bytes.
+ * <p>
+ * 4. Node A decodes {@link RecoveryLastReceivedMessage} from the received network packet and finishes the handshake.
+ * But the MESSAGE cannot be processed because not enough bytes were received to decode it.
+ *
+ */
 public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
+    /** */
+    private static final int TEST_ITERATION_CNT = 1000;
+
+    /** The number of messages intended to fill the network buffer during last handshake message sending. */
+    private static final int RECOVERY_DESCRIPTOR_QUEUE_MESSAGE_CNT = 50;
+
     /** */
     private static final AtomicInteger msgCreatedCntr = new AtomicInteger();
 
@@ -79,7 +106,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
         ClusterNode from = nodes.get(0);
         ClusterNode to = nodes.get(1);
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < TEST_ITERATION_CNT; i++) {
             // Force connection to be established.
             sendMessage(from, to, createMessage());
 
@@ -89,11 +116,12 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
             // Stores multiple dummy messages in a recovery descriptor. When the connection is restored, they will be
             // written to the network buffer along with the last handshake message.
             // See TcpHandshakeExecutor#receiveAcknowledge
-            for (int j = 0; j < 50; j++)
+            for (int j = 0; j < RECOVERY_DESCRIPTOR_QUEUE_MESSAGE_CNT; j++)
                 toDesc.add(new GridNioServer.WriteRequestImpl(toDesc.session(), createMessage(), false, null));
 
             // Close connection to re-initiate handshake between nodes.
-            fromDesc.session().close();
+            if (fromDesc.session() != null)
+                fromDesc.session().close();
         }
 
         assertTrue(waitForCondition(() -> msgCreatedCntr.get() == msgReceivedCntr.get(), 5000));
