@@ -33,6 +33,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -41,14 +42,6 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.internal.client.GridClientAuthenticationException;
-import org.apache.ignite.internal.client.GridClientClosedException;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientHandshakeException;
-import org.apache.ignite.internal.client.GridServerUnreachableException;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
@@ -70,9 +63,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
@@ -138,12 +128,6 @@ public class CommandHandler {
 
     /** */
     public static final int DFLT_PORT = 10800;
-
-    /**
-     * System property for backward compatibility. Will be removed in future releases.
-     * Enables connection to {@link ConnectorConfiguration REST connector} and forcefully sets default port to 11211.
-     */
-    public static final String IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION = "IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION";
 
     /** */
     private final Scanner in = new Scanner(System.in);
@@ -267,13 +251,6 @@ public class CommandHandler {
 
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
-            if (useConnectorConnection() && !(args.command() instanceof HelpCommand)) {
-                logger.warning("WARNING: Deprecated protocol (ConnectorConfiguration) used to connect to cluster. " +
-                    "It will be removed in the next releases. Please update the control utility connection arguments " +
-                    "to use a thin client protocol: set up a port and/or SSL configuration " +
-                    "releated to the ClientConnectorConfiguration on nodes.");
-            }
-
             int tryConnectMaxCnt = 3;
 
             boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
@@ -282,19 +259,16 @@ public class CommandHandler {
 
             while (true) {
                 try (
-                    CloseableCliCommandInvoker invoker = useConnectorConnection()
-                        ? new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))
-                        : new CliIgniteClientInvoker<>(args.command(), args.commandArg(), clientConfiguration(args))
+                    CliIgniteClientInvoker<A> invoker =
+                         new CliIgniteClientInvoker<>(args.command(), args.commandArg(), clientConfiguration(args))
                 ) {
                     if (!invoker.prepare(logger::info))
                         return EXIT_CODE_OK;
 
-                    if (!args.autoConfirmation()) {
-                        if (!confirm(invoker.confirmationPrompt())) {
-                            logger.info("Operation cancelled.");
+                    if (!args.autoConfirmation() && !confirm(invoker.confirmationPrompt())) {
+                        logger.info("Operation cancelled.");
 
-                            return EXIT_CODE_OK;
-                        }
+                        return EXIT_CODE_OK;
                     }
 
                     logger.info("Command [" + cmdName + "] started");
@@ -311,7 +285,7 @@ public class CommandHandler {
                     else if (args.command() instanceof BeforeNodeStartCommand)
                         lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
                     else
-                        lastOperationRes = invoker.invoke(logger::info, args.verbose());
+                        lastOperationRes = invoker.invoke(logger::info);
 
                     break;
                 }
@@ -320,10 +294,10 @@ public class CommandHandler {
                         throw e;
 
                     if (suppliedAuth)
-                        throw new GridClientAuthenticationException("Wrong credentials.");
+                        throw new IgniteAuthenticationException("Wrong credentials.");
 
                     if (tryConnectMaxCnt == 0)
-                        throw new GridClientAuthenticationException("Maximum number of retries exceeded");
+                        throw new IgniteAuthenticationException("Maximum number of retries exceeded");
 
                     logger.info(credentialsRequested ?
                         "Authentication error, please try again." :
@@ -372,11 +346,7 @@ public class CommandHandler {
                 }
 
                 logger.error("Make sure you are connecting to the client connector (configured on a node via '" +
-                    ClientConnectorConfiguration.class.getName() + "'). Connection to the REST connector was " +
-                    "deprecated and will be removed for the control utility in future releases. Set up the '" +
-                    IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION + "' system property to the 'true' to " +
-                    "forcefully connect to the REST connector (configured on a node via '" +
-                    ConnectorConfiguration.class.getName() + "'). ");
+                    ClientConnectorConfiguration.class.getName() + "')");
 
                 logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
@@ -472,26 +442,7 @@ public class CommandHandler {
      * to secured cluster.
      */
     private boolean isConnectionClosedSilentlyException(Throwable e) {
-        if (e instanceof ClientConnectionException && e.getMessage().startsWith("Channel is closed"))
-            return true;
-
-        if (!(e instanceof GridClientDisconnectedException))
-            return false;
-
-        Throwable cause = e.getCause();
-
-        if (cause == null)
-            return false;
-
-        cause = cause.getCause();
-
-        if (cause instanceof GridClientConnectionResetException &&
-            cause.getMessage() != null &&
-            cause.getMessage().contains("Failed to perform handshake")
-        )
-            return true;
-
-        return false;
+        return e instanceof ClientConnectionException && e.getMessage().startsWith("Channel is closed");
     }
 
     /**
@@ -552,75 +503,6 @@ public class CommandHandler {
         clientCfg.setClusterDiscoveryEnabled(false);
 
         return clientCfg;
-    }
-
-    /**
-     * @param args Common arguments.
-     * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private GridClientConfiguration getClientConfiguration(
-        ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
-        return getClientConfiguration(args.userName(), args.password(), args);
-    }
-
-    /**
-     * @param userName User name for authorization.
-     * @param password Password for authorization.
-     * @param args Common arguments.
-     * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private GridClientConfiguration getClientConfiguration(
-        String userName,
-        String password,
-        ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
-        GridClientConfiguration clientCfg = new GridClientConfiguration();
-
-        clientCfg.setPingInterval(args.pingInterval());
-
-        clientCfg.setPingTimeout(args.pingTimeout());
-
-        clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
-
-        if (!F.isEmpty(userName))
-            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
-
-        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
-            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
-                throw new IllegalArgumentException("Incorrect SSL configuration. " +
-                    "SSL factory config path should not be specified simultaneously with other SSL options like keystore path.");
-
-            clientCfg.setSslContextFactory(createSslSupportFactory(args));
-        }
-
-        return clientCfg;
-    }
-
-    /**
-     * @param userName User name for authorization.
-     * @param password Password for authorization.
-     * @param clientCfg Thin client configuration to connect to cluster.
-     * @return Security credentials provider with usage of given user name and password.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
-        String userName,
-        String password,
-        GridClientConfiguration clientCfg
-    ) throws IgniteCheckedException {
-        SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
-
-        if (securityCredential == null)
-            return new SecurityCredentialsBasicProvider(new SecurityCredentials(userName, password));
-
-        final SecurityCredentials credential = securityCredential.credentials();
-        credential.setLogin(userName);
-        credential.setPassword(password);
-
-        return securityCredential;
     }
 
     /**
@@ -718,8 +600,7 @@ public class CommandHandler {
      * @return {@code true} if specified exception is an authentication exception.
      */
     public static boolean isAuthError(Throwable e) {
-        return X.hasCause(e, GridClientAuthenticationException.class)
-            || X.hasCause(e, ClientAuthenticationException.class);
+        return X.hasCause(e, ClientAuthenticationException.class);
     }
 
     /**
@@ -727,12 +608,7 @@ public class CommandHandler {
      * @return {@code true} if specified exception is a connection error.
      */
     private static boolean isConnectionError(Throwable e) {
-        return e instanceof GridClientClosedException ||
-            e instanceof GridClientConnectionResetException ||
-            e instanceof GridClientDisconnectedException ||
-            e instanceof GridClientHandshakeException ||
-            e instanceof GridServerUnreachableException ||
-            X.hasCause(e, ClientConnectionException.class);
+        return X.hasCause(e, ClientConnectionException.class);
     }
 
     /**
@@ -1008,11 +884,6 @@ public class CommandHandler {
                     length = Math.max(length, name.length());
             }
         }
-    }
-
-    /** */
-    public static boolean useConnectorConnection() {
-        return getBoolean(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION);
     }
 
     /** */
