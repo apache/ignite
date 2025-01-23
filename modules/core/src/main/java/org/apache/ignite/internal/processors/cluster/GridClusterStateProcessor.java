@@ -781,7 +781,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 bltHistItem,
                 state.state(),
                 stateChangeTopVer,
-                isBaselineChangeRequest(msg)
+                msg.forceChangeBaselineTopology() || globalState.isBaselineChangeInProgress()
             );
 
             exchangeActions.stateChangeRequest(req);
@@ -850,23 +850,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         return DiscoveryDataClusterState.createState(state, stateMsg.baselineTopology());
     }
-
-    /** */
-    private boolean isBaselineChangeRequest(ChangeGlobalStateMessage msg) {
-        if (msg.forceChangeBaselineTopology())
-            return true;
-
-        assert globalState.transition() : globalState;
-
-        if (globalState.previouslyActive() == globalState.state().active())
-            return true;
-
-        // Or it is the first activation.
-        return globalState.state() != ClusterState.INACTIVE
-            && !globalState.previouslyActive()
-            && globalState.previousBaselineTopology() == null;
-    }
-
 
     /**
      * @param msg State change message.
