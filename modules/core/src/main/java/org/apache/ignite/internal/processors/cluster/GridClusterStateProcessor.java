@@ -776,14 +776,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
-            ClusterState prevState = state.state();
-
             StateChangeRequest req = new StateChangeRequest(
                 msg,
                 bltHistItem,
-                prevState,
+                state.state(),
                 stateChangeTopVer,
-                isBaselineChangeRequest(msg, prevState)
+                isBaselineChangeRequest(msg)
             );
 
             exchangeActions.stateChangeRequest(req);
@@ -815,24 +813,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return false;
-    }
-
-    /** */
-    private boolean isBaselineChangeRequest(ChangeGlobalStateMessage msg, ClusterState curClusterState) {
-        if (msg.forceChangeBaselineTopology())
-            return true;
-
-        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
-
-        assert clusterState.transition() : clusterState;
-
-        if (curClusterState.active() == msg.state().active())
-            return true;
-
-        // Or it is the first activation.
-        return clusterState.state() != ClusterState.INACTIVE
-            && !clusterState.previouslyActive()
-            && clusterState.previousBaselineTopology() == null;
     }
 
     /**
@@ -870,6 +850,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         return DiscoveryDataClusterState.createState(state, stateMsg.baselineTopology());
     }
+
+    /** */
+    private boolean isBaselineChangeRequest(ChangeGlobalStateMessage msg) {
+        if (msg.forceChangeBaselineTopology())
+            return true;
+
+        assert globalState.transition() : globalState;
+
+        if (globalState.previouslyActive() == globalState.state().active())
+            return true;
+
+        // Or it is the first activation.
+        return globalState.state() != ClusterState.INACTIVE
+            && !globalState.previouslyActive()
+            && globalState.previousBaselineTopology() == null;
+    }
+
 
     /**
      * @param msg State change message.
