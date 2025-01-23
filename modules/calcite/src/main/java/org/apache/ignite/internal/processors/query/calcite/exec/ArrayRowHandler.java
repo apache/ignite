@@ -43,8 +43,17 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** */
-    @Override public void reset(Object[] row) {
+    @Override public void resetRow(Object[] row) {
         Arrays.fill(row, null);
+    }
+
+    /** */
+    @Override public Object[] copyRow(Object[] row) {
+        Object[] copy = new Object[row.length];
+
+        System.arraycopy(row, 0, copy, 0, row.length);
+
+        return copy;
     }
 
     /** {@inheritDoc} */

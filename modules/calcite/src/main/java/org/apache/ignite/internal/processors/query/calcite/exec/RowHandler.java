@@ -35,7 +35,10 @@ public interface RowHandler<Row> {
     void set(int field, Row row, Object val);
 
     /** */
-    void reset(Row row);
+    void resetRow(Row row);
+
+    /** */
+    Row copyRow(Row row);
 
     /** */
     Row concat(Row left, Row right);

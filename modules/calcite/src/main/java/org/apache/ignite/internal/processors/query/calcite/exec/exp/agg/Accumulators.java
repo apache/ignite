@@ -304,6 +304,11 @@ public class Accumulators {
         int columnCount(Row row) {
             return hnd.columnCount(row);
         }
+
+        /** */
+        Row copyRow(Row row) {
+            return hnd.copyRow(row);
+        }
     }
 
     /** */
@@ -1456,7 +1461,7 @@ public class Accumulators {
             if (row == null || columnCount(row) == 0 || (key = get(0, row)) == null)
                 return;
 
-            rows.put(key, row);
+            rows.put(key, copyRow(row));
         }
 
         /** {@inheritDoc} */
