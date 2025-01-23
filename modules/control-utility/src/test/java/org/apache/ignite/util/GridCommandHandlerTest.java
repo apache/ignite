@@ -310,6 +310,33 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test several changes os cluster state without auto confirmation option (--yes)
+     *  @throws Exception If failed.
+     */
+    @Test
+    public void testActivateNoAutoConfirmation() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        autoConfirmation = false;
+
+        injectTestSystemOut();
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "INACTIVE"));
+
+        assertEquals(INACTIVE, ignite.cluster().state());
+
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
+
+        assertEquals(ACTIVE, ignite.cluster().state());
+    }
+
+    /**
      * Test clients leakage.
      *
      * @throws Exception If failed.
