@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -125,7 +126,7 @@ public class Accumulators {
         if (call.getCollation() != null && !call.getCollation().getFieldCollations().isEmpty()) {
             Comparator<Row> cmp = ctx.expressionFactory().comparator(call.getCollation());
 
-            return () -> new SortingAccumulator<>(accSup, cmp);
+            return () -> new SortingAccumulator<>(accSup, cmp, hnd);
         }
 
         return accSup;
@@ -1200,12 +1201,16 @@ public class Accumulators {
         /** */
         private final Accumulator<Row> acc;
 
+        /** */
+        private final RowHandler<Row> hnd;
+
         /**
          * @param accSup Accumulator supplier.
          * @param cmp Comparator.
          */
-        private SortingAccumulator(Supplier<Accumulator<Row>> accSup, Comparator<Row> cmp) {
+        private SortingAccumulator(Supplier<Accumulator<Row>> accSup, Comparator<Row> cmp, RowHandler<Row> hnd) {
             this.cmp = cmp;
+            this.hnd = hnd;
 
             list = new ArrayList<>();
             acc = accSup.get();
@@ -1213,7 +1218,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            list.add(row);
+            list.add(hnd.copyRow(row));
         }
 
         /** {@inheritDoc} */
@@ -1266,7 +1271,19 @@ public class Accumulators {
             if (row == null)
                 return;
 
-            buf.add(row);
+            buf.add(copyRow(row));
+
+            StringBuilder res = new StringBuilder();
+
+            res.append(getClass().getSimpleName());
+            res.append("; ROW: ");
+            res.append(Arrays.toString((Object[])row));
+            res.append("; BUF: ");
+
+            for (Row r: buf)
+                res.append(Arrays.toString((Object[])r)).append(", ");
+
+            System.out.println(res);
         }
 
         /** {@inheritDoc} */
