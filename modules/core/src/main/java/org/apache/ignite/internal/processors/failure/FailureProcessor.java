@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;
+import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 
 /**
  * General failure processing API
@@ -180,14 +181,17 @@ public class FailureProcessor extends GridProcessorAdapter {
                 "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
         }
 
-        if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class)) {
-            reserveBuf = null;
+        if (X.hasCause(failureCtx.error(), OutOfMemoryError.class)) {
+            if (reserveBuf != null)
+                reserveBuf = null;
 
             if (ctx instanceof GridKernalContextImpl) {
-                String ramMsg = ((GridKernalContextImpl)ctx).getRamUsageMsg();
+                String ramMsg = validateRamUsage(ctx);
 
-                if (ramMsg != null)
-                    log.error(ramMsg);
+                if (ramMsg != null) {
+                    log.warning("OutOfMemoryError detected with configured RAM usage exceeding recommended value.");
+                    log.error(ramMsg, failureCtx.error());
+                }
             }
         }
 

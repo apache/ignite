@@ -114,9 +114,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 
 /**
  * Implementation of kernal context.
@@ -1104,51 +1101,5 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return config().getAsyncContinuationExecutor() == null
                 ? ForkJoinPool.commonPool()
                 : config().getAsyncContinuationExecutor();
-    }
-
-    /**
-     * Checks whether physical RAM is not exceeded.
-     */
-    @SuppressWarnings("ConstantConditions")
-    public String getRamUsageMsg() {
-        long ram = discovery().localNode().attribute(ATTR_PHY_RAM);
-
-        if (ram != -1) {
-            String macs = discovery().localNode().attribute(ATTR_MACS);
-
-            long totalHeap = 0;
-            long totalOffheap = 0;
-
-            for (ClusterNode node : discovery().allNodes()) {
-                if (macs.equals(node.attribute(ATTR_MACS))) {
-                    long heap = node.metrics().getHeapMemoryMaximum();
-                    Long offheap = node.<Long>attribute(ATTR_OFFHEAP_SIZE);
-
-                    if (heap != -1)
-                        totalHeap += heap;
-
-                    if (offheap != null)
-                        totalOffheap += offheap;
-                }
-            }
-
-            long total = totalHeap + totalOffheap;
-
-            if (total < 0)
-                total = Long.MAX_VALUE;
-
-            // 4GB or 20% of available memory is expected to be used by OS and user applications
-            long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
-
-            if (total > safeToUse) {
-                return "The total amount of RAM configured for nodes running on the local host exceeds " +
-                    "the recommended maximum value. This may lead to significant slowdown due to swapping, or even " +
-                    "JVM/Ignite crash with OutOfMemoryError (please decrease JVM heap size, data region size or " +
-                    "checkpoint buffer size) [configured=" + (total >> 20) + "MB, available=" + (ram >> 20) +
-                    "MB, recommended=" + (safeToUse >> 20) + "MB]";
-            }
-        }
-
-        return null;
     }
 }

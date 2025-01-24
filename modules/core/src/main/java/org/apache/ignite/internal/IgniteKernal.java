@@ -270,6 +270,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.mxbean.IgniteMXBean.ACTIVE_DESC;
@@ -1478,7 +1479,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * Checks whether physical RAM is not exceeded.
      */
     private void checkPhysicalRam() {
-        String ramUsageMsg = ctx.getRamUsageMsg();
+        String ramUsageMsg = validateRamUsage(ctx);
 
         if (ramUsageMsg != null)
             U.quietAndWarn(log, ramUsageMsg);
