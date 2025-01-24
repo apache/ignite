@@ -89,7 +89,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        computeWithOomError(ignite0, ignite1);
+        failWithOutOfMemoryErrorOnCompute(ignite0, ignite1);
 
         assertFailureState(ignite0, ignite1);
     }
@@ -225,7 +225,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
 
         IgniteEx ignite1 = startGridWithMaxedRamUsage(1, ram);
 
-        computeWithOomError(ignite0, ignite1);
+        failWithOutOfMemoryErrorOnCompute(ignite0, ignite1);
 
         assertFailureState(ignite0, ignite1);
 
@@ -252,7 +252,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
      * @param ignite0 instance that starts compute.
      * @param ignite1 instance that handles compute and throws {@link OutOfMemoryError}.
      */
-    private void computeWithOomError(IgniteEx ignite0, IgniteEx ignite1) {
+    private void failWithOutOfMemoryErrorOnCompute(IgniteEx ignite0, IgniteEx ignite1) {
         try {
             IgniteFuture<Boolean> res = ignite0.compute(ignite0.cluster().forNodeId(ignite1.cluster().localNode().id()))
                 .callAsync(new IgniteCallable<Boolean>() {

@@ -1479,10 +1479,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * Checks whether physical RAM is not exceeded.
      */
     private void checkPhysicalRam() {
-        String ramUsageMsg = validateRamUsage(ctx);
+        String validationResult = validateRamUsage(ctx);
 
-        if (ramUsageMsg != null)
-            U.quietAndWarn(log, ramUsageMsg);
+        if (validationResult != null)
+            U.quietAndWarn(log, validationResult);
     }
 
     /** */

@@ -30,7 +30,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
@@ -49,6 +48,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 public class FailureProcessor extends GridProcessorAdapter {
     /** @see IgniteSystemProperties#IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE */
     public static final int DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = 64 * 1024;
+
+    /** OOME ram configuration logger message. */
+    private static final String OOME_RAM_CONFIGURATION_LOG_MSG = "OutOfMemoryError detected! Excessive RAM usage " +
+        "configured for the cluster might be the reason for the failure. ";
 
     /** Value of the system property that enables threads dumping on failure. */
     private final boolean igniteDumpThreadsOnFailure =
@@ -185,14 +188,10 @@ public class FailureProcessor extends GridProcessorAdapter {
             if (reserveBuf != null)
                 reserveBuf = null;
 
-            if (ctx instanceof GridKernalContextImpl) {
-                String ramMsg = validateRamUsage(ctx);
+            String validationResult = validateRamUsage(ctx);
 
-                if (ramMsg != null) {
-                    log.warning("OutOfMemoryError detected with configured RAM usage exceeding recommended value.");
-                    log.error(ramMsg, failureCtx.error());
-                }
-            }
+            if (validationResult != null)
+                log.error(OOME_RAM_CONFIGURATION_LOG_MSG + validationResult, failureCtx.error());
         }
 
         CorruptedDataStructureException corruptedDataStructureEx =
