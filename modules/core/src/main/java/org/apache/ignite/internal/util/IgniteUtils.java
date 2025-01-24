@@ -12514,18 +12514,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Validates the RAM usage of nodes running on the local host against the available physical RAM.
-     *
-     * <p>This method retrieves the physical RAM and MAC address information of the local node.
-     * It then iterates through all nodes in the cluster, identifies nodes with the same MAC address,
-     * and calculates the total heap and off-heap memory configured for those nodes.
-     * Finally, it compares the total configured memory with the recommended maximum, considering
-     * a certain amount of memory reserved for the operating system and other applications.</p>
-     *
-     * <p>A warning message is returned if the configured memory exceeds the recommended maximum. Otherwise, it returns
-     * {@code null}.</p>
-     *
-     * @param ctx The {@link GridKernalContext} providing access to cluster and node information.
+     * @param ctx {@link GridKernalContext}.
      * @return A warning message indicating excessive RAM usage or {@code null} if the RAM usage is within acceptable
      * limits.
      */

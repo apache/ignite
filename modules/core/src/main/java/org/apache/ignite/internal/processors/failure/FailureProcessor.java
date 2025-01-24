@@ -49,9 +49,9 @@ public class FailureProcessor extends GridProcessorAdapter {
     /** @see IgniteSystemProperties#IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE */
     public static final int DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = 64 * 1024;
 
-    /** OOME ram configuration logger message. */
-    private static final String OOME_RAM_CONFIGURATION_LOG_MSG = "OutOfMemoryError detected! Excessive RAM usage " +
-        "configured for the cluster might be the reason for the failure. ";
+    /** OOM fix recommendation message. */
+    private static final String OOM_FIX_RECOMMENDATION_LOG_MSG = "Insufficient Java heap space. The following Ignite" +
+        " configuration problems have been detected that may caused the node failure: ";
 
     /** Value of the system property that enables threads dumping on failure. */
     private final boolean igniteDumpThreadsOnFailure =
@@ -191,7 +191,7 @@ public class FailureProcessor extends GridProcessorAdapter {
             String validationResult = validateRamUsage(ctx);
 
             if (validationResult != null)
-                log.error(OOME_RAM_CONFIGURATION_LOG_MSG + validationResult, failureCtx.error());
+                log.error(OOM_FIX_RECOMMENDATION_LOG_MSG + validationResult, failureCtx.error());
         }
 
         CorruptedDataStructureException corruptedDataStructureEx =
