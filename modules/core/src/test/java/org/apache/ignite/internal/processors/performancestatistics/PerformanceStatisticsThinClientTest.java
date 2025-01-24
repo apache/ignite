@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -219,44 +218,25 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
      * @param isAsync boolean flag for asynchronous cache operation processing.
      */
     private void checkCacheAllConflictOperations(OperationType opType, boolean isAsync) throws Exception {
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+
         checkCacheOperation(opType, cache -> {
+            TcpClientCache<Object, Object> clientCache = (TcpClientCache<Object, Object>)cache;
+
             try {
                 if (opType == CACHE_PUT_ALL_CONFLICT && !isAsync)
-                    ((TcpClientCache<Object, Object>)cache).putAllConflict(getPutAllConflictMap(6, 1));
+                    clientCache.putAllConflict(F.asMap(6, new T3<>(1, confl, CU.EXPIRE_TIME_ETERNAL)));
                 else if (opType == CACHE_REMOVE_ALL_CONFLICT && !isAsync)
-                    ((TcpClientCache<Object, Object>)cache).removeAllConflict(getRemoveAllConflictMap(6));
+                    clientCache.removeAllConflict(F.asMap(6, confl));
                 else if (opType == CACHE_PUT_ALL_CONFLICT)
-                    ((TcpClientCache<Object, Object>)cache).putAllConflictAsync(getPutAllConflictMap(7, 2)).get();
+                    clientCache.putAllConflictAsync(F.asMap(7, new T3<>(2, confl, CU.EXPIRE_TIME_ETERNAL))).get();
                 else if (opType == CACHE_REMOVE_ALL_CONFLICT)
-                    ((TcpClientCache<Object, Object>)cache).removeAllConflictAsync(getRemoveAllConflictMap(7)).get();
+                    clientCache.removeAllConflictAsync(F.asMap(7, confl)).get();
             }
             catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         });
-    }
-
-    /**
-     * @param key Key
-     * @param val Value
-     * @return {@link Map} with data to send with {@link TcpClientCache#putAllConflict(Map)} or
-     * {@link TcpClientCache#putAllConflictAsync(Map)} cache operations.
-     */
-    private Map<?, T3<?, GridCacheVersion, Long>> getPutAllConflictMap(int key, int val) {
-        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
-
-        return F.asMap(key, new T3<>(val, confl, CU.EXPIRE_TIME_ETERNAL));
-    }
-
-    /**
-     * @param key Key
-     * @return {@link Map} with keys to remove with {@link TcpClientCache#removeAllConflict(Map)} or
-     * {@link TcpClientCache#removeAllConflict(Map)} cache operations.
-     */
-    private Map<?, GridCacheVersion> getRemoveAllConflictMap(int key) {
-        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
-
-        return F.asMap(key, confl);
     }
 
     /** Checks cache operation. */
