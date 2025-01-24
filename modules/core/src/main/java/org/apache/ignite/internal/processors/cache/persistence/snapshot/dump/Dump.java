@@ -46,12 +46,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -162,14 +162,13 @@ public class Dump implements AutoCloseable {
      * @return Standalone kernal context.
      */
     private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
-        File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
+        IgniteDirectories dirs = new IgniteDirectories(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
 
-        A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
-        A.ensure(marshaller.exists(), "marshaller directory not exists");
+        A.ensure(dirs.binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(dirs.marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, dirs.binaryMeta(), dirs.marshaller());
 
             startAllComponents(kctx);
 
