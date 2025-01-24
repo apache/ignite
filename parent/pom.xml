@@ -84,7 +84,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.56.v20240826</jetty.version>
+        <jetty.version>10.0.24</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>

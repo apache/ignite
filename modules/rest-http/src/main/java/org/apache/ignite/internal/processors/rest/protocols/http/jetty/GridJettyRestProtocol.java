@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -275,7 +276,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             XmlConfiguration cfg;
 
             try {
-                cfg = new XmlConfiguration(cfgUrl);
+                Resource rsrc = Resource.newResource(cfgUrl);
+                cfg = new XmlConfiguration(rsrc);
             }
             catch (FileNotFoundException e) {
                 throw new IgniteSpiException("Failed to find configuration file: " + cfgUrl, e);
