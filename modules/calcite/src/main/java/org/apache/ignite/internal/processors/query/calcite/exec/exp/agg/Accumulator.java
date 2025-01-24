@@ -21,13 +21,16 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  *
  */
 public interface Accumulator<Row> extends Serializable {
-    /** */
+    /**
+     * @param row Reusable object of Row. To collect rows one has to use {@link RowHandler#copyRow(Object)} call.
+     */
     void add(Row row);
 
     /** */

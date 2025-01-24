@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1272,18 +1271,6 @@ public class Accumulators {
                 return;
 
             buf.add(copyRow(row));
-
-            StringBuilder res = new StringBuilder();
-
-            res.append(getClass().getSimpleName());
-            res.append("; ROW: ");
-            res.append(Arrays.toString((Object[])row));
-            res.append("; BUF: ");
-
-            for (Row r: buf)
-                res.append(Arrays.toString((Object[])r)).append(", ");
-
-            System.out.println(res);
         }
 
         /** {@inheritDoc} */
