@@ -325,8 +325,6 @@ public class CdcMain implements Runnable {
         }
 
         try (CdcFileLockHolder lock = lockPds()) {
-            String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
-
             Files.createDirectories(cdcDir.resolve(STATE_DIR));
 
             if (log.isInfoEnabled()) {

@@ -51,10 +51,12 @@ import org.jetbrains.annotations.Nullable;
  * │      └── BinaryMarshaller
  * ├── db
  * │  ├── binary_meta                                                           ← binaryMetaRoot
- * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta
+ * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta for node 0
+ * │  │      └── 1645778359.bin
+ * │  │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                        ← binaryMeta for node 1
  * │  │      └── 1645778359.bin
  * │  ├── lock
- * │  ├── marshaller                                                            ← marshaller
+ * │  ├── marshaller                                                            ← marshaller (shared between all nodes)
  * │  │  └── 1645778359.classname0
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
  * │  │  ├── cache-default
@@ -83,10 +85,27 @@ import org.jetbrains.annotations.Nullable;
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
  * │  │  └── snp
+ * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
+ * │  │  ├── cache-default
+ * ..
+ * │  │  ├── cache-ignite-sys-cache
+ * ...
+ * │  │  ├── cache-tx-cache
+ * ...
+ * │  │  ├── cp
+ * ...
+ * │  │  ├── lock
+ * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── metastorage
+ * ...
+ * │  │  └── snp
+ * ...
+ * ...
  * │  └── wal
  * │      ├── archive
  * │      │  └── ignite_0
  * │      │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │      │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
  * │      ├── cdc
  * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
  * │      │      ├── lock
@@ -94,11 +113,15 @@ import org.jetbrains.annotations.Nullable;
  * │      │          ├── cdc-caches-state.bin
  * │      │          ├── cdc-mappings-state.bin
  * │      │          └── cdc-types-state.bin
+ *
+ * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
  * │          ├── 0000000000000000.wal
  * │          ├── 0000000000000001.wal
  * ...
  * │          └── 0000000000000009.wal
+ * │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
+ * ...
  * ├── diagnostic
  * ├── log
  * │  ├── all.log
@@ -110,8 +133,6 @@ import org.jetbrains.annotations.Nullable;
  * ...
  * │  └── jmx-invoker.9.log
  * └── snapshots
- *
- * 26 directories, 155 files
  * </pre>
  */
 public class IgniteDirectories {

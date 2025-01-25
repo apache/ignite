@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
@@ -87,9 +86,7 @@ public class DumpReader implements Runnable {
                 cnsmr.start();
 
             try {
-                IgniteDirectories dirs = new IgniteDirectories(cfg.dumpRoot());
-
-                File[] files = dirs.marshaller().listFiles(BinaryUtils::notTmpFile);
+                File[] files = F.first(dump.directories()).marshaller().listFiles(BinaryUtils::notTmpFile);
 
                 if (files != null)
                     cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));

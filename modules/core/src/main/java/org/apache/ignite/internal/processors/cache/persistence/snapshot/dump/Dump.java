@@ -84,6 +84,9 @@ public class Dump implements AutoCloseable {
     /** Dump directory. */
     private final File dumpDir;
 
+    /** Dump directories. */
+    private final List<IgniteDirectories> dirs;
+
     /** Specific consistent id. */
     private final @Nullable String consistentId;
 
@@ -142,8 +145,11 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
+        this.dirs = metadata.stream()
+            .map(m -> new IgniteDirectories(dumpDir, m.folderName()))
+            .collect(Collectors.toList());
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(dumpDir, log);
+        this.cctx = standaloneKernalContext(log);
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -155,18 +161,15 @@ public class Dump implements AutoCloseable {
     }
 
     /**
-     * @param dumpDir Dump directory.
      * @param log Logger.
      * @return Standalone kernal context.
      */
-    private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        IgniteDirectories dirs = new IgniteDirectories(dumpDir, F.first(metadata).folderName());
-
-        A.ensure(dirs.binaryMeta().exists(), "binary metadata directory not exists");
-        A.ensure(dirs.marshaller().exists(), "marshaller directory not exists");
+    private GridKernalContext standaloneKernalContext(IgniteLogger log) {
+        A.ensure(F.first(dirs).binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(F.first(dirs).marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, dirs.binaryMeta(), dirs.marshaller());
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(dirs).binaryMeta(), F.first(dirs).marshaller());
 
             startAllComponents(kctx);
 
@@ -355,6 +358,11 @@ public class Dump implements AutoCloseable {
     /** @return Root dump directory. */
     public File dumpDirectory() {
         return dumpDir;
+    }
+
+    /** @return Dump directories. */
+    public List<IgniteDirectories> directories() {
+        return dirs;
     }
 
     /** */

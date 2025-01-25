@@ -677,6 +677,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void resolveWorkDirectory() throws Exception {
         IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
 
+        U.delete(dirs.marshaller());
+        U.delete(dirs.binaryMetaRoot());
+
         dirs.mkdirBinaryMetaRoot();
         dirs.mkdirMarshaller();
     }
