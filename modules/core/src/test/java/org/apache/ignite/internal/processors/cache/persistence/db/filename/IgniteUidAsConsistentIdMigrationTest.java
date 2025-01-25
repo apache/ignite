@@ -119,7 +119,10 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (pstWalStoreCustomPath != null)
             ok &= U.delete(pstWalStoreCustomPath);
 
-        ok &= U.delete(new IgniteDirectories(U.defaultWorkDirectory()).binaryMetaRoot());
+        File binaryMetaRoot = new IgniteDirectories(U.defaultWorkDirectory()).binaryMetaRoot();
+
+        if (binaryMetaRoot.exists())
+            ok &= U.delete(binaryMetaRoot);
 
         if (failIfDeleteNotCompleted)
             assertTrue(ok);

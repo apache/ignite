@@ -150,6 +150,9 @@ public class PdsFolderSettings<L extends FileLockHolder> {
      * @return {@link IgniteDirectories} from this settings.
      */
     public IgniteDirectories toIgniteDirectories() {
+        if (persistentStoreRootPath == null) {
+            System.out.println("PdsFolderSettings.toIgniteDirectories");
+        }
         return new IgniteDirectories(persistentStoreRootPath.getParent(), folderName);
     }
 
