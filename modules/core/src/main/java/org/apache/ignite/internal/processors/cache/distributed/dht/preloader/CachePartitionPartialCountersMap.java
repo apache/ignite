@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.TreeMap;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -209,24 +208,6 @@ public class CachePartitionPartialCountersMap implements Serializable {
                 new T2<>(cntrsMap.initialUpdateCounterAt(idx), cntrsMap.updateCounterAt(idx)));
 
         return res;
-    }
-
-    /**
-     * @param map Partition ID to partition counters map.
-     * @param partsCnt Total cache partitions.
-     * @return Partial local counters map.
-     */
-    static CachePartitionPartialCountersMap fromCountersMap(Map<Integer, T2<Long, Long>> map, int partsCnt) {
-        CachePartitionPartialCountersMap map0 = new CachePartitionPartialCountersMap(partsCnt);
-
-        TreeMap<Integer, T2<Long, Long>> sorted = new TreeMap<>(map);
-
-        for (Map.Entry<Integer, T2<Long, Long>> e : sorted.entrySet())
-            map0.add(e.getKey(), e.getValue().get1(), e.getValue().get2());
-
-        map0.trim();
-
-        return map0;
     }
 
     /** {@inheritDoc} */
