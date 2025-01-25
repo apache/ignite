@@ -147,7 +147,6 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         U.delete(new IgniteDirectories(U.defaultWorkDirectory()).marshaller());
     }
 
-
     /**
      * @param str String.
      */

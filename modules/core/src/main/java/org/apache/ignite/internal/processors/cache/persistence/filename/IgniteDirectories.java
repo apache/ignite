@@ -20,15 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.nio.file.Paths;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 
 /**
  * Class contains pathes to Ignite folder.
@@ -119,6 +115,12 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARS
  * </pre>
  */
 public class IgniteDirectories {
+    /** Default path (relative to working directory) of binary metadata folder */
+    public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
+
+    /** Default path (relative to working directory) of marshaller mappings folder */
+    public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
+
     /** Path to the folder containing binary metadata. */
     private final File binaryMetaRoot;
 
@@ -134,7 +136,7 @@ public class IgniteDirectories {
     public IgniteDirectories(File root) {
         A.notNull(root, "Root directory");
 
-        marshaller = new File(root, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+        marshaller = new File(root, DFLT_MARSHALLER_PATH);
         binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
         binaryMeta = null;
     }
@@ -180,7 +182,7 @@ public class IgniteDirectories {
         A.notNull(root, "Root directory");
         A.notNullOrEmpty(folderName, "Node directory");
 
-        marshaller = new File(root, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+        marshaller = new File(root, DFLT_MARSHALLER_PATH);
         binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
         binaryMeta = folderName == null ? null : Paths.get(binaryMetaRoot.getAbsolutePath(), folderName).toFile();
     }
@@ -260,7 +262,7 @@ public class IgniteDirectories {
      * @return {@code True} if {@code f} contains binary meta root directory.
      */
     public static boolean containsBinaryMetaPath(File file) {
-        return file.getPath().contains(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
+        return file.getPath().contains(DFLT_BINARY_METADATA_PATH);
     }
 
     /**
