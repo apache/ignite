@@ -28,12 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -69,6 +70,9 @@ public class IdleVerifyUtility {
     public static final String GRID_NOT_IDLE_MSG =
         "Cluster not idle. Modifications found in caches or groups: ";
 
+    /** */
+    public static final String CRC_CHECK_ERR_MSG = "CRC check of partition failed";
+
     /**
      * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
      * and associated with cache group.
@@ -77,13 +81,15 @@ public class IdleVerifyUtility {
      * @param partId Partition id.
      * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
      *      and {@link PageIdAllocator#FLAG_AUX}.
+     * @param cancelled Supplier of cancelled status.
      */
     public static void checkPartitionsPageCrcSum(
         IgniteThrowableSupplier<FilePageStore> pageStoreSup,
         int partId,
-        byte pageType
+        byte pageType,
+        @Nullable BooleanSupplier cancelled
     ) {
-        checkPartitionsPageCrcSum(pageStoreSup, partId, pageType, null);
+        checkPartitionsPageCrcSum(pageStoreSup, partId, pageType, null, cancelled);
     }
 
     /**
@@ -95,12 +101,14 @@ public class IdleVerifyUtility {
      * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
      *      and {@link PageIdAllocator#FLAG_AUX}.
      * @param pagePostProc Page post processor closure.
+     * @param cancelled Supplier of cancelled status.
      */
     public static void checkPartitionsPageCrcSum(
         IgniteThrowableSupplier<FilePageStore> pageStoreSup,
         int partId,
         byte pageType,
-        @Nullable BiConsumer<Long, ByteBuffer> pagePostProc
+        @Nullable BiConsumer<Long, ByteBuffer> pagePostProc,
+        @Nullable BooleanSupplier cancelled
     ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
@@ -114,6 +122,9 @@ public class IdleVerifyUtility {
             ByteBuffer buf = ByteBuffer.allocateDirect(pageStore.getPageSize()).order(ByteOrder.nativeOrder());
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
+                if (cancelled != null && cancelled.getAsBoolean())
+                    throw new IgniteException();
+
                 buf.clear();
 
                 pageStore.read(pageId, buf, true, true);
@@ -123,7 +134,7 @@ public class IdleVerifyUtility {
             }
         }
         catch (Throwable e) {
-            String msg0 = "CRC check of partition failed [partId=" + partId +
+            String msg0 = CRC_CHECK_ERR_MSG + " [partId=" + partId +
                 ", grpName=" + (pageStore == null ? "" : cacheGroupName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
                 ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
 
@@ -266,27 +277,29 @@ public class IdleVerifyUtility {
      * @param isPrimary {@code true} if partition is primary.
      * @param partSize Partition size on disk.
      * @param it Iterator though partition data rows.
+     * @param cancelled Supplier of cancelled status.
      * @throws IgniteCheckedException If fails.
      * @return Map of calculated partition.
      */
-    public static @Nullable PartitionHashRecordV2 calculatePartitionHash(
-        PartitionKeyV2 partKey,
+    public static @Nullable PartitionHashRecord calculatePartitionHash(
+        PartitionKey partKey,
         Object updCntr,
         Object consId,
         GridDhtPartitionState state,
         boolean isPrimary,
         long partSize,
-        GridIterator<CacheDataRow> it
+        GridIterator<CacheDataRow> it,
+        @Nullable BooleanSupplier cancelled
     ) throws IgniteCheckedException {
         if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-            return new PartitionHashRecordV2(partKey,
+            return new PartitionHashRecord(partKey,
                 isPrimary,
                 consId,
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                    PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
+                    PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
             );
         }
@@ -297,6 +310,9 @@ public class IdleVerifyUtility {
         VerifyPartitionContext ctx = new VerifyPartitionContext();
 
         while (it.hasNextX()) {
+            if (cancelled != null && cancelled.getAsBoolean())
+                throw new IgniteCheckedException("Caclulate partition hash cancelled.");
+
             CacheDataRow row = it.nextX();
 
             if (row.expireTime() > 0)
@@ -305,13 +321,13 @@ public class IdleVerifyUtility {
             ctx.update(row.key(), row.value(), row.version());
         }
 
-        return new PartitionHashRecordV2(
+        return new PartitionHashRecord(
             partKey,
             isPrimary,
             consId,
             updCntr,
             partSize,
-            PartitionHashRecordV2.PartitionState.OWNING,
+            PartitionHashRecord.PartitionState.OWNING,
             ctx
         );
     }

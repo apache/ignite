@@ -57,7 +57,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -119,12 +118,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(igniteInstanceName)) {
-            assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
-        else
+        if (!isFirstGrid(igniteInstanceName))
             cfg.setServiceConfiguration(getServiceConfiguration());
 
         cfg.setCacheConfiguration(getCacheConfiguration());
@@ -163,11 +157,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -271,9 +260,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEvents() throws Exception {
-        Ignite ignite = startClientGrid(0);
-
         ServerStarter srvStarter = startServers();
+
+        Ignite ignite = startClientGrid(0);
 
         IgniteCache<IntegerKey, Integer> cache = ignite.cache(TEST_CACHE_NAME);
 

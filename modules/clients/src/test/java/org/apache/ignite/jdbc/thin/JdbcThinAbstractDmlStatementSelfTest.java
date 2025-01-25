@@ -30,7 +30,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.nio.charset.StandardCharsets.UTF_16;
@@ -105,8 +104,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
      */
     IgniteConfiguration getBinaryConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = getConfiguration0(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 

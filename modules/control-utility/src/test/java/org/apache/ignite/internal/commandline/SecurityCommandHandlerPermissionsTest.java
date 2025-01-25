@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -64,7 +65,7 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
-        return Collections.singletonList(CLI_CMD_HND);
+        return F.asList(CLI_CMD_HND);
     }
 
     /** {@inheritDoc} */

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -72,7 +72,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         super.beforeTest();
     }
@@ -97,14 +97,19 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
-            .setConnectorConfiguration(
-                new ConnectorConfiguration()
-                    .setSslEnabled(true)
-                    .setSslFactory(sslTrustedFactory("connectorServer", "trustthree"))
+            .setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+
+        if (commandHandler.equals(CLI_CMD_HND)) {
+            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setSslEnabled(true)
+                .setSslContextFactory(sslTrustedFactory("thinServer", "trusttwo"))
+                .setUseIgniteSslContextFactory(false)
             );
+        }
+
+        return cfg;
     }
 
     /**
@@ -153,10 +158,10 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         args.add(login);
 
         args.add("--keystore");
-        args.add(keyStorePath("connectorServer"));
+        args.add(keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"));
 
         args.add("--truststore");
-        args.add(keyStorePath("trustthree"));
+        args.add(keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"));
 
         assertEquals(EXIT_CODE_OK, cmd.execute(args));
         assertEquals(1, keyStorePwdCnt.get());
@@ -180,9 +185,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
             "--state",
             "--user", login,
             "--password", pwd,
-            "--keystore", keyStorePath("connectorClient"),
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
             "--keystore-password", keyStorePassword(),
-            "--truststore", keyStorePath("trustthree"),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
             "--truststore-password", keyStorePassword()));
 
         assertEquals(EXIT_CODE_OK, exitCode);

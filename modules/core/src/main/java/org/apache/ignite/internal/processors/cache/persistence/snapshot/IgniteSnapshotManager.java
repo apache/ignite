@@ -92,7 +92,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -100,7 +99,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
@@ -203,8 +202,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
@@ -1835,7 +1832,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
         return checkSnapshot(name, snpPath, -1);
@@ -1848,7 +1845,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @param incIdx Incremental snapshot index.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
@@ -1879,7 +1876,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incIdx Incremental snapshot index.
      * @param check If {@code true} check snapshot integrity.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
         String name,
@@ -1936,7 +1933,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                                new IdleVerifyResult(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
                         else
                             res.onDone(f1.error());
                     });
@@ -1946,7 +1943,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
                 else if (f0.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                        new IdleVerifyResult(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
                 else
                     res.onDone(f0.error());
             }
@@ -2174,9 +2171,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
-
-            if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
-                throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
@@ -2533,9 +2527,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new ClusterTopologyCheckedException("Snapshot remote request cannot be performed. " +
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']');
         }
-
-        if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
-            throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
         RemoteSnapshotFilesRecevier fut =
             new RemoteSnapshotFilesRecevier(this, rmtNodeId, reqId, snpName, rmtSnpPath, parts, stopChecker, partHnd);

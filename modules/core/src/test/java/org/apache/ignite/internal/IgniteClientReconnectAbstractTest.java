@@ -82,8 +82,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         BlockTcpCommunicationSpi commSpi = new BlockTcpCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(commSpi);
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 

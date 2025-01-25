@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -686,7 +685,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
     protected TcpCommunicationSpi getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
         spi.setLocalPort(port++);
         spi.setIdleConnectionTimeout(10_000);
         spi.setConnectTimeout(10_000);
@@ -730,7 +728,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
             );
 
             ctx.setLocalNode(node);

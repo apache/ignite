@@ -88,8 +88,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
         cfg.setBinaryConfiguration(bCfg);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         this.cfg = cfg;
 
         return cfg;

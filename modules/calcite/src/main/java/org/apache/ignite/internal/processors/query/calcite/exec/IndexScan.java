@@ -116,7 +116,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
             txChanges = ectx.transactionChanges(
                 cctx.cacheId(),
-                parts,
+                cctx.isReplicated() ? null : this.parts,
                 r -> new IndexRowImpl(rowHnd, r),
                 this::compare
             );

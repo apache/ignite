@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
@@ -25,15 +24,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
  * The role of this is aggregate logic of cluster states.
@@ -157,23 +152,6 @@ public class ClusterStateProvider {
      */
     public void dumpStats() {
         tcpCommSpi.dumpStats();
-    }
-
-    /**
-     * Checks whether remote nodes support {@link HandshakeWaitMessage}.
-     *
-     * @return {@code True} if remote nodes support {@link HandshakeWaitMessage}.
-     */
-    public boolean isHandshakeWaitSupported() {
-        DiscoverySpi discoSpi = ignite.configuration().getDiscoverySpi();
-
-        if (discoSpi instanceof IgniteDiscoverySpi)
-            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
-        else {
-            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
-
-            return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
-        }
     }
 
     /**

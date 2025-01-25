@@ -100,6 +100,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryTypePutRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcCachePartitionsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcCachePartitionsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcClientInfoAwareRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
@@ -277,6 +278,9 @@ public class JdbcThinConnection implements Connection {
     /** Marshaller context. */
     private final JdbcMarshallerContext marshCtx;
 
+    /** Client info. */
+    private @Nullable Map<String, String> clientInfo;
+
     /**
      * Creates new connection.
      *
@@ -321,7 +325,7 @@ public class JdbcThinConnection implements Connection {
         marsh.setContext(marshCtx);
 
         BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
-        
+
         BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
 
         ctx.configure(marsh, binCfg);
@@ -477,12 +481,12 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public Statement createStatement() throws SQLException {
-        return createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+        return createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, holdability);
     }
 
     /** {@inheritDoc} */
     @Override public Statement createStatement(int resSetType, int resSetConcurrency) throws SQLException {
-        return createStatement(resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
+        return createStatement(resSetType, resSetConcurrency, holdability);
     }
 
     /** {@inheritDoc} */
@@ -905,26 +909,41 @@ public class JdbcThinConnection implements Connection {
     @Override public void setClientInfo(String name, String val) throws SQLClientInfoException {
         if (closed)
             throw new SQLClientInfoException("Connection is closed.", null);
+
+        if (clientInfo == null)
+            clientInfo = new HashMap<>();
+
+        clientInfo.put(name, val);
     }
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(Properties props) throws SQLClientInfoException {
         if (closed)
             throw new SQLClientInfoException("Connection is closed.", null);
+
+        clientInfo = new HashMap<>();
+
+        for (String propName : props.stringPropertyNames())
+            clientInfo.put(propName, props.getProperty(propName));
     }
 
     /** {@inheritDoc} */
     @Override public String getClientInfo(String name) throws SQLException {
         ensureNotClosed();
 
-        return null;
+        return clientInfo.get(name);
     }
 
     /** {@inheritDoc} */
     @Override public Properties getClientInfo() throws SQLException {
         ensureNotClosed();
 
-        return new Properties();
+        Properties ret = new Properties();
+
+        if (clientInfo != null)
+            ret.putAll(clientInfo);
+
+        return ret;
     }
 
     /** {@inheritDoc} */
@@ -1121,6 +1140,9 @@ public class JdbcThinConnection implements Connection {
 
                     if (req instanceof JdbcQueryExecuteRequest)
                         qryReq = (JdbcQueryExecuteRequest)req;
+
+                    if (req instanceof JdbcClientInfoAwareRequest)
+                        ((JdbcClientInfoAwareRequest)req).clientInfo(clientInfo);
 
                     JdbcResponse res = cliIo.sendRequest(req, stmt);
 

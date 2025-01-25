@@ -31,7 +31,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -48,8 +47,6 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
-import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
-import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
@@ -95,12 +92,6 @@ public class ArgumentParser {
 
     /** Option is used for auto confirmation. */
     public static final String CMD_AUTO_CONFIRMATION = "--yes";
-
-    /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
-    static final String CMD_PING_INTERVAL = "--ping-interval";
-
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
-    static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
     /** Verbose mode. */
     public static final String CMD_VERBOSE = "--verbose";
@@ -150,12 +141,6 @@ public class ArgumentParser {
     };
 
     /** */
-    private static final BiConsumer<String, Long> POSITIVE_LONG = (name, val) -> {
-        if (val <= 0)
-            throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
-    };
-
-    /** */
     private final List<CLIArgument<?>> common = new ArrayList<>();
 
     static {
@@ -187,8 +172,6 @@ public class ArgumentParser {
         arg(CMD_PORT, "PORT", Integer.class, DFLT_PORT, PORT_VALIDATOR);
         arg(CMD_USER, "USER", String.class, null);
         arg(CMD_PASSWORD, "PASSWORD", String.class, null, (BiConsumer<String, String>)securityWarn);
-        arg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class, DFLT_PING_INTERVAL, POSITIVE_LONG);
-        arg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class, DFLT_PING_TIMEOUT, POSITIVE_LONG);
         arg(CMD_VERBOSE, CMD_VERBOSE, boolean.class, false);
         arg(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", String[].class, new String[] {DFLT_SSL_PROTOCOL});
         arg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String[].class, null);
