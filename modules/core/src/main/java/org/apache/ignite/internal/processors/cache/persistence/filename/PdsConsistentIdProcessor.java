@@ -77,9 +77,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     /** {@inheritDoc} */
     @Override public IgniteDirectories resolveDirectories() {
         try {
-            PdsFolderSettings<NodeFileLockHolder> folderSettings = resolveFolders();
-
-            return new IgniteDirectories(folderSettings.persistentStoreRootPath().getAbsolutePath(), folderSettings.folderName());
+            return resolveFolders().toIgniteDirectories();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

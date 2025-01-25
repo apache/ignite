@@ -2563,7 +2563,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpDir,
         String folderName
     ) throws IgniteCheckedException {
-        IgniteDirectories dirs = new IgniteDirectories(snpDir.getAbsolutePath(), folderName);
+        IgniteDirectories dirs = new IgniteDirectories(snpDir, folderName);
 
         return new StandaloneGridKernalContext(log, cmpProc, dirs.binaryMeta(), dirs.marshaller());
     }

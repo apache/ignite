@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -292,8 +293,11 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
                 U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
                 U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
+
+                IgniteDirectories dirs = new IgniteDirectories(dir.toString());
+
+                U.delete(dirs.marshaller());
+                U.delete(dirs.binaryMetaRoot());
             }
         }
         catch (IOException e) {

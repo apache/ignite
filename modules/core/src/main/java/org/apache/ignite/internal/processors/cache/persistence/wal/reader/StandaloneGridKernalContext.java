@@ -211,7 +211,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
+            binaryMetadataFileStoreDir = new IgniteDirectories(new File(".")).binaryMetaRoot().getAbsoluteFile();
 
         cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
@@ -702,7 +702,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             /** {@inheritDoc} */
             @Override public IgniteDirectories resolveDirectories() {
                 // TODO: check me - refactor constructor to provide Instance of IgniteDirectories.
-                return new IgniteDirectories(new File(".").getAbsolutePath(), U.maskForFileName(""));
+                return new IgniteDirectories(new File("."), U.maskForFileName(""));
             }
         };
     }

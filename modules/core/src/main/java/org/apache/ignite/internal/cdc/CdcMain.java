@@ -329,8 +329,6 @@ public class CdcMain implements Runnable {
 
             Files.createDirectories(cdcDir.resolve(STATE_DIR));
 
-            dirs = new IgniteDirectories(igniteCfg.getWorkDirectory(), consIdDir);
-
             if (log.isInfoEnabled()) {
                 log.info("Change Data Capture [dir=" + cdcDir + ']');
                 log.info("Ignite node Binary meta [dir=" + dirs.binaryMeta() + ']');
@@ -461,6 +459,8 @@ public class CdcMain implements Runnable {
             throw new IgniteException("Can't find the folder to read WAL segments from! " +
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
+
+        dirs = settings.toIgniteDirectories();
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 

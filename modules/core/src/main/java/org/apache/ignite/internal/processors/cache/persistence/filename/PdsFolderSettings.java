@@ -146,6 +146,13 @@ public class PdsFolderSettings<L extends FileLockHolder> {
         return new File(persistentStoreRootPath, folderName);
     }
 
+    /**
+     * @return {@link IgniteDirectories} from this settings.
+     */
+    public IgniteDirectories toIgniteDirectories() {
+        return new IgniteDirectories(persistentStoreRootPath.getParent(), folderName);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PdsFolderSettings.class, this);

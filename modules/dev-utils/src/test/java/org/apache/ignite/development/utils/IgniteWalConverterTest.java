@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -49,8 +50,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
@@ -170,12 +169,14 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            dirs.binaryMeta(),
+            dirs.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -351,12 +352,14 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            dirs.binaryMeta(),
+            dirs.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -456,12 +459,14 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
+        final IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            dirs.binaryMeta(),
+            dirs.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()

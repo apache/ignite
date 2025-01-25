@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -41,6 +40,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -373,12 +373,13 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        Path fromFile = Paths.get(workDir, fromWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
-            fromConsId, fileName);
-        Path toFile = Paths.get(workDir, toWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
-            toConsId, fileName);
+        IgniteDirectories fromDirs = new IgniteDirectories(new File(workDir, fromWorkDir), fromConsId);
+        IgniteDirectories toDirs = new IgniteDirectories(new File(workDir, toWorkDir), toConsId);
 
-        Files.copy(fromFile, toFile, StandardCopyOption.REPLACE_EXISTING);
+        File fromFile = new File(fromDirs.binaryMeta(), fileName);
+        File toFile = new File(toDirs.binaryMeta(), fileName);
+
+        Files.copy(fromFile.toPath(), toFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**

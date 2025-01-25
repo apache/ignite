@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -164,7 +163,8 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnUpdated() throws Exception {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
+
         MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 
         ctx.onMarshallerProcessorStarted(this.ctx, null);
@@ -176,7 +176,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         // Wait until marshaller context write class to file.
         U.sleep(2_000);
 
-        checkFileName("java.lang.String", Paths.get(workDir + "/1.classname0"));
+        checkFileName("java.lang.String", new File(dirs.marshaller(), "1.classname0").toPath());
 
         MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
@@ -186,7 +186,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         execSvc.shutdown();
 
         if (execSvc.awaitTermination(1000, TimeUnit.MILLISECONDS))
-            checkFileName("Random.Class.Name", Paths.get(workDir + "/2.classname2"));
+            checkFileName("Random.Class.Name", new File(dirs.marshaller(), "2.classname2").toPath());
         else
             fail("Failed to wait for executor service to shutdown");
     }

@@ -964,7 +964,7 @@ public class SnapshotRestoreProcess {
                                     .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx)
                                 : snpDir;
 
-                            IgniteDirectories dirs = new IgniteDirectories(dir.getAbsolutePath(), meta.folderName());
+                            IgniteDirectories dirs = new IgniteDirectories(dir, meta.folderName());
 
                             ctx.cacheObjects().updateMetadata(dirs.binaryMeta(), opCtx0.stopChecker);
 

@@ -23,8 +23,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 
 /**
  * Class contains pathes to Ignite folder.
@@ -35,31 +39,111 @@ import org.jetbrains.annotations.Nullable;
  *     <li>Cache dump files</li>
  *     <li>CDC</li>
  * </ul>
+ * Ignite node directories structure with the point to currenlty supported dirs.
+ * Description:<br>
+ * <ul>
+ *     <li>{@code .} folder is {@code root} constructor parameter.</li>
+ *     <li>{@code node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c} is the {@link PdsFolderSettings#folderName()} and {@code folderName}
+ *     constructor parameter.</li>
+ * </ul>
+ *
+ * <pre>
+ * ❯ tree
+ * .
+ * ├── cp
+ * │  └── sharedfs
+ * │      └── BinaryMarshaller
+ * ├── db
+ * │  ├── binary_meta                                                           ← binaryMetaRoot
+ * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta
+ * │  │      └── 1645778359.bin
+ * │  ├── lock
+ * │  ├── marshaller                                                            ← marshaller
+ * │  │  └── 1645778359.classname0
+ * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │  │  ├── cache-default
+ * │  │  │  ├── cache_data.dat
+ * │  │  │  ├── index.bin
+ * │  │  │  ├── part-0.bin
+ * │  │  │  ├── part-1.bin
+ * ...
+ * │  │  │  └── part-9.bin
+ * │  │  ├── cache-ignite-sys-cache
+ * │  │  │  ├── cache_data.dat
+ * │  │  │  └── index.bin
+ * │  │  ├── cache-tx-cache
+ * │  │  │  ├── cache_data.dat
+ * │  │  │  ├── index.bin
+ * │  │  │  ├── part-0.bin
+ * │  │  │  ├── part-1.bin
+ * ...
+ * │  │  │  └── part-9.bin
+ * │  │  ├── cp
+ * │  │  │  ├── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-END.bin
+ * │  │  │  └── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-START.bin
+ * │  │  ├── lock
+ * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── metastorage
+ * │  │  │  ├── part-0.bin
+ * │  │  │  └── part-1.bin
+ * │  │  └── snp
+ * │  └── wal
+ * │      ├── archive
+ * │      │  └── ignite_0
+ * │      │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │      ├── cdc
+ * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │      │      ├── lock
+ * │      │      └── state
+ * │      │          ├── cdc-caches-state.bin
+ * │      │          ├── cdc-mappings-state.bin
+ * │      │          └── cdc-types-state.bin
+ * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │          ├── 0000000000000000.wal
+ * │          ├── 0000000000000001.wal
+ * ...
+ * │          └── 0000000000000009.wal
+ * ├── diagnostic
+ * ├── log
+ * │  ├── all.log
+ * │  ├── consistency.log
+ * │  ├── filtered.log
+ * │  ├── ignite-e10fbb91.0.log
+ * │  ├── ignite.log
+ * │  ├── jmx-invoker.0.log
+ * ...
+ * │  └── jmx-invoker.9.log
+ * └── snapshots
+ *
+ * 26 directories, 155 files
+ * </pre>
  */
 public class IgniteDirectories {
-    /**
-     * Path to the folder containing binary metadata.
-     * Example: TODO add example.
-     */
+    /** Path to the folder containing binary metadata. */
     private final File binaryMetaRoot;
-    /**
-     * Path to the folder containing binary metadata.
-     * Example: TODO add example.
-     */
+
+    /** Path to the folder containing binary metadata. */
     private final @Nullable File binaryMeta;
 
-    /**
-     * Path to the folder containing marshaller files.
-     * Example: TODO add example.
-     */
+    /** Path to the folder containing marshaller files. */
     private final File marshaller;
 
-    public IgniteDirectories(String root) {
-        A.notNullOrEmpty(root, "Root directory");
+    /**
+     * @param root Root directory.
+     */
+    public IgniteDirectories(File root) {
+        A.notNull(root, "Root directory");
 
         marshaller = new File(root, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = Paths.get(root, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).toFile();
+        binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
         binaryMeta = null;
+    }
+
+    /**
+     * @param root Root directory.
+     */
+    public IgniteDirectories(String root) {
+        this(new File(root));
     }
 
     /**
@@ -76,35 +160,59 @@ public class IgniteDirectories {
      * @see U#IGNITE_WORK_DIR
      */
     public IgniteDirectories(String root, String folderName) {
-        A.notNullOrEmpty(root, "Root directory");
-        A.notNullOrEmpty(folderName, "Node directory");
-
-        marshaller = new File(root, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = Paths.get(root, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).toFile();
-        binaryMeta = folderName == null ? null : Paths.get(binaryMetaRoot.getAbsolutePath(), folderName).toFile();
+        this(new File(root), folderName);
     }
 
     /**
-     * @return Path to binary metadata directory. TODO: add example.
+     * Root directory can be Ignite work directory, see {@link U#workDirectory(String, String)} and other methods.
+     *
+     * @param root Root directory.
+     * @param folderName Name of the folder for current node.
+     *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     *
+     * @see IgniteConfiguration#getWorkDirectory()
+     * @see IgniteConfiguration#setWorkDirectory(String)
+     * @see U#workDirectory(String, String)
+     * @see U#resolveWorkDirectory(String, String, boolean, boolean)
+     * @see U#IGNITE_WORK_DIR
      */
-    public File binaryMeta() {
-        return binaryMeta;
+    public IgniteDirectories(File root, String folderName) {
+        A.notNull(root, "Root directory");
+        A.notNullOrEmpty(folderName, "Node directory");
+
+        marshaller = new File(root, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+        binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
+        binaryMeta = folderName == null ? null : Paths.get(binaryMetaRoot.getAbsolutePath(), folderName).toFile();
     }
 
     /**
      * @return Path to common binary metadata directory. Note, directory can contains data from several nodes.
      * Each node will create own directory inside this root.
-     * TODO: add example.
      */
     public File binaryMetaRoot() {
         return binaryMetaRoot;
     }
 
-    /**
-     * @return Path to marshaller directory. TODO add example.
-     */
+    /** @return Path to binary metadata directory. */
+    public File binaryMeta() {
+        return binaryMeta;
+    }
+
+    /** @return Path to marshaller directory. TODO add example. */
     public File marshaller() {
         return marshaller;
+    }
+
+    /**
+     * Creates {@link #binaryMeta()} directory.
+     * @return Created directory.
+     * @see #binaryMeta()
+     */
+    public File mkdirBinaryMetaRoot() {
+        if (!U.mkdirs(binaryMetaRoot))
+            throw new IgniteException("Could not create root directory for binary metadata: " + binaryMetaRoot);
+
+        return binaryMetaRoot;
     }
 
     /**
@@ -129,5 +237,42 @@ public class IgniteDirectories {
             throw new IgniteException("Could not create directory for marshaller mappings: " + marshaller);
 
         return marshaller;
+    }
+
+    /**
+     * @param f File to check.
+     * @return {@code True} if argument can be binary meta root directory.
+     */
+    public static boolean isBinaryMetaRoot(File f) {
+        return f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH);
+    }
+
+    /**
+     * @param f File to check.
+     * @return {@code True} if f ends with binary meta root directory.
+     */
+    public static boolean isMarshaller(File f) {
+        return f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH);
+    }
+
+    /**
+     * @param file File to check.
+     * @return {@code True} if {@code f} contains binary meta root directory.
+     */
+    public static boolean containsBinaryMetaPath(File file) {
+        return file.getPath().contains(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
+    }
+
+    /**
+     * @param f File to check.
+     * @return {@code True} if {@code f} contains marshaller directory.
+     */
+    public static boolean containsMarshaller(File f) {
+        return f.getAbsolutePath().contains(DFLT_MARSHALLER_PATH);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteDirectories.class, this);
     }
 }

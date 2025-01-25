@@ -16,9 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
-import java.io.File;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -39,9 +38,6 @@ public class BinaryMetadataInMemoryTest extends GridCommonAbstractTest {
 
         stopGrid();
 
-        File metaDir = U.resolveWorkDirectory(U.defaultWorkDirectory(),
-                DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false);
-
-        assertTrue(F.isEmpty(metaDir.list()));
+        assertTrue(F.isEmpty(new IgniteDirectories(U.defaultWorkDirectory()).binaryMetaRoot().list()));
     }
 }

@@ -986,7 +986,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
                 ctx,
                 log,
-                new IgniteDirectories(dir.getAbsolutePath(), ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
+                new IgniteDirectories(dir, ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
                 true
             );
 

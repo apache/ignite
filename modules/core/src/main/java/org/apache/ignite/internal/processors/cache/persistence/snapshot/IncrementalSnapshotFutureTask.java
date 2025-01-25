@@ -137,7 +137,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
 
                     IgniteDirectories nodeDirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
-                    IgniteDirectories snpDirs = new IgniteDirectories(incSnpDir.getAbsolutePath(), folderName);
+                    IgniteDirectories snpDirs = new IgniteDirectories(incSnpDir, folderName);
 
                     copyFiles(
                         nodeDirs.marshaller(),

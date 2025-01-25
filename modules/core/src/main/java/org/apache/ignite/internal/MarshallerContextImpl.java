@@ -193,7 +193,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         throws IgniteCheckedException {
         MarshallerMappingFileStore writer = new MarshallerMappingFileStore(
             ctx,
-            new IgniteDirectories(dir.getAbsolutePath()).mkdirMarshaller()
+            new IgniteDirectories(dir).mkdirMarshaller()
         );
 
         addPlatformMappings(ctx.log(MarshallerContextImpl.class),

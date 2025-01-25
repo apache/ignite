@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -211,16 +212,12 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
         // legacy marshaller mappings dir must be deleted at this moment
         assertFalse(legacyDir.exists());
 
-        File newDir = U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            DataStorageConfiguration.DFLT_MARSHALLER_PATH,
-            false
-        );
+        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
 
         // assert folder and contents moved to new location
-        assertTrue(newDir.exists());
+        assertTrue(dirs.marshaller().exists());
 
-        assertTrue(new File(newDir, typeIdFile).exists());
+        assertTrue(new File(dirs.marshaller(), typeIdFile).exists());
     }
 
 }
