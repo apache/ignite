@@ -16,8 +16,13 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
+import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperatorBinding;
+import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.type.OperandTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -26,19 +31,21 @@ import org.apache.calcite.sql.validate.SqlMonotonicity;
 /**
  * Definition of the "SYSTEM_RANGE" builtin SQL function.
  */
-public class SqlSystemRangeFunction extends IgniteAbstractTableFunction {
+public class SqlSystemRangeFunction extends SqlFunction implements SqlTableFunction {
     /**
      * Creates the SqlSystemRangeFunction.
      */
     SqlSystemRangeFunction() {
         super(
             "SYSTEM_RANGE",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.CURSOR,
             null,
             OperandTypes.or(
                 OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
                 OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC)
-            )
-        );
+            ),
+            SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION);
     }
 
     /** {@inheritDoc} */

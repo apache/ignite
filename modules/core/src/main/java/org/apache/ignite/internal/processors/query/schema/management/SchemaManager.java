@@ -514,7 +514,7 @@ public class SchemaManager {
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
-                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m, ann.tableFunctionColumnTypes());
                 }
             }
         }
@@ -1411,8 +1411,9 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
-            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onFunctionCreated(schemaName, name, deterministic, method)));
+        @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method,
+            Class<?>[] tableColumnTypes) {
+            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onFunctionCreated(schemaName, name, deterministic, method, tableColumnTypes)));
         }
 
         /** {@inheritDoc} */

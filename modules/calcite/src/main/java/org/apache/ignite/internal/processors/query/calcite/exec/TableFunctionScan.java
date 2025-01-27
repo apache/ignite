@@ -25,14 +25,14 @@ import org.apache.ignite.internal.util.typedef.F;
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
     /** */
-    private final Supplier<Iterable<Object[]>> dataSupplier;
+    private final Supplier<Iterable<?>> dataSupplier;
 
     /** */
     private final RowFactory<Row> rowFactory;
 
     /** */
     public TableFunctionScan(
-        Supplier<Iterable<Object[]>> dataSupplier,
+        Supplier<Iterable<?>> dataSupplier,
         RowFactory<Row> rowFactory
     ) {
         this.dataSupplier = dataSupplier;

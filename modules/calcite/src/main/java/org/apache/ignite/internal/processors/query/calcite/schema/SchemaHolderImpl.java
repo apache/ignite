@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -349,10 +352,15 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method,
+        Class<?>[] tableColumnTypes) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
+        Function fun = F.isEmpty(tableColumnTypes)
+            ? IgniteScalarFunction.create(method)
+            : IgniteTableFunction.create(method, tableColumnTypes);
+
+        schema.addFunction(name.toUpperCase(), fun);
 
         rebuild();
     }

@@ -103,7 +103,8 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method,
+        Class<?>[] tableColumnTypes) {
         // No-op.
     }
 

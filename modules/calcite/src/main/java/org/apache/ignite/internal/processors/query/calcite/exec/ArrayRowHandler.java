@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Iterator;
 
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -55,7 +56,7 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     @Override public RowFactory<Object[]> factory(Type... types) {
         int rowLen = types.length;
 
-        return new RowFactory<Object[]>() {
+        return new RowFactory<>() {
             /** {@inheritDoc} */
             @Override public RowHandler<Object[]> handler() {
                 return ArrayRowHandler.this;
@@ -68,6 +69,26 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
 
             /** {@inheritDoc} */
             @Override public Object[] create(Object... fields) {
+                // Check if an Iteratable arrived instead of Object[].
+                if (fields.length == 1 && fields[0] instanceof Iterable && (types[0] != Iterable.class || ((types[0] instanceof Class)
+                    && !Iterable.class.isAssignableFrom((Class<?>)types[0])))) {
+                    Object[] converted = new Object[types.length];
+
+                    Iterator<Object> it = ((Iterable<Object>)fields[0]).iterator();
+
+                    int cnt = 0;
+
+                    while (it.hasNext())
+                        converted[cnt++] = it.next();
+
+                    if (cnt != types.length) {
+                        throw new IllegalStateException("Unable to convert Iteratable to Object array to process. Number " +
+                            "of the received values [" + cnt + "] does not match expected [" + types.length + "].");
+                    }
+
+                    fields = converted;
+                }
+
                 assert fields.length == rowLen;
 
                 return fields;

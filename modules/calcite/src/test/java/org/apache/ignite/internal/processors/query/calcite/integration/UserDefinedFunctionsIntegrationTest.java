@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -30,6 +33,27 @@ import org.junit.Test;
  * Integration test for user defined functions.
  */
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    @Test
+    public void testTableUserFunctions() throws Exception {
+        IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TableFunctions.class)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
+
+        emp.put(1, new Employer("Igor1", 1d));
+        emp.put(2, new Employer("Roman1", 2d));
+
+        awaitPartitionMapExchange();
+
+        assertQuery("SELECT * from tbl_fun_it(?)").withParams(1)
+            .returns(2, 3, 4)
+            .returns(5, 6, 7)
+            .returns(8, 9, 10)
+            .check();
+    }
+
     /** */
     @Test
     public void testFunctions() throws Exception {
@@ -109,6 +133,19 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
+    }
+
+    /** */
+    public static class TableFunctions {
+        /** */
+        @QuerySqlFunction(tableFunctionColumnTypes = {int.class, int.class, int.class})
+        public static Iterable<Collection<?>> tbl_fun_it(int x) {
+            return new QueryCursorImpl(Arrays.asList(
+                Arrays.asList(x + 1, x + 2, x + 3),
+                Arrays.asList(x + 4, x + 5, x + 6),
+                Arrays.asList(x + 7, x + 8, x + 9)
+            ));
+        }
     }
 
     /** */
