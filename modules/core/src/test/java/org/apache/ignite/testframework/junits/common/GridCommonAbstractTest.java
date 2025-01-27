@@ -1971,10 +1971,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
-        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
-
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+
+        IgniteDirectories dirs = dirs();
+
         U.delete(dirs.marshaller());
         U.delete(dirs.binaryMetaRoot());
 

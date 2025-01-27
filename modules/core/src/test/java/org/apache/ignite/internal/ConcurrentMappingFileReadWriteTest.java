@@ -27,7 +27,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -53,7 +52,7 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        mappingDir = new IgniteDirectories(U.workDirectory(null, null)).mkdirMarshaller();
+        mappingDir = dirs().mkdirMarshaller();
 
         mappingFileStore = new MarshallerMappingFileStore(
             new StandaloneGridKernalContext(log, null, null),

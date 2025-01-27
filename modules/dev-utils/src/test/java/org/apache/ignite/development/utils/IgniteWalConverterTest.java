@@ -169,7 +169,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
-        final IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+        final IgniteDirectories dirs = dirs(nodeFolder);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
@@ -352,7 +352,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
-        final IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+        final IgniteDirectories dirs = dirs(nodeFolder);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,
@@ -459,7 +459,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final PrintStream out = new PrintStream(outByte);
 
-        final IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+        final IgniteDirectories dirs = dirs(nodeFolder);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             walDir,

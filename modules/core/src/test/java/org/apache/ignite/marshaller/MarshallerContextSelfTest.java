@@ -161,8 +161,6 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnUpdated() throws Exception {
-        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
-
         MarshallerContextImpl ctx = getMarshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
@@ -171,6 +169,8 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         // Wait until marshaller context write class to file.
         U.sleep(2_000);
+
+        IgniteDirectories dirs = dirs();
 
         checkFileName("java.lang.String", new File(dirs.marshaller(), "1.classname0").toPath());
 
@@ -268,7 +268,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     private @NotNull MarshallerContextImpl getMarshallerContext() throws IgniteCheckedException {
         MarshallerContextImpl mctx = new MarshallerContextImpl(null, null);
 
-        mctx.setMarshallerMappingFileStoreDir(new IgniteDirectories(U.defaultWorkDirectory()).marshaller());
+        mctx.setMarshallerMappingFileStoreDir(dirs().marshaller());
         mctx.onMarshallerProcessorStarted(ctx, null);
 
         return mctx;

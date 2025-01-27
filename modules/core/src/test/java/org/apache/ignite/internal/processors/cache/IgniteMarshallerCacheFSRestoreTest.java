@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -103,7 +102,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        U.delete(new IgniteDirectories(U.defaultWorkDirectory()).marshaller());
+        U.delete(dirs().marshaller());
         cleanPersistenceDir();
     }
 
@@ -165,7 +164,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         String fileName = typeId + ".classname0";
 
-        File marshStoreDir = new IgniteDirectories(U.defaultWorkDirectory()).mkdirMarshaller();
+        File marshStoreDir = dirs().mkdirMarshaller();
 
         try (FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
             try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
@@ -209,7 +208,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * Class name for CustomClass class mapping file gets cleaned up from file system.
      */
     private void corruptMarshallerStorage() throws Exception {
-        File marshallerDir = new IgniteDirectories(U.defaultWorkDirectory()).marshaller();
+        File marshallerDir = dirs().marshaller();
 
         File[] storedMappingsFiles = marshallerDir.listFiles();
 

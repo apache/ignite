@@ -212,9 +212,9 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
         // legacy marshaller mappings dir must be deleted at this moment
         assertFalse(legacyDir.exists());
 
-        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
-
         // assert folder and contents moved to new location
+        IgniteDirectories dirs = dirs();
+
         assertTrue(dirs.marshaller().exists());
 
         assertTrue(new File(dirs.marshaller(), typeIdFile).exists());

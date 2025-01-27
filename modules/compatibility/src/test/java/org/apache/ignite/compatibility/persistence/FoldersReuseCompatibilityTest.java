@@ -222,7 +222,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @throws IgniteCheckedException if IO error occur
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), subDirName);
+        IgniteDirectories dirs = dirs(subDirName);
 
         assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
 

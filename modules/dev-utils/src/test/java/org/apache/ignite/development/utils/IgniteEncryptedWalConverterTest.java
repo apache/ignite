@@ -76,7 +76,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
 
         PrintStream out = new PrintStream(outByte);
 
-        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory(), nodeFolder);
+        IgniteDirectories dirs = dirs(nodeFolder);
 
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),

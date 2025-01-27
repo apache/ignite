@@ -675,7 +675,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        IgniteDirectories dirs = new IgniteDirectories(U.defaultWorkDirectory());
+        IgniteDirectories dirs = dirs();
 
         U.delete(dirs.marshaller());
         U.delete(dirs.binaryMetaRoot());
@@ -3182,5 +3182,19 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             throw new IgniteException("MBean not registered: " + mbeanName);
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
+    }
+
+    /**
+     * @return Ignite directories without specific {@code folerName} parameter.
+     */
+    protected IgniteDirectories dirs() throws IgniteCheckedException {
+        return new IgniteDirectories(U.defaultWorkDirectory());
+    }
+
+    /**
+     * @return Ignite directories for specific {@code folderName}.
+     */
+    protected IgniteDirectories dirs(String folderName) throws IgniteCheckedException {
+        return new IgniteDirectories(U.defaultWorkDirectory(), folderName);
     }
 }
