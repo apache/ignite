@@ -20,8 +20,12 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
@@ -41,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -73,13 +78,29 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics process. */
     private DistributedProcess<Serializable, Serializable> rotateProc;
 
+    /** System view predicate to filter recorded views. */
+    private Predicate<SystemView<?>> sysViewPredicate;
+
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        // System views that won't be recorded. They may be large or copy another PerfStat values.
+        List<String> ignoredViews = List.of("baseline.node.attributes",
+            "metrics",
+            "caches",
+            "sql.queries",
+            "nodes");
+        sysViewPredicate = view -> !ignoredViews.contains(view.name());
+
         registerStateListener(() -> {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
+
+            ctx.systemView().forEach(view -> {
+                if (sysViewPredicate.test(view))
+                    systemView(view);
+            });
         });
     }
 
@@ -170,6 +191,21 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         write(writer -> writer.query(type, text, id, startTime, duration, success));
+    }
+
+    /**
+     * @param view System view to extract data from.
+     */
+    public void systemView(SystemView<?> view) {
+        AttributeToMapVisitor visitor = new AttributeToMapVisitor();
+
+        for (Object row : view) {
+            Map<String, String> data = new TreeMap<>();
+            visitor.data(data);
+            ((SystemView<Object>)view).walker().visitAll(row, visitor);
+
+            write(writer -> writer.systemView(view.name(), data));
+        }
     }
 
     /**
