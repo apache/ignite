@@ -28,6 +28,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -79,6 +80,7 @@ public class GridTestBinaryMarshaller {
 
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl();
 
+        marshCtx.setMarshallerMappingFileStoreDir(new IgniteDirectories(U.defaultWorkDirectory()).marshaller());
         marshCtx.onMarshallerProcessorStarted(new GridTestKernalContext(log, iCfg), null);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
