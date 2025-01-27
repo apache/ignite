@@ -2523,7 +2523,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);
 
-            if (stateChangeExchange() && err0 == null && !finishState.isFailed())
+            if (stateChangeExchange() && err0 == null && finishState != null && finishState.isCompleted())
                 cctx.kernalContext().state().onStateChangeExchangeDone(exchActions);
         });
 
@@ -5620,8 +5620,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         /** */
-        public boolean isFailed() {
-            return msg == null;
+        public boolean isCompleted() {
+            return msg != null;
         }
 
         /**
