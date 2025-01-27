@@ -69,29 +69,33 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
 
             /** {@inheritDoc} */
             @Override public Object[] create(Object... fields) {
-                // Check if an Iteratable arrived instead of Object[].
-                if (fields.length == 1 && fields[0] instanceof Iterable && (types[0] != Iterable.class || ((types[0] instanceof Class)
-                    && !Iterable.class.isAssignableFrom((Class<?>)types[0])))) {
-                    Object[] converted = new Object[types.length];
-
-                    Iterator<Object> it = ((Iterable<Object>)fields[0]).iterator();
-
-                    int cnt = 0;
-
-                    while (it.hasNext())
-                        converted[cnt++] = it.next();
-
-                    if (cnt != types.length) {
-                        throw new IllegalStateException("Unable to convert Iteratable to Object array to process. Number " +
-                            "of the received values [" + cnt + "] does not match expected [" + types.length + "].");
-                    }
-
-                    fields = converted;
-                }
-
                 assert fields.length == rowLen;
 
                 return fields;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object[] createByRowContainer(Object rowContainer) {
+                assert rowContainer instanceof Iterable || rowContainer.getClass() == Object[].class;
+
+                if (rowContainer.getClass() == Object[].class)
+                    return create((Object[])rowContainer);
+
+                Iterator<?> it = ((Iterable<?>)rowContainer).iterator();
+
+                if (!it.hasNext())
+                    return create(new Object[0]);
+
+                Object[] arr = new Object[types.length];
+
+                int cnt = 0;
+
+                while (it.hasNext())
+                    arr[cnt++] = it.next();
+
+                assert cnt == types.length;
+
+                return create(arr);
             }
         };
     }

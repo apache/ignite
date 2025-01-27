@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,6 +47,20 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         awaitPartitionMapExchange();
 
         assertQuery("SELECT * from tbl_fun_it(?)").withParams(1)
+            .returns(2, 3, 4)
+            .returns(5, 6, 7)
+            .returns(8, 9, 10)
+            .check();
+
+        assertQuery("SELECT * from tbl_fun_it(?) WHERE COL_1=3").withParams(1)
+            .returns(2, 3, 4)
+            .check();
+
+        assertQuery("SELECT COL_0, COL_2 from tbl_fun_it(?) WHERE COL_1=3").withParams(1)
+            .returns(2, 4)
+            .check();
+
+        assertQuery("SELECT * from tbl_fun_arr(?)").withParams(1)
             .returns(2, 3, 4)
             .returns(5, 6, 7)
             .returns(8, 9, 10)
@@ -140,11 +153,21 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         /** */
         @QuerySqlFunction(tableFunctionColumnTypes = {int.class, int.class, int.class})
         public static Iterable<Collection<?>> tbl_fun_it(int x) {
-            return new QueryCursorImpl(Arrays.asList(
+            return Arrays.asList(
                 Arrays.asList(x + 1, x + 2, x + 3),
                 Arrays.asList(x + 4, x + 5, x + 6),
                 Arrays.asList(x + 7, x + 8, x + 9)
-            ));
+            );
+        }
+
+        /** */
+        @QuerySqlFunction(tableFunctionColumnTypes = {int.class, int.class, int.class})
+        public static Iterable<Object[]> tbl_fun_arr(int x) {
+            return Arrays.asList(
+                new Object[] {x + 1, x + 2, x + 3},
+                new Object[] {x + 4, x + 5, x + 6},
+                new Object[] {x + 7, x + 8, x + 9}
+            );
         }
     }
 

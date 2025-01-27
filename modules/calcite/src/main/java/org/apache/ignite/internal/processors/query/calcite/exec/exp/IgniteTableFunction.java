@@ -44,8 +44,7 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
     private final List<String> columnNames;
 
     /** */
-    private IgniteTableFunction(Method method, Class<?>[] columnTypes, @Nullable List<String> columnNames,
-        CallImplementor implementor) {
+    private IgniteTableFunction(Method method, Class<?>[] columnTypes, @Nullable List<String> columnNames, CallImplementor implementor) {
         super(method);
 
         validate(method, columnTypes, columnNames);
@@ -63,8 +62,7 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
 
     /** */
     public static Function create(Method method, Class<?>[] tableColumnTypes) {
-        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(method),
-            NullPolicy.NONE, false);
+        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
 
         return new IgniteTableFunction(method, tableColumnTypes, null, impl);
     }
@@ -111,4 +109,62 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
         if (!Iterable.class.isAssignableFrom(method.getReturnType()))
             throw new IllegalArgumentException("The method is expected to return a collection (iteratable).");
     }
+
+//    /** */
+//    public static class ObjectArrayResultImplementor extends ReflectiveCallNotNullImplementor {
+//        /** */
+//        private static final Method CONVETER_MTD = lookupMethod(ObjectArrayResultImplementor.class,
+//            "convertToObjectArrayResult", Object.class, int.class);
+//
+//        /** */
+//        private final int columnsNum;
+//
+//        /** */
+//        public ObjectArrayResultImplementor(Method original, int columnsNum) {
+//            super(original);
+//
+//            this.columnsNum = columnsNum;
+//        }
+//
+//        /** {@inheritDoc} */
+//        @Override public Expression implement(RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands) {
+//            Expression expr = super.implement(translator, call, translatedOperands);
+//
+//            expr = Expressions.call(CONVETER_MTD, expr, Expressions.constant(columnsNum, int.class));
+//
+//            return expr;
+//        }
+//
+//        /**
+//         * Currently, we use only a {@code Object[]} row handler. Especially a handler of {@code Object...}.
+//         *
+//         * @see RowHandler.RowFactory#create(Object...)
+//         * @see ArrayRowHandler#INSTANCE
+//         */
+//        public static @Nullable Object[] convertToObjectArrayResult(Object originRes, int expectedColumnNum) {
+//            if (originRes == null)
+//                return null;
+//
+//            if (originRes.getClass() == Object[].class)
+//                return (Object[])originRes;
+//
+//            if (originRes instanceof Iterable) {
+//                Iterator<Object> it = ((Iterable<Object>)originRes).iterator();
+//
+//                int cnt = 0;
+//
+//                Object[] converted = new Object[expectedColumnNum];
+//
+//                while (it.hasNext())
+//                    converted[cnt++] = it.next();
+//
+//                assert cnt == expectedColumnNum;
+//
+//                return converted;
+//            }
+//
+//            throw new IllegalArgumentException("Unable to convert user-defined table function's result to an Object[]. " +
+//                "The result is neither Iteratable or object array.");
+//        }
+//    }
 }

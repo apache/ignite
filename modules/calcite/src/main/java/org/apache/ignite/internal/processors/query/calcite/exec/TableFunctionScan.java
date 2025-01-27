@@ -41,6 +41,6 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> iterator() {
-        return F.iterator(dataSupplier.get(), rowFactory::create, true);
+        return F.iterator(dataSupplier.get(), rowFactory::createByRowContainer, true);
     }
 }
