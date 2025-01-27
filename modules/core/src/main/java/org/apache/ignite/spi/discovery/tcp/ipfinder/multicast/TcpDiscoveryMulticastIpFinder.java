@@ -167,7 +167,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** @param ignite Ignite instance. */
     @IgniteInstanceResource
     public void setIgnite(IgniteEx ignite) {
-        marsh = ignite.context().marshallerContext().jdkMarshaller();
+        if (ignite != null)
+            marsh = ignite.context().marshallerContext().jdkMarshaller();
     }
 
     /**
