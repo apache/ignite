@@ -514,7 +514,10 @@ public class SchemaManager {
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
-                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                    if (F.isEmpty(ann.tableColumnTypes()) && F.isEmpty(ann.tableColumnNames()))
+                        lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                    else
+                        lsnr.onTableFunctionCreated(schema, alias, m, ann.tableColumnTypes(), ann.tableColumnNames());
                 }
             }
         }
@@ -1413,6 +1416,12 @@ public class SchemaManager {
         /** {@inheritDoc} */
         @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
             lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onFunctionCreated(schemaName, name, deterministic, method)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,
+            @Nullable String[] colNames) {
+            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onTableFunctionCreated(schemaName, name, method, colTypes, colNames)));
         }
 
         /** {@inheritDoc} */

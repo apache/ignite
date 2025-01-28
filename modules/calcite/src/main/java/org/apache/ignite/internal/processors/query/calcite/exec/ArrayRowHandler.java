@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Iterator;
 
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -71,6 +72,34 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
                 assert fields.length == rowLen;
 
                 return fields;
+            }
+
+            /**
+             * Wraps a column collection to {@code Object[]} if requred using the knowladge of expected column number.
+             *
+             * @param rowContainer Row values holder. Must be an {@code Iterable} or an {@code Object[]}.
+             */
+            @Override public Object[] createByRowContainer(Object rowContainer) {
+                assert rowContainer instanceof Iterable || rowContainer.getClass() == Object[].class;
+
+                if (rowContainer.getClass() == Object[].class)
+                    return create((Object[])rowContainer);
+
+                Iterator<?> it = ((Iterable<?>)rowContainer).iterator();
+
+                if (!it.hasNext())
+                    return create(new Object[0]);
+
+                Object[] arr = new Object[types.length];
+
+                int cnt = 0;
+
+                while (it.hasNext())
+                    arr[cnt++] = it.next();
+
+                assert cnt == types.length;
+
+                return create(arr);
             }
         };
     }

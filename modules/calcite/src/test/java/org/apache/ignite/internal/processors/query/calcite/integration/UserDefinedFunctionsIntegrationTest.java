@@ -17,19 +17,39 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 /**
  * Integration test for user defined functions.
  */
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Log listener. */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (igniteInstanceName.endsWith("0"))
+            cfg.setGridLogger(listeningLog);
+
+        return cfg;
+    }
+
     /** */
     @Test
     public void testFunctions() throws Exception {
@@ -106,9 +126,284 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testTableFunctions() throws Exception {
+        IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TableFunctionsLibrary.class)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
+
+        emp.put(1, new Employer("Igor1", 1d));
+        emp.put(2, new Employer("Roman1", 2d));
+
+        awaitPartitionMapExchange();
+
+        assertQuery("SELECT * from iteratorRow(?)").withParams(1)
+            .returns(2, 3, 4)
+            .returns(5, 6, 7)
+            .returns(8, 9, 10)
+            .check();
+
+        assertQuery("SELECT * from iteratorRow(?) WHERE COL_2=4").withParams(2)
+            .returns(3, 4, 5)
+            .check();
+
+        assertQuery("SELECT COL_1, COL_3 from iteratorRow(?) WHERE COL_2=3").withParams(1)
+            .returns(2, 4)
+            .check();
+
+        // Overrides.
+        assertQuery("SELECT * from iteratorRow(?, 2, ?)").withParams(1, 3)
+            .returns(11, 22, 33)
+            .returns(41, 52, 63)
+            .returns(71, 82, 93)
+            .check();
+
+        assertQuery("SELECT * from arrayRow(?)").withParams(1)
+            .returns(2, 3, 4)
+            .returns(5, 6, 7)
+            .returns(8, 9, 10)
+            .check();
+
+        assertQuery("SELECT * from arrayRow_and_it(1) WHERE COL_1>4 AND COL_2>? AND COL_3>6").withParams(5)
+            .returns(5, 6, 7)
+            .returns(8, 9, 10)
+            .check();
+
+        assertQuery("SELECT * from boxingUnboxing(1, ?, ?, 4.0::FLOAT)").withParams(1, 4.0d)
+            .returns(1, 1, 4.0d, 4.0d)
+            .check();
+
+        assertQuery("SELECT * from boxingUnboxing(1, 1, 2, 2)")
+            .returns(1, 1, 2.0d, 2.0d)
+            .check();
+
+        assertQuery("SELECT * from boxingUnboxing(?, ?, ?, ?)").withParams(1, 1, 2.0d, 2.0d)
+            .returns(1, 1, 2.0d, 2.0d)
+            .check();
+
+        assertQuery("SELECT STR_COL from withColumnNames(1001) where INT_COL>1000")
+            .returns("1001")
+            .returns("empty")
+            .check();
+
+        assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_1 from iteratorRow(1) WHERE COL_2=3)")
+            .returns("Roman1", 2d)
+            .check();
+
+        assertQuery("SELECT * from aliasedName(?)").withParams(1)
+            .returns(2, 3, 4)
+            .returns(5, 6, 7)
+            .check();
+
+        assertQuery("SELECT * from raiseException(?, ?, ?)").withParams(1, "test", false)
+            .returns(2, "test2")
+            .returns(3, "test3")
+            .check();
+
+        assertThrows("SELECT * from raiseException(?, ?, ?)", IgniteSQLException.class, "An error occurred while query executing",
+            1, "test", true);
+        assertThrows("SELECT * from raiseException(?, ?, ?)", RuntimeException.class, "Test exception",
+            1, "test", true);
+
+        // Object type.
+        assertQuery("SELECT * from withObjectType(1)")
+            .returns(1, new Employer("emp1", 1000d))
+            .returns(10, new Employer("emp10", 10000d))
+            .check();
+        assertQuery("SELECT * from withObjectType(1) where EMP=?")
+            .withParams(new Employer("emp10", 10000d))
+            .returns(10, new Employer("emp10", 10000d))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIncorrectTableFunctions() throws Exception {
+        LogListener logChecker0 = LogListener.matches("One or more column names is not unique")
+            .andMatches("either be empty or match the number of column types")
+            .andMatches("The method is expected to return a collection (iterable)")
+            .andMatches("Column types cannot be empty")
+            .build();
+
+        listeningLog.registerListener(logChecker0);
+
+        IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(IncorrectTableFunctionsLibrary.class)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
+
+        emp.put(1, new Employer("Igor1", 1d));
+        emp.put(2, new Employer("Roman1", 2d));
+
+        awaitPartitionMapExchange();
+
+        // Ensure the cache SQL is OK.
+        assertQuery("SELECT * from emp WHERE SALARY >= 2")
+            .returns("Roman1", 2d)
+            .check();
+
+        logChecker0.check(getTestTimeout());
+
+        assertThrows("SELECT * FROM duplicateColumnName", SqlValidatorException.class, "not found");
+
+        assertThrows("SELECT * FROM wrongColumnNamesNumber", SqlValidatorException.class, "not found");
+
+        assertThrows("SELECT * FROM wrongReturnType1", SqlValidatorException.class, "not found");
+        assertThrows("SELECT * FROM noReturnType", SqlValidatorException.class, "not found");
+
+        assertThrows("SELECT * FROM noColumnTypes", SqlValidatorException.class, "not found");
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
+    }
+
+    /** */
+    public static final class TableFunctionsLibrary {
+        /** */
+        private TableFunctionsLibrary() {
+            // No-op.
+        }
+
+        /** Trivial test. Returts collections as row holders. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        public static Iterable<Collection<?>> iteratorRow(int x) {
+            return Arrays.asList(
+                Arrays.asList(x + 1, x + 2, x + 3),
+                Arrays.asList(x + 4, x + 5, x + 6),
+                Arrays.asList(x + 7, x + 8, x + 9)
+            );
+        }
+
+        /** Overrides. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        public static Collection<Collection<?>> iteratorRow(int x, int y, int z) {
+            return Arrays.asList(
+                Arrays.asList(x + 10, y + 20, z + 30),
+                Arrays.asList(x + 40, y + 50, z + 60),
+                Arrays.asList(x + 70, y + 80, z + 90)
+            );
+        }
+
+        /** Returns arrays as row holders. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        public static Iterable<Object[]> arrayRow(int x) {
+            return Arrays.asList(
+                new Object[] {x + 1, x + 2, x + 3},
+                new Object[] {x + 4, x + 5, x + 6},
+                new Object[] {x + 7, x + 8, x + 9}
+            );
+        }
+
+        /** Returns mixed row holders. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        public static Collection<?> arrayRow_and_it(int x) {
+            return Arrays.asList(
+                new Object[] {x + 1, x + 2, x + 3},
+                Arrays.asList(x + 4, x + 5, x + 6),
+                new Object[] {x + 7, x + 8, x + 9}
+            );
+        }
+
+        /** Boxed/unboxed test. */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, int.class, Double.class, double.class})
+        public static Collection<List<?>> boxingUnboxing(int i1, Integer i2, double d1, Double d2) {
+            return List.of(Arrays.asList(i1, i2, d1, d2));
+        }
+
+        /** Defined column names test. */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "STR_COL"})
+        public static Iterable<?> withColumnNames(int i) {
+            return Arrays.asList(
+                Arrays.asList(i, "" + i),
+                Arrays.asList(i * 10, "empty")
+            );
+        }
+
+        /** Alias test. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class}, alias = "aliasedName")
+        public static Iterable<Collection<?>> alias(int x) {
+            return Arrays.asList(
+                Arrays.asList(x + 1, x + 2, x + 3),
+                Arrays.asList(x + 4, x + 5, x + 6)
+            );
+        }
+
+        /** User exception test. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, String.class})
+        public static Iterable<Collection<?>> raiseException(int i, String str, boolean doThrow) {
+            if (doThrow)
+                throw new RuntimeException("Test exception.");
+
+            return Arrays.asList(
+                Arrays.asList(i + 1, str + (i + 1)),
+                Arrays.asList(i + 2, str + (i + 2))
+            );
+        }
+
+        /** User exception test. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, Object.class}, tableColumnNames = {"ID", "EMP"})
+        public static Iterable<Collection<?>> withObjectType(int i) {
+            return Arrays.asList(
+                Arrays.asList(i, new Employer("emp" + i, i * 1000d)),
+                Arrays.asList(i * 10, new Employer("emp" + i * 10, i * 10000d))
+            );
+        }
+    }
+
+    /** */
+    public static final class IncorrectTableFunctionsLibrary {
+        /** */
+        private IncorrectTableFunctionsLibrary() {
+            // No-op.
+        }
+
+        /** Duplicated column names. */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "INT_COL"})
+        public static Iterable<?> duplicateColumnName(int i, String s) {
+            return Arrays.asList(
+                Arrays.asList(i, s + i),
+                Arrays.asList(i * 10, s + (i * 10))
+            );
+        }
+
+        /** Non-matching number of the column names. */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL"})
+        public static Iterable<?> wrongColumnNamesNumber(int i, String s) {
+            return Arrays.asList(
+                Arrays.asList(i, s + i),
+                Arrays.asList(i * 10, s + (i * 10))
+            );
+        }
+
+        /** Wrong return type 1. */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, Integer.class})
+        public static Object[] wrongReturnType1(int i) {
+            return new Object[] {
+                Arrays.asList(i * 2, i * 2 + 1),
+                Arrays.asList(i * 3, i * 3 + 1)
+            };
+        }
+
+        /** Wrong return type 2. */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class})
+        public static void noReturnType(int i) {
+            System.err.println("Test value: " + i);
+        }
+
+        /** Empty column types. */
+        @QuerySqlFunction(tableColumnNames = {"INT_COL", "STR_COL"})
+        public static Collection<?> noColumnTypes(int i, String s) {
+            return Arrays.asList(
+                Arrays.asList(i, s + i),
+                Arrays.asList(i * 10, s + (i * 10))
+            );
+        }
     }
 
     /** */

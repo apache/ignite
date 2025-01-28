@@ -21,22 +21,16 @@ import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ScalarFunction;
-import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
 
 /**
  * Implementation of {@link ScalarFunction} for Ignite user defined functions.
  */
-public class IgniteScalarFunction extends ReflectiveFunctionBase implements ScalarFunction, ImplementableFunction {
-    /** Implementor. */
-    private final CallImplementor implementor;
-
+public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implements ScalarFunction {
     /**
      * Private constructor.
      */
     private IgniteScalarFunction(Method method, CallImplementor implementor) {
-        super(method);
-
-        this.implementor = implementor;
+        super(method, implementor);
     }
 
     /**
@@ -55,10 +49,5 @@ public class IgniteScalarFunction extends ReflectiveFunctionBase implements Scal
     /** {@inheritDoc} */
     @Override public RelDataType getReturnType(RelDataTypeFactory typeFactory) {
         return typeFactory.createJavaType(method.getReturnType());
-    }
-
-    /** {@inheritDoc} */
-    @Override public CallImplementor getImplementor() {
-        return implementor;
     }
 }
