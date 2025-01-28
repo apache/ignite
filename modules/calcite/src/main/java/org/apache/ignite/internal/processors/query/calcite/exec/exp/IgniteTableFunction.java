@@ -30,16 +30,12 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.TableFunction;
-import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class IgniteTableFunction extends ReflectiveFunctionBase implements TableFunction, ImplementableFunction {
-    /** */
-    private final CallImplementor impl;
-
+public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements TableFunction {
     /** */
     private final Class<?>[] colTypes;
 
@@ -47,12 +43,11 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
     @Nullable private final List<String> colNames;
 
     /** */
-    private IgniteTableFunction(Method mtd, Class<?>[] colTypes, @Nullable String[] colNames, CallImplementor impl) {
-        super(mtd);
+    private IgniteTableFunction(Method method, Class<?>[] colTypes, @Nullable String[] colNames, CallImplementor implementor) {
+        super(method, implementor);
 
-        validate(mtd, colTypes, colNames);
+        validate(method, colTypes, colNames);
 
-        this.impl = impl;
         this.colTypes = colTypes;
 
         this.colNames = F.isEmpty(colNames) ? new ArrayList<>(colTypes.length) : Arrays.asList(colNames);
@@ -68,11 +63,6 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
         CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(mtd), NullPolicy.NONE, false);
 
         return new IgniteTableFunction(mtd, colTypes, colNames, impl);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CallImplementor getImplementor() {
-        return impl;
     }
 
     /** {@inheritDoc} */

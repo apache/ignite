@@ -111,7 +111,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     /** {@inheritDoc} */
     @Override public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,
         @Nullable String[] colNames) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */

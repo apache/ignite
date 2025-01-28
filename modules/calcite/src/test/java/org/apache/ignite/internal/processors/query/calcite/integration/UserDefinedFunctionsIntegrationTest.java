@@ -153,6 +153,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(2, 4)
             .check();
 
+        // Overrides.
+        assertQuery("SELECT * from tbl_fun_it(?, 2, ?)").withParams(1, 3)
+            .returns(11, 22, 33)
+            .returns(41, 52, 63)
+            .returns(71, 82, 93)
+            .check();
+
         assertQuery("SELECT * from tbl_fun_arr(?)").withParams(1)
             .returns(2, 3, 4)
             .returns(5, 6, 7)
@@ -245,6 +252,16 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 Arrays.asList(x + 1, x + 2, x + 3),
                 Arrays.asList(x + 4, x + 5, x + 6),
                 Arrays.asList(x + 7, x + 8, x + 9)
+            );
+        }
+
+        /** Overrides. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        public static Iterable<Collection<?>> tbl_fun_it(int x, int y, int z) {
+            return Arrays.asList(
+                Arrays.asList(x + 10, y + 20, z + 30),
+                Arrays.asList(x + 40, y + 50, z + 60),
+                Arrays.asList(x + 70, y + 80, z + 90)
             );
         }
 

@@ -75,20 +75,19 @@ public @interface QuerySqlFunction {
     String alias() default "";
 
     /**
-     * Makes the function a table function and defines column types of the returned SQL table. Number of the names must
-     * match number of the column types {@link #tableColumnNames()}.
+     * Makes the function a table function and defines column types of the returned SQL table.
      *
-     * @return Column types of the table if this function is a table function. By default, is empty meaning that the function
+     * @return Column types of the table if this function is a table function. By default, is empty meaning the function
      * doesn't return SQL table.
      */
     Class<?>[] tableColumnTypes() default {};
 
     /**
      * Makes the function a table function and defines column names of the returned SQL table. Number of the names must
-     * match number of the column types {@link #tableColumnTypes()}. If empty while {@link #tableColumnTypes()} is set,
-     * default columnt names are used ('COL_0', 'COL_1', etc.).
+     * match number of the column types {@link #tableColumnTypes()} or be empty. If are empty while {@link #tableColumnTypes()}
+     * is set, the default column names are used ('COL_0', 'COL_1', etc.).
      *
-     * @return Column names of the table if this function is a table function. Or empty to use the default names or if
+     * @return Table column names if this function is a table function. Is empty to use the default names or if
      * the function is not a table function.
      * @see #tableColumnTypes()
      */
