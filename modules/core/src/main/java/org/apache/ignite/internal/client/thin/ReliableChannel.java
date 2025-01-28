@@ -631,6 +631,19 @@ final class ReliableChannel implements AutoCloseable {
             return;
         }
 
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+        if (holders != null && clientCfg.getAddressesFinder() == null) {
+            // Do not modify the original list.
+            newAddrs = new ArrayList<>(newAddrs);
+
+            for (ClientChannelHolder h : holders) {
+                ClientChannel ch = h.ch;
+
+                if (ch != null && !ch.closed() && !newAddrs.contains(h.getAddresses()))
+                    newAddrs.add(h.getAddresses());
+            }
+        }
+
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
@@ -822,9 +835,8 @@ final class ReliableChannel implements AutoCloseable {
                 curChannelsGuard.readLock().lock();
 
                 try {
-                    if (!partitionAwarenessEnabled || channelsCnt.get() <= 1 || F.size(failures) > 0) {
+                    if (!partitionAwarenessEnabled || channelsCnt.get() <= 1 || F.size(failures) > 0)
                         hld = channels.get(curChIdx);
-                    }
                     else {
                         // Make first attempt with the random open channel.
                         int idx = ThreadLocalRandom.current().nextInt(channels.size());
