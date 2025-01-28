@@ -1616,36 +1616,34 @@ public class ClusterCachesInfo {
                 cfg.getNearConfiguration() != null);
         }
 
-        updateRegisteredCachesIfNeeded(patchesToApply, cachesToSave, hasSchemaPatchConflict);
+        if (!hasSchemaPatchConflict)
+            updateRegisteredCaches(patchesToApply, cachesToSave);
     }
 
     /**
-     * Merging config or resaving it if it needed.
+     * Merging config, resaving it if it needed.
      *
      * @param patchesToApply Patches which need to apply.
      * @param cachesToSave Caches which need to resave.
-     * @param hasSchemaPatchConflict {@code true} if we have conflict during making patch.
      */
-    private void updateRegisteredCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
-        Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
-        //Skip merge of config if least one conflict was found.
-        if (!hasSchemaPatchConflict) {
-            boolean isClusterActive = ctx.state().clusterState().active();
+    private void updateRegisteredCaches(
+        Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
+        Collection<DynamicCacheDescriptor> cachesToSave
+    ) {
+        // Store config only if cluster is nactive.
+        boolean isClusterActive = ctx.state().clusterState().active();
 
-            //Merge of config for cluster only for inactive grid.
-            if (!isClusterActive && !patchesToApply.isEmpty()) {
-                for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
-                    if (entry.getKey().applySchemaPatch(entry.getValue()))
-                        saveCacheConfiguration(entry.getKey());
-                }
+        //Merge of config for cluster only for inactive grid.
+        if (!patchesToApply.isEmpty()) {
+            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
+                if (entry.getKey().applySchemaPatch(entry.getValue()) && !isClusterActive)
+                    saveCacheConfiguration(entry.getKey());
+            }
+        }
 
-                for (DynamicCacheDescriptor descriptor : cachesToSave)
-                    saveCacheConfiguration(descriptor);
-            }
-            else if (patchesToApply.isEmpty()) {
-                for (DynamicCacheDescriptor descriptor : cachesToSave)
-                    saveCacheConfiguration(descriptor);
-            }
+        if (isClusterActive) {
+            for (DynamicCacheDescriptor descriptor : cachesToSave)
+                saveCacheConfiguration(descriptor);
         }
     }
 
@@ -1840,7 +1838,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        locCfg.cacheData().config(),
+                        mergeConfigurations(locCfg.cacheData().config(), cfg),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
@@ -1879,6 +1877,28 @@ public class ClusterCachesInfo {
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }
+    }
+
+    /**
+     * Merges local and received cache configurations.
+     *
+     * @param loc Local cache configuration.
+     * @param received Cache configuration received from the cluster.
+     * @see #registerReceivedCaches
+     * @see #updateRegisteredCaches
+     * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     */
+    private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+        // Schema is supposed to get merged earlier.
+        loc.setQueryEntities(received.getQueryEntities());
+        loc.setSqlSchema(received.getSqlSchema());
+        loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
+        loc.setSqlEscapeAll(received.isSqlEscapeAll());
+
+        assert loc.isSqlOnheapCacheEnabled() == received.isSqlOnheapCacheEnabled();
+        assert loc.getSqlOnheapCacheMaxSize() == received.getSqlOnheapCacheMaxSize();
+
+        return loc;
     }
 
     /**
