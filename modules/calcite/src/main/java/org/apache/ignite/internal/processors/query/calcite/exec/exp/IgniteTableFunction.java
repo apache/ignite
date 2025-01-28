@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,14 +101,27 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
     /** */
     private static void validate(Method mtd, Class<?>[] colTypes, String[] colNames) {
         if (F.isEmpty(colTypes))
-            throw new IllegalArgumentException("Column types of the table cannot be empty.");
+            raiseValidationError(mtd, "Column types of the table cannot be empty.");
 
-        if (!F.isEmpty(colNames) && colTypes.length != colNames.length) {
-            throw new IllegalArgumentException("Number of the table column names [" + colNames.length + "] must either " +
-                "be empty or match number of the column types [" + colTypes.length + "].");
+        if (!F.isEmpty(colNames)) {
+            if (colTypes.length != colNames.length) {
+                raiseValidationError(mtd, "Number of the table column names [" + colNames.length
+                    + "] must either be empty or match the number of column types [" + colTypes.length + "].");
+            }
+
+            if (new HashSet<>(Arrays.asList(colNames)).size() != colNames.length)
+                raiseValidationError(mtd, "One or more column names is not unique.");
         }
 
         if (!Iterable.class.isAssignableFrom(mtd.getReturnType()))
-            throw new IllegalArgumentException("The method is expected to return a collection (iteratable).");
+            raiseValidationError(mtd, "The method is expected to return a collection (iteratable).");
+    }
+
+    /** */
+    private static void raiseValidationError(Method mtd, String errPostfix) {
+        String mtdSign = mtd.getName() + '(' + Stream.of(mtd.getParameterTypes()).map(Class::getSimpleName)
+            .collect(Collectors.joining(", ")) + ')';
+
+        throw new IllegalArgumentException("Unable to create table function for method '" + mtdSign + "'. " + errPostfix);
     }
 }

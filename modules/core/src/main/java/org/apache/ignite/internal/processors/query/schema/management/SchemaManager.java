@@ -514,7 +514,7 @@ public class SchemaManager {
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
-                    if (F.isEmpty(ann.tableColumnTypes()))
+                    if (F.isEmpty(ann.tableColumnTypes()) && F.isEmpty(ann.tableColumnNames()))
                         lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
                     else
                         lsnr.onTableFunctionCreated(schema, alias, m, ann.tableColumnTypes(), ann.tableColumnNames());
