@@ -19,14 +19,14 @@ package org.apache.ignite.internal.commandline.argument.parser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.commandline.GridConsole;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static java.util.stream.Collectors.toSet;
@@ -49,20 +49,21 @@ public class CLIArgumentParser {
     /** */
     private final Map<String, Object> parsedArgs = new HashMap<>();
 
-    /** */
-    public CLIArgumentParser(List<CLIArgument<?>> argConfiguration) {
-        this(Collections.emptyList(), argConfiguration);
-    }
+    /** Console instance */
+    protected final GridConsole console;
 
     /** */
     public CLIArgumentParser(
-        List<CLIArgument<?>> positionalArgConfig,
-        List<CLIArgument<?>> argConfiguration
+        List<CLIArgument<?>> positionalArgCfg,
+        List<CLIArgument<?>> argConfiguration,
+        GridConsole console
     ) {
-        this.positionalArgCfg = positionalArgConfig;
+        this.positionalArgCfg = positionalArgCfg;
 
         for (CLIArgument<?> cliArg : argConfiguration)
             this.argConfiguration.put(cliArg.name(), cliArg);
+
+        this.console = console;
     }
 
     /**
@@ -71,7 +72,7 @@ public class CLIArgumentParser {
      *
      * @param argsIter Iterator.
      */
-    public void parse(Iterator<String> argsIter) {
+    public void parse(ListIterator<String> argsIter) {
         Set<String> obligatoryArgs =
             argConfiguration.values().stream().filter(a -> !a.optional()).map(CLIArgument::name).collect(toSet());
 
@@ -102,18 +103,23 @@ public class CLIArgumentParser {
             else if (parsedArgs.get(cliArg.name()) != null)
                 throw new IllegalArgumentException(cliArg.name() + " argument specified twice");
 
-            boolean bool = cliArg.type().equals(Boolean.class) || cliArg.type().equals(boolean.class);
+            String argVal;
 
-            if (!bool && !argsIter.hasNext())
-                throw new IllegalArgumentException("Please specify a value for argument: " + arg);
+            if (cliArg.isFlag())
+                argVal = "true";
+            else {
+                argVal = readArgumentValue(argsIter);
 
-            String strVal = bool ? "true" : argsIter.next();
-
-            if (strVal != null && strVal.startsWith(NAME_PREFIX))
-                throw new IllegalArgumentException("Unexpected value: " + strVal);
+                if (argVal == null) {
+                    if (console != null && cliArg.isInteractive())
+                        argVal = new String(requestPasswordFromConsole(cliArg.name() + ": "));
+                    else
+                        throw new IllegalArgumentException("Please specify a value for argument: " + arg);
+                }
+            }
 
             try {
-                Object val = parseVal(strVal, cliArg.type());
+                Object val = parseVal(argVal, cliArg.type());
 
                 ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), val);
 
@@ -213,5 +219,31 @@ public class CLIArgumentParser {
             return "[" + arg.name() + "]";
         else
             return arg.name();
+    }
+
+    /** */
+    private String readArgumentValue(ListIterator<String> argsIter) {
+        if (!argsIter.hasNext())
+            return null;
+
+        String val = argsIter.next();
+
+        if (val.startsWith(NAME_PREFIX)) {
+            argsIter.previous();
+
+            return null;
+        }
+
+        return val;
+    }
+
+    /**
+     * Requests password from console with message.
+     *
+     * @param msg Message.
+     * @return Password.
+     */
+    private char[] requestPasswordFromConsole(String msg) {
+        return console.readPassword(msg);
     }
 }

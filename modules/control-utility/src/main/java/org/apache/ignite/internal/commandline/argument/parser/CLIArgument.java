@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline.argument.parser;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Command line argument.
@@ -33,13 +32,10 @@ public class CLIArgument<T> {
     private final String name;
 
     /** */
-    private final String usage;
-
-    /** */
-    private final boolean isOptional;
-
-    /** */
     private final Class<T> type;
+
+    /** */
+    private final String usage;
 
     /** */
     private final Function<CLIArgumentParser, T> dfltValSupplier;
@@ -48,48 +44,22 @@ public class CLIArgument<T> {
     private final BiConsumer<String, T> validator;
 
     /** */
-    public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type) {
-        return new CLIArgument<>(name, usage, true, type, null, null);
-    }
+    private final boolean isOptional;
 
     /** */
-    public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type, Supplier<T> dfltValSupplier) {
-        return new CLIArgument<>(name, usage, true, type, p -> dfltValSupplier.get(), null);
-    }
+    private final boolean isInteractive;
 
     /** */
-    public static <T> CLIArgument<T> optionalArg(
-        String name,
-        String usage,
-        Class<T> type,
-        Function<CLIArgumentParser, T> dfltValSupplier,
-        BiConsumer<String, T> validator
+    private CLIArgument(
+        CLIArgumentBuilder<T> builder
     ) {
-        return new CLIArgument<>(name, usage, true, type, dfltValSupplier, validator);
-    }
-
-    /** */
-    public static <T> CLIArgument<T> mandatoryArg(String name, String usage, Class<T> type) {
-        return new CLIArgument<>(name, usage, false, type, null, null);
-    }
-
-    /** */
-    public CLIArgument(
-        String name,
-        String usage,
-        boolean isOptional,
-        Class<T> type,
-        Function<CLIArgumentParser, T> dfltValSupplier,
-        BiConsumer<String, T> validator
-    ) {
-        this.name = name;
-        this.usage = usage;
-        this.isOptional = isOptional;
-        this.type = type;
-        this.dfltValSupplier = dfltValSupplier == null
-            ? (type.equals(Boolean.class) ? p -> (T)Boolean.FALSE : p -> null)
-            : dfltValSupplier;
-        this.validator = validator;
+        name = builder.name;
+        type = builder.type;
+        usage = builder.usage;
+        dfltValSupplier = builder.dfltValSupplier;
+        validator = builder.validator;
+        isOptional = builder.isOptional;
+        isInteractive = builder.isInteractive;
     }
 
     /** */
@@ -98,18 +68,13 @@ public class CLIArgument<T> {
     }
 
     /** */
-    public String usage() {
-        return usage;
-    }
-
-    /** */
-    public boolean optional() {
-        return isOptional;
-    }
-
-    /** */
     public Class<T> type() {
         return type;
+    }
+
+    /** */
+    public String usage() {
+        return usage;
     }
 
     /** */
@@ -120,5 +85,125 @@ public class CLIArgument<T> {
     /** */
     public BiConsumer<String, T> validator() {
         return validator == null ? EMPTY : validator;
+    }
+
+    /** */
+    public boolean optional() {
+        return isOptional;
+    }
+
+    /** */
+    public boolean isInteractive() {
+        return isInteractive;
+    }
+
+    /** */
+    public boolean isFlag() {
+        return type.equals(Boolean.class) || type.equals(boolean.class);
+    }
+
+    /**  */
+    public static CLIArgumentBuilder<?> argument(String name, Class<?> type) {
+        return new CLIArgumentBuilder<>(name, type, false);
+    }
+
+    /** */
+    public static CLIArgumentBuilder<?> optionalArgument(String name, Class<?> type) {
+        return new CLIArgumentBuilder<>(name, type, true);
+    }
+
+    /**
+     * Command line argument builder.
+     * @param <T> Value type.
+     */
+    public static class CLIArgumentBuilder<T> {
+        /** */
+        private final String name;
+
+        /** */
+        private final Class<T> type;
+
+        /** */
+        private String usage;
+
+        /** */
+        private Function<CLIArgumentParser, T> dfltValSupplier;
+
+        /** */
+        private BiConsumer<String, T> validator;
+
+        /** */
+        private boolean isOptional;
+
+        /** */
+        private boolean isInteractive;
+
+        /** */
+        public CLIArgumentBuilder(String name, Class<T> type, boolean isOptional) {
+            this.name = name;
+            this.type = type;
+            this.isOptional = isOptional;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> withUsage(String usage) {
+            this.usage = usage;
+            return this;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> withDefault(Object dflt) {
+            dfltValSupplier = t -> (T)dflt;
+            return this;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> withValidator(BiConsumer<String, ?> validator) {
+            this.validator = (BiConsumer<String, T>)validator;
+            return this;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> markOptional() {
+            isOptional = true;
+            return this;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> setOptional(boolean optional) {
+            isOptional = optional;
+            return this;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> markInteractive() {
+            isInteractive = true;
+            return this;
+        }
+
+        /** */
+        public CLIArgumentBuilder<T> setInteractive(boolean interactive) {
+            isInteractive = interactive;
+            return this;
+        }
+
+        /** */
+        public CLIArgument<T> build() {
+            assert name != null;
+            assert type != null;
+
+            if (isFlag() && isInteractive)
+                throw new IllegalArgumentException("Flag argument can't be interactive");
+
+            if (dfltValSupplier == null)
+                dfltValSupplier = isFlag() ? p -> (T)Boolean.FALSE : p -> null;
+
+            return new CLIArgument<>(this);
+        }
+
+        /** */
+        private boolean isFlag() {
+            return type.equals(Boolean.class) || type.equals(boolean.class);
+        }
     }
 }
