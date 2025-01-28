@@ -22,6 +22,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -272,6 +274,15 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         String actSesId = set.getString("SESSION_ID");
 
         assertEquals(sesId, actSesId);
+
+        // Test the same works with a table function.
+        set = jdbcQuery(conn, "select SID from sessionIdTbl();");
+
+        set.next();
+
+        actSesId = set.getString(1);
+
+        assertEquals(sesId, actSesId);
     }
 
     /** */
@@ -286,6 +297,14 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
             SessionContext sesCtx = sesCtxProv.getSessionContext();
 
             return sesCtx == null ? null : sesCtx.getAttribute(SESSION_ID);
+        }
+
+        /** */
+        @QuerySqlFunction(tableColumnTypes = {String.class}, tableColumnNames = {"SID"})
+        public Collection<Object[]> sessionIdTbl() {
+            SessionContext sesCtx = sesCtxProv.getSessionContext();
+
+            return Collections.singletonList(new Object[]{sesCtx == null ? null : sesCtx.getAttribute(SESSION_ID)});
         }
     }
 }
