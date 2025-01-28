@@ -639,7 +639,7 @@ final class ReliableChannel implements AutoCloseable {
             for (ClientChannelHolder h : holders) {
                 ClientChannel ch = h.ch;
 
-                if (ch != null && !ch.closed())
+                if (ch != null && !ch.closed() && !newAddrs.contains(h.getAddresses()))
                     newAddrs.add(h.getAddresses());
             }
         }
