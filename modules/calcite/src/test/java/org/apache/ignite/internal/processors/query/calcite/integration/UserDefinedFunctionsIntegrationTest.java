@@ -184,6 +184,11 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_0 from tbl_fun_it(1) WHERE COL_1=3)")
             .returns("Roman1", 2d)
             .check();
+
+        assertQuery("SELECT * from aliased_fun_name(?)").withParams(1)
+            .returns(2, 3, 4)
+            .returns(5, 6, 7)
+            .check();
     }
 
     /** */
@@ -275,6 +280,15 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return Arrays.asList(
                 Arrays.asList(i, "" + i),
                 Arrays.asList(i * 10, "empty")
+            );
+        }
+
+        /** */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class}, alias = "aliased_fun_name")
+        public static Iterable<Collection<?>> tbl_fun_alias(int x) {
+            return Arrays.asList(
+                Arrays.asList(x + 1, x + 2, x + 3),
+                Arrays.asList(x + 4, x + 5, x + 6)
             );
         }
     }
