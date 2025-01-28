@@ -127,7 +127,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -146,7 +145,6 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
@@ -2131,7 +2129,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             msg = cctx.exchange().createPartitionsSingleMessage(exchangeId(),
                 false,
                 true,
-                node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0,
                 exchActions);
 
             Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
@@ -2174,15 +2171,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param compress Message compress flag.
-     * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
      * @return Message.
      */
-    private GridDhtPartitionsFullMessage createPartitionsMessage(boolean compress, boolean newCntrMap) {
+    private GridDhtPartitionsFullMessage createPartitionsMessage(boolean compress) {
         GridCacheVersion last = lastVer.get();
 
         GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(
             compress,
-            newCntrMap,
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
@@ -2962,7 +2957,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         onDone(null, reconnectEx);
 
-        GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true, false);
+        GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true);
 
         fullMsg.setErrorsMap(exchangeGlobalExceptions);
 
@@ -3123,8 +3118,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return;
                     }
 
-                    GridDhtPartitionsFullMessage msg =
-                        createPartitionsMessage(true, node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
+                    GridDhtPartitionsFullMessage msg = createPartitionsMessage(true);
 
                     msg.rebalanced(rebalanced());
 
@@ -3293,7 +3287,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
 
-            GridDhtPartitionsFullMessage m = createPartitionsMessage(false, false);
+            GridDhtPartitionsFullMessage m = createPartitionsMessage(false);
 
             CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
 
@@ -3350,8 +3344,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Map<Integer, TreeSet<Long>> varCntrs = new HashMap<>();
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            CachePartitionPartialCountersMap nodeCntrs = e.getValue().partitionUpdateCounters(top.groupId(),
-                top.partitions());
+            CachePartitionPartialCountersMap nodeCntrs = e.getValue().partitionUpdateCounters(top.groupId());
 
             assert nodeCntrs != null;
 
@@ -3903,10 +3896,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.versions().onExchange(lastVer.get().order());
 
-            IgniteProductVersion minVer = exchCtx.events().discoveryCache().minimumNodeVersion();
-
-            GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
-                minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
+            GridDhtPartitionsFullMessage msg = createPartitionsMessage(true);
 
             if (!cctx.affinity().rebalanceRequired() && !deactivateCluster())
                 msg.rebalanced(true);
@@ -4079,7 +4069,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ? grp.topology()
                 : cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-            CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId, top.partitions());
+            CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId);
 
             if (cntrs != null)
                 top.collectUpdateCounters(cntrs);
@@ -4512,7 +4502,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         msg.restoreExchangeId(),
                         cctx.kernalContext().clientNode(),
                         true,
-                        node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0,
                         exchActions);
 
                     if (localJoinExchange() && finishState0 == null)
@@ -4756,12 +4745,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 parallelismLvl,
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 msg.partitions().keySet(), grpId -> {
+                    CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId);
+
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
-                        CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                            grp.topology().partitions());
-
                         grp.topology().update(resTopVer,
                             msg.partitions().get(grpId),
                             cntrMap,
@@ -4773,9 +4761,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                     else {
                         GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
-
-                        CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                            top.partitions());
 
                         top.update(resTopVer,
                             msg.partitions().get(grpId),
