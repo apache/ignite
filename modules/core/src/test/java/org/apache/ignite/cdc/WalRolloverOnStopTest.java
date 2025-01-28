@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -52,7 +51,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -178,8 +176,7 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
             IgniteWalIteratorFactory.IteratorParametersBuilder builder =
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()
                     .log(ign.log())
-                    .filesOrDirs(
-                        U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false))
+                    .filesOrDirs(ign.context().pdsFolderResolver().resolveDirectories().walArchive())
                     .filter((type, ptr) -> type == DATA_RECORD_V2);
 
             Set<Integer> keys = new HashSet<>();

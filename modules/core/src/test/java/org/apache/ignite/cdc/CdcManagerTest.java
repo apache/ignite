@@ -41,6 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -365,12 +366,7 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
     /** Get WAL directory. */
     private File walDir(IgniteEx ign) throws Exception {
-        return new File(
-            U.resolveWorkDirectory(
-                ign.configuration().getWorkDirectory(),
-                DataStorageConfiguration.DFLT_WAL_PATH,
-                false),
-            ign.context().pdsFolderResolver().resolveFolders().folderName());
+        return new IgniteDirectories(ign.configuration(), ign.context().pdsFolderResolver().resolveFolders().folderName()).wal();
     }
 
     /** @return Length of the all written records in the specified segment. */

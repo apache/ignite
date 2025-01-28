@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -59,6 +58,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories.containsBinaryMetaPath;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
@@ -165,9 +165,14 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         int key = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
         cache.put(key, new TestAddress(0, "USA", "NYC", "Park Ave"));
 
-        String ig1ConsId = ig1.localNode().consistentId().toString();
+        File ig1BinaryMeta = ig1.context().pdsFolderResolver().resolveDirectories().binaryMeta();
+
+        assertTrue(ig1BinaryMeta.exists());
+        assertTrue(ig1BinaryMeta.isDirectory());
+
         stopGrid(1);
-        cleanBinaryMetaFolderForNode(ig1ConsId);
+
+        U.delete(ig1BinaryMeta);
 
         ig1 = startGrid(1);
         stopGrid(0);
@@ -559,22 +564,6 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         return cdl;
     }
 
-    /**
-     * Deletes directory with persisted binary metadata for a node with given Consistent ID.
-     */
-    private void cleanBinaryMetaFolderForNode(String consId) throws IgniteCheckedException {
-        String dfltWorkDir = U.defaultWorkDirectory();
-        File metaDir = U.resolveWorkDirectory(dfltWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false);
-
-        for (File subDir : metaDir.listFiles()) {
-            if (subDir.getName().contains(consId)) {
-                U.delete(subDir);
-
-                return;
-            }
-        }
-    }
-
     /** Finds a key that target node is neither primary or backup. */
     private int findNonAffinityKeyForNode(Affinity aff, ClusterNode targetNode, int startFrom) {
         int key = startFrom;
@@ -691,11 +680,6 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
     }
 
     /** */
-    private static boolean isBinaryMetaFile(File file) {
-        return file.getPath().contains(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
-    }
-
-    /** */
     static final class SlowFileIOFactory implements FileIOFactory {
         /** */
         private final FileIOFactory delegateFactory;
@@ -711,7 +695,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = delegateFactory.create(file, modes);
 
-            if (isBinaryMetaFile(file))
+            if (containsBinaryMetaPath(file))
                 return new SlowFileIO(delegate, fileWriteLatchRef.get());
 
             return delegate;
@@ -761,7 +745,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = delegateFactory.create(file, modes);
 
-            if (isBinaryMetaFile(file))
+            if (containsBinaryMetaPath(file))
                 return new FailingFileIO(delegate);
 
             return delegate;

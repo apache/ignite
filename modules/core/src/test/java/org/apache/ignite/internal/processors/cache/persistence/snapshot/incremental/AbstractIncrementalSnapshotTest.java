@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRec
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -202,13 +202,10 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        String subfolderName = U.maskForFileName(getTestIgniteInstanceName(nodeIdx));
-
-        File wal = workDir.resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
-        File archive = workDir.resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
+        IgniteDirectories dirs = ignite(nodeIdx).context().pdsFolderResolver().resolveDirectories();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(wal, archive);
+            .filesOrDirs(dirs.wal(), dirs.walArchive());
 
         return factory.iterator(params);
     }
