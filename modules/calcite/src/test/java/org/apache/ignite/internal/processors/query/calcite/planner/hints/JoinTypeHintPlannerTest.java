@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlann
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -36,9 +37,11 @@ import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.HASH_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_HASH_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
 
@@ -120,12 +123,12 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         // Following hint must not override leading.
         lsnrLog.clearListeners();
 
-        lsnr = LogListener.matches("Skipped hint '" + NL_JOIN.name() + "'")
+        lsnr = LogListener.matches("Skipped hint '" + HASH_JOIN.name() + "'")
             .andMatches("This join type is already disabled or forced to use before").build();
 
         lsnrLog.registerListener(lsnr);
 
-        physicalPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1)," + NL_JOIN + "(TBL1,TBL2) */ t1.v1, t2.v2 FROM TBL1 " +
+        physicalPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1)," + HASH_JOIN + "(TBL1,TBL2) */ t1.v1, t2.v2 FROM TBL1 " +
             "t1 JOIN TBL2 t2 on t1.v3=t2.v3", schema);
 
         assertTrue(lsnr.check());
@@ -140,7 +143,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
 
         physicalPlan("SELECT /*+ " + NL_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 " +
             "t1 JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in " +
-            "(SELECT /*+ " + MERGE_JOIN + "(TBL1), " + CNL_JOIN + "(TBL1,TBL3) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 " +
+            "(SELECT /*+ " + HASH_JOIN + "(TBL1), " + CNL_JOIN + "(TBL1,TBL3) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 " +
             "on t3.v2=t4.v2)", schema, CORE_JOIN_REORDER_RULES);
 
         assertTrue(lsnr.check());
@@ -186,9 +189,9 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testDisableNLJoin() throws Exception {
-        for (HintDefinition hint : Arrays.asList(NO_NL_JOIN, CNL_JOIN, MERGE_JOIN)) {
+        for (HintDefinition hint : Arrays.asList(NO_NL_JOIN, CNL_JOIN, MERGE_JOIN, HASH_JOIN)) {
             doTestDisableJoinTypeWith("TBL5", "TBL4", "INNER", IgniteNestedLoopJoin.class,
-                NO_NL_JOIN, "MergeJoinConverter");
+                NO_NL_JOIN, "MergeJoinConverter", "HashJoinConverter");
 
             doTestDisableJoinTypeWith("TBL3", "TBL1", "LEFT", IgniteNestedLoopJoin.class,
                 NO_NL_JOIN);
@@ -210,15 +213,34 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDisableMergeJoin() throws Exception {
         for (HintDefinition hint : Arrays.asList(NO_MERGE_JOIN, NL_JOIN, CNL_JOIN)) {
-            doTestDisableJoinTypeWith("TBL4", "TBL2", "INNER", IgniteMergeJoin.class, hint);
+            doTestDisableJoinTypeWith("TBL4", "TBL2", "INNER", IgniteMergeJoin.class, hint, "HashJoinConverter");
 
-            doTestDisableJoinTypeWith("TBL4", "TBL2", "LEFT", IgniteMergeJoin.class, hint);
+            doTestDisableJoinTypeWith("TBL4", "TBL2", "LEFT", IgniteMergeJoin.class, hint, "HashJoinConverter");
 
             // Correlated nested loop join supports only INNER and LEFT join types.
             if (hint != CNL_JOIN) {
-                doTestDisableJoinTypeWith("TBL4", "TBL2", "RIGHT", IgniteMergeJoin.class, hint);
+                doTestDisableJoinTypeWith("TBL4", "TBL2", "RIGHT", IgniteMergeJoin.class, hint, "HashJoinConverter");
 
-                doTestDisableJoinTypeWith("TBL4", "TBL2", "FULL", IgniteMergeJoin.class, hint);
+                doTestDisableJoinTypeWith("TBL4", "TBL2", "FULL", IgniteMergeJoin.class, hint, "HashJoinConverter");
+            }
+        }
+    }
+
+    /**
+     * Tests hash join is disabled by hints.
+     */
+    @Test
+    public void testDisableHashJoin() throws Exception {
+        for (HintDefinition hint : Arrays.asList(NO_HASH_JOIN, MERGE_JOIN, NL_JOIN, CNL_JOIN)) {
+            doTestDisableJoinTypeWith("TBL4", "TBL2", "INNER", IgniteHashJoin.class, hint);
+
+            doTestDisableJoinTypeWith("TBL4", "TBL2", "LEFT", IgniteHashJoin.class, hint);
+
+            // Correlated nested loop join supports only INNER and LEFT join types.
+            if (hint != CNL_JOIN) {
+                doTestDisableJoinTypeWith("TBL4", "TBL2", "RIGHT", IgniteHashJoin.class, hint);
+
+                doTestDisableJoinTypeWith("TBL4", "TBL2", "FULL", IgniteHashJoin.class, hint);
             }
         }
     }
@@ -242,6 +264,24 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * Tests the hash join is enabled by the hint instead of the other joins.
+     */
+    @Test
+    public void testHashJoinEnabled() throws Exception {
+        doTestCertainJoinTypeEnabled("TBL1", "INNER", "TBL2", IgniteCorrelatedNestedLoopJoin.class,
+            HASH_JOIN, IgniteHashJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL1", "RIGHT", "TBL2", IgniteNestedLoopJoin.class,
+            HASH_JOIN, IgniteHashJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL1", "INNER", "TBL2", IgniteCorrelatedNestedLoopJoin.class,
+            HASH_JOIN, IgniteHashJoin.class, CORE_JOIN_REORDER_RULES);
+
+        doTestCertainJoinTypeEnabled("TBL1", "RIGHT", "TBL2", IgniteNestedLoopJoin.class,
+            HASH_JOIN, IgniteHashJoin.class, CORE_JOIN_REORDER_RULES);
+    }
+
+    /**
      * Tests the nested loop join is enabled by the hint instead of the other joins.
      */
     @Test
@@ -249,13 +289,13 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         doTestCertainJoinTypeEnabled("TBL2", "INNER", "TBL1", IgniteCorrelatedNestedLoopJoin.class,
             NL_JOIN, IgniteNestedLoopJoin.class);
 
-        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteHashJoin.class,
             NL_JOIN, IgniteNestedLoopJoin.class);
 
         doTestCertainJoinTypeEnabled("TBL1", "LEFT", "TBL2", IgniteCorrelatedNestedLoopJoin.class,
             NL_JOIN, IgniteNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
 
-        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteHashJoin.class,
             NL_JOIN, IgniteNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
     }
 
@@ -281,7 +321,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         doTestCertainJoinTypeEnabled("TBL2", "LEFT", "TBL1", IgniteNestedLoopJoin.class,
             CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class);
 
-        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteHashJoin.class,
             CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class);
 
         // Even CNL join doesn't support RIGHT join, join type and join inputs might be switched by Calcite.
@@ -291,7 +331,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         doTestCertainJoinTypeEnabled("TBL2", "LEFT", "TBL1", IgniteNestedLoopJoin.class,
             CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
 
-        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteHashJoin.class,
             CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
     }
 
@@ -387,15 +427,15 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
 
         // Table hint has a bigger priority. Leading CNL_JOIN is ignored.
-        assertPlan(String.format(sqlTpl, "/*+ " + CNL_JOIN + " */", "/*+ " + NL_JOIN + " */", "/*+ " + MERGE_JOIN + " */"),
+        assertPlan(String.format(sqlTpl, "/*+ " + CNL_JOIN + " */", "/*+ " + NL_JOIN + " */", "/*+ " + HASH_JOIN + " */"),
             schema, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
-                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                .and(nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
 
         // Leading query hint works only for the second join.
-        assertPlan(String.format(sqlTpl, "/*+ " + CNL_JOIN + " */", "/*+ " + NL_JOIN + " */", ""), schema,
+        assertPlan(String.format(sqlTpl, "/*+ " + HASH_JOIN + " */", "/*+ " + NL_JOIN + " */", ""), schema,
             nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
-                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
 
         // Table hint with wrong table name is ignored.
@@ -499,13 +539,13 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         assertPlan(String.format(sqlTpl, "/*+ " + NO_CNL_JOIN + ',' + NO_NL_JOIN + " */"), schema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()
                 .and(nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate())
-                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1"))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class).and(hasNestedTableScan("TBL1"))
                     .and(hasNestedTableScan("TBL2")))), CORE_JOIN_REORDER_RULES);
 
         assertPlan(String.format(sqlTpl, "/*+ " + NO_CNL_JOIN + "(TBL1)," + NO_NL_JOIN + "(TBL2) */"), schema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()
                 .and(nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate())
-                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1"))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class).and(hasNestedTableScan("TBL1"))
                     .and(hasNestedTableScan("TBL2")))), CORE_JOIN_REORDER_RULES);
 
         // Check with forcing in the middle.
@@ -530,7 +570,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         assertPlan(String.format(sqlTpl, "/*+ " + NO_CNL_JOIN + ',' + NO_NL_JOIN + ',' + NO_MERGE_JOIN + " */"), schema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()
                 .and(nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate())
-                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1"))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class).and(hasNestedTableScan("TBL1"))
                     .and(hasNestedTableScan("TBL2")))), CORE_JOIN_REORDER_RULES);
 
         // Check many duplicated disables doesn't erase other disables.
