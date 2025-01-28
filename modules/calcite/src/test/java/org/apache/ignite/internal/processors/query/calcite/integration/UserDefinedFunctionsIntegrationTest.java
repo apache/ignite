@@ -196,6 +196,16 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(2, 3, 4)
             .returns(5, 6, 7)
             .check();
+
+        assertQuery("SELECT * from tbl_fun_exception(?, ?, ?)").withParams(1, "test", false)
+            .returns(2, "test2")
+            .returns(3, "test3")
+            .check();
+
+        assertThrows("SELECT * from tbl_fun_exception(?, ?, ?)", IgniteSQLException.class, "An error occurred while query executing",
+            1, "test", true);
+        assertThrows("SELECT * from tbl_fun_exception(?, ?, ?)", RuntimeException.class, "Test exception",
+            1, "test", true);
     }
 
     /** */
@@ -245,7 +255,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     public static class TableFunctions {
-        /** */
+        /** Trivial test. Returts collections as row holders. */
         @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
         public static Iterable<Collection<?>> tbl_fun_it(int x) {
             return Arrays.asList(
@@ -257,7 +267,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         /** Overrides. */
         @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
-        public static Iterable<Collection<?>> tbl_fun_it(int x, int y, int z) {
+        public static Collection<Collection<?>> tbl_fun_it(int x, int y, int z) {
             return Arrays.asList(
                 Arrays.asList(x + 10, y + 20, z + 30),
                 Arrays.asList(x + 40, y + 50, z + 60),
@@ -265,7 +275,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             );
         }
 
-        /** */
+        /** Returns arrays as row holders. */
         @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
         public static Iterable<Object[]> tbl_fun_arr(int x) {
             return Arrays.asList(
@@ -275,7 +285,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             );
         }
 
-        /** */
+        /** Returns mixed row holders. */
         @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
         public static Collection<?> tbl_fun_arr_and_it(int x) {
             return Arrays.asList(
@@ -285,13 +295,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             );
         }
 
-        /** */
+        /** Boxed/unboxed test. */
         @QuerySqlFunction(tableColumnTypes = {Integer.class, int.class, Double.class, double.class})
         public static Collection<List<?>> tbl_fun_boxing(int i1, Integer i2, double d1, Double d2) {
             return List.of(Arrays.asList(i1, i2, d1, d2));
         }
 
-        /** */
+        /** Defined column names test. */
         @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "STR_COL"})
         public static Iterable<?> tbl_fun_col_names(int i) {
             return Arrays.asList(
@@ -300,12 +310,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             );
         }
 
-        /** */
+        /** Alias test. */
         @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class}, alias = "aliased_fun_name")
         public static Iterable<Collection<?>> tbl_fun_alias(int x) {
             return Arrays.asList(
                 Arrays.asList(x + 1, x + 2, x + 3),
                 Arrays.asList(x + 4, x + 5, x + 6)
+            );
+        }
+
+        /** User exception test. */
+        @QuerySqlFunction(tableColumnTypes = {int.class, String.class})
+        public static Iterable<Collection<?>> tbl_fun_exception(int i, String str, boolean doThrow) {
+            if (doThrow)
+                throw new RuntimeException("Test exception.");
+
+            return Arrays.asList(
+                Arrays.asList(i + 1, str + (i + 1)),
+                Arrays.asList(i + 2, str + (i + 2))
             );
         }
     }
