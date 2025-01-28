@@ -277,7 +277,7 @@ public class DataStorageMetricsImpl {
 
         mreg.register("LastArchivedSegment",
             this::lastArchivedSegment,
-            "Last archived file absolute index, 0-based.");
+            "Last archived segment index.");
 
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
 
@@ -366,7 +366,7 @@ public class DataStorageMetricsImpl {
         return walMgr == null ? 0 : walMgr.walArchiveSegments();
     }
 
-    /** @return Last archived file absolute index, 0-based. */
+    /** @return Last archived segment index. */
     private long lastArchivedSegment() {
         if (!metricsEnabled)
             return -1;
