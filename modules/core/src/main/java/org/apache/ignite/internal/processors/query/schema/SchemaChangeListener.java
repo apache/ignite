@@ -146,8 +146,8 @@ public interface SchemaChangeListener {
      *
      * @param schemaName Schema name.
      * @param name Function name.
-     * @param colTypes Column types of the returned table.
-     * @param colNames Column names if the returned table. If {@code null} or empty, the default names are used instead.
+     * @param colTypes Column types of the table representation.
+     * @param colNames Column names if the table representation. If {@code null} or empty, the default names are used instead.
      * @param method Public static method, implementing this function.
      */
     public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,

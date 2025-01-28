@@ -28,21 +28,32 @@ import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.TableFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Implementation of user-defined table function.
+ *
+ * @see QuerySqlFunction#tableColumnTypes()
+ */
 public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements TableFunction {
-    /** */
+    /** Column types of the returned table representation. */
     private final Class<?>[] colTypes;
 
-    /** */
-    @Nullable private final List<String> colNames;
+    /** Column names of the returned table representation. */
+    private final List<String> colNames;
 
-    /** */
+    /**
+     * Creates user-defined table function.
+     *
+     * @param method   The implementation method.
+     * @param colTypes Column types of the returned table representation.
+     * @param colNames Column names of the returned table representation. Of empty, the defaults are used ('COL_1', 'COL_2', etc.).
+     * @param implementor Call implementor.
+     */
     private IgniteTableFunction(Method method, Class<?>[] colTypes, @Nullable String[] colNames, CallImplementor implementor) {
         super(method, implementor);
 
@@ -54,15 +65,21 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
 
         if (F.isEmpty(colNames)) {
             for (int i = 0; i < colTypes.length; ++i)
-                this.colNames.add("COL_" + i);
+                this.colNames.add("COL_" + (i + 1));
         }
     }
 
-    /** */
-    public static Function create(Method mtd, Class<?>[] colTypes, @Nullable String[] colNames) {
-        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(mtd), NullPolicy.NONE, false);
+    /**
+     * Creates user-defined table function.
+     *
+     * @param method   The implementation method.
+     * @param colTypes Column types of the returned table representation.
+     * @param colNames Column names of the returned table representation. Of empty, the defaults are used ('COL_1', 'COL_2', etc.).
+     */
+    public static IgniteTableFunction create(Method method, Class<?>[] colTypes, @Nullable String[] colNames) {
+        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
 
-        return new IgniteTableFunction(mtd, colTypes, colNames, impl);
+        return new IgniteTableFunction(method, colTypes, colNames, impl);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +106,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         return Iterable.class;
     }
 
-    /** */
+    /** Validates the parameters. */
     private static void validate(Method mtd, Class<?>[] colTypes, String[] colNames) {
         if (F.isEmpty(colTypes))
             raiseValidationError(mtd, "Column types cannot be empty.");
@@ -108,9 +125,14 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
             raiseValidationError(mtd, "The method is expected to return a collection (iteratable).");
     }
 
-    /** */
-    private static void raiseValidationError(Method mtd, String errPostfix) {
-        String mtdSign = mtd.getName() + '(' + Stream.of(mtd.getParameterTypes()).map(Class::getSimpleName)
+    /**
+     * Throws a parameter validation exception with a standard text prefix.
+     *
+     * @param method Java-method of the related user-defined table function.
+     * @param errPostfix Error text postfix.
+     */
+    private static void raiseValidationError(Method method, String errPostfix) {
+        String mtdSign = method.getName() + '(' + Stream.of(method.getParameterTypes()).map(Class::getSimpleName)
             .collect(Collectors.joining(", ")) + ')';
 
         throw new IgniteSQLException("Unable to create table function for method '" + mtdSign + "'. " + errPostfix);

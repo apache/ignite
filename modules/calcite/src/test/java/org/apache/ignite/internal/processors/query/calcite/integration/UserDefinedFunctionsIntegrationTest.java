@@ -145,11 +145,11 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(8, 9, 10)
             .check();
 
-        assertQuery("SELECT * from tbl_fun_it(?) WHERE COL_1=4").withParams(2)
+        assertQuery("SELECT * from tbl_fun_it(?) WHERE COL_2=4").withParams(2)
             .returns(3, 4, 5)
             .check();
 
-        assertQuery("SELECT COL_0, COL_2 from tbl_fun_it(?) WHERE COL_1=3").withParams(1)
+        assertQuery("SELECT COL_1, COL_3 from tbl_fun_it(?) WHERE COL_2=3").withParams(1)
             .returns(2, 4)
             .check();
 
@@ -166,7 +166,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(8, 9, 10)
             .check();
 
-        assertQuery("SELECT * from tbl_fun_arr_and_it(1) WHERE COL_0>4 AND COL_1>? AND COL_2>6").withParams(5)
+        assertQuery("SELECT * from tbl_fun_arr_and_it(1) WHERE COL_1>4 AND COL_2>? AND COL_3>6").withParams(5)
             .returns(5, 6, 7)
             .returns(8, 9, 10)
             .check();
@@ -188,7 +188,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns("empty")
             .check();
 
-        assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_0 from tbl_fun_it(1) WHERE COL_1=3)")
+        assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_1 from tbl_fun_it(1) WHERE COL_2=3)")
             .returns("Roman1", 2d)
             .check();
 
@@ -254,7 +254,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
-    public static class TableFunctions {
+    public static final class TableFunctions {
+        /** */
+        private TableFunctions() {
+            // No-op.
+        }
+
         /** Trivial test. Returts collections as row holders. */
         @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
         public static Iterable<Collection<?>> tbl_fun_it(int x) {
@@ -333,7 +338,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
-    public static class IncorrectTableFunctions {
+    public static final class IncorrectTableFunctions {
+        /** */
+        private IncorrectTableFunctions() {
+            // No-op.
+        }
+
         /** Duplicated column names. */
         @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "INT_COL"})
         public static Iterable<?> tbl_fun_dupl_col_nm(int i, String s) {
