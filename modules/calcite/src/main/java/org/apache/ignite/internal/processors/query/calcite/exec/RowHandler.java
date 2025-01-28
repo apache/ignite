@@ -75,7 +75,7 @@ public interface RowHandler<Row> {
         Row create(Object... fields);
 
         /**
-         * Wraps a column collection to {@code Object[]} if requred.
+         * Wraps a column collection with {@code Object[]} if requred.
          *
          * @param rowContainer Row values holder. Must be an {@code Iterable} or an {@code Object[]}.
          */

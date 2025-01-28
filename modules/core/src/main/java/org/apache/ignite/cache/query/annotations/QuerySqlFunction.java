@@ -45,7 +45,7 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cache.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
- * SQL function can be a table function. Result of table function is treated as a row set (a table) and can be used with
+ * SQL function can be a table function. Result of table function is treated as a row set (a table) and can be used by
  * other SQL operators.
  * <p>
  * Example usage:
@@ -117,7 +117,7 @@ public @interface QuerySqlFunction {
      * of the names must match number of the column types {@link #tableColumnTypes()} or be empty. If are empty while
      * {@link #tableColumnTypes()} is set, the default column names are used ('COL_1', 'COL_2', etc.).
      *
-     * @return Table column names if this function is a table function. Is empty to use the default names or if
+     * @return Table column names if this function is a table function. Or empty to use the default names or if
      * the function is not a table function.
      * @see #tableColumnTypes()
      */

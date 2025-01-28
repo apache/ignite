@@ -48,8 +48,8 @@ include::{javaFile}[tags=sql-function-query, indent=0]
 
 
 Custom SQL function can be a table function. Result of table function is treated as a row set (a table) and can be used
-with other SQL operators. Custom SQL function is also a public static method marked by the same `@QuerySqlFunction`
-annotation but with setting additional `tableColumnTypes` and optionally `tableColumnNames` parameters.
+by other SQL operators. Custom SQL function is also a public static method marked by the same `@QuerySqlFunction`
+annotation with additional parameters `tableColumnTypes` and optionally `tableColumnNames`.
 Table function must return `Iterable` as a row set. Each row can be represented by `Object[]` or
 by `Iterable` too. Row length must match the defined number of column types. Row value types must match the
 defined column types or can be assigned to them.

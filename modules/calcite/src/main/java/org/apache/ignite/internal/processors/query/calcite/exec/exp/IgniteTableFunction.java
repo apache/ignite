@@ -49,7 +49,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /**
      * Creates user-defined table function holder.
      *
-     * @param method The implementation method.
+     * @param method The implementatng method.
      * @param colTypes Column types of the returned table representation.
      * @param colNames Column names of the returned table representation. Of empty, the defaults are used ('COL_1', 'COL_2', etc.).
      * @param implementor Call implementor.
@@ -72,7 +72,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /**
      * Creates user-defined table function implementor and holder.
      *
-     * @param method The implementation method.
+     * @param method The implementating method.
      * @param colTypes Column types of the returned table representation.
      * @param colNames Column names of the returned table representation. Of empty, the defaults are used ('COL_1', 'COL_2', etc.).
      */
@@ -93,7 +93,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
 
     /** {@inheritDoc} */
     @Override public Type getElementType(List<?> arguments) {
-        // Calcite's {@link TableFunctionImpl} does a real invocation ({@link TableFunctionImpl#apply(List)}) to determine
+        // Calcite's {@link TableFunctionImpl} does real invocation ({@link TableFunctionImpl#apply(List)}) to determine
         // the type. The call might be long, 'heavy', affect some metrics and should not be executed at validation/planning.
         // We may check the argument number here but not their types. The types might be wrong, but converted further.
         if (F.isEmpty(arguments) && !F.isEmpty(method.getParameterTypes())
