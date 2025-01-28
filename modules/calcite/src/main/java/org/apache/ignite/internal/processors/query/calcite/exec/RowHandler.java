@@ -74,7 +74,7 @@ public interface RowHandler<Row> {
         /** */
         Row create(Object... fields);
 
-        /** @param rowContainer {@code Iteratable} or {@code Object[]}. */
+        /** @param rowContainer Row values holder. Must be an {@code Iteratable} or an {@code Object[]}. */
         default Row createByRowContainer(Object rowContainer) {
             assert rowContainer instanceof Iterable || rowContainer.getClass() == Object[].class;
 

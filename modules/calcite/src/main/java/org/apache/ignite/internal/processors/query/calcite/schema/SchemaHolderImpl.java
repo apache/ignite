@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -352,15 +350,20 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method mtd,
-        Class<?>[] tblColTypes, @Nullable String[] tblColNames) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        Function fun = F.isEmpty(tblColTypes)
-            ? IgniteScalarFunction.create(mtd)
-            : IgniteTableFunction.create(mtd, tblColTypes, tblColNames);
+        schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
 
-        schema.addFunction(name.toUpperCase(), fun);
+        rebuild();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,
+        @Nullable String[] colNames) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.addFunction(name.toUpperCase(), IgniteTableFunction.create(method, colTypes, colNames));
 
         rebuild();
     }

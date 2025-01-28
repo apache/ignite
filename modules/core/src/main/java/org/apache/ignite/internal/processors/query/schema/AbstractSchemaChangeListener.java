@@ -104,9 +104,14 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method mtd,
-        @Nullable Class<?>[] tblColTypes, @Nullable String[] tblColNames) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,
+        @Nullable String[] colNames) {
+
     }
 
     /** {@inheritDoc} */
