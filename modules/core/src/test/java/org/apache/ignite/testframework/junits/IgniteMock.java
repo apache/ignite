@@ -449,8 +449,7 @@ public class IgniteMock implements IgniteEx {
                 }
             };
 
-            if (marshaller instanceof BinaryMarshaller)
-                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
+            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {

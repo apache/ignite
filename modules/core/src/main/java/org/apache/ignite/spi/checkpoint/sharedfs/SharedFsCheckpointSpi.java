@@ -30,7 +30,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -226,10 +225,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         this.igniteInstanceName = igniteInstanceName;
 
-        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
-            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
-        else
-            marsh = ignite.configuration().getMarshaller();
+        marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
 
         folder = getNextSharedPath();
 
