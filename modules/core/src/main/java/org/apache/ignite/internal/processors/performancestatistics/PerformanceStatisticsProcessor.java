@@ -20,7 +20,13 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -41,9 +47,11 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.getSystemViewByName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PERFORMANCE_STATISTICS_ROTATE;
 
 /**
@@ -73,6 +81,20 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics process. */
     private DistributedProcess<Serializable, Serializable> rotateProc;
 
+    /** System views to collect after start. */
+    private final Queue<String> views = new ConcurrentLinkedQueue<>();
+
+    /** Listener to collect system views after start. */
+    private final PerformanceStatisticsStateListener sysViewLsnr = new PerformanceStatisticsStateListener() {
+        @Override public void onStarted() {
+            views.stream()
+                .map(name -> getSystemViewByName(ctx.systemView(), name))
+                .filter(Objects::nonNull)
+                .forEach(PerformanceStatisticsProcessor.this::systemView);
+            views.clear();
+        }
+    };
+
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
@@ -81,6 +103,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
         });
+        registerStateListener(sysViewLsnr);
     }
 
     /** {@inheritDoc} */
@@ -170,6 +193,21 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         write(writer -> writer.query(type, text, id, startTime, duration, success));
+    }
+
+    /**
+     * @param view System view to extract data from.
+     */
+    public void systemView(SystemView<?> view) {
+        AttributeToMapVisitor visitor = new AttributeToMapVisitor();
+
+        for (Object row : view) {
+            Map<String, String> data = new TreeMap<>();
+            visitor.data(data);
+            ((SystemView<Object>)view).walker().visitAll(row, visitor);
+
+            write(writer -> writer.systemView(view.name(), data));
+        }
     }
 
     /**
@@ -343,6 +381,11 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         if (enabled())
             stopWriter();
+    }
+
+    /** Add system views to collect after start. */
+    public void addSystemViews(List<String> views) {
+        this.views.addAll(views);
     }
 
     /** Starts or stops collecting statistics on metastorage update. */

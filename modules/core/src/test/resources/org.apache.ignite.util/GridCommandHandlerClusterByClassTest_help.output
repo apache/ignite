@@ -416,7 +416,11 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --defragmentation cancel
 
   Start collecting performance statistics in the cluster:
-    control.(sh|bat) --performance-statistics start
+    control.(sh|bat) --performance-statistics start [--system-views view1,view2,..] [--all-system-views]
+
+    Parameters:
+    --system-views view1,view2,..  - Comma-separated list of the system view names which should be collected.  Both "SQL" and "Java" styles of system view name are supported (e.g. SQL_TABLES and sql.tables will be handled similarly).
+    --all-system-views             - Collect all registered system views.
 
   Stop collecting performance statistics in the cluster:
     control.(sh|bat) --performance-statistics stop
