@@ -208,8 +208,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             1, "test", true);
 
         // Object type.
-        assertQuery("SELECT * from withClassType(1)")
+        assertQuery("SELECT * from withObjectType(1)")
             .returns(1, new Employer("emp1", 1000d))
+            .returns(10, new Employer("emp10", 10000d))
+            .check();
+        assertQuery("SELECT * from withObjectType(1) where EMP=?")
+            .withParams(new Employer("emp10", 10000d))
             .returns(10, new Employer("emp10", 10000d))
             .check();
     }
@@ -343,8 +347,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** User exception test. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, Employer.class}, tableColumnNames = {"ID", "EMP"})
-        public static Iterable<Collection<?>> withClassType(int i) {
+        @QuerySqlFunction(tableColumnTypes = {int.class, Object.class}, tableColumnNames = {"ID", "EMP"})
+        public static Iterable<Collection<?>> withObjectType(int i) {
             return Arrays.asList(
                 Arrays.asList(i, new Employer("emp" + i, i * 1000d)),
                 Arrays.asList(i * 10, new Employer("emp" + i * 10, i * 10000d))
