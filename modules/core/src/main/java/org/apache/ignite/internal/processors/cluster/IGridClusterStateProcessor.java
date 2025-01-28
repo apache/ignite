@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -130,9 +131,9 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     void onStateChangeError(Map<UUID, Exception> errs, StateChangeRequest req);
 
     /**
-     * @param req State change request.
+     * @param exchangeActions Exchange actions.
      */
-    void onStateChangeExchangeDone(StateChangeRequest req);
+    void onStateChangeExchangeDone(ExchangeActions exchangeActions);
 
     /**
      * @param blt New baseline topology.
