@@ -336,5 +336,18 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             this.name = name;
             this.salary = salary;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Employer employer = (Employer)o;
+
+            return name.equals(employer.name) && salary.equals(employer.salary);
+        }
     }
 }
