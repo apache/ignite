@@ -61,6 +61,8 @@ public class GridBinaryCacheEntryMemorySizeSelfTest extends GridCacheEntryMemory
         kernCtx.add(new GridDiscoveryManager(kernCtx));
 
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null);
+
+        marshCtx.setMarshallerMappingFileStoreDir(dirs().marshaller());
         marshCtx.onMarshallerProcessorStarted(kernCtx, null);
 
         marsh.setContext(marshCtx);
