@@ -27,14 +27,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -70,17 +67,15 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIgniteWalConverter() throws Exception {
-        String nodeFolder = createWal();
+        IgniteDirectories dirs = createWal();
 
         ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         PrintStream out = new PrintStream(outByte);
 
-        IgniteDirectories dirs = dirs(nodeFolder);
-
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            dirs.wal(),
+            dirs.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
             dirs.binaryMeta(),
             dirs.marshaller(),
@@ -105,7 +100,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
     /**
      * Populates a cache and returns the name of its node's folder.
      */
-    private String createWal() throws Exception {
+    private IgniteDirectories createWal() throws Exception {
         try (IgniteEx node = startGrid(0)) {
             node.cluster().state(ClusterState.ACTIVE);
 
@@ -114,7 +109,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
 
-            return node.context().pdsFolderResolver().resolveFolders().folderName();
+            return node.context().pdsFolderResolver().resolveDirectories();
         }
     }
 }

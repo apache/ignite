@@ -18,13 +18,19 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.nio.file.Paths;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
  * Class contains pathes to Ignite folder.
@@ -45,11 +51,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>
  * ❯ tree
- * .
+ * .                                                                            ← root (work directory, shared between all nodes).
  * ├── cp
  * │  └── sharedfs
  * │      └── BinaryMarshaller
- * ├── db
+ * ├── db                                                                       ← db (shared between all nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot
  * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta for node 0
  * │  │      └── 1645778359.bin
@@ -104,23 +110,23 @@ import org.jetbrains.annotations.Nullable;
  * │  └── wal
  * │      ├── archive
  * │      │  └── ignite_0
- * │      │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
- * │      │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
+ * │      │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                ← walArchive (node 0)
+ * │      │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                ← walArchive (node 1)
  * │      ├── cdc
- * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                    ← walCdc (node 0)
  * │      │      ├── lock
  * │      │      └── state
  * │      │          ├── cdc-caches-state.bin
  * │      │          ├── cdc-mappings-state.bin
  * │      │          └── cdc-types-state.bin
  *
- * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
- * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c
+ * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
+ * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
  * │          ├── 0000000000000000.wal
  * │          ├── 0000000000000001.wal
  * ...
  * │          └── 0000000000000009.wal
- * │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d
+ * │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                       ← wal (node 1)
  * ...
  * ├── diagnostic
  * ├── log
@@ -142,14 +148,26 @@ public class IgniteDirectories {
     /** Default path (relative to working directory) of marshaller mappings folder */
     public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
 
-    /** Path to the folder containing binary metadata. */
+    /** Root(work) directory. */
+    private final File root;
+
+    /** Path to the directory containing binary metadata. */
     private final File binaryMetaRoot;
 
-    /** Path to the folder containing binary metadata. */
+    /** Path to the directory containing binary metadata. */
     private final @Nullable File binaryMeta;
 
-    /** Path to the folder containing marshaller files. */
+    /** Path to the directory containing marshaller files. */
     private final File marshaller;
+
+    /** Path to the directory containing active WAL segments. */
+    private final File wal;
+
+    /** Path to the directory containing archive WAL segments. */
+    private final File walArchive;
+
+    /** Path to the directory containing archive WAL segments for CDC. */
+    private final File walCdc;
 
     /**
      * @param root Root directory.
@@ -157,9 +175,13 @@ public class IgniteDirectories {
     public IgniteDirectories(File root) {
         A.notNull(root, "Root directory");
 
+        this.root = root;
         marshaller = new File(root, DFLT_MARSHALLER_PATH);
         binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
         binaryMeta = null;
+        wal = null;
+        walArchive = null;
+        walCdc = null;
     }
 
     /**
@@ -167,6 +189,16 @@ public class IgniteDirectories {
      */
     public IgniteDirectories(String root) {
         this(new File(root));
+    }
+
+    /**
+     * Note, to calculate all field you need to specify {@code folderName}.
+     *
+     * @param cfg Ignite configuration.
+     * @see IgniteDirectories#IgniteDirectories(IgniteConfiguration, String)
+     */
+    public IgniteDirectories(IgniteConfiguration cfg) throws IgniteCheckedException {
+        this(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
     }
 
     /**
@@ -187,7 +219,7 @@ public class IgniteDirectories {
     }
 
     /**
-     * Root directory can be Ignite work directory, see {@link U#workDirectory(String, String)} and other methods.
+     * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
      *
      * @param root Root directory.
      * @param folderName Name of the folder for current node.
@@ -203,9 +235,64 @@ public class IgniteDirectories {
         A.notNull(root, "Root directory");
         A.notNullOrEmpty(folderName, "Node directory");
 
+        this.root = root;
         marshaller = new File(root, DFLT_MARSHALLER_PATH);
         binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
-        binaryMeta = folderName == null ? null : Paths.get(binaryMetaRoot.getAbsolutePath(), folderName).toFile();
+        binaryMeta = folderName == null ? null : new File(binaryMetaRoot.getAbsolutePath(), folderName);
+        wal = folderName == null ? null : new File(new File(root, DFLT_WAL_PATH), folderName);
+        walArchive = folderName == null ? null : new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
+        walCdc = folderName == null ? null : new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
+    }
+
+    /**
+     * Creates instance based on config and folder name.
+     *
+     * @param cfg Ignite configuration to get parameter from.
+     * @param folderName Name of the folder for current node.
+     *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     *
+     * @see IgniteConfiguration#getWorkDirectory()
+     * @see IgniteConfiguration#setWorkDirectory(String)
+     * @see U#workDirectory(String, String)
+     * @see U#resolveWorkDirectory(String, String, boolean, boolean)
+     * @see U#IGNITE_WORK_DIR
+     */
+    public IgniteDirectories(IgniteConfiguration cfg, String folderName) {
+        A.notNull(cfg, "config");
+        A.notNullOrEmpty(folderName, "Node directory");
+
+        try {
+            root = new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        marshaller = new File(root, DFLT_MARSHALLER_PATH);
+        binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
+        binaryMeta = new File(binaryMetaRoot, folderName);
+
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        A.notNull(dsCfg, "Data storage configuration");
+
+        wal = resolveDirectory(folderName, dsCfg.getWalPath());
+        walArchive = resolveDirectory(folderName, dsCfg.getWalArchivePath());
+        walCdc = resolveDirectory(folderName, dsCfg.getCdcWalPath());
+    }
+
+    /**
+     * @return Path to the {@code root} directory.
+     */
+    public File root() {
+        return root;
+    }
+
+    /**
+     * @return Path to the {@code db} directory.
+     */
+    public File db() {
+        return new File(root, DB_DEFAULT_FOLDER);
     }
 
     /**
@@ -226,16 +313,19 @@ public class IgniteDirectories {
         return marshaller;
     }
 
-    /**
-     * Creates {@link #binaryMeta()} directory.
-     * @return Created directory.
-     * @see #binaryMeta()
-     */
-    public File mkdirBinaryMetaRoot() {
-        if (!U.mkdirs(binaryMetaRoot))
-            throw new IgniteException("Could not create root directory for binary metadata: " + binaryMetaRoot);
+    /** @return Path to the directory containing active WAL segments. */
+    public File wal() {
+        return wal;
+    }
 
-        return binaryMetaRoot;
+    /** @return Path to the directory containing archive WAL segments. */
+    public File walArchive() {
+        return walArchive;
+    }
+
+    /** @return Path to the directory containing archive WAL segments for CDC. */
+    public File walCdc() {
+        return walCdc;
     }
 
     /**
@@ -243,11 +333,17 @@ public class IgniteDirectories {
      * @return Created directory.
      * @see #binaryMeta()
      */
-    public File mkdirBinaryMeta() {
-        if (!U.mkdirs(binaryMeta))
-            throw new IgniteException("Could not create directory for binary metadata: " + binaryMeta);
+    public File mkdirBinaryMetaRoot() throws IgniteCheckedException {
+        return mkdir(binaryMetaRoot, "root binary metadata");
+    }
 
-        return binaryMeta;
+    /**
+     * Creates {@link #binaryMeta()} directory.
+     * @return Created directory.
+     * @see #binaryMeta()
+     */
+    public File mkdirBinaryMeta() throws IgniteCheckedException {
+        return mkdir(binaryMeta, "binary metadata");
     }
 
     /**
@@ -255,11 +351,8 @@ public class IgniteDirectories {
      * @return Created directory.
      * @see #marshaller()
      */
-    public File mkdirMarshaller() {
-        if (!U.mkdirs(marshaller))
-            throw new IgniteException("Could not create directory for marshaller mappings: " + marshaller);
-
-        return marshaller;
+    public File mkdirMarshaller() throws IgniteCheckedException {
+        return mkdir(marshaller, "marshaller mappings");
     }
 
     /**
@@ -292,6 +385,40 @@ public class IgniteDirectories {
      */
     public static boolean containsMarshaller(File f) {
         return f.getAbsolutePath().contains(DFLT_MARSHALLER_PATH);
+    }
+
+    /**
+     * Creates a directory specified by the given arguments.
+     *
+     * @param folderName Local node consistent ID.
+     * @param cfg        Configured directory path, may be {@code null}.
+     * @return Initialized directory.
+     * @throws IgniteCheckedException If failed to initialize directory.
+     */
+    private File resolveDirectory(String folderName, String cfg) {
+        File sharedBetweenNodesDir = new File(cfg);
+
+        if (!sharedBetweenNodesDir.isAbsolute())
+            sharedBetweenNodesDir = new File(root, cfg);
+
+        return new File(sharedBetweenNodesDir, folderName);
+    }
+
+    /**
+     * @param dir Directory to create
+     * @throws IgniteCheckedException
+     */
+    private File mkdir(File dir, String name) throws IgniteCheckedException {
+        if (!U.mkdirs(dir))
+            throw new IgniteException("Could not create directory for " + name + ": " + dir);
+
+        if (!dir.canRead())
+            throw new IgniteCheckedException("Cannot read from directory: " + dir);
+
+        if (!dir.canWrite())
+            throw new IgniteCheckedException("Cannot write to directory: " + dir);
+
+        return dir;
     }
 
     /** {@inheritDoc} */

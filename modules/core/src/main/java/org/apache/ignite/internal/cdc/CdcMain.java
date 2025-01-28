@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -226,9 +225,6 @@ public class CdcMain implements Runnable {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Change Data Capture directory. */
-    private Path cdcDir;
-
     /** Database directory. */
     private File dbDir;
 
@@ -325,10 +321,10 @@ public class CdcMain implements Runnable {
         }
 
         try (CdcFileLockHolder lock = lockPds()) {
-            Files.createDirectories(cdcDir.resolve(STATE_DIR));
+            Files.createDirectories(dirs.walCdc().toPath().resolve(STATE_DIR));
 
             if (log.isInfoEnabled()) {
-                log.info("Change Data Capture [dir=" + cdcDir + ']');
+                log.info("Change Data Capture [dir=" + dirs.walCdc() + ']');
                 log.info("Ignite node Binary meta [dir=" + dirs.binaryMeta() + ']');
                 log.info("Ignite node Marshaller [dir=" + dirs.marshaller() + ']');
             }
@@ -340,7 +336,7 @@ public class CdcMain implements Runnable {
             try {
                 kctx.resource().injectGeneric(consumer.consumer());
 
-                state = createState(cdcDir.resolve(STATE_DIR));
+                state = createState(dirs.walCdc().toPath().resolve(STATE_DIR));
 
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
@@ -426,7 +422,7 @@ public class CdcMain implements Runnable {
     private void initMetrics() {
         mreg.objectMetric(BINARY_META_DIR, String.class, "Binary meta directory").value(dirs.binaryMeta().getAbsolutePath());
         mreg.objectMetric(MARSHALLER_DIR, String.class, "Marshaller directory").value(dirs.marshaller().getAbsolutePath());
-        mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(cdcDir.toFile().getAbsolutePath());
+        mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(dirs.walCdc().getAbsolutePath());
 
         curSegmentIdx = mreg.longMetric(CUR_SEG_IDX, "Current segment index");
         committedSegmentIdx = mreg.longMetric(COMMITTED_SEG_IDX, "Committed segment index");
@@ -458,7 +454,7 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
-        dirs = settings.toIgniteDirectories();
+        dirs = new IgniteDirectories(igniteCfg, settings.folderName());
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -491,7 +487,7 @@ public class CdcMain implements Runnable {
                     return;
                 }
 
-                try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
+                try (Stream<Path> cdcFiles = Files.list(dirs.walCdc().toPath())) {
                     Set<Path> exists = new HashSet<>();
 
                     Iterator<Path> segments = cdcFiles
@@ -889,35 +885,20 @@ public class CdcMain implements Runnable {
             return null;
         }
 
-        File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
+        String folderName = dbStoreDirWithSubdirectory.getName();
 
-        if (!cdcRoot.isAbsolute()) {
-            cdcRoot = new File(
-                igniteCfg.getWorkDirectory(),
-                igniteCfg.getDataStorageConfiguration().getCdcWalPath()
-            );
-        }
+        dirs = new IgniteDirectories(igniteCfg, folderName);
 
-        if (!cdcRoot.exists()) {
-            log.warning("CDC root directory not exists. Should be created by Ignite Node. " +
-                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + cdcRoot + ']');
-
-            return null;
-        }
-
-        Path cdcDir = Paths.get(cdcRoot.getAbsolutePath(), dbStoreDirWithSubdirectory.getName());
-
-        if (!Files.exists(cdcDir)) {
+        if (!dirs.walCdc().exists()) {
             log.warning("CDC directory not exists. Should be created by Ignite Node. " +
-                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + cdcDir + ']');
+                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + dirs.walCdc() + ']');
 
             return null;
         }
 
-        this.cdcDir = cdcDir;
         this.dbDir = dbStoreDirWithSubdirectory;
 
-        CdcFileLockHolder lock = new CdcFileLockHolder(cdcDir.toString(), "cdc.lock", log);
+        CdcFileLockHolder lock = new CdcFileLockHolder(dirs.walCdc().toString(), "cdc.lock", log);
 
         try {
             lock.tryLock(cdcCfg.getLockTimeout());
@@ -928,7 +909,7 @@ public class CdcMain implements Runnable {
             U.closeQuiet(lock);
 
             if (log.isInfoEnabled()) {
-                log.info("Unable to acquire lock to lock CDC folder [dir=" + cdcRoot + "]" + NL +
+                log.info("Unable to acquire lock to lock CDC folder [dir=" + dirs.walCdc() + "]" + NL +
                     "Reason: " + e.getMessage());
             }
 

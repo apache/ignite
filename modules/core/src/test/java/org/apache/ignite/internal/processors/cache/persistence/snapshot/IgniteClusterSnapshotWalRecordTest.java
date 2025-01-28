@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -39,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -226,13 +225,10 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        String subfolderName = U.maskForFileName(ign.localNode().consistentId().toString());
-
-        File wals = workPath.resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
-        File archive = workPath.resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
+        IgniteDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(archive, wals)
+            .filesOrDirs(dirs.walArchive(), dirs.wal())
             .sharedContext(ign.context().cache().context());
 
         return factory.iterator(params);

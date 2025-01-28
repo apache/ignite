@@ -193,7 +193,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
@@ -770,22 +769,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String folderName = pdsSettings.folderName();
 
         try {
-            IgniteDirectories dirs = new IgniteDirectories(snpDir.getAbsolutePath(), folderName);
+            IgniteDirectories snpDirs = new IgniteDirectories(snpDir.getAbsolutePath(), folderName);
 
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
             File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
 
-            U.delete(dirs.binaryMeta());
+            U.delete(snpDirs.binaryMeta());
             U.delete(nodeDbDir);
             U.delete(smf);
 
-            deleteDirectory(dirs.binaryMetaRoot());
-            deleteDirectory(dirs.marshaller());
+            deleteDirectory(snpDirs.binaryMetaRoot());
+            deleteDirectory(snpDirs.marshaller());
 
-            File db = new File(snpDir, DB_DEFAULT_FOLDER);
-
-            db.delete();
-            snpDir.delete();
+            snpDirs.db().delete();
+            snpDirs.root().delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -868,9 +865,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return WALs directory for specified incremental snapshot.
      */
     public static File incrementalSnapshotWalsDir(File incSnpDir, String consId) {
-        String folderName = U.maskForFileName(consId);
-
-        return incSnpDir.toPath().resolve(DFLT_WAL_PATH).resolve(folderName).toFile();
+        return new IgniteDirectories(incSnpDir, U.maskForFileName(consId)).wal();
     }
 
     /**

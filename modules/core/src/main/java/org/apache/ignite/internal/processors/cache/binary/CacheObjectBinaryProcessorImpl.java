@@ -227,7 +227,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (!ctx.clientNode()) {
                 if (CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null) {
                     binaryMetadataFileStoreDir =
-                        new IgniteDirectories(ctx.config().getWorkDirectory(), ctx.pdsFolderResolver().resolveFolders().folderName())
+                        new IgniteDirectories(ctx.config(), ctx.pdsFolderResolver().resolveFolders().folderName())
                             .mkdirBinaryMeta();
                 }
 
