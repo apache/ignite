@@ -77,7 +77,7 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
             /**
              * Wraps a column collection to {@code Object[]} if requred using the knowladge of expected column number.
              *
-             * @param rowContainer Row values holder. Must be an {@code Iteratable} or an {@code Object[]}.
+             * @param rowContainer Row values holder. Must be an {@code Iterable} or an {@code Object[]}.
              */
             @Override public Object[] createByRowContainer(Object rowContainer) {
                 assert rowContainer instanceof Iterable || rowContainer.getClass() == Object[].class;

@@ -77,7 +77,7 @@ public interface RowHandler<Row> {
         /**
          * Wraps a column collection to {@code Object[]} if requred.
          *
-         * @param rowContainer Row values holder. Must be an {@code Iteratable} or an {@code Object[]}.
+         * @param rowContainer Row values holder. Must be an {@code Iterable} or an {@code Object[]}.
          */
         default Row createByRowContainer(Object rowContainer) {
             assert rowContainer instanceof Iterable || rowContainer.getClass() == Object[].class;

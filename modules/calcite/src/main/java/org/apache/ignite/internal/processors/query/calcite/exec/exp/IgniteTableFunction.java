@@ -122,7 +122,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         }
 
         if (!Iterable.class.isAssignableFrom(mtd.getReturnType()))
-            raiseValidationError(mtd, "The method is expected to return a collection (iteratable).");
+            raiseValidationError(mtd, "The method is expected to return a collection (iterable).");
     }
 
     /**

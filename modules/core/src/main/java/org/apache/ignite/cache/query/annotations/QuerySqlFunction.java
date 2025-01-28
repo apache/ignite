@@ -45,6 +45,35 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cache.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
+ * SQL function can be a table function. Result of a table function is treated as a row set (a table) and can be used with
+ * other SQL operators.
+ * <p>
+ * Example usage:
+ * <pre name="code" class="java">
+ *     public class MyTableFunctions {
+ *         &#64;QuerySqlFunction(tableColumnTypes = {Float.class, String.class}, tableColumnNames = {&#34;F_VAL&#34;, &#34;S_VAL&#34;})
+ *         public static Iterable&#60;Object[]&#62; my_table(int i, Float f, String str) {
+ *             return Arrays.asList(
+ *                 new Object[]{f, &#34;code_&#34; + (i * 10) + &#34;: &#34; + str},
+ *                 new Object[]{null, &#34;code_&#34; + (i * 20) + &#34;: &#34; + str},
+ *                 new Object[]{f,  &#34;code_&#34; + (i * 30) + &#34;: &#34; + str}
+ *             );
+ *         }
+ *     }
+ *
+ *     // Register in CacheConfiguration.
+ *     cacheCfg.setSqlFunctionClasses(MyTableFunctions.class);
+ *
+ *     // And use in queries.
+ *     cache.query(new SqlFieldsQuery("select S_VAL from MY_TABLE(1, 5.0f, "ext") where F_VAL is not null"));
+ * </pre>
+ * <p>
+ * To make the function a table function, define at least the table column types. Optionally, the column names can be also set.
+ * <p>
+ * A table function must return an {@code Iterable} as a row set. Each row can be represented by an {@code Object[]} or
+ * by an {@code Iterable} too. Row length must match the defined number of column types. Row value types must match the
+ * defined column types or can be assigned to them.
+ * <p>
  * SQL functions can use attributes set on client side:
  * <pre name="code" class="java">
  *     public class MyFunctions {
@@ -57,8 +86,9 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *         }
  *     }
  * </pre>
+ * <p>
  * Note, accessing to the attributes is available in the Calcite query engine only. In a such case a class must have public
- * zero-args constructor.
+ * zero-args constructor. The table functions also are available currently only with Calcite.
  *
  * @see SessionContextProviderResource
  */
@@ -78,7 +108,7 @@ public @interface QuerySqlFunction {
      * Makes the function a table function and defines column types of the returned SQL table representation.
      *
      * @return Column types of the table if this function is a table function. By default, is empty meaning the function
-     * doesn't return a SQL table.
+     * is not a table function.
      */
     Class<?>[] tableColumnTypes() default {};
 
