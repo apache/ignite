@@ -23,7 +23,9 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -63,5 +65,15 @@ public class IgniteRexBuilder extends RexBuilder {
         }
 
         return super.makeLiteral(o, type, typeName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RexNode ensureType(RelDataType type, RexNode node, boolean matchNullability) {
+        // Do not create additional CAST node for NULL'ed node's value. Any type may get NULL value if is nullable
+        // or if the nullability matching is not required.
+        if (node.getType().getFamily() == SqlTypeFamily.NULL && (type.isNullable() || !matchNullability))
+            return node;
+
+        return super.ensureType(type, node, matchNullability);
     }
 }
