@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.marshaller.optimized;
 
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
@@ -28,6 +29,8 @@ public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTe
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
         OptimizedMarshaller m = new OptimizedMarshaller(false);
+
+        m.setContext(new MarshallerContextTestImpl());
 
         m.setPoolSize(8);
 
