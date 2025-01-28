@@ -39,9 +39,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.metric.LongValueMetric;
 import org.apache.ignite.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +58,7 @@ public class CacheGroupMetricsImpl {
     private final CacheGroupContext ctx;
 
     /** Number of local partitions initialized on current node. */
-    private final AtomicLongMetric initLocPartitionsNum;
+    private final LongValueMetric initLocPartitionsNum;
 
     /** Memory page metrics. Will be {@code null} on client nodes. */
     @Nullable
@@ -91,7 +90,7 @@ public class CacheGroupMetricsImpl {
 
         persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
-        MetricRegistryImpl mreg = kernalCtx.metric().registry(metricGroupName());
+        MetricRegistry mreg = kernalCtx.metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
