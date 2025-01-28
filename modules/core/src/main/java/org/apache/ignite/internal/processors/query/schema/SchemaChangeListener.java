@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -136,10 +137,12 @@ public interface SchemaChangeListener {
      * @param schemaName Schema name.
      * @param name Function name.
      * @param deterministic Specifies if the function is deterministic (result depends only on input parameters)
-     * @param tableColumnTypes Column types if the function is table. If {@code null} or empty, ignored.
-     * @param method Public static method, implementing this function.
+     * @param tblColTypes Column types if the function is table. If {@code null} or empty, ignored.
+     * @param tblColNames Column names if the function is table. If {@code null} or empty, ignored.
+     * @param mtd Public static method, implementing this function.
      */
-    public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method, Class<?>[] tableColumnTypes);
+    public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method mtd,
+        @Nullable Class<?>[] tblColTypes, @Nullable String[] tblColNames);
 
     /**
      * Callback on system view creation.

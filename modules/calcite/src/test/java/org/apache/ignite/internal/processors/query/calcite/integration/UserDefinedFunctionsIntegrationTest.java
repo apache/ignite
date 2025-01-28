@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -52,8 +53,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(8, 9, 10)
             .check();
 
-        assertQuery("SELECT * from tbl_fun_it(?) WHERE COL_1=3").withParams(1)
-            .returns(2, 3, 4)
+        assertQuery("SELECT * from tbl_fun_it(?) WHERE COL_1=4").withParams(2)
+            .returns(3, 4, 5)
             .check();
 
         assertQuery("SELECT COL_0, COL_2 from tbl_fun_it(?) WHERE COL_1=3").withParams(1)
@@ -64,6 +65,28 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(2, 3, 4)
             .returns(5, 6, 7)
             .returns(8, 9, 10)
+            .check();
+
+        assertQuery("SELECT * from tbl_fun_arr_and_it(1) WHERE COL_0>4 AND COL_1>? AND COL_2>6").withParams(5)
+            .returns(5, 6, 7)
+            .returns(8, 9, 10)
+            .check();
+
+        assertQuery("SELECT * from tbl_fun_boxing(1, ?, ?, 4.0::FLOAT)").withParams(1, 4.0d)
+            .returns(1, 1, 4.0d, 4.0d)
+            .check();
+
+        assertQuery("SELECT * from tbl_fun_boxing(1, 1, 2, 2)")
+            .returns(1, 1, 2.0d, 2.0d)
+            .check();
+
+        assertQuery("SELECT * from tbl_fun_boxing(?, ?, ?, ?)").withParams(1, 1, 2.0d, 2.0d)
+            .returns(1, 1, 2.0d, 2.0d)
+            .check();
+
+        assertQuery("SELECT STR_COL from tbl_fun_col_names(1001) where INT_COL>1000")
+            .returns("1001")
+            .returns("empty")
             .check();
     }
 
@@ -151,7 +174,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     public static class TableFunctions {
         /** */
-        @QuerySqlFunction(tableFunctionColumnTypes = {int.class, int.class, int.class})
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
         public static Iterable<Collection<?>> tbl_fun_it(int x) {
             return Arrays.asList(
                 Arrays.asList(x + 1, x + 2, x + 3),
@@ -161,12 +184,37 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** */
-        @QuerySqlFunction(tableFunctionColumnTypes = {int.class, int.class, int.class})
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
         public static Iterable<Object[]> tbl_fun_arr(int x) {
             return Arrays.asList(
                 new Object[] {x + 1, x + 2, x + 3},
                 new Object[] {x + 4, x + 5, x + 6},
                 new Object[] {x + 7, x + 8, x + 9}
+            );
+        }
+
+        /** */
+        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        public static Iterable<?> tbl_fun_arr_and_it(int x) {
+            return Arrays.asList(
+                new Object[] {x + 1, x + 2, x + 3},
+                Arrays.asList(x + 4, x + 5, x + 6),
+                new Object[] {x + 7, x + 8, x + 9}
+            );
+        }
+
+        /** */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, int.class, Double.class, double.class})
+        public static Iterable<?> tbl_fun_boxing(int i1, Integer i2, double d1, Double d2) {
+            return List.of(Arrays.asList(i1, i2, d1, d2));
+        }
+
+        /** */
+        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "STR_COL"})
+        public static Iterable<?> tbl_fun_col_names(int i) {
+            return Arrays.asList(
+                Arrays.asList(i, "" + i),
+                Arrays.asList(i * 10, "empty")
             );
         }
     }

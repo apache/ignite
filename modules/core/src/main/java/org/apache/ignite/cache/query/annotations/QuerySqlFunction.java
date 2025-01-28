@@ -75,12 +75,24 @@ public @interface QuerySqlFunction {
     String alias() default "";
 
     /**
-     * Makes the function a table function and defines column types of the returned SQL table.
+     * Makes the function a table function and defines column types of the returned SQL table. Number of the names must
+     * match number of the column types {@link #tableColumnNames()}.
      *
      * @return Column types of the table if this function is a table function. By default, is empty meaning that the function
      * doesn't return SQL table.
+     * @see #tableColumnNames()
      */
-    Class<?>[] tableFunctionColumnTypes() default {};
+    Class<?>[] tableColumnTypes() default {};
+
+    /**
+     * Makes the function a table function and defines column types of the returned SQL table. Number of the names must
+     * match number of the column types {@link #tableColumnTypes()}.
+     *
+     * @return Column names of the table if this function is a table function. By default, is empty meaning that the function
+     * doesn't return SQL table.
+     * @see #tableColumnTypes()
+     */
+    String[] tableColumnNames() default {};
 
     /**
      * Specifies if the function is deterministic (result depends only on input parameters).

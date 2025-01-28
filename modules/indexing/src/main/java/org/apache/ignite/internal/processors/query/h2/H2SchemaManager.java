@@ -221,16 +221,22 @@ public class H2SchemaManager implements SchemaChangeListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schema, String name, boolean deterministic, Method method, Class<?>[] tableColumnTypes) {
-        if (!Modifier.isStatic(method.getModifiers())) {
+    @Override public void onFunctionCreated(String schema, String name, boolean deterministic, Method mtd,
+        @Nullable Class<?>[] tblColTypes, @Nullable String[] tblColNames) {
+        if (!F.isEmpty(tblColTypes) || !F.isEmpty(tblColNames)) {
+            log.warning("Skip creating SQL table function '" + name + "' in H2 engine. Table functions isn't supported yet");
+
+            return;
+        }
+
+        if (!Modifier.isStatic(mtd.getModifiers())) {
             log.warning("Skip creating SQL function '" + name + "' in H2 engine because it is not static.");
 
             return;
         }
 
         try {
-            createSqlFunction(schema, name, deterministic,
-                method.getDeclaringClass().getName() + '.' + method.getName());
+            createSqlFunction(schema, name, deterministic, mtd.getDeclaringClass().getName() + '.' + mtd.getName());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to create database function: " + name, e);

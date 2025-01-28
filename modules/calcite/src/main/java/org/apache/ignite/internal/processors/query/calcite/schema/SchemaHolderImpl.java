@@ -352,13 +352,13 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method,
-        Class<?>[] tableColumnTypes) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method mtd,
+        Class<?>[] tblColTypes, @Nullable String[] tblColNames) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        Function fun = F.isEmpty(tableColumnTypes)
-            ? IgniteScalarFunction.create(method)
-            : IgniteTableFunction.create(method, tableColumnTypes);
+        Function fun = F.isEmpty(tblColTypes)
+            ? IgniteScalarFunction.create(mtd)
+            : IgniteTableFunction.create(mtd, tblColTypes, tblColNames);
 
         schema.addFunction(name.toUpperCase(), fun);
 

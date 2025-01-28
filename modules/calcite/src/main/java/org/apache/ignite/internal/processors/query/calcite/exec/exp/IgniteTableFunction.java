@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,50 +36,50 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class IgniteTableFunction extends ReflectiveFunctionBase implements TableFunction, ImplementableFunction {
     /** */
-    private final CallImplementor implementor;
+    private final CallImplementor impl;
 
     /** */
-    private final Class<?>[] columnTypes;
+    private final Class<?>[] colTypes;
 
     /** */
-    private final List<String> columnNames;
+    @Nullable private final List<String> colNames;
 
     /** */
-    private IgniteTableFunction(Method method, Class<?>[] columnTypes, @Nullable List<String> columnNames, CallImplementor implementor) {
-        super(method);
+    private IgniteTableFunction(Method mtd, Class<?>[] colTypes, @Nullable String[] colNames, CallImplementor impl) {
+        super(mtd);
 
-        validate(method, columnTypes, columnNames);
+        validate(mtd, colTypes, colNames);
 
-        this.implementor = implementor;
-        this.columnTypes = columnTypes;
+        this.impl = impl;
+        this.colTypes = colTypes;
 
-        this.columnNames = columnNames == null ? new ArrayList<>(columnTypes.length) : columnNames;
+        this.colNames = F.isEmpty(colNames) ? new ArrayList<>(colTypes.length) : Arrays.asList(colNames);
 
-        if (F.isEmpty(columnNames)) {
-            for (Class<?> cl : columnTypes)
-                this.columnNames.add("COL_" + this.columnNames.size());
+        if (F.isEmpty(colNames)) {
+            for (int i = 0; i < colTypes.length; ++i)
+                this.colNames.add("COL_" + i);
         }
     }
 
     /** */
-    public static Function create(Method method, Class<?>[] tableColumnTypes) {
-        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
+    public static Function create(Method mtd, Class<?>[] colTypes, @Nullable String[] colNames) {
+        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(mtd), NullPolicy.NONE, false);
 
-        return new IgniteTableFunction(method, tableColumnTypes, null, impl);
+        return new IgniteTableFunction(mtd, colTypes, colNames, impl);
     }
 
     /** {@inheritDoc} */
     @Override public CallImplementor getImplementor() {
-        return implementor;
+        return impl;
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, List<?> arguments) {
         JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
 
-        List<RelDataType> converted = Stream.of(columnTypes).map(cl -> tf.toSql(tf.createType(cl))).collect(Collectors.toList());
+        List<RelDataType> converted = Stream.of(colTypes).map(cl -> tf.toSql(tf.createType(cl))).collect(Collectors.toList());
 
-        return typeFactory.createStructType(converted, columnNames);
+        return typeFactory.createStructType(converted, colNames);
     }
 
     /** {@inheritDoc} */
@@ -97,74 +98,16 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
     }
 
     /** */
-    private static void validate(Method method, Class<?>[] columnTypes, List<String> columnNames) {
-        if (F.isEmpty(columnTypes))
+    private static void validate(Method mtd, Class<?>[] colTypes, String[] colNames) {
+        if (F.isEmpty(colTypes))
             throw new IllegalArgumentException("Column types of the table cannot be empty.");
 
-        if (!F.isEmpty(columnNames) && columnTypes.length != columnNames.size()) {
-            throw new IllegalArgumentException("Number of the table column names [" + columnNames.size() + "] must either " +
-                "be empty or match number of the column types [" + columnTypes.length + "].");
+        if (!F.isEmpty(colNames) && colTypes.length != colNames.length) {
+            throw new IllegalArgumentException("Number of the table column names [" + colNames.length + "] must either " +
+                "be empty or match number of the column types [" + colTypes.length + "].");
         }
 
-        if (!Iterable.class.isAssignableFrom(method.getReturnType()))
+        if (!Iterable.class.isAssignableFrom(mtd.getReturnType()))
             throw new IllegalArgumentException("The method is expected to return a collection (iteratable).");
     }
-
-//    /** */
-//    public static class ObjectArrayResultImplementor extends ReflectiveCallNotNullImplementor {
-//        /** */
-//        private static final Method CONVETER_MTD = lookupMethod(ObjectArrayResultImplementor.class,
-//            "convertToObjectArrayResult", Object.class, int.class);
-//
-//        /** */
-//        private final int columnsNum;
-//
-//        /** */
-//        public ObjectArrayResultImplementor(Method original, int columnsNum) {
-//            super(original);
-//
-//            this.columnsNum = columnsNum;
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public Expression implement(RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands) {
-//            Expression expr = super.implement(translator, call, translatedOperands);
-//
-//            expr = Expressions.call(CONVETER_MTD, expr, Expressions.constant(columnsNum, int.class));
-//
-//            return expr;
-//        }
-//
-//        /**
-//         * Currently, we use only a {@code Object[]} row handler. Especially a handler of {@code Object...}.
-//         *
-//         * @see RowHandler.RowFactory#create(Object...)
-//         * @see ArrayRowHandler#INSTANCE
-//         */
-//        public static @Nullable Object[] convertToObjectArrayResult(Object originRes, int expectedColumnNum) {
-//            if (originRes == null)
-//                return null;
-//
-//            if (originRes.getClass() == Object[].class)
-//                return (Object[])originRes;
-//
-//            if (originRes instanceof Iterable) {
-//                Iterator<Object> it = ((Iterable<Object>)originRes).iterator();
-//
-//                int cnt = 0;
-//
-//                Object[] converted = new Object[expectedColumnNum];
-//
-//                while (it.hasNext())
-//                    converted[cnt++] = it.next();
-//
-//                assert cnt == expectedColumnNum;
-//
-//                return converted;
-//            }
-//
-//            throw new IllegalArgumentException("Unable to convert user-defined table function's result to an Object[]. " +
-//                "The result is neither Iteratable or object array.");
-//        }
-//    }
 }
