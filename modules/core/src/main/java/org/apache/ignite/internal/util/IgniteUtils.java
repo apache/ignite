@@ -3004,7 +3004,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets a hex string representation of the given long value.
+     * Gets a hex string representation of the given int value.
      *
      * @param val Value to convert to string.
      * @return Hex string.
