@@ -31,6 +31,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.TableFunction;
 import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,7 +102,7 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
     /** */
     private static void validate(Method mtd, Class<?>[] colTypes, String[] colNames) {
         if (F.isEmpty(colTypes))
-            raiseValidationError(mtd, "Column types of the table cannot be empty.");
+            raiseValidationError(mtd, "Column types cannot be empty.");
 
         if (!F.isEmpty(colNames)) {
             if (colTypes.length != colNames.length) {
@@ -122,6 +123,6 @@ public class IgniteTableFunction extends ReflectiveFunctionBase implements Table
         String mtdSign = mtd.getName() + '(' + Stream.of(mtd.getParameterTypes()).map(Class::getSimpleName)
             .collect(Collectors.joining(", ")) + ')';
 
-        throw new IllegalArgumentException("Unable to create table function for method '" + mtdSign + "'. " + errPostfix);
+        throw new IgniteSQLException("Unable to create table function for method '" + mtdSign + "'. " + errPostfix);
     }
 }

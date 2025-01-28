@@ -25,15 +25,31 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 /**
  * Integration test for user defined functions.
  */
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Log listener. */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (igniteInstanceName.endsWith("0"))
+            cfg.setGridLogger(listeningLog);
+
+        return cfg;
+    }
+
     /** */
     @Test
     public void testFunctions() throws Exception {
@@ -173,6 +189,14 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     @Test
     public void testIncorrentTableFunctions() throws Exception {
+        LogListener logChecker0 = LogListener.matches("One or more column names is not unique")
+            .andMatches("either be empty or match the number of column types")
+            .andMatches("The method is expected to return a collection (iteratable)")
+            .andMatches("Column types cannot be empty")
+            .build();
+
+        listeningLog.registerListener(logChecker0);
+
         IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
             .setSqlSchema("PUBLIC")
             .setSqlFunctionClasses(IncorrectTableFunctions.class)
@@ -188,6 +212,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * from emp WHERE SALARY >= 2")
             .returns("Roman1", 2d)
             .check();
+
+        logChecker0.check(getTestTimeout());
 
         assertThrows("SELECT * FROM tbl_fun_dupl_col_nm", SqlValidatorException.class, "not found");
 
@@ -288,7 +314,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             System.err.println("Test value: " + i);
         }
 
-        /** Wrong return type 2. */
+        /** Empty column types. */
         @QuerySqlFunction(tableColumnNames = {"INT_COL", "STR_COL"})
         public static Collection<?> tbl_fun_wrong_col_types(int i, String s) {
             return Arrays.asList(
