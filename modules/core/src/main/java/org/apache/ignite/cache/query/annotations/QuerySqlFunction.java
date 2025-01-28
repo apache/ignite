@@ -45,7 +45,7 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cache.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
- * SQL function can be a table function. Result of a table function is treated as a row set (a table) and can be used with
+ * SQL function can be a table function. Result of table function is treated as a row set (a table) and can be used with
  * other SQL operators.
  * <p>
  * Example usage:
@@ -70,8 +70,8 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  * <p>
  * To make the function a table function, define at least the table column types. Optionally, the column names can be also set.
  * <p>
- * A table function must return an {@code Iterable} as a row set. Each row can be represented by an {@code Object[]} or
- * by an {@code Iterable} too. Row length must match the defined number of column types. Row value types must match the
+ * Table function must return {@code Iterable} as a row set. Each row can be represented by {@code Object[]} or
+ * by {@code Iterable} too. Row length must match the defined number of column types. Row value types must match the
  * defined column types or can be assigned to them.
  * <p>
  * SQL functions can use attributes set on client side:

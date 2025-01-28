@@ -46,4 +46,23 @@ Once you have deployed a cache with the above configuration, you can call the cu
 include::{javaFile}[tags=sql-function-query, indent=0]
 ----
 
+
+Custom SQL function can be a table function. Result of table function is treated as a row set (a table) and can be used
+with other SQL operators. Custom SQL function is also a public static method marked by the same `@QuerySqlFunction`
+annotation but with setting additional `tableColumnTypes` and optionally `tableColumnNames` parameters.
+Table function must return `Iterable` as a row set. Each row can be represented by `Object[]` or
+by `Iterable` too. Row length must match the defined number of column types. Row value types must match the
+defined column types or can be assigned to them.
+
+[source,java]
+----
+include::{javaFile}[tags=sql-table-function-example, indent=0]
+----
+[source,java]
+----
+include::{javaFile}[tags=sql-table-function-config-query, indent=0]
+----
+NOTE: The table functions also are available currently only with Calcite.
+
+
 NOTE: Classes registered with `CacheConfiguration.setSqlFunctionClasses(...)` must be added to the classpath of all the nodes where the defined custom functions might be executed. Otherwise, you will get a `ClassNotFoundException` error when trying to execute the custom function.
