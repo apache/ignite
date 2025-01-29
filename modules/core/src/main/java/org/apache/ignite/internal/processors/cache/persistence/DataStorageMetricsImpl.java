@@ -275,6 +275,10 @@ public class DataStorageMetricsImpl {
             this::walTotalSize,
             "Total size in bytes for storage wal files.");
 
+        mreg.register("LastArchivedSegment",
+            this::lastArchivedSegment,
+            "Last archived segment index.");
+
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
 
         cpBeforeLockHistogram = mreg.histogram("CheckpointBeforeLockHistogram", cpBounds,
@@ -360,6 +364,16 @@ public class DataStorageMetricsImpl {
         IgniteWriteAheadLogManager walMgr = this.wal;
 
         return walMgr == null ? 0 : walMgr.walArchiveSegments();
+    }
+
+    /** @return Last archived segment index. */
+    private long lastArchivedSegment() {
+        if (!metricsEnabled)
+            return -1;
+
+        IgniteWriteAheadLogManager walMgr = this.wal;
+
+        return walMgr == null ? -1 : walMgr.lastArchivedSegment();
     }
 
     /**
