@@ -245,6 +245,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns("Roman1", 2d)
             .check();
 
+        assertThrows("SELECT * FROM wrongRowLength(1)", IgniteSQLException.class,
+            "row length [2] doesn't match expected defined columns size [3]");
+
         logChecker0.check(getTestTimeout());
 
         String errTxt = "No match found for function signature";
@@ -421,6 +424,17 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return Arrays.asList(
                 Arrays.asList(i, s + i),
                 Arrays.asList(i * 10, s + (i * 10))
+            );
+        }
+
+        /** Incorrect row length. */
+        @QuerySqlTableFunction(columnTypes = {int.class, String.class, double.class}, columnNames = {"INT_COL", "STR_COL", "DBL_COL"})
+        public static Collection<?> wrongRowLength(int i) {
+            return Arrays.asList(
+                Arrays.asList(i, "code_" + i, i * 1000.0d),
+                Arrays.asList(i + 15, "code_" + (i + 15), (i + 15) * 1000.0d),
+                // Mismatched length.
+                Arrays.asList(i * 100, i * 100000.0d)
             );
         }
     }
