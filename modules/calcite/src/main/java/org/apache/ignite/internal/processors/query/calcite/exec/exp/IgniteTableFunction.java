@@ -86,7 +86,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /** {@inheritDoc} */
     @Override public Type getElementType(List<?> arguments) {
         // Calcite's {@link TableFunctionImpl} does real invocation ({@link TableFunctionImpl#apply(List)}) to determine
-        // the type. The call might be long, 'heavy', affect some metrics and should not be executed at validation/planning.
+        // the type. The call might be long, 'heavy', may affect some metrics and should not be executed at validation/planning.
         // We may check the argument number here but not their types. The types might be wrong, but converted further.
         if (F.isEmpty(arguments) && !F.isEmpty(method.getParameterTypes())
             || F.isEmpty(method.getParameterTypes()) && !F.isEmpty(arguments)
@@ -98,7 +98,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         return Iterable.class;
     }
 
-    /** Validates the parameters and throws an exception if finds an incorrect parameter. */
+    /** Validates the parameters and throws an exception if it finds an incorrect parameter. */
     private static void validate(Method mtd, Class<?>[] colTypes, String[] colNames) {
         if (F.isEmpty(colTypes))
             raiseValidationError(mtd, "Column types cannot be empty.");
@@ -108,7 +108,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
 
         if (colTypes.length != colNames.length) {
             raiseValidationError(mtd, "Number of the table column names [" + colNames.length
-                + "] must either be empty or match the number of column types [" + colTypes.length + "].");
+                + "] must match the number of column types [" + colTypes.length + "].");
         }
 
         if (new HashSet<>(Arrays.asList(colNames)).size() != colNames.length)
@@ -121,7 +121,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /**
      * Throws a parameter validation exception with a standard text prefix.
      *
-     * @param method Java-method of the related user-defined table function.
+     * @param method A java-method implementing related user-defined table function.
      * @param errPostfix Error text postfix.
      */
     private static void raiseValidationError(Method method, String errPostfix) {

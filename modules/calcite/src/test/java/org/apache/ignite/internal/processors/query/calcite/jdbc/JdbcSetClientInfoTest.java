@@ -276,7 +276,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
 
         assertEquals(sesId, actSesId);
 
-        // Test the same works with a table function.
+        // Ensure that the context works also with a table function.
         set = jdbcQuery(conn, "select SID from sessionIdTbl();");
 
         set.next();

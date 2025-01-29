@@ -62,9 +62,9 @@ import org.apache.ignite.resources.SessionContextProviderResource;
 @Target(ElementType.METHOD)
 public @interface QuerySqlTableFunction {
     /**
-     * Specifies alias for the table function to be used form SQL queries. If no alias provided method name will be used.
+     * Specifies alias for the table function name to be used form SQL queries. If no alias provided, the method name is used.
      *
-     * @return Alias for function name.
+     * @return Alias for table function name.
      */
     String alias() default "";
 
