@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
@@ -49,33 +50,12 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
 
         QueryKey qryKey = new QueryKey(qryId, fragmentId);
 
-        executor.execute(
-            new QueryAwareTask(qryKey) {
-                @Override public void run() {
-                    try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
-                        qryTask.run();
-                    }
-                    catch (Throwable e) {
-                        U.warn(log, "Uncaught exception", e);
-
-                        /*
-                         * No exceptions are rethrown here to preserve the current thread from being destroyed,
-                         * because other queries may be pinned to the current thread id.
-                         * However, unrecoverable errors must be processed by FailureHandler.
-                         */
-                        uncaughtException(Thread.currentThread(), e);
-                    }
-                    finally {
-                        tasksQueue.unblockQuery(qryKey);
-                    }
-                }
-            }
-        );
+        executor.execute(new QueryAndSecurityAwareTask(qryKey, secCtx, qryTask));
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        eHnd = ctx.uncaughtExceptionHandler();
+        super.onStart(ctx);
 
         executor = new IgniteThreadPoolExecutor(
             "calciteQry",
@@ -86,7 +66,13 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
             tasksQueue.blockingQueue(),
             GridIoPolicy.CALLER_THREAD,
             eHnd
-        );
+        ) {
+            @Override protected void afterExecute(Runnable r, Throwable t) {
+                tasksQueue.unblockQuery(((QueryAwareTask)r).queryKey());
+
+                super.afterExecute(r, t);
+            }
+        };
 
         // Prestart threads to ensure that all threads always use queue to poll tasks (without this call worker can
         // get its first task directly from 'execute' method, bypassing tasks queue).
@@ -98,5 +84,28 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
     /** {@inheritDoc} */
     @Override public void tearDown() {
         U.shutdownNow(getClass(), executor, log);
+    }
+
+    /** */
+    private class QueryAndSecurityAwareTask extends SecurityAwareTask implements QueryAwareTask {
+        /** */
+        private final QueryKey qryKey;
+
+        /** */
+        public QueryAndSecurityAwareTask(QueryKey qryKey, SecurityContext secCtx, Runnable qryTask) {
+            super(secCtx, qryTask);
+
+            this.qryKey = qryKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public QueryKey queryKey() {
+            return qryKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(QueryAndSecurityAwareTask.class, this);
+        }
     }
 }

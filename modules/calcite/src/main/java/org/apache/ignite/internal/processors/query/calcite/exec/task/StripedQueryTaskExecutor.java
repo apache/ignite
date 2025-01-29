@@ -49,29 +49,12 @@ public class StripedQueryTaskExecutor extends AbstractQueryTaskExecutor {
     @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
         SecurityContext secCtx = ctx.security().securityContext();
 
-        stripedThreadPoolExecutor.execute(
-            () -> {
-                try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
-                    qryTask.run();
-                }
-                catch (Throwable e) {
-                    U.warn(log, "Uncaught exception", e);
-
-                    /*
-                     * No exceptions are rethrown here to preserve the current thread from being destroyed,
-                     * because other queries may be pinned to the current thread id.
-                     * However, unrecoverable errors must be processed by FailureHandler.
-                     */
-                    uncaughtException(Thread.currentThread(), e);
-                }
-            },
-            hash(qryId, fragmentId)
-        );
+        stripedThreadPoolExecutor.execute(new SecurityAwareTask(secCtx, qryTask), hash(qryId, fragmentId));
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        eHnd = ctx.uncaughtExceptionHandler();
+        super.onStart(ctx);
 
         IgniteStripedThreadPoolExecutor executor = new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),

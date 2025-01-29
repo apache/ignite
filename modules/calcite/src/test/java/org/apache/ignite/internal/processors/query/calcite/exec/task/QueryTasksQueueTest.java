@@ -257,10 +257,18 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestQueryAwareTask extends QueryAwareTask {
+    private static class TestQueryAwareTask implements QueryAwareTask {
+        /** */
+        private final QueryKey qryKey;
+
         /** */
         public TestQueryAwareTask(QueryKey qryKey) {
-            super(qryKey);
+            this.qryKey = qryKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public QueryKey queryKey() {
+            return qryKey;
         }
 
         /** */

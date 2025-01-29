@@ -17,27 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.task;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 /**
  * Query aware task.
  */
-abstract class QueryAwareTask implements Runnable {
+interface QueryAwareTask extends Runnable {
     /** */
-    private final QueryKey qryKey;
-
-    /** */
-    QueryAwareTask(QueryKey qryKey) {
-        this.qryKey = qryKey;
-    }
-
-    /** */
-    public QueryKey queryKey() {
-        return qryKey;
-    }
-
-    /** */
-    @Override public String toString() {
-        return S.toString(QueryAwareTask.class, this);
-    }
+    public QueryKey queryKey();
 }

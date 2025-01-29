@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.task;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Abstract query task executor.
@@ -44,5 +46,44 @@ public abstract class AbstractQueryTaskExecutor extends AbstractService implemen
     @Override public void uncaughtException(Thread t, Throwable e) {
         if (eHnd != null)
             eHnd.uncaughtException(t, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        eHnd = ctx.uncaughtExceptionHandler();
+
+        super.onStart(ctx);
+    }
+
+    /** */
+    protected class SecurityAwareTask implements Runnable {
+        /** */
+        private final SecurityContext secCtx;
+
+        /** */
+        private final Runnable qryTask;
+
+        /** */
+        public SecurityAwareTask(SecurityContext secCtx, Runnable qryTask) {
+            this.secCtx = secCtx;
+            this.qryTask = qryTask;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
+                qryTask.run();
+            }
+            catch (Throwable e) {
+                U.warn(log, "Uncaught exception", e);
+
+                /*
+                 * No exceptions are rethrown here to preserve the current thread from being destroyed,
+                 * because other queries may be pinned to the current thread id.
+                 * However, unrecoverable errors must be processed by FailureHandler.
+                 */
+                uncaughtException(Thread.currentThread(), e);
+            }
+        }
     }
 }
