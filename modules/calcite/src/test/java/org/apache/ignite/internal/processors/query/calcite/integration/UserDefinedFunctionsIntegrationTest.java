@@ -55,9 +55,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         listeningLog.registerListener(logChecker);
 
-        // Actually, we could use QuerySqlFunction#alias instead of declaring additional method holding class (OtherFunctionsLibrary2).
+        // Actually, we might use QuerySqlFunction#alias instead of declaring additional method holding class (OtherFunctionsLibrary2).
         // But Class#getDeclaredMethods() seems to give methods with a different order. If we define methods with one class,
-        // we can get one 'sameSign' before another. And the test becomes flaky.
+        // we can get one 'sameSign' registered before another. And the test would become flaky.
         client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
             .setSqlFunctionClasses(OtherFunctionsLibrary.class, OtherFunctionsLibrary2.class));
 
@@ -65,7 +65,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT \"emp\".sameSign(1)").returns("echo_1").check();
 
         // Ensure that OtherFunctionsLibrary#sameSign2(int) isn't registered.
-        assertThrows("SELECT \"emp\".sameSign2(1)", SqlValidatorException.class, "No match found for function signature SAMESIGN2");
+        assertThrows("SELECT \"emp\".sameSign2(1)", SqlValidatorException.class,
+            "No match found for function signature SAMESIGN2");
 
         logChecker.check(getTestTimeout());
     }
