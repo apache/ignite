@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -122,10 +123,8 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     public IgniteCheckedException createFailureCompoundException() {
         IgniteCheckedException ex = new IgniteCheckedException("Failed to complete exchange process.");
 
-        for (Map.Entry<UUID, Exception> entry : exchangeErrors.entrySet()) {
-            if (ex != entry.getValue())
-                ex.addSuppressed(entry.getValue());
-        }
+        for (Map.Entry<UUID, Exception> entry : exchangeErrors.entrySet())
+            U.addSuppressed(ex, entry.getValue());
 
         return ex;
     }
