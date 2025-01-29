@@ -63,7 +63,7 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
         if (rowArr.length != rowType.getFieldCount()) {
             throw new IgniteSQLException("Unable to process table function data: row length [" + rowArr.length
-                + "] doesn't match expected defined columns size [" + rowType.getFieldCount() + "].");
+                + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
         return rowFactory.create(rowArr);

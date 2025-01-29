@@ -246,7 +246,10 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .check();
 
         assertThrows("SELECT * FROM wrongRowLength(1)", IgniteSQLException.class,
-            "row length [2] doesn't match expected defined columns size [3]");
+            "row length [2] doesn't match defined columns number [3]");
+
+        assertThrows("SELECT * FROM wrongRowType(1)", IgniteSQLException.class,
+            "row type is neither Collection or Object[]");
 
         logChecker0.check(getTestTimeout());
 
@@ -433,6 +436,17 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return Arrays.asList(
                 Arrays.asList(i, "code_" + i, i * 1000.0d),
                 Arrays.asList(i + 15, "code_" + (i + 15), (i + 15) * 1000.0d),
+                // Mismatched length.
+                Arrays.asList(i * 100, i * 100000.0d)
+            );
+        }
+
+        /** Incorrect row type. */
+        @QuerySqlTableFunction(columnTypes = {int.class, String.class, double.class}, columnNames = {"INT_COL", "STR_COL", "DBL_COL"})
+        public static Collection<?> wrongRowType(int i) {
+            return Arrays.asList(
+                Arrays.asList(i, "code_" + i, i * 1000.0d),
+                "wrongType",
                 // Mismatched length.
                 Arrays.asList(i * 100, i * 100000.0d)
             );
