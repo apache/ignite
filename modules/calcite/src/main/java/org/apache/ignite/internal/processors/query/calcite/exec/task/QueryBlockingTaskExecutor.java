@@ -50,8 +50,8 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
         QueryKey qryKey = new QueryKey(qryId, fragmentId);
 
         executor.execute(
-            new QueryAwareTask(qryKey,
-                () -> {
+            new QueryAwareTask(qryKey) {
+                @Override public void run() {
                     try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
                         qryTask.run();
                     }
@@ -69,7 +69,7 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
                         tasksQueue.unblockQuery(qryKey);
                     }
                 }
-            )
+            }
         );
     }
 

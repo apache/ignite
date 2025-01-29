@@ -39,12 +39,12 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         QueryKey qryKey2 = new QueryKey(qryId2, 0);
         QueryKey qryKey3 = new QueryKey(qryId1, 1);
 
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey2, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey2, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey3, () -> {}));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
+        queue.addTask(new TestQueryAwareTask(qryKey2));
+        queue.addTask(new TestQueryAwareTask(qryKey2));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
+        queue.addTask(new TestQueryAwareTask(qryKey3));
 
         QueryAwareTask task = queue.pollTaskAndBlockQuery(waitTimeout, TimeUnit.MILLISECONDS);
         assertEquals(qryKey1, task.queryKey());
@@ -56,7 +56,7 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         assertEquals(qryKey3, task.queryKey());
 
         // Test threads parking and unparking.
-        QueryAwareTask[] res = new QueryAwareTask[1];
+        QueryAwareTask[] res = new TestQueryAwareTask[1];
 
         Runnable pollAndStoreResult = () -> {
             try {
@@ -91,7 +91,7 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(() -> thread2.getState() == Thread.State.TIMED_WAITING, waitTimeout));
 
-        queue.addTask(new QueryAwareTask(qryKey3, () -> {}));
+        queue.addTask(new TestQueryAwareTask(qryKey3));
 
         thread2.join(waitTimeout);
 
@@ -134,14 +134,14 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         QueryKey qryKey2 = new QueryKey(UUID.randomUUID(), 1);
         QueryKey qryKey3 = new QueryKey(UUID.randomUUID(), 2);
 
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey2, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey3, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
+        queue.addTask(new TestQueryAwareTask(qryKey2));
+        queue.addTask(new TestQueryAwareTask(qryKey3));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
 
         assertEquals(4, queue.size());
 
-        QueryAwareTask[] tasks = queue.toArray(new QueryAwareTask[2]);
+        QueryAwareTask[] tasks = queue.toArray(new TestQueryAwareTask[2]);
 
         assertEquals(4, queue.size());
         assertEquals(4, tasks.length);
@@ -150,10 +150,10 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         assertEquals(qryKey3, tasks[2].queryKey());
         assertEquals(qryKey1, tasks[3].queryKey());
 
-        tasks = queue.toArray(new QueryAwareTask[] {
+        tasks = queue.toArray(new TestQueryAwareTask[] {
             null, null, null, null,
-            new QueryAwareTask(qryKey1, () -> {}),
-            new QueryAwareTask(qryKey2, () -> {})
+            new TestQueryAwareTask(qryKey1),
+            new TestQueryAwareTask(qryKey2)
         });
 
         assertEquals(4, queue.size());
@@ -175,12 +175,12 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         QueryKey qryKey2 = new QueryKey(UUID.randomUUID(), 1);
         QueryKey qryKey3 = new QueryKey(UUID.randomUUID(), 2);
 
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey2, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey3, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey1, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey2, () -> {}));
-        queue.addTask(new QueryAwareTask(qryKey3, () -> {}));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
+        queue.addTask(new TestQueryAwareTask(qryKey2));
+        queue.addTask(new TestQueryAwareTask(qryKey3));
+        queue.addTask(new TestQueryAwareTask(qryKey1));
+        queue.addTask(new TestQueryAwareTask(qryKey2));
+        queue.addTask(new TestQueryAwareTask(qryKey3));
 
         List<QueryAwareTask> tasks = new ArrayList<>();
         assertEquals(2, queue.drainTo(tasks, 2));
@@ -214,10 +214,10 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
 
         QueryKey qryKey1 = new QueryKey(UUID.randomUUID(), 0);
         QueryKey qryKey2 = new QueryKey(UUID.randomUUID(), 1);
-        QueryAwareTask task1 = new QueryAwareTask(qryKey1, () -> {});
-        QueryAwareTask task2 = new QueryAwareTask(qryKey1, () -> {});
-        QueryAwareTask task3 = new QueryAwareTask(qryKey2, () -> {});
-        QueryAwareTask task4 = new QueryAwareTask(qryKey2, () -> {});
+        QueryAwareTask task1 = new TestQueryAwareTask(qryKey1);
+        QueryAwareTask task2 = new TestQueryAwareTask(qryKey1);
+        QueryAwareTask task3 = new TestQueryAwareTask(qryKey2);
+        QueryAwareTask task4 = new TestQueryAwareTask(qryKey2);
 
         queue.addTask(task1);
         queue.addTask(task2);
@@ -230,19 +230,19 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
 
         assertEquals(3, queue.size());
 
-        assertEqualsArraysAware(new QueryAwareTask[] {task1, task3, task4}, queue.toArray(new QueryAwareTask[3]));
+        assertEqualsArraysAware(new QueryAwareTask[] {task1, task3, task4}, queue.toArray(new TestQueryAwareTask[3]));
 
         queue.removeTask(task1);
 
         assertEquals(2, queue.size());
 
-        assertEqualsArraysAware(new QueryAwareTask[] {task3, task4}, queue.toArray(new QueryAwareTask[2]));
+        assertEqualsArraysAware(new QueryAwareTask[] {task3, task4}, queue.toArray(new TestQueryAwareTask[2]));
 
         queue.removeTask(task4);
 
         assertEquals(1, queue.size());
 
-        assertEqualsArraysAware(new QueryAwareTask[] {task3}, queue.toArray(new QueryAwareTask[1]));
+        assertEqualsArraysAware(new QueryAwareTask[] {task3}, queue.toArray(new TestQueryAwareTask[1]));
 
         queue.removeTask(task3);
 
@@ -253,6 +253,19 @@ public class QueryTasksQueueTest extends GridCommonAbstractTest {
         queue.addTask(task2);
         assertEquals(2, queue.size());
 
-        assertEqualsArraysAware(new QueryAwareTask[] {task1, task2}, queue.toArray(new QueryAwareTask[2]));
+        assertEqualsArraysAware(new QueryAwareTask[] {task1, task2}, queue.toArray(new TestQueryAwareTask[2]));
+    }
+
+    /** */
+    private static class TestQueryAwareTask extends QueryAwareTask {
+        /** */
+        public TestQueryAwareTask(QueryKey qryKey) {
+            super(qryKey);
+        }
+
+        /** */
+        @Override public void run() {
+            // No-op.
+        }
     }
 }

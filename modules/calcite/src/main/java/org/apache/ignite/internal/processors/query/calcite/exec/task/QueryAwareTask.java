@@ -22,27 +22,18 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Query aware task.
  */
-public class QueryAwareTask implements Runnable {
+public abstract class QueryAwareTask implements Runnable {
     /** */
     private final QueryKey qryKey;
 
     /** */
-    private final Runnable runnable;
-
-    /** */
-    public QueryAwareTask(QueryKey qryKey, Runnable runnable) {
+    protected QueryAwareTask(QueryKey qryKey) {
         this.qryKey = qryKey;
-        this.runnable = runnable;
     }
 
     /** */
     public QueryKey queryKey() {
         return qryKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void run() {
-        runnable.run();
     }
 
     /** */
