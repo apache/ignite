@@ -307,9 +307,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         boolean convert)
         throws IgniteCheckedException {
         if (store != null) {
-            if (key.internal())
-                // Never load internal keys from store as they are never persisted.
-                return null;
+//            if (key.internal())
+//                // Never load internal keys from store as they are never persisted.
+//                return null;
 
             Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
 

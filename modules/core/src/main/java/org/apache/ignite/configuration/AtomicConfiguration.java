@@ -17,9 +17,11 @@
 
 package org.apache.ignite.configuration;
 
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -51,6 +53,9 @@ public class AtomicConfiguration {
 
     /** Group name. */
     private String grpName;
+
+    /** Cache store factory. If it was specified, the data structures state will be stored in third-party starage. */
+    private Factory<? extends CacheStore<?, ?>> cacheStoreFactory;
 
     /**
      * @return Number of backup nodes.
@@ -148,6 +153,25 @@ public class AtomicConfiguration {
      */
     public AtomicConfiguration setGroupName(String grpName) {
         this.grpName = grpName;
+
+        return this;
+    }
+
+    /**
+     * @return Cache store factory. If it was specified, the data structures state will be stored in third-party starage.
+     */
+    public Factory<? extends CacheStore<?, ?>> getCacheStoreFactory() {
+        return cacheStoreFactory;
+    }
+
+    /**
+     * Sets cache store factory. If it was specified, the data structures state will be stored in third-party starage.
+     *
+     * @param cacheStoreFactory Cache store factory.
+     * @return {@code this} for chaining.
+     */
+    public AtomicConfiguration setCacheStoreFactory(Factory<? extends CacheStore<?, ?>> cacheStoreFactory) {
+        this.cacheStoreFactory = cacheStoreFactory;
 
         return this;
     }

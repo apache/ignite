@@ -1384,7 +1384,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException If batch update failed.
      */
     protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
-        if (!storeEnabled() || internal() ||
+        if (!storeEnabled() || /*internal() ||*/
             (!local() && near())) // No need to work with local store at GridNearTxRemote.
             return;
 
