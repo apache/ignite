@@ -20,12 +20,16 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
+    /** */
+    private final RelDataType rowType;
+
     /** */
     private final Supplier<Iterable<?>> dataSupplier;
 
@@ -34,26 +38,33 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** */
     public TableFunctionScan(
+        RelDataType rowType,
         Supplier<Iterable<?>> dataSupplier,
         RowFactory<Row> rowFactory
     ) {
+        this.rowType = rowType;
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> iterator() {
-        return F.iterator(dataSupplier.get(), this::wrapToRow, true);
+        return F.iterator(dataSupplier.get(), this::convertToRow, true);
     }
 
     /** */
-    private Row wrapToRow(Object rowContainer) {
+    private Row convertToRow(Object rowContainer) {
         if (rowContainer.getClass() != Object[].class && !Collection.class.isAssignableFrom(rowContainer.getClass()))
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
         Object[] rowArr = rowContainer.getClass() == Object[].class
             ? (Object[])rowContainer
             : ((Collection<?>)rowContainer).toArray();
+
+        if (rowArr.length != rowType.getFieldCount()) {
+            throw new IgniteSQLException("Unable to process table function data: row length [" + rowArr.length
+                + "] doesn't match expected defined columns size [" + rowType.getFieldCount() + "].");
+        }
 
         return rowFactory.create(rowArr);
     }
