@@ -43,11 +43,11 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> iterator() {
-        return F.iterator(dataSupplier.get(), this::wrapToObjectArray, true);
+        return F.iterator(dataSupplier.get(), this::wrapToRow, true);
     }
 
     /** */
-    private Row wrapToObjectArray(Object rowContainer) {
+    private Row wrapToRow(Object rowContainer) {
         if (rowContainer.getClass() != Object[].class && !Collection.class.isAssignableFrom(rowContainer.getClass()))
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 

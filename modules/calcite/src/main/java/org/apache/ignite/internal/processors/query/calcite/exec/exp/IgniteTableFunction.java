@@ -69,7 +69,9 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
      * @param colNames Column names of the returned table representation.
      */
     public static IgniteTableFunction create(Method method, Class<?>[] colTypes, String[] colNames) {
-        CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
+        NotNullImplementor implementor = new ReflectiveCallNotNullImplementor(method);
+
+        CallImplementor impl = RexImpTable.createImplementor(implementor, NullPolicy.NONE, false);
 
         return new IgniteTableFunction(method, colTypes, colNames, impl);
     }

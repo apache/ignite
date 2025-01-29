@@ -1433,7 +1433,7 @@ public class SchemaManager {
             String name,
             Method method,
             Class<?>[] colTypes,
-            @Nullable String[] colNames
+            String[] colNames
         ) {
             lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onTableFunctionCreated(schemaName, name, method, colTypes, colNames)));
         }

@@ -141,22 +141,22 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         awaitPartitionMapExchange();
 
-        assertQuery("SELECT * from iteratorRow(?)").withParams(1)
+        assertQuery("SELECT * from collectionRow(?)").withParams(1)
             .returns(2, 3, 4)
             .returns(5, 6, 7)
             .returns(8, 9, 10)
             .check();
 
-        assertQuery("SELECT * from iteratorRow(?) WHERE COL_2=4").withParams(2)
+        assertQuery("SELECT * from collectionRow(?) WHERE COL_2=4").withParams(2)
             .returns(3, 4, 5)
             .check();
 
-        assertQuery("SELECT COL_1, COL_3 from iteratorRow(?) WHERE COL_2=3").withParams(1)
+        assertQuery("SELECT COL_1, COL_3 from collectionRow(?) WHERE COL_2=3").withParams(1)
             .returns(2, 4)
             .check();
 
         // Overrides.
-        assertQuery("SELECT * from iteratorRow(?, 2, ?)").withParams(1, 3)
+        assertQuery("SELECT * from collectionRow(?, 2, ?)").withParams(1, 3)
             .returns(11, 22, 33)
             .returns(41, 52, 63)
             .returns(71, 82, 93)
@@ -185,7 +185,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(1, 1, 2.0d, 2.0d)
             .check();
 
-        assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_1 from iteratorRow(1) WHERE COL_2=3)")
+        assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_1 from collectionRow(1) WHERE COL_2=3)")
             .returns("Roman1", 2d)
             .check();
 
@@ -201,6 +201,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         assertThrows("SELECT * from raiseException(?, ?, ?)", IgniteSQLException.class, "An error occurred while query executing",
             1, "test", true);
+
         assertThrows("SELECT * from raiseException(?, ?, ?)", RuntimeException.class, "Test exception",
             1, "test", true);
 
@@ -209,6 +210,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(1, new Employer("emp1", 1000d))
             .returns(10, new Employer("emp10", 10000d))
             .check();
+
         assertQuery("SELECT * from withObjectType(1) where EMP=?")
             .withParams(new Employer("emp10", 10000d))
             .returns(10, new Employer("emp10", 10000d))
@@ -268,7 +270,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             () -> client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
                 .setSqlFunctionClasses(UnregistrableTableFunctionsLibrary.class)),
             IgniteCheckedException.class,
-            "oth table and non-table function variants are defined"
+            "both table and non-table function variants are defined"
         );
     }
 
@@ -285,9 +287,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             // No-op.
         }
 
-        /** Trivial test. Returts collections as row holders. */
+        /** Trivial test. Returns collections as row holders. */
         @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"})
-        public static Iterable<Collection<?>> iteratorRow(int x) {
+        public static Iterable<Collection<?>> collectionRow(int x) {
             return Arrays.asList(
                 Arrays.asList(x + 1, x + 2, x + 3),
                 Arrays.asList(x + 4, x + 5, x + 6),
@@ -297,7 +299,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         /** Overrides. */
         @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"})
-        public static Collection<Collection<?>> iteratorRow(int x, int y, int z) {
+        public static Collection<Collection<?>> collectionRow(int x, int y, int z) {
             return Arrays.asList(
                 Arrays.asList(x + 10, y + 20, z + 30),
                 Arrays.asList(x + 40, y + 50, z + 60),
@@ -342,7 +344,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             );
         }
 
-        /** User exception test. */
+        /** Can raise a user-side exception. */
         @QuerySqlTableFunction(columnTypes = {int.class, String.class}, columnNames = {"COL_1", "COL_2"})
         public static Iterable<Collection<?>> raiseException(int i, String str, boolean doThrow) {
             if (doThrow)

@@ -170,8 +170,8 @@ public class SqlAPI {
         @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {"INT_COL", "STR_COL"})
         public static Iterable<Object[]> table_function(int i) {
             return Arrays.asList(
-                new Object[]{i, "" + i},
-                new Object[]{i * 10, "empty"}
+                new Object[] {i, "" + i},
+                new Object[] {i * 10, "empty"}
             );
         }
     }

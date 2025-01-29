@@ -243,7 +243,7 @@ public class H2SchemaManager implements SchemaChangeListener {
         String name,
         Method method,
         Class<?>[] colTypes,
-        @Nullable String[] colNames
+        String[] colNames
     ) {
         log.warning("Skipped creation of SQL table function '" + name + "' in H2 engine. Table functions arent't supported yet.");
     }

@@ -364,7 +364,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         String name,
         Method method,
         Class<?>[] colTypes,
-        @Nullable String[] colNames
+        String[] colNames
     ) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 

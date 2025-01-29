@@ -305,7 +305,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         public Collection<Object[]> sessionIdTbl() {
             SessionContext sesCtx = sesCtxProv.getSessionContext();
 
-            return Collections.singletonList(new Object[]{sesCtx == null ? null : sesCtx.getAttribute(SESSION_ID)});
+            return Collections.singletonList(new Object[] {sesCtx == null ? null : sesCtx.getAttribute(SESSION_ID)});
         }
     }
 }
