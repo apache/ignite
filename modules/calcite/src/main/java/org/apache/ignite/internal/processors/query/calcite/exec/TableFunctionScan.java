@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -47,7 +48,8 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** */
     private Row wrapToObjectArray(Object rowContainer) {
-        assert rowContainer instanceof Collection || rowContainer.getClass() == Object[].class;
+        if (rowContainer.getClass() != Object[].class || !Collection.class.isAssignableFrom(rowContainer.getClass()))
+            throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
         Object[] rowArr = rowContainer.getClass() == Object[].class
             ? (Object[])rowContainer
