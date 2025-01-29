@@ -218,7 +218,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     @Test
     public void testIncorrectTableFunctions() throws Exception {
         LogListener logChecker0 = LogListener.matches("One or more column names is not unique")
-            .andMatches("either be empty or match the number of column types")
+            .andMatches("must match the number of column types")
             .andMatches("The method is expected to return a collection (iterable)")
             .andMatches("Column types cannot be empty")
             .andMatches("Column names cannot be empty")

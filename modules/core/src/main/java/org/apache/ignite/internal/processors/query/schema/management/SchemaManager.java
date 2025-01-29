@@ -506,22 +506,25 @@ public class SchemaManager {
         for (Class<?> cls : clss) {
             for (Method m : cls.getDeclaredMethods()) {
                 QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
+                QuerySqlTableFunction tflFun = m.getAnnotation(QuerySqlTableFunction.class);
+
+                if (ann == null && tflFun == null)
+                    continue;
+
+                if (ann != null && tflFun != null) {
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                        "both table and non-table function varints are defined.");
+                }
+
+                if (!Modifier.isPublic(m.getModifiers()))
+                    throw new IgniteCheckedException("Method '" + m.getName() + "' must be public.");
 
                 if (ann != null) {
-                    if (!Modifier.isPublic(m.getModifiers()))
-                        throw new IgniteCheckedException("Method '" + m.getName() + "' must be public.");
-
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
                     lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
                 }
-
-                QuerySqlTableFunction tflFun = m.getAnnotation(QuerySqlTableFunction.class);
-
-                if (tflFun != null) {
-                    if (!Modifier.isPublic(m.getModifiers()))
-                        throw new IgniteCheckedException("Method '" + m.getName() + "' must be public.");
-
+                else {
                     String alias = tflFun.alias().isEmpty() ? m.getName() : tflFun.alias();
 
                     lsnr.onTableFunctionCreated(schema, alias, m, tflFun.columnTypes(), tflFun.columnNames());
