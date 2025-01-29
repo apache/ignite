@@ -141,7 +141,7 @@ class QueryTasksQueue {
             if (!blockedQrys.contains(cur.item.queryKey())) { // Skip tasks for blocked queries.
                 QueryAwareTask res = cur.item;
 
-                unlink(cur, pred);
+                unlink(pred, cur);
 
                 return res;
             }
@@ -175,7 +175,7 @@ class QueryTasksQueue {
         try {
             for (Node pred = head, cur = pred.next; cur != null; pred = cur, cur = cur.next) {
                 if (task.equals(cur.item)) {
-                    unlink(cur, pred);
+                    unlink(pred, cur);
 
                     cnt.getAndDecrement();
 
@@ -193,7 +193,7 @@ class QueryTasksQueue {
     /**
      * Unlinks interior Node cur with predecessor pred.
      */
-    private void unlink(Node cur, Node pred) {
+    private void unlink(Node pred, Node cur) {
         cur.item = null;
         pred.next = cur.next;
 
@@ -242,7 +242,7 @@ class QueryTasksQueue {
             for (Node cur = head.next; i < n && cur != null; cur = cur.next, i++) {
                 c.add(cur.item);
 
-                unlink(cur, head);
+                unlink(head, cur);
 
                 cnt.getAndDecrement();
             }
