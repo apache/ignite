@@ -208,7 +208,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return s;
         }
 
-        /** The signature interferes with aliased {@link OtherFunctionsLibrary2#sameSign(int)}. */
+        /** The signature interferes with aliased {@link OtherFunctionsLibrary2#sameSign2(int)}. */
         @QuerySqlFunction
         public static String sameSign(int v) {
             return "echo_" + v;
@@ -218,8 +218,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     public static class OtherFunctionsLibrary2 {
         /** The aliased signature interferes with {@link OtherFunctionsLibrary#sameSign(int)}. */
-        @QuerySqlFunction
-        public static int sameSign(int v) {
+        @QuerySqlFunction(alias = "sameSign")
+        public static int sameSign2(int v) {
             return v;
         }
     }
