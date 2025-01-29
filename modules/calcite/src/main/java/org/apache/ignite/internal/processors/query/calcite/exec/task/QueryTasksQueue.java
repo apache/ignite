@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A tasks queue with filtering (based on linked nodes).
  */
-public class QueryTasksQueue {
+class QueryTasksQueue {
     /**
      * Linked list node class.
      */
@@ -72,7 +72,7 @@ public class QueryTasksQueue {
     /**
      * Creates a {@code LinkedBlockingQueue}.
      */
-    public QueryTasksQueue() {
+    QueryTasksQueue() {
         last = head = new Node(null);
     }
 
@@ -86,7 +86,9 @@ public class QueryTasksQueue {
         lock.lock();
 
         try {
-            enqueue(new Node(task));
+            assert last.next == null : "Unexpected last.next: " + last.next;
+
+            last = last.next = new Node(task);
 
             cnt.getAndIncrement();
 
@@ -124,18 +126,6 @@ public class QueryTasksQueue {
         finally {
             lock.unlock();
         }
-    }
-
-    /**
-     * Links node at end of queue.
-     *
-     * @param node The node.
-     */
-    private void enqueue(Node node) {
-        assert lock.isHeldByCurrentThread();
-        assert last.next == null : "Unexpected last.next: " + last.next;
-
-        last = last.next = node;
     }
 
     /**

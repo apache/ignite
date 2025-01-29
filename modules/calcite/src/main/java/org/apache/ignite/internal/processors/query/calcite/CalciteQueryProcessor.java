@@ -199,9 +199,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** Query planner timeout. */
     private final long qryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT);
 
-    /** Use query blocking task executor. */
-    private final boolean useQryBlockingTaskExecutor = getBoolean(IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR);
-
     /** */
     private final QueryPlanCache qryPlanCache;
 
@@ -267,7 +264,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         qryPlanCache = new QueryPlanCacheImpl(ctx);
         parserMetrics = new QueryParserMetricsHolder(ctx.metric());
         mailboxRegistry = new MailboxRegistryImpl(ctx);
-        taskExecutor = useQryBlockingTaskExecutor
+        taskExecutor = getBoolean(IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR)
             ? new QueryBlockingTaskExecutor(ctx)
             : new StripedQueryTaskExecutor(ctx);
         executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);

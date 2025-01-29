@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Query key.
  */
-public class QueryKey {
+class QueryKey {
     /** */
     private final UUID qryId;
 
@@ -33,7 +33,7 @@ public class QueryKey {
     private final long fragmentId;
 
     /** */
-    public QueryKey(UUID qryId, long fragmentId) {
+    QueryKey(UUID qryId, long fragmentId) {
         this.qryId = qryId;
         this.fragmentId = fragmentId;
     }
