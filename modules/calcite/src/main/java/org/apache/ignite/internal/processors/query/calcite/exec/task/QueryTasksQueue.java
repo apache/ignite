@@ -107,7 +107,6 @@ class QueryTasksQueue {
             QueryAwareTask res;
 
             long nanos = unit.toNanos(timeout);
-            final AtomicInteger cnt = this.cnt;
 
             while (cnt.get() == 0 || (res = dequeue()) == null) {
                 if (nanos <= 0L)
@@ -116,10 +115,9 @@ class QueryTasksQueue {
                 nanos = notEmpty.awaitNanos(nanos);
             }
 
-            blockedQrys.add(res.queryKey());
+            boolean added = blockedQrys.add(res.queryKey());
 
-            if (cnt.decrementAndGet() > 0)
-                notEmpty.signal();
+            assert added;
 
             return res;
         }
@@ -143,6 +141,9 @@ class QueryTasksQueue {
 
                 unlink(pred, cur);
 
+                if (cnt.decrementAndGet() > 0)
+                    notEmpty.signal();
+
                 return res;
             }
         }
@@ -155,7 +156,9 @@ class QueryTasksQueue {
         lock.lock();
 
         try {
-            blockedQrys.remove(qryKey);
+            boolean removed = blockedQrys.remove(qryKey);
+
+            assert removed;
 
             if (cnt.get() > 0)
                 notEmpty.signal();
