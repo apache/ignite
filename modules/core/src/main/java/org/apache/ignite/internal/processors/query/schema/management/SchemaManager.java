@@ -505,29 +505,28 @@ public class SchemaManager {
 
         for (Class<?> cls : clss) {
             for (Method m : cls.getDeclaredMethods()) {
-                QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
-                QuerySqlTableFunction tflFun = m.getAnnotation(QuerySqlTableFunction.class);
+                QuerySqlFunction fun = m.getAnnotation(QuerySqlFunction.class);
+                QuerySqlTableFunction tableFun = m.getAnnotation(QuerySqlTableFunction.class);
 
-                if (ann == null && tflFun == null)
+                if (fun == null && tableFun == null)
                     continue;
 
-                if (ann != null && tflFun != null) {
+                if (!Modifier.isPublic(m.getModifiers())) {
                     throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
-                        "both table and non-table function varints are defined.");
+                        "method must be public.");
                 }
 
-                if (!Modifier.isPublic(m.getModifiers()))
-                    throw new IgniteCheckedException("Method '" + m.getName() + "' must be public.");
-
-                if (ann != null) {
-                    String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
-
-                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                if (fun != null && tableFun != null) {
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                        "both table and non-table function variants are defined.");
                 }
+
+                if (fun != null)
+                    lsnr.onFunctionCreated(schema, fun.alias().isEmpty() ? m.getName() : fun.alias(), fun.deterministic(), m);
                 else {
-                    String alias = tflFun.alias().isEmpty() ? m.getName() : tflFun.alias();
+                    String alias = tableFun.alias().isEmpty() ? m.getName() : tableFun.alias();
 
-                    lsnr.onTableFunctionCreated(schema, alias, m, tflFun.columnTypes(), tflFun.columnNames());
+                    lsnr.onTableFunctionCreated(schema, alias, m, tableFun.columnTypes(), tableFun.columnNames());
                 }
             }
         }

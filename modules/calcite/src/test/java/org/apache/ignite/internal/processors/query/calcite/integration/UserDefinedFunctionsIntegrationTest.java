@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
@@ -260,6 +261,18 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testUnregistrableTableFunctions() {
+        GridTestUtils.assertThrowsAnyCause(
+            null,
+            () -> client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+                .setSqlFunctionClasses(UnregistrableTableFunctionsLibrary.class)),
+            IgniteCheckedException.class,
+            "oth table and non-table function variants are defined"
+        );
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
@@ -403,6 +416,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         /** Empty column names. */
         @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {})
         public static Collection<?> noColumnNames(int i, String s) {
+            return Arrays.asList(
+                Arrays.asList(i, s + i),
+                Arrays.asList(i * 10, s + (i * 10))
+            );
+        }
+    }
+
+    /** */
+    public static final class UnregistrableTableFunctionsLibrary {
+        /** */
+        private UnregistrableTableFunctionsLibrary() {
+            // No-op.
+        }
+
+        /** Both variants. */
+        @QuerySqlFunction
+        @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {"INT_COL", "STR_COL"})
+        public static Collection<?> bothVariants(int i, String s) {
             return Arrays.asList(
                 Arrays.asList(i, s + i),
                 Arrays.asList(i * 10, s + (i * 10))
