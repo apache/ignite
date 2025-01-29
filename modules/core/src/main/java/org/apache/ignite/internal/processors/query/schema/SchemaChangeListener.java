@@ -150,8 +150,13 @@ public interface SchemaChangeListener {
      * @param colNames Column names if the table representation. If {@code null} or empty, the default names are used instead.
      * @param method Public static method, implementing this function.
      */
-    public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,
-        @Nullable String[] colNames);
+    public void onTableFunctionCreated
+    (String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        @Nullable String[] colNames
+    );
 
     /**
      * Callback on system view creation.

@@ -1426,8 +1426,13 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onTableFunctionCreated(String schemaName, String name, Method method, Class<?>[] colTypes,
-            @Nullable String[] colNames) {
+        @Override public void onTableFunctionCreated(
+            String schemaName,
+            String name,
+            Method method,
+            Class<?>[] colTypes,
+            @Nullable String[] colNames
+        ) {
             lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onTableFunctionCreated(schemaName, name, method, colTypes, colNames)));
         }
 
