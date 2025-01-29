@@ -32,6 +32,24 @@ import org.junit.Test;
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
+    public void testSameSignatureRegistered() throws Exception {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp1")
+            .setSqlFunctionClasses(OtherFunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp1")))
+        );
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp2")
+            .setSqlFunctionClasses(AddFunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp2")))
+        );
+
+        assertQuery("SELECT \"emp1\".add(1, 2)").returns(3.0d).check();
+    }
+
+    /** */
+    @Test
     public void testFunctions() throws Exception {
         // Cache with impicit schema.
         IgniteCache<Integer, Employer> emp1 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp1")
@@ -130,6 +148,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         public static int addFour(int a, int b, int c, int d) {
             return a + b + c + d;
         }
+
+        /** Same signature as {@link OtherFunctionsLibrary#reservedSign(int)}. */
+        @QuerySqlFunction
+        public static int reservedSign(int v){
+            return v;
+        }
     }
 
     /** */
@@ -165,6 +189,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static String echo(String s) {
             return s;
+        }
+
+        /** Same signature as {@link AddFunctionsLibrary#reservedSign(int)}. */
+        @QuerySqlFunction
+        public static String reservedSign(int v){
+            return "echo_" + v;
         }
     }
 }
