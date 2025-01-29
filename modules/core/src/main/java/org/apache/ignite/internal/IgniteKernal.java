@@ -240,7 +240,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -1717,10 +1716,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
-
-        // Whether rollback of dynamic cache start is supported or not.
-        // This property is added because of backward compatibility.
-        add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Save data storage configuration.
         addDataStorageConfigurationAttributes();
