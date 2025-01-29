@@ -148,6 +148,7 @@ public class AtomicDataStructuresWithCacheStoreTest extends GridCommonAbstractTe
 
     /** */
     private static class TestFactory implements Factory<CacheStore<GridCacheInternalKey, AtomicDataStructureValue>> {
+        /** {@inheritDoc} */
         @Override public CacheStore<GridCacheInternalKey, AtomicDataStructureValue> create() {
             return new CacheStoreAdapter<>() {
                 @Override public AtomicDataStructureValue load(GridCacheInternalKey key) throws CacheLoaderException {
