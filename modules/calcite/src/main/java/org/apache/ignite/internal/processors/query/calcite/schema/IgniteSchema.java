@@ -29,7 +29,7 @@ import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -93,22 +93,22 @@ public class IgniteSchema extends AbstractSchema {
      * @param func SQL function.
      */
     public void addFunction(String name, Function func) {
-        for (Function registered : getFunctions(name)) {
+        for (Function existingFun : getFunctions(name)) {
             List<FunctionParameter> params = func.getParameters();
-            List<FunctionParameter> regParams = registered.getParameters();
+            List<FunctionParameter> existingParams = existingFun.getParameters();
 
-            if (params.size() != regParams.size())
+            if (params.size() != existingParams.size())
                 continue;
 
             for (int i = 0; i < params.size(); ++i) {
                 FunctionParameter p = params.get(i);
-                FunctionParameter regP = regParams.get(i);
+                FunctionParameter existingP = existingParams.get(i);
 
-                if (!p.getType(Commons.typeFactory()).equalsSansFieldNames(regP.getType(Commons.typeFactory())))
+                if (!p.getType(Commons.typeFactory()).equalsSansFieldNames(existingP.getType(Commons.typeFactory())))
                     break;
             }
 
-            throw new IgniteSQLException("Unable to register function '" + name + "'. Other function with the same " +
+            throw new IgniteException("Unable to register function '" + name + "'. Other function with the same " +
                 "name and parameters is already registered in schema '" + schemaName + "'.");
         }
 

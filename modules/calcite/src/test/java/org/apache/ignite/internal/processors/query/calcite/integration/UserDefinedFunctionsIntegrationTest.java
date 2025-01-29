@@ -17,35 +17,57 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 /**
  * Integration test for user defined functions.
  */
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Log listener. */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (igniteInstanceName.endsWith("0"))
+            cfg.setGridLogger(listeningLog);
+
+        return cfg;
+    }
+
     /** */
     @Test
     public void testSameSignatureRegistered() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp1")
-            .setSqlFunctionClasses(OtherFunctionsLibrary.class)
-            .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp1")))
-        );
+        LogListener logChecker = LogListener.matches("Unable to register function 'SAMESIGN'. Other function " +
+            "with the same name and parameters is already registered").build();
 
-        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp2")
-            .setSqlFunctionClasses(AddFunctionsLibrary.class)
-            .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp2")))
-        );
+        listeningLog.registerListener(logChecker);
 
-        assertQuery("SELECT \"emp1\".add(1, 2)").returns(3.0d).check();
+        // Actually, we could use QuerySqlFunction#alias instead of declaring additional method holding class (OtherFunctionsLibrary2).
+        // But Class#getDeclaredMethods() seems to give methods with a different order. If we define methods with one class,
+        // we can get one 'sameSign' before another. And the test becomes flaky.
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
+            .setSqlFunctionClasses(OtherFunctionsLibrary.class, OtherFunctionsLibrary2.class));
+
+        // Ensure that 1::INTEGER isn't returned by OtherFunctionsLibrary2#sameSign(int).
+        assertQuery("SELECT \"emp\".sameSign(1)").returns("echo_1").check();
+
+        // Ensure that OtherFunctionsLibrary#sameSign2(int) isn't registered.
+        assertThrows("SELECT \"emp\".sameSign2(1)", SqlValidatorException.class, "No match found for function signature SAMESIGN2");
+
+        logChecker.check(getTestTimeout());
     }
 
     /** */
@@ -148,12 +170,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         public static int addFour(int a, int b, int c, int d) {
             return a + b + c + d;
         }
-
-        /** Same signature as {@link OtherFunctionsLibrary#reservedSign(int)}. */
-        @QuerySqlFunction
-        public static int reservedSign(int v){
-            return v;
-        }
     }
 
     /** */
@@ -191,10 +207,19 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return s;
         }
 
-        /** Same signature as {@link AddFunctionsLibrary#reservedSign(int)}. */
+        /** The signature interferes with aliased {@link OtherFunctionsLibrary2#sameSign(int)}. */
         @QuerySqlFunction
-        public static String reservedSign(int v){
+        public static String sameSign(int v) {
             return "echo_" + v;
+        }
+    }
+
+    /** */
+    public static class OtherFunctionsLibrary2 {
+        /** The aliased signature interferes with {@link OtherFunctionsLibrary#sameSign(int)}. */
+        @QuerySqlFunction
+        public static int sameSign(int v) {
+            return v;
         }
     }
 }
