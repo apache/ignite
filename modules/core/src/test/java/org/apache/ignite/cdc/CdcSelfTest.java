@@ -54,7 +54,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -813,7 +813,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, 1);
 
-        IgniteDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
+        IgniteNodeDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
 
         assertTrue(waitForCondition(() -> 1 == dirs.walCdc().list().length, 2 * WAL_ARCHIVE_TIMEOUT));
 
@@ -847,7 +847,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteWriteAheadLogManager wal = ign.context().cache().context().wal(true);
-        IgniteDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
+        IgniteNodeDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
 
         RunnableX writeSgmnt = () -> {
             int sgmnts = wal.walArchiveSegments();

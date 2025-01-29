@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -284,7 +284,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private DataStorageMetricsImpl metrics;
 
     /** Ignite directories. */
-    private IgniteDirectories dirs;
+    private IgniteNodeDirectories dirs;
 
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
@@ -1791,7 +1791,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Files from {@link IgniteDirectories#walArchive()}.
+     * Files from {@link IgniteNodeDirectories#walArchive()}.
      *
      * @return Raw or compressed WAL segments from archive.
      */
@@ -3375,9 +3375,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Removing files from {@link IgniteDirectories#walArchive()}.
+     * Removing files from {@link IgniteNodeDirectories#walArchive()}.
      *
-     * @param files Files from {@link IgniteDirectories#walArchive()}.
+     * @param files Files from {@link IgniteNodeDirectories#walArchive()}.
      * @return Total deleted size in bytes.
      */
     private long deleteArchiveFiles(File... files) {

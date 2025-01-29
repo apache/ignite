@@ -40,7 +40,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -373,8 +373,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        IgniteDirectories fromDirs = new IgniteDirectories(new File(workDir, fromWorkDir), fromConsId);
-        IgniteDirectories toDirs = new IgniteDirectories(new File(workDir, toWorkDir), toConsId);
+        IgniteNodeDirectories fromDirs = new IgniteNodeDirectories(new File(workDir, fromWorkDir), fromConsId);
+        IgniteNodeDirectories toDirs = new IgniteNodeDirectories(new File(workDir, toWorkDir), toConsId);
 
         File fromFile = new File(fromDirs.binaryMeta(), fileName);
         File toFile = new File(toDirs.binaryMeta(), fileName);

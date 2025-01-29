@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -191,7 +191,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        IgniteDirectories dirs = dirs(subfolderName);
+        IgniteNodeDirectories dirs = dirs(subfolderName);
 
         assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
 
@@ -681,10 +681,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * Checks existence of all storage-related directories
      *
      * @param subDirName sub directories name expected
-     * @throws IgniteCheckedException if IO error occur
      */
-    private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) throws IgniteCheckedException {
-        IgniteDirectories dirs = new IgniteDirectories(ign.configuration(), subDirName);
+    private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) {
+        IgniteNodeDirectories dirs = new IgniteNodeDirectories(ign.configuration(), subDirName);
 
         Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 

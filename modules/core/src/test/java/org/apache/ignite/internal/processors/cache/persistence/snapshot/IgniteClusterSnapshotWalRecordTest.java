@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +35,11 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -221,11 +218,9 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
      * @return WAL iterator over existing WAL files.
      */
     private WALIterator wal(IgniteEx ign) throws Exception {
-        Path workPath = Paths.get(U.defaultWorkDirectory());
-
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IgniteDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
+        IgniteNodeDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .filesOrDirs(dirs.walArchive(), dirs.wal())

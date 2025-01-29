@@ -58,7 +58,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories.containsBinaryMetaPath;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories.containsBinaryMetaPath;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**

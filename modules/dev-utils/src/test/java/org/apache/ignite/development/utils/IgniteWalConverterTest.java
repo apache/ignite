@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -162,7 +162,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverter() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final IgniteDirectories dirs = createWal(list, null);
+        final IgniteNodeDirectories dirs = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
@@ -226,7 +226,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithOutBinaryMeta() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        IgniteDirectories dirs = createWal(list, null);
+        IgniteNodeDirectories dirs = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
@@ -293,7 +293,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final IgniteDirectories dirs = createWal(list, null);
+        final IgniteNodeDirectories dirs = createWal(list, null);
 
         final File wal = new File(dirs.wal(), "0000000000000000.wal");
 
@@ -410,7 +410,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final IgniteDirectories dirs = createWal(list, null);
+        final IgniteNodeDirectories dirs = createWal(list, null);
 
         final File wal = new File(dirs.wal(), "0000000000000000.wal");
 
@@ -512,7 +512,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testPages() throws Exception {
         List<T2<PageSnapshot, String>> walRecords = new ArrayList<>();
 
-        IgniteDirectories dirs = createWal(new ArrayList<>(), n -> {
+        IgniteNodeDirectories dirs = createWal(new ArrayList<>(), n -> {
             try (WALIterator walIter = n.context().cache().context().wal().replay(new WALPointer(0, 0, 0))) {
                 while (walIter.hasNextX()) {
                     WALRecord walRecord = walIter.nextX().get2();
@@ -564,11 +564,11 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      * @return Ignite directories structure.
      * @throws Exception
      */
-    private IgniteDirectories createWal(
+    private IgniteNodeDirectories createWal(
         List<Person> list,
         @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer
     ) throws Exception {
-        IgniteDirectories dirs;
+        IgniteNodeDirectories dirs;
 
         try (final IgniteEx node = startGrid(0)) {
             node.cluster().state(ClusterState.ACTIVE);

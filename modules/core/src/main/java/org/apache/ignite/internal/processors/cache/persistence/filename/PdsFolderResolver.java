@@ -85,8 +85,8 @@ public class PdsFolderResolver<L extends FileLockHolder> {
         @Override public boolean accept(File pathname) {
             return pathname.isDirectory()
                 && !"wal".equals(pathname.getName())
-                && !IgniteDirectories.containsBinaryMetaPath(pathname)
-                && !IgniteDirectories.containsMarshaller(pathname)
+                && !IgniteNodeDirectories.containsBinaryMetaPath(pathname)
+                && !IgniteNodeDirectories.containsMarshaller(pathname)
                 && !pathname.getName().matches(SUBDIR_PATTERN);
         }
     };

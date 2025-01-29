@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories.containsBinaryMetaPath;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories.containsBinaryMetaPath;
 
 /**
  *

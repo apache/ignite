@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -85,7 +85,7 @@ public class Dump implements AutoCloseable {
     private final File dumpDir;
 
     /** Dump directories. */
-    private final List<IgniteDirectories> dirs;
+    private final List<IgniteNodeDirectories> dirs;
 
     /** Specific consistent id. */
     private final @Nullable String consistentId;
@@ -146,7 +146,7 @@ public class Dump implements AutoCloseable {
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
         this.dirs = metadata.stream()
-            .map(m -> new IgniteDirectories(dumpDir, m.folderName()))
+            .map(m -> new IgniteNodeDirectories(dumpDir, m.folderName()))
             .collect(Collectors.toList());
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(log);
@@ -188,7 +188,7 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(IgniteDirectories.isBinaryMetaRoot(f) || IgniteDirectories.isMarshaller(f))
+            && !(IgniteNodeDirectories.isBinaryMetaRoot(f) || IgniteNodeDirectories.isMarshaller(f))
             && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)
@@ -361,7 +361,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return Dump directories. */
-    public List<IgniteDirectories> directories() {
+    public List<IgniteNodeDirectories> directories() {
         return dirs;
     }
 

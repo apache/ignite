@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -213,7 +213,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
         assertFalse(legacyDir.exists());
 
         // assert folder and contents moved to new location
-        IgniteDirectories dirs = dirs();
+        IgniteSharedDirectories dirs = dirs();
 
         assertTrue(dirs.marshaller().exists());
 

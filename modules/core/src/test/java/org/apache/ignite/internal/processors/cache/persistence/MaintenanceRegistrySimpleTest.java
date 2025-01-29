@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -102,8 +102,8 @@ public class MaintenanceRegistrySimpleTest {
                         return new PdsFolderSettings(new File(dfltWorkDir), U.maskForFileName(""));
                     }
 
-                    @Override public IgniteDirectories resolveDirectories() {
-                        return new IgniteDirectories(dfltWorkDir, U.maskForFileName(""));
+                    @Override public IgniteNodeDirectories resolveDirectories() {
+                        return new IgniteNodeDirectories(dfltWorkDir, U.maskForFileName(""));
                     }
                 };
             }

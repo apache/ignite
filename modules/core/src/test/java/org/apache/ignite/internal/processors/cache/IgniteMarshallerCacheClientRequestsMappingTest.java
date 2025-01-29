@@ -35,7 +35,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
 import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -118,7 +118,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        U.delete(new IgniteDirectories(clntWorkDir).marshaller());
+        U.delete(new IgniteSharedDirectories(clntWorkDir).marshaller());
     }
 
     /**

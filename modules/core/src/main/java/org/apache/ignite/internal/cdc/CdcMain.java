@@ -53,7 +53,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -229,7 +229,7 @@ public class CdcMain implements Runnable {
     private File dbDir;
 
     /** Ignite folders. */
-    private IgniteDirectories dirs;
+    private IgniteNodeDirectories dirs;
 
     /** Standalone kernal context. */
     private StandaloneGridKernalContext kctx;
@@ -454,7 +454,7 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
-        dirs = new IgniteDirectories(igniteCfg, settings.folderName());
+        dirs = new IgniteNodeDirectories(igniteCfg, settings.folderName());
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -887,7 +887,7 @@ public class CdcMain implements Runnable {
 
         String folderName = dbStoreDirWithSubdirectory.getName();
 
-        dirs = new IgniteDirectories(igniteCfg, folderName);
+        dirs = new IgniteNodeDirectories(igniteCfg, folderName);
 
         if (!dirs.walCdc().exists()) {
             log.warning("CDC directory not exists. Should be created by Ignite Node. " +

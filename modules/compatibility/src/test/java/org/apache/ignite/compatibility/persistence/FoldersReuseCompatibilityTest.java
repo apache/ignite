@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -222,7 +222,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @throws IgniteCheckedException if IO error occur
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        IgniteDirectories dirs = dirs(subDirName);
+        IgniteNodeDirectories dirs = dirs(subDirName);
 
         assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
 

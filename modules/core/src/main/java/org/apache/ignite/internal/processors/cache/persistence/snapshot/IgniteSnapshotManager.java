@@ -134,7 +134,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -769,7 +769,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String folderName = pdsSettings.folderName();
 
         try {
-            IgniteDirectories snpDirs = new IgniteDirectories(snpDir.getAbsolutePath(), folderName);
+            IgniteNodeDirectories snpDirs = new IgniteNodeDirectories(snpDir.getAbsolutePath(), folderName);
 
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
             File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
@@ -865,7 +865,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return WALs directory for specified incremental snapshot.
      */
     public static File incrementalSnapshotWalsDir(File incSnpDir, String consId) {
-        return new IgniteDirectories(incSnpDir, U.maskForFileName(consId)).wal();
+        return new IgniteNodeDirectories(incSnpDir, U.maskForFileName(consId)).wal();
     }
 
     /**
@@ -2558,7 +2558,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpDir,
         String folderName
     ) throws IgniteCheckedException {
-        IgniteDirectories dirs = new IgniteDirectories(snpDir, folderName);
+        IgniteNodeDirectories dirs = new IgniteNodeDirectories(snpDir, folderName);
 
         return new StandaloneGridKernalContext(log, cmpProc, dirs.binaryMeta(), dirs.marshaller());
     }

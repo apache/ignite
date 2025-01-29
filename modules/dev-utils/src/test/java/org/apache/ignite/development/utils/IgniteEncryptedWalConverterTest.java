@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -67,7 +67,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIgniteWalConverter() throws Exception {
-        IgniteDirectories dirs = createWal();
+        IgniteNodeDirectories dirs = createWal();
 
         ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
@@ -100,7 +100,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
     /**
      * Populates a cache and returns the name of its node's folder.
      */
-    private IgniteDirectories createWal() throws Exception {
+    private IgniteNodeDirectories createWal() throws Exception {
         try (IgniteEx node = startGrid(0)) {
             node.cluster().state(ClusterState.ACTIVE);
 
