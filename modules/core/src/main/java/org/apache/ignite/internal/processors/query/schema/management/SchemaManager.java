@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -507,17 +508,23 @@ public class SchemaManager {
                 QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
 
                 if (ann != null) {
-                    int modifiers = m.getModifiers();
-
-                    if (!Modifier.isPublic(modifiers))
-                        throw new IgniteCheckedException("Method " + m.getName() + " must be public.");
+                    if (!Modifier.isPublic(m.getModifiers()))
+                        throw new IgniteCheckedException("Method '" + m.getName() + "' must be public.");
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
-                    if (F.isEmpty(ann.tableColumnTypes()) && F.isEmpty(ann.tableColumnNames()))
-                        lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
-                    else
-                        lsnr.onTableFunctionCreated(schema, alias, m, ann.tableColumnTypes(), ann.tableColumnNames());
+                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                }
+
+                QuerySqlTableFunction tflFun = m.getAnnotation(QuerySqlTableFunction.class);
+
+                if (tflFun != null) {
+                    if (!Modifier.isPublic(m.getModifiers()))
+                        throw new IgniteCheckedException("Method '" + m.getName() + "' must be public.");
+
+                    String alias = tflFun.alias().isEmpty() ? m.getName() : tflFun.alias();
+
+                    lsnr.onTableFunctionCreated(schema, alias, m, tflFun.columnTypes(), tflFun.columnNames());
                 }
             }
         }

@@ -167,7 +167,7 @@ public class SqlAPI {
 
     // tag::sql-table-function-example[]
     static class SqlTableFunctions {
-        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "STR_COL"})
+        @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {"INT_COL", "STR_COL"})
         public static Iterable<Object[]> table_function(int i) {
             return Arrays.asList(
                 new Object[]{i, "" + i},
@@ -194,7 +194,7 @@ public class SqlAPI {
     }
 
     @Test
-    IgniteCache setSqlTableFunction(Ignite ignite) {
+    IgniteCache testSqlTableFunction(Ignite ignite) {
         // tag::sql-table-function-config-query[]
         CacheConfiguration cfg = new CacheConfiguration("myCache");
 

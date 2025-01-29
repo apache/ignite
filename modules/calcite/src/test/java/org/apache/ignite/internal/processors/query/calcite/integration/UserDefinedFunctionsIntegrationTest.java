@@ -24,6 +24,7 @@ import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -166,9 +167,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .returns(8, 9, 10)
             .check();
 
-        assertQuery("SELECT * from arrayRow_and_it(1) WHERE COL_1>4 AND COL_2>? AND COL_3>6").withParams(5)
-            .returns(5, 6, 7)
-            .returns(8, 9, 10)
+        assertQuery("SELECT COL_1, COL_3 from arrayRow_and_it(1) WHERE COL_1>4 AND COL_2>? AND COL_3>6").withParams(5)
+            .returns(5, 7)
+            .returns(8, 10)
             .check();
 
         assertQuery("SELECT * from boxingUnboxing(1, ?, ?, 4.0::FLOAT)").withParams(1, 4.0d)
@@ -181,11 +182,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         assertQuery("SELECT * from boxingUnboxing(?, ?, ?, ?)").withParams(1, 1, 2.0d, 2.0d)
             .returns(1, 1, 2.0d, 2.0d)
-            .check();
-
-        assertQuery("SELECT STR_COL from withColumnNames(1001) where INT_COL>1000")
-            .returns("1001")
-            .returns("empty")
             .check();
 
         assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_1 from iteratorRow(1) WHERE COL_2=3)")
@@ -225,6 +221,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .andMatches("either be empty or match the number of column types")
             .andMatches("The method is expected to return a collection (iterable)")
             .andMatches("Column types cannot be empty")
+            .andMatches("Column names cannot be empty")
             .build();
 
         listeningLog.registerListener(logChecker0);
@@ -247,14 +244,19 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         logChecker0.check(getTestTimeout());
 
-        assertThrows("SELECT * FROM duplicateColumnName", SqlValidatorException.class, "not found");
+        String errTxt = "No match found for function signature";
 
-        assertThrows("SELECT * FROM wrongColumnNamesNumber", SqlValidatorException.class, "not found");
+        assertThrows("SELECT * FROM duplicateColumnName(1, 'a')", SqlValidatorException.class, errTxt);
 
-        assertThrows("SELECT * FROM wrongReturnType1", SqlValidatorException.class, "not found");
-        assertThrows("SELECT * FROM noReturnType", SqlValidatorException.class, "not found");
+        assertThrows("SELECT * FROM wrongColumnNamesNumber(1, 'a')", SqlValidatorException.class, errTxt);
 
-        assertThrows("SELECT * FROM noColumnTypes", SqlValidatorException.class, "not found");
+        assertThrows("SELECT * FROM wrongReturnType(1, 'a')", SqlValidatorException.class, errTxt);
+
+        assertThrows("SELECT * FROM noReturnType(1, 'a')", SqlValidatorException.class, errTxt);
+
+        assertThrows("SELECT * FROM noColumnTypes(1, 'a')", SqlValidatorException.class, errTxt);
+
+        assertThrows("SELECT * FROM noColumnNames(1, 'a')", SqlValidatorException.class, errTxt);
     }
 
     /** */
@@ -271,7 +273,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Trivial test. Returts collections as row holders. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"})
         public static Iterable<Collection<?>> iteratorRow(int x) {
             return Arrays.asList(
                 Arrays.asList(x + 1, x + 2, x + 3),
@@ -281,7 +283,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Overrides. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"})
         public static Collection<Collection<?>> iteratorRow(int x, int y, int z) {
             return Arrays.asList(
                 Arrays.asList(x + 10, y + 20, z + 30),
@@ -291,7 +293,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Returns arrays as row holders. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"})
         public static Iterable<Object[]> arrayRow(int x) {
             return Arrays.asList(
                 new Object[] {x + 1, x + 2, x + 3},
@@ -301,7 +303,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Returns mixed row holders. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class})
+        @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"})
         public static Collection<?> arrayRow_and_it(int x) {
             return Arrays.asList(
                 new Object[] {x + 1, x + 2, x + 3},
@@ -311,22 +313,15 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Boxed/unboxed test. */
-        @QuerySqlFunction(tableColumnTypes = {Integer.class, int.class, Double.class, double.class})
+        @QuerySqlTableFunction(columnTypes = {Integer.class, int.class, Double.class, double.class},
+            columnNames = {"COL_1", "COL_2", "COL_3", "COL_4"})
         public static Collection<List<?>> boxingUnboxing(int i1, Integer i2, double d1, Double d2) {
             return List.of(Arrays.asList(i1, i2, d1, d2));
         }
 
-        /** Defined column names test. */
-        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "STR_COL"})
-        public static Iterable<?> withColumnNames(int i) {
-            return Arrays.asList(
-                Arrays.asList(i, "" + i),
-                Arrays.asList(i * 10, "empty")
-            );
-        }
-
         /** Alias test. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, int.class, int.class}, alias = "aliasedName")
+        @QuerySqlTableFunction(columnTypes = {int.class, int.class, int.class}, columnNames = {"COL_1", "COL_2", "COL_3"},
+            alias = "aliasedName")
         public static Iterable<Collection<?>> alias(int x) {
             return Arrays.asList(
                 Arrays.asList(x + 1, x + 2, x + 3),
@@ -335,7 +330,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** User exception test. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, String.class})
+        @QuerySqlTableFunction(columnTypes = {int.class, String.class}, columnNames = {"COL_1", "COL_2"})
         public static Iterable<Collection<?>> raiseException(int i, String str, boolean doThrow) {
             if (doThrow)
                 throw new RuntimeException("Test exception.");
@@ -347,7 +342,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** User exception test. */
-        @QuerySqlFunction(tableColumnTypes = {int.class, Object.class}, tableColumnNames = {"ID", "EMP"})
+        @QuerySqlTableFunction(columnTypes = {int.class, Object.class}, columnNames = {"ID", "EMP"})
         public static Iterable<Collection<?>> withObjectType(int i) {
             return Arrays.asList(
                 Arrays.asList(i, new Employer("emp" + i, i * 1000d)),
@@ -364,7 +359,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Duplicated column names. */
-        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL", "INT_COL"})
+        @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {"INT_COL", "INT_COL"})
         public static Iterable<?> duplicateColumnName(int i, String s) {
             return Arrays.asList(
                 Arrays.asList(i, s + i),
@@ -373,7 +368,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Non-matching number of the column names. */
-        @QuerySqlFunction(tableColumnTypes = {Integer.class, String.class}, tableColumnNames = {"INT_COL"})
+        @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {"INT_COL"})
         public static Iterable<?> wrongColumnNamesNumber(int i, String s) {
             return Arrays.asList(
                 Arrays.asList(i, s + i),
@@ -382,8 +377,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Wrong return type 1. */
-        @QuerySqlFunction(tableColumnTypes = {Integer.class, Integer.class})
-        public static Object[] wrongReturnType1(int i) {
+        @QuerySqlTableFunction(columnTypes = {Integer.class, Integer.class}, columnNames = {"COL_1", "COL_2"})
+        public static Object[] wrongReturnType(int i) {
             return new Object[] {
                 Arrays.asList(i * 2, i * 2 + 1),
                 Arrays.asList(i * 3, i * 3 + 1)
@@ -391,14 +386,23 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Wrong return type 2. */
-        @QuerySqlFunction(tableColumnTypes = {Integer.class})
+        @QuerySqlTableFunction(columnTypes = {Integer.class}, columnNames = {"COL_1"})
         public static void noReturnType(int i) {
             System.err.println("Test value: " + i);
         }
 
         /** Empty column types. */
-        @QuerySqlFunction(tableColumnNames = {"INT_COL", "STR_COL"})
+        @QuerySqlTableFunction(columnTypes = {}, columnNames = {"INT_COL", "STR_COL"})
         public static Collection<?> noColumnTypes(int i, String s) {
+            return Arrays.asList(
+                Arrays.asList(i, s + i),
+                Arrays.asList(i * 10, s + (i * 10))
+            );
+        }
+
+        /** Empty column names. */
+        @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {})
+        public static Collection<?> noColumnNames(int i, String s) {
             return Arrays.asList(
                 Arrays.asList(i, s + i),
                 Arrays.asList(i * 10, s + (i * 10))

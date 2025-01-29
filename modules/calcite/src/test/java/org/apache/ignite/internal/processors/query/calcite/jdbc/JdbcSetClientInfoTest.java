@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Properties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -300,7 +301,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @QuerySqlFunction(tableColumnTypes = {String.class}, tableColumnNames = {"SID"})
+        @QuerySqlTableFunction(columnTypes = {String.class}, columnNames = {"SID"})
         public Collection<Object[]> sessionIdTbl() {
             SessionContext sesCtx = sesCtxProv.getSessionContext();
 

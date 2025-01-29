@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -29,15 +28,14 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TableFunction;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Holder of user-defined table function.
  *
- * @see QuerySqlFunction#tableColumnTypes()
+ * @see QuerySqlTableFunction
  */
 public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements TableFunction {
     /** Column types of the returned table representation. */
@@ -51,22 +49,16 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
      *
      * @param method The implementatng method.
      * @param colTypes Column types of the returned table representation.
-     * @param colNames Column names of the returned table representation. Of empty, the defaults are used ('COL_1', 'COL_2', etc.).
+     * @param colNames Column names of the returned table representation.
      * @param implementor Call implementor.
      */
-    private IgniteTableFunction(Method method, Class<?>[] colTypes, @Nullable String[] colNames, CallImplementor implementor) {
+    private IgniteTableFunction(Method method, Class<?>[] colTypes, String[] colNames, CallImplementor implementor) {
         super(method, implementor);
 
         validate(method, colTypes, colNames);
 
         this.colTypes = colTypes;
-
-        this.colNames = F.isEmpty(colNames) ? new ArrayList<>(colTypes.length) : Arrays.asList(colNames);
-
-        if (F.isEmpty(colNames)) {
-            for (int i = 0; i < colTypes.length; ++i)
-                this.colNames.add("COL_" + (i + 1));
-        }
+        this.colNames = Arrays.asList(colNames);
     }
 
     /**
@@ -74,9 +66,9 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
      *
      * @param method The implementating method.
      * @param colTypes Column types of the returned table representation.
-     * @param colNames Column names of the returned table representation. Of empty, the defaults are used ('COL_1', 'COL_2', etc.).
+     * @param colNames Column names of the returned table representation.
      */
-    public static IgniteTableFunction create(Method method, Class<?>[] colTypes, @Nullable String[] colNames) {
+    public static IgniteTableFunction create(Method method, Class<?>[] colTypes, String[] colNames) {
         CallImplementor impl = RexImpTable.createImplementor(new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
 
         return new IgniteTableFunction(method, colTypes, colNames, impl);
@@ -111,15 +103,16 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         if (F.isEmpty(colTypes))
             raiseValidationError(mtd, "Column types cannot be empty.");
 
-        if (!F.isEmpty(colNames)) {
-            if (colTypes.length != colNames.length) {
-                raiseValidationError(mtd, "Number of the table column names [" + colNames.length
-                    + "] must either be empty or match the number of column types [" + colTypes.length + "].");
-            }
+        if (F.isEmpty(colNames))
+            raiseValidationError(mtd, "Column names cannot be empty.");
 
-            if (new HashSet<>(Arrays.asList(colNames)).size() != colNames.length)
-                raiseValidationError(mtd, "One or more column names is not unique.");
+        if (colTypes.length != colNames.length) {
+            raiseValidationError(mtd, "Number of the table column names [" + colNames.length
+                + "] must either be empty or match the number of column types [" + colTypes.length + "].");
         }
+
+        if (new HashSet<>(Arrays.asList(colNames)).size() != colNames.length)
+            raiseValidationError(mtd, "One or more column names is not unique.");
 
         if (!Iterable.class.isAssignableFrom(mtd.getReturnType()))
             raiseValidationError(mtd, "The method is expected to return a collection (iterable).");

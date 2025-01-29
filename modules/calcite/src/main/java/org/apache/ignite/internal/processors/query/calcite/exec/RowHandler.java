@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.calcite.plan.RelOptUtil;
@@ -73,34 +71,5 @@ public interface RowHandler<Row> {
 
         /** */
         Row create(Object... fields);
-
-        /**
-         * Wraps a column collection with {@code Object[]} if requred.
-         *
-         * @param rowContainer Row values holder. Must be an {@code Iterable} or an {@code Object[]}.
-         */
-        default Row createByRowContainer(Object rowContainer) {
-            assert rowContainer instanceof Iterable || rowContainer.getClass() == Object[].class;
-
-            if (rowContainer.getClass() == Object[].class)
-                return create((Object[])rowContainer);
-
-            Iterator<?> it = ((Iterable<?>)rowContainer).iterator();
-
-            if (!it.hasNext())
-                return create(new Object[0]);
-
-            ArrayList<Object> lst = new ArrayList<>();
-
-            while (it.hasNext())
-                lst.add(it.next());
-
-            Object[] arr = new Object[lst.size()];
-
-            for (int i = 0; i < lst.size(); ++i)
-                arr[i] = lst.get(i);
-
-            return create(arr);
-        }
     }
 }

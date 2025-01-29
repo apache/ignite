@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -41,6 +42,17 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> iterator() {
-        return F.iterator(dataSupplier.get(), rowFactory::createByRowContainer, true);
+        return F.iterator(dataSupplier.get(), this::wrapToObjectArray, true);
+    }
+
+    /** */
+    private Row wrapToObjectArray(Object rowContainer) {
+        assert rowContainer instanceof Collection || rowContainer.getClass() == Object[].class;
+
+        Object[] rowArr = rowContainer.getClass() == Object[].class
+            ? (Object[])rowContainer
+            : ((Collection<?>)rowContainer).toArray();
+
+        return rowFactory.create(rowArr);
     }
 }
