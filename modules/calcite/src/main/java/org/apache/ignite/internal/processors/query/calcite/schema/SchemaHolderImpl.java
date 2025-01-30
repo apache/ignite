@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -69,6 +68,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
+
+    /** */
+    private FrameworkConfig frameworkCfg;
 
     /** */
     private volatile SchemaPlus calciteSchema;
@@ -138,10 +140,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /**
      * @param ctx Kernal context.
      */
-    public SchemaHolderImpl(GridKernalContext ctx) {
+    public SchemaHolderImpl(GridKernalContext ctx, FrameworkConfig frameworkCfg) {
         super(ctx);
 
         this.ctx = ctx;
+        this.frameworkCfg = frameworkCfg;
 
         subscriptionProcessor(ctx.internalSubscriptionProcessor());
 
@@ -412,8 +415,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add("UUID", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(UUID.class));
         newCalciteSchema.add("OTHER", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(Object.class));
         newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));
-
-        FrameworkConfig frameworkCfg = Commons.lookupComponent(ctx, CalciteQueryProcessor.class).frameworkConfig();
 
         for (IgniteSchema schema : igniteSchemas.values())
             schema.register(newCalciteSchema, frameworkCfg);
