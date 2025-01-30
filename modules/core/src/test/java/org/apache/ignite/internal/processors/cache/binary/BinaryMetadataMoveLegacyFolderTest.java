@@ -213,7 +213,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
         assertFalse(legacyDir.exists());
 
         // assert folder and contents moved to new location
-        IgniteSharedDirectories dirs = dirs();
+        IgniteSharedDirectories dirs = sharedDirs();
 
         assertTrue(dirs.marshaller().exists());
 

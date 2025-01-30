@@ -619,7 +619,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Kill the cluster node, clean up the working directory (with cached types)
             // and drop the client connection.
             ignite.close();
-            U.delete(dirs().marshaller());
+            U.delete(sharedDirs().marshaller());
             dropAllThinClientConnections();
 
             // Invoke the service.

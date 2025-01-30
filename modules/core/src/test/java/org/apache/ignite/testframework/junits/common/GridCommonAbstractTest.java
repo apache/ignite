@@ -1974,7 +1974,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
-        IgniteSharedDirectories dirs = dirs();
+        IgniteSharedDirectories dirs = sharedDirs();
 
         U.delete(dirs.marshaller());
         U.delete(dirs.binaryMetaRoot());

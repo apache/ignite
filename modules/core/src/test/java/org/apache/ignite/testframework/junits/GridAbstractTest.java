@@ -676,7 +676,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        IgniteSharedDirectories dirs = dirs();
+        IgniteSharedDirectories dirs = sharedDirs();
 
         U.delete(dirs.marshaller());
         U.delete(dirs.binaryMetaRoot());
@@ -3188,14 +3188,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * @return Ignite directories without specific {@code folerName} parameter.
      */
-    protected IgniteSharedDirectories dirs() throws IgniteCheckedException {
+    protected IgniteSharedDirectories sharedDirs() throws IgniteCheckedException {
         return new IgniteSharedDirectories(U.defaultWorkDirectory());
     }
 
     /**
      * @return Ignite directories for specific {@code folderName}.
      */
-    protected IgniteNodeDirectories dirs(String folderName) throws IgniteCheckedException {
+    protected IgniteNodeDirectories nodeDirs(String folderName) throws IgniteCheckedException {
         return new IgniteNodeDirectories(U.defaultWorkDirectory(), folderName);
     }
 }

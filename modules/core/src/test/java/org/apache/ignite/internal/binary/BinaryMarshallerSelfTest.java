@@ -4176,7 +4176,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         kernCtx.add(new GridSystemViewManager(kernCtx));
         kernCtx.add(new GridDiscoveryManager(kernCtx));
 
-        marshCtx.setMarshallerMappingFileStoreDir(dirs().marshaller());
+        marshCtx.setMarshallerMappingFileStoreDir(sharedDirs().marshaller());
         marshCtx.onMarshallerProcessorStarted(kernCtx, null);
 
         marsh.setContext(marshCtx);
@@ -4237,7 +4237,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         kernCtx.add(new GridSystemViewManager(kernCtx));
         kernCtx.add(new GridDiscoveryManager(kernCtx));
 
-        marshCtx.setMarshallerMappingFileStoreDir(dirs().marshaller());
+        marshCtx.setMarshallerMappingFileStoreDir(sharedDirs().marshaller());
         marshCtx.onMarshallerProcessorStarted(kernCtx, null);
 
         marsh.setContext(marshCtx);

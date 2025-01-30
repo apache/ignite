@@ -120,7 +120,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (pstWalStoreCustomPath != null)
             ok &= U.delete(pstWalStoreCustomPath);
 
-        File binaryMetaRoot = dirs().binaryMetaRoot();
+        File binaryMetaRoot = sharedDirs().binaryMetaRoot();
 
         if (binaryMetaRoot.exists())
             ok &= U.delete(binaryMetaRoot);
@@ -191,7 +191,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        IgniteNodeDirectories dirs = dirs(subfolderName);
+        IgniteNodeDirectories dirs = nodeDirs(subfolderName);
 
         assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
 
