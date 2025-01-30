@@ -30,6 +30,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -51,10 +52,14 @@ public class ViewTableMacroImpl implements TableMacro {
     /** */
     private final SchemaPlus schema;
 
+    /* **/
+    private final FrameworkConfig frameworkCfg;
+
     /** Ctor. */
-    public ViewTableMacroImpl(String viewSql, SchemaPlus schema) {
+    public ViewTableMacroImpl(String viewSql, SchemaPlus schema, FrameworkConfig frameworkCfg) {
         this.viewSql = viewSql;
         this.schema = schema;
+        this.frameworkCfg = frameworkCfg;
     }
 
     /** {@inheritDoc} */
@@ -65,7 +70,7 @@ public class ViewTableMacroImpl implements TableMacro {
 
         try {
             IgnitePlanner planner = PlanningContext.builder()
-                .parentContext(BaseQueryContext.builder().defaultSchema(schema).build())
+                .parentContext(BaseQueryContext.builder().frameworkConfig(frameworkCfg).defaultSchema(schema).build())
                 .build()
                 .planner();
 
