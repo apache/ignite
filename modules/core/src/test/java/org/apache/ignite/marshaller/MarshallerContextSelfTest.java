@@ -78,7 +78,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClassName() throws Exception {
-        MarshallerContextImpl marshCtx = getMarshallerContext();
+        MarshallerContextImpl marshCtx = marshallerContext();
 
         MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
@@ -104,7 +104,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     public void testMultiplatformMappingsCollecting() throws Exception {
         String nonJavaClsName = "random.platform.Mapping";
 
-        MarshallerContextImpl marshCtx = getMarshallerContext();
+        MarshallerContextImpl marshCtx = marshallerContext();
 
         MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClsName);
 
@@ -161,7 +161,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnUpdated() throws Exception {
-        MarshallerContextImpl ctx = getMarshallerContext();
+        MarshallerContextImpl ctx = marshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
@@ -193,7 +193,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheStructure0() throws Exception {
-        MarshallerContextImpl ctx = getMarshallerContext();
+        MarshallerContextImpl ctx = marshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
@@ -225,7 +225,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheStructure1() throws Exception {
-        MarshallerContextImpl ctx = getMarshallerContext();
+        MarshallerContextImpl ctx = marshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
@@ -265,7 +265,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private @NotNull MarshallerContextImpl getMarshallerContext() throws IgniteCheckedException {
+    private @NotNull MarshallerContextImpl marshallerContext() throws IgniteCheckedException {
         MarshallerContextImpl mctx = new MarshallerContextImpl(null, null);
 
         mctx.setMarshallerMappingFileStoreDir(sharedDirs().marshaller());

@@ -325,8 +325,6 @@ public class CdcMain implements Runnable {
         }
 
         try (CdcFileLockHolder lock = lockPds()) {
-            String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
-
             Files.createDirectories(cdcDir.resolve(STATE_DIR));
 
             if (log.isInfoEnabled()) {
@@ -335,7 +333,7 @@ public class CdcMain implements Runnable {
                 log.info("Ignite node Marshaller [dir=" + dirs.marshaller() + ']');
             }
 
-            kctx = startStandaloneKernal();
+            startStandaloneKernal();
 
             initMetrics();
 
@@ -384,8 +382,8 @@ public class CdcMain implements Runnable {
      * @return Kernal instance.
      * @throws IgniteCheckedException If failed.
      */
-    private StandaloneGridKernalContext startStandaloneKernal() throws IgniteCheckedException {
-        StandaloneGridKernalContext kctx = new StandaloneGridKernalContext(log, dirs.binaryMeta(), dirs.marshaller()) {
+    private void startStandaloneKernal() throws IgniteCheckedException {
+        kctx = new StandaloneGridKernalContext(log, dirs.binaryMeta(), dirs.marshaller()) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -420,8 +418,6 @@ public class CdcMain implements Runnable {
         }
 
         mreg = kctx.metric().registry("cdc");
-
-        return kctx;
     }
 
     /** Initialize metrics. */
