@@ -507,17 +507,23 @@ public class SchemaManager {
                 QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
 
                 if (ann != null) {
-                    int modifiers = m.getModifiers();
-
-                    if (!Modifier.isPublic(modifiers))
+                    if (!Modifier.isPublic(m.getModifiers()))
                         throw new IgniteCheckedException("Method " + m.getName() + " must be public.");
 
-                    String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
+                    String name = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
-                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                    if (isSystemFunction(m))
+                        throw new IgniteCheckedException("Unable to register SQL function " + name + ": overloads a system function.");
+
+                    lsnr.onFunctionCreated(schema, name, ann.deterministic(), m);
                 }
             }
         }
+    }
+
+    /** TODO */
+    private boolean isSystemFunction(Method method) {
+        return false;
     }
 
     /**

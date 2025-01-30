@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
@@ -26,6 +27,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -45,6 +47,22 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
 
         return cfg;
+    }
+
+    /** */
+    @Test
+    public void testOverrideSystemFunction() {
+        assertQuery("select IS_NULL(?)").withParams(null).returns(true).check();
+        assertQuery("select IS_NULL(1)").withParams(null).returns(false).check();
+        assertQuery("select UPPER(?))").withParams("abc").returns("ABC").check();
+        assertQuery("select BITAND(?, ?))").withParams(1, 2).returns(3).check();
+
+        // Cache with impicit schema.
+        IgniteCache<Integer, Employer> cache = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("testCache")
+            .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
+                .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
     }
 
     /** */
@@ -201,6 +219,27 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static String echo(String s) {
             return s;
+        }
+    }
+
+    /** */
+    public static class OverrideSystemFunctionLibrary {
+        /** Overwrites {@link SqlFunctions#upper(String)}. */
+        @QuerySqlFunction
+        public static int upper(String s) {
+            return F.isEmpty(s) ? 0 : s.length();
+        }
+
+        /** Overwrites default 'IS_NULL'. */
+        @QuerySqlFunction
+        public static int is_null(Object o) {
+            return 1;
+        }
+
+        /** Overwrites {@link IgniteOwnSqlOperatorTable#BITAND}. */
+        @QuerySqlFunction
+        public static String bitand(int a, int b) {
+            return "echo";
         }
     }
 
