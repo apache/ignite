@@ -135,7 +135,7 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
             calculateCRC32Partitions(nodeDirs.marshaller()), calculateCRC32Partitions(snpDirs.marshaller()));
 
-        File snpWorkDir = mgr.snapshotTmpDir();
+        File snpWorkDir = ig.context().pdsFolderResolver().resolveDirectories().snapshotTemp();
 
         assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
     }

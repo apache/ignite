@@ -86,7 +86,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -318,7 +317,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // Cleanup persistence directory except created snapshots.
         Arrays.stream(new File(U.defaultWorkDirectory()).listFiles())
-            .filter(f -> !f.getName().equals(DFLT_SNAPSHOT_DIRECTORY))
+            .filter(f -> !f.equals(sharedDirs().snapshotsRoot()))
             .forEach(U::delete);
 
         Set<UUID> assigns = Collections.newSetFromMap(new ConcurrentHashMap<>());

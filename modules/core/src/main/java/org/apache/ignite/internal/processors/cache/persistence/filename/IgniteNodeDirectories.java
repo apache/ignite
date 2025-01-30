@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -136,12 +137,18 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
  * │  ├── jmx-invoker.0.log
  * ...
  * │  └── jmx-invoker.9.log
- * └── snapshots                                                                ← snapshotRoot (shared between all nodes).
+ * └── snapshots                                                                ← snpsRoot (shared between all nodes).
  * </pre>
  */
 public class IgniteNodeDirectories extends IgniteSharedDirectories {
+    /** Default snapshot directory for loading remote snapshots. */
+    public static final String DFLT_SNAPSHOT_TMP_DIR = "snp";
+
     /** Folder name for consistent id. */
     private final String folderName;
+
+    /** Node root folder. */
+    private final File nodeRoot;
 
     /** Path to the directory containing binary metadata. */
     private final File binaryMeta;
@@ -154,6 +161,12 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
 
     /** Path to the directory containing archive WAL segments for CDC. */
     private final File walCdc;
+
+    /**
+     * Working directory for loaded snapshots from the remote nodes and storing
+     * temporary partition delta-files of locally started snapshot process.
+     */
+    private final File snpTmp;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -192,10 +205,12 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
 
         this.folderName = folderName;
 
+        nodeRoot = new File(db, folderName);
         binaryMeta = new File(binaryMetaRoot.getAbsolutePath(), folderName);
         wal = new File(new File(root, DFLT_WAL_PATH), folderName);
         walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
         walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
+        snpTmp = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
     }
 
     /**
@@ -218,6 +233,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
 
         this.folderName = folderName;
 
+        nodeRoot = new File(db, folderName);
         binaryMeta = new File(binaryMetaRoot, folderName);
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
@@ -227,6 +243,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         wal = resolveDirectory(dsCfg.getWalPath());
         walArchive = resolveDirectory(dsCfg.getWalArchivePath());
         walCdc = resolveDirectory(dsCfg.getCdcWalPath());
+        snpTmp = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
     }
 
     /** @return Folder name. */
@@ -261,6 +278,11 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         return walCdc;
     }
 
+    /** @return Path to the directory form temp snapshot files. */
+    public File snapshotTemp() {
+        return snpTmp;
+    }
+
     /**
      * Creates {@link #binaryMeta()} directory.
      * @return Created directory.
@@ -270,17 +292,30 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         return mkdir(binaryMeta, "binary metadata");
     }
 
+    /**
+     * Creates {@link #snapshotTemp()} directory.
+     * @return Created directory.
+     * @see #snapshotTemp()
+     */
+    public File mkdirSnapshotTemp() {
+        try {
+            return mkdir(snpTmp, "temp directory for snapshot creation");
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /** @return {@code True} if WAL archive enabled. */
     public boolean isWalArchiveEnabled() {
         return !walArchive.equals(wal);
     }
 
     /**
-     * Creates a directory specified by the given arguments.
+     * Resolves a directory specified by the given arguments.
      *
      * @param cfg Configured directory path, may be {@code null}.
      * @return Initialized directory.
-     * @throws IgniteCheckedException If failed to initialize directory.
      */
     private File resolveDirectory(String cfg) {
         File sharedBetweenNodesDir = new File(cfg);

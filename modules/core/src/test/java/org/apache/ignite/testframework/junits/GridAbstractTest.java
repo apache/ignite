@@ -3188,14 +3188,24 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * @return Ignite directories without specific {@code folerName} parameter.
      */
-    protected IgniteSharedDirectories sharedDirs() throws IgniteCheckedException {
-        return new IgniteSharedDirectories(U.defaultWorkDirectory());
+    protected IgniteSharedDirectories sharedDirs() {
+        try {
+            return new IgniteSharedDirectories(U.defaultWorkDirectory());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
      * @return Ignite directories for specific {@code folderName}.
      */
-    protected IgniteNodeDirectories nodeDirs(String folderName) throws IgniteCheckedException {
-        return new IgniteNodeDirectories(U.defaultWorkDirectory(), folderName);
+    protected IgniteNodeDirectories nodeDirs(String folderName) {
+        try {
+            return new IgniteNodeDirectories(U.defaultWorkDirectory(), folderName);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

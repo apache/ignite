@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -35,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * ├── db                                                                       ← db (shared between all nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all nodes).
  * │  ├── marshaller                                                            ← marshaller (shared between all nodes).
- * │  ├── snapshots                                                             ← snapshots (shared between all nodes).
+ * ├── snapshots                                                                ← snpsRoot (shared between all nodes).
  *
  * @see IgniteNodeDirectories
  */
@@ -56,7 +57,10 @@ public class IgniteSharedDirectories {
     protected final File binaryMetaRoot;
 
     /** Path to the directory containing marshaller files. */
-    protected final File marshaller;
+    private final File marshaller;
+
+    /** Path to the snapshot root directory. */
+    private final File snpsRoot;
 
     /**
      * @param root Root directory.
@@ -68,6 +72,7 @@ public class IgniteSharedDirectories {
         db = new File(root, DB_DEFAULT_FOLDER);
         marshaller = new File(db, DFLT_MARSHALLER_PATH);
         binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
+        snpsRoot = new File(root, DFLT_SNAPSHOT_DIRECTORY);
     }
 
     /**
@@ -93,6 +98,7 @@ public class IgniteSharedDirectories {
         db = new File(root, DB_DEFAULT_FOLDER);
         marshaller = new File(db, DFLT_MARSHALLER_PATH);
         binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
+        snpsRoot = resolveSharedDirectory(cfg.getSnapshotPath());
     }
 
     /**
@@ -122,6 +128,11 @@ public class IgniteSharedDirectories {
         return marshaller;
     }
 
+    /** @return Path to snapshots root directory. */
+    public File snapshotsRoot() {
+        return snpsRoot;
+    }
+
     /**
      * Creates {@link #binaryMetaRoot()} directory.
      * @return Created directory.
@@ -138,6 +149,20 @@ public class IgniteSharedDirectories {
      */
     public File mkdirMarshaller() throws IgniteCheckedException {
         return mkdir(marshaller, "marshaller mappings");
+    }
+
+    /**
+     * Creates {@link #snapshotsRoot()} directory.
+     * @return Created directory.
+     * @see #snapshotsRoot()
+     */
+    public File mkdirSnapshotsRoot() {
+        try {
+            return mkdir(snpsRoot, "snapshot work directory");
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -187,6 +212,20 @@ public class IgniteSharedDirectories {
             throw new IgniteCheckedException("Cannot write to directory: " + dir);
 
         return dir;
+    }
+
+    /**
+     * Creates a directory specified by the given arguments.
+     *
+     * @param cfg Configured directory path, may be {@code null}.
+     * @return Initialized directory.
+     */
+    private File resolveSharedDirectory(String cfg) {
+        File sharedBetweenNodesDir = new File(cfg);
+
+        return sharedBetweenNodesDir.isAbsolute()
+            ? sharedBetweenNodesDir
+            : new File(root, cfg);
     }
 
     /** {@inheritDoc} */

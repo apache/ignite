@@ -107,7 +107,6 @@ import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
@@ -120,7 +119,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
@@ -348,11 +346,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
         try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
-            File snpDir = new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY);
-            File tmpSnpDir = new File(
-                ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
-                DFLT_SNAPSHOT_TMP_DIR
-            );
+            File snpDir = ign.context().pdsFolderResolver().resolveDirectories().snapshotsRoot();
+            File tmpSnpDir = ign.context().pdsFolderResolver().resolveDirectories().snapshotTemp();
 
             assertFalse(snpDir + " must created lazily for in-memory node", snpDir.exists());
             assertFalse(tmpSnpDir + " must created lazily for in-memory node", tmpSnpDir.exists());
@@ -641,15 +636,12 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
-                new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY).exists()
+                ign.context().pdsFolderResolver().resolveDirectories().snapshotsRoot().exists()
             );
 
             assertFalse(
                 "Temporary snapshot directory must created lazily for in-memory node",
-                new File(
-                    ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
-                    DFLT_SNAPSHOT_TMP_DIR
-                ).exists()
+                ign.context().pdsFolderResolver().resolveDirectories().snapshotTemp().exists()
             );
 
             assertTrue(snpDir.exists());

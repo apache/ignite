@@ -119,7 +119,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
@@ -271,10 +270,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
-                File storeWorkDir = ((FilePageStoreManager)((IgniteEx)ig).context()
-                    .cache().context().pageStore()).workDir();
-
-                Path snpTempDir = Paths.get(storeWorkDir.getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR);
+                Path snpTempDir = ((IgniteEx)ig).context().pdsFolderResolver().resolveDirectories().snapshotTemp().toPath();
 
                 assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
                     0, U.fileCount(snpTempDir));
