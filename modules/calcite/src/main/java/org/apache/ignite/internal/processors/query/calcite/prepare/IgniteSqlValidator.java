@@ -565,6 +565,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         Object val = parameters[node.getIndex()];
 
+        if (val == null && type != null)
+            return type;
+
         type = val == null
             ? typeFactory.createSqlType(SqlTypeName.NULL)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
