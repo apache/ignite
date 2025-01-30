@@ -3066,12 +3066,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (wal == null)
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
 
-        File archiveDir = wal.archiveDir();
+        IgniteNodeDirectories dirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
 
-        if (archiveDir == null)
+        if (dirs.isWalArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
-        ensureHardLinkAvailable(archiveDir.toPath(), snpDir.toPath());
+        ensureHardLinkAvailable(dirs.walArchive().toPath(), snpDir.toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()

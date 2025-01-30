@@ -33,7 +33,7 @@ public class SegmentRouter {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** */
-    IgniteNodeDirectories dirs;
+    private final IgniteNodeDirectories dirs;
 
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
@@ -65,7 +65,7 @@ public class SegmentRouter {
     public FileDescriptor findSegment(long segmentId) throws FileNotFoundException {
         FileDescriptor fd;
 
-        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !isArchiverEnabled())
+        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !dirs.isWalArchiveEnabled())
             fd = new FileDescriptor(new File(dirs.walArchive(), fileName(segmentId)));
         else
             fd = new FileDescriptor(new File(dirs.wal(), fileName(segmentId % dsCfg.getWalSegments())), segmentId);
@@ -82,39 +82,5 @@ public class SegmentRouter {
         }
 
         return fd;
-    }
-
-    /**
-     * TODO: remove
-     * @return {@code true} If archive folder exists.
-     */
-    public boolean hasArchive() {
-        return !dirs.wal().getAbsolutePath().equals(dirs.walArchive().getAbsolutePath());
-    }
-
-    /**
-     * TODO: remove
-     * @return WAL working directory.
-     */
-    public File getWalWorkDir() {
-        return dirs.wal();
-    }
-
-    /**
-     * TODO: remove
-     * @return WAL archive directory.
-     */
-    public File getWalArchiveDir() {
-        return dirs.walArchive();
-    }
-
-    /**
-     * Returns {@code true} if archiver is enabled.
-     */
-    private boolean isArchiverEnabled() {
-        if (dirs != null)
-            return !dirs.walArchive().equals(dirs.wal());
-
-        return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 }

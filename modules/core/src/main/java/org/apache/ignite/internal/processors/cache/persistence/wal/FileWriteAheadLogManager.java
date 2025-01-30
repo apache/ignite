@@ -637,16 +637,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return flag indicating if archiver is disabled.
      */
     private boolean isArchiverEnabled() {
-        if (dirs != null)
-            return !dirs.walArchive().equals(dirs.wal());
-
-        return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable File archiveDir() {
-        // TODO: chang to dirs.
-        return dirs.walArchive();
+        return dirs != null
+            ? dirs.isWalArchiveEnabled()
+            : !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 
     /**

@@ -270,6 +270,11 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         return mkdir(binaryMeta, "binary metadata");
     }
 
+    /** @return {@code True} if WAL archive enabled. */
+    public boolean isWalArchiveEnabled() {
+        return !walArchive.equals(wal);
+    }
+
     /**
      * Creates a directory specified by the given arguments.
      *
@@ -277,7 +282,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      * @return Initialized directory.
      * @throws IgniteCheckedException If failed to initialize directory.
      */
-    public File resolveDirectory(String cfg) {
+    private File resolveDirectory(String cfg) {
         File sharedBetweenNodesDir = new File(cfg);
 
         return sharedBetweenNodesDir.isAbsolute()
