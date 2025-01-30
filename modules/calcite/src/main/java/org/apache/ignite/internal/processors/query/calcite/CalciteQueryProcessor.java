@@ -144,7 +144,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
 
     /**
-     * Planner timeout property name.
+     * Use query blocking executor property name.
      */
     @SystemProperty(value = "Calcite-based SQL engine. Use query blocking task executor instead of striped task " +
         "executor. Query blocking executor allows to run SQL queries inside user-defined functions at the cost of " +
