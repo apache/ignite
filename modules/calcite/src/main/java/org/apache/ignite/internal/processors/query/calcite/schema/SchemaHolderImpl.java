@@ -67,10 +67,10 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     private final GridKernalContext ctx;
 
     /** */
-    private GridInternalSubscriptionProcessor subscriptionProcessor;
+    private final FrameworkConfig frameworkCfg;
 
     /** */
-    private FrameworkConfig frameworkCfg;
+    private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
     private volatile SchemaPlus calciteSchema;
