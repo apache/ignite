@@ -524,7 +524,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (isPersistenceEnabled(cctx.gridConfig())) {
             dirs.mkdirSnapshotsRoot();
-            dirs.mkdirSnapshotTemp();
+            dirs.mkdirSnapshotTempRoot();
         }
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -2390,7 +2390,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         recovered = true;
 
-        for (File tmp : dirs.snapshotTemp().listFiles())
+        for (File tmp : dirs.snapshotTempRoot().listFiles())
             U.delete(tmp);
 
         if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
@@ -2656,7 +2656,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 encrypt
             )
             : new SnapshotFutureTask(
-                cctx, srcNodeId, reqId, snpName, dirs.snapshotTemp(), ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+                cctx, srcNodeId, reqId, snpName, dirs.snapshotTempRoot(), ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -3557,7 +3557,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(snpMgr.dirs.snapshotTemp().getAbsolutePath(), this.reqId);
+            dir = Paths.get(snpMgr.dirs.snapshotTempRoot().getAbsolutePath(), this.reqId);
             initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;

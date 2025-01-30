@@ -166,7 +166,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      * Working directory for loaded snapshots from the remote nodes and storing
      * temporary partition delta-files of locally started snapshot process.
      */
-    private final File snpTmp;
+    private final File snpTmpRoot;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -210,7 +210,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         wal = new File(new File(root, DFLT_WAL_PATH), folderName);
         walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
         walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
-        snpTmp = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
+        snpTmpRoot = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
     }
 
     /**
@@ -243,7 +243,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         wal = resolveDirectory(dsCfg.getWalPath());
         walArchive = resolveDirectory(dsCfg.getWalArchivePath());
         walCdc = resolveDirectory(dsCfg.getCdcWalPath());
-        snpTmp = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
+        snpTmpRoot = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
     }
 
     /** @return Folder name. */
@@ -279,8 +279,8 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
     }
 
     /** @return Path to the directory form temp snapshot files. */
-    public File snapshotTemp() {
-        return snpTmp;
+    public File snapshotTempRoot() {
+        return snpTmpRoot;
     }
 
     /**
@@ -293,13 +293,13 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
     }
 
     /**
-     * Creates {@link #snapshotTemp()} directory.
+     * Creates {@link #snapshotTempRoot()} directory.
      * @return Created directory.
-     * @see #snapshotTemp()
+     * @see #snapshotTempRoot()
      */
-    public File mkdirSnapshotTemp() {
+    public File mkdirSnapshotTempRoot() {
         try {
-            return mkdir(snpTmp, "temp directory for snapshot creation");
+            return mkdir(snpTmpRoot, "temp directory for snapshot creation");
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
