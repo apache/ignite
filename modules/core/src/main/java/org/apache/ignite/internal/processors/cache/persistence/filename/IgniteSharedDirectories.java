@@ -41,10 +41,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  */
 public class IgniteSharedDirectories {
     /** Default path (relative to working directory) of binary metadata folder */
-    private static final String DFLT_BINARY_METADATA_PATH = "binary_meta";
+    public static final String DFLT_BINARY_METADATA_PATH = "binary_meta";
 
     /** Default path (relative to working directory) of marshaller mappings folder */
-    private static final String DFLT_MARSHALLER_PATH = "marshaller";
+    public static final String DFLT_MARSHALLER_PATH = "marshaller";
 
     /** Root(work) directory. */
     protected final File root;

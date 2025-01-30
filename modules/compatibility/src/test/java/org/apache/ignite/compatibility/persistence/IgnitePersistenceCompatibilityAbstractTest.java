@@ -25,13 +25,16 @@ import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtil
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories.DFLT_BINARY_METADATA_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories.DFLT_MARSHALLER_PATH;
 
 /**
  * Super class for all persistence compatibility tests.
  */
 public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** Persistence directories. */
-    private static final List<String> PERSISTENCE_DIRS = Arrays.asList(DFLT_STORE_DIR, "binary_meta", "cp", "marshaller");
+    private static final List<String> PERSISTENCE_DIRS
+        = Arrays.asList(DFLT_STORE_DIR, DFLT_BINARY_METADATA_PATH, "cp", DFLT_MARSHALLER_PATH);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
