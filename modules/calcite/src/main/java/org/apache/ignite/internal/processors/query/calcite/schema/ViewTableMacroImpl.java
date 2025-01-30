@@ -52,7 +52,7 @@ public class ViewTableMacroImpl implements TableMacro {
     /** */
     private final SchemaPlus schema;
 
-    /* **/
+    /** */
     private final FrameworkConfig frameworkCfg;
 
     /** Ctor. */
