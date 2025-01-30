@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -31,12 +30,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Supply message with supplier error transfer support.
  */
-public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessage {
+public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Available since. */
-    public static final IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Supplying process error. */
     @GridDirectTransient
@@ -48,7 +44,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
     /**
      * Default constructor.
      */
-    public GridDhtPartitionSupplyMessageV2() {
+    public GridDhtPartitionSupplyErrorMessage() {
     }
 
     /**
@@ -58,7 +54,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
      * @param addDepInfo Add dep info.
      * @param err Supply process error.
      */
-    public GridDhtPartitionSupplyMessageV2(
+    public GridDhtPartitionSupplyErrorMessage(
         long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
@@ -133,7 +129,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionSupplyMessageV2.class);
+        return reader.afterMessageRead(GridDhtPartitionSupplyErrorMessage.class);
     }
 
     /** {@inheritDoc} */

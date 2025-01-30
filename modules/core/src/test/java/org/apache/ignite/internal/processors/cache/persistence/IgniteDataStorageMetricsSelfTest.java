@@ -125,7 +125,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
-                .setName(PERSISTENCE_REGION_1))
+                .setName(PERSISTENCE_REGION_1)
+                .setCdcEnabled(true))
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setMaxSize(maxRegionSize)
@@ -538,6 +539,17 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             totalSize += walMgr.totalSize(walFiles(router.getWalArchiveDir()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
+
+        long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
+
+        if (router.hasArchive()) {
+            long cdcWalArchiveSegments = walFiles(walMgr.walCdcDirectory()).length;
+
+            // Count of segments = LastArchivedSegmentIndex + 1
+            assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);
+        }
+        else
+            assertEquals(-1, lastArchivedSegIdx);
     }
 
     /**

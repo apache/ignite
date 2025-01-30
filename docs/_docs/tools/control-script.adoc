@@ -49,8 +49,6 @@ If you want to connect to a node that is running on a remove machine, specify th
 
 | --user USER | The user name. |
 | --password PASSWORD |The user password. |
-| --ping-interval PING_INTERVAL | The ping interval. | 5000
-| --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
 | --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]. | `TLS`
 | --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names[Supported ciphers,window=_blank]. |
 | --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`

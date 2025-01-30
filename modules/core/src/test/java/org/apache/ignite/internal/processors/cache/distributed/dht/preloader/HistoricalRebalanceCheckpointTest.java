@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -193,8 +193,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         IdleVerifyResult checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
-        Map<Boolean, PartitionHashRecordV2> conflicts = F.flatCollections(checkRes.counterConflicts().values())
-            .stream().collect(Collectors.toMap(PartitionHashRecordV2::isPrimary, Functions.identity()));
+        Map<Boolean, PartitionHashRecord> conflicts = F.flatCollections(checkRes.counterConflicts().values())
+            .stream().collect(Collectors.toMap(PartitionHashRecord::isPrimary, Functions.identity()));
 
         // The cache is of only 1 partition with 2 nodes: primary and backup.
         assertEquals(2, conflicts.size());
@@ -337,7 +337,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         // Storing counters on primary.
         forceCheckpoint();
 
-        Collection<PartitionHashRecordV2> conflicts =
+        Collection<PartitionHashRecord> conflicts =
             F.flatCollections(idleVerify(prim, DEFAULT_CACHE_NAME).counterConflicts().values());
 
         // With 1 backup and one-phase commit partitions are the same because there are no finish requests while all
@@ -345,7 +345,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         assertTrue(!conflicts.isEmpty() || backupNodes == 1);
 
         // Ensure the primary node got a higher counter.
-        for (PartitionHashRecordV2 c : conflicts) {
+        for (PartitionHashRecord c : conflicts) {
             if (c.isPrimary()) {
                 assertCounters(c.updateCounter(), preloadCnt, "" + (preloadCnt + 1) + " - " +
                     (preloadCnt + prepareBlockCnt), updateCnt);
