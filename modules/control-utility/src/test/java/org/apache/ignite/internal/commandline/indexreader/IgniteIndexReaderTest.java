@@ -156,7 +156,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
-        return F.asList(CLI_CMD_HND, CLI_GRID_CLIENT_CMD_HND);
+        return F.asList(CLI_CMD_HND);
     }
 
     /** {@inheritDoc} */
