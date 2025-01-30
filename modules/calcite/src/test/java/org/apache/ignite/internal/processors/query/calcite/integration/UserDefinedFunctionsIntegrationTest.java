@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -28,11 +31,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 
 /**
  * Integration test for user defined functions.
  */
+@WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** Log listener. */
     private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -40,6 +47,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
 
         if (igniteInstanceName.endsWith("0"))
             cfg.setGridLogger(listeningLog);
@@ -174,6 +183,25 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testInnerSql() {
+        IgniteCache<Integer, Employer> emp4 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+            .setName("emp4")
+            .setSqlFunctionClasses(InnerSqlFunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp4")))
+        );
+
+        for (int i = 0; i < 100; i++)
+            put(client, emp4, i, new Employer("Name" + i, (double)i));
+
+        assertQuery(grid(0), "SELECT sum(salary(?, _key)) FROM emp4")
+            .withParams(grid(0).name())
+            .returns(4950d)
+            .check();
+    }
+
+    /** */
     public static class MulFunctionsLibrary {
         /** */
         @QuerySqlFunction
@@ -221,6 +249,18 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction(alias = "sameSign")
         public static int sameSign2(int v) {
             return v;
+        }
+    }
+
+    /** */
+    public static class InnerSqlFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static double salary(String ignite, int key) {
+            return (double)Ignition.ignite(ignite)
+                .cache("emp4")
+                .query(new SqlFieldsQuery("SELECT salary FROM emp4 WHERE _key = ?").setArgs(key))
+                .getAll().get(0).get(0);
         }
     }
 }

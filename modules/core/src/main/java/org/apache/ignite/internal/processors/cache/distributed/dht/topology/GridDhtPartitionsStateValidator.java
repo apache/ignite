@@ -183,8 +183,6 @@ public class GridDhtPartitionsStateValidator {
             updateCountersAndNodesByPartitions.put(part.id(), new AbstractMap.SimpleEntry<>(cctx.localNodeId(), part.updateCounter()));
         }
 
-        int partitions = top.partitions();
-
         // Then process and validate counters from other nodes.
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
             UUID nodeId = e.getKey();
@@ -193,7 +191,7 @@ public class GridDhtPartitionsStateValidator {
 
             final GridDhtPartitionsSingleMessage msg = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId());
 
             Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
 
@@ -244,8 +242,6 @@ public class GridDhtPartitionsStateValidator {
             sizesAndNodesByPartitions.put(part.id(), new AbstractMap.SimpleEntry<>(cctx.localNodeId(), part.fullSize()));
         }
 
-        int partitions = top.partitions();
-
         // Then process and validate sizes from other nodes.
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
             UUID nodeId = e.getKey();
@@ -254,7 +250,7 @@ public class GridDhtPartitionsStateValidator {
 
             final GridDhtPartitionsSingleMessage msg = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId());
 
             Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
 
