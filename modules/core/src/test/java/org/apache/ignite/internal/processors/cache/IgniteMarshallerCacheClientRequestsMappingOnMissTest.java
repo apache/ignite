@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -29,13 +26,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -91,21 +88,9 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        cleanupMarshallerFileStore();
+        U.delete(new IgniteSharedDirectories(TMP_DIR).marshaller());
 
         mappingReqsCounter.set(0);
-    }
-
-    /**
-     *
-     */
-    private void cleanupMarshallerFileStore() throws IOException {
-        Path marshCache = Paths.get(TMP_DIR, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
-
-        for (File file : marshCache.toFile().listFiles())
-            Files.delete(file.toPath());
-
-        Files.deleteIfExists(marshCache);
     }
 
     /**
@@ -127,7 +112,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         stopGrid(1);
 
-        File[] files = Paths.get(TMP_DIR, DataStorageConfiguration.DFLT_MARSHALLER_PATH).toFile().listFiles();
+        File[] files = new IgniteSharedDirectories(TMP_DIR).marshaller().listFiles();
 
         assertNotNull(TMP_DIR + "/marshaller directory should contain at least one file", files);
 

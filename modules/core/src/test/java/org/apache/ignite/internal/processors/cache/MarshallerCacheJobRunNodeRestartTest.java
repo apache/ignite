@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -39,7 +38,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     @Test
     public void testJobRun() throws Exception {
         for (int i = 0; i < 5; i++) {
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, true);
+            dirs().mkdirMarshaller();
 
             log.info("Iteration: " + i);
 

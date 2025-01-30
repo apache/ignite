@@ -69,6 +69,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -1586,15 +1587,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @NotNull private IteratorParametersBuilder createIteratorParametersBuilder(
         String workDir,
         String subfolderName
-    ) throws IgniteCheckedException {
-        File binaryMeta = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
-            false);
-        File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
-        File marshallerMapping = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+    ) {
+        IgniteNodeDirectories dirs = new IgniteNodeDirectories(workDir, subfolderName);
 
         return new IteratorParametersBuilder()
-            .binaryMetadataFileStoreDir(binaryMetaWithConsId)
-            .marshallerMappingFileStoreDir(marshallerMapping);
+            .binaryMetadataFileStoreDir(dirs.binaryMeta())
+            .marshallerMappingFileStoreDir(dirs.marshaller());
     }
 
     /**

@@ -107,19 +107,11 @@ class BinaryMetadataFileStore {
 
         fileIOFactory = dsCfg == null ? new DataStorageConfiguration().getFileIOFactory() : dsCfg.getFileIOFactory();
 
-        final String nodeFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+        metadataDir = binaryMetadataFileStoreDir != null
+            ? binaryMetadataFileStoreDir
+            : ctx.pdsFolderResolver().resolveDirectories().binaryMeta();
 
-        if (binaryMetadataFileStoreDir != null)
-            metadataDir = binaryMetadataFileStoreDir;
-        else {
-            metadataDir = new File(U.resolveWorkDirectory(
-                ctx.config().getWorkDirectory(),
-                DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
-                false
-            ), nodeFolderName);
-        }
-
-        fixLegacyFolder(nodeFolderName);
+        fixLegacyFolder(ctx.pdsFolderResolver().resolveFolders().folderName());
     }
 
     /**

@@ -46,12 +46,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,8 +63,6 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
@@ -85,6 +83,9 @@ public class Dump implements AutoCloseable {
 
     /** Dump directory. */
     private final File dumpDir;
+
+    /** Dump directories. */
+    private final List<IgniteNodeDirectories> dirs;
 
     /** Specific consistent id. */
     private final @Nullable String consistentId;
@@ -144,8 +145,11 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
+        this.dirs = metadata.stream()
+            .map(m -> new IgniteNodeDirectories(dumpDir, m.folderName()))
+            .collect(Collectors.toList());
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(dumpDir, log);
+        this.cctx = standaloneKernalContext(log);
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -157,19 +161,15 @@ public class Dump implements AutoCloseable {
     }
 
     /**
-     * @param dumpDir Dump directory.
      * @param log Logger.
      * @return Standalone kernal context.
      */
-    private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
-        File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
-
-        A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
-        A.ensure(marshaller.exists(), "marshaller directory not exists");
+    private GridKernalContext standaloneKernalContext(IgniteLogger log) {
+        A.ensure(F.first(dirs).binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(F.first(dirs).marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(dirs).binaryMeta(), F.first(dirs).marshaller());
 
             startAllComponents(kctx);
 
@@ -188,7 +188,7 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH))
+            && !(IgniteNodeDirectories.isBinaryMetaRoot(f) || IgniteNodeDirectories.isMarshaller(f))
             && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)
@@ -358,6 +358,11 @@ public class Dump implements AutoCloseable {
     /** @return Root dump directory. */
     public File dumpDirectory() {
         return dumpDir;
+    }
+
+    /** @return Dump directories. */
+    public List<IgniteNodeDirectories> directories() {
+        return dirs;
     }
 
     /** */

@@ -31,4 +31,9 @@ public interface PdsFoldersResolver {
      * @throws IgniteCheckedException if failed.
      */
     public PdsFolderSettings<NodeFileLockHolder> resolveFolders() throws IgniteCheckedException;
+
+    /**
+     * @return Ignite node standart directories.
+     */
+    public IgniteNodeDirectories resolveDirectories();
 }

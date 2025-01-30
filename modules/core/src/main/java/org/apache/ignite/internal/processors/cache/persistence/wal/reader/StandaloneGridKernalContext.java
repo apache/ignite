@@ -58,6 +58,8 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -210,7 +212,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
+            binaryMetadataFileStoreDir = new IgniteSharedDirectories(new File(".")).binaryMetaRoot().getAbsoluteFile();
 
         cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
@@ -696,6 +698,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
                 return new PdsFolderSettings(new File("."), U.maskForFileName(""));
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteNodeDirectories resolveDirectories() {
+                // TODO: check me - refactor constructor to provide Instance of IgniteDirectories.
+                return new IgniteNodeDirectories(new File("."), U.maskForFileName(""));
             }
         };
     }

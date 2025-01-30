@@ -45,7 +45,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
@@ -620,10 +619,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Kill the cluster node, clean up the working directory (with cached types)
             // and drop the client connection.
             ignite.close();
-            U.delete(U.resolveWorkDirectory(
-                    U.defaultWorkDirectory(),
-                    DataStorageConfiguration.DFLT_MARSHALLER_PATH,
-                    false));
+            U.delete(dirs().marshaller());
             dropAllThinClientConnections();
 
             // Invoke the service.

@@ -88,6 +88,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -674,8 +676,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, true);
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, true);
+        IgniteSharedDirectories dirs = dirs();
+
+        U.delete(dirs.marshaller());
+        U.delete(dirs.binaryMetaRoot());
+
+        dirs.mkdirBinaryMetaRoot();
+        dirs.mkdirMarshaller();
     }
 
     /** */
@@ -3176,5 +3183,19 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             throw new IgniteException("MBean not registered: " + mbeanName);
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
+    }
+
+    /**
+     * @return Ignite directories without specific {@code folerName} parameter.
+     */
+    protected IgniteSharedDirectories dirs() throws IgniteCheckedException {
+        return new IgniteSharedDirectories(U.defaultWorkDirectory());
+    }
+
+    /**
+     * @return Ignite directories for specific {@code folderName}.
+     */
+    protected IgniteNodeDirectories dirs(String folderName) throws IgniteCheckedException {
+        return new IgniteNodeDirectories(U.defaultWorkDirectory(), folderName);
     }
 }
