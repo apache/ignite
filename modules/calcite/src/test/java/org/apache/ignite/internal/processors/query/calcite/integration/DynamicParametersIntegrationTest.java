@@ -78,7 +78,9 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT ?::VARCHAR").withParams(1).returns("1").check();
         assertQuery("SELECT CAST(? as VARCHAR)").withParams(1).returns("1").check();
 
-        IgniteCache<Integer, Employer> cache = createAndPopulateTable();
+        createAndPopulateTable();
+
+        IgniteCache<Integer, Employer> cache = client.getOrCreateCache(TABLE_NAME);
 
         cache.put(cache.size(), new Employer("15", 15d));
 
