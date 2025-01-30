@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Map;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
@@ -26,8 +28,13 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -38,13 +45,51 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
  */
 @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Log listener. */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
 
+        if (igniteInstanceName.endsWith("0"))
+            cfg.setGridLogger(listeningLog);
+
         return cfg;
+    }
+
+    /** */
+    @Test
+    public void testSameSignatureRegistered() throws Exception {
+        LogListener logChecker = LogListener.matches("Unable to register function 'SAMESIGN'. Other function " +
+            "with the same name and parameters is already registered").build();
+
+        listeningLog.registerListener(logChecker);
+
+        // Actually, we might use QuerySqlFunction#alias instead of declaring additional method holding class (OtherFunctionsLibrary2).
+        // But Class#getDeclaredMethods() seems to give methods with a different order. If we define methods with one class,
+        // we can get one 'sameSign' registered before another. And the test would become flaky.
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
+            .setSqlFunctionClasses(OtherFunctionsLibrary.class, OtherFunctionsLibrary2.class));
+
+        // Ensure that 1::INTEGER isn't returned by OtherFunctionsLibrary2#sameSign(int).
+        assertQuery("SELECT \"emp\".sameSign(1)").returns("echo_1").check();
+
+        // Ensure that OtherFunctionsLibrary#sameSign2(int) isn't registered.
+        assertThrows("SELECT \"emp\".sameSign2(1)", SqlValidatorException.class,
+            "No match found for function signature SAMESIGN2");
+
+        logChecker.check(getTestTimeout());
+
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(qryProc, "schemaHolder", "igniteSchemas");
+
+        IgniteSchema schema = schemas.get("emp");
+
+        assertEquals(1, schema.getFunctions("SAMESIGN").size());
     }
 
     /** */
@@ -201,6 +246,21 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static String echo(String s) {
             return s;
+        }
+
+        /** The signature interferes with aliased {@link OtherFunctionsLibrary2#sameSign2(int)}. */
+        @QuerySqlFunction
+        public static String sameSign(int v) {
+            return "echo_" + v;
+        }
+    }
+
+    /** */
+    public static class OtherFunctionsLibrary2 {
+        /** The aliased signature interferes with {@link OtherFunctionsLibrary#sameSign(int)}. */
+        @QuerySqlFunction(alias = "sameSign")
+        public static int sameSign2(int v) {
+            return v;
         }
     }
 
