@@ -43,11 +43,6 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** */
-    @Override public void resetRow(Object[] row) {
-        Arrays.fill(row, null);
-    }
-
-    /** */
     @Override public Object[] copyRow(Object[] row) {
         Object[] copy = new Object[row.length];
 
@@ -70,6 +65,8 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     @Override public RowFactory<Object[]> factory(Type... types) {
         int rowLen = types.length;
 
+        Object[] row = new Object[rowLen];
+
         return new RowFactory<Object[]>() {
             /** {@inheritDoc} */
             @Override public RowHandler<Object[]> handler() {
@@ -78,7 +75,9 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
 
             /** {@inheritDoc} */
             @Override public Object[] create() {
-                return new Object[rowLen];
+                Arrays.fill(row, null);
+
+                return row;
             }
 
             /** {@inheritDoc} */
