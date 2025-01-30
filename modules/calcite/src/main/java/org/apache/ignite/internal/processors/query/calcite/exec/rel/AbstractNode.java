@@ -49,9 +49,6 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IO_BATCH_CNT, 4);
 
-    /** for debug purpose */
-    private volatile Thread thread;
-
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
@@ -186,12 +183,6 @@ public abstract class AbstractNode<Row> implements Node<Row> {
             throw new QueryCancelledException("The query was timed out.");
         if (Thread.interrupted())
             throw new IgniteInterruptedCheckedException("Thread was interrupted.");
-        if (!U.assertionsEnabled())
-            return;
-        if (thread == null)
-            thread = Thread.currentThread();
-        else
-            assert thread == Thread.currentThread();
     }
 
     /** */
