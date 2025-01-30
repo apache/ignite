@@ -682,28 +682,15 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @param subDirName sub directories name expected
      */
-    private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) throws IgniteCheckedException {
+    private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) {
         IgniteNodeDirectories dirs = new IgniteNodeDirectories(ign.configuration(), subDirName);
 
         Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 
         check.accept(dirs.binaryMeta());
-
-        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
-        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsFolderResolver.DB_DEFAULT_FOLDER, subDirName);
-    }
-
-    /**
-     * Checks one folder existence.
-     *
-     * @param subFolderNames sub folders chain array to touch.
-     * @throws IgniteCheckedException if IO error occur.
-     */
-    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory());
-
-        assertDirectoryExist(curFolder, subFolderNames);
+        check.accept(dirs.wal());
+        check.accept(dirs.walArchive());
+        check.accept(new File(dirs.root(), subDirName));
     }
 
     /**

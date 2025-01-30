@@ -19,10 +19,15 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 
 /**
  * Provides access to Ignite node directories.
@@ -57,7 +62,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * │  ├── lock
  * │  ├── marshaller                                                            ← marshaller (shared between all nodes)
  * │  │  └── 1645778359.classname0
- * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← folderName (node 0).
+ * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeRoot (node 0).
  * │  │  ├── cache-default
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
@@ -84,7 +89,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
  * │  │  └── snp                                                                ← snpTmp (node 0)
- * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← folderName (node 1).
+ * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeRoot (node 1).
  * │  │  ├── cache-default
  * ..
  * │  │  ├── cache-ignite-sys-cache
@@ -141,6 +146,15 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
     /** Path to the directory containing binary metadata. */
     private final File binaryMeta;
 
+    /** Path to the directory containing active WAL segments. */
+    private final File wal;
+
+    /** Path to the directory containing archive WAL segments. */
+    private final File walArchive;
+
+    /** Path to the directory containing archive WAL segments for CDC. */
+    private final File walCdc;
+
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
      *
@@ -179,6 +193,9 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot.getAbsolutePath(), folderName);
+        wal = new File(new File(root, DFLT_WAL_PATH), folderName);
+        walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
+        walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
     }
 
     /**
@@ -202,6 +219,14 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        A.notNull(dsCfg, "Data storage configuration");
+
+        wal = resolveDirectory(dsCfg.getWalPath());
+        walArchive = resolveDirectory(dsCfg.getWalArchivePath());
+        walCdc = resolveDirectory(dsCfg.getCdcWalPath());
     }
 
     /** @return Folder name. */
@@ -209,9 +234,31 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
         return folderName;
     }
 
+    /**
+     * @return Node root directory.
+     */
+    public File nodeRoot() {
+        return new File(db, folderName);
+    }
+
     /** @return Path to binary metadata directory. */
     public File binaryMeta() {
         return binaryMeta;
+    }
+
+    /** @return Path to the directory containing active WAL segments. */
+    public File wal() {
+        return wal;
+    }
+
+    /** @return Path to the directory containing archive WAL segments. */
+    public File walArchive() {
+        return walArchive;
+    }
+
+    /** @return Path to the directory containing archive WAL segments for CDC. */
+    public File walCdc() {
+        return walCdc;
     }
 
     /**
@@ -221,6 +268,21 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      */
     public File mkdirBinaryMeta() throws IgniteCheckedException {
         return mkdir(binaryMeta, "binary metadata");
+    }
+
+    /**
+     * Creates a directory specified by the given arguments.
+     *
+     * @param cfg Configured directory path, may be {@code null}.
+     * @return Initialized directory.
+     * @throws IgniteCheckedException If failed to initialize directory.
+     */
+    public File resolveDirectory(String cfg) {
+        File sharedBetweenNodesDir = new File(cfg);
+
+        return sharedBetweenNodesDir.isAbsolute()
+            ? new File(sharedBetweenNodesDir, folderName)
+            : new File(new File(root, cfg), folderName);
     }
 
     /** {@inheritDoc} */

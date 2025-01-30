@@ -18,10 +18,10 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -224,36 +224,11 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
         IgniteNodeDirectories dirs = nodeDirs(subDirName);
 
-        assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
+        Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, subDirName);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsFolderResolver.DB_DEFAULT_FOLDER, subDirName);
+        check.accept(dirs.binaryMeta());
+        check.accept(dirs.wal());
+        check.accept(dirs.walArchive());
+        check.accept(dirs.nodeRoot());
     }
-
-    /**
-     * Checks one folder existence
-     *
-     * @param subFolderNames subfolders array to touch
-     * @throws IgniteCheckedException if IO error occur
-     */
-    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
-        File curFolder = new File(U.defaultWorkDirectory());
-
-        for (String name : subFolderNames) {
-            curFolder = new File(curFolder, name);
-        }
-
-        final String path;
-        try {
-            path = curFolder.getCanonicalPath();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to convert path: [" + curFolder.getAbsolutePath() + "]", e);
-        }
-
-        assertTrue("Directory " + Arrays.asList(subFolderNames).toString()
-            + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
-    }
-
 }

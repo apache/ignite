@@ -90,9 +90,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
 
         /** {@inheritDoc} */
         @Override protected Void run(CdcDeleteLostSegmentLinksCommandArg arg) throws IgniteException {
-            FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ignite.context().cache().context().wal(true);
-
-            File walCdcDir = wal.walCdcDirectory();
+            File walCdcDir = ignite.context().pdsFolderResolver().resolveDirectories().walCdc();
 
             if (walCdcDir == null)
                 throw new IgniteException("CDC is not configured.");

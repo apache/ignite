@@ -27,14 +27,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -77,8 +74,8 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
         PrintStream out = new PrintStream(outByte);
 
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            dirs.wal(),
+            dirs.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
             dirs.binaryMeta(),
             dirs.marshaller(),

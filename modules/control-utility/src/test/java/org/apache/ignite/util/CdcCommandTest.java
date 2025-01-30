@@ -250,9 +250,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private void checkLinks(IgniteEx srv, List<Long> expLinks) {
-        FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)srv.context().cache().context().wal(true);
-
-        File[] links = wal0.walCdcDirectory().listFiles(WAL_SEGMENT_FILE_FILTER);
+        File[] links = srv.context().pdsFolderResolver().resolveDirectories().walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
         Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
@@ -419,14 +420,11 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             }
         });
 
-        String nodeId0 = U.maskForFileName(ig0.localNode().consistentId().toString());
-
-        String walArchPath = ig0.configuration().getDataStorageConfiguration().getWalArchivePath();
+        File walArchPath = ig0.context().pdsFolderResolver().resolveDirectories().walArchive();
 
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
-            nodeId0, false));
+        U.delete(walArchPath);
 
         startGrid(0);
 

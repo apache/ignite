@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -31,8 +32,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
 public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
@@ -57,9 +56,11 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        IgniteNodeDirectories dirs = new IgniteNodeDirectories(new File(DFLT_WORK_DIR), CONSISTENT_ID);
+
         assertNotNull(DFLT_WORK_DIR);
-        assertTrue(new File(new File(DFLT_WORK_DIR, DFLT_STORE_DIR), CONSISTENT_ID).mkdirs());
-        assertTrue(new File(new File(DFLT_WORK_DIR, DFLT_WAL_CDC_PATH), CONSISTENT_ID).mkdirs());
+        assertTrue(dirs.db().mkdirs());
+        assertTrue(dirs.walCdc().mkdirs());
     }
 
     /** {@inheritDoc} */

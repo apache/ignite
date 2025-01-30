@@ -25,7 +25,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.cdc.CdcConsumerState.CDC_MODE_FILE_NAME;
@@ -45,7 +44,7 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
         if (fut.localJoinExchange() || fut.activateCluster()) {
             try {
                 File cdcModeFile = Paths.get(
-                    ((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory().getAbsolutePath(),
+                    cctx.kernalContext().pdsFolderResolver().resolveDirectories().walCdc().getAbsolutePath(),
                     STATE_DIR,
                     CDC_MODE_FILE_NAME).toFile();
 

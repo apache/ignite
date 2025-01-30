@@ -34,12 +34,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -274,32 +272,12 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
          * @throws IgniteCheckedException if failed.
          */
         private File getWalArchiveDir() throws IgniteCheckedException {
-            IgniteConfiguration igCfg = ignite.context().config();
+            IgniteNodeDirectories dirs = ignite.context().pdsFolderResolver().resolveDirectories();
 
-            DataStorageConfiguration dsCfg = igCfg.getDataStorageConfiguration();
+            if (!dirs.walArchive().exists())
+                throw new IgniteCheckedException("WAL archive directory does not exists" + dirs.walArchive().getAbsolutePath());
 
-            PdsFolderSettings resFldrs = ignite.context().pdsFolderResolver().resolveFolders();
-
-            String consId = resFldrs.folderName();
-
-            File dir;
-
-            if (dsCfg.getWalArchivePath() != null) {
-                File workDir0 = new File(dsCfg.getWalArchivePath());
-
-                dir = workDir0.isAbsolute() ?
-                        new File(workDir0, consId) :
-                        new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(), dsCfg.getWalArchivePath(), false),
-                                consId);
-            }
-            else
-                dir = new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(),
-                        DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false), consId);
-
-            if (!dir.exists())
-                throw new IgniteCheckedException("WAL archive directory does not exists" + dir.getAbsolutePath());
-
-            return dir;
+            return dirs.walArchive();
         }
 
         /**

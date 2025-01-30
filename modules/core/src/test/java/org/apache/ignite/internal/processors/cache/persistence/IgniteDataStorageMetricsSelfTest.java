@@ -543,7 +543,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
 
         if (router.hasArchive()) {
-            long cdcWalArchiveSegments = walFiles(walMgr.walCdcDirectory()).length;
+            long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().resolveDirectories().walCdc()).length;
 
             // Count of segments = LastArchivedSegmentIndex + 1
             assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);
