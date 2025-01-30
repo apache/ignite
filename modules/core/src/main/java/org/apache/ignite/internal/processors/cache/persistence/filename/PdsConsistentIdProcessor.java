@@ -82,7 +82,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (dirs == null) {
             try {
                 if (ctx.clientNode()) {
-                    // TODO: return empty instance here
                     dirs = new IgniteNodeDirectories(
                         U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome()),
                         resolveFolders().folderName()

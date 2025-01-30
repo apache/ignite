@@ -702,8 +702,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
             /** {@inheritDoc} */
             @Override public IgniteNodeDirectories resolveDirectories() {
-                // TODO: check me - refactor constructor to provide Instance of IgniteDirectories.
-                return new IgniteNodeDirectories(new File("."), U.maskForFileName(""));
+                return new IgniteNodeDirectories(new File("."), resolveFolders().folderName());
             }
         };
     }

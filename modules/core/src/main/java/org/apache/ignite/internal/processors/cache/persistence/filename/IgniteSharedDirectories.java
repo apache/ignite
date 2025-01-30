@@ -41,13 +41,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  */
 public class IgniteSharedDirectories {
     /** Default path (relative to working directory) of binary metadata folder */
-    public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
+    private static final String DFLT_BINARY_METADATA_PATH = "binary_meta";
 
     /** Default path (relative to working directory) of marshaller mappings folder */
-    public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
+    private static final String DFLT_MARSHALLER_PATH = "marshaller";
 
     /** Root(work) directory. */
     protected final File root;
+
+    /** db directory. */
+    protected final File db;
 
     /** Path to the directory containing binary metadata. */
     protected final File binaryMetaRoot;
@@ -62,8 +65,9 @@ public class IgniteSharedDirectories {
         A.notNull(root, "Root directory");
 
         this.root = root;
-        marshaller = new File(root, DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
+        db = new File(root, DB_DEFAULT_FOLDER);
+        marshaller = new File(db, DFLT_MARSHALLER_PATH);
+        binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
     }
 
     /**
@@ -86,8 +90,9 @@ public class IgniteSharedDirectories {
             throw new IgniteException(e);
         }
 
-        marshaller = new File(root, DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = new File(root, DFLT_BINARY_METADATA_PATH);
+        db = new File(root, DB_DEFAULT_FOLDER);
+        marshaller = new File(db, DFLT_MARSHALLER_PATH);
+        binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
     }
 
     /**
@@ -101,7 +106,7 @@ public class IgniteSharedDirectories {
      * @return Path to the {@code db} directory.
      */
     public File db() {
-        return new File(root, DB_DEFAULT_FOLDER);
+        return db;
     }
 
     /**
