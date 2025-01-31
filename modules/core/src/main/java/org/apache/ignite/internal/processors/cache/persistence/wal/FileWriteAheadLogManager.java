@@ -410,6 +410,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Pointer to the last successful checkpoint until which WAL segments can be safely deleted. */
     private volatile WALPointer lastCheckpointPtr = new WALPointer(0, 0, 0);
 
+    /** {@code True} if CDC enabled in {@link IgniteConfiguration}. */
+    private final boolean cdcConfigured;
+
     /** CDC disabled flag. */
     private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED,
         "CDC disabled flag. Disables CDC in the cluster to avoid disk overflow. " +
@@ -438,7 +441,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
-        inMemoryCdc = !CU.isPersistenceEnabled(dsCfg) && CU.isCdcEnabled(igCfg);
+        cdcConfigured = CU.isCdcEnabled(igCfg);
+        inMemoryCdc = cdcConfigured && !CU.isPersistenceEnabled(dsCfg);
 
         timeoutRolloverMux = (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) ? new Object() : null;
 
@@ -2136,7 +2140,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (dirs.walCdc() != null) {
+                if (cdcConfigured) {
                     if (!cdcDisabled.getOrDefault(false)) {
                         if (checkCdcWalDirectorySize(dstFile.length()))
                             Files.createLink(dirs.walCdc().toPath().resolve(dstFile.getName()), dstFile.toPath());
