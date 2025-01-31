@@ -37,7 +37,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -272,12 +272,12 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
          * @throws IgniteCheckedException if failed.
          */
         private File getWalArchiveDir() throws IgniteCheckedException {
-            IgniteNodeDirectories dirs = ignite.context().pdsFolderResolver().resolveDirectories();
+            NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-            if (!dirs.walArchive().exists())
-                throw new IgniteCheckedException("WAL archive directory does not exists" + dirs.walArchive().getAbsolutePath());
+            if (!ft.walArchive().exists())
+                throw new IgniteCheckedException("WAL archive directory does not exists" + ft.walArchive().getAbsolutePath());
 
-            return dirs.walArchive();
+            return ft.walArchive();
         }
 
         /**

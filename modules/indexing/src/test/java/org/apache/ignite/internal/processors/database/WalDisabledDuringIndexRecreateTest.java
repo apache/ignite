@@ -41,7 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -315,10 +315,10 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         Predicate<WALPointer> filter,
         long grpId
     ) throws IgniteCheckedException {
-        IgniteNodeDirectories dirs = grid(0).context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = grid(0).context().pdsFolderResolver().fileTree();
 
         IteratorParametersBuilder walIterBldr = new IteratorParametersBuilder()
-            .filesOrDirs(dirs.wal(), dirs.walArchive())
+            .filesOrDirs(ft.wal(), ft.walArchive())
             .filter((rt, ptr) -> filter.test(ptr));
 
         long cntGrpRecs = 0;

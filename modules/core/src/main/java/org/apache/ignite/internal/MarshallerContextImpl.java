@@ -39,7 +39,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
@@ -193,7 +193,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         throws IgniteCheckedException {
         MarshallerMappingFileStore writer = new MarshallerMappingFileStore(
             ctx,
-            new IgniteSharedDirectories(dir).mkdirMarshaller()
+            new SharedFileTree(dir).mkdirMarshaller()
         );
 
         addPlatformMappings(ctx.log(MarshallerContextImpl.class),
@@ -590,7 +590,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         assert ctx != null;
 
         fileStore = marshallerMappingFileStoreDir == null
-            ? new MarshallerMappingFileStore(ctx, ctx.pdsFolderResolver().resolveDirectories().mkdirMarshaller())
+            ? new MarshallerMappingFileStore(ctx, ctx.pdsFolderResolver().fileTree().mkdirMarshaller())
             : new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();

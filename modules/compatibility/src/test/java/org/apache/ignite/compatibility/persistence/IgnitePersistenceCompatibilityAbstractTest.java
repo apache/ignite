@@ -25,8 +25,8 @@ import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtil
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories.DFLT_MARSHALLER_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DFLT_BINARY_METADATA_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DFLT_MARSHALLER_PATH;
 
 /**
  * Super class for all persistence compatibility tests.

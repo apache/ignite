@@ -134,7 +134,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -769,20 +769,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String folderName = pdsSettings.folderName();
 
         try {
-            IgniteNodeDirectories snpDirs = new IgniteNodeDirectories(snpDir.getAbsolutePath(), folderName);
+            NodeFileTree snpFt = new NodeFileTree(snpDir.getAbsolutePath(), folderName);
 
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
             File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
 
-            U.delete(snpDirs.binaryMeta());
+            U.delete(snpFt.binaryMeta());
             U.delete(nodeDbDir);
             U.delete(smf);
 
-            deleteDirectory(snpDirs.binaryMetaRoot());
-            deleteDirectory(snpDirs.marshaller());
+            deleteDirectory(snpFt.binaryMetaRoot());
+            deleteDirectory(snpFt.marshaller());
 
-            snpDirs.db().delete();
-            snpDirs.root().delete();
+            snpFt.db().delete();
+            snpFt.root().delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -865,7 +865,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return WALs directory for specified incremental snapshot.
      */
     public static File incrementalSnapshotWalsDir(File incSnpDir, String consId) {
-        return new IgniteNodeDirectories(incSnpDir, U.maskForFileName(consId)).wal();
+        return new NodeFileTree(incSnpDir, U.maskForFileName(consId)).wal();
     }
 
     /**
@@ -2558,9 +2558,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpDir,
         String folderName
     ) throws IgniteCheckedException {
-        IgniteNodeDirectories dirs = new IgniteNodeDirectories(snpDir, folderName);
+        NodeFileTree snpFt = new NodeFileTree(snpDir, folderName);
 
-        return new StandaloneGridKernalContext(log, cmpProc, dirs.binaryMeta(), dirs.marshaller());
+        return new StandaloneGridKernalContext(log, cmpProc, snpFt.binaryMeta(), snpFt.marshaller());
     }
 
     /**
@@ -3066,12 +3066,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (wal == null)
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
 
-        IgniteNodeDirectories dirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-        if (!dirs.isWalArchiveEnabled())
+        if (!ft.isWalArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
-        ensureHardLinkAvailable(dirs.walArchive().toPath(), snpDir.toPath());
+        ensureHardLinkAvailable(ft.walArchive().toPath(), snpDir.toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()

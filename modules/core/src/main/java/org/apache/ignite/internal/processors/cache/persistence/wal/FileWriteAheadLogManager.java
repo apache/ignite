@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -284,7 +284,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private DataStorageMetricsImpl metrics;
 
     /** Ignite directories. */
-    private IgniteNodeDirectories dirs;
+    private NodeFileTree dirs;
 
     /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
@@ -478,7 +478,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (cctx.kernalContext().clientNode())
             return;
 
-        dirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
+        dirs = cctx.kernalContext().pdsFolderResolver().fileTree();
 
         checkWalConfiguration();
 
@@ -1757,7 +1757,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Files from {@link IgniteNodeDirectories#walArchive()}.
+     * Files from {@link NodeFileTree#walArchive()}.
      *
      * @return Raw or compressed WAL segments from archive.
      */
@@ -2904,7 +2904,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteNodeDirectories dirs;
+        private final NodeFileTree dirs;
 
         /** See {@link FileWriteAheadLogManager#archiver}. */
         @Nullable private final FileArchiver archiver;
@@ -2940,7 +2940,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private RecordsIterator(
             GridCacheSharedContext<?, ?> cctx,
-            IgniteNodeDirectories dirs,
+            NodeFileTree dirs,
             @Nullable WALPointer start,
             @Nullable WALPointer end,
             DataStorageConfiguration dsCfg,
@@ -3329,9 +3329,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Removing files from {@link IgniteNodeDirectories#walArchive()}.
+     * Removing files from {@link NodeFileTree#walArchive()}.
      *
-     * @param files Files from {@link IgniteNodeDirectories#walArchive()}.
+     * @param files Files from {@link NodeFileTree#walArchive()}.
      * @return Total deleted size in bytes.
      */
     private long deleteArchiveFiles(File... files) {

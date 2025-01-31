@@ -36,6 +36,6 @@ public class BinaryMetadataInMemoryTest extends GridCommonAbstractTest {
 
         stopGrid();
 
-        assertTrue(F.isEmpty(sharedDirs().binaryMetaRoot().list()));
+        assertTrue(F.isEmpty(sharedFileTree().binaryMetaRoot().list()));
     }
 }

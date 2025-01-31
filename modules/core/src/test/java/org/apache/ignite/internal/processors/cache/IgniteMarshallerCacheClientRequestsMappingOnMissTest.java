@@ -32,7 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -88,7 +88,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        U.delete(new IgniteSharedDirectories(TMP_DIR).marshaller());
+        U.delete(new SharedFileTree(TMP_DIR).marshaller());
 
         mappingReqsCounter.set(0);
     }
@@ -112,7 +112,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         stopGrid(1);
 
-        File[] files = new IgniteSharedDirectories(TMP_DIR).marshaller().listFiles();
+        File[] files = new SharedFileTree(TMP_DIR).marshaller().listFiles();
 
         assertNotNull(TMP_DIR + "/marshaller directory should contain at least one file", files);
 

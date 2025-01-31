@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRec
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -197,10 +197,10 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
     protected WALIterator walIter(int nodeIdx) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IgniteNodeDirectories dirs = ignite(nodeIdx).context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = ignite(nodeIdx).context().pdsFolderResolver().fileTree();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(dirs.wal(), dirs.walArchive());
+            .filesOrDirs(ft.wal(), ft.walArchive());
 
         return factory.iterator(params);
     }

@@ -58,7 +58,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories.containsBinaryMetaPath;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.containsBinaryMetaPath;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
@@ -165,7 +165,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         int key = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
         cache.put(key, new TestAddress(0, "USA", "NYC", "Park Ave"));
 
-        File ig1BinaryMeta = ig1.context().pdsFolderResolver().resolveDirectories().binaryMeta();
+        File ig1BinaryMeta = ig1.context().pdsFolderResolver().fileTree().binaryMeta();
 
         assertTrue(ig1BinaryMeta.exists());
         assertTrue(ig1BinaryMeta.isDirectory());

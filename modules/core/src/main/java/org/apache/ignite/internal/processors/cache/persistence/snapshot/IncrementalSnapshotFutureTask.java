@@ -34,7 +34,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -136,18 +136,18 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
 
                     copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
 
-                    IgniteNodeDirectories nodeDirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
-                    IgniteNodeDirectories snpDirs = new IgniteNodeDirectories(incSnpDir, folderName);
+                    NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+                    NodeFileTree snpFt = new NodeFileTree(incSnpDir, folderName);
 
                     copyFiles(
-                        nodeDirs.marshaller(),
-                        snpDirs.marshaller(),
+                        ft.marshaller(),
+                        snpFt.marshaller(),
                         BinaryUtils::notTmpFile
                     );
 
                     copyFiles(
-                        nodeDirs.binaryMeta(),
-                        snpDirs.binaryMeta(),
+                        ft.binaryMeta(),
+                        snpFt.binaryMeta(),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 

@@ -88,8 +88,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -676,13 +676,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        IgniteSharedDirectories dirs = sharedDirs();
+        SharedFileTree sft = sharedFileTree();
 
-        U.delete(dirs.marshaller());
-        U.delete(dirs.binaryMetaRoot());
+        U.delete(sft.marshaller());
+        U.delete(sft.binaryMetaRoot());
 
-        dirs.mkdirBinaryMetaRoot();
-        dirs.mkdirMarshaller();
+        sft.mkdirBinaryMetaRoot();
+        sft.mkdirMarshaller();
     }
 
     /** */
@@ -3188,14 +3188,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * @return Ignite directories without specific {@code folerName} parameter.
      */
-    protected IgniteSharedDirectories sharedDirs() throws IgniteCheckedException {
-        return new IgniteSharedDirectories(U.defaultWorkDirectory());
+    protected SharedFileTree sharedFileTree() throws IgniteCheckedException {
+        return new SharedFileTree(U.defaultWorkDirectory());
     }
 
     /**
      * @return Ignite directories for specific {@code folderName}.
      */
-    protected IgniteNodeDirectories nodeDirs(String folderName) throws IgniteCheckedException {
-        return new IgniteNodeDirectories(U.defaultWorkDirectory(), folderName);
+    protected NodeFileTree nodeFileTree(String folderName) throws IgniteCheckedException {
+        return new NodeFileTree(U.defaultWorkDirectory(), folderName);
     }
 }

@@ -79,7 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -964,11 +964,11 @@ public class SnapshotRestoreProcess {
                                     .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx)
                                 : snpDir;
 
-                            IgniteNodeDirectories dirs = new IgniteNodeDirectories(dir, meta.folderName());
+                            NodeFileTree ft = new NodeFileTree(dir, meta.folderName());
 
-                            ctx.cacheObjects().updateMetadata(dirs.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(ft.binaryMeta(), opCtx0.stopChecker);
 
-                            restoreMappings(dirs.marshaller(), opCtx0.stopChecker);
+                            restoreMappings(ft.marshaller(), opCtx0.stopChecker);
                         }
                         catch (Throwable t) {
                             log.error("Unable to perform metadata update operation for the cache groups restore process", t);

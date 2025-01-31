@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -56,11 +56,11 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgniteNodeDirectories dirs = new IgniteNodeDirectories(new File(DFLT_WORK_DIR), CONSISTENT_ID);
+        NodeFileTree ft = new NodeFileTree(new File(DFLT_WORK_DIR), CONSISTENT_ID);
 
         assertNotNull(DFLT_WORK_DIR);
-        assertTrue(dirs.db().mkdirs());
-        assertTrue(dirs.walCdc().mkdirs());
+        assertTrue(ft.db().mkdirs());
+        assertTrue(ft.walCdc().mkdirs());
     }
 
     /** {@inheritDoc} */

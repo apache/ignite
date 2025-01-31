@@ -420,7 +420,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             }
         });
 
-        File walArchPath = ig0.context().pdsFolderResolver().resolveDirectories().walArchive();
+        File walArchPath = ig0.context().pdsFolderResolver().fileTree().walArchive();
 
         stopAllGrids();
 

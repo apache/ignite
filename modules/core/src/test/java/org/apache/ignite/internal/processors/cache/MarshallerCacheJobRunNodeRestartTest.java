@@ -38,7 +38,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     @Test
     public void testJobRun() throws Exception {
         for (int i = 0; i < 5; i++) {
-            sharedDirs().mkdirMarshaller();
+            sharedFileTree().mkdirMarshaller();
 
             log.info("Iteration: " + i);
 

@@ -30,7 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -170,9 +170,9 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         // Wait until marshaller context write class to file.
         U.sleep(2_000);
 
-        IgniteSharedDirectories dirs = sharedDirs();
+        SharedFileTree sft = sharedFileTree();
 
-        checkFileName("java.lang.String", new File(dirs.marshaller(), "1.classname0").toPath());
+        checkFileName("java.lang.String", new File(sft.marshaller(), "1.classname0").toPath());
 
         MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
@@ -182,7 +182,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         execSvc.shutdown();
 
         if (execSvc.awaitTermination(1000, TimeUnit.MILLISECONDS))
-            checkFileName("Random.Class.Name", new File(dirs.marshaller(), "2.classname2").toPath());
+            checkFileName("Random.Class.Name", new File(sft.marshaller(), "2.classname2").toPath());
         else
             fail("Failed to wait for executor service to shutdown");
     }
@@ -268,7 +268,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     private @NotNull MarshallerContextImpl marshallerContext() throws IgniteCheckedException {
         MarshallerContextImpl mctx = new MarshallerContextImpl(null, null);
 
-        mctx.setMarshallerMappingFileStoreDir(sharedDirs().marshaller());
+        mctx.setMarshallerMappingFileStoreDir(sharedFileTree().marshaller());
         mctx.onMarshallerProcessorStarted(ctx, null);
 
         return mctx;

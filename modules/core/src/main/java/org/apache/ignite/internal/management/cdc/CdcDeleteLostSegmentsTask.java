@@ -94,7 +94,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             if (!CU.isCdcEnabled(ignite.configuration()))
                 throw new IgniteException("CDC is not configured.");
 
-            File walCdcDir = ignite.context().pdsFolderResolver().resolveDirectories().walCdc();
+            File walCdcDir = ignite.context().pdsFolderResolver().fileTree().walCdc();
 
             CdcFileLockHolder lock = new CdcFileLockHolder(walCdcDir.getAbsolutePath(), "Delete lost segments job", log);
 

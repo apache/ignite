@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,12 +67,12 @@ public class FileStoreHeapUtilizationJolBenchmark {
         if (!F.isEmpty(G.allGrids()))
             throw new IgniteException("Grids are not stopped");
 
-        IgniteSharedDirectories dirs = new IgniteSharedDirectories(U.defaultWorkDirectory());
+        SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
-        U.delete(dirs.db());
-        U.delete(dirs.marshaller());
-        U.delete(dirs.binaryMetaRoot());
+        U.delete(sft.db());
+        U.delete(sft.marshaller());
+        U.delete(sft.binaryMetaRoot());
     }
 
     /** */

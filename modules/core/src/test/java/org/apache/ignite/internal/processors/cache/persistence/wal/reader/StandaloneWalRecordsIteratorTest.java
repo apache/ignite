@@ -428,7 +428,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      * @return path to directory with WAL archive.
      */
     private String getArchiveWalDirPath(Ignite ignite) {
-        return ((IgniteEx)ignite).context().pdsFolderResolver().resolveDirectories().walArchive().getAbsolutePath();
+        return ((IgniteEx)ignite).context().pdsFolderResolver().fileTree().walArchive().getAbsolutePath();
     }
 
     /**

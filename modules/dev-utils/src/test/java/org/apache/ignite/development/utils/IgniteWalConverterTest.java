@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -162,18 +162,18 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverter() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final IgniteNodeDirectories dirs = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            dirs.wal(),
-            dirs.walArchive(),
+            ft.wal(),
+            ft.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -226,15 +226,15 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithOutBinaryMeta() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        IgniteNodeDirectories dirs = createWal(list, null);
+        NodeFileTree ft = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            dirs.wal(),
-            dirs.walArchive(),
+            ft.wal(),
+            ft.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
             null,
             null,
@@ -293,9 +293,9 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final IgniteNodeDirectories dirs = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null);
 
-        final File wal = new File(dirs.wal(), "0000000000000000.wal");
+        final File wal = new File(ft.wal(), "0000000000000000.wal");
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -348,11 +348,11 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            dirs.wal(),
-            dirs.walArchive(),
+            ft.wal(),
+            ft.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -410,9 +410,9 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final IgniteNodeDirectories dirs = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null);
 
-        final File wal = new File(dirs.wal(), "0000000000000000.wal");
+        final File wal = new File(ft.wal(), "0000000000000000.wal");
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -451,11 +451,11 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            dirs.wal(),
-            dirs.walArchive(),
+            ft.wal(),
+            ft.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -512,7 +512,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testPages() throws Exception {
         List<T2<PageSnapshot, String>> walRecords = new ArrayList<>();
 
-        IgniteNodeDirectories dirs = createWal(new ArrayList<>(), n -> {
+        NodeFileTree ft = createWal(new ArrayList<>(), n -> {
             try (WALIterator walIter = n.context().cache().context().wal().replay(new WALPointer(0, 0, 0))) {
                 while (walIter.hasNextX()) {
                     WALRecord walRecord = walIter.nextX().get2();
@@ -529,7 +529,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         assertTrue(U.fileCount(walDir.toPath()) > 0);
 
-        assertTrue(U.fileCount(dirs.wal().toPath()) > 0);
+        assertTrue(U.fileCount(ft.wal().toPath()) > 0);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(baos);
@@ -564,16 +564,16 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      * @return Ignite directories structure.
      * @throws Exception
      */
-    private IgniteNodeDirectories createWal(
+    private NodeFileTree createWal(
         List<Person> list,
         @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer
     ) throws Exception {
-        IgniteNodeDirectories dirs;
+        NodeFileTree ft;
 
         try (final IgniteEx node = startGrid(0)) {
             node.cluster().state(ClusterState.ACTIVE);
 
-            dirs = node.context().pdsFolderResolver().resolveDirectories();
+            ft = node.context().pdsFolderResolver().fileTree();
 
             final IgniteCache<PersonKey, Person> cache = node.cache(DEFAULT_CACHE_NAME);
 
@@ -596,6 +596,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 afterPopulateConsumer.accept(node);
         }
 
-        return dirs;
+        return ft;
     }
 }

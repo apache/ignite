@@ -89,7 +89,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -227,7 +227,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (!ctx.clientNode()) {
                 if (CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null) {
                     binaryMetadataFileStoreDir =
-                        new IgniteNodeDirectories(ctx.config(), ctx.pdsFolderResolver().resolveFolders().folderName())
+                        new NodeFileTree(ctx.config(), ctx.pdsFolderResolver().resolveFolders().folderName())
                             .mkdirBinaryMeta();
                 }
 
@@ -986,7 +986,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
                 ctx,
                 log,
-                new IgniteNodeDirectories(dir, ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
+                new NodeFileTree(dir, ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
                 true
             );
 

@@ -143,7 +143,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             assertTrue(conn.isClosed());
         }
 
-        U.delete(sharedDirs().marshaller());
+        U.delete(sharedFileTree().marshaller());
     }
 
     /**

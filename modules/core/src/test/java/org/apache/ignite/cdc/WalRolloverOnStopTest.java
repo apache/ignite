@@ -176,7 +176,7 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
             IgniteWalIteratorFactory.IteratorParametersBuilder builder =
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()
                     .log(ign.log())
-                    .filesOrDirs(ign.context().pdsFolderResolver().resolveDirectories().walArchive())
+                    .filesOrDirs(ign.context().pdsFolderResolver().fileTree().walArchive())
                     .filter((type, ptr) -> type == DATA_RECORD_V2);
 
             Set<Integer> keys = new HashSet<>();

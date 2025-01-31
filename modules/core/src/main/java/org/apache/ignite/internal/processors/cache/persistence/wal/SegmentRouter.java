@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import java.io.File;
 import java.io.FileNotFoundException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
@@ -33,7 +33,7 @@ public class SegmentRouter {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** */
-    private final IgniteNodeDirectories dirs;
+    private final NodeFileTree dirs;
 
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
@@ -47,7 +47,7 @@ public class SegmentRouter {
      * @param dsCfg Data storage configuration.
      */
     public SegmentRouter(
-        IgniteNodeDirectories dirs,
+        NodeFileTree dirs,
         SegmentAware segmentAware,
         DataStorageConfiguration dsCfg) {
         this.dirs = dirs;
