@@ -1290,7 +1290,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
             catch (Throwable e) {
-                if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() && cctx.binaryMarshaller() &&
+                if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() &&
                     !cctx.localNode().isClient() && !log.isQuiet()) {
                     LT.warn(log, "Suggestion for the cause of ClassNotFoundException");
                     LT.warn(log, "To disable, set -D" + IGNITE_QUIET + "=true");
