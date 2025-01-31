@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -41,6 +42,15 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
         row[field] = val;
     }
 
+    /** */
+    @Override public Object[] copyRow(Object[] row) {
+        Object[] copy = new Object[row.length];
+
+        System.arraycopy(row, 0, copy, 0, row.length);
+
+        return copy;
+    }
+
     /** {@inheritDoc} */
     @Override public Object[] concat(Object[] left, Object[] right) {
         return F.concat(left, right);
@@ -55,6 +65,8 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     @Override public RowFactory<Object[]> factory(Type... types) {
         int rowLen = types.length;
 
+        Object[] row = new Object[rowLen];
+
         return new RowFactory<Object[]>() {
             /** {@inheritDoc} */
             @Override public RowHandler<Object[]> handler() {
@@ -63,7 +75,9 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
 
             /** {@inheritDoc} */
             @Override public Object[] create() {
-                return new Object[rowLen];
+                Arrays.fill(row, null);
+
+                return row;
             }
 
             /** {@inheritDoc} */
