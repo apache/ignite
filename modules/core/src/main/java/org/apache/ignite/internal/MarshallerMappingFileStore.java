@@ -29,7 +29,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -224,7 +224,7 @@ final class MarshallerMappingFileStore {
 
         File legacyDir = new File(
             ctx.config().getWorkDirectory(),
-            IgniteSharedDirectories.MARSHALLER_DIR
+            SharedFileTree.MARSHALLER_DIR
         );
 
         File legacyTmpDir = new File(legacyDir + TMP_SUFFIX);

@@ -102,7 +102,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        U.delete(sharedDirs().marshaller());
+        U.delete(sharedFileTree().marshaller());
         cleanPersistenceDir();
     }
 
@@ -164,7 +164,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         String fileName = typeId + ".classname0";
 
-        File marshStoreDir = sharedDirs().mkdirMarshaller();
+        File marshStoreDir = sharedFileTree().mkdirMarshaller();
 
         try (FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
             try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
@@ -208,7 +208,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * Class name for CustomClass class mapping file gets cleaned up from file system.
      */
     private void corruptMarshallerStorage() throws Exception {
-        File marshallerDir = sharedDirs().marshaller();
+        File marshallerDir = sharedFileTree().marshaller();
 
         File[] storedMappingsFiles = marshallerDir.listFiles();
 

@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -164,7 +164,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final List<Person> list = new LinkedList<>();
 
         final String nodeFolder = createWal(list, null);
-        final IgniteNodeDirectories dirs = new IgniteNodeDirectories(U.defaultWorkDirectory(), nodeFolder);
+        final NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), nodeFolder);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
@@ -174,8 +174,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -296,7 +296,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final List<Person> list = new LinkedList<>();
 
         final String nodeFolder = createWal(list, null);
-        final IgniteNodeDirectories dirs = new IgniteNodeDirectories(U.defaultWorkDirectory(), nodeFolder);
+        final NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), nodeFolder);
 
         final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
 
@@ -356,8 +356,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             walDir,
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -416,7 +416,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final List<Person> list = new LinkedList<>();
 
         final String nodeFolder = createWal(list, null);
-        final IgniteNodeDirectories dirs = new IgniteNodeDirectories(U.defaultWorkDirectory(), nodeFolder);
+        final NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), nodeFolder);
 
         final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
 
@@ -462,8 +462,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             walDir,
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()

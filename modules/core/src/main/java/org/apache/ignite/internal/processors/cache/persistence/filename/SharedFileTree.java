@@ -38,9 +38,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
  * </pre>
  *
- * @see IgniteNodeDirectories
+ * @see NodeFileTree
  */
-public class IgniteSharedDirectories {
+public class SharedFileTree {
     /** Default path (relative to working directory) of binary metadata folder. */
     public static final String BINARY_METADATA_DIR = "binary_meta";
 
@@ -62,7 +62,7 @@ public class IgniteSharedDirectories {
     /**
      * @param root Root directory.
      */
-    public IgniteSharedDirectories(File root) {
+    public SharedFileTree(File root) {
         A.notNull(root, "Root directory");
 
         this.root = root;
@@ -74,14 +74,14 @@ public class IgniteSharedDirectories {
     /**
      * @param root Root directory.
      */
-    public IgniteSharedDirectories(String root) {
+    public SharedFileTree(String root) {
         this(new File(root));
     }
 
     /**
      * @param cfg Config to get {@code root} directory from.
      */
-    IgniteSharedDirectories(IgniteConfiguration cfg) {
+    SharedFileTree(IgniteConfiguration cfg) {
         A.notNull(cfg, "config");
 
         try {
@@ -126,7 +126,7 @@ public class IgniteSharedDirectories {
     /**
      * Creates {@link #binaryMetaRoot()} directory.
      * @return Created directory.
-     * @see IgniteSharedDirectories#binaryMetaRoot()
+     * @see SharedFileTree#binaryMetaRoot()
      */
     public File mkdirBinaryMetaRoot() {
         return mkdir(binaryMetaRoot, "root binary metadata");
@@ -191,6 +191,6 @@ public class IgniteSharedDirectories {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteSharedDirectories.class, this);
+        return S.toString(SharedFileTree.class, this);
     }
 }

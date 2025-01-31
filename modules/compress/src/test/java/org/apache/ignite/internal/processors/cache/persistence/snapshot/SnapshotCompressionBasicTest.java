@@ -291,8 +291,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
                 U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
                 U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(nodeDirs(dir.toString()).marshaller());
-                U.delete(nodeDirs(dir.toString()).binaryMetaRoot());
+                U.delete(nodeFileTree(dir.toString()).marshaller());
+                U.delete(nodeFileTree(dir.toString()).binaryMetaRoot());
             }
         }
         catch (IOException e) {

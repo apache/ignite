@@ -54,7 +54,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -233,7 +233,7 @@ public class CdcMain implements Runnable {
     private File dbDir;
 
     /** Ignite folders. */
-    private IgniteNodeDirectories dirs;
+    private NodeFileTree ft;
 
     /** Standalone kernal context. */
     private StandaloneGridKernalContext kctx;
@@ -329,8 +329,8 @@ public class CdcMain implements Runnable {
 
             if (log.isInfoEnabled()) {
                 log.info("Change Data Capture [dir=" + cdcDir + ']');
-                log.info("Ignite node Binary meta [dir=" + dirs.binaryMeta() + ']');
-                log.info("Ignite node Marshaller [dir=" + dirs.marshaller() + ']');
+                log.info("Ignite node Binary meta [dir=" + ft.binaryMeta() + ']');
+                log.info("Ignite node Marshaller [dir=" + ft.marshaller() + ']');
             }
 
             startStandaloneKernal();
@@ -383,7 +383,7 @@ public class CdcMain implements Runnable {
      * @throws IgniteCheckedException If failed.
      */
     private void startStandaloneKernal() throws IgniteCheckedException {
-        kctx = new StandaloneGridKernalContext(log, dirs.binaryMeta(), dirs.marshaller()) {
+        kctx = new StandaloneGridKernalContext(log, ft.binaryMeta(), ft.marshaller()) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -422,8 +422,8 @@ public class CdcMain implements Runnable {
 
     /** Initialize metrics. */
     private void initMetrics() {
-        mreg.objectMetric(BINARY_META_DIR, String.class, "Binary meta directory").value(dirs.binaryMeta().getAbsolutePath());
-        mreg.objectMetric(MARSHALLER_DIR, String.class, "Marshaller directory").value(dirs.marshaller().getAbsolutePath());
+        mreg.objectMetric(BINARY_META_DIR, String.class, "Binary meta directory").value(ft.binaryMeta().getAbsolutePath());
+        mreg.objectMetric(MARSHALLER_DIR, String.class, "Marshaller directory").value(ft.marshaller().getAbsolutePath());
         mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(cdcDir.toFile().getAbsolutePath());
 
         curSegmentIdx = mreg.longMetric(CUR_SEG_IDX, "Current segment index");
@@ -456,7 +456,7 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
-        dirs = new IgniteNodeDirectories(igniteCfg, settings.folderName());
+        ft = new NodeFileTree(igniteCfg, settings.folderName());
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -557,8 +557,8 @@ public class CdcMain implements Runnable {
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
-                .binaryMetadataFileStoreDir(dirs.binaryMeta())
-                .marshallerMappingFileStoreDir(dirs.marshaller())
+                .binaryMetadataFileStoreDir(ft.binaryMeta())
+                .marshallerMappingFileStoreDir(ft.marshaller())
                 .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile());
@@ -682,7 +682,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
-            File[] files = dirs.binaryMeta().listFiles();
+            File[] files = ft.binaryMeta().listFiles();
 
             if (files == null)
                 return;
@@ -700,7 +700,7 @@ public class CdcMain implements Runnable {
                     typesState.put(typeId, lastModified);
 
                     try {
-                        kctx.cacheObjects().cacheMetadataLocally(dirs.binaryMeta(), typeId);
+                        kctx.cacheObjects().cacheMetadataLocally(ft.binaryMeta(), typeId);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -729,7 +729,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = dirs.marshaller().listFiles(BinaryUtils::notTmpFile);
+            File[] files = ft.marshaller().listFiles(BinaryUtils::notTmpFile);
 
             if (files == null)
                 return;

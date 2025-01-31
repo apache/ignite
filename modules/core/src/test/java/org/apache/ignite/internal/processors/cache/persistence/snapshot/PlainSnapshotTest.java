@@ -27,7 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -116,9 +116,8 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         // Calculate CRCs.
         PdsFolderSettings<?> settings = ig.context().pdsFolderResolver().resolveFolders();
         String nodePath = databaseRelativePath(settings.folderName());
-        IgniteNodeDirectories nodeDirs = ig.context().pdsFolderResolver().resolveDirectories();
-        IgniteNodeDirectories snpDirs =
-            new IgniteNodeDirectories(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+        NodeFileTree snpFt = new NodeFileTree(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
@@ -131,9 +130,9 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
             origPartCRCs, snpPartCRCs);
         assertEquals("Binary object mappings must be the same for local node and created snapshot",
-            calculateCRC32Partitions(nodeDirs.binaryMeta()), calculateCRC32Partitions(snpDirs.binaryMeta()));
+            calculateCRC32Partitions(ft.binaryMeta()), calculateCRC32Partitions(snpFt.binaryMeta()));
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
-            calculateCRC32Partitions(nodeDirs.marshaller()), calculateCRC32Partitions(snpDirs.marshaller()));
+            calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(snpFt.marshaller()));
 
         File snpWorkDir = mgr.snapshotTmpDir();
 

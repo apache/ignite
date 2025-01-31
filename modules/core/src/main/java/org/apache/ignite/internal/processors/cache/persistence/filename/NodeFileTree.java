@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Provides access to Ignite node directories.
+ * Provides access to Ignite node file tree.
  * Note, that base path can be different for each usage:
  * <ul>
  *     <li>Ignite node.</li>
@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     <li>CDC.</li>
  * </ul>
  *
- * Ignite node directories structure with the point to currenlty supported dirs.
+ * Ignite node file tree structure with the point to currenlty supported dirs.
  * Description:<br>
  * <ul>
  *     <li>{@code .} folder is {@code root} constructor parameter.</li>
@@ -133,7 +133,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
  * </pre>
  */
-public class IgniteNodeDirectories extends IgniteSharedDirectories {
+public class NodeFileTree extends SharedFileTree {
     /** Folder name for consistent id. */
     private final String folderName;
 
@@ -153,7 +153,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public IgniteNodeDirectories(String root, String folderName) {
+    public NodeFileTree(String root, String folderName) {
         this(new File(root), folderName);
     }
 
@@ -170,7 +170,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public IgniteNodeDirectories(File root, String folderName) {
+    public NodeFileTree(File root, String folderName) {
         super(root);
 
         A.notNullOrEmpty(folderName, "Node directory");
@@ -193,7 +193,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public IgniteNodeDirectories(IgniteConfiguration cfg, String folderName) {
+    public NodeFileTree(IgniteConfiguration cfg, String folderName) {
         super(cfg);
 
         A.notNullOrEmpty(folderName, "Node directory");
@@ -224,6 +224,6 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteNodeDirectories.class, this);
+        return S.toString(NodeFileTree.class, this);
     }
 }
