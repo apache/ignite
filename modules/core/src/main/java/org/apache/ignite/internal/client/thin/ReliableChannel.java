@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -634,12 +635,14 @@ final class ReliableChannel implements AutoCloseable {
         // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
         if (holders != null && clientCfg.getAddressesFinder() == null) {
             // Do not modify the original list.
-            newAddrs = new ArrayList<>(newAddrs);
+            Set<Set<InetSocketAddress>> newAddrsSet = newAddrs.stream()
+                .map(HashSet::new)
+                .collect(Collectors.toSet());
 
             for (ClientChannelHolder h : holders) {
                 ClientChannel ch = h.ch;
 
-                if (ch != null && !ch.closed() && !newAddrs.contains(h.getAddresses()))
+                if (ch != null && !ch.closed() && !newAddrsSet.contains(new HashSet<>(h.getAddresses())))
                     newAddrs.add(h.getAddresses());
             }
         }
