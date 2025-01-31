@@ -259,8 +259,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
+        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
+
         failureProcessor = ctx.failure();
-        schemaHolder = new SchemaHolderImpl(ctx);
+        schemaHolder = new SchemaHolderImpl(ctx, frameworkCfg);
         qryPlanCache = new QueryPlanCacheImpl(ctx);
         parserMetrics = new QueryParserMetricsHolder(ctx.metric());
         mailboxRegistry = new MailboxRegistryImpl(ctx);
@@ -276,9 +279,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
         injectSvc = new InjectResourcesService(ctx);
-
-        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
-        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
