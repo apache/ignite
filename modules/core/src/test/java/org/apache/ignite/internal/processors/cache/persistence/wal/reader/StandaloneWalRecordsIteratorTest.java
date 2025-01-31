@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
@@ -427,14 +426,9 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      * @param ignite instance of Ignite.
      * @return path to directory with WAL archive.
-     * @throws IgniteCheckedException if error occur.
      */
-    private String getArchiveWalDirPath(Ignite ignite) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            ignite.configuration().getDataStorageConfiguration().getWalArchivePath(),
-            false
-        ).getAbsolutePath();
+    private String getArchiveWalDirPath(Ignite ignite) {
+        return ((IgniteEx)ignite).context().pdsFolderResolver().fileTree().walArchive().getAbsolutePath();
     }
 
     /**

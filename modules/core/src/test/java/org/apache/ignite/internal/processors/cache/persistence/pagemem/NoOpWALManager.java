@@ -204,11 +204,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable File archiveDir() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public @Nullable File compactedSegment(long idx) {
         return null;
     }
