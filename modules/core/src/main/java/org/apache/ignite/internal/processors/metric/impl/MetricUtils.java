@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metric.impl;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -27,6 +28,7 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
@@ -233,5 +235,30 @@ public class MetricUtils {
         });
 
         return attrs;
+    }
+
+    /**
+     * Extract system view from systemViewManager. Both "SQL" and "Java" styles of system view name are supported.
+     *
+     * @param systemViewManager Manager to extract view from.
+     * @param viewName System view name.
+     * @return System view with viewName. Null if the view does not exist.
+     */
+    @Nullable public static SystemView<?> getSystemViewByName(GridSystemViewManager systemViewManager, String viewName) {
+        SystemView<?> view = systemViewManager.view(viewName);
+        if (view != null)
+            return view;
+
+        if (view == null) {
+            for (SystemView<?> sysView : systemViewManager) {
+                if (toSqlName(sysView.name()).equalsIgnoreCase(viewName)) {
+                    view = sysView;
+
+                    break;
+                }
+            }
+        }
+
+        return view;
     }
 }

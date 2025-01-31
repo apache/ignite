@@ -91,7 +91,10 @@ public enum OperationType {
     QUERY_ROWS(20),
 
     /** Custom query property. */
-    QUERY_PROPERTY(21);
+    QUERY_PROPERTY(21),
+
+    /** System view. */
+    SYSYTEM_VIEW(22);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,

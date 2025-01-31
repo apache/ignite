@@ -55,6 +55,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSYTEM_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
@@ -289,6 +290,33 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.query(nodeId, qryType, text, id, startTime, duration, success);
+
+            return true;
+        }
+        else if (opType == SYSYTEM_VIEW) {
+            String viewName = readCacheableString(buf);
+            if (viewName == null)
+                return false;
+
+            if (buf.remaining() < 4)
+                return false;
+            int attrsNumber = buf.getInt();
+
+            Map<String, String> data = new HashMap<>();
+            for (int i = 0; i < attrsNumber; i++) {
+                String key = readCacheableString(buf);
+                if (key == null)
+                    return false;
+
+                String val = readCacheableString(buf);
+                if (val == null)
+                    return false;
+
+                data.put(key, val);
+            }
+
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.systemView(nodeId, viewName, data);
 
             return true;
         }
