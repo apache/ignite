@@ -42,10 +42,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  */
 public class IgniteSharedDirectories {
     /** Default path (relative to working directory) of binary metadata folder. */
-    public static final String DFLT_BINARY_METADATA_PATH = "binary_meta";
+    public static final String BINARY_METADATA_DIR = "binary_meta";
 
     /** Default path (relative to working directory) of marshaller mappings folder. */
-    public static final String DFLT_MARSHALLER_PATH = "marshaller";
+    public static final String MARSHALLER_DIR = "marshaller";
 
     /** Root(work) directory. */
     protected final File root;
@@ -67,8 +67,8 @@ public class IgniteSharedDirectories {
 
         this.root = root;
         db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
+        marshaller = new File(db, MARSHALLER_DIR);
+        binaryMetaRoot = new File(db, BINARY_METADATA_DIR);
     }
 
     /**
@@ -92,8 +92,8 @@ public class IgniteSharedDirectories {
         }
 
         db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
+        marshaller = new File(db, MARSHALLER_DIR);
+        binaryMetaRoot = new File(db, BINARY_METADATA_DIR);
     }
 
     /**
@@ -146,7 +146,7 @@ public class IgniteSharedDirectories {
      * @return {@code True} if argument can be binary meta root directory.
      */
     public static boolean isBinaryMetaRoot(File f) {
-        return f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH);
+        return f.getAbsolutePath().endsWith(BINARY_METADATA_DIR);
     }
 
     /**
@@ -154,7 +154,7 @@ public class IgniteSharedDirectories {
      * @return {@code True} if f ends with binary meta root directory.
      */
     public static boolean isMarshaller(File f) {
-        return f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH);
+        return f.getAbsolutePath().endsWith(MARSHALLER_DIR);
     }
 
     /**
@@ -162,7 +162,7 @@ public class IgniteSharedDirectories {
      * @return {@code True} if {@code f} contains binary meta root directory.
      */
     public static boolean containsBinaryMetaPath(File file) {
-        return file.getPath().contains(DFLT_BINARY_METADATA_PATH);
+        return file.getPath().contains(BINARY_METADATA_DIR);
     }
 
     /**
@@ -170,7 +170,7 @@ public class IgniteSharedDirectories {
      * @return {@code True} if {@code f} contains marshaller directory.
      */
     public static boolean containsMarshaller(File f) {
-        return f.getAbsolutePath().contains(DFLT_MARSHALLER_PATH);
+        return f.getAbsolutePath().contains(MARSHALLER_DIR);
     }
 
     /**

@@ -224,7 +224,7 @@ final class MarshallerMappingFileStore {
 
         File legacyDir = new File(
             ctx.config().getWorkDirectory(),
-            IgniteSharedDirectories.DFLT_MARSHALLER_PATH
+            IgniteSharedDirectories.MARSHALLER_DIR
         );
 
         File legacyTmpDir = new File(legacyDir + TMP_SUFFIX);

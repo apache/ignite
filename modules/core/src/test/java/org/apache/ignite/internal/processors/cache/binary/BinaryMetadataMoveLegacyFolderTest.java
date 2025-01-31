@@ -39,7 +39,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories.DFLT_MARSHALLER_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories.MARSHALLER_DIR;
 
 /**
  * Test for moving binary metadata and marshaller folders to PDS.
@@ -197,7 +197,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
 
         File legacyDir = U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
-            DFLT_MARSHALLER_PATH,
+            MARSHALLER_DIR,
             false
         );
 
