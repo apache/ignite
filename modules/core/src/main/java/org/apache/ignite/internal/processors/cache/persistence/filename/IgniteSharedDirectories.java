@@ -29,21 +29,22 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 
 /**
  * Provides access to directories shared between all nodes.
- *
+ * <pre>
  * ❯ tree
- * .                                                                            ← root (work directory, shared between all nodes).
- * ├── db                                                                       ← db (shared between all nodes).
- * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all nodes).
- * │  ├── marshaller                                                            ← marshaller (shared between all nodes).
- * │  ├── snapshots                                                             ← snapshots (shared between all nodes).
+ * .                                                                            ← root (work directory, shared between all local nodes).
+ * ├── db                                                                       ← db (shared between all local nodes).
+ * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
+ * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
+ * │  ├── snapshots                                                             ← snapshots (shared between all local nodes).
+ * </pre>
  *
  * @see IgniteNodeDirectories
  */
 public class IgniteSharedDirectories {
-    /** Default path (relative to working directory) of binary metadata folder */
+    /** Default path (relative to working directory) of binary metadata folder. */
     public static final String DFLT_BINARY_METADATA_PATH = "binary_meta";
 
-    /** Default path (relative to working directory) of marshaller mappings folder */
+    /** Default path (relative to working directory) of marshaller mappings folder. */
     public static final String DFLT_MARSHALLER_PATH = "marshaller";
 
     /** Root(work) directory. */
@@ -127,7 +128,7 @@ public class IgniteSharedDirectories {
      * @return Created directory.
      * @see IgniteSharedDirectories#binaryMetaRoot()
      */
-    public File mkdirBinaryMetaRoot() throws IgniteCheckedException {
+    public File mkdirBinaryMetaRoot() {
         return mkdir(binaryMetaRoot, "root binary metadata");
     }
 
@@ -136,7 +137,7 @@ public class IgniteSharedDirectories {
      * @return Created directory.
      * @see #marshaller()
      */
-    public File mkdirMarshaller() throws IgniteCheckedException {
+    public File mkdirMarshaller() {
         return mkdir(marshaller, "marshaller mappings");
     }
 
@@ -173,18 +174,17 @@ public class IgniteSharedDirectories {
     }
 
     /**
-     * @param dir Directory to create
-     * @throws IgniteCheckedException
+     * @param dir Directory to create.
      */
-    public static File mkdir(File dir, String name) throws IgniteCheckedException {
+    public static File mkdir(File dir, String name) {
         if (!U.mkdirs(dir))
             throw new IgniteException("Could not create directory for " + name + ": " + dir);
 
         if (!dir.canRead())
-            throw new IgniteCheckedException("Cannot read from directory: " + dir);
+            throw new IgniteException("Cannot read from directory: " + dir);
 
         if (!dir.canWrite())
-            throw new IgniteCheckedException("Cannot write to directory: " + dir);
+            throw new IgniteException("Cannot write to directory: " + dir);
 
         return dir;
     }

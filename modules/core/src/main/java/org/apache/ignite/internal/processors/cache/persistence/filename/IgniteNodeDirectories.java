@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,8 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * <ul>
  *     <li>Ignite node.</li>
  *     <li>Snapshot files.</li>
- *     <li>Cache dump files</li>
- *     <li>CDC</li>
+ *     <li>Cache dump files.</li>
+ *     <li>CDC.</li>
  * </ul>
  *
  * Ignite node directories structure with the point to currenlty supported dirs.
@@ -44,18 +43,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * <pre>
  * ❯ tree
- * .                                                                            ← root (work directory, shared between all nodes).
+ * .                                                                            ← root (work directory, shared between all local nodes).
  * ├── cp
  * │  └── sharedfs
  * │      └── BinaryMarshaller
  * ├── db                                                                       ← db (shared between all nodes).
- * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all nodes).
+ * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta for node 0
  * │  │      └── 1645778359.bin
  * │  │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                        ← binaryMeta for node 1
  * │  │      └── 1645778359.bin
  * │  ├── lock
- * │  ├── marshaller                                                            ← marshaller (shared between all nodes)
+ * │  ├── marshaller                                                            ← marshaller (shared between all local nodes)
  * │  │  └── 1645778359.classname0
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← folderName (node 0).
  * │  │  ├── cache-default
@@ -131,7 +130,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * │  ├── jmx-invoker.0.log
  * ...
  * │  └── jmx-invoker.9.log
- * └── snapshots                                                                ← snapshotRoot (shared between all nodes).
+ * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
  * </pre>
  */
 public class IgniteNodeDirectories extends IgniteSharedDirectories {
@@ -219,7 +218,7 @@ public class IgniteNodeDirectories extends IgniteSharedDirectories {
      * @return Created directory.
      * @see #binaryMeta()
      */
-    public File mkdirBinaryMeta() throws IgniteCheckedException {
+    public File mkdirBinaryMeta() {
         return mkdir(binaryMeta, "binary metadata");
     }
 
