@@ -24,12 +24,14 @@ import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
@@ -108,6 +110,46 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             " available: expected single matching bean but found 2:");
 
         G.stop("anotherGrid", false);
+    }
+
+    /**
+     * Tests that spring application context can be injected to a field.
+     */
+    @Test
+    public void testClosureFieldApplicationContext() {
+        grid.compute().call(new IgniteCallable<Object>() {
+            @SpringApplicationContextResource
+            private transient ApplicationContext appCtx;
+
+            @Override public Object call() throws Exception {
+                assertNotNull(appCtx);
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Tests that spring application context can be injected to a method.
+     */
+    @Test
+    public void testClosureMethodApplicationContext() {
+        grid.compute().call(new IgniteCallable<Object>() {
+            private transient ApplicationContext appCtx;
+
+            @SpringApplicationContextResource
+            private void setApplicationContext(ApplicationContext appCtx) {
+                assertNotNull(appCtx);
+
+                this.appCtx = appCtx;
+            }
+
+            @Override public Object call() throws Exception {
+                assertNotNull(appCtx);
+
+                return null;
+            }
+        });
     }
 
     /**

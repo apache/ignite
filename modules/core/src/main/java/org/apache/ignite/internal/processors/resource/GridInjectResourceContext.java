@@ -21,28 +21,22 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
 
 /**
- * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
- * provides optional spring resource injectors, it can be passed to factory method
- * starting Ignite {@link IgnitionEx#start(GridSpringResourceContext)}.
+ * Interface introduced to separate compile-time dependency to injection framework.
+ * Specific injection mechanisms can be selected at runtime by starting Ignite with
+ * {@link IgnitionEx#start(GridInjectResourceContext)}.
  */
-@Deprecated
-public interface GridSpringResourceContext {
+public interface GridInjectResourceContext {
     /**
-     * @return Spring bean injector.
+     * @return Bean injector.
      */
-    public GridResourceInjector springBeanInjector();
+    GridResourceInjector beanInjector();
 
     /**
-     * @return Spring context injector.
-     */
-    public GridResourceInjector springContextInjector();
-
-    /**
-     * Return original object if AOP used with proxy objects.
+     * Return original object if AOP or proxies are used with given object.
      *
      * @param target Target object.
      * @return Original object wrapped by proxy.
      * @throws IgniteCheckedException If unwrap failed.
      */
-    public Object unwrapTarget(Object target) throws IgniteCheckedException;
+    Object unwrapTarget(Object target) throws IgniteCheckedException;
 }
