@@ -165,6 +165,18 @@ public class SqlAPI {
 
     // end::sql-function-example[]
 
+    // tag::sql-table-function-example[]
+    static class SqlTableFunctions {
+        @QuerySqlTableFunction(columnTypes = {Integer.class, String.class}, columnNames = {"INT_COL", "STR_COL"})
+        public static Iterable<Object[]> table_function(int i) {
+            return Arrays.asList(
+                new Object[] {i, "" + i},
+                new Object[] {i * 10, "empty"}
+            );
+        }
+    }
+    // end::sql-table-function-example[]
+
     @Test
     IgniteCache setSqlFunction(Ignite ignite) {
 
@@ -177,6 +189,23 @@ public class SqlAPI {
 
         IgniteCache cache = ignite.createCache(cfg);
         // end::sql-function-config[]
+
+        return cache;
+    }
+
+    @Test
+    IgniteCache testSqlTableFunction(Ignite ignite) {
+        // tag::sql-table-function-config-query[]
+        CacheConfiguration cfg = new CacheConfiguration("myCache");
+
+        cfg.setSqlFunctionClasses(SqlTableFunctions.class);
+
+        IgniteCache cache = ignite.createCache(cfg);
+
+        SqlFieldsQuery query = new SqlFieldsQuery("SELECT STR_COL FROM TABLE_FUNCTION(10) WHERE INT_COL > 50");
+
+        cache.query(query).getAll();
+        // end::sql-table-function-config-query[]
 
         return cache;
     }
