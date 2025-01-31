@@ -19,7 +19,7 @@ package org.apache.ignite.startup.cmdline;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CdcLoader;
+import org.apache.ignite.internal.cdc.CdcLoader;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;

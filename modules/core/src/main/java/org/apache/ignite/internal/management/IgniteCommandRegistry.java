@@ -70,8 +70,8 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new PersistenceCommand(),
             new DefragmentationCommand(),
             new PerformanceStatisticsCommand(),
-            new ConsistencyCommand(),
-            new CdcCommand()
+            new CdcCommand(),
+            new ConsistencyCommand()
         );
     }
 
