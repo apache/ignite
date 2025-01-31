@@ -47,7 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * ├── cp
  * │  └── sharedfs
  * │      └── BinaryMarshaller
- * ├── db                                                                       ← db (shared between all nodes).
+ * ├── db                                                                       ← db (shared between all local nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta for node 0
  * │  │      └── 1645778359.bin

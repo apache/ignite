@@ -28,14 +28,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
- * Provides access to directories shared between all nodes.
+ * Provides access to directories shared between all local nodes.
  * <pre>
  * ❯ tree
  * .                                                                            ← root (work directory, shared between all local nodes).
  * ├── db                                                                       ← db (shared between all local nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
- * │  ├── snapshots                                                             ← snapshots (shared between all local nodes).
+ * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
  * </pre>
  *
  * @see IgniteNodeDirectories
