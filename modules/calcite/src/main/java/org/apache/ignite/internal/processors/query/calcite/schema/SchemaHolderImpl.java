@@ -27,9 +27,11 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -352,9 +355,23 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
+        if (isSystemFuction(schemaName, name)) {
+            throw new IgniteException("Unable to register SQL function '" + name + "'. The name interferres with " +
+                "a standard or system function.");
+        }
+
         schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
 
         rebuild();
+    }
+
+    /** */
+    private static boolean isSystemFuction(String schemaName, String name) {
+        if(!"PUBLIC".equalsIgnoreCase(schemaName) && !QueryUtils.SCHEMA_SYS.equalsIgnoreCase(schemaName))
+            return false;
+
+        return CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable().getOperatorList().stream()
+            .anyMatch(op->op instanceof SqlFunction && op.getName().equalsIgnoreCase(name));
     }
 
     /** {@inheritDoc} */

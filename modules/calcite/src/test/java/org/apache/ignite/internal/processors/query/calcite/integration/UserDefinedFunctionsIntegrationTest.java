@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import org.apache.calcite.runtime.SqlFunctions;
+import java.sql.Timestamp;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
@@ -27,7 +28,9 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -52,17 +55,49 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     @Test
     public void testOverrideSystemFunction() {
-        assertQuery("select IS_NULL(?)").withParams(null).returns(true).check();
-        assertQuery("select IS_NULL(1)").withParams(null).returns(false).check();
-        assertQuery("select UPPER(?))").withParams("abc").returns("ABC").check();
-        assertQuery("select BITAND(?, ?))").withParams(1, 2).returns(3).check();
+        assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
+        assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
 
-        // Cache with impicit schema.
-        IgniteCache<Integer, Employer> cache = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("testCache")
+        assertThrows("SELECT \"OWN_SCHEME\".UPPER(1)");
+        assertThrows("select \"OWN_SCHEME\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')");
+        assertThrows("select \"OWN_SCHEME\".TYPEOF(1)");
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_OWN")
+            .setSqlSchema("OWN_SCHEME")
             .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
-                .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
         );
+
+        assertQuery("SELECT \"OWN_SCHEME\".UPPER(?)").withParams("abc").returns(3).check();
+        assertQuery("select \"OWN_SCHEME\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
+        assertQuery("select \"OWN_SCHEME\".TYPEOF(?)").withParams(1L).returns(1).check();
+
+        // Make sure not affected 'PUBLIC' scheme.
+        assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
+        assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_PUB")
+            .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
+
+        // Make sure not registered and the standard functions works.
+        assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
+        assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
+
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(qryProc, "schemaHolder", "igniteSchemas");
+
+        IgniteSchema schema = schemas.get("PUBLIC");
+
+        assertEquals(0, schema.getFunctions("UPPER").size());
+        assertEquals(0, schema.getFunctions("UNIX_SECONDS").size());
+        assertEquals(0, schema.getFunctions("TYPEOFTYPEOF").size());
     }
 
     /** */
@@ -224,22 +259,22 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     public static class OverrideSystemFunctionLibrary {
-        /** Overwrites {@link SqlFunctions#upper(String)}. */
+        /** Overwrites standard 'UPPER(VARCHAR)'. */
         @QuerySqlFunction
         public static int upper(String s) {
             return F.isEmpty(s) ? 0 : s.length();
         }
 
-        /** Overwrites default 'IS_NULL'. */
+        /** Overwrites standard 'UNIX_SECONDS(Timestamp)'. */
         @QuerySqlFunction
-        public static int is_null(Object o) {
+        public static int unix_seconds(Timestamp ts) {
             return 1;
         }
 
-        /** Overwrites {@link IgniteOwnSqlOperatorTable#BITAND}. */
+        /** Overwrites Ignite's 'TYPEOF(Object)'. */
         @QuerySqlFunction
-        public static String bitand(int a, int b) {
-            return "echo";
+        public static int typeof(Object o) {
+            return 1;
         }
     }
 
