@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -37,6 +38,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
     /** Cached folder settings. */
     private PdsFolderSettings<NodeFileLockHolder> settings;
+
+    /** Cached Ignite directories. */
+    private NodeFileTree ft;
 
     /**
      * Creates folders resolver
@@ -71,6 +75,27 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             }
         }
         return settings;
+    }
+
+    /** {@inheritDoc} */
+    @Override public NodeFileTree fileTree() {
+        if (ft == null) {
+            try {
+                if (ctx.clientNode()) {
+                    ft = new NodeFileTree(
+                        U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome()),
+                        resolveFolders().folderName()
+                    );
+                }
+                else
+                    ft = new NodeFileTree(ctx.config(), resolveFolders().folderName());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return ft;
     }
 
     /**
