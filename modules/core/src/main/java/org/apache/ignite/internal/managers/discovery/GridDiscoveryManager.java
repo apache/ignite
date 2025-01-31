@@ -1679,13 +1679,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (!state.state().active() && targetState.active()) {
                 String offlineConsistentIds = "";
 
-                if (bltOffline > 0 && bltOffline <= 5) {
-                    Collection<BaselineNode> offlineNodes = new HashSet<>(discoCache.baselineNodes());
-
-                    offlineNodes.removeAll(discoCache.aliveBaselineNodes());
-
-                    offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
-                }
+                if (bltOffline > 0 && bltOffline <= 5)
+                    offlineConsistentIds = ' ' + F.nodeConsistentIds(discoCache.offlineBaselineNodes()).toString();
 
                 if (bltOffline == 0) {
                     if (evtType == EVT_NODE_JOINED && discoCache.baselineNode(evtNode))
