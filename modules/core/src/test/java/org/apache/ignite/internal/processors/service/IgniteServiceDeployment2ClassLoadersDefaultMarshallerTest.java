@@ -89,8 +89,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setMarshaller(marshaller());
-
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
 
         if (grp1.contains(igniteInstanceName))
