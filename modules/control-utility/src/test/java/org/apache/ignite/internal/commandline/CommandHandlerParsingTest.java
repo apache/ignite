@@ -968,7 +968,7 @@ public class CommandHandlerParsingTest {
                 "--group-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "Unexpected value: --some-other-arg"
+            "Please specify a value for argument: --group-names"
         );
 
         GridTestUtils.assertThrows(
@@ -979,7 +979,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "Unexpected value: --some-other-arg"
+            "Please specify a value for argument: --cache-names"
         );
 
         GridTestUtils.assertThrows(
@@ -1339,7 +1339,7 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseArgs(List<String> args) {
-        return new ArgumentParser(setupTestLogger(), new IgniteCommandRegistry()).parseAndValidate(args);
+        return new ArgumentParser(setupTestLogger(), new IgniteCommandRegistry(), null).parseAndValidate(args);
     }
 
     /**
