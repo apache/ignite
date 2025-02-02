@@ -294,7 +294,7 @@ This application should be started near the destination cluster.
 
 IMPORTANT: `kafka-to-ignite.sh` implements the fail-fast approach. It just fails in case of any error. The restart procedure should be configured with the OS tools.
 
-Count of instances of the application does not corellate to the count of destination server nodes.
+Count of instances of the application does not correlate to the count of destination server nodes.
 It should be just enough to process source cluster load.
 Each instance of application will process configured subset of topic partitions to spread the load.
 `KafkaConsumer` for each partition will be created to ensure fair reads.
@@ -314,6 +314,17 @@ ignite-cdc-ext.zip
 Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
 
 NOTE: Please, enable `ignite-cdc-ext` to be able to run `kafka-to-ignite.sh`.
+
+==== Kafka Installation
+
+To install Kafka, download the binary from the link:https://kafka.apache.org/downloads[Apache Kafka downloads page]. Extract the downloaded archive to your desired location. Next, configure the server.properties file to suit your needs and then you can start Zookeeper and Kafka server using provided scripts.
+
+To bootstrap Kafka server use:
+
+```
+./zookeeper-server-start.sh ../config/zookeeper.properties
+./kafka-server-start.sh ../config/server.properties
+```
 
 ==== Configuration
 
@@ -585,7 +596,7 @@ Examples for reference:
 
 To start an Ignite cluster node, use `--ignite` or `-i` command with `cdc-start-up.sh`. You also need to specify properties holder directory.
 
-There are currently 2 examples for 2 clusters, that you can run sumalteniously. You can find them under `$IGNITE_HOME/examples/config/cdc-start-up/cluster-1` and `$IGNITE_HOME/examples/config/cdc-start-up/cluster-2` as `ignite-cdc.properties`. These files contains all independent settings that you can tinker for your needs.
+There are currently 2 examples for 2 clusters, that you can run simultaneously. You can find them under `$IGNITE_HOME/examples/config/cdc-start-up/cluster-1` and `$IGNITE_HOME/examples/config/cdc-start-up/cluster-2` as `ignite-cdc.properties`. These files contains all independent settings that you can tinker for your needs.
 
 NOTE: All properties files are preconfigured to work out of the box.
 
@@ -596,29 +607,29 @@ To start a single node for each cluster type the following commands in different
 ./cdc-start-up.sh --ignite cluster-2
 ```
 
-* Start CDC clients with specified properties:
+* Start CDC consumer with specified properties:
 
-** To start any CDC client node, use `--cdc-client` or `-c` command with `cdc-start-up.sh`. In addition, you have to specify CDC client mode and properties holder directory for the source cluster (as in the previous example).
+** To start any CDC consumer, use `--cdc-consumer` or `-c` command with `cdc-start-up.sh`. In addition, you have to specify CDC consumer mode and properties holder directory for the source cluster (as in the previous example).
 
-** There are 5 options you can specify CDC client mode from. Take a look at `--help` command output to learn about them.
+** There are 3 options you can specify CDC consumer mode from. Take a look at `--help` command output to learn about them.
 
-NOTE: Start both clusters (as in previous example with Ignite nodes) before starting CDC client.
+NOTE: Start both clusters (as in previous example with Ignite nodes) before starting CDC consumer.
 
-Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes and one thin CDC client for Ignite-to-Ignite replication from cluster 1 to cluster 2 (Run the commands independently):
+Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes and one CDC consumer with thin client for Ignite-to-Ignite replication from cluster 1 to cluster 2 (Run the commands independently):
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-client --ignite-to-ignite-thin cluster-1
+./cdc-start-up.sh --cdc-consumer --ignite-to-ignite-thin cluster-1
 ```
 
-NOTE: Make sure clusters fully started up before starting CDC client.
+NOTE: Make sure clusters fully started up before starting CDC consumer.
 
-Here is an example on how to start Active-Active inter-cluster communication with 2 separate nodes and 2 CDC clients (thick) for Ignite-to-Ignite replication (Run the commands independently):
+Here is an example on how to start Active-Active inter-cluster communication with 2 separate nodes and 2 CDC consumers (thick) for Ignite-to-Ignite replication (Run the commands independently):
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-client --ignite-to-ignite cluster-1
-./cdc-start-up.sh --cdc-client --ignite-to-ignite cluster-2
+./cdc-start-up.sh --cdc-consumer --ignite-to-ignite cluster-1
+./cdc-start-up.sh --cdc-consumer --ignite-to-ignite cluster-2
 ```
 
 NOTE: To start CDC with Kafka you need to start topics beforehand.
@@ -639,13 +650,17 @@ We use the following topics naming for our examples:
 ./kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic metadata_from_dc2 --bootstrap-server localhost:9092
 ```
 
-Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes and 2 CDC clients for replication with Kafka from cluster 1 to cluster 2 (Run the commands independently):
+To start-up the replication with Kafka topics you need 1 CDC consumer to replicate data from source cluster to Kafka topics, and 1 Kafka-to-Ignite applier to retrieve data from the topics and apply them to the destination cluster.
+
+Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes, 1 CDC consumer and 1 Kafka-to-Ignite applier (thick) for replication with Kafka from cluster 1 to cluster 2 (Run the commands independently):
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-client --ignite-to-kafka cluster-1
-./cdc-start-up.sh --cdc-client --kafka-to-ignite-thin cluster-2
+./cdc-start-up.sh --cdc-consumer --ignite-to-kafka cluster-1
+./cdc-start-up.sh --kafka-to-ignite thick cluster-2
 ```
+
+NOTE: Kafka-to-Ignite applier starts alongside the destination cluster and uses its configuration to connect to it.
 
 * You can check CDC replication with `--check-cdc`. Use it in parallel with Active-Passive/Active-Active replication. To start CDC check for proposed entry:
 ```
@@ -664,4 +679,4 @@ NOTE: Try to play with version value to see how the conflict resolver works. We 
 ./cdc-start-up.sh --check-cdc --key 11006 --value 3 --version 3 --cluster 1
 ./cdc-start-up.sh --check-cdc --key 11006 --value 2 --version 2 --cluster 2
 ```
-This sequence simulates the case when the first cluster receives outdated value from the second. In our case the data will not be replicated in the last command and the check would fail after 20 tries.
+This sequence simulates the case when the first cluster receives outdated value from the second. In our case the data will not be replicated in the last command and the check would timeout after 1 minute.
