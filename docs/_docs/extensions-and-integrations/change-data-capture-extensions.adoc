@@ -294,7 +294,7 @@ This application should be started near the destination cluster.
 
 IMPORTANT: `kafka-to-ignite.sh` implements the fail-fast approach. It just fails in case of any error. The restart procedure should be configured with the OS tools.
 
-Count of instances of the application does not corellate to the count of destination server nodes.
+Count of instances of the application does not correlate to the count of destination server nodes.
 It should be just enough to process source cluster load.
 Each instance of application will process configured subset of topic partitions to spread the load.
 `KafkaConsumer` for each partition will be created to ensure fair reads.
@@ -314,6 +314,17 @@ ignite-cdc-ext.zip
 Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
 
 NOTE: Please, enable `ignite-cdc-ext` to be able to run `kafka-to-ignite.sh`.
+
+==== Kafka Installation
+
+To install Kafka, download the binary from the link:https://kafka.apache.org/downloads[Apache Kafka downloads page]. Extract the downloaded archive to your desired location. Next, configure the server.properties file to suit your needs and then you can start Zookeeper and Kafka server using provided scripts.
+
+To bootstrap Kafka server use:
+
+```
+./zookeeper-server-start.sh ../config/zookeeper.properties
+./kafka-server-start.sh ../config/server.properties
+```
 
 ==== Configuration
 
