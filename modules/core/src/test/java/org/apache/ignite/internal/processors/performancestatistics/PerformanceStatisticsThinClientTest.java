@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -44,7 +47,11 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
@@ -55,10 +62,12 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL_CONFLICT;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests thin client performance statistics.
  */
+@RunWith(Parameterized.class)
 public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStatisticsTest {
     /** Test task name. */
     public static final String TEST_TASK_NAME = "TestTask";
@@ -72,11 +81,19 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     /** Thin client. */
     private static IgniteClient thinClient;
 
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode atomicityMode;
+
+    /** */
+    @Parameterized.Parameters(name = "atomicityMode={0}")
+    public static Collection<?> parameters() {
+        return EnumSet.of(ATOMIC, TRANSACTIONAL);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
@@ -102,7 +119,20 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        stopAllGrids();
         thinClient.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        thinClient.createCache(new ClientCacheConfiguration()
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(atomicityMode));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        thinClient.destroyCache(DEFAULT_CACHE_NAME);
     }
 
     /** @throws Exception If failed. */
@@ -270,6 +300,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     /** @throws Exception If failed. */
     @Test
     public void testTransaction() throws Exception {
+        assumeTrue(atomicityMode == TRANSACTIONAL);
+
         checkTx(true);
 
         checkTx(false);
