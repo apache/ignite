@@ -642,7 +642,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private boolean isArchiverEnabled() {
         return dirs != null
-            ? dirs.isWalArchiveEnabled()
+            ? dirs.walArchiveEnabled()
             : !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 

@@ -192,7 +192,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
     private void checkLocalSegmentSizes(IgniteEx n) throws Exception {
         disableWal(n, true);
 
-        if (n.context().pdsFolderResolver().fileTree().isWalArchiveEnabled()) {
+        if (n.context().pdsFolderResolver().fileTree().walArchiveEnabled()) {
             assertTrue(waitForCondition(
                 () -> walMgr(n).lastArchivedSegment() == walMgr(n).currentSegment() - 1, getTestTimeout()));
         }

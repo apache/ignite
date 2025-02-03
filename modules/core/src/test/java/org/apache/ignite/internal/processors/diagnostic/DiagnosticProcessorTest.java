@@ -248,7 +248,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
         if (walMgr != null) {
             assertNotNull(walMgr.getSegmentRouter());
 
-            return ft.isWalArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
+            return ft.walArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
         }
 
         return null;

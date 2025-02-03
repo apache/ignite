@@ -22,8 +22,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
@@ -147,13 +149,13 @@ public class NodeFileTree extends SharedFileTree {
     private final File binaryMeta;
 
     /** Path to the directory containing active WAL segments. */
-    private final File wal;
+    private final @Nullable File wal;
 
     /** Path to the directory containing archive WAL segments. */
-    private final File walArchive;
+    private final @Nullable File walArchive;
 
     /** Path to the directory containing archive WAL segments for CDC. */
-    private final File walCdc;
+    private final @Nullable File walCdc;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -161,6 +163,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param persistenceEnabled If {@code true} then calculate persistence directories.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -168,8 +171,8 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public NodeFileTree(String root, String folderName) {
-        this(new File(root), folderName);
+    public NodeFileTree(String root, String folderName, boolean persistenceEnabled) {
+        this(new File(root), folderName, persistenceEnabled);
     }
 
     /**
@@ -178,6 +181,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param persistenceEnabled If {@code true} then calculate persistence directories.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -185,7 +189,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public NodeFileTree(File root, String folderName) {
+    public NodeFileTree(File root, String folderName, boolean persistenceEnabled) {
         super(root);
 
         A.notNullOrEmpty(folderName, "Node directory");
@@ -193,9 +197,16 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot.getAbsolutePath(), folderName);
-        wal = new File(new File(root, DFLT_WAL_PATH), folderName);
-        walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
-        walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
+        if (persistenceEnabled) {
+            wal = new File(new File(root, DFLT_WAL_PATH), folderName);
+            walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
+            walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
+        }
+        else {
+            wal = null;
+            walArchive = null;
+            walCdc = null;
+        }
     }
 
     /**
@@ -222,11 +233,16 @@ public class NodeFileTree extends SharedFileTree {
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        A.notNull(dsCfg, "Data storage configuration");
-
-        wal = resolveDirectory(dsCfg.getWalPath());
-        walArchive = resolveDirectory(dsCfg.getWalArchivePath());
-        walCdc = resolveDirectory(dsCfg.getCdcWalPath());
+        if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
+            wal = resolveDirectory(dsCfg.getWalPath());
+            walArchive = resolveDirectory(dsCfg.getWalArchivePath());
+            walCdc = resolveDirectory(dsCfg.getCdcWalPath());
+        }
+        else {
+            wal = null;
+            walArchive = null;
+            walCdc = null;
+        }
     }
 
     /** @return Folder name. */
@@ -247,17 +263,17 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Path to the directory containing active WAL segments. */
-    public File wal() {
+    public @Nullable File wal() {
         return wal;
     }
 
     /** @return Path to the directory containing archive WAL segments. */
-    public File walArchive() {
+    public @Nullable File walArchive() {
         return walArchive;
     }
 
     /** @return Path to the directory containing archive WAL segments for CDC. */
-    public File walCdc() {
+    public @Nullable File walCdc() {
         return walCdc;
     }
 
@@ -271,8 +287,8 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return {@code True} if WAL archive enabled. */
-    public boolean isWalArchiveEnabled() {
-        return !walArchive.equals(wal);
+    public boolean walArchiveEnabled() {
+        return walArchive != null && wal != null && !walArchive.equals(wal);
     }
 
     /**

@@ -200,7 +200,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
             SegmentRouter sr = ((FileWriteAheadLogManager)walMgr).getSegmentRouter();
 
             if (sr != null) {
-                return ft.isWalArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
+                return ft.walArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
             }
         }
 

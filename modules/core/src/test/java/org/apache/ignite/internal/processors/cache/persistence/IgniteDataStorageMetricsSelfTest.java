@@ -522,10 +522,10 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = igniteEx.context().pdsFolderResolver().fileTree();
 
-        assertEquals(ft.isWalArchiveEnabled(), hasWalArchive);
+        assertEquals(ft.walArchiveEnabled(), hasWalArchive);
 
         //Wait to avoid race condition where new segments(and corresponding .tmp files) are created after totalSize has been calculated.
-        if (ft.isWalArchiveEnabled()) {
+        if (ft.walArchiveEnabled()) {
             int expWalWorkSegements = igniteEx.configuration().getDataStorageConfiguration().getWalSegments();
 
             assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000l));
@@ -535,14 +535,14 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         long totalSize = walMgr.totalSize(walFiles(ft.wal()));
 
-        if (ft.isWalArchiveEnabled())
+        if (ft.walArchiveEnabled())
             totalSize += walMgr.totalSize(walFiles(ft.walArchive()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
 
         long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
 
-        if (ft.isWalArchiveEnabled()) {
+        if (ft.walArchiveEnabled()) {
             long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().fileTree().walCdc()).length;
 
             // Count of segments = LastArchivedSegmentIndex + 1
