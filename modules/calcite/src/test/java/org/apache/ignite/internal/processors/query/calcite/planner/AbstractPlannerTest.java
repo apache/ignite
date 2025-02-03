@@ -682,7 +682,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         SchemaPlus dfltSchema = null;
 
         for (IgniteSchema igniteSchema : schemas) {
-            SchemaPlus schema = igniteSchema.register(rootSchema);
+            SchemaPlus schema = igniteSchema.register(rootSchema, null);
 
             if (dfltSchema == null || DEFAULT_SCHEMA.equals(schema.getName()))
                 dfltSchema = schema;
