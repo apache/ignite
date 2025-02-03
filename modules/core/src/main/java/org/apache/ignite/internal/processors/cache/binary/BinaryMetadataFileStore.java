@@ -82,7 +82,7 @@ class BinaryMetadataFileStore {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
-     * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta
+     * @param metadataDir Path to binary metadata store configured by user, should include binary_meta
      * and consistentId.
      * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
@@ -90,7 +90,7 @@ class BinaryMetadataFileStore {
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        final File binaryMetadataFileStoreDir,
+        final File metadataDir,
         final boolean forceEnabled
     ) throws IgniteCheckedException {
         this.metadataLocCache = metadataLocCache;
@@ -107,19 +107,9 @@ class BinaryMetadataFileStore {
 
         fileIOFactory = dsCfg == null ? new DataStorageConfiguration().getFileIOFactory() : dsCfg.getFileIOFactory();
 
-        final String nodeFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+        this.metadataDir = metadataDir;
 
-        if (binaryMetadataFileStoreDir != null)
-            metadataDir = binaryMetadataFileStoreDir;
-        else {
-            metadataDir = new File(U.resolveWorkDirectory(
-                ctx.config().getWorkDirectory(),
-                DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
-                false
-            ), nodeFolderName);
-        }
-
-        fixLegacyFolder(nodeFolderName);
+        fixLegacyFolder(ctx.pdsFolderResolver().resolveFolders().folderName());
     }
 
     /**
