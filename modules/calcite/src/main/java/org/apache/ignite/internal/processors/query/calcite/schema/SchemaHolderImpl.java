@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -64,6 +66,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private final FrameworkConfig frameworkCfg;
 
     /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
@@ -136,10 +141,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /**
      * @param ctx Kernal context.
      */
-    public SchemaHolderImpl(GridKernalContext ctx) {
+    public SchemaHolderImpl(GridKernalContext ctx, FrameworkConfig frameworkCfg) {
         super(ctx);
 
         this.ctx = ctx;
+        this.frameworkCfg = frameworkCfg;
 
         subscriptionProcessor(ctx.internalSubscriptionProcessor());
 
@@ -358,6 +364,21 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(
+        String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        String[] colNames
+    ) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.addFunction(name.toUpperCase(), IgniteTableFunction.create(method, colTypes, colNames));
+
+        rebuild();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
@@ -412,7 +433,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));
 
         for (IgniteSchema schema : igniteSchemas.values())
-            schema.register(newCalciteSchema);
+            schema.register(newCalciteSchema, frameworkCfg);
 
         calciteSchema = newCalciteSchema;
     }

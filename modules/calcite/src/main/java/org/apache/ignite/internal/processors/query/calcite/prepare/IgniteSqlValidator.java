@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTab
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -102,7 +103,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** Dynamic parameters. */
-    Object[] parameters;
+    @Nullable private final Object[] parameters;
 
     /**
      * Creates a validator.
@@ -110,12 +111,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param opTab         Operator table
      * @param catalogReader Catalog reader
      * @param typeFactory   Type factory
-     * @param config        Config
+     * @param cfg           Config
      * @param parameters    Dynamic parameters
      */
-    public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters) {
-        super(opTab, catalogReader, typeFactory, config);
+    public IgniteSqlValidator(
+        SqlOperatorTable opTab,
+        CalciteCatalogReader catalogReader,
+        IgniteTypeFactory typeFactory,
+        SqlValidator.Config cfg,
+        @Nullable Object[] parameters
+    ) {
+        super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
     }
@@ -535,8 +541,46 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+        if (expr instanceof SqlDynamicParam) {
+            RelDataType type = deriveDynamicParameterType((SqlDynamicParam)expr);
+
+            if (type != null)
+                return type;
+        }
+
+        return super.deriveType(scope, expr);
+    }
+
+    /** @return A derived type or {@code null} if unable to determine. */
+    @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node) {
+        RelDataType type = getValidatedNodeTypeIfKnown(node);
+
+        // Do not clarify the widest type for any value.
+        if (type instanceof OtherType)
+            return type;
+
+        if (parameters == null || node.getIndex() >= parameters.length)
+            return null;
+
+        Object val = parameters[node.getIndex()];
+
+        if (val == null && type != null)
+            return type;
+
+        type = val == null
+            ? typeFactory.createSqlType(SqlTypeName.NULL)
+            : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
+
+        setValidatedNodeType(node, type);
+
+        return type;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (inferDynamicParamType(inferredType, node))
+        if (node instanceof SqlDynamicParam && unknownType.equals(inferredType)
+            && deriveDynamicParameterType((SqlDynamicParam)node) != null)
             return;
 
         if (node instanceof SqlCall) {
@@ -581,40 +625,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else
             super.inferUnknownTypes(inferredType, scope, node);
-    }
-
-    /**
-     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
-     * is actual to {@link #parameters}.
-     *
-     * @return {@code True} if a new type was set. {@code False} otherwise.
-     */
-    private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
-        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
-            return false;
-
-        Object val = parameters[((SqlDynamicParam)node).getIndex()];
-
-        if (val == null) {
-            if (inferredType.equals(unknownType)) {
-                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
-
-                return true;
-            }
-
-            return false;
-        }
-
-        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
-
-        assert !unknownType.equals(valType);
-
-        if (unknownType.equals(inferredType) || valType.getFamily().equals(inferredType.getFamily()))
-            setValidatedNodeType(node, valType);
-        else
-            setValidatedNodeType(node, inferredType);
-
-        return true;
     }
 
     /** {@inheritDoc} */

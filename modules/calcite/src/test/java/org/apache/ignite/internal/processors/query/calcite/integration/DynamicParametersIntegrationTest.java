@@ -26,6 +26,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -58,6 +60,46 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             assertQuery("SELECT typeof(?)").withParams(values.get(i)).returns(types.get(i)).check();
             assertQuery("SELECT ?").withParams(values.get(i)).returns(values.get(i)).check();
         }
+    }
+
+    /** */
+    @Test
+    public void testMissedValue() {
+        assertThrows("SELECT ?", IgniteSQLException.class, "Illegal use of dynamic parameter");
+
+        assertThrows("SELECT ?, ?", IgniteSQLException.class, "Illegal use of dynamic parameter", "arg0");
+    }
+
+    /** */
+    @Test
+    public void testCasts() {
+        assertQuery("SELECT CAST(? as INTEGER)").withParams('1').returns(1).check();
+        assertQuery("SELECT ?::INTEGER").withParams('1').returns(1).check();
+        assertQuery("SELECT ?::VARCHAR").withParams(1).returns("1").check();
+        assertQuery("SELECT CAST(? as VARCHAR)").withParams(1).returns("1").check();
+
+        createAndPopulateTable();
+
+        IgniteCache<Integer, Employer> cache = client.getOrCreateCache(TABLE_NAME);
+
+        cache.put(cache.size(), new Employer("15", 15d));
+
+        assertQuery("SELECT name FROM Person WHERE id=?::INTEGER").withParams("2").returns("Ilya").check();
+        assertQuery("SELECT name FROM Person WHERE id=CAST(? as INTEGER)").withParams("2").returns("Ilya").check();
+
+        assertQuery("SELECT id FROM Person WHERE name=CAST(? as VARCHAR)").withParams(15).returns(5).check();
+        assertQuery("SELECT id FROM Person WHERE name IN (?::VARCHAR)").withParams(15).returns(5).check();
+        assertQuery("SELECT name FROM Person WHERE id IN (?::INTEGER)").withParams("2").returns("Ilya").check();
+        assertQuery("SELECT name FROM Person WHERE id IN (?::INTEGER, ?::INTEGER)").withParams("2", "3")
+            .returns("Ilya").returns("Roma").check();
+
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NOT NULL").withParams(1).returns(6L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NOT NULL").withParams("abc").returns(6L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NOT NULL").withParams(new Object[] { null }).returns(0L).check();
+
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NULL").withParams(1).returns(0L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NULL").withParams("abc").returns(0L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NULL").withParams(new Object[] {null}).returns(6L).check();
     }
 
     /** */

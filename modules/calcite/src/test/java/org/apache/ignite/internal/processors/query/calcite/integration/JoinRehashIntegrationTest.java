@@ -49,7 +49,7 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransacti
         // AbstractBasicIntegrationTest.afterTest method.
         GridTestUtils.runMultiThreaded(() -> {
             for (int i = 0; i < 100; i++)
-                sql(sql, i % 10);
+                sql(sql, "region" + (i % 10));
         }, 10, "query_starter");
     }
 
