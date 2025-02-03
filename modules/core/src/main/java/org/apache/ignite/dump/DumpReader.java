@@ -86,7 +86,7 @@ public class DumpReader implements Runnable {
                 cnsmr.start();
 
             try {
-                File[] files = F.first(dump.directories()).marshaller().listFiles(BinaryUtils::notTmpFile);
+                File[] files = F.first(dump.fileTrees()).marshaller().listFiles(BinaryUtils::notTmpFile);
 
                 if (files != null)
                     cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));

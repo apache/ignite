@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
@@ -65,6 +66,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private final FrameworkConfig frameworkCfg;
 
     /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
@@ -137,10 +141,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /**
      * @param ctx Kernal context.
      */
-    public SchemaHolderImpl(GridKernalContext ctx) {
+    public SchemaHolderImpl(GridKernalContext ctx, FrameworkConfig frameworkCfg) {
         super(ctx);
 
         this.ctx = ctx;
+        this.frameworkCfg = frameworkCfg;
 
         subscriptionProcessor(ctx.internalSubscriptionProcessor());
 
@@ -428,7 +433,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));
 
         for (IgniteSchema schema : igniteSchemas.values())
-            schema.register(newCalciteSchema);
+            schema.register(newCalciteSchema, frameworkCfg);
 
         calciteSchema = newCalciteSchema;
     }

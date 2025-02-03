@@ -681,7 +681,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         U.delete(sft.marshaller());
         U.delete(sft.binaryMetaRoot());
 
-        sft.mkdirBinaryMetaRoot();
+        SharedFileTree.mkdir(sft.binaryMetaRoot(), "root binary metadata");
         sft.mkdirMarshaller();
     }
 
