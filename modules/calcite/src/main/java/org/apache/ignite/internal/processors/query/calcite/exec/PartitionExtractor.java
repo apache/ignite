@@ -33,6 +33,7 @@ import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionAllNode;
@@ -253,7 +254,9 @@ public class PartitionExtractor extends IgniteRelShuttle {
             assert node instanceof RexCall;
             assert ((RexCall)node).operandCount() == 1;
 
-            return ((RexCall)node).getOperands().get(0);
+            RexNode op0 = ((RexCall)node).getOperands().get(0);
+
+            return op0.getType().getFamily() != SqlTypeFamily.NULL ? node : op0;
         }
 
         return node;
