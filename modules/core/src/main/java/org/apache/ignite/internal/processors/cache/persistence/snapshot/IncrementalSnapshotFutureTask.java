@@ -30,19 +30,17 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
@@ -138,15 +136,18 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
 
                     copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
 
+                    NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+                    NodeFileTree snpFt = new NodeFileTree(incSnpDir, folderName);
+
                     copyFiles(
-                        MarshallerContextImpl.mappingFileStoreWorkDir(cctx.gridConfig().getWorkDirectory()),
-                        mappingFileStoreWorkDir(incSnpDir.getAbsolutePath()),
+                        ft.marshaller(),
+                        snpFt.marshaller(),
                         BinaryUtils::notTmpFile
                     );
 
                     copyFiles(
-                        binaryWorkDir(cctx.gridConfig().getWorkDirectory(), folderName),
-                        binaryWorkDir(incSnpDir.getAbsolutePath(), folderName),
+                        ft.binaryMeta(),
+                        snpFt.binaryMeta(),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
