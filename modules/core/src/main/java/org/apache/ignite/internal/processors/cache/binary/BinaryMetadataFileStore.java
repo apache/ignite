@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -96,7 +97,7 @@ class BinaryMetadataFileStore {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
-        enabled = forceEnabled || CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config());
+        enabled = forceEnabled || enabled(ctx.config());
 
         this.log = log;
 
@@ -383,6 +384,11 @@ class BinaryMetadataFileStore {
         writer.cancelTasksForType(typeId);
 
         writer.prepareRemoveFuture(typeId);
+    }
+
+    /** @return {@code True} if file store enabled. */
+    public static boolean enabled(IgniteConfiguration cfg) {
+        return CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg);
     }
 
     /**
