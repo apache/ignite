@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -67,7 +65,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -335,13 +332,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = insertKey(row, ectx);
         Object val = insertVal(row, ectx);
 
-        if (cacheContext().binaryMarshaller()) {
-            if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder)key).build();
+        if (key instanceof BinaryObjectBuilder)
+            key = ((BinaryObjectBuilder)key).build();
 
-            if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder)val).build();
-        }
+        if (val instanceof BinaryObjectBuilder)
+            val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
 
@@ -409,34 +404,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = cacheContext();
 
-        if (cctx.binaryMarshaller()) {
-            BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-            cctx.prepareAffinityField(builder);
+        BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
+        cctx.prepareAffinityField(builder);
 
-            return builder;
-        }
-
-        Class<?> cls = U.classForName(typeName, typeCls);
-
-        try {
-            Constructor<?> ctor = cls.getDeclaredConstructor();
-            ctor.setAccessible(true);
-
-            return ctor.newInstance();
-        }
-        catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw instantiationException(typeName, e);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
-            try {
-                return GridUnsafe.allocateInstance(cls);
-            }
-            catch (InstantiationException e0) {
-                e0.addSuppressed(e);
-
-                throw instantiationException(typeName, e0);
-            }
-        }
+        return builder;
     }
 
     /** */
@@ -469,7 +440,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
 
-        if (cacheContext().binaryMarshaller() && val instanceof BinaryObjectBuilder)
+        if (val instanceof BinaryObjectBuilder)
             val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
@@ -503,14 +474,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object clone(Object val) throws IgniteCheckedException {
+    private Object clone(Object val) {
         if (val == null || QueryUtils.isSqlType(val.getClass()))
             return val;
 
         GridCacheContext<?, ?> cctx = cacheContext();
-
-        if (!cctx.binaryMarshaller())
-            return cctx.marshaller().unmarshal(cctx.marshaller().marshal(val), U.resolveClassLoader(cctx.gridConfig()));
 
         BinaryObjectBuilder builder = cctx.grid().binary().builder(
             cctx.grid().binary().<BinaryObject>toBinary(val));
