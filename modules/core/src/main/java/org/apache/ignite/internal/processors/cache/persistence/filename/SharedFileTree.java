@@ -41,10 +41,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * @see NodeFileTree
  */
 public class SharedFileTree {
-    /** Default path (relative to working directory) of binary metadata folder. */
+    /** Name of binary metadata folder. */
     public static final String BINARY_METADATA_DIR = "binary_meta";
 
-    /** Default path (relative to working directory) of marshaller mappings folder. */
+    /** Name of marshaller mappings folder. */
     public static final String MARSHALLER_DIR = "marshaller";
 
     /** Root(work) directory. */
@@ -82,18 +82,7 @@ public class SharedFileTree {
      * @param cfg Config to get {@code root} directory from.
      */
     SharedFileTree(IgniteConfiguration cfg) {
-        A.notNull(cfg, "config");
-
-        try {
-            root = new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
-        db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, MARSHALLER_DIR);
-        binaryMetaRoot = new File(db, BINARY_METADATA_DIR);
+        this(root(cfg));
     }
 
     /**
@@ -145,7 +134,7 @@ public class SharedFileTree {
      * @param f File to check.
      * @return {@code True} if argument can be binary meta root directory.
      */
-    public static boolean isBinaryMetaRoot(File f) {
+    public static boolean binaryMetaRoot(File f) {
         return f.getAbsolutePath().endsWith(BINARY_METADATA_DIR);
     }
 
@@ -153,7 +142,7 @@ public class SharedFileTree {
      * @param f File to check.
      * @return {@code True} if f ends with binary meta root directory.
      */
-    public static boolean isMarshaller(File f) {
+    public static boolean marshaller(File f) {
         return f.getAbsolutePath().endsWith(MARSHALLER_DIR);
     }
 
@@ -187,6 +176,19 @@ public class SharedFileTree {
             throw new IgniteException("Cannot write to directory: " + dir);
 
         return dir;
+    }
+
+    /**
+     * @param cfg Ignite config.
+     * @return Root directory.
+     */
+    private static File root(IgniteConfiguration cfg) {
+        try {
+            return new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

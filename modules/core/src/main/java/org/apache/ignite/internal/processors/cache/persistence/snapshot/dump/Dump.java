@@ -85,7 +85,7 @@ public class Dump implements AutoCloseable {
     private final File dumpDir;
 
     /** Dump directories. */
-    private final List<NodeFileTree> dirs;
+    private final List<NodeFileTree> fts;
 
     /** Specific consistent id. */
     private final @Nullable String consistentId;
@@ -145,7 +145,7 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
-        this.dirs = metadata.stream()
+        this.fts = metadata.stream()
             .map(m -> new NodeFileTree(dumpDir, m.folderName()))
             .collect(Collectors.toList());
         this.keepBinary = keepBinary;
@@ -165,11 +165,11 @@ public class Dump implements AutoCloseable {
      * @return Standalone kernal context.
      */
     private GridKernalContext standaloneKernalContext(IgniteLogger log) {
-        A.ensure(F.first(dirs).binaryMeta().exists(), "binary metadata directory not exists");
-        A.ensure(F.first(dirs).marshaller().exists(), "marshaller directory not exists");
+        A.ensure(F.first(fts).binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(F.first(fts).marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(dirs).binaryMeta(), F.first(dirs).marshaller());
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(fts).binaryMeta(), F.first(fts).marshaller());
 
             startAllComponents(kctx);
 
@@ -188,7 +188,7 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(NodeFileTree.isBinaryMetaRoot(f) || NodeFileTree.isMarshaller(f))
+            && !(NodeFileTree.binaryMetaRoot(f) || NodeFileTree.marshaller(f))
             && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)
@@ -361,8 +361,8 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return Dump directories. */
-    public List<NodeFileTree> directories() {
-        return dirs;
+    public List<NodeFileTree> fileTrees() {
+        return fts;
     }
 
     /** */
