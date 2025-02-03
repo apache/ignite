@@ -105,9 +105,14 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** */
     @Test
     public void testDynamicParameters() {
-        assertQuery("select 1 + ?").withParams(new BigDecimal("2")).returns(3L);
-        assertQuery("select 1 + ?").withParams(2L).returns(3L);
-        assertQuery("select 1 + CAST(? AS DECIMAL(5,2)").withParams(2).returns(3L);
+        assertQuery("select 1 + ?").withParams(1).returns(2).check();
+        assertQuery("select ? + 1").withParams(1).returns(2).check();
+        assertQuery("select 1 + CAST(? AS INTEGER)").withParams(2L).returns(3).check();
+        assertQuery("select CAST(? AS INTEGER) + 1").withParams(2L).returns(3).check();
+        assertQuery("select 1 + ?").withParams(1L).returns(2L).check();
+        assertQuery("select ? + 1").withParams(1L).returns(2L).check();
+        assertQuery("select 1 + ?").withParams(new BigDecimal("2")).returns(new BigDecimal(3)).check();
+        assertQuery("select ? + 1").withParams(new BigDecimal("2")).returns(new BigDecimal(3)).check();
 
         assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
         assertQuery("SELECT COALESCE(null, ?)").withParams(13).returns(13).check();

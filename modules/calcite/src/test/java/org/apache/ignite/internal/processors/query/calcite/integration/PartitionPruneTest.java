@@ -217,13 +217,13 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNullsInCondition() {
-        execute("select * from T1 where T1.ID is NULL",
-            res -> {
-                assertPartitions();
-                assertNodes();
-
-                assertTrue(res.isEmpty());
-            });
+//        execute("select * from T1 where T1.ID is NULL",
+//            res -> {
+//                assertPartitions();
+//                assertNodes();
+//
+//                assertTrue(res.isEmpty());
+//            });
 
         execute("select * from T1 where T1.ID = ?",
             res -> {

@@ -565,9 +565,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         Object val = parameters[node.getIndex()];
 
-        if (val == null && type != null)
-            return type;
-
         type = val == null
             ? typeFactory.createSqlType(SqlTypeName.NULL)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
@@ -579,7 +576,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam && unknownType.equals(inferredType)
+        if (node instanceof SqlDynamicParam && !(inferredType instanceof OtherType)
             && deriveDynamicParameterType((SqlDynamicParam)node) != null)
             return;
 
