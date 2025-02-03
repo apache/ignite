@@ -86,11 +86,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             //
             RelDataType targetType = factory.leastRestrictive(Arrays.asList(leftType, rightType));
 
-            // Do not wrap additional CAST if NULL is acceptable.
-            if (targetType == null || targetType.getFamily() == SqlTypeFamily.ANY
-                || (leftType.getFamily() == SqlTypeFamily.NULL && rightType.isNullable())
-                || (rightType.getFamily() == SqlTypeFamily.NULL && leftType.isNullable())
-            )
+            if (targetType == null || targetType.getFamily() == SqlTypeFamily.ANY)
                 return super.binaryComparisonCoercion(binding);
             else
                 return coerceOperandsType(scope, call, targetType);

@@ -182,7 +182,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         switch (opKind) {
             case IS_NULL: {
-                RexNode left = operands.get(0);
+                RexNode left = removeCast(operands.get(0));
 
                 if (!left.isA(SqlKind.LOCAL_REF))
                     return PartitionAllNode.INSTANCE;
@@ -201,12 +201,12 @@ public class PartitionExtractor extends IgniteRelShuttle {
                     return PartitionAllNode.INSTANCE;
 
                 RexNode left, right;
-                if (operands.get(0).isA(SqlKind.LOCAL_REF)) {
+                if (removeCast(operands.get(0)).isA(SqlKind.LOCAL_REF)) {
                     left = operands.get(0);
-                    right = operands.get(1);
+                    right = removeCast(operands.get(1));
                 }
                 else {
-                    left = operands.get(1);
+                    left = removeCast(operands.get(1));
                     right = operands.get(0);
                 }
 
@@ -245,5 +245,17 @@ public class PartitionExtractor extends IgniteRelShuttle {
             default:
                 return PartitionAllNode.INSTANCE;
         }
+    }
+
+    /** */
+    private static RexNode removeCast(RexNode node) {
+        if (node.isA(SqlKind.CAST)) {
+            assert node instanceof RexCall;
+            assert ((RexCall)node).operandCount() == 1;
+
+            return ((RexCall)node).getOperands().get(0);
+        }
+
+        return node;
     }
 }
