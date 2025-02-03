@@ -163,7 +163,6 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
-     * @param persistenceEnabled If {@code true} then calculate persistence directories.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -171,8 +170,8 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public NodeFileTree(String root, String folderName, boolean persistenceEnabled) {
-        this(new File(root), folderName, persistenceEnabled);
+    public NodeFileTree(String root, String folderName) {
+        this(new File(root), folderName);
     }
 
     /**
@@ -181,7 +180,6 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
-     * @param persistenceEnabled If {@code true} then calculate persistence directories.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -189,7 +187,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    public NodeFileTree(File root, String folderName, boolean persistenceEnabled) {
+    public NodeFileTree(File root, String folderName) {
         super(root);
 
         A.notNullOrEmpty(folderName, "Node directory");
@@ -197,16 +195,9 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot.getAbsolutePath(), folderName);
-        if (persistenceEnabled) {
-            wal = new File(new File(root, DFLT_WAL_PATH), folderName);
-            walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
-            walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
-        }
-        else {
-            wal = null;
-            walArchive = null;
-            walCdc = null;
-        }
+        wal = new File(new File(root, DFLT_WAL_PATH), folderName);
+        walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
+        walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
     }
 
     /**
