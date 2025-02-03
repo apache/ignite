@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Provides access to Ignite node file tree.
- * Note, that base path can be different for each usage:
+ * Note, that root path can be different for each usage:
  * <ul>
  *     <li>Ignite node.</li>
  *     <li>Snapshot files.</li>
