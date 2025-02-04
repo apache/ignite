@@ -203,12 +203,12 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
                 RexNode left, right;
                 if (removeCast(operands.get(0)).isA(SqlKind.LOCAL_REF)) {
-                    left = operands.get(0);
+                    left = removeCast(operands.get(0));
                     right = removeCast(operands.get(1));
                 }
                 else {
                     left = removeCast(operands.get(1));
-                    right = operands.get(0);
+                    right = removeCast(operands.get(0));
                 }
 
                 if (!left.isA(SqlKind.LOCAL_REF))
