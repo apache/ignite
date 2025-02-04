@@ -216,7 +216,7 @@ public class NodeFileTree extends SharedFileTree {
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
         super(cfg);
 
-        A.notNullOrEmpty(folderName, "Node directory");
+        A.notNull(folderName, "Node directory");
 
         this.folderName = folderName;
 

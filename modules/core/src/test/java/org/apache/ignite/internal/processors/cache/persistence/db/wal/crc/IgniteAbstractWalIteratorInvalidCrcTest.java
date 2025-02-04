@@ -179,12 +179,10 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-
         List<FileDescriptor> archiveDescs = iterFactory.resolveWalFiles(
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .filesOrDirs(ft.walArchive())
         );
-
 
         List<FileDescriptor> descs = iterFactory.resolveWalFiles(
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
