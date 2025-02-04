@@ -735,6 +735,7 @@ final class ReliableChannel implements AutoCloseable {
     private ClientChannelHolder getOrCreateHolder(List<InetSocketAddress> addrs,
         Map<InetSocketAddress, ClientChannelHolder> addrMap) {
 
+        // Try to find already created channel holder.
         ClientChannelHolder holder = findExistingHolder(addrs, addrMap);
 
         if (holder == null)
