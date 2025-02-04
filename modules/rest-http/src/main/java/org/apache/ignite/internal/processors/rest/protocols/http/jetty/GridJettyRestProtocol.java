@@ -277,6 +277,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             try {
                 Resource rsrc = Resource.newResource(cfgUrl);
+
                 cfg = new XmlConfiguration(rsrc);
             }
             catch (FileNotFoundException e) {
