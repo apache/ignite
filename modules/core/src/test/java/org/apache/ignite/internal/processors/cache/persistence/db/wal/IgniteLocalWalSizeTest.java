@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
 import org.apache.ignite.internal.util.typedef.F;
@@ -202,12 +203,11 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
                 () -> walMgr(n).lastCompactedSegment() == walMgr(n).lastArchivedSegment(), getTestTimeout()));
         }
 
-        File walWorkDir = getFieldValue(walMgr(n), "walWorkDir");
-        File walArchiveDir = getFieldValue(walMgr(n), "walArchiveDir");
+        NodeFileTree ft = n.context().pdsFolderResolver().fileTree();
 
         Map<Long, Long> expSegmentSize = new HashMap<>();
 
-        F.asList(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER))
+        F.asList(ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER))
             .stream()
             .map(FileDescriptor::new)
             .forEach(fd -> {
@@ -219,12 +219,12 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
 
         FileWriteHandle currHnd = getFieldValue(walMgr(n), "currHnd");
 
-        if (!walArchiveDir.equals(walWorkDir)) {
+        if (ft.walArchiveEnabled()) {
             long absIdx = currHnd.getSegmentId();
             int segments = n.configuration().getDataStorageConfiguration().getWalSegments();
 
             for (long i = absIdx - (absIdx % segments); i <= absIdx; i++)
-                expSegmentSize.putIfAbsent(i, new File(walWorkDir, fileName(i % segments)).length());
+                expSegmentSize.putIfAbsent(i, new File(ft.wal(), fileName(i % segments)).length());
         }
 
         assertEquals(currHnd.getSegmentId() + 1, expSegmentSize.size());

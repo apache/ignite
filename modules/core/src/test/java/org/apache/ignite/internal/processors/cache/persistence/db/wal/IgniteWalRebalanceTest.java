@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -86,7 +87,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -895,10 +895,10 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                         DataEntry.EMPTY_FLAGS
                     )));
 
-                    File walDir = U.field(walMgr, "walWorkDir");
+                    NodeFileTree ft = supplier1.context().pdsFolderResolver().fileTree();
 
                     List<FileDescriptor> walFiles = new IgniteWalIteratorFactory().resolveWalFiles(
-                        new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(walDir));
+                        new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(ft.wal()));
 
                     FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
