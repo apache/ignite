@@ -618,6 +618,8 @@ final class ReliableChannel implements AutoCloseable {
      */
     synchronized void initChannelHolders() {
         startChannelsReInit = System.currentTimeMillis();
+
+        // Enable parallel threads to schedule new init of channel holders.
         scheduledChannelsReinit.set(false);
 
         Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
@@ -629,7 +631,9 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientChannelHolder> curHolders = channels;
         Set<List<InetSocketAddress>> newAddrsSet = new HashSet<>(newAddrs);
 
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
         if (curHolders != null && clientCfg.getAddressesFinder() == null) {
+            // Do not modify the original list.
             for (ClientChannelHolder holder : curHolders) {
                 if (isValidChannel(holder))
                     newAddrsSet.add(holder.getAddresses());
@@ -642,6 +646,7 @@ final class ReliableChannel implements AutoCloseable {
             .flatMap(Collection::stream)
             .collect(Collectors.toSet());
 
+        // Close obsolete holders or map old but valid addresses to holders
         if (curHolders != null)
             processExistingHolders(curHolders, newAddrSet, addrMap);
 
@@ -676,6 +681,7 @@ final class ReliableChannel implements AutoCloseable {
         for (ClientChannelHolder holder : holders) {
             boolean isValid = false;
             for (InetSocketAddress addr : holder.getAddresses()) {
+                // If new endpoints contain at least one of channel addresses, don't close this channel.
                 if (newAddrSet.contains(addr)) {
                     ClientChannelHolder existing = addrMap.putIfAbsent(addr, holder);
                     if (existing == null || existing == holder)
@@ -702,6 +708,8 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientChannelHolder> curHolders,
         int curIdx) {
 
+        // The variable holds a new index of default channel after topology change.
+        // Suppose that reuse of the channel is better than open new connection.
         int dfltChannelIdx = -1;
         ClientChannelHolder curDflt = (curIdx != -1) ?
             curHolders.get(curIdx) : null;
