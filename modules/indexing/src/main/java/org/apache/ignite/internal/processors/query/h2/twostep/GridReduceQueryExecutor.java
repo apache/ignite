@@ -545,7 +545,7 @@ public class GridReduceQueryExecutor {
                         if (h2.runningQueryManager().planHistoryTracker().enabled()) {
                             ReduceH2QueryInfo qryInfo0 = qryInfo;
 
-                            ctx.pools().getExecutorService().submit(() -> {
+                            ctx.pools().getSystemExecutorService().submit(() -> {
                                 h2.runningQueryManager().planHistoryTracker().addPlan(
                                     qryInfo0.plan(),
                                     qryInfo0.sql(),
