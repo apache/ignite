@@ -690,7 +690,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         check.accept(ft.binaryMeta());
         check.accept(ft.wal());
         check.accept(ft.walArchive());
-        check.accept(new File(ft.root(), subDirName));
+        check.accept(ft.nodeRoot());
     }
 
     /**
