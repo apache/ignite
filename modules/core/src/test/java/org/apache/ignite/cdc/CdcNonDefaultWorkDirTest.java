@@ -59,8 +59,8 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
         NodeFileTree ft = new NodeFileTree(new File(DFLT_WORK_DIR), CONSISTENT_ID);
 
         assertNotNull(DFLT_WORK_DIR);
-        assertTrue(ft.db().exists() || ft.db().mkdirs());
-        assertTrue(ft.walCdc().mkdirs());
+        assertTrue(ft.nodeRoot().exists() || ft.nodeRoot().mkdirs());
+        assertTrue(ft.walCdc().exists() || ft.walCdc().mkdirs());
     }
 
     /** {@inheritDoc} */
