@@ -749,14 +749,14 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
-            if (!ft.nodeRoot().exists())
+            if (!ft.nodeStorage().exists())
                 return;
 
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
-                    ft.nodeRoot(),
+                    ft.nodeStorage(),
                     kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()

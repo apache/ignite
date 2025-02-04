@@ -70,9 +70,7 @@ public class FileStoreHeapUtilizationJolBenchmark {
         SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
-        U.delete(sft.db());
-        U.delete(sft.marshaller());
-        U.delete(sft.binaryMetaRoot());
+        U.delete(sft.marshaller().getParentFile());
     }
 
     /** */

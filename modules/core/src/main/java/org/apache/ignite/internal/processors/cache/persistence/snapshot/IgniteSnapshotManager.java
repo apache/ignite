@@ -781,8 +781,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             deleteDirectory(snpFt.binaryMetaRoot());
             deleteDirectory(snpFt.marshaller());
 
-            snpFt.db().delete();
-            snpFt.root().delete();
+            U.delete(snpFt.root());
         }
         catch (IOException e) {
             throw new IgniteException(e);

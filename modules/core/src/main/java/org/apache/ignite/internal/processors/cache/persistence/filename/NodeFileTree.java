@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
  * Provides access to Ignite node file tree.
@@ -47,6 +48,9 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
  *     <li>{@code .} folder is {@code root} constructor parameter.</li>
  *     <li>{@code node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c} is the {@link PdsFolderSettings#folderName()} and {@code folderName}
  *     constructor parameter.</li>
+ *     <li>{@code db/binary_meta}, {@code db/marshaller} directories calculated relative to Ignite working directory.</li>
+ *     <li>{@code nodeStorage} calculated relative to {@link DataStorageConfiguration#getStoragePath()},
+ *     which equal to {@code ${IGNITE_WORK_DIR}/db}, by default.</li>
  * </ul>
  *
  * <pre>
@@ -64,7 +68,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
  * │  ├── lock
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes)
  * │  │  └── 1645778359.classname0
- * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeRoot (node 0).
+ * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
  * │  │  ├── cache-default
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
@@ -91,7 +95,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
  * │  │  └── snp                                                                ← snpTmp (node 0)
- * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeRoot (node 1).
+ * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeStorage (node 1).
  * │  │  ├── cache-default
  * ..
  * │  │  ├── cache-ignite-sys-cache
@@ -148,6 +152,9 @@ public class NodeFileTree extends SharedFileTree {
     /** Path to the directory containing binary metadata. */
     private final File binaryMeta;
 
+    /** Path to the storage directory. */
+    private final @Nullable File nodeStorage;
+
     /** Path to the directory containing active WAL segments. */
     private final @Nullable File wal;
 
@@ -198,6 +205,7 @@ public class NodeFileTree extends SharedFileTree {
         wal = new File(new File(root, DFLT_WAL_PATH), folderName);
         walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
         walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
+        nodeStorage = defaultNodeStorage();
     }
 
     /**
@@ -224,6 +232,14 @@ public class NodeFileTree extends SharedFileTree {
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
+        if (CU.isPersistenceEnabled(dsCfg)) {
+            nodeStorage = dsCfg.getStoragePath() == null
+                ? defaultNodeStorage()
+                : resolveDirectory(dsCfg.getStoragePath());
+        }
+        else
+            nodeStorage = null;
+
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
@@ -242,10 +258,10 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @return Node root directory.
+     * @return Node storage directory.
      */
-    public File nodeRoot() {
-        return new File(db, folderName);
+    public File nodeStorage() {
+        return nodeStorage;
     }
 
     /** @return Path to binary metadata directory. */
@@ -295,6 +311,13 @@ public class NodeFileTree extends SharedFileTree {
         return sharedBetweenNodesDir.isAbsolute()
             ? new File(sharedBetweenNodesDir, folderName)
             : new File(new File(root, cfg), folderName);
+    }
+
+    /**
+     * @return Default node directory, if {@link DataStorageConfiguration#getStoragePath()} is {@code null}.
+     */
+    private File defaultNodeStorage() {
+        return new File(new File(root, DB_DEFAULT_FOLDER), folderName);
     }
 
     /** {@inheritDoc} */

@@ -50,9 +50,6 @@ public class SharedFileTree {
     /** Root(work) directory. */
     protected final File root;
 
-    /** db directory. */
-    protected final File db;
-
     /** Path to the directory containing binary metadata. */
     protected final File binaryMetaRoot;
 
@@ -66,9 +63,8 @@ public class SharedFileTree {
         A.notNull(root, "Root directory");
 
         this.root = root;
-        db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, MARSHALLER_DIR);
-        binaryMetaRoot = new File(db, BINARY_METADATA_DIR);
+        marshaller = new File(root, DB_DEFAULT_FOLDER + "/" + MARSHALLER_DIR);
+        binaryMetaRoot = new File(root, DB_DEFAULT_FOLDER + "/" + BINARY_METADATA_DIR);
     }
 
     /**
@@ -90,13 +86,6 @@ public class SharedFileTree {
      */
     public File root() {
         return root;
-    }
-
-    /**
-     * @return Path to the {@code db} directory.
-     */
-    public File db() {
-        return db;
     }
 
     /**
