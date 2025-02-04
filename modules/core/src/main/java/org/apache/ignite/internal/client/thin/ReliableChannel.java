@@ -617,129 +617,197 @@ final class ReliableChannel implements AutoCloseable {
      * Init channel holders to all nodes.
      */
     synchronized void initChannelHolders() {
-        List<ClientChannelHolder> holders = channels;
-
         startChannelsReInit = System.currentTimeMillis();
-
-        // Enable parallel threads to schedule new init of channel holders.
         scheduledChannelsReinit.set(false);
 
         Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
-
         if (newAddrs == null) {
             finishChannelsReInit = System.currentTimeMillis();
-
             return;
         }
 
-        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
-        if (holders != null && clientCfg.getAddressesFinder() == null) {
-            // Do not modify the original list.
-            Set<Set<InetSocketAddress>> newAddrsSet = newAddrs.stream()
-                .map(HashSet::new)
-                .collect(Collectors.toSet());
+        List<ClientChannelHolder> curHolders = channels;
+        Set<List<InetSocketAddress>> newAddrsSet = new HashSet<>(newAddrs);
 
-            for (ClientChannelHolder h : holders) {
-                ClientChannel ch = h.ch;
-
-                if (ch != null && !ch.closed() && !newAddrsSet.contains(new HashSet<>(h.getAddresses())))
-                    newAddrs.add(h.getAddresses());
+        if (curHolders != null && clientCfg.getAddressesFinder() == null) {
+            for (ClientChannelHolder holder : curHolders) {
+                if (isValidChannel(holder))
+                    newAddrsSet.add(holder.getAddresses());
             }
+            newAddrs = new ArrayList<>(newAddrsSet);
         }
 
-        Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
+        Map<InetSocketAddress, ClientChannelHolder> addrMap = new HashMap<>();
+        Set<InetSocketAddress> newAddrSet = newAddrs.stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
 
-        Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
-
-        // Close obsolete holders or map old but valid addresses to holders
-        if (holders != null) {
-            for (ClientChannelHolder h : holders) {
-                boolean found = false;
-
-                for (InetSocketAddress addr : h.getAddresses()) {
-                    // If new endpoints contain at least one of channel addresses, don't close this channel.
-                    if (newAddrsSet.contains(addr)) {
-                        ClientChannelHolder oldHld = curAddrs.putIfAbsent(addr, h);
-
-                        if (oldHld == null || oldHld == h) // If not duplicate.
-                            found = true;
-                    }
-                }
-
-                if (!found)
-                    h.close();
-            }
-        }
+        if (curHolders != null)
+            processExistingHolders(curHolders, newAddrSet, addrMap);
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
+        int dfltChannelIdx = initializeHolders(newAddrs, addrMap, reinitHolders,
+            curHolders, curChIdx);
 
-        // The variable holds a new index of default channel after topology change.
-        // Suppose that reuse of the channel is better than open new connection.
-        int dfltChannelIdx = -1;
+        updateChannels(reinitHolders, dfltChannelIdx);
 
-        ClientChannelHolder currDfltHolder = null;
+        finishChannelsReInit = System.currentTimeMillis();
+    }
 
-        int idx = curChIdx;
+    /**
+     * Checks if a given channel holder is valid and active.
+     * @param holder Holder to validate.
+     */
+    private boolean isValidChannel(ClientChannelHolder holder) {
+        ClientChannel ch = holder.ch;
+        return ch != null && !ch.closed();
+    }
 
-        if (idx != -1)
-            currDfltHolder = holders.get(idx);
+    /**
+     * Processes existing holders, closing obsolete ones and mapping valid ones.
+     * @param holders Existing channel holders.
+     * @param newAddrSet Set of new valid addresses.
+     * @param addrMap Mapping of addresses to channel holders.
+     */
+    private void processExistingHolders(List<ClientChannelHolder> holders,
+        Set<InetSocketAddress> newAddrSet,
+        Map<InetSocketAddress, ClientChannelHolder> addrMap) {
 
-        for (List<InetSocketAddress> addrs : newAddrs) {
-            ClientChannelHolder hld = null;
-
-            // Try to find already created channel holder.
-            for (InetSocketAddress addr : addrs) {
-                hld = curAddrs.get(addr);
-
-                if (hld != null) {
-                    if (!hld.getAddresses().equals(addrs)) // Enrich holder addresses.
-                        hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
-
-                    break;
+        for (ClientChannelHolder holder : holders) {
+            boolean isValid = false;
+            for (InetSocketAddress addr : holder.getAddresses()) {
+                if (newAddrSet.contains(addr)) {
+                    ClientChannelHolder existing = addrMap.putIfAbsent(addr, holder);
+                    if (existing == null || existing == holder)
+                        isValid = true;
                 }
             }
+            if (!isValid)
+                holder.close();
+        }
+    }
 
-            if (hld == null) { // If not found, create the new one.
-                hld = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs));
+    /**
+     * Initializes channel holders for new addresses, ensuring proper mappings.
+     * @param addresses New addresses to process.
+     * @param addrMap Address-to-holder mapping.
+     * @param reinitHolders List to store reinitialized holders.
+     * @param curHolders List of current channel holders.
+     * @param curIdx Current index of the default holder.
+     * @return Index of the new default channel holder.
+     */
+    private int initializeHolders(Collection<List<InetSocketAddress>> addresses,
+        Map<InetSocketAddress, ClientChannelHolder> addrMap,
+        List<ClientChannelHolder> reinitHolders,
+        List<ClientChannelHolder> curHolders,
+        int curIdx) {
 
-                for (InetSocketAddress addr : addrs)
-                    curAddrs.putIfAbsent(addr, hld);
-            }
+        int dfltChannelIdx = -1;
+        ClientChannelHolder curDflt = (curIdx != -1) ?
+            curHolders.get(curIdx) : null;
 
-            reinitHolders.add(hld);
+        for (List<InetSocketAddress> addrs : addresses) {
+            ClientChannelHolder holder = getOrCreateHolder(addrs, addrMap);
+            reinitHolders.add(holder);
 
-            if (hld == currDfltHolder)
+            if (holder == curDflt)
                 dfltChannelIdx = reinitHolders.size() - 1;
         }
 
-        if (dfltChannelIdx == -1) {
-            // If holder is not specified get the random holder from the range of holders with the same port.
-            reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
+        return (dfltChannelIdx == -1) ?
+            selectRandomHolder(reinitHolders) : dfltChannelIdx;
+    }
 
-            int limit = 0;
-            int port = F.first(reinitHolders.get(0).getAddresses()).getPort();
+    /**
+     * Retrieves an existing holder or creates a new one for the given addresses.
+     * @param addrs Addresses associated with the holder.
+     * @param addrMap Address mapping.
+     * @return The found or newly created holder.
+     */
+    private ClientChannelHolder getOrCreateHolder(List<InetSocketAddress> addrs,
+        Map<InetSocketAddress, ClientChannelHolder> addrMap) {
 
-            while (limit + 1 < reinitHolders.size() && F.first(reinitHolders.get(limit + 1).getAddresses()).getPort() == port)
-                limit++;
+        ClientChannelHolder holder = findExistingHolder(addrs, addrMap);
 
-            dfltChannelIdx = ThreadLocalRandom.current().nextInt(limit + 1);
+        if (holder == null)
+            holder = createNewHolder(addrs, addrMap);
+
+        return holder;
+    }
+
+    /**
+     * Finds an existing holder that matches the given addresses.
+     * @param addrs Addresses to search for.
+     * @param addrMap Address-to-holder mapping.
+     * @return Found holder or null if none exist.
+     */
+    private ClientChannelHolder findExistingHolder(List<InetSocketAddress> addrs,
+        Map<InetSocketAddress, ClientChannelHolder> addrMap) {
+
+        for (InetSocketAddress addr : addrs) {
+            ClientChannelHolder holder = addrMap.get(addr);
+            if (holder != null) {
+                if (!holder.getAddresses().equals(addrs))
+                    holder.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
+                return holder;
+            }
         }
+        return null;
+    }
 
+    /**
+     * Creates a new channel holder for the given addresses.
+     * @param addrs Addresses to assign to the holder.
+     * @param addrMap Address mapping.
+     * @return Newly created channel holder.
+     */
+    private ClientChannelHolder createNewHolder(List<InetSocketAddress> addrs,
+        Map<InetSocketAddress, ClientChannelHolder> addrMap) {
+
+        ClientChannelHolder holder = new ClientChannelHolder(
+            new ClientChannelConfiguration(clientCfg, addrs));
+
+        for (InetSocketAddress addr : addrs)
+            addrMap.putIfAbsent(addr, holder);
+
+        return holder;
+    }
+
+    /**
+     * Selects a random holder from the sorted list as a default.
+     * @param holders List of holders to choose from.
+     * @return Index of the selected default holder.
+     */
+    private int selectRandomHolder(List<ClientChannelHolder> holders) {
+        holders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
+
+        int limit = 0;
+        int port = F.first(holders.get(0).getAddresses()).getPort();
+
+        while (limit + 1 < holders.size() &&
+            F.first(holders.get(limit + 1).getAddresses()).getPort() == port)
+            limit++;
+
+        return ThreadLocalRandom.current().nextInt(limit + 1);
+    }
+
+    /**
+     * Updates the active channels and sets the default holder index.
+     * @param holders New list of active holders.
+     * @param dfltIdx Index of the new default holder.
+     */
+    private void updateChannels(List<ClientChannelHolder> holders, int dfltIdx) {
         curChannelsGuard.writeLock().lock();
-
         try {
-            channels = reinitHolders;
-
+            channels = holders;
             attemptsLimit = getRetryLimit();
-
-            curChIdx = dfltChannelIdx;
+            curChIdx = dfltIdx;
         }
         finally {
             curChannelsGuard.writeLock().unlock();
         }
-
-        finishChannelsReInit = System.currentTimeMillis();
     }
+
 
     /**
      * Establishing connections to servers. If partition awareness feature is enabled connections are created
