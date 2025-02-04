@@ -32,11 +32,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.MARSHALLER_DIR;
 
 /**
  * Test for moving binary metadata and marshaller folders to PDS.
@@ -194,7 +197,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
 
         File legacyDir = U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
-            "marshaller",
+            MARSHALLER_DIR,
             false
         );
 
@@ -211,16 +214,12 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
         // legacy marshaller mappings dir must be deleted at this moment
         assertFalse(legacyDir.exists());
 
-        File newDir = U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            DataStorageConfiguration.DFLT_MARSHALLER_PATH,
-            false
-        );
-
         // assert folder and contents moved to new location
-        assertTrue(newDir.exists());
+        SharedFileTree sft = sharedFileTree();
 
-        assertTrue(new File(newDir, typeIdFile).exists());
+        assertTrue(sft.marshaller().exists());
+
+        assertTrue(new File(sft.marshaller(), typeIdFile).exists());
     }
 
 }
