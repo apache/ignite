@@ -232,20 +232,17 @@ public class NodeFileTree extends SharedFileTree {
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        if (CU.isPersistenceEnabled(dsCfg)) {
+        if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             nodeStorage = dsCfg.getStoragePath() == null
                 ? defaultNodeStorage()
                 : resolveDirectory(dsCfg.getStoragePath());
-        }
-        else
-            nodeStorage = null;
 
-        if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
+            nodeStorage = null;
             wal = null;
             walArchive = null;
             walCdc = null;
