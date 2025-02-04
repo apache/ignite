@@ -49,7 +49,7 @@ public class CLIArgumentParser {
     /** */
     private final Map<String, Object> parsedArgs = new HashMap<>();
 
-    /** Console instance */
+    /** Console instance. */
     protected final GridConsole console;
 
     /** */
@@ -171,12 +171,10 @@ public class CLIArgumentParser {
     }
 
     /**
-     * Get CLIArgument.
-     *
      * @param name Argument name.
-     * @return CLIArgument.
+     * @return Command line rgument.
      */
-    public CLIArgument<?> getCliArg(String name) {
+    public CLIArgument<?> getArgumentDescriptor(String name) {
         return argConfiguration.get(name);
     }
 
@@ -252,8 +250,6 @@ public class CLIArgumentParser {
     }
 
     /**
-     * Requests password from console with message.
-     *
      * @param msg Message.
      * @return Password.
      */

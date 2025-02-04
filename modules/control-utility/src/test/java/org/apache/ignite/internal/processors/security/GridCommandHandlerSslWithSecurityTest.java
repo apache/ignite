@@ -256,7 +256,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
     }
 
     /**
-     * Perform the test with prepared List arguments
+     * Perform the test with prepared List arguments.
      *
      * @param args List of query arguments.
      * @throws Exception If failed.

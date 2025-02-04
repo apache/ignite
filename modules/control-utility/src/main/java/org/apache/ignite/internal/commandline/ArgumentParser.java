@@ -143,7 +143,7 @@ public class ArgumentParser {
     /** */
     private final List<CLIArgument<?>> common = new ArrayList<>();
 
-    /** Console instance */
+    /** Console instance. */
     protected final GridConsole console;
 
     /**
@@ -220,7 +220,7 @@ public class ArgumentParser {
 
         parser.parse(args.listIterator());
 
-        String argsToStr = convertCommandToString(raw.listIterator(), parser);
+        String safeCmd = buildSafeCommandString(raw.listIterator(), parser);
 
         A arg = (A)argument(
             cmdPath.peek().argClass(),
@@ -237,7 +237,7 @@ public class ArgumentParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters<>(cmdPath, arg, parser, argsToStr);
+        return new ConnectionAndSslParameters<>(cmdPath, arg, parser, safeCmd);
     }
 
     /**
@@ -339,39 +339,34 @@ public class ArgumentParser {
         return new CLIArgumentParser(positionalArgs, namedArgs, console);
     }
 
-    /**
-     * Create string of command arguments for logging arguments with hidden confidential values
-     * @param rawIter raw command arguments iterator
-     * @param parser CLIArgumentParser
-     *
-     * @return string of command arguments for logging with hidden confidential values
-     */
-    private String convertCommandToString(ListIterator<String> rawIter, CLIArgumentParser parser) {
-        SB cmdToStr = new SB();
+    /** @return safe command for logging with hidden confidential values. */
+    private String buildSafeCommandString(ListIterator<String> rawIter, CLIArgumentParser parser) {
+        SB res = new SB();
 
         while (rawIter.hasNext()) {
             String arg = rawIter.next();
 
-            CLIArgument<?> cliArg = parser.getCliArg(arg.toLowerCase());
+            CLIArgument<?> argDesc = parser.getArgumentDescriptor(arg.toLowerCase());
 
-            cmdToStr.a(arg).a(' ');
+            res.a(arg).a(' ');
 
-            if (cliArg == null || cliArg.isFlag())
+            if (argDesc == null || argDesc.isFlag())
                 continue;
 
             String argVal = readNextValueToken(rawIter);
 
             if (argVal != null) {
-                if (cliArg.isSensitive()) {
-                    cmdToStr.a("***** ");
-                    log.info(String.format("Warning: %s is insecure. Whenever possible, use interactive " +
-                            "prompt for password (just omit the argument value).", cliArg.name()));
+                if (!argDesc.isSensitive())
+                    res.a(argVal).a(' ');
+                else {
+                    res.a("***** ");
+
+                    log.info(String.format("Warning: %s is insecure. Whenever possible, use interactive prompt for " +
+                            "password (just omit the argument value).", argDesc.name()));
                 }
-                else
-                    cmdToStr.a(argVal).a(' ');
             }
         }
 
-        return cmdToStr.toString();
+        return res.toString();
     }
 }
