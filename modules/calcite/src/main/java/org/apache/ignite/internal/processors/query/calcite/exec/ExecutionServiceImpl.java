@@ -710,13 +710,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
         }
 
-        ctx.query().runningQueryManager().planHistoryTracker().addPlan(
-            plan.textPlan(),
-            qry.sql(),
-            qry.context().schemaName(),
-            qry.context().isLocal(),
-            CalciteQueryEngineConfiguration.ENGINE_NAME
-        );
+        if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
+            ctx.query().runningQueryManager().planHistoryTracker().addPlan(
+                plan.textPlan(),
+                qry.sql(),
+                qry.context().schemaName(),
+                qry.context().isLocal(),
+                CalciteQueryEngineConfiguration.ENGINE_NAME
+            );
+        }
 
         QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
 

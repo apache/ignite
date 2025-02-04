@@ -274,21 +274,21 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
                 startGridsMultiThreaded(1, 2);
 
                 awaitPartitionMapExchange();
+
+                cacheQuery(new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE).setDistributedJoins(true), "pers");
+
+                checkSqlPlanHistory(3);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
-            cacheQuery(new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE).setDistributedJoins(true), "pers");
-
-            checkSqlPlanHistory(3);
-
             for (int i = 1; i <= 2; i++) {
                 List<SqlPlanHistoryView> sqlPlansOnMapNode = getSqlPlanHistory(grid(i));
 
-                assertNotNull(sqlPlansOnMapNode);
+                assertTrue(sqlPlansOnMapNode.size() == 2);
 
-                checkMetrics(2, sqlPlansOnMapNode);
+                checkMetrics(sqlPlansOnMapNode);
             }
         });
     }
@@ -356,7 +356,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             cacheQuery(qry, "A");
         }
 
-        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == planHistorySize, 1000));
+        assertTrue(waitForCondition(() -> getSqlPlanHistory().stream().map(SqlPlanHistoryView::sql).anyMatch(str ->
+            str.contains("STR" + String.format("%02d", planHistorySize + PLAN_HISTORY_EXCESS))), 1000));
 
         Set<String> qrys = getSqlPlanHistory().stream().map(SqlPlanHistoryView::sql).collect(Collectors.toSet());
 
@@ -377,23 +378,27 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void testEntryReplacement() throws Exception {
         startTestGrid();
 
-        long[] timeStamps = new long[2];
+        long firstPlanTS = 0;
 
         for (int i = 0; i < 2; i++) {
             cacheQuery(new SqlFieldsQuery(SQL), "A");
 
-            checkSqlPlanHistory(1);
-
-            timeStamps[i] = F.first(getSqlPlanHistory()).lastStartTime().getTime();
-
             if (i == 0) {
+                assertTrue(waitForCondition(() -> !getSqlPlanHistory().isEmpty(), 1000));
+
+                firstPlanTS = F.first(getSqlPlanHistory()).lastStartTime().getTime();
+
                 long ts0 = U.currentTimeMillis();
 
                 assertTrue(waitForCondition(() -> (U.currentTimeMillis() != ts0), 1000));
             }
-        }
+            else {
+                long firstPlanTS0 = firstPlanTS;
 
-        assertTrue(timeStamps[1] > timeStamps[0]);
+                assertTrue(waitForCondition(() ->
+                    F.first(getSqlPlanHistory()).lastStartTime().getTime() > firstPlanTS0, 1000));
+            }
+        }
     }
 
     /** Checks that SQL plan history stays empty if the grid is started with a zero history size. */
@@ -619,12 +624,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      *
      * @param size Number of SQL plan entries expected to be in the history.
      */
-    public void checkSqlPlanHistory(int size) {
-        List<SqlPlanHistoryView> sqlPlans = getSqlPlanHistory();
+    public void checkSqlPlanHistory(int size) throws Exception {
+        if (size == 0)
+            return;
 
-        assertNotNull(sqlPlans);
+        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == size, 1000));
 
-        checkMetrics(size, sqlPlans);
+        checkMetrics(getSqlPlanHistory());
     }
 
     /**
@@ -634,6 +640,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param isSimpleQry Simple query flag.
      */
     public void checkSqlPlanHistoryDml(int size, boolean isSimpleQry) {
+        if (size == 0)
+            return;
+
         List<SqlPlanHistoryView> sqlPlans = getSqlPlanHistory();
 
         assertNotNull(sqlPlans);
@@ -649,21 +658,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             sqlPlans = sqlPlans.stream().filter(e -> e.plan().contains(check)).collect(Collectors.toList());
         }
 
-        checkMetrics(size, sqlPlans);
+        assertTrue(sqlPlans.size() == size);
+
+        checkMetrics(sqlPlans);
     }
 
     /**
      * Checks metrics of provided SQL plan history entries.
      *
-     * @param size Number of SQL plan entries expected to be in the history.
      * @param sqlPlans Sql plans recorded in the history.
      */
-    public void checkMetrics(int size, List<SqlPlanHistoryView> sqlPlans) {
-        assertTrue(size == sqlPlans.size());
-
-        if (size == 0)
-            return;
-
+    public void checkMetrics(List<SqlPlanHistoryView> sqlPlans) {
         for (SqlPlanHistoryView plan : sqlPlans) {
             assertEquals(loc, plan.local());
             assertEquals(sqlEngine, plan.engine());

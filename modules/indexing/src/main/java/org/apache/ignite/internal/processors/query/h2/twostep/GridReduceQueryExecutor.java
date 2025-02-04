@@ -542,13 +542,18 @@ public class GridReduceQueryExecutor {
                             qryInfo
                         );
 
-                        h2.runningQueryManager().planHistoryTracker().addPlan(
-                            qryInfo.plan(),
-                            qry.originalSql(),
-                            schemaName,
-                            qry.isLocal(),
-                            IndexingQueryEngineConfiguration.ENGINE_NAME
-                        );
+                        if (h2.runningQueryManager().planHistoryTracker().enabled()) {
+                            ReduceH2QueryInfo qryInfo0 = qryInfo;
+
+                            ctx.pools().getExecutorService().submit(() -> {
+                                h2.runningQueryManager().planHistoryTracker().addPlan(
+                                    qryInfo0.plan(),
+                                    qryInfo0.sql(),
+                                    qryInfo0.schema(),
+                                    qry.isLocal(),
+                                    IndexingQueryEngineConfiguration.ENGINE_NAME);
+                            });
+                        }
 
                         resIter = new H2FieldsIterator(
                             res,

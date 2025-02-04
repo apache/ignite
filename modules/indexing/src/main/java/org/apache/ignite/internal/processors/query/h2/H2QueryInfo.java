@@ -74,6 +74,9 @@ public class H2QueryInfo implements TrackableQuery {
     /** Query id. */
     private final long queryId;
 
+    /** Query SQL plan. */
+    private volatile String plan;
+
     /**
      * @param type Query type.
      * @param stmt Query statement.
@@ -117,8 +120,21 @@ public class H2QueryInfo implements TrackableQuery {
     }
 
     /** */
-    public String plan() {
-        return stmt.getPlanSQL();
+    public synchronized String plan() {
+        if (plan == null)
+            plan = stmt.getPlanSQL();
+
+        return plan;
+    }
+
+    /** */
+    public String schema() {
+        return schema;
+    }
+
+    /** */
+    public String sql() {
+        return sql;
     }
 
     /** */
@@ -179,7 +195,7 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema)
                 .append(", sql='").append(sql)
-                .append("', plan=").append(stmt.getPlanSQL());
+                .append("', plan=").append(plan());
 
         printInfo(msgSb);
 
