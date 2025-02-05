@@ -42,9 +42,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     /** Cached Ignite directories. */
     private volatile NodeFileTree ft;
 
-    /** Cached Ignite directories. */
-    private NodeFileTree ft;
-
     /**
      * Creates folders resolver
      *
@@ -123,27 +120,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
         else
             ft = new NodeFileTree(ctx.config(), resolveFolders().folderName());
-    }
-
-    /** {@inheritDoc} */
-    @Override public NodeFileTree fileTree() {
-        if (ft == null) {
-            try {
-                if (ctx.clientNode()) {
-                    ft = new NodeFileTree(
-                        U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome()),
-                        resolveFolders().folderName()
-                    );
-                }
-                else
-                    ft = new NodeFileTree(ctx.config(), resolveFolders().folderName());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        return ft;
     }
 
     /**

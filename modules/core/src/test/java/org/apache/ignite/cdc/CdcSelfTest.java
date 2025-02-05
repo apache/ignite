@@ -55,7 +55,6 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -352,7 +351,11 @@ public class CdcSelfTest extends AbstractCdcTest {
         txCache.putAll(batch);
 
         // Check `DataRecord(List<DataEntry>)` logged.
-        File archive = grid(1).context().pdsFolderResolver().fileTree().walArchive();
+        File archive = U.resolveWorkDirectory(
+            U.defaultWorkDirectory(),
+            grid(1).configuration().getDataStorageConfiguration().getWalArchivePath(),
+            false
+        );
 
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
@@ -829,7 +832,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         File walCdcDir = ign.context().pdsFolderResolver().fileTree().walCdc();
 
-        assertTrue(waitForCondition(() -> 1 == ft.walCdc().list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
 
         DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
             .property(FileWriteAheadLogManager.CDC_DISABLED);
@@ -840,13 +843,13 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
 
-        assertEquals(1, ft.walCdc().list().length);
+        assertEquals(1, walCdcDir.list().length);
 
         disabled.propagate(false);
 
         addData(cache, 0, 1);
 
-        assertTrue(waitForCondition(() -> 2 == ft.walCdc().list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
     }
 
     /** */
@@ -882,7 +885,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         // The segment link creation should be skipped.
         writeSgmnt.run();
 
-        assertTrue(cdcWalDirMaxSize >= Arrays.stream(ft.walCdc().listFiles()).mapToLong(File::length).sum());
+        assertTrue(cdcWalDirMaxSize >= Arrays.stream(walCdcDir.listFiles()).mapToLong(File::length).sum());
 
         UserCdcConsumer cnsmr = new UserCdcConsumer();
 
