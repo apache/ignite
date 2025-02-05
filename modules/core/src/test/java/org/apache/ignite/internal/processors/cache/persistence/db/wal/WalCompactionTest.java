@@ -333,15 +333,11 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         assertTrue(System.currentTimeMillis() - start < 15_000);
 
-        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         stopAllGrids();
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0));
+        File walSegment = new File(ft.walArchive(), FileDescriptor.fileName(0));
 
         assertTrue("" + walSegment.length(), walSegment.length() < 200_000_000);
     }
@@ -370,18 +366,14 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
 
-        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         stopAllGrids();
 
         int emptyIdx = 5;
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx));
-        File zippedWalSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx + 1) + ZIP_SUFFIX);
+        File walSegment = new File(ft.walArchive(), FileDescriptor.fileName(emptyIdx));
+        File zippedWalSegment = new File(ft.walArchive(), FileDescriptor.fileName(emptyIdx + 1) + ZIP_SUFFIX);
 
         long start = U.currentTimeMillis();
         do {
@@ -407,7 +399,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = nodeArchiveDir.listFiles(new FilenameFilter() {
+        File[] compressedSegments = ft.walArchive().listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
                 return name.endsWith(".wal.zip");
             }
@@ -424,7 +416,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertTrue(maxIdx > emptyIdx);
 
         if (!walSegment.exists()) {
-            File[] list = nodeArchiveDir.listFiles();
+            File[] list = ft.walArchive().listFiles();
 
             Arrays.sort(list);
 

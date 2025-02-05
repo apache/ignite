@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Ignore;
@@ -287,13 +285,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     }
 
     /** */
-    private File cacheDir(Ignite ig, String cacheName) throws IgniteCheckedException {
-        String igFolder = ((IgniteEx)ig).context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig.configuration().getWorkDirectory(), "db", false);
-
-        File igPdsFolder = new File(dbDir, igFolder);
-
-        return new File(igPdsFolder, "cache-" + cacheName);
+    private File cacheDir(Ignite ig, String cacheName) {
+        return new File(((IgniteEx)ig).context().pdsFolderResolver().fileTree().nodeStorage(), "cache-" + cacheName);
     }
 
     /** */

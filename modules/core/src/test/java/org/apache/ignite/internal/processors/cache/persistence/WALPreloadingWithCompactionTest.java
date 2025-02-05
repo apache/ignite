@@ -29,8 +29,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -120,14 +120,10 @@ public class WALPreloadingWithCompactionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void checkThatOnlyZipSegmentExists(IgniteEx ignite, int segment) throws IgniteCheckedException {
-        String nodeFolderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walZipSegment = new File(nodeArchiveDir, FileDescriptor.fileName(segment) + ".zip");
-        File walRawSegment = new File(nodeArchiveDir, FileDescriptor.fileName(segment));
+        File walZipSegment = new File(ft.walArchive(), FileDescriptor.fileName(segment) + ".zip");
+        File walRawSegment = new File(ft.walArchive(), FileDescriptor.fileName(segment));
 
         assertTrue(walZipSegment.exists());
         assertFalse(walRawSegment.exists());
