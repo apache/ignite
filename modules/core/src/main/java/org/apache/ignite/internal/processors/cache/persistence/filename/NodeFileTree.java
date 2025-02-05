@@ -274,6 +274,11 @@ public class NodeFileTree extends SharedFileTree {
         return nodeStorage;
     }
 
+    /** @return Folder name. */
+    public String folderName() {
+        return folderName;
+    }
+
     /** @return Path to binary metadata directory. */
     public File binaryMeta() {
         return binaryMeta;
