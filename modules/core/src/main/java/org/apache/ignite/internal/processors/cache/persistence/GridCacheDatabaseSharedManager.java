@@ -566,7 +566,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 kernalCtx.cache(),
                 () -> cpFreqDeviation.getOrDefault(DEFAULT_CHECKPOINT_DEVIATION),
                 kernalCtx.pools().getSystemExecutorService(),
-                kernalCtx.marshallerContext().jdkMarshaller()
+                kernalCtx.marshallerContext().jdkMarshaller(),
+                kernalCtx.pdsFolderResolver().fileTree()
             );
 
             final NodeFileLockHolder preLocked = kernalCtx.pdsFolderResolver()
@@ -745,8 +746,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().clientNode())
             return;
 
+        File nodeStorage = cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage();
+
         fileLockHolder = preLocked == null ?
-            new NodeFileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log) : preLocked;
+            new NodeFileLockHolder(nodeStorage.getPath(), cctx.kernalContext(), log) : preLocked;
 
         if (!fileLockHolder.isLocked()) {
             if (log.isDebugEnabled())
@@ -1314,7 +1317,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "Invalid page store manager was created: " + cctx.pageStore();
 
                 Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
-                    ((FilePageStoreManager)cctx.pageStore()).workDir().toPath(), FilePageStoreManager.INDEX_FILE_NAME);
+                    cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().toPath(),
+                    FilePageStoreManager.INDEX_FILE_NAME
+                );
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
@@ -1840,13 +1845,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @return Checkpoint directory.
-     */
-    public File checkpointDirectory() {
-        return checkpointManager.checkpointDirectory();
-    }
-
-    /**
      * @param lsnr Listener.
      * @param dataRegion Data region for which listener is corresponded to.
      */
@@ -1889,10 +1887,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (mntcTask != null) {
             log.warning("Maintenance task found, stop restoring memory");
 
-            File workDir = ((FilePageStoreManager)cctx.pageStore()).workDir();
-
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                new CorruptedPdsMaintenanceCallback(workDir,
+                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage(),
                     Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 

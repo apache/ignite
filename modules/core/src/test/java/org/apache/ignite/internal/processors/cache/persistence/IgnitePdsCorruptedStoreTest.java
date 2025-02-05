@@ -317,9 +317,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         ignite0.cluster().state(ClusterState.INACTIVE);
 
-        FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
-
-        File workDir = storeMgr.workDir();
+        File workDir = ignite0.context().pdsFolderResolver().fileTree().nodeStorage();
         File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
         File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
 

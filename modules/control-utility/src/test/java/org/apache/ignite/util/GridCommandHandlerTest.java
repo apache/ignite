@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
@@ -328,10 +329,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
-        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
-
-        File ig1LfsDir = new File(dbDir, ig1Folder);
+        NodeFileTree ft1 = ig1.context().pdsFolderResolver().fileTree();
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().state(ACTIVE);
@@ -362,7 +360,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(1);
 
-        File[] cpMarkers = new File(ig1LfsDir, "cp").listFiles();
+        File[] cpMarkers = ft1.checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))
@@ -371,7 +369,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertThrows(log, () -> startGrid(1), Exception.class, null);
 
-        return ig1LfsDir;
+        return ft1.nodeStorage();
     }
 
     /**

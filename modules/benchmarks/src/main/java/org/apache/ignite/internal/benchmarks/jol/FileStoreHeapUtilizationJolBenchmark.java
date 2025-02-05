@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.benchmarks.jol;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class FileStoreHeapUtilizationJolBenchmark {
 
         SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(new File(sft.root(), "cp"));
         U.delete(sft.marshaller().getParentFile());
     }
 

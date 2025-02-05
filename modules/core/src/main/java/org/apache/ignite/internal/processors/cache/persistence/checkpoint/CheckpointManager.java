@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -108,7 +108,7 @@ public class CheckpointManager {
      * @param cpFreqDeviation Distributed checkpoint frequency deviation.
      * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
      * @param marsh JDK marshaller.
-     * @throws IgniteCheckedException if fail.
+     * @param ft Node file tree.
      */
     public CheckpointManager(
         Function<Class<?>, IgniteLogger> logger,
@@ -129,8 +129,9 @@ public class CheckpointManager {
         GridCacheProcessor cacheProcessor,
         Supplier<Integer> cpFreqDeviation,
         Executor checkpointMapSnapshotExecutor,
-        JdkMarshaller marsh
-    ) throws IgniteCheckedException {
+        JdkMarshaller marsh,
+        NodeFileTree ft
+    ) {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
             logger,
@@ -147,7 +148,7 @@ public class CheckpointManager {
             logger,
             cpHistory,
             ioFactory,
-            pageStoreManager.workDir().getAbsolutePath(),
+            ft,
             lock,
             checkpointMapSnapshotExecutor,
             marsh
@@ -257,13 +258,6 @@ public class CheckpointManager {
      */
     public void memoryRecoveryRecordPtr(WALPointer memoryRecoveryRecordPtr) {
         checkpointWorkflow.memoryRecoveryRecordPtr(memoryRecoveryRecordPtr);
-    }
-
-    /**
-     * @return Checkpoint directory.
-     */
-    public File checkpointDirectory() {
-        return checkpointMarkersStorage.cpDir;
     }
 
     /**

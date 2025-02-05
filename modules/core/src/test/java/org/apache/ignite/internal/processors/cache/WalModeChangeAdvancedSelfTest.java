@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -159,11 +160,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         File cacheToClean = cacheDir(srv, CACHE_NAME);
 
-        String ig0Folder = srv.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(srv.configuration().getWorkDirectory(), "db", false);
-
-        File ig0LfsDir = new File(dbDir, ig0Folder);
-        File ig0CpDir = new File(ig0LfsDir, "cp");
+        NodeFileTree ft0 = srv.context().pdsFolderResolver().fileTree();
 
         srv.cluster().state(ACTIVE);
 
@@ -176,7 +173,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         stopAllGrids(true);
 
-        File[] cpMarkers = ig0CpDir.listFiles();
+        File[] cpMarkers = ft0.checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))

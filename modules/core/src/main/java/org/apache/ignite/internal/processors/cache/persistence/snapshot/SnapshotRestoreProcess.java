@@ -204,11 +204,9 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If it was not possible to delete some temporary directory.
      */
     protected void cleanup() throws IgniteCheckedException {
-        FilePageStoreManager pageStore = (FilePageStoreManager)ctx.cache().context().pageStore();
+        File nodeStorage = ctx.pdsFolderResolver().fileTree().nodeStorage();
 
-        File dbDir = pageStore.workDir();
-
-        for (File dir : dbDir.listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_CACHE_DIR_PREFIX))) {
+        for (File dir : nodeStorage.listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_CACHE_DIR_PREFIX))) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
