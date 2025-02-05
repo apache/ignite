@@ -1611,7 +1611,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptyList();
 
         synchronized (snpOpMux) {
-            File[] dirs = (snpPath == null ? this.ft.snapshotsRoot() : new File(snpPath)).listFiles(File::isDirectory);
+            File[] dirs = (snpPath == null ? ft.snapshotsRoot() : new File(snpPath)).listFiles(File::isDirectory);
 
             if (dirs == null)
                 return Collections.emptyList();
@@ -2658,7 +2658,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 encrypt
             )
             : new SnapshotFutureTask(
-                cctx, srcNodeId, reqId, snpName, ft.snapshotTempRoot(), ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+                cctx,
+                srcNodeId,
+                reqId,
+                snpName,
+                ft.snapshotTempRoot(),
+                ioFactory,
+                snpSndr,
+                parts,
+                withMetaStorage,
+                locBuff
+            )
+        );
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {

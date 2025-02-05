@@ -171,7 +171,7 @@ public class NodeFileTree extends SharedFileTree {
      * Working directory for loaded snapshots from the remote nodes and storing
      * temporary partition delta-files of locally started snapshot process.
      */
-    private final @Nullable File snpTmpRoot;
+    private final File snpTmpRoot;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -242,21 +242,20 @@ public class NodeFileTree extends SharedFileTree {
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
+        nodeStorage = dsCfg.getStoragePath() == null
+            ? rootRelative(DB_DEFAULT_FOLDER)
+            : resolveDirectory(dsCfg.getStoragePath());
+        snpTmpRoot = new File(nodeStorage, DFLT_SNAPSHOT_TMP_DIR);
+
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
-                ? rootRelative(DB_DEFAULT_FOLDER)
-                : resolveDirectory(dsCfg.getStoragePath());
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
-            snpTmpRoot = new File(nodeStorage, DFLT_SNAPSHOT_TMP_DIR);
         }
         else {
-            nodeStorage = null;
             wal = null;
             walArchive = null;
             walCdc = null;
-            snpTmpRoot = null;
         }
     }
 
