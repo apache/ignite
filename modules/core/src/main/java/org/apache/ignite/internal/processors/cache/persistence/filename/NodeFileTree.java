@@ -342,7 +342,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    private File resolveDirectory(String cfg) {
+    public File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()

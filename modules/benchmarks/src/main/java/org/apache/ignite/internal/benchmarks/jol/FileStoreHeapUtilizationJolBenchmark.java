@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFi
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jol.info.GraphLayout;
@@ -70,7 +71,7 @@ public class FileStoreHeapUtilizationJolBenchmark {
 
         SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
 
-        U.delete(new File(sft.root(), "cp"));
+        U.delete(new File(sft.root(), SharedFsCheckpointSpi.DFLT_ROOT));
         U.delete(sft.marshaller().getParentFile());
     }
 

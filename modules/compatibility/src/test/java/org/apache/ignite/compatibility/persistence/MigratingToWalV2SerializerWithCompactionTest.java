@@ -124,9 +124,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-            File nodeArchiveDir = ft.walArchive();
-
-            File[] compressedSegments = nodeArchiveDir.listFiles(new FilenameFilter() {
+            File[] compressedSegments = ft.walArchive().listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
                     return name.endsWith(".wal.zip");
                 }
@@ -139,9 +137,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             stopAllGrids();
 
-            File cpMarkersDir = ft.checkpoint();
-
-            File[] cpMarkers = cpMarkersDir.listFiles();
+            File[] cpMarkers = ft.checkpoint().listFiles();
 
             assertNotNull(cpMarkers);
             assertTrue(cpMarkers.length > 0);

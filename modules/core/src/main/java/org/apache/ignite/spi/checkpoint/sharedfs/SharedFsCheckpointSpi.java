@@ -122,13 +122,18 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiConsistencyChecked(optional = false)
 public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /**
+     * Default root checkpoint directory.
+     */
+    public static final String DFLT_ROOT = "cp";
+
+    /**
      * Default checkpoint directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
      * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
      * {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
      */
-    public static final String DFLT_DIR_PATH = "cp/sharedfs";
+    public static final String DFLT_DIR_PATH = DFLT_ROOT + "/sharedfs";
 
     /** */
     private static final String CODES = "0123456789QWERTYUIOPASDFGHJKLZXCVBNM";

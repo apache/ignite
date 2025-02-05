@@ -141,6 +141,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1971,7 +1972,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
         SharedFileTree sft = sharedFileTree();
