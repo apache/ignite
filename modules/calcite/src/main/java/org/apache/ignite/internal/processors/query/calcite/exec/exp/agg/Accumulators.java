@@ -125,7 +125,7 @@ public class Accumulators {
         if (call.getCollation() != null && !call.getCollation().getFieldCollations().isEmpty()) {
             Comparator<Row> cmp = ctx.expressionFactory().comparator(call.getCollation());
 
-            return () -> new SortingAccumulator<>(accSup, cmp, hnd);
+            return () -> new SortingAccumulator<>(accSup, cmp);
         }
 
         return accSup;
@@ -303,11 +303,6 @@ public class Accumulators {
         /** */
         int columnCount(Row row) {
             return hnd.columnCount(row);
-        }
-
-        /** */
-        Row copyRow(Row row) {
-            return hnd.copyRow(row);
         }
     }
 
@@ -1200,16 +1195,12 @@ public class Accumulators {
         /** */
         private final Accumulator<Row> acc;
 
-        /** */
-        private final RowHandler<Row> hnd;
-
         /**
          * @param accSup Accumulator supplier.
          * @param cmp Comparator.
          */
-        private SortingAccumulator(Supplier<Accumulator<Row>> accSup, Comparator<Row> cmp, RowHandler<Row> hnd) {
+        private SortingAccumulator(Supplier<Accumulator<Row>> accSup, Comparator<Row> cmp) {
             this.cmp = cmp;
-            this.hnd = hnd;
 
             list = new ArrayList<>();
             acc = accSup.get();
@@ -1217,7 +1208,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            list.add(hnd.copyRow(row));
+            list.add(row);
         }
 
         /** {@inheritDoc} */
@@ -1270,7 +1261,7 @@ public class Accumulators {
             if (row == null)
                 return;
 
-            buf.add(copyRow(row));
+            buf.add(row);
         }
 
         /** {@inheritDoc} */
@@ -1434,7 +1425,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class DistinctAccumulator<Row> extends AbstractAccumulator<Row> {
+    private static class DistinctAccumulator<Row> extends AbstractAccumulator<Row> implements StoringAccumulator {
         /** */
         private final Accumulator<Row> acc;
 
@@ -1465,7 +1456,7 @@ public class Accumulators {
             if (row == null || columnCount(row) == 0 || (key = get(0, row)) == null)
                 return;
 
-            rows.put(key, copyRow(row));
+            rows.put(key, row);
         }
 
         /** {@inheritDoc} */

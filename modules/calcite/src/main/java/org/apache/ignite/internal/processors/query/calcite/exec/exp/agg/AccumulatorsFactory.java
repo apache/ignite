@@ -236,13 +236,17 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             for (int i = 0; i < call.getArgList().size(); ++i)
                 argMapping[call.getArgList().get(i)] = i;
 
+            boolean createRow = accumulator.getClass().isAssignableFrom(StoringAccumulator.class);
+
             return new Function<Row, Row>() {
                 final RowHandler<Row> hnd = ctx.rowHandler();
 
-                final Row out = hnd.factory(ctx.getTypeFactory(), inputRowType).create();
+                final RowHandler.RowFactory<Row> rowFac = ctx.rowHandler().factory(ctx.getTypeFactory(), inputRowType);
+
+                final Row reuseRow = createRow ? null : rowFac.create();
 
                 @Override public Row apply(Row in) {
-                    hnd.resetRow(out);
+                    Row out = createRow ? rowFac.create() : reuseRow;
 
                     for (int i = 0; i < hnd.columnCount(in); ++i) {
                         Object val = hnd.get(i, in);
@@ -319,11 +323,12 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            Row newRow = inAdapter.apply(row);
-            if (newRow == null)
+            Row accRow = inAdapter.apply(row);
+
+            if (accRow == null)
                 return;
 
-            accumulator.add(newRow);
+            accumulator.add(accRow);
         }
 
         /** {@inheritDoc} */
