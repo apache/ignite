@@ -964,11 +964,11 @@ public class SnapshotRestoreProcess {
                                     .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx)
                                 : snpDir;
 
-                            NodeFileTree dirs = new NodeFileTree(dir, meta.folderName());
+                            NodeFileTree ft = new NodeFileTree(dir, meta.folderName());
 
-                            ctx.cacheObjects().updateMetadata(dirs.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(ft.binaryMeta(), opCtx0.stopChecker);
 
-                            restoreMappings(dirs.marshaller(), opCtx0.stopChecker);
+                            restoreMappings(ft.marshaller(), opCtx0.stopChecker);
                         }
                         catch (Throwable t) {
                             log.error("Unable to perform metadata update operation for the cache groups restore process", t);

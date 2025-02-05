@@ -116,9 +116,8 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         // Calculate CRCs.
         PdsFolderSettings<?> settings = ig.context().pdsFolderResolver().resolveFolders();
         String nodePath = databaseRelativePath(settings.folderName());
-        NodeFileTree nodeDirs = ig.context().pdsFolderResolver().fileTree();
-        NodeFileTree snpDirs =
-            new NodeFileTree(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+        NodeFileTree snpFt = new NodeFileTree(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
@@ -131,9 +130,9 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
             origPartCRCs, snpPartCRCs);
         assertEquals("Binary object mappings must be the same for local node and created snapshot",
-            calculateCRC32Partitions(nodeDirs.binaryMeta()), calculateCRC32Partitions(snpDirs.binaryMeta()));
+            calculateCRC32Partitions(ft.binaryMeta()), calculateCRC32Partitions(snpFt.binaryMeta()));
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
-            calculateCRC32Partitions(nodeDirs.marshaller()), calculateCRC32Partitions(snpDirs.marshaller()));
+            calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(snpFt.marshaller()));
 
         File snpWorkDir = ig.context().pdsFolderResolver().fileTree().snapshotTempRoot();
 

@@ -697,7 +697,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings(new File("."), U.maskForFileName(""));
+                return new PdsFolderSettings<>(new File("."), U.maskForFileName(""));
+            }
+
+            /** {@inheritDoc} */
+            @Override public NodeFileTree fileTree() {
+                return new NodeFileTree(cfg, resolveFolders().folderName());
             }
 
             /** {@inheritDoc} */

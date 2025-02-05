@@ -756,20 +756,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String folderName = pdsSettings.folderName();
 
         try {
-            NodeFileTree snpDirs = new NodeFileTree(snpDir.getAbsolutePath(), folderName);
+            NodeFileTree snpFt = new NodeFileTree(snpDir.getAbsolutePath(), folderName);
 
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
             File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
 
-            U.delete(snpDirs.binaryMeta());
+            U.delete(snpFt.binaryMeta());
             U.delete(nodeDbDir);
             U.delete(smf);
 
-            deleteDirectory(snpDirs.binaryMetaRoot());
-            deleteDirectory(snpDirs.marshaller());
+            deleteDirectory(snpFt.binaryMetaRoot());
+            deleteDirectory(snpFt.marshaller());
 
-            snpDirs.marshaller().getParentFile().delete();
-            snpDirs.root().delete();
+            // Delete parent dir which is {snapshot_root}/db if empty.
+            snpFt.marshaller().getParentFile().delete();
+            // Delete root dir which is {snapshot_root} if empty.
+            snpFt.root().delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -3034,7 +3036,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-        if (ft.walArchiveEnabled())
+        if (!ft.walArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
         ensureHardLinkAvailable(ft.walArchive().toPath(), snpDir.toPath());

@@ -25,8 +25,8 @@ import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtil
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DFLT_MARSHALLER_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.BINARY_METADATA_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.MARSHALLER_DIR;
 
 /**
  * Super class for all persistence compatibility tests.
@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
 public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** Persistence directories. */
     private static final List<String> PERSISTENCE_DIRS
-        = Arrays.asList(DFLT_STORE_DIR, DFLT_BINARY_METADATA_PATH, "cp", DFLT_MARSHALLER_PATH);
+        = Arrays.asList(DFLT_STORE_DIR, BINARY_METADATA_DIR, "cp", MARSHALLER_DIR);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

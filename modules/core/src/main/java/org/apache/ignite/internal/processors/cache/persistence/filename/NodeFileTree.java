@@ -165,7 +165,7 @@ public class NodeFileTree extends SharedFileTree {
     private final @Nullable File walArchive;
 
     /** Path to the directory containing archive WAL segments for CDC. */
-    private final File walCdc;
+    private final @Nullable File walCdc;
 
     /**
      * Working directory for loaded snapshots from the remote nodes and storing

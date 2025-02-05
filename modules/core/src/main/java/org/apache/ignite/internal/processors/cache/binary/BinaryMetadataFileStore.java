@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -82,7 +83,7 @@ class BinaryMetadataFileStore {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
-     * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta
+     * @param metadataDir Path to binary metadata store configured by user, should include binary_meta
      * and consistentId.
      * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
@@ -90,13 +91,13 @@ class BinaryMetadataFileStore {
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        final File binaryMetadataFileStoreDir,
+        final File metadataDir,
         final boolean forceEnabled
     ) throws IgniteCheckedException {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
-        enabled = forceEnabled || CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config());
+        enabled = forceEnabled || enabled(ctx.config());
 
         this.log = log;
 
@@ -107,9 +108,7 @@ class BinaryMetadataFileStore {
 
         fileIOFactory = dsCfg == null ? new DataStorageConfiguration().getFileIOFactory() : dsCfg.getFileIOFactory();
 
-        metadataDir = binaryMetadataFileStoreDir != null
-            ? binaryMetadataFileStoreDir
-            : ctx.pdsFolderResolver().fileTree().binaryMeta();
+        this.metadataDir = metadataDir;
 
         fixLegacyFolder(ctx.pdsFolderResolver().resolveFolders().folderName());
     }
@@ -385,6 +384,11 @@ class BinaryMetadataFileStore {
         writer.cancelTasksForType(typeId);
 
         writer.prepareRemoveFuture(typeId);
+    }
+
+    /** @return {@code True} if file store enabled. */
+    public static boolean enabled(IgniteConfiguration cfg) {
+        return CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg);
     }
 
     /**

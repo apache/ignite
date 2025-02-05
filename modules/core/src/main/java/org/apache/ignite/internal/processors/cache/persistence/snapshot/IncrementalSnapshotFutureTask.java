@@ -136,18 +136,18 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
 
                     copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
 
-                    NodeFileTree nodeDirs = cctx.kernalContext().pdsFolderResolver().fileTree();
-                    NodeFileTree snpDirs = new NodeFileTree(incSnpDir, folderName);
+                    NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+                    NodeFileTree snpFt = new NodeFileTree(incSnpDir, folderName);
 
                     copyFiles(
-                        nodeDirs.marshaller(),
-                        snpDirs.marshaller(),
+                        ft.marshaller(),
+                        snpFt.marshaller(),
                         BinaryUtils::notTmpFile
                     );
 
                     copyFiles(
-                        nodeDirs.binaryMeta(),
-                        snpDirs.binaryMeta(),
+                        ft.binaryMeta(),
+                        snpFt.binaryMeta(),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 

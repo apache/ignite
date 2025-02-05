@@ -373,11 +373,11 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        NodeFileTree fromDirs = new NodeFileTree(new File(workDir, fromWorkDir), fromConsId);
-        NodeFileTree toDirs = new NodeFileTree(new File(workDir, toWorkDir), toConsId);
+        NodeFileTree fromFt = new NodeFileTree(new File(workDir, fromWorkDir), fromConsId);
+        NodeFileTree toFt = new NodeFileTree(new File(workDir, toWorkDir), toConsId);
 
-        File fromFile = new File(fromDirs.binaryMeta(), fileName);
-        File toFile = new File(toDirs.binaryMeta(), fileName);
+        File fromFile = new File(fromFt.binaryMeta(), fileName);
+        File toFile = new File(toFt.binaryMeta(), fileName);
 
         Files.copy(fromFile.toPath(), toFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }

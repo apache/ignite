@@ -34,6 +34,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -90,10 +91,10 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
 
         /** {@inheritDoc} */
         @Override protected Void run(CdcDeleteLostSegmentLinksCommandArg arg) throws IgniteException {
-            File walCdcDir = ignite.context().pdsFolderResolver().fileTree().walCdc();
-
-            if (walCdcDir == null)
+            if (!CU.isCdcEnabled(ignite.configuration()))
                 throw new IgniteException("CDC is not configured.");
+
+            File walCdcDir = ignite.context().pdsFolderResolver().fileTree().walCdc();
 
             CdcFileLockHolder lock = new CdcFileLockHolder(walCdcDir.getAbsolutePath(), "Delete lost segments job", log);
 
