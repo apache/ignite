@@ -269,28 +269,33 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryWithReducePhase() throws Exception {
-        runQueryWithReducePhase(() -> {
-            try {
-                startGridsMultiThreaded(1, 2);
+        assumeTrue("Map/reduce queries are only applicable to H2 engine",
+            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
 
-                awaitPartitionMapExchange();
+        assumeFalse("Only distributed queries have map and reduce phases", loc);
 
-                cacheQuery(new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE).setDistributedJoins(true), "pers");
+        startTestGrid();
 
-                checkSqlPlanHistory(3);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            startGridsMultiThreaded(1, 2);
+
+            awaitPartitionMapExchange();
+
+            cacheQuery(new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE).setDistributedJoins(true), "pers");
+
+            checkSqlPlanHistory(3);
 
             for (int i = 1; i <= 2; i++) {
                 List<SqlPlanHistoryView> sqlPlansOnMapNode = getSqlPlanHistory(grid(i));
 
-                assertTrue(sqlPlansOnMapNode.size() == 2);
+                assertTrue(waitForCondition(() -> sqlPlansOnMapNode.size() == 2, 1000));
 
                 checkMetrics(sqlPlansOnMapNode);
             }
-        });
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** Checks successful SqlQuery. */
@@ -378,27 +383,21 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void testEntryReplacement() throws Exception {
         startTestGrid();
 
-        long firstPlanTS = 0;
+        long firstTs;
 
-        for (int i = 0; i < 2; i++) {
-            cacheQuery(new SqlFieldsQuery(SQL), "A");
+        cacheQuery(new SqlFieldsQuery(SQL), "A");
 
-            if (i == 0) {
-                assertTrue(waitForCondition(() -> !getSqlPlanHistory().isEmpty(), 1000));
+        assertTrue(waitForCondition(() -> !getSqlPlanHistory().isEmpty(), 1000));
 
-                firstPlanTS = F.first(getSqlPlanHistory()).lastStartTime().getTime();
+        firstTs = F.first(getSqlPlanHistory()).lastStartTime().getTime();
 
-                long ts0 = U.currentTimeMillis();
+        long curTs = U.currentTimeMillis();
 
-                assertTrue(waitForCondition(() -> (U.currentTimeMillis() != ts0), 1000));
-            }
-            else {
-                long firstPlanTS0 = firstPlanTS;
+        assertTrue(waitForCondition(() -> (U.currentTimeMillis() != curTs), 1000));
 
-                assertTrue(waitForCondition(() ->
-                    F.first(getSqlPlanHistory()).lastStartTime().getTime() > firstPlanTS0, 1000));
-            }
-        }
+        cacheQuery(new SqlFieldsQuery(SQL), "A");
+
+        assertTrue(waitForCondition(() -> F.first(getSqlPlanHistory()).lastStartTime().getTime() > firstTs, 1000));
     }
 
     /** Checks that SQL plan history stays empty if the grid is started with a zero history size. */
@@ -494,21 +493,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         cacheQuery(qry, "A");
 
-        checkSqlPlanHistory(0);
-    }
-
-    /**
-     * @param task Test task to execute.
-     */
-    public void runQueryWithReducePhase(Runnable task) throws Exception {
-        assumeTrue("Map/reduce queries are only applicable to H2 engine",
-            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
-
-        assumeFalse("Only distributed queries have map and reduce phases", loc);
-
-        startTestGrid();
-
-        task.run();
+        assertTrue(getSqlPlanHistory().isEmpty());
     }
 
     /**
@@ -625,9 +610,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      */
     public void checkSqlPlanHistory(int size) throws Exception {
-        if (size == 0)
-            return;
-
         assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == size, 1000));
 
         checkMetrics(getSqlPlanHistory());
@@ -640,9 +622,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param isSimpleQry Simple query flag.
      */
     public void checkSqlPlanHistoryDml(int size, boolean isSimpleQry) {
-        if (size == 0)
-            return;
-
         List<SqlPlanHistoryView> sqlPlans = getSqlPlanHistory();
 
         assertNotNull(sqlPlans);
