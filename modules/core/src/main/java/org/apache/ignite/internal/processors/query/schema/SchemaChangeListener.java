@@ -131,8 +131,10 @@ public interface SchemaChangeListener {
      */
     public void onIndexRebuildFinished(String schemaName, String tblName);
 
-    /** @return An error text if function cannot be added or {@code Null}/empty if no error is expected. */
-    public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName);
+    /** @return An error text if function cannot be added. {@code Null} or empty string if no error is expected. */
+    public default @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
+        return null;
+    }
 
     /**
      * Callback on function creation.

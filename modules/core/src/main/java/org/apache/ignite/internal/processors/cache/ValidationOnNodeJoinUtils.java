@@ -404,6 +404,7 @@ public class ValidationOnNodeJoinUtils {
             }
         }
 
+        // User-defined functions must not overwrite standard functions in the default schema.
         if (F.eq(schemaName, QueryUtils.DFLT_SCHEMA) && !F.isEmpty(cacheCfg.getSqlFunctionClasses())) {
             IgniteCheckedException udfErr = schemaMgr.validateUserDefinedFunctions(schemaName, cacheCfg.getSqlFunctionClasses());
 

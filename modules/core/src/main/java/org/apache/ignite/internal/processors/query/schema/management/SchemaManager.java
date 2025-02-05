@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryIndexType;
@@ -498,7 +497,7 @@ public class SchemaManager {
         boolean skipError,
         BiConsumer<QuerySqlFunction, Method> funConsumer,
         BiConsumer<QuerySqlTableFunction, Method> tblFunConsumer
-    ) {
+    ) throws IgniteCheckedException {
         if (F.isEmpty(clss))
             return;
 
@@ -514,7 +513,7 @@ public class SchemaManager {
                     if (skipError)
                         continue;
 
-                    throw new IgniteException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
                         "method must be public.");
                 }
 
@@ -522,7 +521,7 @@ public class SchemaManager {
                     if (skipError)
                         continue;
 
-                    throw new IgniteException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
                         "both table and non-table function variants are defined.");
                 }
 
@@ -540,7 +539,7 @@ public class SchemaManager {
      * @param schema Schema.
      * @param clss Classes.
      */
-    private void createSqlFunctions(String schema, Class<?>[] clss) {
+    private void createSqlFunctions(String schema, Class<?>[] clss) throws IgniteCheckedException {
         assert lock.isWriteLockedByCurrentThread();
 
         if (F.isEmpty(clss))
@@ -1357,12 +1356,17 @@ public class SchemaManager {
     public @Nullable IgniteCheckedException validateUserDefinedFunctions(String schemaName, Class<?>[] udfHolders) {
         List<String> errs = new ArrayList<>();
 
-        findUserDefinedFunctions(
-            udfHolders,
-            true,
-            (f, m) -> errs.add(lsnr.beforeCustomFunctionCreated(schemaName, F.isEmpty(f.alias()) ? m.getName() : f.alias())),
-            (f, m) -> errs.add(lsnr.beforeCustomFunctionCreated(schemaName, F.isEmpty(f.alias()) ? m.getName() : f.alias()))
-        );
+        try {
+            findUserDefinedFunctions(
+                udfHolders,
+                true,
+                (f, m) -> errs.add(lsnr.beforeCustomFunctionCreated(schemaName, F.isEmpty(f.alias()) ? m.getName() : f.alias())),
+                (f, m) -> errs.add(lsnr.beforeCustomFunctionCreated(schemaName, F.isEmpty(f.alias()) ? m.getName() : f.alias()))
+            );
+        }
+        catch (IgniteCheckedException ignored) {
+            assert false : "An exception must not be thrown with enabled skip-error flag.";
+        }
 
         List<String> errs0 = errs.stream().filter(e -> !F.isEmpty(e)).collect(Collectors.toList());
 
