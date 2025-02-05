@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -346,11 +347,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
         try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
-            File snpDir = ign.context().pdsFolderResolver().fileTree().snapshotsRoot();
-            File tmpSnpDir = ign.context().pdsFolderResolver().fileTree().snapshotTempRoot();
+            NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), ign.context().pdsFolderResolver().resolveFolders().folderName());
 
-            assertFalse(snpDir + " must created lazily for in-memory node", snpDir.exists());
-            assertFalse(tmpSnpDir + " must created lazily for in-memory node", tmpSnpDir.exists());
+            assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
+            assertFalse(ft.snapshotTempRoot() + " must created lazily for in-memory node", ft.snapshotTempRoot().exists());
         }
     }
 
@@ -634,14 +634,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false
             ).get();
 
+            NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), ign.context().pdsFolderResolver().resolveFolders().folderName());
+
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
-                ign.context().pdsFolderResolver().fileTree().snapshotsRoot().exists()
+                ft.snapshotsRoot().exists()
             );
 
             assertFalse(
                 "Temporary snapshot directory must created lazily for in-memory node",
-                ign.context().pdsFolderResolver().fileTree().snapshotTempRoot().exists()
+                ft.snapshotTempRoot().exists()
             );
 
             assertTrue(snpDir.exists());

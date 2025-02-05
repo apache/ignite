@@ -123,7 +123,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │      │          ├── cdc-caches-state.bin
  * │      │          ├── cdc-mappings-state.bin
  * │      │          └── cdc-types-state.bin
- *
+ * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
  * │          ├── 0000000000000000.wal
@@ -142,12 +142,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  ├── jmx-invoker.0.log
  * ...
  * │  └── jmx-invoker.9.log
- * └── snapshots                                                                ← snpsRoot (shared between all nodes).
+ * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
  */
 public class NodeFileTree extends SharedFileTree {
     /** Default snapshot directory for loading remote snapshots. */
-    public static final String DFLT_SNAPSHOT_TMP_DIR = "snp";
+    public static final String SNAPSHOT_TMP_DIR = "snp";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -215,7 +215,7 @@ public class NodeFileTree extends SharedFileTree {
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
-        snpTmpRoot = new File(nodeStorage, DFLT_SNAPSHOT_TMP_DIR);
+        snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
     }
 
     /**
@@ -242,17 +242,18 @@ public class NodeFileTree extends SharedFileTree {
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        nodeStorage = dsCfg.getStoragePath() == null
-            ? rootRelative(DB_DEFAULT_FOLDER)
-            : resolveDirectory(dsCfg.getStoragePath());
-        snpTmpRoot = new File(nodeStorage, DFLT_SNAPSHOT_TMP_DIR);
-
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
+            nodeStorage = dsCfg.getStoragePath() == null
+                ? rootRelative(DB_DEFAULT_FOLDER)
+                : resolveDirectory(dsCfg.getStoragePath());
+            snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
+            nodeStorage = null;
+            snpTmpRoot = null;
             wal = null;
             walArchive = null;
             walCdc = null;
