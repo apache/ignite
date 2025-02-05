@@ -86,7 +86,7 @@ public class SharedFileTree {
     /**
      * @param cfg Config to get {@code root} directory from.
      */
-    SharedFileTree(IgniteConfiguration cfg) {
+    public SharedFileTree(IgniteConfiguration cfg) {
         this(root(cfg));
     }
 

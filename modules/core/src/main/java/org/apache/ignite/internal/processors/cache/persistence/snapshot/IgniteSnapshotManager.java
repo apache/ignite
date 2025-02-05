@@ -83,7 +83,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -2924,29 +2923,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     static String databaseRelativePath(String folderName) {
         return Paths.get(DB_DEFAULT_FOLDER, folderName).toString();
-    }
-
-    /**
-     * @param cfg Ignite configuration.
-     * @return Snapshot directory resolved through given configuration.
-     */
-    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
-        return resolveSnapshotWorkDirectory(cfg, true);
-    }
-
-    /**
-     * @param cfg Ignite configuration.
-     * @param create If {@code true} then create resolved directory if not exists.
-     * @return Snapshot directory resolved through given configuration.
-     */
-    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg, boolean create) {
-        try {
-            return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
-                cfg.getSnapshotPath(), false, create);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
     }
 
     /**

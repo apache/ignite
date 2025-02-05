@@ -98,7 +98,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -307,7 +306,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         stopAllGrids();
 
-        IgniteEx snpIg0 = startGridsFromSnapshot(grids, cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
+        IgniteEx snpIg0 = startGridsFromSnapshot(grids, cfg -> sharedFileTree(cfg).snapshotsRoot(), SNAPSHOT_NAME, false);
 
         if (!onlyPrimary) {
             // Block whole rebalancing.
@@ -440,7 +439,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(grids,
-            cfg -> resolveSnapshotWorkDirectory(cfg.setCacheConfiguration()).getAbsolutePath(),
+            cfg -> sharedFileTree(cfg).snapshotsRoot(),
             SNAPSHOT_NAME,
             true);
 
@@ -804,7 +803,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             stopAllGrids();
 
-            IgniteEx snp = startGridsFromSnapshot(2, cfg -> snpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
+            IgniteEx snp = startGridsFromSnapshot(2, cfg -> snpDir, SNAPSHOT_NAME, true);
 
             assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
         }

@@ -3198,6 +3198,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * @return Ignite directories without specific {@code folerName} parameter.
+     */
+    protected SharedFileTree sharedFileTree(IgniteConfiguration cfg) {
+        return new SharedFileTree(cfg);
+    }
+
+    /**
      * @return Ignite directories for specific {@code folderName}.
      */
     protected NodeFileTree nodeFileTree(String folderName) {
