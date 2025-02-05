@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import org.apache.ignite.IgniteCheckedException;
+import java.nio.file.Paths;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -201,11 +201,11 @@ public class NodeFileTree extends SharedFileTree {
 
         this.folderName = folderName;
 
-        binaryMeta = new File(binaryMetaRoot.getAbsolutePath(), folderName);
-        wal = new File(new File(root, DFLT_WAL_PATH), folderName);
-        walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
-        walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
-        nodeStorage = defaultNodeStorage();
+        binaryMeta = new File(binaryMetaRoot, folderName);
+        wal = rootRelative(DFLT_WAL_PATH);
+        walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
+        walCdc = rootRelative(DFLT_WAL_CDC_PATH);
+        nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
     }
 
     /**
@@ -234,9 +234,8 @@ public class NodeFileTree extends SharedFileTree {
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             nodeStorage = dsCfg.getStoragePath() == null
-                ? defaultNodeStorage()
+                ? rootRelative(DB_DEFAULT_FOLDER)
                 : resolveDirectory(dsCfg.getStoragePath());
-
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
@@ -249,14 +248,7 @@ public class NodeFileTree extends SharedFileTree {
         }
     }
 
-    /** @return Folder name. */
-    public String folderName() {
-        return folderName;
-    }
-
-    /**
-     * @return Node storage directory.
-     */
+    /** @return Node storage directory. */
     public File nodeStorage() {
         return nodeStorage;
     }
@@ -298,23 +290,20 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * Creates a directory specified by the given arguments.
      *
-     * @param cfg Configured directory path, may be {@code null}.
+     * @param cfg Configured directory path.
      * @return Initialized directory.
-     * @throws IgniteCheckedException If failed to initialize directory.
      */
     private File resolveDirectory(String cfg) {
-        File sharedBetweenNodesDir = new File(cfg);
+        File sharedDir = new File(cfg);
 
-        return sharedBetweenNodesDir.isAbsolute()
-            ? new File(sharedBetweenNodesDir, folderName)
-            : new File(new File(root, cfg), folderName);
+        return sharedDir.isAbsolute()
+            ? new File(sharedDir, folderName)
+            : rootRelative(cfg);
     }
 
-    /**
-     * @return Default node directory, if {@link DataStorageConfiguration#getStoragePath()} is {@code null}.
-     */
-    private File defaultNodeStorage() {
-        return new File(new File(root, DB_DEFAULT_FOLDER), folderName);
+    /** @return {@code ${root}/${path}/${folderName}} path. */
+    private File rootRelative(String path) {
+        return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
     }
 
     /** {@inheritDoc} */

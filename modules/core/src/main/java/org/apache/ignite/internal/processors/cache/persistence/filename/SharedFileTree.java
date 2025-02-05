@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Paths;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,8 +64,11 @@ public class SharedFileTree {
         A.notNull(root, "Root directory");
 
         this.root = root;
-        marshaller = new File(root, DB_DEFAULT_FOLDER + "/" + MARSHALLER_DIR);
-        binaryMetaRoot = new File(root, DB_DEFAULT_FOLDER + "/" + BINARY_METADATA_DIR);
+
+        String rootStr = root.getAbsolutePath();
+
+        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER , MARSHALLER_DIR).toFile();
+        binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
     }
 
     /**
