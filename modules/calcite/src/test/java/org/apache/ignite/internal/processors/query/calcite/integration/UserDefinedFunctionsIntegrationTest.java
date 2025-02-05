@@ -69,22 +69,22 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
-    public void testOverrideSystemFunction() throws Exception {
-        // Add custom function with the same names in a custom schema.
+    public void testSystemFunctionOverriding() throws Exception {
+        // To a custom schema.
         client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_OWN")
             .setSqlSchema("OWN_SCHEMA")
             .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp_own")))
         );
 
-        // Make sure those function have not affected 'PUBLIC' schema.
+        // Make sure that the new functions didn't affect schema 'PUBLIC'.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
         assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
         assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
-        assertThrows("select PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
         assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
+        assertThrows("select PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
 
-        // Ensure that new functions are successfully  created in the custom schema.
+        // Ensure that new functions are successfully created in a custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
         assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
         assertQuery("select \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
@@ -106,7 +106,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         assertTrue(logChecker0.check(getTestTimeout()));
 
-        // Make sure that standard functions work once again.
+        // Make sure that the standard functions work once again.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
         assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
         assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
@@ -640,7 +640,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return 1;
         }
 
-        /** Same name as the of operator '+' which is not a function. */
+        /** Same name as of operator '+' which is not a function. */
         @QuerySqlFunction
         public static int plus(int x, int y) {
             return 100;

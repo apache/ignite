@@ -629,7 +629,7 @@ public class RexImpTable {
 
     /** */
     public boolean hasOperator(Predicate<SqlOperator> filter) {
-        return map.keySet().stream().anyMatch(op -> filter.test(op));
+        return map.keySet().stream().anyMatch(filter);
     }
 
     /** */
