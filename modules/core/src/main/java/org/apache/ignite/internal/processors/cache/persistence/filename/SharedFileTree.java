@@ -67,7 +67,7 @@ public class SharedFileTree {
 
         String rootStr = root.getAbsolutePath();
 
-        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER , MARSHALLER_DIR).toFile();
+        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER, MARSHALLER_DIR).toFile();
         binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
     }
 
