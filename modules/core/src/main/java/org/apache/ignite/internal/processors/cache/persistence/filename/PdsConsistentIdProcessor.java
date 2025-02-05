@@ -40,7 +40,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private PdsFolderSettings<NodeFileLockHolder> settings;
 
     /** Cached Ignite directories. */
-    private IgniteNodeDirectories dirs;
+    private NodeFileTree dirs;
 
     /**
      * Creates folders resolver
@@ -78,17 +78,17 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteNodeDirectories resolveDirectories() {
+    @Override public NodeFileTree resolveDirectories() {
         if (dirs == null) {
             try {
                 if (ctx.clientNode()) {
-                    dirs = new IgniteNodeDirectories(
+                    dirs = new NodeFileTree(
                         U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome()),
                         resolveFolders().folderName()
                     );
                 }
                 else
-                    dirs = new IgniteNodeDirectories(ctx.config(), resolveFolders().folderName());
+                    dirs = new NodeFileTree(ctx.config(), resolveFolders().folderName());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

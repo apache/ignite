@@ -35,7 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -220,7 +220,7 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
     private WALIterator wal(IgniteEx ign) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IgniteNodeDirectories dirs = ign.context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree dirs = ign.context().pdsFolderResolver().resolveDirectories();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .filesOrDirs(dirs.walArchive(), dirs.wal())

@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -191,7 +191,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        IgniteNodeDirectories dirs = nodeDirs(subfolderName);
+        NodeFileTree dirs = nodeDirs(subfolderName);
 
         assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
 
@@ -683,7 +683,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @param subDirName sub directories name expected
      */
     private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) {
-        IgniteNodeDirectories dirs = new IgniteNodeDirectories(ign.configuration(), subDirName);
+        NodeFileTree dirs = new NodeFileTree(ign.configuration(), subDirName);
 
         Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -116,9 +116,9 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         // Calculate CRCs.
         PdsFolderSettings<?> settings = ig.context().pdsFolderResolver().resolveFolders();
         String nodePath = databaseRelativePath(settings.folderName());
-        IgniteNodeDirectories nodeDirs = ig.context().pdsFolderResolver().resolveDirectories();
-        IgniteNodeDirectories snpDirs =
-            new IgniteNodeDirectories(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
+        NodeFileTree nodeDirs = ig.context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree snpDirs =
+            new NodeFileTree(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(

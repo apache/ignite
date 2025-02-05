@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -49,7 +49,7 @@ public class OptimizedMarshallerEnumSelfTest {
 
         MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
 
-        ctx.setMarshallerMappingFileStoreDir(new IgniteSharedDirectories(U.defaultWorkDirectory()).marshaller());
+        ctx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
         ctx.onMarshallerProcessorStarted(newContext(), null);
 
         marsh.setContext(ctx);

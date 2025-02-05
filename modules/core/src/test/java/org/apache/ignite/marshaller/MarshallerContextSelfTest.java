@@ -30,7 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteSharedDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -170,7 +170,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         // Wait until marshaller context write class to file.
         U.sleep(2_000);
 
-        IgniteSharedDirectories dirs = sharedDirs();
+        SharedFileTree dirs = sharedDirs();
 
         checkFileName("java.lang.String", new File(dirs.marshaller(), "1.classname0").toPath());
 

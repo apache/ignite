@@ -48,7 +48,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -520,7 +520,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private void checkWalArchiveAndTotalSize(IgniteEx igniteEx, boolean hasWalArchive) throws Exception {
         FileWriteAheadLogManager walMgr = walMgr(igniteEx);
 
-        IgniteNodeDirectories dirs = igniteEx.context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree dirs = igniteEx.context().pdsFolderResolver().resolveDirectories();
 
         assertEquals(dirs.isWalArchiveEnabled(), hasWalArchive);
 

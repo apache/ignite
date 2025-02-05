@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.IgniteNodeDirectories;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -194,7 +194,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     @Nullable static File[] walDirs(GridKernalContext ctx) {
         IgniteWriteAheadLogManager walMgr = ctx.cache().context().wal();
 
-        IgniteNodeDirectories dirs = ctx.pdsFolderResolver().resolveDirectories();
+        NodeFileTree dirs = ctx.pdsFolderResolver().resolveDirectories();
 
         if (walMgr instanceof FileWriteAheadLogManager) {
             SegmentRouter sr = ((FileWriteAheadLogManager)walMgr).getSegmentRouter();
