@@ -439,7 +439,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(grids,
-            cfg -> sharedFileTree(cfg).snapshotsRoot(),
+            cfg -> sharedFileTree(cfg.setCacheConfiguration()).snapshotsRoot(),
             SNAPSHOT_NAME,
             true);
 
