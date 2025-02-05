@@ -750,6 +750,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalPath(String walStorePath) {
+        A.notNull(walStorePath, "WAL");
+
         this.walPath = walStorePath;
 
         return this;
@@ -772,6 +774,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalArchivePath(String walArchivePath) {
+        A.notNull(walArchivePath, "WAL archive");
+
         this.walArchivePath = walArchivePath;
 
         return this;
@@ -797,6 +801,8 @@ public class DataStorageConfiguration implements Serializable {
      */
     @IgniteExperimental
     public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
+        A.notNull(cdcWalPath, "CDC WAL");
+
         this.cdcWalPath = cdcWalPath;
 
         return this;
