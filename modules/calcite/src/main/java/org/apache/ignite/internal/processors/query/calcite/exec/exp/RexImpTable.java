@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
@@ -624,6 +625,11 @@ public class RexImpTable {
                 return implementor.implement(translator, call, RexImpTable.NullAs.NULL);
             }
         };
+    }
+
+    /** */
+    public boolean hasOperator(Predicate<SqlOperator> filter) {
+        return map.entrySet().stream().anyMatch(e -> filter.test(e.getKey()));
     }
 
     /** */

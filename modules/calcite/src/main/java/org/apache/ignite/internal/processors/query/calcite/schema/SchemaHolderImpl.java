@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -171,7 +174,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public void onSchemaCreated(String schemaName) {
-        igniteSchemas.computeIfAbsent(schemaName, name -> new IgniteSchema(schemaName));
+        igniteSchemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
         rebuild();
     }
 
@@ -352,6 +355,13 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         assert tbl != null;
 
         tbl.markIndexRebuildInProgress(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
+        return F.eq(schemaName, QueryUtils.DFLT_SCHEMA) && RexImpTable.INSTANCE.hasOperator(op -> op instanceof SqlFunction)
+            ? "Schema '" + QueryUtils.DFLT_SCHEMA + "' has already a function named '" + functionName + "'."
+            : null;
     }
 
     /** {@inheritDoc} */

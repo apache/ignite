@@ -221,6 +221,11 @@ public class H2SchemaManager implements SchemaChangeListener {
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schema, String name, boolean deterministic, Method method) {
         if (!Modifier.isStatic(method.getModifiers())) {
             log.warning("Skip creating SQL function '" + name + "' in H2 engine because it is not static.");

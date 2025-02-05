@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract schema change listener with no-op implementation for all calbacks.
@@ -105,6 +106,11 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
+        return null;
     }
 
     /** {@inheritDoc} */

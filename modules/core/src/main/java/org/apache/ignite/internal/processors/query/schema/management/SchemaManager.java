@@ -36,8 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryIndexType;
@@ -490,16 +492,13 @@ public class SchemaManager {
         schema.incrementUsageCount();
     }
 
-    /**
-     * Registers SQL functions.
-     *
-     * @param schema Schema.
-     * @param clss Classes.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void createSqlFunctions(String schema, Class<?>[] clss) throws IgniteCheckedException {
-        assert lock.isWriteLockedByCurrentThread();
-
+    /** */
+    private void findUserDefinedFunctions(
+        Class<?>[] clss,
+        boolean skipError,
+        BiConsumer<QuerySqlFunction, Method> funConsumer,
+        BiConsumer<QuerySqlTableFunction, Method> tblFunConsumer
+    ) {
         if (F.isEmpty(clss))
             return;
 
@@ -512,24 +511,51 @@ public class SchemaManager {
                     continue;
 
                 if (!Modifier.isPublic(m.getModifiers())) {
-                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                    if (skipError)
+                        continue;
+
+                    throw new IgniteException("Failed to register method '" + m.getName() + "' as a SQL function: " +
                         "method must be public.");
                 }
 
                 if (fun != null && tableFun != null) {
-                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                    if (skipError)
+                        continue;
+
+                    throw new IgniteException("Failed to register method '" + m.getName() + "' as a SQL function: " +
                         "both table and non-table function variants are defined.");
                 }
 
                 if (fun != null)
-                    lsnr.onFunctionCreated(schema, fun.alias().isEmpty() ? m.getName() : fun.alias(), fun.deterministic(), m);
-                else {
-                    String alias = tableFun.alias().isEmpty() ? m.getName() : tableFun.alias();
-
-                    lsnr.onTableFunctionCreated(schema, alias, m, tableFun.columnTypes(), tableFun.columnNames());
-                }
+                    funConsumer.accept(fun, m);
+                else
+                    tblFunConsumer.accept(tableFun, m);
             }
         }
+    }
+
+    /**
+     * Registers SQL functions.
+     *
+     * @param schema Schema.
+     * @param clss Classes.
+     */
+    private void createSqlFunctions(String schema, Class<?>[] clss) {
+        assert lock.isWriteLockedByCurrentThread();
+
+        if (F.isEmpty(clss))
+            return;
+
+        findUserDefinedFunctions(
+            clss,
+            false,
+            (f, m) -> lsnr.onFunctionCreated(schema, f.alias().isEmpty() ? m.getName() : f.alias(), f.deterministic(), m),
+            (f, m) -> {
+                String alias = f.alias().isEmpty() ? m.getName() : f.alias();
+
+                lsnr.onTableFunctionCreated(schema, alias, m, f.columnTypes(), f.columnNames());
+            }
+        );
     }
 
     /**
@@ -1328,6 +1354,25 @@ public class SchemaManager {
     }
 
     /** */
+    public @Nullable IgniteCheckedException validateUserDefinedFunctions(String schemaName, Class<?>[] udfHolders) {
+        List<String> errs = new ArrayList<>();
+
+        findUserDefinedFunctions(
+            udfHolders,
+            true,
+            (f, m) -> errs.add(lsnr.beforeCustomFunctionCreated(schemaName, F.isEmpty(f.alias()) ? m.getName() : f.alias())),
+            (f, m) -> errs.add(lsnr.beforeCustomFunctionCreated(schemaName, F.isEmpty(f.alias()) ? m.getName() : f.alias()))
+        );
+
+        List<String> errs0 = errs.stream().filter(e -> !F.isEmpty(e)).collect(Collectors.toList());
+
+        if (errs0.isEmpty())
+            return null;
+
+        return new IgniteCheckedException("Unable to add a user-defined function. " + errs0.get(0));
+    }
+
+    /** */
     private static final class NoOpSchemaChangeListener extends AbstractSchemaChangeListener {
         // No-op.
     }
@@ -1425,6 +1470,20 @@ public class SchemaManager {
         /** {@inheritDoc} */
         @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
             lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onFunctionCreated(schemaName, name, deterministic, method)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
+            String err = null;
+
+            for (SchemaChangeListener lsnr : lsnrs) {
+                err = lsnr.beforeCustomFunctionCreated(schemaName, functionName);
+
+                if (!F.isEmpty(err))
+                    break;
+            }
+
+            return err;
         }
 
         /** {@inheritDoc} */

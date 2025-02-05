@@ -49,6 +49,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -359,7 +360,7 @@ public class ValidationOnNodeJoinUtils {
                 ", cacheType=" + cacheType + "]");
 
         if (ctx.query().moduleEnabled())
-            validateSQLSchemas();
+            validateSQLSchemas(cc, ctx.query().schemaManager());
 
         if (cc.isEncryptionEnabled() && !ctx.clientNode()) {
             StringBuilder cacheSpec = new StringBuilder("[cacheName=").append(cc.getName())
@@ -386,25 +387,29 @@ public class ValidationOnNodeJoinUtils {
     }
 
     /** */
-    private static void validateSQLSchemas() {
-            String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
+    private static void validateSQLSchemas(CacheConfiguration<?, ?> cacheCfg, SchemaManager schemaMgr) throws IgniteCheckedException {
+        String schemaName = QueryUtils.normalizeSchemaName(cacheCfg.getName(), cacheCfg.getSqlSchema());
 
-            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
-                if (cc.getSqlSchema() == null) {
-                    // Conflict on cache name.
-                    throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
-                        "please set explicit SQL schema name through CacheConfiguration.setSqlSchema() or choose " +
-                        "another cache name) [cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + "]");
-                }
-                else {
-                    // Conflict on schema name.
-                    throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
-                        "cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + ']');
-                }
+        if (F.eq(schemaName, QueryUtils.SCHEMA_SYS)) {
+            if (cacheCfg.getSqlSchema() == null) {
+                // Conflict on cache name.
+                throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
+                    "please set explicit SQL schema name through CacheConfiguration.setSqlSchema() or choose " +
+                    "another cache name) [cacheName=" + cacheCfg.getName() + ", schemaName=" + cacheCfg.getSqlSchema() + "]");
             }
+            else {
+                // Conflict on schema name.
+                throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
+                    "cacheName=" + cacheCfg.getName() + ", schemaName=" + cacheCfg.getSqlSchema() + ']');
+            }
+        }
 
-            if()
+        if (F.eq(schemaName, QueryUtils.DFLT_SCHEMA) && !F.isEmpty(cacheCfg.getSqlFunctionClasses())) {
+            IgniteCheckedException udfErr = schemaMgr.validateUserDefinedFunctions(schemaName, cacheCfg.getSqlFunctionClasses());
 
+            if (udfErr != null)
+                throw udfErr;
+        }
     }
 
     /**

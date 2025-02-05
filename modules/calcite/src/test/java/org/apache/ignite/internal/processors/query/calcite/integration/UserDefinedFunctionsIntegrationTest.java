@@ -23,10 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.sql.validate.SqlValidatorException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -40,10 +38,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -95,21 +90,17 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         // Ensure that new custom functions created with the same names in a custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
         assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
-        assertQuery("select \"OWN_SCHEMA\".TYPEOF(?)").withParams(1L).returns(1).check();
 
-        //try {
-            client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_PUB")
-                .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
-                .setSqlSchema(QueryUtils.DFLT_SCHEMA)
-                .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp"))));
-
-//            throw new IllegalStateException("Exception is not thrown.");
-//        }
-//        catch (Throwable t) {
-//            assertTrue(
-//                "Unexpected exception",
-//                X.hasCause(t, "an internal schema with the same name is already registered.", IgniteException.class));
-//        }
+        GridTestUtils.assertThrows(
+            null,
+            () ->
+                client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_PUB")
+                    .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
+                    .setSqlSchema(QueryUtils.DFLT_SCHEMA)
+                    .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))),
+            IgniteCheckedException.class,
+            "has already a function named"
+        );
 
         // Make sure that the standard functions work.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
