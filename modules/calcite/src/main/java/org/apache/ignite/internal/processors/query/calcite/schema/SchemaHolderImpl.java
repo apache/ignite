@@ -358,9 +358,12 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
-        return F.eq(schemaName, QueryUtils.DFLT_SCHEMA) && RexImpTable.INSTANCE.hasOperator(op -> op instanceof SqlFunction)
-            ? "Schema '" + QueryUtils.DFLT_SCHEMA + "' has already a function named '" + functionName + "'."
+    @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String fnName) {
+        if (!F.eq(schemaName, QueryUtils.DFLT_SCHEMA))
+            return null;
+
+        return RexImpTable.INSTANCE.hasOperator(op -> op instanceof SqlFunction && op.getName().equalsIgnoreCase(fnName))
+            ? "Schema '" + QueryUtils.DFLT_SCHEMA + "' already has a standard function with the same name."
             : null;
     }
 

@@ -69,27 +69,26 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
-    public void testOverrideSystemFunction() {
-        // Check default functions.
-        assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
-        assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
-        assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
-
+    public void testOverrideSystemFunction() throws Exception {
         // Add custom function with the same names in a custom schema.
         client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_OWN")
             .setSqlSchema("OWN_SCHEMA")
             .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp_own")))
         );
 
         // Make sure those function have not affected 'PUBLIC' schema.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
         assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
         assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
+        assertThrows("select PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
+        assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
 
-        // Ensure that new custom functions created with the same names in a custom schema.
+        // Ensure that new functions are successfully  created in the custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
         assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
+        assertQuery("select \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
+        assertQuery("select \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
 
         GridTestUtils.assertThrows(
             null,
@@ -97,24 +96,28 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_PUB")
                     .setSqlFunctionClasses(OverrideSystemFunctionLibrary.class)
                     .setSqlSchema(QueryUtils.DFLT_SCHEMA)
-                    .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))),
+                    .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp_pub")))),
             IgniteCheckedException.class,
-            "has already a function named"
+            "already a standard function with the same name"
         );
 
-        // Make sure that the standard functions work.
+        // Make sure that standard functions work once again.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
         assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
         assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
 
-        // Make sure that the fucntions were not registered.
+        // Make sure that operator + works and new function 'PLUS' also regustered in the default schema.
+        assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
+        assertQuery("select PLUS(?, ?)").withParams(1, 2).returns(100);
+
         CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
         Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(qryProc, "schemaHolder", "igniteSchemas");
-        IgniteSchema schema = schemas.get("PUBLIC");
+        IgniteSchema dfltSchema = schemas.get(QueryUtils.DFLT_SCHEMA);
 
-        assertEquals(0, schema.getFunctions("UPPER").size());
-        assertEquals(0, schema.getFunctions("UNIX_SECONDS").size());
-        assertEquals(0, schema.getFunctions("TYPEOFTYPEOF").size());
+        assertEquals(0, dfltSchema.getFunctions("UPPER").size());
+        assertEquals(0, dfltSchema.getFunctions("UNIX_SECONDS").size());
+        assertEquals(0, dfltSchema.getFunctions("TYPEOF").size());
+        assertEquals(1, dfltSchema.getFunctions("PLUS").size());
     }
 
     /** */
@@ -316,7 +319,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertThrows("SELECT * FROM wrongRowType(1)", IgniteSQLException.class,
             "row type is neither Collection or Object[]");
 
-        logChecker0.check(getTestTimeout());
+        assertTrue(logChecker0.check(getTestTimeout()));
 
         String errTxt = "No match found for function signature";
 
@@ -630,6 +633,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static int typeof(Object o) {
             return 1;
+        }
+
+        /** Same name as the of operator '+' which is not a function. */
+        @QuerySqlFunction
+        public static int plus(int x, int y) {
+            return 100;
         }
     }
 
