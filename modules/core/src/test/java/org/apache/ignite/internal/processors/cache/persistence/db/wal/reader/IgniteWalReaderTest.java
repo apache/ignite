@@ -1588,11 +1588,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         String workDir,
         String subfolderName
     ) {
-        NodeFileTree dirs = new NodeFileTree(workDir, subfolderName);
+        NodeFileTree ft = new NodeFileTree(workDir, subfolderName);
 
         return new IteratorParametersBuilder()
-            .binaryMetadataFileStoreDir(dirs.binaryMeta())
-            .marshallerMappingFileStoreDir(dirs.marshaller());
+            .binaryMetadataFileStoreDir(ft.binaryMeta())
+            .marshallerMappingFileStoreDir(ft.marshaller());
     }
 
     /**

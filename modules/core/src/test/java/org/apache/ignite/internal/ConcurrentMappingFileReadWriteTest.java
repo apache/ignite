@@ -52,7 +52,7 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        mappingDir = sharedDirs().mkdirMarshaller();
+        mappingDir = sharedFileTree().mkdirMarshaller();
 
         mappingFileStore = new MarshallerMappingFileStore(
             new StandaloneGridKernalContext(log, null, null),

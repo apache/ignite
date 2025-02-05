@@ -65,7 +65,7 @@ public class SegmentRouter {
     public FileDescriptor findSegment(long segmentId) throws FileNotFoundException {
         FileDescriptor fd;
 
-        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !dirs.isWalArchiveEnabled())
+        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !dirs.walArchiveEnabled())
             fd = new FileDescriptor(new File(dirs.walArchive(), fileName(segmentId)));
         else
             fd = new FileDescriptor(new File(dirs.wal(), fileName(segmentId % dsCfg.getWalSegments())), segmentId);

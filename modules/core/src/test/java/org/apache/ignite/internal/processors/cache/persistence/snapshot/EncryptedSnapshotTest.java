@@ -221,7 +221,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             encryption = false;
             dfltCacheCfg = null;
 
-            File snpDir = sharedDirs().snapshotsRoot();
+            File snpDir = sharedFileTree().snapshotsRoot();
             assertTrue(snpDir.isDirectory() && snpDir.listFiles().length > 0);
 
             tmpSnpDir = new File(snpDir.getAbsolutePath() + "_tmp");
@@ -236,7 +236,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             IgniteEx ig = startGrids(3);
 
-            snpDir.renameTo(sharedDirs().snapshotsRoot());
+            snpDir.renameTo(sharedFileTree().snapshotsRoot());
 
             ig.cluster().state(ACTIVE);
 

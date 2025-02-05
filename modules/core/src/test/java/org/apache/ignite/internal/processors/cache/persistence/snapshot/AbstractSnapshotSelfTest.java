@@ -270,7 +270,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
-                Path snpTempDir = ((IgniteEx)ig).context().pdsFolderResolver().resolveDirectories().snapshotTempRoot().toPath();
+                Path snpTempDir = ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotTempRoot().toPath();
 
                 assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
                     0, U.fileCount(snpTempDir));

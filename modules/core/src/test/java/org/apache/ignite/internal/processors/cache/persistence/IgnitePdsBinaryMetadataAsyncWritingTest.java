@@ -165,7 +165,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         int key = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
         cache.put(key, new TestAddress(0, "USA", "NYC", "Park Ave"));
 
-        File ig1BinaryMeta = ig1.context().pdsFolderResolver().resolveDirectories().binaryMeta();
+        File ig1BinaryMeta = ig1.context().pdsFolderResolver().fileTree().binaryMeta();
 
         assertTrue(ig1BinaryMeta.exists());
         assertTrue(ig1BinaryMeta.isDirectory());

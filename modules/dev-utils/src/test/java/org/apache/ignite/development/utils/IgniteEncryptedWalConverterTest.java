@@ -67,18 +67,18 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIgniteWalConverter() throws Exception {
-        NodeFileTree dirs = createWal();
+        NodeFileTree ft = createWal();
 
         ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         PrintStream out = new PrintStream(outByte);
 
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            dirs.wal(),
-            dirs.walArchive(),
+            ft.wal(),
+            ft.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            dirs.binaryMeta(),
-            dirs.marshaller(),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null,
@@ -109,7 +109,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
 
-            return node.context().pdsFolderResolver().resolveDirectories();
+            return node.context().pdsFolderResolver().fileTree();
         }
     }
 }

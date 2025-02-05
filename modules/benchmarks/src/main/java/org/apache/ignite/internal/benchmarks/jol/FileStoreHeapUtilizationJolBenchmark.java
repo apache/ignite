@@ -67,12 +67,10 @@ public class FileStoreHeapUtilizationJolBenchmark {
         if (!F.isEmpty(G.allGrids()))
             throw new IgniteException("Grids are not stopped");
 
-        SharedFileTree dirs = new SharedFileTree(U.defaultWorkDirectory());
+        SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
-        U.delete(dirs.db());
-        U.delete(dirs.marshaller());
-        U.delete(dirs.binaryMetaRoot());
+        U.delete(sft.marshaller().getParentFile());
     }
 
     /** */

@@ -520,30 +520,30 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private void checkWalArchiveAndTotalSize(IgniteEx igniteEx, boolean hasWalArchive) throws Exception {
         FileWriteAheadLogManager walMgr = walMgr(igniteEx);
 
-        NodeFileTree dirs = igniteEx.context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = igniteEx.context().pdsFolderResolver().fileTree();
 
-        assertEquals(dirs.isWalArchiveEnabled(), hasWalArchive);
+        assertEquals(ft.walArchiveEnabled(), hasWalArchive);
 
         //Wait to avoid race condition where new segments(and corresponding .tmp files) are created after totalSize has been calculated.
-        if (dirs.isWalArchiveEnabled()) {
+        if (ft.walArchiveEnabled()) {
             int expWalWorkSegements = igniteEx.configuration().getDataStorageConfiguration().getWalSegments();
 
-            assertTrue(waitForCondition(() -> walFiles(dirs.wal()).length == expWalWorkSegements, 3000l));
+            assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000l));
 
             assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000l));
         }
 
-        long totalSize = walMgr.totalSize(walFiles(dirs.wal()));
+        long totalSize = walMgr.totalSize(walFiles(ft.wal()));
 
-        if (dirs.isWalArchiveEnabled())
-            totalSize += walMgr.totalSize(walFiles(dirs.walArchive()));
+        if (ft.walArchiveEnabled())
+            totalSize += walMgr.totalSize(walFiles(ft.walArchive()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
 
         long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
 
-        if (dirs.isWalArchiveEnabled()) {
-            long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().resolveDirectories().walCdc()).length;
+        if (ft.walArchiveEnabled()) {
+            long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().fileTree().walCdc()).length;
 
             // Count of segments = LastArchivedSegmentIndex + 1
             assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);

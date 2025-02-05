@@ -222,13 +222,13 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @throws IgniteCheckedException if IO error occur
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        NodeFileTree dirs = nodeDirs(subDirName);
+        NodeFileTree ft = nodeFileTree(subDirName);
 
         Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 
-        check.accept(dirs.binaryMeta());
-        check.accept(dirs.wal());
-        check.accept(dirs.walArchive());
-        check.accept(dirs.nodeRoot());
+        check.accept(ft.binaryMeta());
+        check.accept(ft.wal());
+        check.accept(ft.walArchive());
+        check.accept(ft.nodeRoot());
     }
 }

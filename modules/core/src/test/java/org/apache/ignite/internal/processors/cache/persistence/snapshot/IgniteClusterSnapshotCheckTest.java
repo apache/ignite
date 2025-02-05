@@ -317,7 +317,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // Cleanup persistence directory except created snapshots.
         Arrays.stream(new File(U.defaultWorkDirectory()).listFiles())
-            .filter(f -> !f.equals(sharedDirs().snapshotsRoot()))
+            .filter(f -> !f.equals(sharedFileTree().snapshotsRoot()))
             .forEach(U::delete);
 
         Set<UUID> assigns = Collections.newSetFromMap(new ConcurrentHashMap<>());

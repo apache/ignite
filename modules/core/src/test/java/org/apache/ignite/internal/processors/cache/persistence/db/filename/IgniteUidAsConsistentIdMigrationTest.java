@@ -120,7 +120,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (pstWalStoreCustomPath != null)
             ok &= U.delete(pstWalStoreCustomPath);
 
-        File binaryMetaRoot = sharedDirs().binaryMetaRoot();
+        File binaryMetaRoot = sharedFileTree().binaryMetaRoot();
 
         if (binaryMetaRoot.exists())
             ok &= U.delete(binaryMetaRoot);
@@ -191,9 +191,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        NodeFileTree dirs = nodeDirs(subfolderName);
+        NodeFileTree ft = nodeFileTree(subfolderName);
 
-        assertTrue(dirs.binaryMeta().exists() && dirs.binaryMeta().isDirectory());
+        assertTrue(ft.binaryMeta().exists() && ft.binaryMeta().isDirectory());
 
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
@@ -663,7 +663,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if failed.
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = sharedDirs().db();
+        final File curFolder = new File(U.defaultWorkDirectory(), PdsFolderResolver.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
@@ -683,14 +683,14 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @param subDirName sub directories name expected
      */
     private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) {
-        NodeFileTree dirs = new NodeFileTree(ign.configuration(), subDirName);
+        NodeFileTree ft = new NodeFileTree(ign.configuration(), subDirName);
 
         Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 
-        check.accept(dirs.binaryMeta());
-        check.accept(dirs.wal());
-        check.accept(dirs.walArchive());
-        check.accept(new File(dirs.root(), subDirName));
+        check.accept(ft.binaryMeta());
+        check.accept(ft.wal());
+        check.accept(ft.walArchive());
+        check.accept(ft.nodeStorage());
     }
 
     /**

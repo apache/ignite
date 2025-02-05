@@ -243,12 +243,12 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
     @Nullable private File[] expWalDirs(IgniteEx n) {
         FileWriteAheadLogManager walMgr = walMgr(n);
 
-        NodeFileTree dirs = n.context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = n.context().pdsFolderResolver().fileTree();
 
         if (walMgr != null) {
             assertNotNull(walMgr.getSegmentRouter());
 
-            return dirs.isWalArchiveEnabled() ? F.asArray(dirs.wal(), dirs.walArchive()) : F.asArray(dirs.wal());
+            return ft.walArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
         }
 
         return null;

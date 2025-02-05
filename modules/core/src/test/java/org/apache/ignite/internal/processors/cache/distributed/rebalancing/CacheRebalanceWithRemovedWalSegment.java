@@ -123,7 +123,7 @@ public class CacheRebalanceWithRemovedWalSegment extends GridCommonAbstractTest 
 
         TestRecordingCommunicationSpi.spi(ignite).waitForBlocked();
 
-        File walPath = ignite(0).context().pdsFolderResolver().resolveDirectories().walArchive();
+        File walPath = ignite(0).context().pdsFolderResolver().fileTree().walArchive();
 
         for (File file : walPath.listFiles()) {
             if (U.delete(file))

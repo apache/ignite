@@ -379,6 +379,6 @@ public class WalForCdcTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed
      */
     private static String archive(IgniteEx ignite) {
-        return ignite.context().pdsFolderResolver().resolveDirectories().walArchive().getAbsolutePath();
+        return ignite.context().pdsFolderResolver().fileTree().walArchive().getAbsolutePath();
     }
 }

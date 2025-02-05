@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Paths;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,29 +30,27 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
- * Provides access to directories shared between all nodes.
- *
+ * Provides access to directories shared between all local nodes.
+ * <pre>
  * ❯ tree
- * .                                                                            ← root (work directory, shared between all nodes).
- * ├── db                                                                       ← db (shared between all nodes).
- * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all nodes).
- * │  ├── marshaller                                                            ← marshaller (shared between all nodes).
- * ├── snapshots                                                                ← snpsRoot (shared between all nodes).
+ * .                                                                            ← root (work directory, shared between all local nodes).
+ * ├── db                                                                       ← db (shared between all local nodes).
+ * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
+ * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
+ * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
+ * </pre>
  *
  * @see NodeFileTree
  */
 public class SharedFileTree {
-    /** Default path (relative to working directory) of binary metadata folder */
-    public static final String DFLT_BINARY_METADATA_PATH = "binary_meta";
+    /** Name of binary metadata folder. */
+    public static final String BINARY_METADATA_DIR = "binary_meta";
 
-    /** Default path (relative to working directory) of marshaller mappings folder */
-    public static final String DFLT_MARSHALLER_PATH = "marshaller";
+    /** Name of marshaller mappings folder. */
+    public static final String MARSHALLER_DIR = "marshaller";
 
     /** Root(work) directory. */
     protected final File root;
-
-    /** db directory. */
-    protected final File db;
 
     /** Path to the directory containing binary metadata. */
     protected final File binaryMetaRoot;
@@ -69,9 +68,11 @@ public class SharedFileTree {
         A.notNull(root, "Root directory");
 
         this.root = root;
-        db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
+
+        String rootStr = root.getAbsolutePath();
+
+        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER, MARSHALLER_DIR).toFile();
+        binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
         snpsRoot = new File(root, DFLT_SNAPSHOT_DIRECTORY);
     }
 
@@ -86,19 +87,7 @@ public class SharedFileTree {
      * @param cfg Config to get {@code root} directory from.
      */
     SharedFileTree(IgniteConfiguration cfg) {
-        A.notNull(cfg, "config");
-
-        try {
-            root = new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
-        db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, DFLT_MARSHALLER_PATH);
-        binaryMetaRoot = new File(db, DFLT_BINARY_METADATA_PATH);
-        snpsRoot = resolveSharedDirectory(cfg.getSnapshotPath());
+        this(root(cfg));
     }
 
     /**
@@ -106,13 +95,6 @@ public class SharedFileTree {
      */
     public File root() {
         return root;
-    }
-
-    /**
-     * @return Path to the {@code db} directory.
-     */
-    public File db() {
-        return db;
     }
 
     /**
@@ -138,7 +120,7 @@ public class SharedFileTree {
      * @return Created directory.
      * @see SharedFileTree#binaryMetaRoot()
      */
-    public File mkdirBinaryMetaRoot() throws IgniteCheckedException {
+    public File mkdirBinaryMetaRoot() {
         return mkdir(binaryMetaRoot, "root binary metadata");
     }
 
@@ -147,7 +129,7 @@ public class SharedFileTree {
      * @return Created directory.
      * @see #marshaller()
      */
-    public File mkdirMarshaller() throws IgniteCheckedException {
+    public File mkdirMarshaller() {
         return mkdir(marshaller, "marshaller mappings");
     }
 
@@ -157,28 +139,23 @@ public class SharedFileTree {
      * @see #snapshotsRoot()
      */
     public File mkdirSnapshotsRoot() {
-        try {
-            return mkdir(snpsRoot, "snapshot work directory");
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return mkdir(snpsRoot, "snapshot work directory");
     }
 
     /**
      * @param f File to check.
      * @return {@code True} if argument can be binary meta root directory.
      */
-    public static boolean isBinaryMetaRoot(File f) {
-        return f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH);
+    public static boolean binaryMetaRoot(File f) {
+        return f.getAbsolutePath().endsWith(BINARY_METADATA_DIR);
     }
 
     /**
      * @param f File to check.
      * @return {@code True} if f ends with binary meta root directory.
      */
-    public static boolean isMarshaller(File f) {
-        return f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH);
+    public static boolean marshaller(File f) {
+        return f.getAbsolutePath().endsWith(MARSHALLER_DIR);
     }
 
     /**
@@ -186,7 +163,7 @@ public class SharedFileTree {
      * @return {@code True} if {@code f} contains binary meta root directory.
      */
     public static boolean containsBinaryMetaPath(File file) {
-        return file.getPath().contains(DFLT_BINARY_METADATA_PATH);
+        return file.getPath().contains(BINARY_METADATA_DIR);
     }
 
     /**
@@ -194,38 +171,36 @@ public class SharedFileTree {
      * @return {@code True} if {@code f} contains marshaller directory.
      */
     public static boolean containsMarshaller(File f) {
-        return f.getAbsolutePath().contains(DFLT_MARSHALLER_PATH);
+        return f.getAbsolutePath().contains(MARSHALLER_DIR);
     }
 
     /**
-     * @param dir Directory to create
-     * @throws IgniteCheckedException
+     * @param dir Directory to create.
      */
-    public static File mkdir(File dir, String name) throws IgniteCheckedException {
+    public static File mkdir(File dir, String name) {
         if (!U.mkdirs(dir))
             throw new IgniteException("Could not create directory for " + name + ": " + dir);
 
         if (!dir.canRead())
-            throw new IgniteCheckedException("Cannot read from directory: " + dir);
+            throw new IgniteException("Cannot read from directory: " + dir);
 
         if (!dir.canWrite())
-            throw new IgniteCheckedException("Cannot write to directory: " + dir);
+            throw new IgniteException("Cannot write to directory: " + dir);
 
         return dir;
     }
 
     /**
-     * Creates a directory specified by the given arguments.
-     *
-     * @param cfg Configured directory path, may be {@code null}.
-     * @return Initialized directory.
+     * @param cfg Ignite config.
+     * @return Root directory.
      */
-    private File resolveSharedDirectory(String cfg) {
-        File sharedBetweenNodesDir = new File(cfg);
-
-        return sharedBetweenNodesDir.isAbsolute()
-            ? sharedBetweenNodesDir
-            : new File(root, cfg);
+    private static File root(IgniteConfiguration cfg) {
+        try {
+            return new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

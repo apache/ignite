@@ -18,52 +18,57 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import java.nio.file.Paths;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
- * Provides access to Ignite node directories.
- * Note, that base path can be different for each usage:
+ * Provides access to Ignite node file tree.
+ * Note, that root path can be different for each usage:
  * <ul>
  *     <li>Ignite node.</li>
  *     <li>Snapshot files.</li>
- *     <li>Cache dump files</li>
- *     <li>CDC</li>
+ *     <li>Cache dump files.</li>
+ *     <li>CDC.</li>
  * </ul>
  *
- * Ignite node directories structure with the point to currenlty supported dirs.
+ * Ignite node file tree structure with the point to currenlty supported dirs.
  * Description:<br>
  * <ul>
  *     <li>{@code .} folder is {@code root} constructor parameter.</li>
  *     <li>{@code node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c} is the {@link PdsFolderSettings#folderName()} and {@code folderName}
  *     constructor parameter.</li>
+ *     <li>{@code db/binary_meta}, {@code db/marshaller} directories calculated relative to Ignite working directory.</li>
+ *     <li>{@code nodeStorage} calculated relative to {@link DataStorageConfiguration#getStoragePath()},
+ *     which equal to {@code ${IGNITE_WORK_DIR}/db}, by default.</li>
  * </ul>
  *
  * <pre>
  * ❯ tree
- * .                                                                            ← root (work directory, shared between all nodes).
+ * .                                                                            ← root (work directory, shared between all local nodes).
  * ├── cp
  * │  └── sharedfs
  * │      └── BinaryMarshaller
- * ├── db                                                                       ← db (shared between all nodes).
- * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all nodes).
+ * ├── db                                                                       ← db (shared between all local nodes).
+ * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← binaryMeta for node 0
  * │  │      └── 1645778359.bin
  * │  │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                        ← binaryMeta for node 1
  * │  │      └── 1645778359.bin
  * │  ├── lock
- * │  ├── marshaller                                                            ← marshaller (shared between all nodes)
+ * │  ├── marshaller                                                            ← marshaller (shared between all local nodes)
  * │  │  └── 1645778359.classname0
- * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeRoot (node 0).
+ * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
  * │  │  ├── cache-default
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
@@ -90,7 +95,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
  * │  │  └── snp                                                                ← snpTmp (node 0)
- * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeRoot (node 1).
+ * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeStorage (node 1).
  * │  │  ├── cache-default
  * ..
  * │  │  ├── cache-ignite-sys-cache
@@ -147,17 +152,17 @@ public class NodeFileTree extends SharedFileTree {
     /** Folder name for consistent id. */
     private final String folderName;
 
-    /** Node root folder. */
-    private final File nodeRoot;
-
     /** Path to the directory containing binary metadata. */
     private final File binaryMeta;
 
+    /** Path to the storage directory. */
+    private final @Nullable File nodeStorage;
+
     /** Path to the directory containing active WAL segments. */
-    private final File wal;
+    private final @Nullable File wal;
 
     /** Path to the directory containing archive WAL segments. */
-    private final File walArchive;
+    private final @Nullable File walArchive;
 
     /** Path to the directory containing archive WAL segments for CDC. */
     private final File walCdc;
@@ -166,7 +171,7 @@ public class NodeFileTree extends SharedFileTree {
      * Working directory for loaded snapshots from the remote nodes and storing
      * temporary partition delta-files of locally started snapshot process.
      */
-    private final File snpTmpRoot;
+    private final @Nullable File snpTmpRoot;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -205,12 +210,12 @@ public class NodeFileTree extends SharedFileTree {
 
         this.folderName = folderName;
 
-        nodeRoot = new File(db, folderName);
-        binaryMeta = new File(binaryMetaRoot.getAbsolutePath(), folderName);
-        wal = new File(new File(root, DFLT_WAL_PATH), folderName);
-        walArchive = new File(new File(root, DFLT_WAL_ARCHIVE_PATH), folderName);
-        walCdc = new File(new File(root, DFLT_WAL_CDC_PATH), folderName);
-        snpTmpRoot = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
+        binaryMeta = new File(binaryMetaRoot, folderName);
+        wal = rootRelative(DFLT_WAL_PATH);
+        walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
+        walCdc = rootRelative(DFLT_WAL_CDC_PATH);
+        nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+        snpTmpRoot = new File(nodeStorage, DFLT_SNAPSHOT_TMP_DIR);
     }
 
     /**
@@ -229,33 +234,35 @@ public class NodeFileTree extends SharedFileTree {
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
         super(cfg);
 
-        A.notNullOrEmpty(folderName, "Node directory");
+        A.notNull(folderName, "Node directory");
 
         this.folderName = folderName;
 
-        nodeRoot = new File(db, folderName);
         binaryMeta = new File(binaryMetaRoot, folderName);
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        A.notNull(dsCfg, "Data storage configuration");
-
-        wal = resolveDirectory(dsCfg.getWalPath());
-        walArchive = resolveDirectory(dsCfg.getWalArchivePath());
-        walCdc = resolveDirectory(dsCfg.getCdcWalPath());
-        snpTmpRoot = new File(nodeRoot, DFLT_SNAPSHOT_TMP_DIR);
+        if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
+            nodeStorage = dsCfg.getStoragePath() == null
+                ? rootRelative(DB_DEFAULT_FOLDER)
+                : resolveDirectory(dsCfg.getStoragePath());
+            wal = resolveDirectory(dsCfg.getWalPath());
+            walArchive = resolveDirectory(dsCfg.getWalArchivePath());
+            walCdc = resolveDirectory(dsCfg.getCdcWalPath());
+            snpTmpRoot = new File(nodeStorage, DFLT_SNAPSHOT_TMP_DIR);
+        }
+        else {
+            nodeStorage = null;
+            wal = null;
+            walArchive = null;
+            walCdc = null;
+            snpTmpRoot = null;
+        }
     }
 
-    /** @return Folder name. */
-    public String folderName() {
-        return folderName;
-    }
-
-    /**
-     * @return Node root directory.
-     */
-    public File nodeRoot() {
-        return new File(db, folderName);
+    /** @return Node storage directory. */
+    public File nodeStorage() {
+        return nodeStorage;
     }
 
     /** @return Path to binary metadata directory. */
@@ -264,17 +271,17 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Path to the directory containing active WAL segments. */
-    public File wal() {
+    public @Nullable File wal() {
         return wal;
     }
 
     /** @return Path to the directory containing archive WAL segments. */
-    public File walArchive() {
+    public @Nullable File walArchive() {
         return walArchive;
     }
 
     /** @return Path to the directory containing archive WAL segments for CDC. */
-    public File walCdc() {
+    public @Nullable File walCdc() {
         return walCdc;
     }
 
@@ -288,7 +295,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Created directory.
      * @see #binaryMeta()
      */
-    public File mkdirBinaryMeta() throws IgniteCheckedException {
+    public File mkdirBinaryMeta() {
         return mkdir(binaryMeta, "binary metadata");
     }
 
@@ -298,31 +305,31 @@ public class NodeFileTree extends SharedFileTree {
      * @see #snapshotTempRoot()
      */
     public File mkdirSnapshotTempRoot() {
-        try {
-            return mkdir(snpTmpRoot, "temp directory for snapshot creation");
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return mkdir(snpTmpRoot, "temp directory for snapshot creation");
     }
 
     /** @return {@code True} if WAL archive enabled. */
-    public boolean isWalArchiveEnabled() {
-        return !walArchive.equals(wal);
+    public boolean walArchiveEnabled() {
+        return walArchive != null && wal != null && !walArchive.equals(wal);
     }
 
     /**
-     * Resolves a directory specified by the given arguments.
+     * Creates a directory specified by the given arguments.
      *
-     * @param cfg Configured directory path, may be {@code null}.
+     * @param cfg Configured directory path.
      * @return Initialized directory.
      */
     private File resolveDirectory(String cfg) {
-        File sharedBetweenNodesDir = new File(cfg);
+        File sharedDir = new File(cfg);
 
-        return sharedBetweenNodesDir.isAbsolute()
-            ? new File(sharedBetweenNodesDir, folderName)
-            : new File(new File(root, cfg), folderName);
+        return sharedDir.isAbsolute()
+            ? new File(sharedDir, folderName)
+            : rootRelative(cfg);
+    }
+
+    /** @return {@code ${root}/${path}/${folderName}} path. */
+    private File rootRelative(String path) {
+        return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
     }
 
     /** {@inheritDoc} */

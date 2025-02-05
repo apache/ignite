@@ -113,7 +113,7 @@ public class MockWalIteratorFactory {
                 return new PdsFolderSettings(new File("."), subfolderName, consistentId, null, false);
             }
 
-            @Override public NodeFileTree resolveDirectories() {
+            @Override public NodeFileTree fileTree() {
                 return new NodeFileTree(new File(".").getAbsolutePath(), subfolderName);
             }
         });

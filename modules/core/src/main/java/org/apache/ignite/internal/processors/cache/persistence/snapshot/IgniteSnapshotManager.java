@@ -390,7 +390,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile PdsFolderSettings<?> pdsSettings;
 
     /** Ignite directories. */
-    private volatile NodeFileTree dirs;
+    private volatile NodeFileTree ft;
 
     /** Fully initialized metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
@@ -520,11 +520,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         locCfgMgr = cctx.cache().configManager();
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-        dirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
+        ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
         if (isPersistenceEnabled(cctx.gridConfig())) {
-            dirs.mkdirSnapshotsRoot();
-            dirs.mkdirSnapshotTempRoot();
+            ft.mkdirSnapshotsRoot();
+            ft.mkdirSnapshotTempRoot();
         }
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -677,7 +677,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             })),
             Function.identity());
 
-        File[] files = dirs.snapshotsRoot().listFiles();
+        File[] files = ft.snapshotsRoot().listFiles();
 
         if (files != null) {
             Arrays.stream(files)
@@ -768,7 +768,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             deleteDirectory(snpDirs.binaryMetaRoot());
             deleteDirectory(snpDirs.marshaller());
 
-            snpDirs.db().delete();
+            snpDirs.marshaller().getParentFile().delete();
             snpDirs.root().delete();
         }
         catch (IOException e) {
@@ -815,10 +815,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Local snapshot directory where snapshot files are located.
      */
     public File snapshotLocalDir(String snpName, @Nullable String snpPath) {
-        assert dirs != null;
+        assert ft != null;
         assert U.alphanumericUnderscore(snpName) : snpName;
 
-        return snpPath == null ? new File(dirs.snapshotsRoot(), snpName) : new File(snpPath, snpName);
+        return snpPath == null ? new File(ft.snapshotsRoot(), snpName) : new File(snpPath, snpName);
     }
 
     /**
@@ -1100,7 +1100,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean withMetaStorage
     ) {
         if (!isPersistenceEnabled(cctx.gridConfig()) && req.snapshotPath() == null)
-            dirs.mkdirSnapshotsRoot();
+            ft.mkdirSnapshotsRoot();
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
@@ -1605,11 +1605,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
-        if (dirs == null)
+        if (ft == null)
             return Collections.emptyList();
 
         synchronized (snpOpMux) {
-            File[] dirs = (snpPath == null ? this.dirs.snapshotsRoot() : new File(snpPath)).listFiles(File::isDirectory);
+            File[] dirs = (snpPath == null ? this.ft.snapshotsRoot() : new File(snpPath)).listFiles(File::isDirectory);
 
             if (dirs == null)
                 return Collections.emptyList();
@@ -2390,7 +2390,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         recovered = true;
 
-        for (File tmp : dirs.snapshotTempRoot().listFiles())
+        for (File tmp : ft.snapshotTempRoot().listFiles())
             U.delete(tmp);
 
         if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
@@ -2523,9 +2523,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpDir,
         String folderName
     ) throws IgniteCheckedException {
-        NodeFileTree dirs = new NodeFileTree(snpDir, folderName);
+        NodeFileTree ft = new NodeFileTree(snpDir, folderName);
 
-        return new StandaloneGridKernalContext(log, cmpProc, dirs.binaryMeta(), dirs.marshaller());
+        return new StandaloneGridKernalContext(log, cmpProc, ft.binaryMeta(), ft.marshaller());
     }
 
     /**
@@ -2656,7 +2656,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 encrypt
             )
             : new SnapshotFutureTask(
-                cctx, srcNodeId, reqId, snpName, dirs.snapshotTempRoot(), ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+                cctx, srcNodeId, reqId, snpName, ft.snapshotTempRoot(), ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -3032,12 +3032,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (wal == null)
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
 
-        NodeFileTree dirs = cctx.kernalContext().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-        if (dirs.isWalArchiveEnabled())
+        if (ft.walArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
-        ensureHardLinkAvailable(dirs.walArchive().toPath(), snpDir.toPath());
+        ensureHardLinkAvailable(ft.walArchive().toPath(), snpDir.toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()
@@ -3557,7 +3557,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(snpMgr.dirs.snapshotTempRoot().getAbsolutePath(), this.reqId);
+            dir = Paths.get(snpMgr.ft.snapshotTempRoot().getAbsolutePath(), this.reqId);
             initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;

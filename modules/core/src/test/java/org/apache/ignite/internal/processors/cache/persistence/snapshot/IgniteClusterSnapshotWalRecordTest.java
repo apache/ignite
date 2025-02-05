@@ -220,10 +220,10 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
     private WALIterator wal(IgniteEx ign) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        NodeFileTree dirs = ign.context().pdsFolderResolver().resolveDirectories();
+        NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(dirs.walArchive(), dirs.wal())
+            .filesOrDirs(ft.walArchive(), ft.wal())
             .sharedContext(ign.context().cache().context());
 
         return factory.iterator(params);

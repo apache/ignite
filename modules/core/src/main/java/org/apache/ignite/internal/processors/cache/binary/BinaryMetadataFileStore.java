@@ -109,7 +109,7 @@ class BinaryMetadataFileStore {
 
         metadataDir = binaryMetadataFileStoreDir != null
             ? binaryMetadataFileStoreDir
-            : ctx.pdsFolderResolver().resolveDirectories().binaryMeta();
+            : ctx.pdsFolderResolver().fileTree().binaryMeta();
 
         fixLegacyFolder(ctx.pdsFolderResolver().resolveFolders().folderName());
     }

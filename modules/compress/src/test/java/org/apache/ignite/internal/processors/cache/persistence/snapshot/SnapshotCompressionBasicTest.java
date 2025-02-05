@@ -290,8 +290,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
                 U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
                 U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(nodeDirs(dir.toString()).marshaller());
-                U.delete(nodeDirs(dir.toString()).binaryMetaRoot());
+                U.delete(nodeFileTree(dir.toString()).marshaller());
+                U.delete(nodeFileTree(dir.toString()).binaryMetaRoot());
             }
         }
         catch (IOException e) {
@@ -412,7 +412,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long snapshotSize(Collection<Ignite> grids, String snpName, String pattern) {
         return grids.stream()
-            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().resolveDirectories().snapshotsRoot().toPath().resolve(snpName))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath().resolve(snpName))
             .reduce(0L, (acc, p) -> acc + directorySize(p, pattern), Long::sum);
     }
 

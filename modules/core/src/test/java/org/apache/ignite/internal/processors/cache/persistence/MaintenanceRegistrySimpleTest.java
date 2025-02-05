@@ -102,7 +102,7 @@ public class MaintenanceRegistrySimpleTest {
                         return new PdsFolderSettings(new File(dfltWorkDir), U.maskForFileName(""));
                     }
 
-                    @Override public NodeFileTree resolveDirectories() {
+                    @Override public NodeFileTree fileTree() {
                         return new NodeFileTree(dfltWorkDir, U.maskForFileName(""));
                     }
                 };

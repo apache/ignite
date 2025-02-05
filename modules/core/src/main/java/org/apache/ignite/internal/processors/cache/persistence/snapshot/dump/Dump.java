@@ -188,7 +188,7 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(NodeFileTree.isBinaryMetaRoot(f) || NodeFileTree.isMarshaller(f))
+            && !(NodeFileTree.binaryMetaRoot(f) || NodeFileTree.marshaller(f))
             && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)

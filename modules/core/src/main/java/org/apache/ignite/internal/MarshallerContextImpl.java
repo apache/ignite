@@ -590,7 +590,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         assert ctx != null;
 
         fileStore = marshallerMappingFileStoreDir == null
-            ? new MarshallerMappingFileStore(ctx, ctx.pdsFolderResolver().resolveDirectories().mkdirMarshaller())
+            ? new MarshallerMappingFileStore(ctx, ctx.pdsFolderResolver().fileTree().mkdirMarshaller())
             : new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();

@@ -224,7 +224,7 @@ final class MarshallerMappingFileStore {
 
         File legacyDir = new File(
             ctx.config().getWorkDirectory(),
-            SharedFileTree.DFLT_MARSHALLER_PATH
+            SharedFileTree.MARSHALLER_DIR
         );
 
         File legacyTmpDir = new File(legacyDir + TMP_SUFFIX);

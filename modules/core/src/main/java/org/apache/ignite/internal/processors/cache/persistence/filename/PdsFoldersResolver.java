@@ -33,7 +33,7 @@ public interface PdsFoldersResolver {
     public PdsFolderSettings<NodeFileLockHolder> resolveFolders() throws IgniteCheckedException;
 
     /**
-     * @return Ignite node standart directories.
+     * @return Ignite node file tree.
      */
-    public NodeFileTree resolveDirectories();
+    public NodeFileTree fileTree();
 }
