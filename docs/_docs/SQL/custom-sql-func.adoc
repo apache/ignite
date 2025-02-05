@@ -18,7 +18,7 @@
 
 The SQL Engine can extend the SQL functions' set, defined by the ANSI-99 specification, via the addition of custom SQL functions written in Java.
 
-A custom SQL function is just a public static method marked by the `@QuerySqlFunction` annotation.
+A custom SQL function is just a `public` or `public static` method marked by the `@QuerySqlFunction` annotation.
 
 ////
 TODO looks like it's unsupported in C#
@@ -48,7 +48,7 @@ include::{javaFile}[tags=sql-function-query, indent=0]
 
 
 Custom SQL function can be a table function. Result of table function is treated as a row set (a table) and can be used
-by other SQL operators. Custom SQL function is also a `public` method marked by annotation `@QuerySqlTableFunction`.
+by other SQL operators. Custom SQL function is also a `public` or `public static` method marked by annotation `@QuerySqlTableFunction`.
 Table function must return an `Iterable` as a row set. Each row can be represented by an `Object[]` or by a `Collection`.
 Row length must match the defined number of column types. Row value types must match the defined column types or be able
 assigned to them.
@@ -61,6 +61,8 @@ include::{javaFile}[tags=sql-table-function-example, indent=0]
 ----
 include::{javaFile}[tags=sql-table-function-config-query, indent=0]
 ----
+NOTE: Creating custom functions in the system schema is forbidden. Creating a custom function in schema 'PUBLIC' is forbidden if the function name interferes with a standard function like 'TYPEOF' or 'SUBSTRING'.
+
 NOTE: The table functions also are available currently only with link:SQL/sql-calcite[Calcite, window=_blank].
 
 NOTE: Classes registered with `CacheConfiguration.setSqlFunctionClasses(...)` must be added to the classpath of all the nodes where the defined custom functions might be executed. Otherwise, you will get a `ClassNotFoundException` error when trying to execute the custom function.

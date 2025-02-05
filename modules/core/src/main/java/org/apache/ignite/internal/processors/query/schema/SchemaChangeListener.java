@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -130,9 +129,6 @@ public interface SchemaChangeListener {
      * @param tblName Table name.
      */
     public void onIndexRebuildFinished(String schemaName, String tblName);
-
-    /** @return An error text if function cannot be added or {@code Null}/empty if no error is expected. */
-    public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName);
 
     /**
      * Callback on function creation.

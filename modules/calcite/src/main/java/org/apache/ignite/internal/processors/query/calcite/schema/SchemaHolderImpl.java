@@ -358,14 +358,10 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String beforeCustomFunctionCreated(String schemaName, String functionName) {
-        return F.eq(schemaName, QueryUtils.DFLT_SCHEMA) && RexImpTable.INSTANCE.hasOperator(op -> op instanceof SqlFunction)
-            ? "Schema '" + QueryUtils.DFLT_SCHEMA + "' has already a function named '" + functionName + "'."
-            : null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
+        if (!checkNewUserDefinedFunction(schemaName, name))
+            return;
+
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
@@ -381,11 +377,27 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         Class<?>[] colTypes,
         String[] colNames
     ) {
+        if (!checkNewUserDefinedFunction(schemaName, name))
+            return;
+
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         schema.addFunction(name.toUpperCase(), IgniteTableFunction.create(method, colTypes, colNames));
 
         rebuild();
+    }
+
+    /** */
+    private boolean checkNewUserDefinedFunction(String schName, String funName) {
+        if (F.eq(schName, QueryUtils.DFLT_SCHEMA)
+            && RexImpTable.INSTANCE.hasOperator(op -> op instanceof SqlFunction && op.getName().equalsIgnoreCase(funName))) {
+            log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '" + QueryUtils.DFLT_SCHEMA +
+                "' already has a standard function with the same name.");
+
+            return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
