@@ -314,7 +314,7 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * Creates a directory specified by the given arguments.
+     * Resolves directory specified by the given arguments.
      *
      * @param cfg Configured directory path.
      * @return Initialized directory.

@@ -63,31 +63,39 @@ public class SharedFileTree {
 
     /**
      * @param root Root directory.
+     * @param snpsRoot Snapshot path.
      */
-    public SharedFileTree(File root) {
+    private SharedFileTree(File root, String snpsRoot) {
         A.notNull(root, "Root directory");
 
         this.root = root;
+        this.snpsRoot = resolveDirectory(snpsRoot);
 
         String rootStr = root.getAbsolutePath();
 
         marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER, MARSHALLER_DIR).toFile();
         binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
-        snpsRoot = new File(root, DFLT_SNAPSHOT_DIRECTORY);
+    }
+
+    /**
+     * @param root Root directory.
+     */
+    public SharedFileTree(File root) {
+        this(root, DFLT_SNAPSHOT_DIRECTORY);
     }
 
     /**
      * @param root Root directory.
      */
     public SharedFileTree(String root) {
-        this(new File(root));
+        this(new File(root), DFLT_SNAPSHOT_DIRECTORY);
     }
 
     /**
      * @param cfg Config to get {@code root} directory from.
      */
     public SharedFileTree(IgniteConfiguration cfg) {
-        this(root(cfg));
+        this(root(cfg), cfg.getSnapshotPath());
     }
 
     /**
@@ -201,6 +209,20 @@ public class SharedFileTree {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Creates a directory specified by the given arguments.
+     *
+     * @param cfg Configured directory path.
+     * @return Initialized directory.
+     */
+    private File resolveDirectory(String cfg) {
+        File sharedDir = new File(cfg);
+
+        return sharedDir.isAbsolute()
+            ? sharedDir
+            : new File(root, cfg);
     }
 
     /** {@inheritDoc} */
