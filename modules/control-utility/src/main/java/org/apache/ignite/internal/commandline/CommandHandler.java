@@ -271,7 +271,7 @@ public class CommandHandler {
                     }
 
                     logger.info("Command [" + cmdName + "] started");
-                    logger.info("Arguments: " + args.getSafeCmd());
+                    logger.info("Arguments: " + args.safeCommandString());
                     logger.info(U.DELIM);
 
                     String deprecationMsg = args.command().deprecationMessage(args.commandArg());

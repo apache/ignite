@@ -209,14 +209,14 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
      */
     @Test
     public void testInputKeyUserPwdOnlyOncePwdArgStart() throws Exception {
-        performTest(Arrays.asList(
-                "--password",
-                "--state",
-                "--user", login,
-                "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
-                "--keystore-password", keyStorePassword(),
-                "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
-                "--truststore-password", keyStorePassword()));
+        doPasswordInteractiveInputTest(Arrays.asList(
+            "--password",
+            "--state",
+            "--user", login,
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword()));
     }
 
     /**
@@ -227,14 +227,14 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
      */
     @Test
     public void testInputKeyUserPwdOnlyOncePwdArgMiddle() throws Exception {
-        performTest(Arrays.asList(
-                "--state",
-                "--user", login,
-                "--password",
-                "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
-                "--keystore-password", keyStorePassword(),
-                "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
-                "--truststore-password", keyStorePassword()));
+        doPasswordInteractiveInputTest(Arrays.asList(
+            "--state",
+            "--user", login,
+            "--password",
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword()));
     }
 
     /**
@@ -245,43 +245,14 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
      */
     @Test
     public void testInputKeyUserPwdOnlyOncePwdArgEnd() throws Exception {
-        performTest(Arrays.asList(
-                "--state",
-                "--user", login,
-                "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
-                "--keystore-password", keyStorePassword(),
-                "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
-                "--truststore-password", keyStorePassword(),
-                "--password"));
-    }
-
-    /**
-     * Perform the test with prepared List arguments.
-     *
-     * @param args List of query arguments.
-     * @throws Exception If failed.
-     */
-    private void performTest(List<String> args) throws Exception {
-        IgniteEx crd = startGrid();
-
-        crd.cluster().state(ACTIVE);
-
-        TestCommandHandler hnd = newCommandHandler();
-
-        AtomicInteger pwdCnt = new AtomicInteger();
-
-        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
-            @Override public char[] readPassword(String fmt, Object... args) {
-                pwdCnt.incrementAndGet();
-
-                return pwd.toCharArray();
-            }
-        };
-
-        int exitCode = hnd.execute(args);
-
-        assertEquals(EXIT_CODE_OK, exitCode);
-        assertEquals(1, pwdCnt.get());
+        doPasswordInteractiveInputTest(Arrays.asList(
+            "--state",
+            "--user", login,
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword(),
+            "--password"));
     }
 
     /**
@@ -302,8 +273,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
             @Override public char[] readPassword(String fmt, Object... args) {
-                reqCnt.incrementAndGet();
-                if (reqCnt.get() == 1)
+                if (reqCnt.incrementAndGet() == 1)
                     return keyStorePassword().toCharArray();
                 else
                     return pwd.toCharArray();
@@ -311,16 +281,45 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         };
 
         int exitCode = hnd.execute(Arrays.asList(
-                "--state",
-                "--user", login,
-                "--verbose",
-                "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
-                "--keystore-password",
-                "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
-                "--truststore-password", keyStorePassword(),
-                "--password"));
+            "--state",
+            "--user", login,
+            "--verbose",
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password",
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword(),
+            "--password"));
 
         assertEquals(EXIT_CODE_OK, exitCode);
         assertEquals(2, reqCnt.get());
+    }
+
+    /**
+     * Perform the test with prepared List arguments.
+     *
+     * @param args List of query arguments.
+     * @throws Exception If failed.
+     */
+    private void doPasswordInteractiveInputTest(List<String> args) throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().state(ACTIVE);
+
+        TestCommandHandler hnd = newCommandHandler();
+
+        AtomicInteger pwdCnt = new AtomicInteger();
+
+        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
+            @Override public char[] readPassword(String fmt, Object... args) {
+                pwdCnt.incrementAndGet();
+
+                return pwd.toCharArray();
+            }
+        };
+
+        int exitCode = hnd.execute(args);
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(1, pwdCnt.get());
     }
 }

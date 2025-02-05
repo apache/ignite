@@ -65,13 +65,14 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     /** */
     private final CLIArgumentParser parser;
 
-    /** Safe command. */
+    /** String representation of command with hidden values of sensitive arguments. */
     private final String safeCmd;
 
     /**
      * @param cmdPath Path to the command in {@link CommandsRegistry} hierarchy.
      * @param arg Command argument.
      * @param parser CLI arguments parser.
+     * @param safeCmd String safe representation of command.
      */
     public ConnectionAndSslParameters(
         Deque<Command<?, ?>> cmdPath,
@@ -255,8 +256,8 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
         return parser.get(CMD_VERBOSE);
     }
 
-    /** @return safe command. */
-    public String getSafeCmd() {
+    /** @return String representation of command with hidden values of sensitive arguments. */
+    public String safeCommandString() {
         return safeCmd;
     }
 }

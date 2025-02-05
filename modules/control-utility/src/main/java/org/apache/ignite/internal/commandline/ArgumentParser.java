@@ -149,7 +149,7 @@ public class ArgumentParser {
     /**
      * @param log Logger.
      * @param registry Supported commands.
-     * @param console Supported commands.
+     * @param console Console.
      */
     public ArgumentParser(IgniteLogger log, IgniteCommandRegistry registry, GridConsole console) {
         this.log = log;
@@ -339,7 +339,7 @@ public class ArgumentParser {
         return new CLIArgumentParser(positionalArgs, namedArgs, console);
     }
 
-    /** @return safe command for logging with hidden confidential values. */
+    /** @return String representation of command with hidden values of sensitive arguments. */
     private String buildSafeCommandString(ListIterator<String> rawIter, CLIArgumentParser parser) {
         SB res = new SB();
 

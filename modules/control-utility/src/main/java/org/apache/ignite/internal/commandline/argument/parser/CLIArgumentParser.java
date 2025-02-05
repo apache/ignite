@@ -172,7 +172,7 @@ public class CLIArgumentParser {
 
     /**
      * @param name Argument name.
-     * @return Command line rgument.
+     * @return Argument descriptor.
      */
     public CLIArgument<?> getArgumentDescriptor(String name) {
         return argConfiguration.get(name);
