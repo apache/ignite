@@ -1663,7 +1663,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 BaselineTopologyHistoryItem.fromBaseline(blt),
                 msg.state(),
                 null,
-                true
+                false
             );
 
             if (exchActs == null)
