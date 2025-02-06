@@ -31,21 +31,25 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -78,12 +82,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.impl.GridClientImpl;
-import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -97,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -115,6 +117,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -134,7 +137,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -157,11 +163,13 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
+import static org.apache.ignite.internal.management.cache.CacheIdleVerifyCancelTask.TASKS_TO_CANCEL;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CACL_PART_HASH_ERR_MSG;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CP_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
@@ -170,8 +178,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.CRC_CHECK_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -218,6 +229,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected static File customDiagnosticDir;
 
+    /** */
+    protected ListeningTestLogger listeningLog;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -228,10 +242,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        listeningLog = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
         cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (listeningLog != null)
+            cfg.setGridLogger(listeningLog);
+
+        return cfg;
     }
 
     /**
@@ -272,36 +303,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         if (cliCommandHandler())
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
-    }
-
-    /**
-     * Test clients leakage.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientsLeakage() throws Exception {
-        Assume.assumeTrue(cliCommandHandler());
-
-        startGrids(1);
-
-        Map<UUID, GridClientImpl> clnts = U.field(GridClientFactory.class, "openClients");
-
-        Map<UUID, GridClientImpl> clntsBefore = new HashMap<>(clnts);
-
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
-
-        Map<UUID, GridClientImpl> clntsAfter1 = new HashMap<>(clnts);
-
-        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter1));
-
-        stopAllGrids();
-
-        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute("--set-state", "ACTIVE"));
-
-        Map<UUID, GridClientImpl> clntsAfter2 = new HashMap<>(clnts);
-
-        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
     }
 
     /** */
@@ -737,7 +738,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--cache", "idle_verify"));
 
-        assertContains(log, testOut.toString(), VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+        assertContains(log, testOut.toString(), VerifyBackupPartitionsTask.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
         assertContains(log, testOut.toString(), "Failed to perform operation");
 
         srv.cluster().state(ACTIVE);
@@ -745,6 +746,199 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /** */
+    @Test
+    public void testIdleVerifyCancelOnCheckpoint() throws Exception {
+        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+            G.allGrids().forEach(grid -> {
+                if (grid.configuration().isClientMode())
+                    return;
+
+                GridCacheDatabaseSharedManager dbMgr =
+                    (GridCacheDatabaseSharedManager)((IgniteEx)grid).context().cache().context().database();
+
+                dbMgr.addCheckpointListener(new CheckpointListener() {
+                    @Override public void beforeCheckpointBegin(Context ctx) {
+                        if (Objects.equals(ctx.progress().reason(), CP_REASON))
+                            beforeCancelLatch.countDown();
+                    }
+
+                    @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
+                        if (Objects.equals(ctx.progress().reason(), CP_REASON)) {
+                            try {
+                                assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                            }
+                            catch (InterruptedException e) {
+                                throw new IgniteInterruptedCheckedException(e);
+                            }
+                        }
+                    }
+
+                    @Override public void onMarkCheckpointBegin(Context ctx) {
+                        // No-op.
+                    }
+
+                    @Override public void onCheckpointBegin(Context ctx) {
+                        // No-op.
+                    }
+                });
+            });
+        }, false);
+    }
+
+    /** */
+    @Test
+    public void testIdleVerifyCancelBeforeCalcPartitionHashStarted() throws Exception {
+        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+            ForkJoinPool pool = new ForkJoinPool() {
+                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                    beforeCancelLatch.countDown();
+
+                    ForkJoinTask<T> submitted = super.submit(task);
+
+                    try {
+                        assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return submitted;
+                }
+            };
+
+            VerifyBackupPartitionsTask.poolSupplier = () -> pool;
+        }, false);
+    }
+
+    /** */
+    @Test
+    public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
+        for (boolean checkCrc : new boolean[] {false, true}) {
+            // Can't place assert inside pool, because exceptions from task ignored.
+            AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
+            AtomicBoolean eCatched = new AtomicBoolean(false);
+
+            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+                ForkJoinPool pool = new ForkJoinPool() {
+                    @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                        return super.submit(new Callable<T>() {
+                            @Override public T call() throws Exception {
+                                beforeCancelLatch.countDown();
+
+                                try {
+                                    assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException ignored) {
+                                    interruptedOnCancel.set(false);
+                                }
+
+                                try {
+                                    // Call must fail.
+                                    T res = task.call();
+
+                                    interruptedOnCancel.set(false);
+
+                                    return res;
+                                }
+                                catch (IgniteException e) {
+                                    if (!e.getMessage().startsWith(checkCrc ? CRC_CHECK_ERR_MSG : CACL_PART_HASH_ERR_MSG))
+                                        interruptedOnCancel.set(false);
+
+                                    eCatched.set(true);
+
+                                    throw e;
+                                }
+                                catch (Throwable e) {
+                                    interruptedOnCancel.set(false);
+
+                                    throw e;
+                                }
+                            }
+                        });
+                    }
+                };
+
+                VerifyBackupPartitionsTask.poolSupplier = () -> pool;
+            }, checkCrc);
+
+            assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
+            assertTrue("Task must fail with expected exception", eCatched.get());
+
+            eCatched.set(false);
+        }
+    }
+
+    /**
+     * Wrapper for tests for idle verify cancel command.
+     *
+     * @param prepare Prepares the test using beforeCancelLatch and afterCancelLatch.
+     * @param checkCrc If {@code true} then run idle verify with --check-crc argument.
+    */
+    private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare, boolean checkCrc) throws Exception {
+        final int gridsCnt = 4;
+
+        if (G.allGrids().isEmpty()) {
+            listeningLog = new ListeningTestLogger(log);
+
+            IgniteEx srv = startGrids(gridsCnt);
+
+            srv.cluster().state(ACTIVE);
+
+            IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setBackups(3)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(3)));
+
+            for (int part = 0; part < 3; part++) {
+                for (Integer key : partitionKeys(cache, part, 3, 0)) {
+                    cache.put(key, key);
+                }
+            }
+        }
+
+        CountDownLatch beforeCancelLatch = new CountDownLatch(1);
+        CountDownLatch afterCancelLatch = new CountDownLatch(1);
+
+        prepare.accept(beforeCancelLatch, afterCancelLatch);
+
+        LogListener lsnr = LogListener.matches("Idle verify was cancelled.").build();
+
+        listeningLog.registerListener(lsnr);
+
+        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> {
+            if (checkCrc)
+                execute("--cache", "idle_verify", "--check-crc");
+            else
+                execute("--cache", "idle_verify");
+        });
+
+        assertTrue(beforeCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        afterCancelLatch.countDown();
+
+        assertTrue(waitForCondition(() -> {
+            for (int i = 0; i < gridsCnt; i++) {
+                for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                    if (TASKS_TO_CANCEL.contains(taskView.taskName()))
+                        return false;
+                }
+
+                for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                    if (TASKS_TO_CANCEL.contains(jobView.taskName()))
+                        return false;
+                }
+            }
+
+            return true;
+        }, getTestTimeout()));
+
+        idleVerifyFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        assertTrue(lsnr.check());
     }
 
     /**
@@ -2252,7 +2446,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String outputStr = testOut.toString();
 
         assertContains(log, outputStr, "The check procedure failed on 1 node.");
-        assertContains(log, outputStr, "CRC check of partition failed");
+        assertContains(log, outputStr, CRC_CHECK_ERR_MSG);
     }
 
     /** */

@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.SystemProperty;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 
 /**
@@ -81,8 +79,6 @@ public class ExchangeContext {
     public ExchangeContext(GridCacheSharedContext<?, ?> cctx, boolean crd, GridDhtPartitionsExchangeFuture fut) {
         log = cctx.logger(getClass());
 
-        int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
-
         boolean pmeFreeAvailable = (fut.wasRebalanced() && fut.isBaselineNodeFailed()) || isSnapshotOperation(fut.firstEvent());
 
         if (!compatibilityNode &&
@@ -98,11 +94,9 @@ public class ExchangeContext {
             boolean startCaches = fut.exchangeId().isJoined() &&
                 fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
 
-            fetchAffOnJoin = protocolVer == 1;
+            fetchAffOnJoin = false;
 
-            merge = !startCaches &&
-                protocolVer > 1 &&
-                fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
+            merge = !startCaches && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 
         evts = new ExchangeDiscoveryEvents(fut);
@@ -111,11 +105,10 @@ public class ExchangeContext {
     }
 
     /**
-     * @param node Node.
      * @return {@code True} if node supports exchange merge protocol.
      */
-    boolean supportsMergeExchanges(ClusterNode node) {
-        return !compatibilityNode && exchangeProtocolVersion(node.version()) > 1;
+    boolean supportsMergeExchanges() {
+        return !compatibilityNode;
     }
 
     /**

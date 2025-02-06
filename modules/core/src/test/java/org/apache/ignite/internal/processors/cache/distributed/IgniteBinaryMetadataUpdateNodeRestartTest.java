@@ -65,8 +65,6 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(null);
-
         CacheConfiguration ccfg1 = cacheConfiguration(TX_CACHE, TRANSACTIONAL);
         CacheConfiguration ccfg2 = cacheConfiguration(ATOMIC_CACHE, ATOMIC);
 

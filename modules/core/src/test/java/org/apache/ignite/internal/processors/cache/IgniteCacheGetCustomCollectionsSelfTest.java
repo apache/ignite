@@ -39,8 +39,6 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(null);
-
         final CacheConfiguration<String, MyMap> mapCacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         mapCacheCfg.setCacheMode(CacheMode.PARTITIONED);

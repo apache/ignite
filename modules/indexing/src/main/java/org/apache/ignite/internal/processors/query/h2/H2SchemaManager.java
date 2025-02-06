@@ -237,6 +237,17 @@ public class H2SchemaManager implements SchemaChangeListener {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(
+        String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        String[] colNames
+    ) {
+        log.warning("Skipped creation of SQL table function '" + name + "' in H2 engine. Table functions arent't supported yet.");
+    }
+
     /**
      * Registers SQL function.
      *

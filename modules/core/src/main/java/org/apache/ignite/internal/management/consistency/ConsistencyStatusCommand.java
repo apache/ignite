@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.consistency;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -45,7 +45,7 @@ public class ConsistencyStatusCommand implements ComputeCommand<NoArg, Consisten
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, NoArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
         return servers(nodes);
     }
 

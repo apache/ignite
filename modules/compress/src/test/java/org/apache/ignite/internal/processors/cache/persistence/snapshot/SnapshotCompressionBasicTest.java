@@ -44,12 +44,11 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -292,8 +291,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
                 U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
                 U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
+                U.delete(nodeFileTree(dir.toString()).marshaller());
+                U.delete(nodeFileTree(dir.toString()).binaryMetaRoot());
             }
         }
         catch (IOException e) {
@@ -336,7 +335,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             snp(ignite).createSnapshot(snpName, null, false, onlyPrimary).get(TIMEOUT);
 
-            IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
+            IdleVerifyResult res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
                 .get().idleVerifyResult();
 
             StringBuilder b = new StringBuilder();

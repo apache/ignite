@@ -752,7 +752,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertContains(log, dumpWithZeros, "The check procedure has finished, found " + parts + " partitions");
-            assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
+            assertContains(log, dumpWithZeros, "Partition: PartitionKey [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
             assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCnt);
@@ -769,7 +769,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCnt + " partitions");
             assertContains(log, dumpWithoutZeros, (parts - keysCnt) + " partitions was skipped");
-            assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
+            assertContains(log, dumpWithoutZeros, "Partition: PartitionKey [grpId=1544803905, grpName=default, partId=");
 
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
@@ -988,7 +988,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     private void assertSort(int expectedPartsCount, String output) {
         Pattern partIdPattern = Pattern.compile(".*partId=([0-9]*)");
-        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecordV2 \\[isPrimary=true");
+        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecord \\[isPrimary=true");
 
         Matcher partIdMatcher = partIdPattern.matcher(output);
         Matcher primaryMatcher = primaryPattern.matcher(output);
@@ -1250,7 +1250,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * @return Build matcher for dump file name.
      */
-    @NotNull private Matcher dumpFileNameMatcher() {
+    @NotNull static Matcher dumpFileNameMatcher() {
         Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getSimpleName()
             + " successfully written output to '(.*)'");
         return fileNamePattern.matcher(testOut.toString());

@@ -1125,13 +1125,6 @@
                                 <xs:documentation>Whether client does not try to reconnect after server detected client node failure.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="forceServerMode" type="xs:boolean">
-                            <xs:annotation>
-                                <xs:documentation>
-                                    Whether TcpDiscoveryspi is started in server mode regardless of IgniteConfiguration.ClientMode setting.
-                                </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>IP finder clean frequency.</xs:documentation>
