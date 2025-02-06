@@ -349,7 +349,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
         assertTrue(waitForCondition(() -> {
             try {
-                List<Long> actual = Files.list(GridTestUtils.getFieldValue(cdcMain, "cdcDir"))
+                List<Long> actual = Files.list(ign.context().pdsFolderResolver().fileTree().walCdc().toPath())
                     .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
                     .map(FileWriteAheadLogManager::segmentIndex)
                     .sorted()

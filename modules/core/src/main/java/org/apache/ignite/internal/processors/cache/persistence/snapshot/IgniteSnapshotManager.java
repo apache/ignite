@@ -193,7 +193,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
@@ -782,7 +781,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             deleteDirectory(snpFt.binaryMetaRoot());
             deleteDirectory(snpFt.marshaller());
 
-            snpFt.db().delete();
+            // Delete parent dir which is {snapshot_root}/db if empty.
+            snpFt.marshaller().getParentFile().delete();
+            // Delete root dir which is {snapshot_root} if empty.
             snpFt.root().delete();
         }
         catch (IOException e) {
@@ -866,9 +867,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return WALs directory for specified incremental snapshot.
      */
     public static File incrementalSnapshotWalsDir(File incSnpDir, String consId) {
-        String folderName = U.maskForFileName(consId);
-
-        return incSnpDir.toPath().resolve(DFLT_WAL_PATH).resolve(folderName).toFile();
+        return new NodeFileTree(incSnpDir, U.maskForFileName(consId)).wal();
     }
 
     /**
@@ -3069,12 +3068,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (wal == null)
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
 
-        File archiveDir = wal.archiveDir();
+        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-        if (archiveDir == null)
+        if (!ft.walArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
-        ensureHardLinkAvailable(archiveDir.toPath(), snpDir.toPath());
+        ensureHardLinkAvailable(ft.walArchive().toPath(), snpDir.toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -60,8 +61,6 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
@@ -316,13 +315,10 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         Predicate<WALPointer> filter,
         long grpId
     ) throws IgniteCheckedException {
-        String dir = grid(0).name().replace(".", "_");
+        NodeFileTree ft = grid(0).context().pdsFolderResolver().fileTree();
 
         IteratorParametersBuilder walIterBldr = new IteratorParametersBuilder()
-            .filesOrDirs(
-                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH + "/" + dir, false),
-                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH + "/" + dir, false)
-            )
+            .filesOrDirs(ft.wal(), ft.walArchive())
             .filter((rt, ptr) -> filter.test(ptr));
 
         long cntGrpRecs = 0;
