@@ -48,9 +48,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
@@ -125,7 +125,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
-                .setName(PERSISTENCE_REGION_1))
+                .setName(PERSISTENCE_REGION_1)
+                .setCdcEnabled(true))
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setMaxSize(maxRegionSize)
@@ -519,25 +520,36 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private void checkWalArchiveAndTotalSize(IgniteEx igniteEx, boolean hasWalArchive) throws Exception {
         FileWriteAheadLogManager walMgr = walMgr(igniteEx);
 
-        SegmentRouter router = walMgr.getSegmentRouter();
+        NodeFileTree ft = igniteEx.context().pdsFolderResolver().fileTree();
 
-        assertEquals(router.hasArchive(), hasWalArchive);
+        assertEquals(ft.walArchiveEnabled(), hasWalArchive);
 
         //Wait to avoid race condition where new segments(and corresponding .tmp files) are created after totalSize has been calculated.
-        if (router.hasArchive()) {
+        if (ft.walArchiveEnabled()) {
             int expWalWorkSegements = igniteEx.configuration().getDataStorageConfiguration().getWalSegments();
 
-            assertTrue(waitForCondition(() -> walFiles(router.getWalWorkDir()).length == expWalWorkSegements, 3000l));
+            assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000l));
 
             assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000l));
         }
 
-        long totalSize = walMgr.totalSize(walFiles(router.getWalWorkDir()));
+        long totalSize = walMgr.totalSize(walFiles(ft.wal()));
 
-        if (router.hasArchive())
-            totalSize += walMgr.totalSize(walFiles(router.getWalArchiveDir()));
+        if (ft.walArchiveEnabled())
+            totalSize += walMgr.totalSize(walFiles(ft.walArchive()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
+
+        long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
+
+        if (ft.walArchiveEnabled()) {
+            long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().fileTree().walCdc()).length;
+
+            // Count of segments = LastArchivedSegmentIndex + 1
+            assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);
+        }
+        else
+            assertEquals(-1, lastArchivedSegIdx);
     }
 
     /**

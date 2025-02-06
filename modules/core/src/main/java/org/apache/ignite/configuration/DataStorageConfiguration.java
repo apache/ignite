@@ -167,12 +167,6 @@ public class DataStorageConfiguration implements Serializable {
     /** Default change data capture directory maximum size. */
     public static final long DFLT_CDC_WAL_DIRECTORY_MAX_SIZE = 0;
 
-    /** Default path (relative to working directory) of binary metadata folder */
-    public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
-
-    /** Default path (relative to working directory) of marshaller mappings folder */
-    public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
-
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
@@ -756,6 +750,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalPath(String walStorePath) {
+        A.notNull(walStorePath, "WAL");
+
         this.walPath = walStorePath;
 
         return this;
@@ -778,6 +774,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalArchivePath(String walArchivePath) {
+        A.notNull(walArchivePath, "WAL archive");
+
         this.walArchivePath = walArchivePath;
 
         return this;
@@ -803,6 +801,8 @@ public class DataStorageConfiguration implements Serializable {
      */
     @IgniteExperimental
     public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
+        A.notNull(cdcWalPath, "CDC WAL");
+
         this.cdcWalPath = cdcWalPath;
 
         return this;

@@ -44,7 +44,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
@@ -63,7 +62,6 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
@@ -292,8 +290,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
                 U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
                 U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
+                U.delete(nodeFileTree(dir.toString()).marshaller());
+                U.delete(nodeFileTree(dir.toString()).binaryMetaRoot());
             }
         }
         catch (IOException e) {
@@ -414,7 +412,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long snapshotSize(Collection<Ignite> grids, String snpName, String pattern) {
         return grids.stream()
-            .map(ig -> workingDirectory(ig).resolve(DFLT_SNAPSHOT_DIRECTORY).resolve(snpName))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath().resolve(snpName))
             .reduce(0L, (acc, p) -> acc + directorySize(p, pattern), Long::sum);
     }
 
