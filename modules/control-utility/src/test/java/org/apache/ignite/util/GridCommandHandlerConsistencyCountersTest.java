@@ -17,10 +17,6 @@
 
 package org.apache.ignite.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -48,9 +44,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -60,10 +53,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.TransactionHeuristicException;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -172,54 +165,13 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         cfg.setGridLogger(listeningLog);
 
         cfg.getDataStorageConfiguration().setFileIOFactory(
-            new BlockableFileIOFactory(cfg.getDataStorageConfiguration().getFileIOFactory()));
+            new ThrowableFileIOTestFactory(cfg.getDataStorageConfiguration().getFileIOFactory()));
 
         cfg.getDataStorageConfiguration().setWalMode(WALMode.FSYNC); // Allows to use special IO at WAL as well.
 
         cfg.setFailureHandler(new StopNodeFailureHandler()); // Helps to kill nodes on stop with disabled IO.
 
         return cfg;
-    }
-
-    /**
-     *
-     */
-    private static class BlockableFileIOFactory implements FileIOFactory {
-        /** IO Factory. */
-        private final FileIOFactory factory;
-
-        /**
-         * @param factory Factory.
-         */
-        public BlockableFileIOFactory(FileIOFactory factory) {
-            this.factory = factory;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            return new FileIODecorator(factory.create(file, modes)) {
-                @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (ioBlocked)
-                        throw new IOException();
-
-                    return super.write(srcBuf);
-                }
-
-                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    if (ioBlocked)
-                        throw new IOException();
-
-                    return super.write(srcBuf, position);
-                }
-
-                @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    if (ioBlocked)
-                        throw new IOException();
-
-                    return super.write(buf, off, len);
-                }
-            };
-        }
     }
 
     /**
@@ -241,6 +193,8 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
      */
     @Test
     public void testCountersOnCrachRecovery() throws Exception {
+        Assume.assumeFalse(atomicityMode == TRANSACTIONAL);
+
         int nodes = 3;
         int backupNodes = nodes - 1;
 
@@ -475,13 +429,16 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         listeningLog.registerListener(lsnrBackupsWalRestoreUpdates);
         listeningLog.registerListener(lsnrPrimaryWalRestoreUpdates);
 
-        ioBlocked = true; // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
+        // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
+        G.allGrids().forEach(
+            node -> ((ThrowableFileIOTestFactory)node.configuration().getDataStorageConfiguration().getFileIOFactory()).setThrowEx(true));
 
         stopAllGrids();
 
         checkAsyncPutOperationsFinished(asyncPutFuts);
 
-        ioBlocked = false;
+        G.allGrids().forEach(
+            node -> ((ThrowableFileIOTestFactory)node.configuration().getDataStorageConfiguration().getFileIOFactory()).setThrowEx(false));
 
         ignite = startGrids(nodes);
 
@@ -608,25 +565,11 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     }
 
     /**
-     * Checks idle_vefify result.
-     *
-     * @param counter Counter conflicts.
-     * @param hash    Hash conflicts.
-     */
-    private void assertConflicts(boolean counter, boolean hash) {
-        if (counter || hash)
-            assertContains(log, testOut.toString(), "conflict partitions has been found: " +
-                "[counterConflicts=" + (counter ? 1 : 0) + ", hashConflicts=" + (hash ? 1 : 0) + "]");
-        else
-            assertContains(log, testOut.toString(), "no conflicts have been found");
-    }
-
-    /**
      * @param lwm Lwm.
      * @param missed Missed.
      * @param hwm Hwm.
      */
-    private void assertTxCounters(int lwm, List<String> missed, int hwm) {
+    void assertTxCounters(int lwm, List<String> missed, int hwm) {
         assertContains(log, testOut.toString(),
             "updateCntr=[lwm=" + lwm + ", missed=" + missed + ", hwm=" + hwm + "]");
     }

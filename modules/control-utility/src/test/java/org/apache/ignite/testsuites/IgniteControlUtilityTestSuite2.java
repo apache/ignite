@@ -24,6 +24,7 @@ import org.apache.ignite.util.CdcCommandTest;
 import org.apache.ignite.util.CdcResendCommandTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyCountersTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyOnClusterCrashTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessAtomicTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencySensitiveTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyTest;
@@ -62,6 +63,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerConsistencyBinaryTest.class,
     GridCommandHandlerConsistencySensitiveTest.class,
     GridCommandHandlerConsistencyRepairCorrectnessAtomicTest.class,
+    GridCommandHandlerConsistencyOnClusterCrashTest.class,
 
     SystemViewCommandTest.class,
     MetricCommandTest.class,

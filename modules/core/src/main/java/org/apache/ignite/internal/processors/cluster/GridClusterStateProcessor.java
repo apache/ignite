@@ -773,7 +773,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 msg,
                 bltHistItem,
                 state.state(),
-                stateChangeTopVer
+                stateChangeTopVer,
+                ctx.discovery().discoCache().offlineBaselineNodes().isEmpty()
             );
 
             exchangeActions.stateChangeRequest(req);
@@ -1648,7 +1649,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 msg,
                 BaselineTopologyHistoryItem.fromBaseline(blt),
                 msg.state(),
-                null
+                null,
+                ctx.discovery().discoCache().offlineBaselineNodes().isEmpty()
             );
 
             if (exchActs == null)
