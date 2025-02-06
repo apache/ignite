@@ -695,7 +695,8 @@ final class ReliableChannel implements AutoCloseable {
             // ???
             if (channels.size() == 1 && partitionAwarenessEnabled)
                 channels.add(channels.get(0));
-        } finally {
+        }
+        finally {
             curChannelsGuard.writeLock().unlock();
         }
 
