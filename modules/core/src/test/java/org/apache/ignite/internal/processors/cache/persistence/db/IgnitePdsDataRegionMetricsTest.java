@@ -404,7 +404,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
 
-        File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), METASTORAGE_DIR_NAME) :
+        File cacheWorkDir = metaStore ? new File(node.context().pdsFolderResolver().fileTree().nodeStorage(), METASTORAGE_DIR_NAME) :
             pageStoreMgr.cacheWorkDir(node.cachex(cacheName).configuration());
 
         long totalPersistenceSize = 0;

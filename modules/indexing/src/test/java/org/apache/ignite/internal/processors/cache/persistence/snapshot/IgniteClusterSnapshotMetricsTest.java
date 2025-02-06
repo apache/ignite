@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -287,10 +286,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         assertEquals(-1, processedSize.value());
 
         // Calculate transfer rate limit.
-        PdsFolderSettings<?> folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        long rate = FileUtils.sizeOfDirectory(storeWorkDir) / 5;
+        long rate = FileUtils.sizeOfDirectory(ignite.context().pdsFolderResolver().fileTree().nodeStorage()) / 5;
 
         // Limit snapshot transfer rate.
         DistributedChangeableProperty<Serializable> rateProp =

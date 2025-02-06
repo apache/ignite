@@ -130,6 +130,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -567,7 +568,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                     String cpEndFileName = CheckpointMarkersStorage.checkpointFileName(cpEntry, CheckpointEntryType.END);
 
-                    Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+                    Files.delete(Paths.get(ig2.context().pdsFolderResolver().fileTree().checkpoint().getAbsolutePath(), cpEndFileName));
 
                     log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
                 }
