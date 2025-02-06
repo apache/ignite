@@ -3787,7 +3787,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(
                 log,
                 testOut.toString(),
-                !sslEnabled() ? "Please specify a value for argument: --increment" : "Unexpected value: "
+                "Please specify a value for argument: --increment"
             );
 
             // Wrong params.

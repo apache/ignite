@@ -177,7 +177,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID),
-            "Unexpected value: --yes");
+            "Please specify a value for argument: --node-id");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
@@ -298,7 +298,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, RESEND, CACHES),
-            "Unexpected value: --yes");
+            "Please specify a value for argument: --caches");
     }
 
     /** */
