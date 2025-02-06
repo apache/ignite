@@ -708,7 +708,7 @@ final class ReliableChannel implements AutoCloseable {
 
         finishChannelsReInit = System.currentTimeMillis();
     }
-    
+
     /**
      * Establishing connections to servers. If partition awareness feature is enabled connections are created
      * for every configured server. Otherwise only default channel is connected.
