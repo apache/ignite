@@ -171,7 +171,7 @@ public class NodeFileTree extends SharedFileTree {
      * Working directory for loaded snapshots from the remote nodes and storing
      * temporary partition delta-files of locally started snapshot process.
      */
-    private final File snpTmpRoot;
+    private final @Nullable File snpTmpRoot;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -286,7 +286,7 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Path to the directory form temp snapshot files. */
-    public File snapshotTempRoot() {
+    public @Nullable File snapshotTempRoot() {
         return snpTmpRoot;
     }
 
