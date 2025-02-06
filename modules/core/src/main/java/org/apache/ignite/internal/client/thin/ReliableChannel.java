@@ -537,8 +537,11 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         log.warning("Channel failure [channel=" + ch + ", err=" + t.getMessage() + ']', t);
 
-        if (ch != null && ch == hld.ch)
+        if (ch != null && ch == hld.ch) {
             hld.closeChannel();
+            if (channelsCnt.get() == 0 && attemptsLimit == 1 && partitionAwarenessEnabled)
+                attemptsLimit = clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), 2) : 2;
+        }
 
         chFailLsnrs.forEach(Runnable::run);
 
@@ -618,21 +621,28 @@ final class ReliableChannel implements AutoCloseable {
      * Init channel holders to all nodes.
      */
     synchronized void initChannelHolders() {
+        List<ClientChannelHolder> holders = channels;
+
         startChannelsReInit = System.currentTimeMillis();
+
+        // Enable parallel threads to schedule new init of channel holders.
         scheduledChannelsReinit.set(false);
 
         Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
-        if (newAddrs == null) {
+
+        if (newAddrs == null || newAddrs.isEmpty()) {
             finishChannelsReInit = System.currentTimeMillis();
             return;
         }
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
+
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
-        // Close obsolete holders and map valid addresses to holders
-        if (channels != null) {
-            for (ClientChannelHolder h : channels) {
+        // Close obsolete holders or map old but valid addresses to holders
+        if (holders != null) {
+            for (ClientChannelHolder h : holders) {
+                // If new endpoints contain at least one of channel addresses, don't close this channel.
                 boolean valid = h.getAddresses().stream().anyMatch(newAddrsSet::contains);
                 if (valid)
                     h.getAddresses().forEach(addr -> curAddrs.putIfAbsent(addr, h));
@@ -642,9 +652,15 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
-        ClientChannelHolder currDfltHolder = (curChIdx != -1) ? channels.get(curChIdx) : null;
+
+        int idx = curChIdx;
+
+        // The variable holds a new index of default channel after topology change.
+        // Suppose that reuse of the channel is better than open new connection.
+        ClientChannelHolder currDfltHolder = (idx != -1) ? holders.get(idx) : null;
 
         for (List<InetSocketAddress> addrs : newAddrs) {
+            // Try to find already created channel holder. If not found, create the new one.
             ClientChannelHolder hld = addrs.stream()
                 .map(curAddrs::get)
                 .filter(Objects::nonNull)
@@ -660,37 +676,38 @@ final class ReliableChannel implements AutoCloseable {
                 hld.setConfiguration(new ClientChannelConfiguration(clientCfg, updatedAddrs));
 
             reinitHolders.add(hld);
+
             updatedAddrs.forEach(addr -> curAddrs.putIfAbsent(addr, hld));
         }
 
         int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
-        if (dfltChannelIdx == -1)
-            dfltChannelIdx = selectDefaultChannelIndex(reinitHolders);
+        if (dfltChannelIdx == -1) {
+            // If holder is not specified get the random holder from the range of holders with the same port.
+            reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
+
+            int limit = 0;
+            int port = F.first(reinitHolders.get(0).getAddresses()).getPort();
+
+            while (limit + 1 < reinitHolders.size() && F.first(reinitHolders.get(limit + 1).getAddresses()).getPort() == port)
+                limit++;
+
+            dfltChannelIdx = ThreadLocalRandom.current().nextInt(limit + 1);
+        }
 
         curChannelsGuard.writeLock().lock();
+
         try {
             channels = reinitHolders;
+
             attemptsLimit = getRetryLimit();
+
             curChIdx = dfltChannelIdx;
-        } finally {
+        }
+        finally {
             curChannelsGuard.writeLock().unlock();
         }
 
         finishChannelsReInit = System.currentTimeMillis();
-    }
-
-    /**
-     * Select default channel index randomly among reinitHolders with the least port.
-     * @param holders Holders.
-     */
-    private int selectDefaultChannelIndex(List<ClientChannelHolder> holders) {
-        holders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
-        int limit = 0;
-        int port = F.first(holders.get(0).getAddresses()).getPort();
-        while (limit + 1 < holders.size() && F.first(holders.get(limit + 1).getAddresses()).getPort() == port)
-            limit++;
-
-        return ThreadLocalRandom.current().nextInt(limit + 1);
     }
 
     /**
