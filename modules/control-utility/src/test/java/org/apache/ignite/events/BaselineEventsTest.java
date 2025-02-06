@@ -79,7 +79,6 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
         return cfg;
     }
 
-
     /** */
     protected abstract void listen(IgniteEx ignite, IgnitePredicate<Event> lsnr, int... types);
 
@@ -89,12 +88,12 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
         startGrid(getConfiguration(getTestIgniteInstanceName(0), false));
         startGrid(getConfiguration(getTestIgniteInstanceName(1), false));
 
-        AtomicBoolean isBaselineChangedEventListened = new AtomicBoolean();
+        AtomicBoolean isBaselineChangedEvtListened = new AtomicBoolean();
 
         listen(
             grid(0),
             event -> {
-                isBaselineChangedEventListened.set(true);
+                isBaselineChangedEvtListened.set(true);
 
                 return true;
             },
@@ -103,7 +102,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
 
         startGrid(getConfiguration(getTestIgniteInstanceName(2), false));
 
-        assertFalse(GridTestUtils.waitForCondition(isBaselineChangedEventListened::get, 2000));
+        assertFalse(GridTestUtils.waitForCondition(isBaselineChangedEvtListened::get, 2000));
     }
 
     /** */
