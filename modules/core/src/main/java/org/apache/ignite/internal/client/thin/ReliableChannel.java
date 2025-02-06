@@ -708,21 +708,7 @@ final class ReliableChannel implements AutoCloseable {
 
         finishChannelsReInit = System.currentTimeMillis();
     }
-
-    /**
-     * Select default channel index randomly among reinitHolders with the least port.
-     * @param holders Holders.
-     */
-    private int selectDefaultChannelIndex(List<ClientChannelHolder> holders) {
-        holders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
-        int limit = 0;
-        int port = F.first(holders.get(0).getAddresses()).getPort();
-        while (limit + 1 < holders.size() && F.first(holders.get(limit + 1).getAddresses()).getPort() == port)
-            limit++;
-
-        return ThreadLocalRandom.current().nextInt(limit + 1);
-    }
-
+    
     /**
      * Establishing connections to servers. If partition awareness feature is enabled connections are created
      * for every configured server. Otherwise only default channel is connected.
