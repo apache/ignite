@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -359,7 +360,10 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
                 mem += metrics.getTotalAllocatedSize();
 
-                pers += FileUtils.sizeOfDirectory(((IgniteEx)node).context().pdsFolderResolver().fileTree().nodeStorage());
+                File nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().fileTree().nodeStorage();
+
+                if (nodeFolder != null)
+                    pers += FileUtils.sizeOfDirectory(nodeFolder);
 
                 if (mode != ConsumptionTestMode.PERSISTENT)
                     assertEquals(0, pers);
