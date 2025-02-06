@@ -619,18 +619,23 @@ final class ReliableChannel implements AutoCloseable {
      */
     synchronized void initChannelHolders() {
         startChannelsReInit = System.currentTimeMillis();
+
+        // Enable parallel threads to schedule new init of channel holders.
         scheduledChannelsReinit.set(false);
 
         Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
+
         if (newAddrs == null) {
             finishChannelsReInit = System.currentTimeMillis();
+
             return;
         }
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
+
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
-        // Close obsolete holders and map valid addresses to holders
+        // Close obsolete holders or map old but valid addresses to holders
         if (channels != null) {
             for (ClientChannelHolder h : channels) {
                 boolean valid = h.getAddresses().stream().anyMatch(newAddrsSet::contains);
@@ -664,20 +669,32 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
-        if (dfltChannelIdx == -1)
-            dfltChannelIdx = selectDefaultChannelIndex(reinitHolders);
+        if (dfltChannelIdx == -1) {
+            // If holder is not specified get the random holder from the range of holders with the same port.
+            reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
+
+            int limit = 0;
+            int port = F.first(reinitHolders.get(0).getAddresses()).getPort();
+
+            while (limit + 1 < reinitHolders.size() && F.first(reinitHolders.get(limit + 1).getAddresses()).getPort() == port)
+                limit++;
+
+            dfltChannelIdx = ThreadLocalRandom.current().nextInt(limit + 1);
+        }
 
         curChannelsGuard.writeLock().lock();
+
         try {
             channels = reinitHolders;
+
+            attemptsLimit = getRetryLimit();
+
+            curChIdx = dfltChannelIdx;
 
             // essential to recover after failure on single server
             // ???
             if (channels.size() == 1 && partitionAwarenessEnabled)
                 channels.add(channels.get(0));
-
-            attemptsLimit = getRetryLimit();
-            curChIdx = dfltChannelIdx;
         } finally {
             curChannelsGuard.writeLock().unlock();
         }
