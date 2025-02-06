@@ -167,6 +167,20 @@ public class DiscoveryDataClusterState implements Serializable {
         this.prevClusterState = prevClusterState;
     }
 
+    /** */
+    public boolean isBaselineChangeInProgress() {
+        if (!transition())
+            return false;
+
+        if (previouslyActive() == state().active())
+            return true;
+
+        // Or it is the first activation.
+        return state() != ClusterState.INACTIVE
+            && !previouslyActive()
+            && previousBaselineTopology() == null;
+    }
+
     /**
      * @return Cluster state before transition if cluster in transition and current cluster state otherwise.
      */
