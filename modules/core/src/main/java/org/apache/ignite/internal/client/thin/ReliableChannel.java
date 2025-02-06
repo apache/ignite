@@ -618,6 +618,8 @@ final class ReliableChannel implements AutoCloseable {
      * Init channel holders to all nodes.
      */
     synchronized void initChannelHolders() {
+        List<ClientChannelHolder> holders = channels;
+
         startChannelsReInit = System.currentTimeMillis();
 
         // Enable parallel threads to schedule new init of channel holders.
@@ -636,8 +638,8 @@ final class ReliableChannel implements AutoCloseable {
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
         // Close obsolete holders or map old but valid addresses to holders
-        if (channels != null) {
-            for (ClientChannelHolder h : channels) {
+        if (holders != null) {
+            for (ClientChannelHolder h : holders) {
                 // If new endpoints contain at least one of channel addresses, don't close this channel.
                 boolean valid = h.getAddresses().stream().anyMatch(newAddrsSet::contains);
                 if (valid)
@@ -649,9 +651,11 @@ final class ReliableChannel implements AutoCloseable {
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
+        int idx = curChIdx;
+
         // The variable holds a new index of default channel after topology change.
         // Suppose that reuse of the channel is better than open new connection.
-        ClientChannelHolder currDfltHolder = (curChIdx != -1) ? channels.get(curChIdx) : null;
+        ClientChannelHolder currDfltHolder = (idx != -1) ? holders.get(idx) : null;
 
         for (List<InetSocketAddress> addrs : newAddrs) {
             // Try to find already created channel holder. If not found, create the new one.
