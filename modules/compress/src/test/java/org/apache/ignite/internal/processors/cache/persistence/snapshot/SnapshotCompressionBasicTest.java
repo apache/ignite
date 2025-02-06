@@ -62,7 +62,6 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
@@ -413,7 +412,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long snapshotSize(Collection<Ignite> grids, String snpName, String pattern) {
         return grids.stream()
-            .map(ig -> workingDirectory(ig).resolve(DFLT_SNAPSHOT_DIRECTORY).resolve(snpName))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath().resolve(snpName))
             .reduce(0L, (acc, p) -> acc + directorySize(p, pattern), Long::sum);
     }
 
