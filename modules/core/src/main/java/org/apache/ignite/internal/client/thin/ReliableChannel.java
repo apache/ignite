@@ -638,6 +638,7 @@ final class ReliableChannel implements AutoCloseable {
         // Close obsolete holders or map old but valid addresses to holders
         if (channels != null) {
             for (ClientChannelHolder h : channels) {
+                // If new endpoints contain at least one of channel addresses, don't close this channel.
                 boolean valid = h.getAddresses().stream().anyMatch(newAddrsSet::contains);
                 if (valid)
                     h.getAddresses().forEach(addr -> curAddrs.putIfAbsent(addr, h));
@@ -648,10 +649,12 @@ final class ReliableChannel implements AutoCloseable {
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
-        // If the current default channel index is out of range, or there is no current default channel,
+        // The variable holds a new index of default channel after topology change.
+        // Suppose that reuse of the channel is better than open new connection.
         ClientChannelHolder currDfltHolder = (curChIdx != -1) ? channels.get(curChIdx) : null;
 
         for (List<InetSocketAddress> addrs : newAddrs) {
+            // Try to find already created channel holder. If not found, create the new one.
             ClientChannelHolder hld = addrs.stream()
                 .map(curAddrs::get)
                 .filter(Objects::nonNull)
