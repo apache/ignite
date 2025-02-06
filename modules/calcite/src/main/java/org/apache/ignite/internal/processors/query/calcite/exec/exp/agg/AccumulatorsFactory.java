@@ -236,7 +236,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             for (int i = 0; i < call.getArgList().size(); ++i)
                 argMapping[call.getArgList().get(i)] = i;
 
-            boolean createRow = accumulator.getClass().isAssignableFrom(StoringAccumulator.class);
+            boolean createRow = StoringAccumulator.class.isAssignableFrom(accumulator.getClass());
 
             return new Function<Row, Row>() {
                 final RowHandler<Row> hnd = ctx.rowHandler();
