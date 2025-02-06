@@ -49,7 +49,7 @@
         <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-jakarta-servlet-api</artifactId>
-            <version>5.0.2</version>
+            <version>${jetty-jakarta-servlet-api.version}</version>
         </dependency>
 
         <dependency>

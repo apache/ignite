@@ -85,6 +85,7 @@
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>11.0.24</jetty.version>
+        <jetty-jakarta-servlet-api.version>5.0.2</jetty-jakarta-servlet-api.version>
         <jmh.version>1.13</jmh.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
