@@ -821,8 +821,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             IgniteFutureCancelledException.class,
             "Execution of snapshot tasks has been cancelled by external process");
 
-        File snpDir = new SharedFileTree(srv.configuration()).snapshotsRoot();
-
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
     }
 
