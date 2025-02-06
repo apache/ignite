@@ -21,7 +21,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,9 +35,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -80,6 +77,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         // Make sure that the new functions didn't affect schema 'PUBLIC'.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
         assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("select * from table(SYSTEM_RANGE(1, 2))").returns(1L).returns(2L).check();
         assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
         assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
         assertThrows("select PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
@@ -87,11 +85,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         // Ensure that new functions are successfully created in a custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
         assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
+        assertQuery("select \"OWN_SCHEMA\".SYSTEM_RANGE(1, 2)").returns(100L).check();
         assertQuery("select \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
         assertQuery("select \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
 
         LogListener logChecker0 = LogListener.matches("Unable to add user-defined SQL function 'upper'")
             .andMatches("Unable to add user-defined SQL function 'unix_seconds'")
+            .andMatches("Unable to add user-defined SQL function 'system_range'")
             .andMatches("Unable to add user-defined SQL function 'typeof'")
             .andMatches("Unable to add user-defined SQL function 'plus'").times(0)
             .build();
@@ -109,18 +109,18 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         // Make sure that the standard functions work once again.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
         assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("select * from table(SYSTEM_RANGE(1, 2))").returns(1L).returns(2L).check();
         assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
 
-        // Make sure that operator + works and new function 'PLUS' also regustered in the default schema.
+        // Make sure that operator '+' works and new function 'PLUS' also registered in the default schema.
         assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
         assertQuery("select PLUS(?, ?)").withParams(1, 2).returns(100);
 
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
-        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(qryProc, "schemaHolder", "igniteSchemas");
-        IgniteSchema dfltSchema = schemas.get(QueryUtils.DFLT_SCHEMA);
+        SchemaPlus dfltSchema = queryProcessor(client).schemaHolder().schema(QueryUtils.DFLT_SCHEMA);
 
         assertEquals(0, dfltSchema.getFunctions("UPPER").size());
         assertEquals(0, dfltSchema.getFunctions("UNIX_SECONDS").size());
+        assertEquals(0, dfltSchema.getFunctions("SYSTEM_RANGE").size());
         assertEquals(0, dfltSchema.getFunctions("TYPEOF").size());
         assertEquals(1, dfltSchema.getFunctions("PLUS").size());
     }
@@ -632,6 +632,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static int unix_seconds(Timestamp ts) {
             return 1;
+        }
+
+        /** Overwrites Ignite's 'SYSTEM_RANGE(...)'. */
+        @QuerySqlFunction
+        public static Object system_range(Object x, Object y) {
+            return 100L;
         }
 
         /** Overwrites Ignite's 'TYPEOF(Object)'. */

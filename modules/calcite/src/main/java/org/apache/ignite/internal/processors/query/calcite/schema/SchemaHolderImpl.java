@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -389,8 +388,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private boolean checkNewUserDefinedFunction(String schName, String funName) {
-        if (F.eq(schName, QueryUtils.DFLT_SCHEMA)
-            && RexImpTable.INSTANCE.hasOperator(op -> op instanceof SqlFunction && op.getName().equalsIgnoreCase(funName))) {
+        if (F.eq(schName, QueryUtils.DFLT_SCHEMA) && frameworkCfg.getOperatorTable().getOperatorList().stream()
+            .anyMatch(op -> op instanceof SqlFunction && op.getName().equalsIgnoreCase(funName))) {
             log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '" + QueryUtils.DFLT_SCHEMA +
                 "' already has a standard function with the same name.");
 
