@@ -241,7 +241,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             return new Function<Row, Row>() {
                 final RowHandler<Row> hnd = ctx.rowHandler();
 
-                final RowHandler.RowFactory<Row> rowFac = ctx.rowHandler().factory(ctx.getTypeFactory(), inputRowType);
+                final RowHandler.RowFactory<Row> rowFac = hnd.factory(ctx.getTypeFactory(), inputRowType);
 
                 final Row reuseRow = createRow ? null : rowFac.create();
 
