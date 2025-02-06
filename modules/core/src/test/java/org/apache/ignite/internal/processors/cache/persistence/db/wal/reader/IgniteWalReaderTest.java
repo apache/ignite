@@ -1129,8 +1129,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        NodeFileTree ft1 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite, 0));
-        NodeFileTree ft2 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite1, 1));
+        NodeFileTree ft1 = nodeFileTree(genDbSubfolderName(ignite, 0));
+        NodeFileTree ft2 = nodeFileTree(genDbSubfolderName(ignite1, 1));
 
         stopAllGrids();
 
@@ -1205,9 +1205,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(false, true, null);
 
-        NodeFileTree ft1 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite, 0));
-        NodeFileTree ft2 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite1, 1));
-        NodeFileTree ft3 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite2, 2));
+        NodeFileTree ft1 = nodeFileTree(genDbSubfolderName(ignite, 0));
+        NodeFileTree ft2 = nodeFileTree(genDbSubfolderName(ignite1, 1));
+        NodeFileTree ft3 = nodeFileTree(genDbSubfolderName(ignite2, 2));
 
         stopAllGrids();
 
@@ -1280,8 +1280,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        NodeFileTree ft1 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite, 0));
-        NodeFileTree ft2 = new NodeFileTree(U.defaultWorkDirectory(), genDbSubfolderName(ignite1, 1));
+        NodeFileTree ft1 = nodeFileTree(genDbSubfolderName(ignite, 0));
+        NodeFileTree ft2 = nodeFileTree(genDbSubfolderName(ignite1, 1));
 
         stopAllGrids();
 

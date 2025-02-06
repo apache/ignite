@@ -341,7 +341,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
     /** */
     private void cleanPersistenceFiles(String igName) throws Exception {
-        NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), igName);
+        NodeFileTree ft = nodeFileTree(igName);
 
         U.delete(ft.nodeStorage());
 

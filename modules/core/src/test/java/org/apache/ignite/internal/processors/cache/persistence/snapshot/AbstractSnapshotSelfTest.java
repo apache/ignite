@@ -804,8 +804,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         assertTrue(CU.isPersistenceEnabled(srv.configuration()));
         assertTrue(CU.isPersistentCache(ccfg, srv.configuration().getDataStorageConfiguration()));
 
-        File snpDir = new SharedFileTree(srv.configuration()).snapshotsRoot();
-
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(srvs);
 
         IgniteFuture<Void> fut = snp(startCli).createSnapshot(SNAPSHOT_NAME, null, null, false,
@@ -820,6 +818,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             fut::get,
             IgniteFutureCancelledException.class,
             "Execution of snapshot tasks has been cancelled by external process");
+
+        File snpDir = new SharedFileTree(srv.configuration()).snapshotsRoot();
 
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
     }

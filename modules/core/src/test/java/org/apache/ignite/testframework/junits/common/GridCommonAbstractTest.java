@@ -1990,7 +1990,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void cleanPersistenceDir(String consistentId) throws Exception {
         String dn2DirName = consistentId.replace(".", "_");
 
-        NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), dn2DirName);
+        NodeFileTree ft = nodeFileTree(dn2DirName);
 
         U.delete(ft.nodeStorage());
         U.delete(ft.wal());
