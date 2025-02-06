@@ -746,10 +746,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().clientNode())
             return;
 
-        File nodeStorage = cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage();
-
-        fileLockHolder = preLocked == null ?
-            new NodeFileLockHolder(nodeStorage.getPath(), cctx.kernalContext(), log) : preLocked;
+        fileLockHolder = preLocked == null
+            ? new NodeFileLockHolder(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().getPath(), cctx.kernalContext(), log)
+            : preLocked;
 
         if (!fileLockHolder.isLocked()) {
             if (log.isDebugEnabled())
