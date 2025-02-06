@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
@@ -56,7 +57,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * <pre>
  * ❯ tree
  * .                                                                            ← root (work directory, shared between all local nodes).
- * ├── cp
+ * ├── cp                                                                       ← default sharedfs root. See  {@link SharedFsCheckpointSpi}.
  * │  └── sharedfs
  * │      └── BinaryMarshaller
  * ├── db                                                                       ← db (shared between all local nodes).

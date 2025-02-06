@@ -87,8 +87,11 @@ public class CheckpointMarkersStorage {
     /** Logger. */
     protected IgniteLogger log;
 
-    /** Checkpoint history. */
-    private final CheckpointHistory cpHistory;
+    /**
+     * Checkpoint history.
+     * Non-final for tests.
+     */
+    private CheckpointHistory cpHistory;
 
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;

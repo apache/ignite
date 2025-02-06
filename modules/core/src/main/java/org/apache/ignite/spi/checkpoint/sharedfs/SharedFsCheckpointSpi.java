@@ -121,9 +121,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
-    /**
-     * Default root checkpoint directory.
-     */
+    /** Default root checkpoint directory. */
     public static final String DFLT_ROOT = "cp";
 
     /**
