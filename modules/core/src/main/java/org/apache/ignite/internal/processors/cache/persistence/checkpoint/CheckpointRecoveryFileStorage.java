@@ -41,8 +41,11 @@ import static java.nio.file.StandardOpenOption.WRITE;
  *
  */
 public class CheckpointRecoveryFileStorage {
+    /** */
+    private static final String FILE_NAME_TAG = "-RECOVERY-";
+
     /** Checkpoint recovery file name pattern. */
-    public static final Pattern FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-RECOVERY-(\\d+)\\.bin");
+    public static final Pattern FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)" + FILE_NAME_TAG + "(\\d+)\\.bin");
 
     /** Context. */
     private final GridKernalContext ctx;
@@ -72,7 +75,7 @@ public class CheckpointRecoveryFileStorage {
 
     /** */
     private static String fileName(long cpTs, UUID cpId, int idx) {
-        return cpTs + "-" + cpId + "-" + "RECOVERY-" + idx + ".bin";
+        return cpTs + "-" + cpId + FILE_NAME_TAG + idx + ".bin";
     }
 
     /**
@@ -97,7 +100,7 @@ public class CheckpointRecoveryFileStorage {
      * @return List of recovery files.
      */
     public List<CheckpointRecoveryFile> list(@Nullable Predicate<UUID> predicate) throws StorageException {
-        File[] files = dir.listFiles(f -> f.isFile() && f.getName().contains("-RECOVERY-"));
+        File[] files = dir.listFiles(f -> f.isFile() && f.getName().contains(FILE_NAME_TAG));
         List<CheckpointRecoveryFile> fileList = new ArrayList<>();
 
         for (File file : files) {
@@ -126,7 +129,7 @@ public class CheckpointRecoveryFileStorage {
      */
     public void clear() throws StorageException {
         File[] files = dir.listFiles(f -> f.isFile()
-            && f.getName().contains("-RECOVERY-")
+            && f.getName().contains(FILE_NAME_TAG)
             && FILE_NAME_PATTERN.matcher(f.getName()).matches());
 
         for (File file : files) {

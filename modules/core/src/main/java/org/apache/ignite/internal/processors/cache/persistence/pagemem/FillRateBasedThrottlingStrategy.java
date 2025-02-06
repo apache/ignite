@@ -82,7 +82,10 @@ class FillRateBasedThrottlingStrategy implements ThrottlingStrategy {
         if (cpBufFillRate > cpProgressRate && cpProgressRate < 1d) {
             throttlingStarted.set(true);
 
-            return (long)(Math.exp(POW * ((cpBufFillRate - cpProgressRate) / (1d - cpProgressRate))) * MIN_THROTTLE_NANOS);
+            // Normalized checkpoint buffer fill rate on range [cpProgressRate .. 1]. Result value in range [0 .. 1].
+            double cpBufFillRateNorm = ((cpBufFillRate - cpProgressRate) / (1d - cpProgressRate));
+
+            return (long)(Math.exp(POW * cpBufFillRateNorm) * MIN_THROTTLE_NANOS);
         }
         else
             return 0;

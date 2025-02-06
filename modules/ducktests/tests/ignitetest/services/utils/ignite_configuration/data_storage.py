@@ -57,6 +57,6 @@ class DataStorageConfiguration(NamedTuple):
     wal_page_compression: str = None
     wal_page_compression_level: int = None
     wal_path: str = None
-    write_recovery_data_on_checkpoint: bool = False
+    write_recovery_data_on_checkpoint: bool = None
     checkpoint_recovery_data_compression: str = None
     checkpoint_recovery_data_compression_level: int = None

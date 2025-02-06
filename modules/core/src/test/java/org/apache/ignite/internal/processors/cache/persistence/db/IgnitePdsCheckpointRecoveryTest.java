@@ -183,9 +183,9 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
             max = Math.max(max, cache0.get(i));
 
         // There are two cases possible:
-        // 1. Failure during put before writting cache entry ta WAL, in this case, after restore we will get last value
+        // 1. Failure during put before writting cache entry to WAL, in this case, after restore we will get last value
         //    in cache: val.get() - 1
-        // 2. Failure during put after writting cache entry ta WAL, in this case, after restore we will get last value
+        // 2. Failure during put after writting cache entry to WAL, in this case, after restore we will get last value
         //    in cache: val.get()
         assertTrue("Expected value between " + (val.get() - 1) + " and " + val.get() + ", actual value: " + max,
             max >= val.get() - 1 && max <= val.get());
