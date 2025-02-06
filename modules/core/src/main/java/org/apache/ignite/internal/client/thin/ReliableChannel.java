@@ -647,6 +647,8 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
+
+        // If the current default channel index is out of range, or there is no current default channel,
         ClientChannelHolder currDfltHolder = (curChIdx != -1) ? channels.get(curChIdx) : null;
 
         for (List<InetSocketAddress> addrs : newAddrs) {
@@ -665,6 +667,7 @@ final class ReliableChannel implements AutoCloseable {
                 hld.setConfiguration(new ClientChannelConfiguration(clientCfg, updatedAddrs));
 
             reinitHolders.add(hld);
+
             updatedAddrs.forEach(addr -> curAddrs.putIfAbsent(addr, hld));
         }
 
