@@ -1987,7 +1987,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param consistentId Node consistentId.
      */
-    protected void cleanPersistenceDir(String consistentId) throws Exception {
+    protected void cleanPersistenceDir(String consistentId) {
         String dn2DirName = consistentId.replace(".", "_");
 
         NodeFileTree ft = nodeFileTree(dn2DirName);

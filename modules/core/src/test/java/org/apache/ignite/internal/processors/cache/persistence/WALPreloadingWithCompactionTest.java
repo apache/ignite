@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -117,9 +116,8 @@ public class WALPreloadingWithCompactionTest extends GridCommonAbstractTest {
      * Check that there's only compacted version of given segment.
      * @param ignite Ignite instance.
      * @param segment Segment index.
-     * @throws IgniteCheckedException If failed.
      */
-    private void checkThatOnlyZipSegmentExists(IgniteEx ignite, int segment) throws IgniteCheckedException {
+    private void checkThatOnlyZipSegmentExists(IgniteEx ignite, int segment) {
         NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         File walZipSegment = new File(ft.walArchive(), FileDescriptor.fileName(segment) + ".zip");
