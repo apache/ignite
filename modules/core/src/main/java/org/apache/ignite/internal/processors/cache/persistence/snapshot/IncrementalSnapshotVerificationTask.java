@@ -40,12 +40,12 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -69,7 +69,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
 
         List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
+        Map<PartitionKey, List<PartitionHashRecord>> partHashes = new HashMap<>();
         Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
 
         Map<ClusterNode, Exception> errors = new HashMap<>();
@@ -92,7 +92,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             if (!F.isEmpty(res.partiallyCommittedTxs()))
                 partiallyCommittedTxs.put(nodeRes.getNode(), res.partiallyCommittedTxs());
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry: res.partHashRes().entrySet())
+            for (Map.Entry<PartitionKey, PartitionHashRecord> entry: res.partHashRes().entrySet())
                 partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
 
             if (log.isDebugEnabled())
@@ -209,7 +209,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
                 Set<GridCacheVersion> partiallyCommittedTxs = new HashSet<>();
                 // Hashes in this map calculated based on WAL records only, not part-X.bin data.
-                Map<PartitionKeyV2, HashHolder> partMap = new HashMap<>();
+                Map<PartitionKey, HashHolder> partMap = new HashMap<>();
                 List<Exception> exceptions = new ArrayList<>();
 
                 Function<Short, HashHolder> hashHolderBuilder = (k) -> new HashHolder();
@@ -245,7 +245,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
                     StoredCacheData cacheData = txCaches.get(dataEntry.cacheId());
 
-                    PartitionKeyV2 partKey = new PartitionKeyV2(
+                    PartitionKey partKey = new PartitionKey(
                         cacheGrpId.get(dataEntry.cacheId()),
                         dataEntry.partitionId(),
                         CU.cacheOrGroupName(cacheData.config()));
@@ -328,10 +328,10 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         Function.identity()
                     ));
 
-                Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes = partMap.entrySet().stream()
+                Map<PartitionKey, PartitionHashRecord> partHashRes = partMap.entrySet().stream()
                     .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        e -> new PartitionHashRecordV2(
+                        e -> new PartitionHashRecord(
                             e.getKey(),
                             false,
                             consId,

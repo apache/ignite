@@ -550,7 +550,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         assertContains(
             null,
             out,
-            "Conflict partition: PartitionKeyV2 [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
+            "Conflict partition: PartitionKey [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
                 ", grpName=" + DEFAULT_CACHE_NAME +
                 ", partId=" + corruptedPart + "]"
         );

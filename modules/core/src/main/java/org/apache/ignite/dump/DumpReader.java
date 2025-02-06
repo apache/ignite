@@ -46,7 +46,6 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -87,7 +86,7 @@ public class DumpReader implements Runnable {
                 cnsmr.start();
 
             try {
-                File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
+                File[] files = F.first(dump.fileTrees()).marshaller().listFiles(BinaryUtils::notTmpFile);
 
                 if (files != null)
                     cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));

@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +49,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -91,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -222,46 +221,14 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             metadataLocCache.values(), val -> new BinaryMetadataView(val.metadata()));
     }
 
-    /**
-     * @param igniteWorkDir Basic ignite working directory.
-     * @param consId Node consistent id.
-     * @return Working directory.
-     */
-    public static File resolveBinaryWorkDir(String igniteWorkDir, String consId) {
-        File workDir = binaryWorkDir(igniteWorkDir, consId);
-
-        if (!U.mkdirs(workDir))
-            throw new IgniteException("Could not create directory for binary metadata: " + workDir);
-
-        return workDir;
-    }
-
-    /**
-     * @param igniteWorkDir Basic ignite working directory.
-     * @param consId Node consistent id.
-     * @return Working directory.
-     */
-    public static File binaryWorkDir(String igniteWorkDir, String consId) {
-        if (F.isEmpty(igniteWorkDir) || F.isEmpty(consId)) {
-            throw new IgniteException("Work directory or consistent id has not been set " +
-                "[igniteWorkDir=" + igniteWorkDir + ", consId=" + consId + ']');
-        }
-
-        return Paths.get(igniteWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, consId).toFile();
-    }
-
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (!ctx.clientNode()) {
-                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache,
-                    ctx,
-                    log,
-                    CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null ?
-                        resolveBinaryWorkDir(ctx.config().getWorkDirectory(),
-                            ctx.pdsFolderResolver().resolveFolders().folderName()) :
-                        binaryMetadataFileStoreDir,
-                    false);
+                if (BinaryMetadataFileStore.enabled(ctx.config()) && binaryMetadataFileStoreDir == null)
+                    binaryMetadataFileStoreDir = ctx.pdsFolderResolver().fileTree().mkdirBinaryMeta();
+
+                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir, false);
 
                 metadataFileStore.start();
             }
@@ -1016,8 +983,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
                 ctx,
                 log,
-                resolveBinaryWorkDir(dir.getAbsolutePath(),
-                    ctx.pdsFolderResolver().resolveFolders().folderName()),
+                new NodeFileTree(dir, ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
                 true
             );
 
