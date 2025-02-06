@@ -697,14 +697,14 @@ final class ReliableChannel implements AutoCloseable {
         try {
             channels = reinitHolders;
 
-            attemptsLimit = getRetryLimit();
-
-            curChIdx = dfltChannelIdx;
-
             // essential to recover after failure on single server
             // ???
             if (channels.size() == 1 && partitionAwarenessEnabled)
                 channels.add(channels.get(0));
+
+            attemptsLimit = getRetryLimit();
+
+            curChIdx = dfltChannelIdx;
         }
         finally {
             curChannelsGuard.writeLock().unlock();
