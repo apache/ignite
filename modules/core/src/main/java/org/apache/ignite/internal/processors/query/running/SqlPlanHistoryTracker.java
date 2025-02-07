@@ -48,7 +48,7 @@ public class SqlPlanHistoryTracker {
         if (sqlPlanHistory == EMPTY_MAP)
             return;
 
-        SqlPlan sqlPlan = new SqlPlan(planWithoutScanCount(plan), qry, schema, loc, engine);
+        SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
 
         sqlPlanHistory.put(sqlPlan, U.currentTimeMillis());
     }
@@ -68,24 +68,5 @@ public class SqlPlanHistoryTracker {
      */
     public void setHistorySize(int histSize) {
         sqlPlanHistory = (histSize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(histSize) : Collections.emptyMap();
-    }
-
-    /**
-     * @param plan SQL plan.
-     *
-     * @return SQL plan without the scanCount suffix.
-     */
-    public String planWithoutScanCount(String plan) {
-        String res = null;
-
-        int start = plan.indexOf("\n    /* scanCount");
-
-        if (start != -1) {
-            int end = plan.indexOf("*/", start);
-
-            res = plan.substring(0, start) + plan.substring(end + 2);
-        }
-
-        return (res == null) ? plan : res;
     }
 }
