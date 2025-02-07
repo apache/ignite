@@ -29,7 +29,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -63,14 +62,10 @@ public class CheckpointRecoveryFileStorage {
     /**
      * Ctor.
      */
-    public CheckpointRecoveryFileStorage(GridKernalContext ctx, File dir, FileIOFactory fileIoFactory) throws StorageException {
+    public CheckpointRecoveryFileStorage(GridKernalContext ctx, File dir, FileIOFactory fileIoFactory) {
         this.ctx = ctx;
         this.dir = dir;
         this.fileIoFactory = fileIoFactory;
-
-        if (!U.mkdirs(dir))
-            throw new StorageException("Failed to create directory for checkpoint recovery files [dir=" + dir + ']');
-
     }
 
     /** */

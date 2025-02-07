@@ -147,7 +147,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
                 cache.put(ThreadLocalRandom.current().nextInt(KEYS_CNT), val.incrementAndGet());
         });
 
-        File cpDir = dbMgr(ignite).checkpointDirectory();
+        File cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint();
 
         spoiledPageLimit.set(10);
         fail.set(true);

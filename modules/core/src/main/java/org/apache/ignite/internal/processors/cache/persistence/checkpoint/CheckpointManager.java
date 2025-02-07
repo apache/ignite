@@ -192,7 +192,7 @@ public class CheckpointManager {
         );
 
         checkpointRecoveryFileStorage = new CheckpointRecoveryFileStorage(cacheProcessor.context().kernalContext(),
-            checkpointDirectory(), ioFactory);
+            ft.checkpoint(), ioFactory);
 
         checkpointerProvider = () -> new Checkpointer(
             igniteInstanceName,
@@ -343,7 +343,7 @@ public class CheckpointManager {
     }
 
     /**
-     * Clean checkpoint directory {@link CheckpointMarkersStorage#cpDir}. The operation is necessary when local node joined to
+     * Clean checkpoint directory {@link NodeFileTree#checkpoint()}. The operation is necessary when local node joined to
      * baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
