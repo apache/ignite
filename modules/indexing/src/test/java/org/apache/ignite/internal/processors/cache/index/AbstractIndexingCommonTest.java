@@ -94,7 +94,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
 
                 assertNotNull(cachex);
 
-                File cacheWorkDir = grid.context().pdsFolderResolver().fileTree().cacheWorkDir(cachex.configuration());
+                File cacheWorkDir = grid.context().pdsFolderResolver().fileTree().cacheStorage(cachex.configuration());
 
                 return cacheWorkDir.toPath().resolve("index.bin");
             })

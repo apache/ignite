@@ -106,8 +106,8 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
         NodeFileTree snpFt = new NodeFileTree(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), ft.folderName());
 
-        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheWorkDir(dfltCacheCfg));
-        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(snpFt.cacheWorkDir(dfltCacheCfg));
+        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorage(dfltCacheCfg));
+        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(snpFt.cacheStorage(dfltCacheCfg));
 
         assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
             origPartCRCs, snpPartCRCs);

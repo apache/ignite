@@ -299,7 +299,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         requireNonNull(internalCache);
 
         File cacheWorkDir = internalCache.context().kernalContext().pdsFolderResolver().fileTree()
-            .cacheWorkDir(internalCache.configuration());
+            .cacheStorage(internalCache.configuration());
 
         return cacheWorkDir.toPath().resolve(INDEX_FILE_NAME).toFile();
     }

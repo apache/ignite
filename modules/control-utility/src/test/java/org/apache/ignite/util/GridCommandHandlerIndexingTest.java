@@ -342,7 +342,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      * Get index partition file for specific node and cache.
      */
     private File indexPartition(Ignite ig, String groupName) {
-        return new File(((IgniteEx)ig).context().pdsFolderResolver().fileTree().cacheWorkDir(true, groupName), INDEX_FILE_NAME);
+        return new File(((IgniteEx)ig).context().pdsFolderResolver().fileTree().cacheStorage(true, groupName), INDEX_FILE_NAME);
     }
 
     /**

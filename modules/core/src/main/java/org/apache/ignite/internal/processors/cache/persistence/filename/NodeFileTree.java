@@ -349,8 +349,8 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
      */
-    public File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
-        return cacheWorkDir(cacheDirName(ccfg));
+    public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
+        return cacheStorage(cacheDirName(ccfg));
     }
 
     /**
@@ -358,8 +358,8 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
      */
-    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheWorkDir(cacheDirName(isSharedGroup, cacheOrGroupName));
+    public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
+        return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**
@@ -376,7 +376,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
-    public static File cacheWorkDir(File storeWorkDir, String cacheDirName) {
+    public static File cacheStorage(File storeWorkDir, String cacheDirName) {
         return new File(storeWorkDir, cacheDirName);
     }
 
@@ -384,7 +384,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
-    public File cacheWorkDir(String cacheDirName) {
+    public File cacheStorage(String cacheDirName) {
         return new File(nodeStorage, cacheDirName);
     }
 

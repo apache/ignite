@@ -206,7 +206,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        File cacheDirIg0 = snd.context().pdsFolderResolver().fileTree().cacheWorkDir(snd.cachex(DEFAULT_CACHE_NAME).configuration());
+        File cacheDirIg0 = snd.context().pdsFolderResolver().fileTree().cacheStorage(snd.cachex(DEFAULT_CACHE_NAME).configuration());
 
         File[] cacheParts = cacheDirIg0.listFiles(fileBinFilter);
 

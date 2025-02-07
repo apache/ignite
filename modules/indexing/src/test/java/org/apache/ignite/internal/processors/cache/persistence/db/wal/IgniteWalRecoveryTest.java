@@ -580,7 +580,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         // Resolve cache directory. Emulating cache destroy in the middle of checkpoint.
         IgniteInternalCache<Object, Object> destoryCache = ig2.cachex(CACHE_TO_DESTROY_NAME);
 
-        File destroyCacheWorkDir = ig2.context().pdsFolderResolver().fileTree().cacheWorkDir(destoryCache.configuration());
+        File destroyCacheWorkDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(destoryCache.configuration());
 
         // Stop the whole cluster
         stopAllGrids();

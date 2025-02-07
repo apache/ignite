@@ -683,7 +683,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheWorkDir(dfltCacheCfg).getParentFile();
+        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheStorage(dfltCacheCfg).getParentFile();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);

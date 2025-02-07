@@ -154,8 +154,8 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        File cacheAWorkDir = ft.cacheWorkDir(cacheAEx.configuration());
-        File cacheBWorkDir = ft.cacheWorkDir(cacheBEx.configuration());
+        File cacheAWorkDir = ft.cacheStorage(cacheAEx.configuration());
+        File cacheBWorkDir = ft.cacheStorage(cacheBEx.configuration());
 
         File idxPathA = cacheAWorkDir.toPath().resolve("index.bin").toFile();
         File idxPathB = cacheBWorkDir.toPath().resolve("index.bin").toFile();

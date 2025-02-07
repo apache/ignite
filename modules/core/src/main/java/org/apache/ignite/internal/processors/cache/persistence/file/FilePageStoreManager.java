@@ -247,7 +247,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
         try {
-            File cacheWorkDir = ft.cacheWorkDir(cacheConfiguration);
+            File cacheWorkDir = ft.cacheStorage(cacheConfiguration);
 
             if (!cacheWorkDir.exists())
                 return;
@@ -368,7 +368,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                             "Corrupted cache groups found",
                             cacheCfgs.stream()
-                                .map(ccfg -> ft.cacheWorkDir(ccfg).getName())
+                                .map(ccfg -> ft.cacheStorage(ccfg).getName())
                                 .collect(Collectors.joining(File.separator)))
                 );
             }
@@ -403,7 +403,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 boolean globalEnabled = cctx.database().walEnabled(grpDescId, false);
 
                 if (!locEnabled || !globalEnabled) {
-                    File dir = ft.cacheWorkDir(desc.config());
+                    File dir = ft.cacheStorage(desc.config());
 
                     if (Arrays.stream(
                         dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
@@ -549,7 +549,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        File cacheWorkDir = ft.cacheWorkDir(ccfg);
+        File cacheWorkDir = ft.cacheStorage(ccfg);
 
         String dataRegionName = grpDesc.config().getDataRegionName();
         DataRegion dataRegion = cctx.database().dataRegion(dataRegionName);
@@ -726,7 +726,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Partition file.
      */
     @NotNull public static File getPartitionFile(File workDir, String cacheDirName, int partId) {
-        return new File(NodeFileTree.cacheWorkDir(workDir, cacheDirName), getPartitionFileName(partId));
+        return new File(NodeFileTree.cacheStorage(workDir, cacheDirName), getPartitionFileName(partId));
     }
 
     /**

@@ -774,7 +774,7 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = ft.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
+                File cacheDir = ft.cacheStorage(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -851,7 +851,7 @@ public class SnapshotRestoreProcess {
                 for (StoredCacheData cacheData : e.getValue().ccfgs) {
                     globalCfgs.put(CU.cacheId(cacheData.config().getName()), cacheData);
 
-                    opCtx0.dirs.add(ft.cacheWorkDir(cacheData.config()));
+                    opCtx0.dirs.add(ft.cacheStorage(cacheData.config()));
                 }
             }
 

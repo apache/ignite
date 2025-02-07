@@ -143,7 +143,7 @@ public class GridLocalConfigManager {
 
         try {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
-                File cacheDir = ft.cacheWorkDir(ccfg);
+                File cacheDir = ft.cacheStorage(ccfg);
 
                 if (!cacheDir.exists())
                     continue;
@@ -288,7 +288,7 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        File cacheWorkDir = ft.cacheWorkDir(ccfg);
+        File cacheWorkDir = ft.cacheStorage(ccfg);
 
         FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
 
@@ -421,7 +421,7 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If fails.
      */
     public void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
-        File cacheGrpDir = ft.cacheWorkDir(ctx.config());
+        File cacheGrpDir = ft.cacheStorage(ctx.config());
 
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
             DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
@@ -532,7 +532,7 @@ public class GridLocalConfigManager {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(ft.cacheWorkDir(ccfg), cacheDataFilename(ccfg));
+        return new File(ft.cacheStorage(ccfg), cacheDataFilename(ccfg));
     }
 
     /** @return Name of cache data filename. */

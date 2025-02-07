@@ -296,7 +296,7 @@ public class CachePartitionDefragmentationManager {
             for (CacheGroupContext oldGrpCtx : cacheGrpCtxsForDefragmentation) {
                 int grpId = oldGrpCtx.groupId();
 
-                File workDir = ft.cacheWorkDir(oldGrpCtx.config());
+                File workDir = ft.cacheStorage(oldGrpCtx.config());
 
                 List<CacheDataStore> oldCacheDataStores = oldStores.get(grpId);
 

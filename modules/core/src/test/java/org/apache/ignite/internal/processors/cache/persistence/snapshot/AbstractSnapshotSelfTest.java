@@ -315,7 +315,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
 
-            File dir = kctx.pdsFolderResolver().fileTree().cacheWorkDir(ccfg);
+            File dir = kctx.pdsFolderResolver().fileTree().cacheStorage(ccfg);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
