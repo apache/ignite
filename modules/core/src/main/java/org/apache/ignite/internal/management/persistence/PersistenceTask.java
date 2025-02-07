@@ -78,7 +78,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private static final long serialVersionUID = 0L;
 
         /** Node file tree. */
-        private NodeFileTree ft;
+        private transient NodeFileTree ft;
 
         /**
          * Create job with specified argument.

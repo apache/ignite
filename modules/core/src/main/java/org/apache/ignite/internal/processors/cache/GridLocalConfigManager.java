@@ -139,8 +139,6 @@ public class GridLocalConfigManager {
         List<CacheConfiguration<?, ?>> ccfgs,
         BiConsumer<CacheConfiguration<?, ?>, File> ccfgCons
     ) {
-        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
-
         chgLock.writeLock().lock();
 
         try {
@@ -290,7 +288,7 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        File cacheWorkDir = ctx.pdsFolderResolver().fileTree().cacheWorkDir(ccfg);
+        File cacheWorkDir = ft.cacheWorkDir(ccfg);
 
         FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
 
@@ -534,9 +532,7 @@ public class GridLocalConfigManager {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        File cacheWorkDir = ctx.pdsFolderResolver().fileTree().cacheWorkDir(ccfg);
-
-        return new File(cacheWorkDir, cacheDataFilename(ccfg));
+        return new File(ft.cacheWorkDir(ccfg), cacheDataFilename(ccfg));
     }
 
     /** @return Name of cache data filename. */
