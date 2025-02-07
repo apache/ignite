@@ -85,7 +85,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         // Ensure that new functions are successfully created in a custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
         assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
-        assertQuery("select \"OWN_SCHEMA\".SYSTEM_RANGE(1, 2)").returns(100L).check();
+        assertQuery("select * from table(\"OWN_SCHEMA\".SYSTEM_RANGE(1, 2))").returns(100L).check();
         assertQuery("select \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
         assertQuery("select \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
 
@@ -635,9 +635,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** Overwrites Ignite's 'SYSTEM_RANGE(...)'. */
-        @QuerySqlFunction
-        public static Object system_range(Object x, Object y) {
-            return 100L;
+        @QuerySqlTableFunction(columnTypes = {long.class}, columnNames = {"RESULT"})
+        public static Collection<Object> system_range(long x, long y) {
+            return F.asList(F.asList(100L));
         }
 
         /** Overwrites Ignite's 'TYPEOF(Object)'. */
