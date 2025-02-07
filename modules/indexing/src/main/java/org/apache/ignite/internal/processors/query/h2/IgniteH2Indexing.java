@@ -472,14 +472,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (runningQueryManager().planHistoryTracker().enabled()) {
                         H2QueryInfo qryInfo0 = qryInfo;
 
-                        ctx.pools().getSystemExecutorService().submit(() -> {
+                        ctx.pools().getSystemExecutorService().submit(() ->
                             runningQueryManager().planHistoryTracker().addPlan(
                                 qryInfo0.plan(),
                                 qryInfo0.sql(),
                                 qryInfo0.schema(),
                                 true,
-                                IndexingQueryEngineConfiguration.ENGINE_NAME);
-                        });
+                                IndexingQueryEngineConfiguration.ENGINE_NAME));
                     }
 
                     return new H2FieldsIterator(

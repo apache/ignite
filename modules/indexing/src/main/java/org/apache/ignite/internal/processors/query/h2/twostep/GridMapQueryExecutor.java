@@ -496,14 +496,13 @@ public class GridMapQueryExecutor {
                         if (h2.runningQueryManager().planHistoryTracker().enabled()) {
                             MapH2QueryInfo qryInfo0 = qryInfo;
 
-                            ctx.pools().getSystemExecutorService().submit(() -> {
+                            ctx.pools().getSystemExecutorService().submit(() ->
                                 h2.runningQueryManager().planHistoryTracker().addPlan(
                                     qryInfo0.plan(),
                                     qryInfo0.sql(),
                                     qryInfo0.schema(),
                                     false,
-                                    IndexingQueryEngineConfiguration.ENGINE_NAME);
-                            });
+                                    IndexingQueryEngineConfiguration.ENGINE_NAME));
                         }
 
                         if (evt) {
