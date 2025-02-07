@@ -27,7 +27,11 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSyntax;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -388,12 +392,23 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private boolean checkNewUserDefinedFunction(String schName, String funName) {
-        if (F.eq(schName, QueryUtils.DFLT_SCHEMA) && frameworkCfg.getOperatorTable().getOperatorList().stream()
-            .anyMatch(op -> op instanceof SqlFunction && op.getName().equalsIgnoreCase(funName))) {
-            log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '" + QueryUtils.DFLT_SCHEMA +
-                "' already has a standard function with the same name.");
+        if (F.eq(schName, QueryUtils.DFLT_SCHEMA)) {
+            List<SqlOperator> operators = new ArrayList<>();
 
-            return false;
+            frameworkCfg.getOperatorTable().lookupOperatorOverloads(
+                new SqlIdentifier(funName, SqlParserPos.ZERO),
+                null,
+                SqlSyntax.FUNCTION,
+                operators,
+                SqlNameMatchers.withCaseSensitive(false)
+            );
+
+            if (!operators.isEmpty()) {
+                log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '" + QueryUtils.DFLT_SCHEMA +
+                    "' already has a standard function with the same name.");
+
+                return false;
+            }
         }
 
         return true;
