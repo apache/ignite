@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -55,15 +56,20 @@ public class SharedFileTree {
     protected final File binaryMetaRoot;
 
     /** Path to the directory containing marshaller files. */
-    protected final File marshaller;
+    private final File marshaller;
+
+    /** Path to the snapshot root directory. */
+    private final File snpsRoot;
 
     /**
      * @param root Root directory.
+     * @param snpsRoot Snapshot path.
      */
-    public SharedFileTree(File root) {
+    private SharedFileTree(File root, String snpsRoot) {
         A.notNull(root, "Root directory");
 
         this.root = root;
+        this.snpsRoot = resolveDirectory(snpsRoot);
 
         String rootStr = root.getAbsolutePath();
 
@@ -74,15 +80,22 @@ public class SharedFileTree {
     /**
      * @param root Root directory.
      */
+    public SharedFileTree(File root) {
+        this(root, DFLT_SNAPSHOT_DIRECTORY);
+    }
+
+    /**
+     * @param root Root directory.
+     */
     public SharedFileTree(String root) {
-        this(new File(root));
+        this(new File(root), DFLT_SNAPSHOT_DIRECTORY);
     }
 
     /**
      * @param cfg Config to get {@code root} directory from.
      */
-    SharedFileTree(IgniteConfiguration cfg) {
-        this(root(cfg));
+    public SharedFileTree(IgniteConfiguration cfg) {
+        this(root(cfg), cfg.getSnapshotPath());
     }
 
     /**
@@ -105,6 +118,11 @@ public class SharedFileTree {
         return marshaller;
     }
 
+    /** @return Path to snapshots root directory. */
+    public File snapshotsRoot() {
+        return snpsRoot;
+    }
+
     /**
      * Creates {@link #binaryMetaRoot()} directory.
      * @return Created directory.
@@ -121,6 +139,15 @@ public class SharedFileTree {
      */
     public File mkdirMarshaller() {
         return mkdir(marshaller, "marshaller mappings");
+    }
+
+    /**
+     * Creates {@link #snapshotsRoot()} directory.
+     * @return Created directory.
+     * @see #snapshotsRoot()
+     */
+    public File mkdirSnapshotsRoot() {
+        return mkdir(snpsRoot, "snapshot work directory");
     }
 
     /**
@@ -182,6 +209,20 @@ public class SharedFileTree {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Creates a directory specified by the given arguments.
+     *
+     * @param cfg Configured directory path.
+     * @return Initialized directory.
+     */
+    private File resolveDirectory(String cfg) {
+        File sharedDir = new File(cfg);
+
+        return sharedDir.isAbsolute()
+            ? sharedDir
+            : new File(root, cfg);
     }
 
     /** {@inheritDoc} */

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -96,6 +97,9 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /** Snapshot working directory on file system. */
     private final File tmpSnpWorkDir;
+
+    /** Node file tree. */
+    private final NodeFileTree ft;
 
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
@@ -154,7 +158,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param snpName Unique identifier of snapshot process.
-     * @param tmpWorkDir Working directory for intermediate snapshot results.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
@@ -165,7 +168,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         UUID srcNodeId,
         UUID reqId,
         String snpName,
-        File tmpWorkDir,
+        NodeFileTree ft,
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
@@ -180,7 +183,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
-        this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
+        this.tmpSnpWorkDir = new File(ft.snapshotTempRoot(), snpName);
+        this.ft = ft;
         this.ioFactory = ioFactory;
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
@@ -408,7 +412,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             return runAsync(() -> {
                 snpSndr.sendPart(
-                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                    getPartitionFile(ft.nodeStorage(), cacheDirName, partId),
                     cacheDirName,
                     pair,
                     partLen);

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -62,7 +63,6 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
@@ -289,10 +289,12 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                     continue;
                 }
 
-                U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(nodeFileTree(dir.toString()).marshaller());
-                U.delete(nodeFileTree(dir.toString()).binaryMetaRoot());
+                NodeFileTree ft = nodeFileTree(dir.toString());
+
+                U.delete(ft.checkpoint());
+                U.delete(ft.nodeStorage().getParentFile());
+                U.delete(ft.marshaller());
+                U.delete(ft.binaryMetaRoot());
             }
         }
         catch (IOException e) {
@@ -413,7 +415,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long snapshotSize(Collection<Ignite> grids, String snpName, String pattern) {
         return grids.stream()
-            .map(ig -> workingDirectory(ig).resolve(DFLT_SNAPSHOT_DIRECTORY).resolve(snpName))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath().resolve(snpName))
             .reduce(0L, (acc, p) -> acc + directorySize(p, pattern), Long::sum);
     }
 

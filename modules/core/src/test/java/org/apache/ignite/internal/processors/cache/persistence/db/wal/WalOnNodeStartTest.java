@@ -112,16 +112,16 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        String walPath = ignite.configuration().getDataStorageConfiguration().getWalPath();
-        String walArchivePath = ignite.configuration().getDataStorageConfiguration().getWalArchivePath();
+        File walPath = ignite.context().pdsFolderResolver().fileTree().wal();
+        File walArchive = ignite.context().pdsFolderResolver().fileTree().walArchive();
 
         // Stop grid so there are no ongoing wal records (BLT update and something else maybe).
         stopGrid(0);
 
         WALIterator replayIter = new IgniteWalIteratorFactory(log).iterator(
             lastWalPtr.next(),
-            new File(walArchivePath),
-            new File(walPath)
+            walArchive,
+            walPath
         );
 
         replayIter.forEach(walPtrAndRecordPair -> {

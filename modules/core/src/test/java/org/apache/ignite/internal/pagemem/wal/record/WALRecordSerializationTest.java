@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
@@ -182,13 +180,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
             ignite.context().cache().context().database().checkpointReadUnlock();
         }
 
-        String nodeFolderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
-        File nodeArchiveDir = Paths.get(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false).getAbsolutePath(),
-            "wal",
-            "archive",
-            nodeFolderName
-        ).toFile();
+        File nodeArchiveDir = ignite.context().pdsFolderResolver().fileTree().walArchive();
         File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(lastPointer.index()));
         File walZipSegment = new File(nodeArchiveDir, FileDescriptor.fileName(lastPointer.index()) + ZIP_SUFFIX);
 

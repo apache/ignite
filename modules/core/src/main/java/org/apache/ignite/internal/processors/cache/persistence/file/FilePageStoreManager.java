@@ -64,7 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
@@ -173,8 +173,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final DataStorageConfiguration dsCfg;
 
-    /** Absolute directory for file page store. Includes consistent id based folder. */
-    private File storeWorkDir;
+    /** Node file tree. */
+    private NodeFileTree ft;
 
     /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
@@ -212,24 +212,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (ctx.clientNode())
             return;
 
-        final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
+        ft = ctx.pdsFolderResolver().fileTree();
 
-        storeWorkDir = folderSettings.persistentStoreNodePath();
-
-        U.ensureDirectory(storeWorkDir, "page store work directory", log);
+        U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
 
         String tmpDir = System.getProperty("java.io.tmpdir");
 
-        if (tmpDir != null && storeWorkDir.getAbsolutePath().startsWith(tmpDir)) {
+        if (tmpDir != null && ft.nodeStorage().getAbsolutePath().startsWith(tmpDir)) {
             log.warning("Persistence store directory is in the temp directory and may be cleaned." +
                 "To avoid this set \"IGNITE_HOME\" environment variable properly or " +
                 "change location of persistence directories in data storage configuration " +
                 "(see DataStorageConfiguration#walPath, DataStorageConfiguration#walArchivePath, " +
                 "DataStorageConfiguration#storagePath properties). " +
-                "Current persistence store directory is: [" + storeWorkDir.getAbsolutePath() + "]");
+                "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
         }
 
-        File[] files = storeWorkDir.listFiles();
+        File[] files = ft.nodeStorage().listFiles();
 
         for (File file : files) {
             if (file.isDirectory()) {
@@ -273,7 +271,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = newDirectoryStream(
-                storeWorkDir.toPath(), entry -> {
+                ft.nodeStorage().toPath(), entry -> {
                     String name = entry.toFile().getName();
 
                     return !name.equals(MetaStorage.METASTORAGE_DIR_NAME) &&
@@ -437,7 +435,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void initializeForCache(CacheGroupDescriptor grpDesc, CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        assert storeWorkDir != null;
+        assert ft != null;
 
         int grpId = grpDesc.groupId();
 
@@ -452,7 +450,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void initializeForMetastorage() throws IgniteCheckedException {
-        assert storeWorkDir != null;
+        assert ft.nodeStorage() != null;
 
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
@@ -461,7 +459,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
+                new File(ft.nodeStorage(), MetaStorage.METASTORAGE_DIR_NAME),
                 grpId,
                 MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
@@ -955,18 +953,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return Store work dir. Includes consistent-id based folder
-     */
-    public File workDir() {
-        return storeWorkDir;
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
-        return cacheWorkDir(storeWorkDir, cacheDirName(ccfg));
+        return cacheWorkDir(ft.nodeStorage(), cacheDirName(ccfg));
     }
 
     /**
@@ -975,7 +966,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store directory for given cache.
      */
     public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheWorkDir(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
+        return cacheWorkDir(ft.nodeStorage(), cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**

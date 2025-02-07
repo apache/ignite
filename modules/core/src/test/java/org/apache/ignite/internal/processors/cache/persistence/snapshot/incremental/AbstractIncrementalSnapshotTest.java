@@ -198,7 +198,7 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
     protected WALIterator walIter(int nodeIdx) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), U.maskForFileName(getTestIgniteInstanceName(nodeIdx)));
+        NodeFileTree ft = nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(nodeIdx)));
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .filesOrDirs(ft.wal(), ft.walArchive());

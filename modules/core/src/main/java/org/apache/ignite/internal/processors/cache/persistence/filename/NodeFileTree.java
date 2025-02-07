@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
@@ -56,7 +57,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * <pre>
  * ❯ tree
  * .                                                                            ← root (work directory, shared between all local nodes).
- * ├── cp
+ * ├── cp                                                                       ← default sharedfs root. See  {@link SharedFsCheckpointSpi}.
  * │  └── sharedfs
  * │      └── BinaryMarshaller
  * ├── db                                                                       ← db (shared between all local nodes).
@@ -86,7 +87,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
- * │  │  ├── cp
+ * │  │  ├── cp                                                                 ← checkpoint (node 0).
  * │  │  │  ├── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-END.bin
  * │  │  │  └── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-START.bin
  * │  │  ├── lock
@@ -102,7 +103,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * ...
  * │  │  ├── cache-tx-cache
  * ...
- * │  │  ├── cp
+ * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
  * │  │  ├── lock
  * │  │  ├── maintenance_tasks.mntc
@@ -123,7 +124,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │      │          ├── cdc-caches-state.bin
  * │      │          ├── cdc-mappings-state.bin
  * │      │          └── cdc-types-state.bin
- *
+ * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
  * │          ├── 0000000000000000.wal
@@ -142,10 +143,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  ├── jmx-invoker.0.log
  * ...
  * │  └── jmx-invoker.9.log
- * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
+ * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
  */
 public class NodeFileTree extends SharedFileTree {
+    /** Default snapshot directory for loading remote snapshots. */
+    public static final String SNAPSHOT_TMP_DIR = "snp";
+
+    /** Checkpoint directory name. */
+    public static final String CHECKPOINT_DIR = "cp";
+
     /** Folder name for consistent id. */
     private final String folderName;
 
@@ -155,6 +162,9 @@ public class NodeFileTree extends SharedFileTree {
     /** Path to the storage directory. */
     private final @Nullable File nodeStorage;
 
+    /** Path to the checkpoint directory. */
+    private final @Nullable File checkpoint;
+
     /** Path to the directory containing active WAL segments. */
     private final @Nullable File wal;
 
@@ -163,6 +173,12 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Path to the directory containing archive WAL segments for CDC. */
     private final @Nullable File walCdc;
+
+    /**
+     * Working directory for loaded snapshots from the remote nodes and storing
+     * temporary partition delta-files of locally started snapshot process.
+     */
+    private final @Nullable File snpTmpRoot;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -206,6 +222,8 @@ public class NodeFileTree extends SharedFileTree {
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+        snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
+        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
     }
 
     /**
@@ -236,12 +254,16 @@ public class NodeFileTree extends SharedFileTree {
             nodeStorage = dsCfg.getStoragePath() == null
                 ? rootRelative(DB_DEFAULT_FOLDER)
                 : resolveDirectory(dsCfg.getStoragePath());
+            snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
+            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
             nodeStorage = null;
+            snpTmpRoot = null;
+            checkpoint = null;
             wal = null;
             walArchive = null;
             walCdc = null;
@@ -251,6 +273,11 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Node storage directory. */
     public File nodeStorage() {
         return nodeStorage;
+    }
+
+    /** @return Folder name. */
+    public String folderName() {
+        return folderName;
     }
 
     /** @return Path to binary metadata directory. */
@@ -273,6 +300,16 @@ public class NodeFileTree extends SharedFileTree {
         return walCdc;
     }
 
+    /** @return Path to the directory form temp snapshot files. */
+    public @Nullable File snapshotTempRoot() {
+        return snpTmpRoot;
+    }
+
+    /** @return Path to the checkpoint directory. */
+    public File checkpoint() {
+        return checkpoint;
+    }
+
     /**
      * Creates {@link #binaryMeta()} directory.
      * @return Created directory.
@@ -282,18 +319,36 @@ public class NodeFileTree extends SharedFileTree {
         return mkdir(binaryMeta, "binary metadata");
     }
 
+    /**
+     * Creates {@link #snapshotTempRoot()} directory.
+     * @return Created directory.
+     * @see #snapshotTempRoot()
+     */
+    public File mkdirSnapshotTempRoot() {
+        return mkdir(snpTmpRoot, "temp directory for snapshot creation");
+    }
+
+    /**
+     * Creates {@link #checkpoint()} directory.
+     * @return Created directory.
+     * @see #checkpoint()
+     */
+    public File mkdirCheckpoint() {
+        return mkdir(checkpoint, "checkpoint metadata directory");
+    }
+
     /** @return {@code True} if WAL archive enabled. */
     public boolean walArchiveEnabled() {
         return walArchive != null && wal != null && !walArchive.equals(wal);
     }
 
     /**
-     * Creates a directory specified by the given arguments.
+     * Resolves directory specified by the given arguments.
      *
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    private File resolveDirectory(String cfg) {
+    public File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()

@@ -351,11 +351,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         txCache.putAll(batch);
 
         // Check `DataRecord(List<DataEntry>)` logged.
-        File archive = U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            grid(1).configuration().getDataStorageConfiguration().getWalArchivePath(),
-            false
-        );
+        File archive = grid(1).context().pdsFolderResolver().fileTree().walArchive();
 
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);

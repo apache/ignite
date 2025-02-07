@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandAr
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -341,21 +341,14 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
     /** */
     private void cleanPersistenceFiles(String igName) throws Exception {
-        String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
+        NodeFileTree ft = nodeFileTree(igName);
 
-        File igDbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbPath, false);
+        U.delete(ft.nodeStorage());
 
-        U.delete(igDbDir);
+        Files.createDirectory(ft.nodeStorage().toPath());
 
-        Files.createDirectory(igDbDir.toPath());
-
-        String ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
-
-        ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", "archive", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
+        U.delete(ft.wal());
+        U.delete(ft.walArchive());
     }
 
     /** */
