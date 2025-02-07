@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -49,8 +50,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
@@ -165,6 +164,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final List<Person> list = new LinkedList<>();
 
         final String nodeFolder = createWal(list, null);
+        final NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), nodeFolder);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
@@ -174,8 +174,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -296,6 +296,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final List<Person> list = new LinkedList<>();
 
         final String nodeFolder = createWal(list, null);
+        final NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), nodeFolder);
 
         final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
 
@@ -355,8 +356,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             walDir,
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -415,6 +416,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final List<Person> list = new LinkedList<>();
 
         final String nodeFolder = createWal(list, null);
+        final NodeFileTree ft = new NodeFileTree(U.defaultWorkDirectory(), nodeFolder);
 
         final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
 
@@ -460,8 +462,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             walDir,
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
