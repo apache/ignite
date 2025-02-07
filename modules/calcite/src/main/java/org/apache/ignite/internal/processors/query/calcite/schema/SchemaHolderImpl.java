@@ -404,8 +404,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             );
 
             if (!operators.isEmpty()) {
-                log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '" + QueryUtils.DFLT_SCHEMA +
-                    "' already has a standard function with the same name.");
+                log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '"
+                    + QueryUtils.DFLT_SCHEMA + "' already has a standard function with the same name.");
 
                 return false;
             }
