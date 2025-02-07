@@ -541,13 +541,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     *
-     */
-    public Path getPath(boolean isSharedGroup, String cacheOrGroupName, int partId) {
-        return getPartitionFilePath(ft.cacheWorkDir(isSharedGroup, cacheOrGroupName), partId);
-    }
-
-    /**
      * @param grpDesc Cache group descriptor.
      * @param ccfg Cache configuration.
      * @return Cache store holder.

@@ -115,15 +115,15 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             MaintenanceTask task = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
             if (arg instanceof PersistenceBackupAllTaskArg)
-                return backupAll(ft.nodeStorage());
+                return backupAll();
             else if (arg instanceof PersistenceBackupCorruptedTaskArg)
-                return backupCaches(ft.nodeStorage(), corruptedCacheDirectories(task));
+                return backupCaches(corruptedCacheDirectories(task));
             else
-                return backupCaches(ft.nodeStorage(), cacheDirectoriesFromCacheNames(((PersistenceBackupCachesTaskArg)arg).caches()));
+                return backupCaches(cacheDirectoriesFromCacheNames(((PersistenceBackupCachesTaskArg)arg).caches()));
         }
 
         /** */
-        private PersistenceTaskResult backupAll(File workDir) {
+        private PersistenceTaskResult backupAll() {
             GridCacheProcessor cacheProc = ignite.context().cache();
 
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
@@ -133,11 +133,11 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 .distinct()
                 .collect(Collectors.toList());
 
-            return backupCaches(workDir, allCacheDirs);
+            return backupCaches(allCacheDirs);
         }
 
         /** */
-        private PersistenceTaskResult backupCaches(File workDir, List<String> cacheDirs) {
+        private PersistenceTaskResult backupCaches(List<String> cacheDirs) {
             PersistenceTaskResult res = new PersistenceTaskResult(true);
 
             List<String> backupCompletedCaches = new ArrayList<>();
@@ -146,13 +146,13 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             for (String dir : cacheDirs) {
                 String backupDirName = BACKUP_FOLDER_PREFIX + dir;
 
-                File backupDir = new File(workDir, backupDirName);
+                File backupDir = new File(ft.nodeStorage(), backupDirName);
 
                 if (!backupDir.exists()) {
                     try {
                         U.ensureDirectory(backupDir, backupDirName, null);
 
-                        copyCacheFiles(workDir.toPath().resolve(dir).toFile(), backupDir);
+                        copyCacheFiles(ft.nodeStorage().toPath().resolve(dir).toFile(), backupDir);
 
                         backupCompletedCaches.add(backupDirName);
                     }

@@ -346,28 +346,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * Resolves directory specified by the given arguments.
-     *
-     * @param cfg Configured directory path.
-     * @return Initialized directory.
-     */
-    public File resolveDirectory(String cfg) {
-        File sharedDir = new File(cfg);
-
-        return sharedDir.isAbsolute()
-            ? new File(sharedDir, folderName)
-            : rootRelative(cfg);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public File cacheWorkDir(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
      */
@@ -382,6 +360,16 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
         return cacheWorkDir(cacheDirName(isSharedGroup, cacheOrGroupName));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return The full cache directory name.
+     */
+    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        boolean isSharedGrp = ccfg.getGroupName() != null;
+
+        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
     }
 
     /**
@@ -403,19 +391,31 @@ public class NodeFileTree extends SharedFileTree {
             : CACHE_DIR_PREFIX + cacheOrGroupName;
     }
 
-    /**
-     * @param ccfg Cache configuration.
-     * @return The full cache directory name.
-     */
-    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
-
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
-    }
-
     /** @return {@code ${root}/${path}/${folderName}} path. */
     private File rootRelative(String path) {
         return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
+    }
+
+    /**
+     * Resolves directory specified by the given arguments.
+     *
+     * @param cfg Configured directory path.
+     * @return Initialized directory.
+     */
+    private File resolveDirectory(String cfg) {
+        File sharedDir = new File(cfg);
+
+        return sharedDir.isAbsolute()
+            ? new File(sharedDir, folderName)
+            : rootRelative(cfg);
+    }
+
+    /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    private File cacheWorkDir(String cacheDirName) {
+        return new File(nodeStorage, cacheDirName);
     }
 
     /** {@inheritDoc} */

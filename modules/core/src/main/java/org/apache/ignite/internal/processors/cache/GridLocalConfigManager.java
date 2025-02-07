@@ -423,7 +423,7 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If fails.
      */
     public void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
-        File cacheGrpDir = ft.cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
+        File cacheGrpDir = ft.cacheWorkDir(ctx.config());
 
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
             DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
