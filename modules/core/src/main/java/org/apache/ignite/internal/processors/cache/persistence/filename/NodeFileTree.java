@@ -391,11 +391,6 @@ public class NodeFileTree extends SharedFileTree {
             : CACHE_DIR_PREFIX + cacheOrGroupName;
     }
 
-    /** @return {@code ${root}/${path}/${folderName}} path. */
-    private File rootRelative(String path) {
-        return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
-    }
-
     /**
      * Resolves directory specified by the given arguments.
      *
@@ -408,6 +403,11 @@ public class NodeFileTree extends SharedFileTree {
         return sharedDir.isAbsolute()
             ? new File(sharedDir, folderName)
             : rootRelative(cfg);
+    }
+
+    /** @return {@code ${root}/${path}/${folderName}} path. */
+    private File rootRelative(String path) {
+        return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
     }
 
     /**
