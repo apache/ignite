@@ -761,7 +761,7 @@ public class SnapshotRestoreProcess {
         }
 
         Map<String, StoredCacheData> cfgsByName = new HashMap<>();
-        FilePageStoreManager pageStore = (FilePageStoreManager)cctx.pageStore();
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
         GridLocalConfigManager locCfgMgr = cctx.cache().configManager();
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
@@ -774,7 +774,7 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
+                File cacheDir = ft.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -844,12 +844,14 @@ public class SnapshotRestoreProcess {
 
         Map<Integer, StoredCacheData> globalCfgs = new HashMap<>();
 
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
         for (Map.Entry<UUID, SnapshotRestoreOperationResponse> e : res.entrySet()) {
             if (e.getValue().ccfgs != null) {
                 for (StoredCacheData cacheData : e.getValue().ccfgs) {
                     globalCfgs.put(CU.cacheId(cacheData.config().getName()), cacheData);
 
-                    opCtx0.dirs.add(((FilePageStoreManager)ctx.cache().context().pageStore()).cacheWorkDir(cacheData.config()));
+                    opCtx0.dirs.add(ft.cacheWorkDir(cacheData.config()));
                 }
             }
 

@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -152,10 +152,10 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         forceCheckpoint();
 
-        File cacheAWorkDir = ((FilePageStoreManager)cacheAEx.context().shared().pageStore())
-            .cacheWorkDir(cacheAEx.configuration());
-        File cacheBWorkDir = ((FilePageStoreManager)cacheBEx.context().shared().pageStore())
-            .cacheWorkDir(cacheBEx.configuration());
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+
+        File cacheAWorkDir = ft.cacheWorkDir(cacheAEx.configuration());
+        File cacheBWorkDir = ft.cacheWorkDir(cacheBEx.configuration());
 
         File idxPathA = cacheAWorkDir.toPath().resolve("index.bin").toFile();
         File idxPathB = cacheBWorkDir.toPath().resolve("index.bin").toFile();

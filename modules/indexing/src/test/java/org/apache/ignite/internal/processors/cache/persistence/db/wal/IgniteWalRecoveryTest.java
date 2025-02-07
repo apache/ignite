@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -581,9 +580,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         // Resolve cache directory. Emulating cache destroy in the middle of checkpoint.
         IgniteInternalCache<Object, Object> destoryCache = ig2.cachex(CACHE_TO_DESTROY_NAME);
 
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)destoryCache.context().shared().pageStore();
-
-        File destroyCacheWorkDir = pageStoreMgr.cacheWorkDir(destoryCache.configuration());
+        File destroyCacheWorkDir = ig2.context().pdsFolderResolver().fileTree().cacheWorkDir(destoryCache.configuration());
 
         // Stop the whole cluster
         stopAllGrids();

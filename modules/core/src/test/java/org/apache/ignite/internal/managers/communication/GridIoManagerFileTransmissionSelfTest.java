@@ -53,11 +53,9 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -935,13 +933,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     private File cacheWorkDir(IgniteEx ignite, String cacheName) {
         // Resolve cache directory.
-        IgniteInternalCache<?, ?> cache = ignite.cachex(cacheName);
-
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cache.context()
-            .shared()
-            .pageStore();
-
-        return pageStoreMgr.cacheWorkDir(cache.configuration());
+        return ignite.context().pdsFolderResolver().fileTree().cacheWorkDir(ignite.cachex(cacheName).configuration());
     }
 
     /**

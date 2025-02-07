@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CheckCorruptedCacheStoresCleanAction;
 import org.apache.ignite.internal.processors.cache.persistence.CleanCacheStoresMaintenanceAction;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,7 +57,6 @@ import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /** */
 @GridInternal
@@ -78,6 +77,9 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Node file tree. */
+        private NodeFileTree ft;
+
         /**
          * Create job with specified argument.
          *
@@ -92,6 +94,8 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         @Override protected PersistenceTaskResult run(@Nullable PersistenceTaskArg arg) throws IgniteException {
             if (!ignite.context().maintenanceRegistry().isMaintenanceMode())
                 return new PersistenceTaskResult(false);
+
+            ft = ignite.context().pdsFolderResolver().fileTree();
 
             if (arg instanceof PersistenceCleanAllTaskArg
                 || arg instanceof PersistenceCleanCorruptedTaskArg
@@ -110,14 +114,12 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
             MaintenanceTask task = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-            File workDir = ignite.context().pdsFolderResolver().fileTree().nodeStorage();
-
             if (arg instanceof PersistenceBackupAllTaskArg)
-                return backupAll(workDir);
+                return backupAll(ft.nodeStorage());
             else if (arg instanceof PersistenceBackupCorruptedTaskArg)
-                return backupCaches(workDir, corruptedCacheDirectories(task));
+                return backupCaches(ft.nodeStorage(), corruptedCacheDirectories(task));
             else
-                return backupCaches(workDir, cacheDirectoriesFromCacheNames(((PersistenceBackupCachesTaskArg)arg).caches()));
+                return backupCaches(ft.nodeStorage(), cacheDirectoriesFromCacheNames(((PersistenceBackupCachesTaskArg)arg).caches()));
         }
 
         /** */
@@ -127,7 +129,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> cacheDirName(desc.cacheConfiguration()))
+                .map(desc -> ft.cacheDirName(desc.cacheConfiguration()))
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -228,7 +230,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                     try {
                         pageStore.cleanupPersistentSpace(cacheDescr.cacheConfiguration());
 
-                        cleanedCaches.add(cacheDirName(cacheDescr.cacheConfiguration()));
+                        cleanedCaches.add(ft.cacheDirName(cacheDescr.cacheConfiguration()));
                     }
                     catch (IgniteCheckedException e) {
                         failedToCleanCaches.add(name);
@@ -268,7 +270,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> cacheDirName(desc.cacheConfiguration()))
+                .map(desc -> ft.cacheDirName(desc.cacheConfiguration()))
                 .collect(Collectors.toList());
 
             try {
@@ -392,7 +394,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 .filter(s ->
                     CU.isPersistentCache(cacheProc.cacheDescriptor(s).cacheConfiguration(), dsCfg))
                 .map(s -> cacheProc.cacheDescriptor(s).cacheConfiguration())
-                .map(FilePageStoreManager::cacheDirName)
+                .map(ft::cacheDirName)
                 .distinct()
                 .collect(Collectors.toList());
         }

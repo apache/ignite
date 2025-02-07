@@ -3893,7 +3893,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File cacheDir = FilePageStoreManager.cacheWorkDir(ft.nodeStorage(), cacheDirName);
+                File cacheDir = ft.cacheWorkDir(cacheDirName);
 
                 File tmpCacheDir = U.resolveWorkDirectory(ft.nodeStorage().getAbsolutePath(),
                     formatTmpDirName(cacheDir).getName(), false);

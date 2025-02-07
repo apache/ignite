@@ -35,10 +35,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -144,11 +143,9 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
 
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
+            NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
-
-            File[] tmpFile = pageStore.cacheWorkDir(true, ODD_GROUP_NAME).listFiles(new FilenameFilter() {
+            File[] tmpFile = ft.cacheWorkDir(true, ODD_GROUP_NAME).listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
                     return name.endsWith(CACHE_DATA_TMP_FILENAME);
                 }
@@ -214,15 +211,13 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
 
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
-
-            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
+            NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
             StoredCacheData data = cacheDescr.toStoredData(ig.context().cache().splitter());
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File tmp = new File(pageStore.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_TMP_FILENAME);
+            File tmp = new File(ft.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_TMP_FILENAME);
 
             try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
                 marshaller.marshal(data, stream);
@@ -240,15 +235,13 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
 
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
-
-            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
+            NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
             StoredCacheData data = cacheDescr.toStoredData(ig.context().cache().splitter());
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File cfg = new File(pageStore.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_FILENAME);
+            File cfg = new File(ft.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_FILENAME);
 
             try (DataOutputStream os = new DataOutputStream(new FileOutputStream(cfg))) {
                 os.writeLong(-1L);

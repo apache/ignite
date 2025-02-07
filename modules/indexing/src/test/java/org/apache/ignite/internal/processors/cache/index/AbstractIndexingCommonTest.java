@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -95,11 +94,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
 
                 assertNotNull(cachex);
 
-                FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cachex.context().shared().pageStore();
-
-                assertNotNull(pageStoreMgr);
-
-                File cacheWorkDir = pageStoreMgr.cacheWorkDir(cachex.configuration());
+                File cacheWorkDir = grid.context().pdsFolderResolver().fileTree().cacheWorkDir(cachex.configuration());
 
                 return cacheWorkDir.toPath().resolve("index.bin");
             })

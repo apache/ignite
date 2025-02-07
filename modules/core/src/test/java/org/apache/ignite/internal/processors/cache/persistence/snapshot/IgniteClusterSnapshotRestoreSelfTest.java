@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -684,8 +683,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = ((FilePageStoreManager)grid(2).context().cache().context().pageStore()).
-            cacheWorkDir(dfltCacheCfg).getParentFile();
+        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheWorkDir(dfltCacheCfg).getParentFile();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);

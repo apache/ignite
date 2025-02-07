@@ -247,7 +247,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
         try {
-            File cacheWorkDir = cacheWorkDir(cacheConfiguration);
+            File cacheWorkDir = ft.cacheWorkDir(cacheConfiguration);
 
             if (!cacheWorkDir.exists())
                 return;
@@ -368,7 +368,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                             "Corrupted cache groups found",
                             cacheCfgs.stream()
-                                .map(ccfg -> cacheWorkDir(ccfg).getName())
+                                .map(ccfg -> ft.cacheWorkDir(ccfg).getName())
                                 .collect(Collectors.joining(File.separator)))
                 );
             }
@@ -403,7 +403,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 boolean globalEnabled = cctx.database().walEnabled(grpDescId, false);
 
                 if (!locEnabled || !globalEnabled) {
-                    File dir = cacheWorkDir(desc.config());
+                    File dir = ft.cacheWorkDir(desc.config());
 
                     if (Arrays.stream(
                         dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
@@ -544,7 +544,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      *
      */
     public Path getPath(boolean isSharedGroup, String cacheOrGroupName, int partId) {
-        return getPartitionFilePath(cacheWorkDir(isSharedGroup, cacheOrGroupName), partId);
+        return getPartitionFilePath(ft.cacheWorkDir(isSharedGroup, cacheOrGroupName), partId);
     }
 
     /**
@@ -556,7 +556,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        File cacheWorkDir = cacheWorkDir(ccfg);
+        File cacheWorkDir = ft.cacheWorkDir(ccfg);
 
         String dataRegionName = grpDesc.config().getDataRegionName();
         DataRegion dataRegion = cctx.database().dataRegion(dataRegionName);
@@ -733,7 +733,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Partition file.
      */
     @NotNull public static File getPartitionFile(File workDir, String cacheDirName, int partId) {
-        return new File(cacheWorkDir(workDir, cacheDirName), getPartitionFileName(partId));
+        return new File(NodeFileTree.cacheWorkDir(workDir, cacheDirName), getPartitionFileName(partId));
     }
 
     /**
@@ -953,51 +953,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param ccfg Cache configuration.
-     * @return Store dir for given cache.
-     */
-    public File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
-        return cacheWorkDir(ft.nodeStorage(), cacheDirName(ccfg));
-    }
-
-    /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return Store directory for given cache.
-     */
-    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheWorkDir(ft.nodeStorage(), cacheDirName(isSharedGroup, cacheOrGroupName));
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public static File cacheWorkDir(File storeWorkDir, String cacheDirName) {
-        return new File(storeWorkDir, cacheDirName);
-    }
-
-    /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return The full cache directory name.
-     */
-    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
-        return isSharedGroup ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
-            : CACHE_DIR_PREFIX + cacheOrGroupName;
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return The full cache directory name.
-     */
-    public static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
-
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
-    }
-
-    /**
      * @param grpId Group id.
      * @return Name of cache group directory.
      * @throws IgniteCheckedException If cache group doesn't exist.
@@ -1011,7 +966,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return cacheDirName(gctx.config());
+        return ft.cacheDirName(gctx.config());
     }
 
     /**

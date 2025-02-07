@@ -92,7 +92,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.validateIncomingConfiguration;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
@@ -1202,7 +1201,7 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String expDir = cacheDirName(ccfg);
+        String expDir = ctx.pdsFolderResolver().fileTree().cacheDirName(ccfg);
 
         try {
             return !expDir.equals(Paths.get(expDir).toFile().getName());
