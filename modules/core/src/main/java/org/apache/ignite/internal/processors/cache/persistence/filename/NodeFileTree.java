@@ -381,6 +381,14 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File cacheWorkDir(String cacheDirName) {
+        return new File(nodeStorage, cacheDirName);
+    }
+
+    /**
      * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
@@ -408,14 +416,6 @@ public class NodeFileTree extends SharedFileTree {
     /** @return {@code ${root}/${path}/${folderName}} path. */
     private File rootRelative(String path) {
         return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    private File cacheWorkDir(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
     }
 
     /** {@inheritDoc} */

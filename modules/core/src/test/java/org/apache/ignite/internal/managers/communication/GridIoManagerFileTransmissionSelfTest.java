@@ -206,7 +206,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        File cacheDirIg0 = cacheWorkDir(snd, DEFAULT_CACHE_NAME);
+        File cacheDirIg0 = snd.context().pdsFolderResolver().fileTree().cacheWorkDir(snd.cachex(DEFAULT_CACHE_NAME).configuration());
 
         File[] cacheParts = cacheDirIg0.listFiles(fileBinFilter);
 
@@ -924,16 +924,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             for (int i = 0; i < CACHE_SIZE; i++)
                 dataStreamer.addData(i, i + cacheName.hashCode());
         }
-    }
-
-    /**
-     * @param ignite An ignite instance.
-     * @param cacheName Cache name.
-     * @return The cache working directory.
-     */
-    private File cacheWorkDir(IgniteEx ignite, String cacheName) {
-        // Resolve cache directory.
-        return ignite.context().pdsFolderResolver().fileTree().cacheWorkDir(ignite.cachex(cacheName).configuration());
     }
 
     /**

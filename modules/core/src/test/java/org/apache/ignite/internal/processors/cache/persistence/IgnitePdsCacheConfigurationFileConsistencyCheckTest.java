@@ -145,7 +145,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-            File[] tmpFile = ft.cacheWorkDir(true, ODD_GROUP_NAME).listFiles(new FilenameFilter() {
+            File[] tmpFile = ft.cacheWorkDir(desc.cacheConfiguration()).listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
                     return name.endsWith(CACHE_DATA_TMP_FILENAME);
                 }
@@ -217,7 +217,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File tmp = new File(ft.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_TMP_FILENAME);
+            File tmp = new File(ft.cacheWorkDir(data.config()), data.config().getName() + CACHE_DATA_TMP_FILENAME);
 
             try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
                 marshaller.marshal(data, stream);
@@ -241,7 +241,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File cfg = new File(ft.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_FILENAME);
+            File cfg = new File(ft.cacheWorkDir(data.config()), data.config().getName() + CACHE_DATA_FILENAME);
 
             try (DataOutputStream os = new DataOutputStream(new FileOutputStream(cfg))) {
                 os.writeLong(-1L);
