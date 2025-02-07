@@ -36,7 +36,7 @@ control.bat <connection parameters> <command> <arguments>
 
 == Connecting to Cluster
 
-NOTE: Starting from Apache Ignite version 2.17, the utility by default uses a connection through the thin client protocol (configured on a node via 'org.apache.ignite.configuration.ClientConnectorConfiguration'). See link:#migration-to-the-thin-client-protocol[migration notes].
+NOTE: Starting from Apache Ignite version 2.17, the utility by default uses a connection through the thin client protocol (configured on a node via `org.apache.ignite.configuration.ClientConnectorConfiguration`). See link:#migration-to-the-thin-client-protocol[Migration Notes] for more information.
 
 When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:10800`).
 If you want to connect to a node that is running on a remove machine, specify the connection parameters.
