@@ -73,17 +73,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes)
  * │  │  └── 1645778359.classname0
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
- * │  │  ├── cache-default
+ * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
  * │  │  │  ├── part-0.bin
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
- * │  │  ├── cache-ignite-sys-cache
+ * │  │  ├── cache-ignite-sys-cache                                             ← cacheStorage (cache name "ignite-sys-cache").
  * │  │  │  ├── cache_data.dat
  * │  │  │  └── index.bin
- * │  │  ├── cache-tx-cache
+ * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
  * │  │  │  ├── part-0.bin
@@ -100,11 +100,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  │  │  └── part-1.bin
  * │  │  └── snp                                                                ← snpTmp (node 0)
  * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeStorage (node 1).
- * │  │  ├── cache-default
+ * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * ..
- * │  │  ├── cache-ignite-sys-cache
+ * │  │  ├── cache-ignite-sys-cache                                             ← cacheStorage (cache name "ignite-sys-cache").
  * ...
- * │  │  ├── cache-tx-cache
+ * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
  * ...
  * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
