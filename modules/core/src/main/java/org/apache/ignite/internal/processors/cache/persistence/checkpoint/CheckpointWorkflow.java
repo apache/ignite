@@ -281,15 +281,13 @@ public class CheckpointWorkflow {
             IgniteInternalFuture<?> markerStoredToDiskFut = curr.futureFor(MARKER_STORED_TO_DISK);
 
             // There are allowable to replace pages only after checkpoint entry was stored to disk.
-            ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace = writeRecoveryData ?
-                () -> {
-                    // If we write recovery data on checkpoint it's not safe to wait for MARKER_STORED_TO_DISK future,
-                    // recovery data writers acquire page memory segments locks to write the pages, in the same time
-                    // another thread can lock page memory segment for writing during page replacement and wait for
-                    // marker stored to disk, so deadlock is possible.
-                    return curr.greaterOrEqualTo(MARKER_STORED_TO_DISK);
-                } :
-                () -> {
+            ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace = writeRecoveryData
+                // If we write recovery data on checkpoint it's not safe to wait for MARKER_STORED_TO_DISK future,
+                // recovery data writers acquire page memory segments locks to write the pages, in the same time
+                // another thread can lock page memory segment for writing during page replacement and wait for
+                // marker stored to disk, so deadlock is possible.
+                ? () -> curr.greaterOrEqualTo(MARKER_STORED_TO_DISK)
+                : () -> {
                     // Uninterruptibly is important because otherwise in case of interrupt of client thread node
                     // would be stopped.
                     markerStoredToDiskFut.getUninterruptibly();

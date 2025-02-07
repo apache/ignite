@@ -269,8 +269,6 @@ public class CheckpointRecoveryFile implements AutoCloseable {
                     file.getName() + ", pos=" + pos + ", grpId=" + fullPageId.groupId() + ", keyId=" + encKeyId + ']');
             }
 
-            EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
-
             decBuf.clear();
             encSpi.decrypt(buf, grpKey.key(), decBuf);
             decBuf.limit(decBuf.position());

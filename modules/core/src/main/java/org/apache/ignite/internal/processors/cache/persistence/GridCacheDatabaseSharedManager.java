@@ -2168,7 +2168,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 CountDownFuture cpRecoveryFut = new CountDownFuture(recoveryFiles.size());
 
-                recoveryFiles.forEach(cpRecoveryFile -> {
+                recoveryFiles.forEach(cpRecoveryFile ->
                     exec.submit(() -> {
                         Throwable err = null;
 
@@ -2209,8 +2209,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             cpRecoveryFut.onDone(err);
                         }
                     // Use file index instead of grpId to define stripe of stripped executor.
-                    }, cpRecoveryFile.checkpointerIndex(), 0);
-                });
+                    }, cpRecoveryFile.checkpointerIndex(), 0)
+                );
 
                 cpRecoveryFut.get();
 

@@ -129,7 +129,7 @@ public class CheckpointRecoveryFileStorage {
 
         for (File file : files) {
             if (!file.delete())
-                throw new StorageException("Failed to checkpoint recovery file [file=" + file + ']');
+                throw new StorageException("Failed to delete checkpoint recovery file [file=" + file + ']');
         }
     }
 }
