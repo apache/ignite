@@ -773,7 +773,7 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = ft.cacheStorage(NodeFileTree.cacheGroupStorage(snpCacheDir), grpName);
+                File cacheDir = ft.cacheStorage(snpCacheDir.getName());
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
