@@ -77,7 +77,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_GRP_DIR_PREFIX;
 
 /** */
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
@@ -232,7 +231,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        File workDir = resolveCacheWorkDir(ig);
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
 
         long[] oldPartLen = partitionSizes(workDir);
 
@@ -297,18 +296,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 throw new IgniteException(e);
             }
         }).toArray();
-    }
-
-    /**
-     * @return Working directory for cache group {@link IgnitePdsDefragmentationTest#GRP_NAME}.
-     * @throws IgniteCheckedException If failed for some reason, like if it's a file instead of directory.
-     */
-    private File resolveCacheWorkDir(IgniteEx ig) throws IgniteCheckedException {
-        File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
-
-        return new File(nodeWorkDir, CACHE_GRP_DIR_PREFIX + GRP_NAME);
     }
 
     /**
@@ -473,7 +460,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        File workDir = resolveCacheWorkDir(ig);
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
 
         //Defragmentation should fail when node starts.
         startAndAwaitNodeFail(workDir);
