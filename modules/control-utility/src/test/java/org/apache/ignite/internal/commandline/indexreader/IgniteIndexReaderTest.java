@@ -54,6 +54,7 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -89,7 +90,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -271,23 +271,13 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Get data directory for cache group.
-     *
-     * @param cacheGrpName Cache group name.
-     * @return Directory name.
-     */
-    protected String dataDir(String cacheGrpName) {
-        return CACHE_GRP_DIR_PREFIX + cacheGrpName;
-    }
-
-    /**
      * @param workDir Working directory.
      * @param cacheGrp Cache group.
      * @return Tuple that consists of some inner page id of any index tree, and some link to data.
      * @throws IgniteCheckedException If failed.
      */
     private IgniteBiTuple<Long, Long> findPagesForAnyCacheKey(File workDir, String cacheGrp) throws IgniteCheckedException {
-        File dir = new File(workDir, dataDir(cacheGrp));
+        File dir = new File(workDir, NodeFileTree.cacheStorageName(true, cacheGrp));
 
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
@@ -358,7 +348,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
         String fileName = partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
 
-        File cacheWorkDir = new File(workDir, dataDir(CACHE_GROUP_NAME));
+        File cacheWorkDir = new File(workDir, NodeFileTree.cacheStorageName(true, CACHE_GROUP_NAME));
 
         File file = new File(cacheWorkDir, fileName);
 
@@ -435,7 +425,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     private void restoreFile(File workDir, int partId) throws IOException {
         String fileName = partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
 
-        File cacheWorkDir = new File(workDir, dataDir(CACHE_GROUP_NAME));
+        File cacheWorkDir = new File(workDir, NodeFileTree.cacheStorageName(true, CACHE_GROUP_NAME));
 
         File backupFiles = new File(cacheWorkDir, fileName + ".backup");
 
@@ -749,7 +739,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             PAGE_SIZE,
             PART_CNT,
             PAGE_STORE_VER,
-            new File(workDir, dataDir(cacheGrp)),
+            new File(workDir, NodeFileTree.cacheStorageName(true, cacheGrp)),
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
             log
@@ -1144,7 +1134,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Create an empty directory and try to check it.
         String newCleanGrp = "noCache";
 
-        File cleanDir = new File(workDir, dataDir(newCleanGrp));
+        File cleanDir = new File(workDir, NodeFileTree.cacheStorageName(true, newCleanGrp));
 
         try {
             cleanDir.mkdir();

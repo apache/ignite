@@ -214,9 +214,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -664,7 +664,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 for (SnapshotMetadata m: readSnapshotMetadatas(name, null)) {
                     List<File> dirs = snapshotCacheDirectories(m.snapshotName(), null, m.folderName(), grpName -> true);
 
-                    Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
+                    Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
 
                     views.add(new SnapshotView(m, cacheGrps));
                 }
@@ -3999,7 +3999,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been sent [part=" + part.getName() + ", pair=" + pair +
-                        ", grpName=" + cacheGroupName(new File(cacheDirName)) + ", length=" + len + ']');
+                        ", grpName=" + cacheName(new File(cacheDirName)) + ", length=" + len + ']');
                 }
             }
             catch (TransmissionCancelledException e) {

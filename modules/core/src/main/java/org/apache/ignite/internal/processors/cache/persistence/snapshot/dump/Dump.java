@@ -67,8 +67,6 @@ import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
@@ -371,18 +369,9 @@ public class Dump implements AutoCloseable {
 
         assert nodeDir.exists() && nodeDir.isDirectory();
 
-        File[] grpDirs = nodeDir.listFiles(f -> {
-            if (!f.isDirectory()
-                || (!f.getName().startsWith(CACHE_DIR_PREFIX)
-                    && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
-                return false;
-
-            String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
-                ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
-                : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
-
-            return grpId == CU.cacheId(grpName);
-        });
+        File[] grpDirs = nodeDir.listFiles(f -> f.isDirectory()
+            && NodeFileTree.CACHE_DIR_FILTER.test(f)
+            && grpId == CU.cacheId(NodeFileTree.cacheName(f)));
 
         if (grpDirs.length != 1)
             throw new IgniteException("Wrong number of group directories: " + grpDirs.length);

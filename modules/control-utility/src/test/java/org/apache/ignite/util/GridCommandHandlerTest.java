@@ -512,7 +512,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("cache-"))
+            .filter(NodeFileTree::cacheStorage)
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
 
@@ -555,7 +555,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("cache-"))
+            .filter(NodeFileTree::cacheStorage)
             .map(File::getName)
             .collect(Collectors.toCollection(TreeSet::new));
 
