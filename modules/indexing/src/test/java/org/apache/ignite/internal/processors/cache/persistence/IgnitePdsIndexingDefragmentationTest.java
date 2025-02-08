@@ -50,6 +50,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_GRP_DIR_PREFIX;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
@@ -128,7 +129,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
         File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
-        File workDir = new File(nodeWorkDir, FilePageStoreManager.CACHE_GRP_DIR_PREFIX + GRP_NAME);
+        File workDir = new File(nodeWorkDir, CACHE_GRP_DIR_PREFIX + GRP_NAME);
 
         long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 

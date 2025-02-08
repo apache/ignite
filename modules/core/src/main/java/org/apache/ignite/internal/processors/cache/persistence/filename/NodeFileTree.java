@@ -32,8 +32,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -155,6 +153,12 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Checkpoint directory name. */
     public static final String CHECKPOINT_DIR = "cp";
+
+    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
+    public static final String CACHE_DIR_PREFIX = "cache-";
+
+    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
+    public static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
     private final String folderName;

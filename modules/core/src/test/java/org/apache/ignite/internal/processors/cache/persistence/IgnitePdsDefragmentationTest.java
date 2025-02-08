@@ -77,6 +77,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_GRP_DIR_PREFIX;
 
 /** */
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
@@ -307,7 +308,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
 
-        return new File(nodeWorkDir, FilePageStoreManager.CACHE_GRP_DIR_PREFIX + GRP_NAME);
+        return new File(nodeWorkDir, CACHE_GRP_DIR_PREFIX + GRP_NAME);
     }
 
     /**
