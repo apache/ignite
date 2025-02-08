@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
@@ -239,11 +238,9 @@ public class DataStorageConfiguration implements Serializable {
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
     /** Change Data Capture path. */
-    @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
     /** Change Data Capture directory size limit. */
-    @IgniteExperimental
     private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
     /**
@@ -298,7 +295,6 @@ public class DataStorageConfiguration implements Serializable {
     private long walAutoArchiveAfterInactivity = -1;
 
     /** Time interval (in milliseconds) after last log of data change for force archiving of incompletely WAL segment. */
-    @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
     /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
@@ -787,7 +783,6 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return CDC directory.
      */
-    @IgniteExperimental
     public String getCdcWalPath() {
         return cdcWalPath;
     }
@@ -799,7 +794,6 @@ public class DataStorageConfiguration implements Serializable {
      * @param cdcWalPath CDC directory.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
         A.notNull(cdcWalPath, "CDC WAL");
 
@@ -813,7 +807,6 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return CDC directory maximum size in bytes.
      */
-    @IgniteExperimental
     public long getCdcWalDirectoryMaxSize() {
         return cdcWalDirMaxSize;
     }
@@ -827,7 +820,6 @@ public class DataStorageConfiguration implements Serializable {
      * @param cdcWalDirMaxSize CDC directory maximum size in bytes.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setCdcWalDirectoryMaxSize(long cdcWalDirMaxSize) {
         this.cdcWalDirMaxSize = cdcWalDirMaxSize;
 
@@ -1149,7 +1141,6 @@ public class DataStorageConfiguration implements Serializable {
      * Zero or negative value disables forcefull auto archiving.
      * @return current configuration instance for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
         this.walForceArchiveTimeout = walForceArchiveTimeout;
 
@@ -1160,7 +1151,6 @@ public class DataStorageConfiguration implements Serializable {
      * @return time interval (in milliseconds) after last log of data change
      * for force archiving of incompletely WAL segment.
      */
-    @IgniteExperimental
     public long getWalForceArchiveTimeout() {
         return walForceArchiveTimeout;
     }

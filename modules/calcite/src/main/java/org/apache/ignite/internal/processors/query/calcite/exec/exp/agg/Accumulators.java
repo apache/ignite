@@ -1425,7 +1425,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class DistinctAccumulator<Row> extends AbstractAccumulator<Row> {
+    private static class DistinctAccumulator<Row> extends AbstractAccumulator<Row> implements StoringAccumulator {
         /** */
         private final Accumulator<Row> acc;
 
