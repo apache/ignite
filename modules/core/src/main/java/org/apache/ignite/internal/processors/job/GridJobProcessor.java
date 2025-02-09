@@ -75,8 +75,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -92,6 +90,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.metric.LongValueMetric;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi;
 import org.apache.ignite.spi.metric.DoubleMetric;
@@ -252,28 +252,28 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final AtomicLong metricsLastUpdateTstamp = new AtomicLong();
 
     /** Number of started jobs. */
-    final AtomicLongMetric startedJobsMetric;
+    private final LongValueMetric startedJobsMetric;
 
     /** Number of active jobs currently executing. */
-    final AtomicLongMetric activeJobsMetric;
+    private final LongValueMetric activeJobsMetric;
 
     /** Number of currently queued jobs waiting to be executed. */
-    final AtomicLongMetric waitingJobsMetric;
+    private final LongValueMetric waitingJobsMetric;
 
     /** Number of cancelled jobs that are still running. */
-    final AtomicLongMetric canceledJobsMetric;
+    private final LongValueMetric canceledJobsMetric;
 
     /** Number of jobs rejected after more recent collision resolution operation. */
-    final AtomicLongMetric rejectedJobsMetric;
+    private final LongValueMetric rejectedJobsMetric;
 
     /** Number of finished jobs. */
-    final AtomicLongMetric finishedJobsMetric;
+    private final LongValueMetric finishedJobsMetric;
 
     /** Total job execution time. */
-    final AtomicLongMetric totalExecutionTimeMetric;
+    private final LongValueMetric totalExecutionTimeMetric;
 
     /** Total time jobs spent on waiting queue. */
-    final AtomicLongMetric totalWaitTimeMetric;
+    private final LongValueMetric totalWaitTimeMetric;
 
     /** */
     private boolean stopping;
@@ -354,7 +354,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         cpuLoadMetric = ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
 
-        MetricRegistryImpl mreg = ctx.metric().registry(JOBS_METRICS);
+        MetricRegistry mreg = ctx.metric().registry(JOBS_METRICS);
 
         startedJobsMetric = mreg.longMetric(STARTED, "Number of started jobs.");
 

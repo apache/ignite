@@ -642,7 +642,7 @@ public class DataStorageMetricsImpl {
         if (!metricsEnabled)
             return;
 
-        lastWalSegmentRollOverTime.value(U.currentTimeMillis());
+        lastWalSegmentRollOverTime.set(U.currentTimeMillis());
     }
 
     /**
@@ -702,23 +702,23 @@ public class DataStorageMetricsImpl {
         if (!metricsEnabled)
             return;
 
-        lastCpBeforeLockDuration.value(beforeLockDuration);
-        lastCpLockWaitDuration.value(lockWaitDuration);
-        lastCpListenersExecuteDuration.value(listenersExecuteDuration);
-        lastCpMarkDuration.value(markDuration);
-        lastCpLockHoldDuration.value(lockHoldDuration);
-        lastCpPagesWriteDuration.value(pagesWriteDuration);
-        lastCpFsyncDuration.value(fsyncDuration);
-        lastCpWalRecordFsyncDuration.value(walRecordFsyncDuration);
-        lastCpWriteEntryDuration.value(writeEntryDuration);
-        lastCpSplitAndSortPagesDuration.value(splitAndSortPagesDuration);
-        lastCpDuration.value(duration);
-        lastCpStart.value(start);
-        lastCpTotalPages.value(totalPages);
-        lastCpDataPages.value(dataPages);
-        lastCpCowPages.value(cowPages);
-        this.storageSize.value(storageSize);
-        this.sparseStorageSize.value(sparseStorageSize);
+        lastCpBeforeLockDuration.set(beforeLockDuration);
+        lastCpLockWaitDuration.set(lockWaitDuration);
+        lastCpListenersExecuteDuration.set(listenersExecuteDuration);
+        lastCpMarkDuration.set(markDuration);
+        lastCpLockHoldDuration.set(lockHoldDuration);
+        lastCpPagesWriteDuration.set(pagesWriteDuration);
+        lastCpFsyncDuration.set(fsyncDuration);
+        lastCpWalRecordFsyncDuration.set(walRecordFsyncDuration);
+        lastCpWriteEntryDuration.set(writeEntryDuration);
+        lastCpSplitAndSortPagesDuration.set(splitAndSortPagesDuration);
+        lastCpDuration.set(duration);
+        lastCpStart.set(start);
+        lastCpTotalPages.set(totalPages);
+        lastCpDataPages.set(dataPages);
+        lastCpCowPages.set(cowPages);
+        this.storageSize.set(storageSize);
+        this.sparseStorageSize.set(sparseStorageSize);
 
         totalCheckpointTime.add(duration);
 

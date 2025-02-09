@@ -342,8 +342,8 @@ public class CdcMain implements Runnable {
                 cdcModeState = state.loadCdcMode();
 
                 if (walState != null) {
-                    committedSegmentIdx.value(walState.get1().index());
-                    committedSegmentOffset.value(walState.get1().fileOffset());
+                    committedSegmentIdx.set(walState.get1().index());
+                    committedSegmentOffset.set(walState.get1().fileOffset());
                 }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
@@ -563,9 +563,9 @@ public class CdcMain implements Runnable {
 
         long segmentIdx = segmentIndex(segment);
 
-        lastSegmentConsumptionTs.value(System.currentTimeMillis());
+        lastSegmentConsumptionTs.set(System.currentTimeMillis());
 
-        curSegmentIdx.value(segmentIdx);
+        curSegmentIdx.set(segmentIdx);
 
         long start = U.currentTimeMillis();
 
@@ -845,8 +845,8 @@ public class CdcMain implements Runnable {
 
         state.saveWal(curState);
 
-        committedSegmentIdx.value(curState.get1().index());
-        committedSegmentOffset.value(curState.get1().fileOffset());
+        committedSegmentIdx.set(curState.get1().index());
+        committedSegmentOffset.set(curState.get1().fileOffset());
 
         Iterator<Path> rmvIter = processedSegments.iterator();
 

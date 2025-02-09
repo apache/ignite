@@ -41,7 +41,6 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
@@ -53,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.IgniteMetrics;
+import org.apache.ignite.metric.LongValueMetric;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -723,23 +723,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Memory usage metrics. */
     public class MemoryUsageMetrics {
         /** @see MemoryUsage#getInit() */
-        private final AtomicLongMetric init;
+        private final LongValueMetric init;
 
         /** @see MemoryUsage#getUsed() */
-        private final AtomicLongMetric used;
+        private final LongValueMetric used;
 
         /** @see MemoryUsage#getCommitted() */
-        private final AtomicLongMetric committed;
+        private final LongValueMetric committed;
 
         /** @see MemoryUsage#getMax() */
-        private final AtomicLongMetric max;
+        private final LongValueMetric max;
 
         /**
          * @param grp Metric registry.
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String grp, String metricNamePrefix) {
-            MetricRegistryImpl mreg = registry(grp);
+            MetricRegistry mreg = registry(grp);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);
@@ -749,10 +749,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         /** Updates metric to the provided values. */
         public void update(MemoryUsage usage) {
-            init.value(usage.getInit());
-            used.value(usage.getUsed());
-            committed.value(usage.getCommitted());
-            max.value(usage.getMax());
+            init.set(usage.getInit());
+            used.set(usage.getUsed());
+            committed.set(usage.getCommitted());
+            max.set(usage.getMax());
         }
     }
 

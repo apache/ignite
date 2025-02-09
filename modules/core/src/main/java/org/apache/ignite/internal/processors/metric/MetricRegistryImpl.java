@@ -180,15 +180,8 @@ public class MetricRegistryImpl implements MetricRegistry {
         return addMetric(name, new IntMetricImpl(metricName(regName, name), desc));
     }
 
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @return {@link AtomicLongMetric}.
-     */
-    public AtomicLongMetric longMetric(String name, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public AtomicLongMetric longMetric(String name, @Nullable String desc) {
         return addMetric(name, new AtomicLongMetric(metricName(regName, name), desc));
     }
 
