@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 @RunWith(Parameterized.class)
 public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     /** */
-    private static final int KEYS_CNT = 10_000;
+    private static final int KEYS_CNT = 20_000;
 
     /** */
     private static final int PARTS = 10;
