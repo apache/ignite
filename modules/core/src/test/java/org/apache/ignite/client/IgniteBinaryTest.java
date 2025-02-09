@@ -463,6 +463,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
 
                 cache.put(0, person);
 
+                // Perform any action on server-side with binary object to ensure binary meta exists on node.
                 assertEquals(name, cache.invoke(0, new ExtractNameEntryProcessor()));
             }
             finally {
@@ -514,7 +515,6 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
     private static class ExtractNameEntryProcessor implements EntryProcessor<Integer, Object, String> {
         /** {@inheritDoc} */
         @Override public String process(MutableEntry<Integer, Object> entry, Object... arguments) {
-            // Perform any action with binary object to ensure binary meta exists on node.
             return ((BinaryObject)entry.getValue()).field("name").toString();
         }
     }
