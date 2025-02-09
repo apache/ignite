@@ -222,6 +222,11 @@ public class CheckpointRecoveryFile implements AutoCloseable {
         byte encFlag = hdrBuf.get();
         byte encKeyId = hdrBuf.get();
 
+        if (pageSize <= 0 || pageSize + fileIo.position() > fileIo.size()) {
+            throw new IOException("Unexpected page size [file=" + file.getName() +
+                ", pos=" + pos + ", pageSize=" + pageSize + ']');
+        }
+
         if (!pageIdPredicate.test(fullPageId)) {
             fileIo.position(fileIo.position() + pageSize);
             buf.clear();
@@ -234,9 +239,13 @@ public class CheckpointRecoveryFile implements AutoCloseable {
         if (encFlag != 0)
             buf = encBuf;
 
+        if (pageSize > buf.capacity()) {
+            throw new IOException("Unexpected page size [file=" + file.getName() +
+                ", pos=" + pos + ", pageSize=" + pageSize + ']');
+        }
+
         // Read page data.
         buf.clear();
-        assert buf.capacity() >= pageSize;
         buf.limit(pageSize);
         read = fileIo.readFully(buf);
 

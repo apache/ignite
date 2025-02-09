@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
@@ -40,6 +41,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFileStorage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -75,6 +77,9 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     private final AtomicInteger spoiledPageLimit = new AtomicInteger();
 
     /** */
+    private Pattern spoilFilePattern;
+
+    /** */
     @Parameterized.Parameter(0)
     public boolean encrypt;
 
@@ -100,7 +105,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
             .setFailureHandler(new StopNodeFailureHandler())
             .setEncryptionSpi(encSpi)
             .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setFileIOFactory(new PageStoreSpoilingFileIOFactory(fail, spoiledPageLimit))
+                .setFileIOFactory(new PageStoreSpoilingFileIOFactory(fail, spoiledPageLimit, spoilFilePattern))
                 .setWriteRecoveryDataOnCheckpoint(true)
                 .setCheckpointRecoveryDataCompression(getCompression())
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -125,20 +130,10 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRecoverFromCheckpointRecoveryFiles() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        ignite.cluster().state(ClusterState.ACTIVE);
+        spoilFilePattern = Pattern.compile('^' + Pattern.quote(PART_FILE_PREFIX) + ".*");
 
-        CacheConfiguration<Integer, Integer> cacheCfg = GridAbstractTest.<Integer, Integer>defaultCacheConfiguration()
-            .setAffinity(new RendezvousAffinityFunction(false, PARTS))
-            .setEncryptionEnabled(encrypt);
-
-        if (encrypt)
-            cacheCfg.setDiskPageCompression(DiskPageCompression.DISABLED);
-
-        IgniteCache<Integer, Integer> cache = ignite.createCache(cacheCfg);
-
-        for (int i = 0; i < KEYS_CNT; i++)
-            cache.put(i, i);
+        IgniteEx ignite = initIgnite();
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         AtomicInteger val = new AtomicInteger(KEYS_CNT);
 
@@ -192,6 +187,116 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testFailToRecoverFromSpoiledCheckpointRecoveryFiles() throws Exception {
+        spoilFilePattern = Pattern.compile('^' + Pattern.quote(PART_FILE_PREFIX) + ".*");
+
+        IgniteEx ignite = initIgnite();
+
+        File cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint();
+
+        spoiledPageLimit.set(10);
+        fail.set(true);
+
+        try {
+            forceCheckpoint();
+        }
+        catch (Throwable ignore) {
+            // Expected.
+        }
+
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> Ignition.state(getTestIgniteInstanceName(0)) == IgniteState.STOPPED_ON_FAILURE,
+            10_000
+        ));
+
+        fail.set(false);
+
+        assertTrue(cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches())).length > 0);
+
+        // Spoil recovery files.
+        for (File file : cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches()))) {
+            if (file.length() == 0)
+                continue;
+
+            FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
+
+            FileIO fileIO = fileIoFactory.create(file);
+
+            for (int i = 0; i < 100; i++) {
+                // Spoil random bytes.
+                fileIO.position(ThreadLocalRandom.current().nextLong(file.length() - 1));
+                fileIO.write(new byte[] {(byte)ThreadLocalRandom.current().nextInt(256)}, 0, 1);
+            }
+        }
+
+        try {
+            startGrid(0);
+
+            fail();
+        }
+        catch (Exception ignore) {
+            // Recovery files inconsistency should be detected by CRC or fields check (depending on bytes spoiled).
+        }
+    }
+
+    /** */
+    @Test
+    public void testFailureOnCheckpointRecoveryFilesWrite() throws Exception {
+        spoilFilePattern = CheckpointRecoveryFileStorage.FILE_NAME_PATTERN;
+
+        IgniteEx ignite = initIgnite();
+
+        spoiledPageLimit.set(10);
+        fail.set(true);
+
+        try {
+            forceCheckpoint();
+        }
+        catch (Throwable ignore) {
+            // Expected.
+        }
+
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> Ignition.state(getTestIgniteInstanceName(0)) == IgniteState.STOPPED_ON_FAILURE,
+            10_000
+        ));
+
+        fail.set(false);
+
+        File cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint();
+
+        assertTrue(cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches())).length > 0);
+
+        ignite = startGrid(0);
+
+        IgniteCache<Integer, Integer> cache0 = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            assertEquals((Integer)i, cache0.get(i));
+    }
+
+    /** */
+    private IgniteEx initIgnite() throws Exception {
+        IgniteEx ignite = startGrid(0);
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Integer, Integer> cacheCfg = GridAbstractTest.<Integer, Integer>defaultCacheConfiguration()
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS))
+            .setEncryptionEnabled(encrypt);
+
+        if (encrypt)
+            cacheCfg.setDiskPageCompression(DiskPageCompression.DISABLED);
+
+        IgniteCache<Integer, Integer> cache = ignite.createCache(cacheCfg);
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.put(i, i);
+
+        return ignite;
+    }
+
+    /** */
     private static final class PageStoreSpoilingFileIOFactory implements FileIOFactory {
         /** */
         private final FileIOFactory delegateFactory;
@@ -203,18 +308,24 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
         private final AtomicInteger spoiledPageLimit;
 
         /** */
-        PageStoreSpoilingFileIOFactory(AtomicBoolean failFlag, AtomicInteger spoiledPageLimit) {
+        private final Pattern filePattern;
+
+        /** */
+        PageStoreSpoilingFileIOFactory(AtomicBoolean failFlag, AtomicInteger spoiledPageLimit, Pattern filePattern) {
             delegateFactory = new RandomAccessFileIOFactory();
 
             this.failFlag = failFlag;
             this.spoiledPageLimit = spoiledPageLimit;
+            this.filePattern = filePattern;
         }
 
         /** {@inheritDoc}*/
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = delegateFactory.create(file, modes);
 
-            return file.getName().startsWith(PART_FILE_PREFIX) ? new PageStoreSpoiling(delegate, spoiledPageLimit) : delegate;
+            return filePattern.matcher(file.getName()).matches()
+                ? new PageStoreSpoiling(delegate)
+                : delegate;
         }
 
         /** */
@@ -222,30 +333,38 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
             /** */
             private final AtomicInteger spoiledPages = new AtomicInteger();
 
-            /** */
-            private final AtomicInteger spoiledPagesLimit;
-
             /**
              * @param delegate File I/O delegate
              */
-            public PageStoreSpoiling(FileIO delegate, AtomicInteger spoiledPagesLimit) {
+            public PageStoreSpoiling(FileIO delegate) {
                 super(delegate);
-                this.spoiledPagesLimit = spoiledPagesLimit;
+            }
+
+            /** {@inheritDoc} */
+            @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                spoilBufferIfNeeded(srcBuf);
+
+                return delegate.writeFully(srcBuf);
             }
 
             /** {@inheritDoc} */
             @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
+                spoilBufferIfNeeded(srcBuf);
+
+                return delegate.writeFully(srcBuf, position);
+            }
+
+            /** */
+            private void spoilBufferIfNeeded(ByteBuffer srcBuf) throws IOException {
                 if (failFlag.get()) {
                     // Spoil specified pages amount and after that throw an exception.
-                    if (spoiledPages.getAndIncrement() > spoiledPagesLimit.get())
+                    if (spoiledPages.getAndIncrement() > spoiledPageLimit.get())
                         throw new IOException("Test exception.");
                     else {
                         srcBuf = ByteBuffer.allocate(srcBuf.remaining()).order(ByteOrder.nativeOrder());
                         ThreadLocalRandom.current().nextBytes(srcBuf.array());
                     }
                 }
-
-                return delegate.writeFully(srcBuf, position);
             }
         }
     }

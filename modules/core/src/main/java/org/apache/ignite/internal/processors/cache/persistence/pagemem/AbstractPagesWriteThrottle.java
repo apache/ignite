@@ -73,7 +73,6 @@ public abstract class AbstractPagesWriteThrottle implements PagesWriteThrottlePo
                 CP_BUF_DANGER_THRESHOLD, CP_BUF_WAKEUP_THRESHOLD_EXP_BACKOFF);
             cpBufProtector = new ExponentialBackoffThrottlingStrategy();
         }
-
     }
 
     /** */

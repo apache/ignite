@@ -93,7 +93,7 @@ public enum OperationType {
     /** Custom query property. */
     QUERY_PROPERTY(21),
 
-    /** Version */
+    /** Version. */
     VERSION(255);
 
     /** Cache operations. */
