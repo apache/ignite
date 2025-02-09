@@ -66,9 +66,9 @@ import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalk
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFile;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
@@ -125,6 +126,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadW
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -139,6 +141,7 @@ import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
+import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -1183,7 +1186,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cacheSize = regCfg.getMaxSize();
 
         // Checkpoint buffer size can not be greater than cache size, it does not make sense.
-        long chpBufSize = checkpointBufferSize(regCfg);
+        long chpBufSize = checkpointBufferSize(dsCfg, regCfg);
 
         if (chpBufSize > cacheSize) {
             U.quietAndInfo(log,
@@ -2126,17 +2129,104 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ", walArchive=" + persistenceCfg.getWalArchivePath() + "]");
         }
 
+        long start = U.currentTimeMillis();
+
+        AtomicLong applied = new AtomicLong();
+
         CacheStripedExecutor exec = new CacheStripedExecutor(cctx.kernalContext().pools().getStripedExecutorService());
 
-        long start = U.currentTimeMillis();
+        boolean restoredFromCheckpointRecoveryFiles = false;
+
+        // Try to restore from checkpoint recovery files.
+        if (apply) {
+            List<CheckpointRecoveryFile> recoveryFiles = checkpointManager.checkpointRecoveryFiles(status.cpStartId);
+
+            boolean useRecoveryFiles = cctx.kernalContext().config().getDataStorageConfiguration()
+                .isWriteRecoveryDataOnCheckpoint();
+
+            if (useRecoveryFiles && recoveryFiles.isEmpty()) {
+                throw new StorageException("Failed to restore memory state. Checkpoint recovery files are expected " +
+                    "to exist, but not found (this can happen due to WriteRecoveryDataOnCheckpoint property change " +
+                    "right after node crash or if files were manually deleted)");
+            }
+            else if (!useRecoveryFiles && !recoveryFiles.isEmpty()) {
+                throw new StorageException("Failed to restore memory state. Checkpoint recovery files are not " +
+                    "expected to exist, but found (this can happen due to WriteRecoveryDataOnCheckpoint property " +
+                    "change right after node crash)");
+            }
+
+            if (!recoveryFiles.isEmpty() ) {
+                if (log.isInfoEnabled()) {
+                    recoveryFiles.sort(Comparator.comparing(CheckpointRecoveryFile::checkpointerIndex));
+
+                    String files = recoveryFiles.size() == 1 ? recoveryFiles.get(0).file().getName() :
+                        recoveryFiles.get(0).file().getName() + " .. " +
+                            recoveryFiles.get(recoveryFiles.size() - 1).file().getName();
+
+                    log.info("Start physical recovery from checkpoint recovery files [" + files + ']');
+                }
+
+                CountDownFuture cpRecoveryFut = new CountDownFuture(recoveryFiles.size());
+
+                recoveryFiles.forEach(cpRecoveryFile ->
+                    exec.submit(() -> {
+                        Throwable err = null;
+
+                        try {
+                            cpRecoveryFile.forAllPages(id -> cacheGroupsPredicate.apply(id.groupId()),
+                                (fullPageId, buf) -> {
+                                    if (skipRemovedIndexUpdates(fullPageId.groupId(), partId(fullPageId.pageId())))
+                                        return;
+
+                                    try {
+                                        PageMemoryEx pageMem = getPageMemoryForCacheGroup(fullPageId.groupId());
+
+                                        if (pageMem == null)
+                                            return;
+
+                                        applyPage(pageMem, fullPageId, buf);
+
+                                        applied.incrementAndGet();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        throw new IgniteException(e);
+                                    }
+                                });
+                        }
+                        catch (Throwable e) {
+                            err = e;
+                        }
+                        finally {
+                            try {
+                                cpRecoveryFile.close();
+                            }
+                            catch (Exception e) {
+                                if (err == null)
+                                    err = e;
+                                else
+                                    err.addSuppressed(e);
+                            }
+                            cpRecoveryFut.onDone(err);
+                        }
+                    // Use file index instead of grpId to define stripe of stripped executor.
+                    }, cpRecoveryFile.checkpointerIndex(), 0)
+                );
+
+                cpRecoveryFut.get();
+
+                restoredFromCheckpointRecoveryFiles = true;
+
+                // Fall through to restore from WAL after restoring from checkpoint recovery files.
+                // There will be no page snapshot records and page delta records in WAL in this case, but we still
+                // need to apply PART_META_UPDATE_STATE/PARTITION_DESTROY records.
+            }
+        }
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
 
         WALIterator it = cctx.wal().replay(recPtr, recordTypePredicate);
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, it, lastArchivedSegment, cacheGroupsPredicate);
-
-        AtomicLong applied = new AtomicLong();
 
         try {
             while (restoreBinaryState.hasNext()) {
@@ -2151,6 +2241,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 switch (rec.type()) {
                     case PAGE_RECORD:
                         if (restoreBinaryState.needApplyBinaryUpdate()) {
+                            assert !restoredFromCheckpointRecoveryFiles;
+
                             PageSnapshot pageSnapshot = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
@@ -2229,6 +2321,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     default:
                         if (restoreBinaryState.needApplyBinaryUpdate() && rec instanceof PageDeltaRecord) {
+                            assert !restoredFromCheckpointRecoveryFiles;
+
                             PageDeltaRecord pageDelta = (PageDeltaRecord)rec;
 
                             int grpId = pageDelta.groupId();
@@ -2311,9 +2405,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param pageSnapshotRecord Page snapshot record.
      * @throws IgniteCheckedException If failed.
      */
-    public void applyPageSnapshot(PageMemoryEx pageMem, PageSnapshot pageSnapshotRecord) throws IgniteCheckedException {
-        int grpId = pageSnapshotRecord.fullPageId().groupId();
-        long pageId = pageSnapshotRecord.fullPageId().pageId();
+    private void applyPageSnapshot(PageMemoryEx pageMem, PageSnapshot pageSnapshotRecord) throws IgniteCheckedException {
+        applyPage(pageMem, pageSnapshotRecord.fullPageId(), pageSnapshotRecord.pageDataBuffer());
+    }
+
+    /**
+     * @param pageMem Page memory.
+     * @param fullPageId Full page ID.
+     * @param buf Page buffer to apply.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void applyPage(PageMemoryEx pageMem, FullPageId fullPageId, ByteBuffer buf) throws IgniteCheckedException {
+        int grpId = fullPageId.groupId();
+        long pageId = fullPageId.pageId();
 
         long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
@@ -2321,14 +2425,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
             try {
-                PageUtils.putBytes(pageAddr, 0, pageSnapshotRecord.pageData());
+                ByteBuffer pageMemBuf = pageMem.pageBuffer(pageAddr);
+
+                PageHandler.copyMemory(buf, 0, pageMemBuf, 0, buf.remaining());
 
                 if (PageIO.getCompressionType(pageAddr) != CompressionProcessor.UNCOMPRESSED_PAGE) {
-                    int realPageSize = pageMem.realPageSize(pageSnapshotRecord.groupId());
+                    int realPageSize = pageMem.realPageSize(grpId);
 
-                    assert pageSnapshotRecord.pageDataSize() <= realPageSize : pageSnapshotRecord.pageDataSize();
-
-                    cctx.kernalContext().compress().decompressPage(pageMem.pageBuffer(pageAddr), realPageSize);
+                    cctx.kernalContext().compress().decompressPage(pageMemBuf, realPageSize);
                 }
             }
             finally {
