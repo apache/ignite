@@ -90,6 +90,12 @@ public class DataStorageMetricsImpl {
     private final AtomicLongMetric lastCpSplitAndSortPagesDuration;
 
     /** */
+    private final AtomicLongMetric lastCpRecoveryDataWriteDuration;
+
+    /** */
+    private final AtomicLongMetric lastCpRecoveryDataSize;
+
+    /** */
     private final AtomicLongMetric lastCpTotalPages;
 
     /** */
@@ -154,6 +160,9 @@ public class DataStorageMetricsImpl {
 
     /** */
     private final HistogramMetricImpl cpSplitAndSortPagesHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpRecoveryDataWriteHistogram;
 
     /** */
     private final HistogramMetricImpl cpHistogram;
@@ -246,6 +255,12 @@ public class DataStorageMetricsImpl {
         lastCpSplitAndSortPagesDuration = mreg.longMetric("LastCheckpointSplitAndSortPagesDuration",
             "Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.");
 
+        lastCpRecoveryDataWriteDuration = mreg.longMetric("LastCheckpointRecoveryDataWriteDuration",
+            "Duration of checkpoint recovery data write in milliseconds.");
+
+        lastCpRecoveryDataSize = mreg.longMetric("LastCheckpointRecoveryDataSize",
+            "Size of checkpoint recovery data in bytes.");
+
         lastCpTotalPages = mreg.longMetric("LastCheckpointTotalPagesNumber",
             "Total number of pages written during the last checkpoint.");
 
@@ -311,6 +326,9 @@ public class DataStorageMetricsImpl {
 
         cpSplitAndSortPagesHistogram = mreg.histogram("CheckpointSplitAndSortPagesHistogram", cpBounds,
                 "Histogram of splitting and sorting checkpoint pages duration in milliseconds.");
+
+        cpRecoveryDataWriteHistogram = mreg.histogram("CheckpointRecoveryDataWriteHistogram", cpBounds,
+            "Histogram of checkpoint recovery data write duration in milliseconds.");
 
         cpHistogram = mreg.histogram("CheckpointHistogram", cpBounds,
                 "Histogram of checkpoint duration in milliseconds.");
@@ -672,11 +690,13 @@ public class DataStorageMetricsImpl {
      * @param walRecordFsyncDuration Duration of WAL fsync after logging {@link CheckpointRecord} on checkpoint begin.
      * @param writeEntryDuration Duration of checkpoint entry buffer writing to file.
      * @param splitAndSortPagesDuration Duration of splitting and sorting checkpoint pages.
+     * @param recoveryDataWriteDuration Recovery data write duration.
      * @param duration Total checkpoint duration.
      * @param start Checkpoint start time.
      * @param totalPages Total number of all pages in checkpoint.
      * @param dataPages Total number of data pages in checkpoint.
      * @param cowPages Total number of COW-ed pages in checkpoint.
+     * @param recoveryDataSize Recovery data size, in bytes.
      * @param storageSize Storage space allocated, in bytes.
      * @param sparseStorageSize Storage space allocated adjusted for possible sparsity, in bytes.
      */
@@ -691,11 +711,13 @@ public class DataStorageMetricsImpl {
         long walRecordFsyncDuration,
         long writeEntryDuration,
         long splitAndSortPagesDuration,
+        long recoveryDataWriteDuration,
         long duration,
         long start,
         long totalPages,
         long dataPages,
         long cowPages,
+        long recoveryDataSize,
         long storageSize,
         long sparseStorageSize
     ) {
@@ -712,11 +734,13 @@ public class DataStorageMetricsImpl {
         lastCpWalRecordFsyncDuration.value(walRecordFsyncDuration);
         lastCpWriteEntryDuration.value(writeEntryDuration);
         lastCpSplitAndSortPagesDuration.value(splitAndSortPagesDuration);
+        lastCpRecoveryDataWriteDuration.value(recoveryDataWriteDuration);
         lastCpDuration.value(duration);
         lastCpStart.value(start);
         lastCpTotalPages.value(totalPages);
         lastCpDataPages.value(dataPages);
         lastCpCowPages.value(cowPages);
+        lastCpRecoveryDataSize.value(recoveryDataSize);
         this.storageSize.value(storageSize);
         this.sparseStorageSize.value(sparseStorageSize);
 
@@ -732,6 +756,7 @@ public class DataStorageMetricsImpl {
         cpWalRecordFsyncHistogram.value(walRecordFsyncDuration);
         cpWriteEntryHistogram.value(writeEntryDuration);
         cpSplitAndSortPagesHistogram.value(splitAndSortPagesDuration);
+        cpRecoveryDataWriteHistogram.value(recoveryDataWriteDuration);
         cpHistogram.value(duration);
     }
 
