@@ -579,21 +579,18 @@ public class SnapshotChecker {
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
-            return new IdleVerifyResultV2(operationErrors);
+            return IdleVerifyResultV2.errors(operationErrors);
+
+        IdleVerifyResultV2.Builder bldr = IdleVerifyResultV2.builder();
 
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
-        List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
-        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
-        Map<ClusterNode, Exception> errors = new HashMap<>();
 
         results.forEach((node, resLst) -> resLst.forEach(res -> {
-            if (res.exceptions().isEmpty() && errors.isEmpty()) {
+            if (res.exceptions().isEmpty() && !bldr.hasErrors()) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
-                    partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
+                    bldr.addPartiallyCommited(node, res.partiallyCommittedTxs());
 
-                for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.partHashRes().entrySet())
-                    partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                bldr.addPartitionHashes(res.partHashRes());
 
                 if (log.isDebugEnabled())
                     log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + node + ", taskRes=" + res + ']');
@@ -612,50 +609,22 @@ public class SnapshotChecker {
                         TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
 
                         if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
-                            txHashConflicts.add(F.asList(hash, prevHash));
+                            bldr.addTxConflicts(F.asList(hash, prevHash));
 
                         resIt.remove();
                     }
                 }
             }
             else if (!res.exceptions().isEmpty())
-                errors.put(node, F.first(res.exceptions()));
+                bldr.addException(node, F.first(res.exceptions()));
         }));
 
         // Add all missed pairs to conflicts.
         nodeTxHashMap.values().stream()
             .flatMap(e -> e.values().stream())
-            .forEach(e -> txHashConflicts.add(F.asList(e, null)));
+            .forEach(e -> bldr.addTxConflicts(F.asList(e, null)));
 
-        return errors.isEmpty()
-            ? new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
-            : new IdleVerifyResultV2(errors);
-    }
-
-    /** */
-    public static IdleVerifyResultV2 reduceHashesResults(
-        Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results,
-        Map<ClusterNode, Exception> ex
-    ) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-
-        // Iterate over node's results.
-        for (Map.Entry<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> nodeHashes : results.entrySet()) {
-            Map<PartitionKeyV2, List<PartitionHashRecordV2>> nodePartsHashes = nodeHashes.getValue();
-
-            // Iterate over partitions hashes related to the certain node.
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes : nodePartsHashes.entrySet()) {
-                PartitionKeyV2 partKey = partHashes.getKey();
-                List<PartitionHashRecordV2> hashes = partHashes.getValue();
-
-                clusterHashes.computeIfAbsent(partKey, k -> new ArrayList<>()).addAll(hashes);
-            }
-        }
-
-        if (results.size() != ex.size())
-            return new IdleVerifyResultV2(clusterHashes, ex);
-        else
-            return new IdleVerifyResultV2(ex);
+        return bldr.build();
     }
 
     /** */

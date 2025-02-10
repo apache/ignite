@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -63,23 +59,22 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public void complete(String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-        Map<ClusterNode, Exception> errs = new HashMap<>();
+        IdleVerifyResultV2.Builder bldr = IdleVerifyResultV2.builder();
 
         for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> res : results) {
             if (res.error() != null) {
-                errs.put(res.node(), res.error());
+                bldr.addException(res.node(), res.error());
 
                 continue;
             }
 
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.data().entrySet())
-                clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                bldr.addPartitionHash(entry.getKey(), entry.getValue());
         }
 
-        IdleVerifyResultV2 verifyResult = new IdleVerifyResultV2(clusterHashes, errs);
+        IdleVerifyResultV2 verifyResult = bldr.build();
 
-        if (errs.isEmpty() && !verifyResult.hasConflicts())
+        if (!bldr.hasErrors() && !verifyResult.hasConflicts())
             return;
 
         GridStringBuilder buf = new GridStringBuilder();
