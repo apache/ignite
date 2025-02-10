@@ -128,7 +128,6 @@ public class GridLocalConfigManager {
 
         if (!ctx.clientNode() && ft.nodeStorage() != null)
             U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
-
     }
 
     /**
