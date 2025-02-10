@@ -163,6 +163,12 @@ public class NodeFileTree extends SharedFileTree {
     /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
+    /**
+     * Partition file prefix.
+     * TODO: check usages.
+     */
+    public static final String PART_FILE_PREFIX = "part-";
+
     /** Filter out all cache directories. */
     public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
@@ -410,6 +416,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean cacheGroupDir(File dir) {
         return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms partition file name pattern.
+     */
+    public static boolean partitionFile(File f) {
+        return f.getName().startsWith(PART_FILE_PREFIX);
     }
 
     /**

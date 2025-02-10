@@ -115,8 +115,8 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
@@ -734,7 +734,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         Map<Integer, Long> rawSizes = Arrays
             .stream(new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
             .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
+            .peek(f -> assertTrue(NodeFileTree.partitionFile(f) && f.getName().endsWith(DUMP_FILE_EXT)))
             .collect(Collectors.toMap(
                 f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(), f.getName().length() - DUMP_FILE_EXT.length())),
                 File::length
@@ -743,7 +743,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         Map<Integer, Long> zipSizes = Arrays
             .stream(new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
             .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT + ZIP_SUFFIX)))
+            .peek(f -> assertTrue(NodeFileTree.partitionFile(f) && f.getName().endsWith(DUMP_FILE_EXT + ZIP_SUFFIX)))
             .collect(Collectors.toMap(
                 f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(),
                     f.getName().length() - (DUMP_FILE_EXT + ZIP_SUFFIX).length())

@@ -89,6 +89,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 
 /**
  * File page store manager.
@@ -103,9 +104,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** Suffix for tmp files */
     public static final String TMP_SUFFIX = ".tmp";
-
-    /** Partition file prefix. */
-    public static final String PART_FILE_PREFIX = "part-";
 
     /** */
     public static final String INDEX_FILE_PREFIX = "index";
