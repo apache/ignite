@@ -44,9 +44,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -173,7 +173,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     public void testRecoveringOnCheckpointBeginFail() throws Exception {
         // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
         ioFactory = new FilteringFileIOFactory(
-            "START.bin" + FilePageStoreManager.TMP_SUFFIX,
+            "START.bin" + NodeFileTree.TMP_SUFFIX,
             new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20)
         );
 

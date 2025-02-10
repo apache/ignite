@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -318,7 +317,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         File workDir = ignite0.context().pdsFolderResolver().fileTree().nodeStorage();
         File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
-        File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
+        File metaStoreFile = new File(metaStoreDir, String.format(NodeFileTree.PART_FILE_TEMPLATE, 0));
 
         readOnlyFile.set(metaStoreFile);
 

@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -348,7 +347,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     protected long[] partitionSizes(File workDir) {
         return IntStream.range(0, PARTS)
-            .mapToObj(p -> new File(workDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, p)))
+            .mapToObj(p -> new File(workDir, String.format(NodeFileTree.PART_FILE_TEMPLATE, p)))
             .mapToLong(File::length)
             .toArray();
     }

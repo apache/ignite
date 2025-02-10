@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 
 /** */
 public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<Boolean> {

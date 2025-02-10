@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -121,7 +121,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 File[] archivedFiles = archiveDir.listFiles(new FileFilter() {
                     @Override public boolean accept(File pathname) {
-                        return pathname.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
+                        return pathname.getName().endsWith(NodeFileTree.ZIP_SUFFIX);
                     }
                 });
 
@@ -131,7 +131,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         File[] tmpFiles = archiveDir.listFiles(new FileFilter() {
             @Override public boolean accept(File pathname) {
-                return pathname.getName().endsWith(FilePageStoreManager.TMP_SUFFIX);
+                return pathname.getName().endsWith(NodeFileTree.TMP_SUFFIX);
             }
         });
 

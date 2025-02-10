@@ -88,31 +88,20 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * File page store manager.
  */
 public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager,
     PageStoreCollection {
-    /** Suffix for zip files */
-    public static final String ZIP_SUFFIX = ".zip";
-
-    /** Suffix for tmp files */
-    public static final String TMP_SUFFIX = ".tmp";
-
-    /** */
-    public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
-
-    /** */
-    public static final String CACHE_DATA_FILENAME = "cache_data.dat";
-
-    /** */
-    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
-
     /** */
     public static final String DFLT_STORE_DIR = "db";
 

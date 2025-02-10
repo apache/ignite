@@ -169,11 +169,26 @@ public class NodeFileTree extends SharedFileTree {
     /** File suffix. */
     public static final String FILE_SUFFIX = ".bin";
 
+    /** Suffix for tmp files */
+    public static final String TMP_SUFFIX = ".tmp";
+
     /** Index file prefix. */
     public static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
     public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
+
+    /** Partition file template. */
+    public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
+
+    /** */
+    public static final String CACHE_DATA_FILENAME = "cache_data.dat";
+
+    /** */
+    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+
+    /** Suffix for zip files */
+    public static final String ZIP_SUFFIX = ".zip";
 
     /** Filter out all cache directories. */
     public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);

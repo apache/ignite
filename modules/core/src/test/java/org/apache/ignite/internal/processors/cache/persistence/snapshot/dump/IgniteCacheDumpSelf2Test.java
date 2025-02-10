@@ -114,9 +114,9 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
@@ -767,8 +767,11 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             try {
                 String entryName = PART_FILE_PREFIX + i + DUMP_FILE_EXT;
 
-                File rawFile = new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName);
-                File zipFile = new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName + ZIP_SUFFIX);
+                NodeFileTree rawFt = new NodeFileTree(dumpDirectory(ign, rawDump), id);
+                NodeFileTree zipFt = new NodeFileTree(dumpDirectory(ign, zipDump), id);
+
+                File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), entryName);
+                File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), entryName + ZIP_SUFFIX);
 
                 byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
 

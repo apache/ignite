@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -120,7 +120,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
     /** {@inheritDoc} */
     @Override public boolean isCompressed() {
-        return file.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
+        return file.getName().endsWith(NodeFileTree.ZIP_SUFFIX);
     }
 
     /** {@inheritDoc} */
