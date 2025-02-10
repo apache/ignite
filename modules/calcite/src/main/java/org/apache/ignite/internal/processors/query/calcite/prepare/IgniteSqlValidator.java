@@ -574,7 +574,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return type;
 
         type = val == null
-            ? nullValType == nullType ? nullType : typeFactory().createTypeWithNullability(nullValType, true)
+            ? typeFactory().createTypeWithNullability(nullValType, true)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
 
         setValidatedNodeType(node, type);
