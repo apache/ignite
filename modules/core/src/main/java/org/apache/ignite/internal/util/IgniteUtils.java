@@ -337,8 +337,15 @@ public abstract class IgniteUtils {
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
 
-    /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
-    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
+    /** Default maximum checkpointing page buffer size (when recovery data stored in WAL). */
+    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_WAL_RECOVERY = 2 * GB;
+
+    /**
+     * Default maximum checkpointing page buffer size (when recovery data stored on checkpoint).
+     * In this mode checkpoint duration can be twice as long as for mode with storing recovery data to WAL.
+     * Also, checkpoint buffer pages can't be released during write recovery data phase, so we need larger buffer size.
+     */
+    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_CP_RECOVERY = 5 * GB;
 
     /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
     public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
@@ -11063,19 +11070,21 @@ public abstract class IgniteUtils {
      * @param regCfg Configuration.
      * @return Checkpoint buffer size.
      */
-    public static long checkpointBufferSize(DataRegionConfiguration regCfg) {
+    public static long checkpointBufferSize(DataStorageConfiguration dsCfg, DataRegionConfiguration regCfg) {
         if (!regCfg.isPersistenceEnabled())
             return 0L;
 
         long res = regCfg.getCheckpointPageBufferSize();
 
         if (res == 0L) {
+            long maxCpPageBufSize = dsCfg.isWriteRecoveryDataOnCheckpoint() ?
+                DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_CP_RECOVERY :
+                DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_WAL_RECOVERY;
+
             if (regCfg.getMaxSize() < GB)
                 res = Math.min(DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE, regCfg.getMaxSize());
-            else if (regCfg.getMaxSize() < 8 * GB)
-                res = regCfg.getMaxSize() / 4;
             else
-                res = DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE;
+                res = Math.min(regCfg.getMaxSize() / 4, maxCpPageBufSize);
         }
 
         return res;
@@ -11097,7 +11106,7 @@ public abstract class IgniteUtils {
 
         if (dsCfg.getDataRegionConfigurations() != null) {
             for (DataRegionConfiguration regCfg : dsCfg.getDataRegionConfigurations()) {
-                long cpBufSize = checkpointBufferSize(regCfg);
+                long cpBufSize = checkpointBufferSize(dsCfg, regCfg);
 
                 if (cpBufSize > regCfg.getMaxSize())
                     cpBufSize = regCfg.getMaxSize();
@@ -11110,7 +11119,7 @@ public abstract class IgniteUtils {
         {
             DataRegionConfiguration regCfg = dsCfg.getDefaultDataRegionConfiguration();
 
-            long cpBufSize = checkpointBufferSize(regCfg);
+            long cpBufSize = checkpointBufferSize(dsCfg, regCfg);
 
             if (cpBufSize > regCfg.getMaxSize())
                 cpBufSize = regCfg.getMaxSize();

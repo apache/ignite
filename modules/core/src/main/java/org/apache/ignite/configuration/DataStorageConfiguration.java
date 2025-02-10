@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
@@ -188,6 +187,12 @@ public class DataStorageConfiguration implements Serializable {
     /** Value used to indicate the use of half of the {@link #getMaxWalArchiveSize}. */
     public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
 
+    /** Default value for {@link #writeRecoveryDataOnCheckpoint} property. */
+    public static final boolean DFLT_WRITE_RECOVERY_DATA_ON_CP = false;
+
+    /** Default compression algorithm for checkpoint recovery data. */
+    public static final DiskPageCompression DFLT_CP_RECOVERY_DATA_COMRESSION = DiskPageCompression.SKIP_GARBAGE;
+
     /** Memory page size. */
     private int pageSize = IgniteSystemProperties.getInteger(
         IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, 0);
@@ -239,11 +244,9 @@ public class DataStorageConfiguration implements Serializable {
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
     /** Change Data Capture path. */
-    @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
     /** Change Data Capture directory size limit. */
-    @IgniteExperimental
     private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
     /**
@@ -298,7 +301,6 @@ public class DataStorageConfiguration implements Serializable {
     private long walAutoArchiveAfterInactivity = -1;
 
     /** Time interval (in milliseconds) after last log of data change for force archiving of incompletely WAL segment. */
-    @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
     /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
@@ -342,6 +344,19 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Default memory allocator for all data regions. */
     @Nullable private MemoryAllocator memoryAllocator = null;
+
+    /**
+     * Mode for storing page recovery data.
+     * If {@code true}, page recovery data will be written during checkpoint.
+     * If {@code false}, WAL physical records will be used to store page recovery data.
+     */
+    private boolean writeRecoveryDataOnCheckpoint = DFLT_WRITE_RECOVERY_DATA_ON_CP;
+
+    /** Compression algorithm for checkpoint recovery data. */
+    private DiskPageCompression cpRecoveryDataCompression = DFLT_CP_RECOVERY_DATA_COMRESSION;
+
+    /** Compression level for checkpoint recovery data. */
+    private Integer cpRecoveryDataCompressionLevel;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -787,7 +802,6 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return CDC directory.
      */
-    @IgniteExperimental
     public String getCdcWalPath() {
         return cdcWalPath;
     }
@@ -799,7 +813,6 @@ public class DataStorageConfiguration implements Serializable {
      * @param cdcWalPath CDC directory.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
         A.notNull(cdcWalPath, "CDC WAL");
 
@@ -813,7 +826,6 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return CDC directory maximum size in bytes.
      */
-    @IgniteExperimental
     public long getCdcWalDirectoryMaxSize() {
         return cdcWalDirMaxSize;
     }
@@ -827,7 +839,6 @@ public class DataStorageConfiguration implements Serializable {
      * @param cdcWalDirMaxSize CDC directory maximum size in bytes.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setCdcWalDirectoryMaxSize(long cdcWalDirMaxSize) {
         this.cdcWalDirMaxSize = cdcWalDirMaxSize;
 
@@ -1149,7 +1160,6 @@ public class DataStorageConfiguration implements Serializable {
      * Zero or negative value disables forcefull auto archiving.
      * @return current configuration instance for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
         this.walForceArchiveTimeout = walForceArchiveTimeout;
 
@@ -1160,7 +1170,6 @@ public class DataStorageConfiguration implements Serializable {
      * @return time interval (in milliseconds) after last log of data change
      * for force archiving of incompletely WAL segment.
      */
-    @IgniteExperimental
     public long getWalForceArchiveTimeout() {
         return walForceArchiveTimeout;
     }
@@ -1400,6 +1409,72 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setMemoryAllocator(MemoryAllocator allocator) {
         memoryAllocator = allocator;
+
+        return this;
+    }
+
+    /**
+     * @return Flag defining mode for storing page recovery data. If {@code true}, recovery data will be written
+     * during checkpoint, if {@code false}, WAL physical records will be used to store recovery data.
+     */
+    public boolean isWriteRecoveryDataOnCheckpoint() {
+        return writeRecoveryDataOnCheckpoint;
+    }
+
+    /**
+     * Sets mode for storing page recovery data.
+     *
+     * @param writeRecoveryDataOnCheckpoint If {@code true}, page recovery data will be written during checkpoint,
+     *        if {@code false}, WAL physical records will be used to store page recovery data.
+     *        Default is {@link #DFLT_WRITE_RECOVERY_DATA_ON_CP}.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setWriteRecoveryDataOnCheckpoint(boolean writeRecoveryDataOnCheckpoint) {
+        this.writeRecoveryDataOnCheckpoint = writeRecoveryDataOnCheckpoint;
+
+        return this;
+    }
+
+    /**
+     * Gets compression algorithm for checkpoint recovery data.
+     *
+     * @return Page compression algorithm.
+     */
+    public DiskPageCompression getCheckpointRecoveryDataCompression() {
+        return cpRecoveryDataCompression == null ? DFLT_CP_RECOVERY_DATA_COMRESSION : cpRecoveryDataCompression;
+    }
+
+    /**
+     * Sets compression algorithm for checkpoint recovery data.
+     *
+     * @param cpRecoveryDataCompression Compression algorithm.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCheckpointRecoveryDataCompression(DiskPageCompression cpRecoveryDataCompression) {
+        this.cpRecoveryDataCompression = cpRecoveryDataCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getCheckpointRecoveryDataCompression()} algorithm specific compression level.
+     *
+     * @return Checkpoint recovery data compression level or {@code null} for default.
+     */
+    public Integer getCheckpointRecoveryDataCompressionLevel() {
+        return cpRecoveryDataCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setCheckpointRecoveryDataCompression(DiskPageCompression)} algorithm specific compression level.
+     *
+     * @param cpRecoveryDataCompressionLevel Checkpoint recovery data compression level or {@code null} to use default.
+     *      {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *      {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCheckpointRecoveryDataCompressionLevel(Integer cpRecoveryDataCompressionLevel) {
+        this.cpRecoveryDataCompressionLevel = cpRecoveryDataCompressionLevel;
 
         return this;
     }

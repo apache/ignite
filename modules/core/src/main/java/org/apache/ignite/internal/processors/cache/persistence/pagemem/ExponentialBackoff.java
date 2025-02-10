@@ -65,7 +65,7 @@ class ExponentialBackoff {
      * Resets the exponential backoff counter so that next call to {@link #nextDuration()}
      * will return {@link #startingBackoffNanos}.
      *
-     * @return {@code true} iff this backoff was not already in a reset state
+     * @return {@code true} if this backoff was not already in a reset state
      */
     public boolean reset() {
         int oldVal = exponentialBackoffCounter.getAndSet(0);

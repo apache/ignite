@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
+    /** Empty map. */
+    private static final Map<SqlPlan, Long> EMPTY_MAP = Collections.emptyMap();
+
     /** SQL plan history. */
     private Map<SqlPlan, Long> sqlPlanHistory;
 
@@ -42,9 +45,7 @@ public class SqlPlanHistoryTracker {
      * @param engine SQL engine.
      */
     public void addPlan(String plan, String qry, String schema, boolean loc, String engine) {
-        Map<SqlPlan, Long> emptyMap = Collections.emptyMap();
-
-        if (sqlPlanHistory == emptyMap)
+        if (sqlPlanHistory == EMPTY_MAP)
             return;
 
         SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
@@ -55,6 +56,11 @@ public class SqlPlanHistoryTracker {
     /** */
     public Map<SqlPlan, Long> sqlPlanHistory() {
         return Collections.unmodifiableMap(sqlPlanHistory);
+    }
+
+    /** */
+    public boolean enabled() {
+        return sqlPlanHistory != EMPTY_MAP;
     }
 
     /**
