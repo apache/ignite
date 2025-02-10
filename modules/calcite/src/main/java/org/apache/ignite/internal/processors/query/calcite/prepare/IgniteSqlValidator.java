@@ -559,22 +559,22 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** @return A derived type or {@code null} if unable to determine. */
     @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node, RelDataType nullValType) {
-        if (parameters == null || node.getIndex() >= parameters.length)
-            return null;
-
         RelDataType type = getValidatedNodeTypeIfKnown(node);
 
         // Do not clarify the widest type for any value.
         if (type instanceof OtherType)
             return type;
 
-        if (type == nullType)
-            return nullValType;
+        if (parameters == null || node.getIndex() >= parameters.length)
+            return null;
 
         Object val = parameters[node.getIndex()];
 
+        if (val == null && type != null)
+            return type;
+
         type = val == null
-            ? nullValType
+            ? nullValType == nullType ? nullType : typeFactory().createTypeWithNullability(nullValType, true)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
 
         setValidatedNodeType(node, type);
