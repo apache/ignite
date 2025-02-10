@@ -670,7 +670,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD.ordinal());
 
-        String failingFilePath = Paths.get(NodeFileTree.cacheStorageName(false, DEFAULT_CACHE_NAME),
+        String failingFilePath = Paths.get(NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME),
             PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
 
         grid(2).context().cache().context().snapshotMgr().ioFactory(

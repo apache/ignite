@@ -716,7 +716,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private File groupDirectory(CacheGroupContext grpCtx) throws IgniteCheckedException {
         return new File(
             IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx),
-            NodeFileTree.cacheStorageName(grpCtx.caches().size() > 1, grpCtx.cacheOrGroupName())
+            NodeFileTree.cacheDirName(grpCtx.caches().size() > 1, grpCtx.cacheOrGroupName())
         );
     }
 

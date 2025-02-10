@@ -369,7 +369,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return cacheStorage(cacheStorageName(ccfg));
+        return cacheStorage(cacheDirName(ccfg));
     }
 
     /**
@@ -378,17 +378,17 @@ public class NodeFileTree extends SharedFileTree {
      * @return The full cache directory name.
      */
     public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheStorage(cacheStorageName(isSharedGroup, cacheOrGroupName));
+        return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**
      * @param ccfg Cache configuration.
      * @return The full cache directory name.
      */
-    public String cacheStorageName(CacheConfiguration<?, ?> ccfg) {
+    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return cacheStorageName(isSharedGrp, CU.cacheOrGroupName(ccfg));
+        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
     }
 
     /**
@@ -402,9 +402,9 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param dir Directory.
      * @return {@code True} if directory conforms cache storage name pattern.
-     * @see #cacheGroupStorage(File)
+     * @see #cacheGroupDir(File)
      */
-    public static boolean cacheStorage(File dir) {
+    public static boolean cacheDir(File dir) {
         return dir.getName().startsWith(CACHE_DIR_PREFIX);
     }
 
@@ -412,7 +412,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param dir Directory.
      * @return {@code True} if directory conforms cache group storage name pattern.
      */
-    public static boolean cacheGroupStorage(File dir) {
+    public static boolean cacheGroupDir(File dir) {
         return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
     }
 
@@ -429,7 +429,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
      */
-    public static String cacheStorageName(boolean isSharedGroup, String cacheOrGroupName) {
+    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
         return isSharedGroup
             ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
             : CACHE_DIR_PREFIX + cacheOrGroupName;

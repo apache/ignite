@@ -926,7 +926,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return ft.cacheStorageName(gctx.config());
+        return ft.cacheDirName(gctx.config());
     }
 
     /**

@@ -237,7 +237,7 @@ public class GridLocalConfigManager {
         if (caches == null)
             return Collections.emptyMap();
 
-        String utilityCacheStorage = NodeFileTree.cacheStorageName(false, UTILITY_CACHE_NAME);
+        String utilityCacheStorage = NodeFileTree.cacheDirName(false, UTILITY_CACHE_NAME);
 
         return Arrays.stream(caches)
             .filter(f -> f.isDirectory() &&
@@ -468,7 +468,7 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        if (NodeFileTree.cacheStorage(dir)) {
+        if (NodeFileTree.cacheDir(dir)) {
             File conf = new File(dir, CACHE_DATA_FILENAME);
 
             if (conf.exists() && conf.length() > 0) {
@@ -479,7 +479,7 @@ public class GridLocalConfigManager {
                 );
             }
         }
-        else if (NodeFileTree.cacheGroupStorage(dir))
+        else if (NodeFileTree.cacheGroupDir(dir))
             readCacheGroupCaches(dir, ccfgs);
     }
 

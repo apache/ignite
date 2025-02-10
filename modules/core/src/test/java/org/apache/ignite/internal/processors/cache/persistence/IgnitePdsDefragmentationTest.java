@@ -577,7 +577,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             }
 
             @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains(NodeFileTree.cacheStorageName(true, "group"))) {
+                if (path.toString().contains(NodeFileTree.cacheDirName(true, "group"))) {
                     File file = path.toFile();
 
                     if (file.getName().contains("part-dfrg-"))

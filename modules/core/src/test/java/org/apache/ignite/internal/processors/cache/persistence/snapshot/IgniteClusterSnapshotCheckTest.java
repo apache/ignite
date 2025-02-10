@@ -169,7 +169,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
-            .filter(d -> d.toFile().getName().equals(ft.cacheStorageName(dfltCacheCfg)))
+            .filter(d -> d.toFile().getName().equals(ft.cacheDirName(dfltCacheCfg)))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Cache directory not found"));
 
@@ -683,7 +683,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     ) throws IgniteCheckedException, IOException {
         Path cachePath = Paths.get(snp(ignite).snapshotLocalDir(snpName).getAbsolutePath(),
             databaseRelativePath(ignite.context().pdsFolderResolver().resolveFolders().folderName()),
-            ignite.context().pdsFolderResolver().fileTree().cacheStorageName(ccfg));
+            ignite.context().pdsFolderResolver().fileTree().cacheDirName(ccfg));
 
         Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
 

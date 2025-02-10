@@ -277,7 +277,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      * @return Directory name.
      */
     protected String dataDir(String cacheGrpName) {
-        return NodeFileTree.cacheStorageName(true, cacheGrpName);
+        return NodeFileTree.cacheDirName(true, cacheGrpName);
     }
 
     /**
