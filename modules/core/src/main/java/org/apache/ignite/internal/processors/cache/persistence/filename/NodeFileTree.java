@@ -164,11 +164,7 @@ public class NodeFileTree extends SharedFileTree {
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Filter out all cache directories. */
-    public static final Predicate<File> CACHE_DIR_FILTER = dir -> {
-        String name = dir.getName();
-
-        return name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX);
-    };
+    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
     public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
