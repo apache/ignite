@@ -265,7 +265,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(cacheStorage(tmpConsIdDir, ft.cacheStorageName(gctx.config())),
+                U.ensureDirectory(cacheStorage(tmpConsIdDir, ft.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
                     log);
             }
@@ -355,7 +355,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), ft.cacheStorageName(gctx.config()));
+                addPartitionWriters(grpId, e.getValue(), ft.cacheDirName(gctx.config()));
             }
 
             if (withMetaStorage) {
@@ -367,7 +367,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
-                    ft.cacheStorageName(ccfg), ccfgFile)));
+                    ft.cacheDirName(ccfg), ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);

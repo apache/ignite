@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -47,6 +46,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DeltaSortedIterator.DELTA_SORT_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 import static org.junit.Assert.assertArrayEquals;
@@ -104,7 +104,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, partCnt));
 
-        String cacheDir = NodeFileTree.cacheStorageName(false, DEFAULT_CACHE_NAME);
+        String cacheDir = CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME;
 
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
 

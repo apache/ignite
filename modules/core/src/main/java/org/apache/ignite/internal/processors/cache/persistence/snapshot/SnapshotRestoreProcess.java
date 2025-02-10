@@ -100,8 +100,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -461,7 +462,7 @@ public class SnapshotRestoreProcess {
             return true;
 
         for (File grpDir : opCtx.dirs) {
-            String locGrpName = cacheName(grpDir);
+            String locGrpName = FilePageStoreManager.cacheGroupName(grpDir);
 
             if (grpName != null) {
                 if (cacheName.equals(locGrpName))
@@ -730,7 +731,7 @@ public class SnapshotRestoreProcess {
 
         String cacheGrpName = tmpCacheDir.getName().substring(TMP_CACHE_DIR_PREFIX.length());
 
-        return CU.cacheId(cacheName(new File(tmpCacheDir.getParentFile(), cacheGrpName)));
+        return CU.cacheId(cacheGroupName(new File(tmpCacheDir.getParentFile(), cacheGrpName)));
     }
 
     /**
@@ -768,12 +769,12 @@ public class SnapshotRestoreProcess {
         for (SnapshotMetadata meta : metas) {
             for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
-                String grpName = cacheName(snpCacheDir);
+                String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = ft.cacheStorage(snpCacheDir.getName());
+                File cacheDir = ft.cacheStorage(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -947,7 +948,7 @@ public class SnapshotRestoreProcess {
                 log.info("Starting snapshot preload operation to restore cache groups " +
                     "[reqId=" + reqId +
                     ", snapshot=" + opCtx0.snpName +
-                    ", caches=" + F.transform(opCtx0.dirs, NodeFileTree::cacheName) + ']');
+                    ", caches=" + F.transform(opCtx0.dirs, FilePageStoreManager::cacheGroupName) + ']');
             }
 
             File snpDir = snpMgr.snapshotLocalDir(opCtx0.snpName, opCtx0.snpPath);
@@ -991,7 +992,7 @@ public class SnapshotRestoreProcess {
 
             // First preload everything from the local node.
             for (File dir : opCtx0.dirs) {
-                String cacheOrGrpName = cacheName(dir);
+                String cacheOrGrpName = cacheGroupName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
 
                 if (log.isInfoEnabled())

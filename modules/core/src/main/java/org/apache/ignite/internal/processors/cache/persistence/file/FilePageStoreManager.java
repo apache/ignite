@@ -88,7 +88,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
 
 /**
  * File page store manager.
@@ -115,6 +114,18 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
+
+    /** */
+    public static final String CACHE_DIR_PREFIX = "cache-";
+
+    /** */
+    public static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+
+    /** */
+    public static final Predicate<File> DATA_DIR_FILTER = dir ->
+        dir.getName().startsWith(CACHE_DIR_PREFIX) ||
+        dir.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
+        dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
 
     /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
@@ -260,7 +271,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = newDirectoryStream(
-                ft.nodeStorage().toPath(), entry -> NodeFileTree.CACHE_DIR_FILTER.test(entry.toFile())
+                ft.nodeStorage().toPath(), entry -> {
+                    String name = entry.toFile().getName();
+
+                    return !name.equals(MetaStorage.METASTORAGE_DIR_NAME) &&
+                        (name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX));
+                }
             )) {
                 for (Path path : files)
                     U.delete(path);
@@ -821,8 +837,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return Arrays.stream(files)
             .sorted()
             .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> names.test(NodeFileTree.cacheName(f)))
+            .filter(DATA_DIR_FILTER)
+            .filter(f -> names.test(cacheGroupName(f)))
             .collect(Collectors.toList());
     }
 
@@ -839,8 +855,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         return Arrays.stream(files)
             .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> CU.cacheId(NodeFileTree.cacheName(f)) == grpId)
+            .filter(DATA_DIR_FILTER)
+            .filter(f -> CU.cacheId(cacheGroupName(f)) == grpId)
             .findAny()
             .orElse(null);
     }
@@ -885,6 +901,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * @param dir Cache directory on disk.
+     * @return Cache or cache group name.
+     */
+    public static String cacheGroupName(File dir) {
+        String name = dir.getName();
+
+        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
+            return name.substring(CACHE_GRP_DIR_PREFIX.length());
+        else if (name.startsWith(CACHE_DIR_PREFIX))
+            return name.substring(CACHE_DIR_PREFIX.length());
+        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
+            return MetaStorage.METASTORAGE_CACHE_NAME;
+        else
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
+    }
+
+    /**
      * @param root Root directory.
      * @return Array of cache data files.
      */
@@ -926,7 +959,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return ft.cacheStorageName(gctx.config());
+        return ft.cacheDirName(gctx.config());
     }
 
     /**

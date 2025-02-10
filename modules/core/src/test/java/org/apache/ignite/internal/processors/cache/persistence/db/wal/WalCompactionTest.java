@@ -206,7 +206,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
-        File cacheDir = ft.cacheStorage(false, CACHE_NAME);
+        File cacheDir = new File(ft.nodeStorage(), "cache-" + CACHE_NAME);
         File[] lfsFiles = cacheDir.listFiles();
 
         assertNotNull(lfsFiles);
@@ -500,7 +500,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
-        File cacheDir = ft.cacheStorage(false, CACHE_NAME);
+        File cacheDir = new File(ft.nodeStorage(), "cache-" + CACHE_NAME);
         File[] lfsFiles = cacheDir.listFiles();
 
         assertNotNull(lfsFiles);

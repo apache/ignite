@@ -77,7 +77,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -114,6 +113,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
@@ -640,7 +641,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             File[] cacheDirs = nodeSnapDir.listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
 
             for (File cacheDir : cacheDirs) {
-                String name = NodeFileTree.cacheName(cacheDir);
+                String name = cacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX)
+                    ? cacheDir.getName().substring(CACHE_GRP_DIR_PREFIX.length())
+                    : cacheDir.getName().substring(CACHE_DIR_PREFIX.length());
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
 

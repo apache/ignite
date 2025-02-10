@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.CacheObject.TYPE_BINARY;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 
 /**
  * Utility class for idle verify command.
@@ -135,7 +135,7 @@ public class IdleVerifyUtility {
         }
         catch (Throwable e) {
             String msg0 = CRC_CHECK_ERR_MSG + " [partId=" + partId +
-                ", grpName=" + (pageStore == null ? "" : cacheName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
+                ", grpName=" + (pageStore == null ? "" : cacheGroupName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
                 ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
 
             throw new IgniteException(msg0, e);

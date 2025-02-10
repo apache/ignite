@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.function.Predicate;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -156,19 +155,6 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Checkpoint directory name. */
     public static final String CHECKPOINT_DIR = "cp";
-
-    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
-    private static final String CACHE_DIR_PREFIX = "cache-";
-
-    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
-    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
-
-    /** Filter out all cache directories. */
-    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheGroupStorage(dir) || cacheStorage(dir);
-
-    /** Filter out all cache directories including {@link MetaStorage}. */
-    public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir -> CACHE_DIR_FILTER.test(dir)
-        || dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -364,7 +350,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return cacheStorage(cacheStorageName(ccfg));
+        return cacheStorage(cacheDirName(ccfg));
     }
 
     /**
@@ -373,17 +359,17 @@ public class NodeFileTree extends SharedFileTree {
      * @return The full cache directory name.
      */
     public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheStorage(cacheStorageName(isSharedGroup, cacheOrGroupName));
+        return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**
      * @param ccfg Cache configuration.
      * @return The full cache directory name.
      */
-    public String cacheStorageName(CacheConfiguration<?, ?> ccfg) {
+    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return cacheStorageName(isSharedGrp, CU.cacheOrGroupName(ccfg));
+        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
     }
 
     /**
@@ -392,23 +378,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static File cacheStorage(File storeWorkDir, String cacheDirName) {
         return new File(storeWorkDir, cacheDirName);
-    }
-
-    /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache storage name pattern.
-     * @see #cacheGroupStorage(File)
-     */
-    public static boolean cacheStorage(File dir) {
-        return dir.getName().startsWith(CACHE_DIR_PREFIX);
-    }
-
-    /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache group storage name pattern.
-     */
-    public static boolean cacheGroupStorage(File dir) {
-        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
     }
 
     /**
@@ -424,27 +393,10 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
      */
-    public static String cacheStorageName(boolean isSharedGroup, String cacheOrGroupName) {
+    private String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
         return isSharedGroup
             ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
             : CACHE_DIR_PREFIX + cacheOrGroupName;
-    }
-
-    /**
-     * @param dir Directory
-     * @return Cache name for directory, if it conforms cache storage pattern.
-     */
-    public static String cacheName(File dir) {
-        String name = dir.getName();
-
-        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
-            return name.substring(CACHE_GRP_DIR_PREFIX.length());
-        else if (name.startsWith(CACHE_DIR_PREFIX))
-            return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
-            return MetaStorage.METASTORAGE_CACHE_NAME;
-        else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
     }
 
     /**
