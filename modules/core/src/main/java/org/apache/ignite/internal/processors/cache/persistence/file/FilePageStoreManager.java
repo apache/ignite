@@ -89,6 +89,8 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 
 /**
@@ -96,20 +98,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
  */
 public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager,
     PageStoreCollection {
-    /** File suffix. */
-    public static final String FILE_SUFFIX = ".bin";
-
     /** Suffix for zip files */
     public static final String ZIP_SUFFIX = ".zip";
 
     /** Suffix for tmp files */
     public static final String TMP_SUFFIX = ".tmp";
-
-    /** */
-    public static final String INDEX_FILE_PREFIX = "index";
-
-    /** */
-    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** */
     public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;

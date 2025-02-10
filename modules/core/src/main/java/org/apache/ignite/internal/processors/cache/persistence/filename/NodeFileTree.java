@@ -163,11 +163,17 @@ public class NodeFileTree extends SharedFileTree {
     /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
-    /**
-     * Partition file prefix.
-     * TODO: check usages.
-     */
+    /** Partition file prefix. */
     public static final String PART_FILE_PREFIX = "part-";
+
+    /** File suffix. */
+    public static final String FILE_SUFFIX = ".bin";
+
+    /** Index file prefix. */
+    public static final String INDEX_FILE_PREFIX = "index";
+
+    /** Index file name. */
+    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** Filter out all cache directories. */
     public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);

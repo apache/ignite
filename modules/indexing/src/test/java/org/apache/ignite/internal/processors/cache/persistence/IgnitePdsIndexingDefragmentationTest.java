@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -49,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
@@ -129,13 +129,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         File cacheStorage = ft.cacheStorage(true, GRP_NAME);
 
-        long oldIdxFileLen = new File(cacheStorage, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long oldIdxFileLen = new File(cacheStorage, INDEX_FILE_NAME).length();
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        long newIdxFileLen = new File(cacheStorage, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long newIdxFileLen = new File(cacheStorage, INDEX_FILE_NAME).length();
 
         assertTrue(
             "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,

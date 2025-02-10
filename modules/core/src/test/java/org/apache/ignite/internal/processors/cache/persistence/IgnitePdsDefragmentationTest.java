@@ -236,7 +236,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         long[] oldPartLen = partitionSizes(workDir);
 
-        long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long oldIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
 
         startGrid(0);
 
@@ -260,7 +260,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         for (int p = 0; p < PARTS; p++)
             assertTrue(newPartLen[p] < oldPartLen[p]);
 
-        long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long newIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
 
         assertTrue(newIdxFileLen <= oldIdxFileLen);
 
