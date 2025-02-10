@@ -27,9 +27,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -63,10 +63,7 @@ public class MaintenanceModeNodeSecurityTest extends AbstractSecurityTest {
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1));
 
-        String srvPdsFolder = srv.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(srv.configuration().getWorkDirectory(), "db", false);
-
-        File srvLfsDir = new File(dbDir, srvPdsFolder);
+        NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
 
         for (int k = 0; k < 1000; k++)
             cache.put(k, k);
@@ -84,7 +81,7 @@ public class MaintenanceModeNodeSecurityTest extends AbstractSecurityTest {
 
         stopGrid(1);
 
-        File[] cpMarkers = new File(srvLfsDir, "cp").listFiles();
+        File[] cpMarkers = ft.checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))

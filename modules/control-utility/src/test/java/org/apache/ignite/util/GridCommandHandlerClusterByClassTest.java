@@ -1362,9 +1362,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(
             log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", CREATE, SPRING_XML_CONFIG),
-            !sslEnabled()
-                ? "Please specify a value for argument: --springXmlConfig"
-                : "Unexpected value: --keystore"
+                "Please specify a value for argument: --springxmlconfig"
         );
 
         autoConfirmation = true;
@@ -1651,10 +1649,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit"));
 
-        if (sslEnabled()) // Extra arguments at the end added.
-            assertContains(log, testOut.toString(), "Unexpected value: --keystore");
-        else
-            assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
+        assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit", "test"));
 

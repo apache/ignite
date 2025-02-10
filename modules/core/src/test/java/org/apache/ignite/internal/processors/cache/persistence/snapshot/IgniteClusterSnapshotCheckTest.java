@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -86,10 +87,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
@@ -165,11 +164,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotCheckMissedGroup() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
-            .filter(d -> d.toFile().getName().equals(cacheDirName(dfltCacheCfg)))
+            .filter(d -> d.toFile().getName().equals(ft.cacheDirName(dfltCacheCfg)))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Cache directory not found"));
 
@@ -318,7 +318,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // Cleanup persistence directory except created snapshots.
         Arrays.stream(new File(U.defaultWorkDirectory()).listFiles())
-            .filter(f -> !f.getName().equals(DFLT_SNAPSHOT_DIRECTORY))
+            .filter(f -> !f.equals(sharedFileTree().snapshotsRoot()))
             .forEach(U::delete);
 
         Set<UUID> assigns = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -683,7 +683,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     ) throws IgniteCheckedException, IOException {
         Path cachePath = Paths.get(snp(ignite).snapshotLocalDir(snpName).getAbsolutePath(),
             databaseRelativePath(ignite.context().pdsFolderResolver().resolveFolders().folderName()),
-            cacheDirName(ccfg));
+            ignite.context().pdsFolderResolver().fileTree().cacheDirName(ccfg));
 
         Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
 

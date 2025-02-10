@@ -25,15 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.events.ConnectionClosedEvent;
 import org.apache.ignite.client.events.ConnectionEventListener;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -69,6 +68,8 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
         try (
             IgniteClient cli = Ignition.startClient(new ClientConfiguration()
                 .setAddresses("127.0.0.1:10800")
+                .setTimeout(5000) // Server will drop packets intended for the client. So client can hang on handshake during reconnect.
+                .setRetryLimit(1) // Let's not retry operations if the channel was closed while waiting for a response.
                 .setEventListeners(new ConnectionEventListener() {
                     @Override public void onConnectionClosed(ConnectionClosedEvent event) {
                         isCliDisconnected.set(true);
@@ -85,11 +86,16 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
 
             skipClientWrite(grid(0), true);
 
-            Collection<IgniteInternalFuture<byte[]>> futs = new ArrayList<>();
+            Collection<IgniteClientFuture<byte[]>> futs = new ArrayList<>();
 
             try {
-                while (!isCliDisconnected.get())
-                    futs.add(GridTestUtils.runAsync(() -> cache.get(0)));
+                while (!isCliDisconnected.get()) {
+                    futs.add(cache.getAsync(0));
+
+                    // Slow and steady. This delay will give us a chance to stop spamming requests
+                    // as soon as server disconnects the client.
+                    U.sleep(10);
+                }
             }
             finally {
                 skipClientWrite(grid(0), false);
@@ -102,8 +108,6 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
                     fut.get();
                 }
                 catch (Exception e) {
-                    assertTrue(e.getMessage().contains("Channel is closed"));
-
                     failedReqsCntr.incrementAndGet();
                 }
             });

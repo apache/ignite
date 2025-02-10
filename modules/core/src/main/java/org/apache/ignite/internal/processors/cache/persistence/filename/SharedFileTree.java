@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Paths;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -50,39 +52,50 @@ public class SharedFileTree {
     /** Root(work) directory. */
     protected final File root;
 
-    /** db directory. */
-    protected final File db;
-
     /** Path to the directory containing binary metadata. */
     protected final File binaryMetaRoot;
 
     /** Path to the directory containing marshaller files. */
-    protected final File marshaller;
+    private final File marshaller;
+
+    /** Path to the snapshot root directory. */
+    private final File snpsRoot;
+
+    /**
+     * @param root Root directory.
+     * @param snpsRoot Snapshot path.
+     */
+    private SharedFileTree(File root, String snpsRoot) {
+        A.notNull(root, "Root directory");
+
+        this.root = root;
+        this.snpsRoot = resolveDirectory(snpsRoot);
+
+        String rootStr = root.getAbsolutePath();
+
+        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER, MARSHALLER_DIR).toFile();
+        binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
+    }
 
     /**
      * @param root Root directory.
      */
     public SharedFileTree(File root) {
-        A.notNull(root, "Root directory");
-
-        this.root = root;
-        db = new File(root, DB_DEFAULT_FOLDER);
-        marshaller = new File(db, MARSHALLER_DIR);
-        binaryMetaRoot = new File(db, BINARY_METADATA_DIR);
+        this(root, DFLT_SNAPSHOT_DIRECTORY);
     }
 
     /**
      * @param root Root directory.
      */
     public SharedFileTree(String root) {
-        this(new File(root));
+        this(new File(root), DFLT_SNAPSHOT_DIRECTORY);
     }
 
     /**
      * @param cfg Config to get {@code root} directory from.
      */
-    SharedFileTree(IgniteConfiguration cfg) {
-        this(root(cfg));
+    public SharedFileTree(IgniteConfiguration cfg) {
+        this(root(cfg), cfg.getSnapshotPath());
     }
 
     /**
@@ -90,13 +103,6 @@ public class SharedFileTree {
      */
     public File root() {
         return root;
-    }
-
-    /**
-     * @return Path to the {@code db} directory.
-     */
-    public File db() {
-        return db;
     }
 
     /**
@@ -110,6 +116,11 @@ public class SharedFileTree {
     /** @return Path to marshaller directory. */
     public File marshaller() {
         return marshaller;
+    }
+
+    /** @return Path to snapshots root directory. */
+    public File snapshotsRoot() {
+        return snpsRoot;
     }
 
     /**
@@ -128,6 +139,15 @@ public class SharedFileTree {
      */
     public File mkdirMarshaller() {
         return mkdir(marshaller, "marshaller mappings");
+    }
+
+    /**
+     * Creates {@link #snapshotsRoot()} directory.
+     * @return Created directory.
+     * @see #snapshotsRoot()
+     */
+    public File mkdirSnapshotsRoot() {
+        return mkdir(snpsRoot, "snapshot work directory");
     }
 
     /**
@@ -189,6 +209,20 @@ public class SharedFileTree {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Creates a directory specified by the given arguments.
+     *
+     * @param cfg Configured directory path.
+     * @return Initialized directory.
+     */
+    private File resolveDirectory(String cfg) {
+        File sharedDir = new File(cfg);
+
+        return sharedDir.isAbsolute()
+            ? sharedDir
+            : new File(root, cfg);
     }
 
     /** {@inheritDoc} */

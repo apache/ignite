@@ -54,7 +54,6 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -228,7 +227,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         try (IgniteEx node = startGrid(0)) {
             populateData(node, null);
 
-            workDir = ((FilePageStoreManager)node.context().cache().context().pageStore()).workDir();
+            workDir = node.context().pdsFolderResolver().fileTree().nodeStorage();
         }
     }
 

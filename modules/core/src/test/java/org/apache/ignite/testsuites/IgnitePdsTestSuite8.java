@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.MaintenancePersis
 import org.apache.ignite.internal.processors.cache.persistence.NoUnnecessaryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.PagesPossibleCorruptionDiagnosticTest;
 import org.apache.ignite.internal.processors.cache.persistence.PendingTreeCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCheckpointRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.HistoricalReservationTest;
@@ -107,6 +108,7 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, MaintenancePersistenceTaskTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, ConnectionEnabledPropertyTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointRecoveryTest.class, ignoredTests);
 
         return suite;
     }
