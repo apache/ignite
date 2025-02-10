@@ -558,7 +558,7 @@ public class ClusterCachesInfo {
      * @param failMsg Dynamic change request fail message.
      * @param topVer Current topology version.
      */
-    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
+    public void onCacheChangeRequested(ExchangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
         AffinityTopologyVersion actualTopVer = failMsg.exchangeId().topologyVersion();
 
         ExchangeActions exchangeActions = new ExchangeActions();
@@ -602,7 +602,7 @@ public class ClusterCachesInfo {
             processStopCacheRequest(exchangeActions, req, res, req.cacheName(), cacheDesc, actualTopVer, true);
         }
 
-        failMsg.exchangeActions(exchangeActions);
+        failMsg.exchangeRollbackActions(exchangeActions);
     }
 
     /**

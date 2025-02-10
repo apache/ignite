@@ -194,7 +194,7 @@ public class CheckpointPagesWriter implements Runnable {
             PageStoreWriter pageStoreWriter =
                 pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
-            pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
+            pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker, false);
 
             if (throttlingEnabled) {
                 while (pageMem.isCpBufferOverflowThresholdExceeded()) {
@@ -205,7 +205,7 @@ public class CheckpointPagesWriter implements Runnable {
 
                     tmpWriteBuf.rewind();
 
-                    pageMem.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, tracker);
+                    pageMem.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, tracker, false);
                 }
             }
         }
