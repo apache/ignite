@@ -145,7 +145,7 @@ public class GridLocalConfigManager {
                 if (!cacheDir.exists())
                     continue;
 
-                File[] ccfgFiles = cacheDir.listFiles((dir, name) -> name.endsWith(CACHE_DATA_FILENAME));
+                File[] ccfgFiles = cacheDir.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
 
                 if (ccfgFiles == null)
                     continue;
@@ -167,18 +167,17 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        File[] files = ft.nodeStorage().listFiles();
+        File[] dirs = ft.nodeStorage().listFiles(File::isDirectory);
 
-        if (files == null)
+        if (dirs == null)
             return Collections.emptyMap();
 
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
-        Arrays.sort(files);
+        Arrays.sort(dirs);
 
-        for (File file : files) {
-            if (file.isDirectory())
-                readCacheConfigurations(file, ccfgs);
+        for (File file : dirs) {
+            readCacheConfigurations(file, ccfgs);
         }
 
         return ccfgs;
@@ -293,7 +292,7 @@ public class GridLocalConfigManager {
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        File file = cacheConfigurationFile(ccfg);
+        File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
 
         chgLock.readLock().lock();
@@ -337,7 +336,7 @@ public class GridLocalConfigManager {
 
         try {
             CacheConfiguration<?, ?> ccfg = cacheData.config();
-            File file = cacheConfigurationFile(ccfg);
+            File file = ft.cacheConfigurationFile(ccfg);
 
             if (file.exists()) {
                 for (BiConsumer<String, File> lsnr : lsnrs)
@@ -425,7 +424,7 @@ public class GridLocalConfigManager {
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
             DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
                 @Override public boolean accept(Path path) {
-                    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(CACHE_DATA_FILENAME);
+                    return Files.isRegularFile(path) && NodeFileTree.cacheOrCacheGroupConfigFile(path.toFile());
                 }
             };
 
@@ -451,7 +450,7 @@ public class GridLocalConfigManager {
             return;
 
         for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0)
+            if (!file.isDirectory() && NodeFileTree.cacheOrCacheGroupConfigFile(file) && file.length() > 0)
                 readAndAdd(
                     ccfgs,
                     file,
@@ -524,19 +523,6 @@ public class GridLocalConfigManager {
             CU.findDataRegion(ctx.config().getDataStorageConfiguration(), cfg.getDataRegionName());
 
         return drCfg != null && !drCfg.isPersistenceEnabled() && drCfg.isCdcEnabled();
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
-     */
-    public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(ft.cacheStorage(ccfg), cacheDataFilename(ccfg));
-    }
-
-    /** @return Name of cache data filename. */
-    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
     }
 
     /**

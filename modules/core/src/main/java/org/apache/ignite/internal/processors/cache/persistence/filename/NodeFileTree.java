@@ -75,17 +75,18 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  │  └── 1645778359.classname0
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
  * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
- * │  │  │  ├── cache_data.dat
+ * │  │  │  ├── cache_data.dat                                                  ← cache("default") configuration file.
  * │  │  │  ├── index.bin
  * │  │  │  ├── part-0.bin
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
  * │  │  ├── cache-ignite-sys-cache                                             ← cacheStorage (cache name "ignite-sys-cache").
- * │  │  │  ├── cache_data.dat
+ * │  │  │  ├── cache_data.dat                                                  ← cache("ignite-sys-cache") configuration file.
  * │  │  │  └── index.bin
  * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
- * │  │  │  ├── cache_data.dat
+ * │  │  │  ├── tx-cachecache_data.dat                                          ← cache("tx-cache") configuration file inside group.
+ * │  │  │  ├── othercache_data.dat                                             ← cache("other") configuration file inside group.
  * │  │  │  ├── index.bin
  * │  │  │  ├── part-0.bin
  * │  │  │  ├── part-1.bin
@@ -415,6 +416,19 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
+     */
+    public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+        return new File(cacheStorage(ccfg), cacheDataFilename(ccfg));
+    }
+
+    /** @return Name of cache data filename. */
+    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
@@ -445,6 +459,22 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean partitionFile(File f) {
         return f.getName().startsWith(PART_FILE_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
+     */
+    public static boolean cacheOrCacheGroupConfigFile(File f) {
+        return f.getName().endsWith(CACHE_DATA_FILENAME);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms cache config file name pattern.
+     */
+    public static boolean cacheConfigFile(File f) {
+        return f.getName().equals(CACHE_DATA_FILENAME);
     }
 
     /**

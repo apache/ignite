@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 
 /**
  *
@@ -53,7 +52,7 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
 
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File file : cacheStoreDir.listFiles()) {
-                    if (!file.getName().equals(CACHE_DATA_FILENAME))
+                    if (!NodeFileTree.cacheConfigFile(file))
                         file.delete();
                 }
             }

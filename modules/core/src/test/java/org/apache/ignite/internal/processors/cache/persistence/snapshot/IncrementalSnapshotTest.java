@@ -309,7 +309,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridLocalConfigManager locCfgMgr = srv.context().cache().configManager();
 
-        File ccfgFile = locCfgMgr.cacheConfigurationFile(ccfg);
+        File ccfgFile = srv.context().pdsFolderResolver().fileTree().cacheConfigurationFile(ccfg);
 
         StoredCacheData cacheData = locCfgMgr.readCacheData(ccfgFile);
 

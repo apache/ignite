@@ -88,7 +88,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
@@ -369,10 +368,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 if (!locEnabled || !globalEnabled) {
                     File dir = ft.cacheStorage(desc.config());
 
-                    if (Arrays.stream(
-                        dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
+                    if (Arrays.stream(dir.listFiles()).anyMatch(f -> !NodeFileTree.cacheConfigFile(f)))
                         corruptedCacheGrps.add(desc.config());
-                    }
                 }
             }
         }
@@ -869,7 +866,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Array of cache data files.
      */
     public static File[] cacheDataFiles(File root) {
-        return root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME));
+        return root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
     }
 
     /** {@inheritDoc} */
