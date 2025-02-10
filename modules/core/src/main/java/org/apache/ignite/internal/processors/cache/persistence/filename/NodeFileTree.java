@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.nio.file.Paths;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -31,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -70,17 +73,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes)
  * │  │  └── 1645778359.classname0
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
- * │  │  ├── cache-default
+ * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
  * │  │  │  ├── part-0.bin
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
- * │  │  ├── cache-ignite-sys-cache
+ * │  │  ├── cache-ignite-sys-cache                                             ← cacheStorage (cache name "ignite-sys-cache").
  * │  │  │  ├── cache_data.dat
  * │  │  │  └── index.bin
- * │  │  ├── cache-tx-cache
+ * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
  * │  │  │  ├── cache_data.dat
  * │  │  │  ├── index.bin
  * │  │  │  ├── part-0.bin
@@ -97,11 +100,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * │  │  │  └── part-1.bin
  * │  │  └── snp                                                                ← snpTmp (node 0)
  * │  ├── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                           ← nodeStorage (node 1).
- * │  │  ├── cache-default
+ * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * ..
- * │  │  ├── cache-ignite-sys-cache
+ * │  │  ├── cache-ignite-sys-cache                                             ← cacheStorage (cache name "ignite-sys-cache").
  * ...
- * │  │  ├── cache-tx-cache
+ * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
  * ...
  * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
@@ -343,12 +346,66 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @return Store dir for given cache.
+     */
+    public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
+        return cacheStorage(cacheDirName(ccfg));
+    }
+
+    /**
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return The full cache directory name.
+     */
+    public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
+        return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return The full cache directory name.
+     */
+    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        boolean isSharedGrp = ccfg.getGroupName() != null;
+
+        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
+    }
+
+    /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public static File cacheStorage(File storeWorkDir, String cacheDirName) {
+        return new File(storeWorkDir, cacheDirName);
+    }
+
+    /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File cacheStorage(String cacheDirName) {
+        return new File(nodeStorage, cacheDirName);
+    }
+
+    /**
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return The full cache directory name.
+     */
+    private String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+        return isSharedGroup
+            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
+            : CACHE_DIR_PREFIX + cacheOrGroupName;
+    }
+
+    /**
      * Resolves directory specified by the given arguments.
      *
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    public File resolveDirectory(String cfg) {
+    private File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()

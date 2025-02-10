@@ -73,8 +73,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
@@ -265,13 +265,13 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
+                U.ensureDirectory(cacheStorage(tmpConsIdDir, ft.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
                     log);
             }
 
             if (withMetaStorage) {
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
+                U.ensureDirectory(cacheStorage(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
                     "directory for snapshotting metastorage",
                     log);
             }
@@ -355,7 +355,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), FilePageStoreManager.cacheDirName(gctx.config()));
+                addPartitionWriters(grpId, e.getValue(), ft.cacheDirName(gctx.config()));
             }
 
             if (withMetaStorage) {
@@ -367,7 +367,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
-                    FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
+                    ft.cacheDirName(ccfg), ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -479,7 +479,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
-            File delta = partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId);
+            File delta = partDeltaFile(cacheStorage(tmpConsIdDir, dirName), partId);
 
             partDeltaWriters.put(pair, deltaWriterFactory.apply(store, delta, encGrpId));
 
@@ -623,7 +623,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (sent || fromTemp)
                     return;
 
-                File cacheWorkDir = cacheWorkDir(tmpSnpWorkDir, cacheDirName);
+                File cacheWorkDir = cacheStorage(tmpSnpWorkDir, cacheDirName);
 
                 if (!U.mkdirs(cacheWorkDir))
                     throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);
