@@ -83,35 +83,24 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * Default constructor for Externalizable.
      */
     public IdleVerifyResult() {
+        // No-op.
     }
 
     /**
-     * @param exceptions Occurred exceptions.
+     * @see #ofErrors(Map)
+     * @see Builder
      */
-    public IdleVerifyResult(Map<ClusterNode, Exception> exceptions) {
+    private IdleVerifyResult(Map<ClusterNode, Exception> exceptions) {
         this.exceptions = exceptions;
     }
 
     /**
-     * @param txHashConflicts Transaction hashes conflicts.
+     * @see Builder
      */
     public IdleVerifyResult(
         Map<PartitionKey, List<PartitionHashRecord>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
-        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
-    ) {
-        this(clusterHashes, Collections.emptyMap());
-
-        this.txHashConflicts = txHashConflicts;
-        this.partiallyCommittedTxs = partiallyCommittedTxs;
-    }
-
-    /**
-     * @param clusterHashes Map of cluster partition hashes.
-     * @param exceptions Exceptions on each cluster node.
-     */
-    public IdleVerifyResult(
-        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes,
+        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs,
         Map<ClusterNode, Exception> exceptions
     ) {
         for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
@@ -151,6 +140,8 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         }
 
         this.exceptions = exceptions;
+        this.txHashConflicts = txHashConflicts;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
     }
 
     /** {@inheritDoc} */
@@ -413,5 +404,129 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IdleVerifyResult.class, this);
+    }
+
+    /** */
+    public static IdleVerifyResult ofErrors(Map<ClusterNode, Exception> exceptions) {
+        return new IdleVerifyResult(exceptions);
+    }
+
+    /** @return A fresh result builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Builder of {@link IdleVerifyResult}. Is not thread-safe. */
+    public static final class Builder {
+        /** */
+        private @Nullable Map<PartitionKey, List<PartitionHashRecord>> partHashes;
+
+        /** */
+        private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+
+        /** */
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+
+        /** */
+        private Map<ClusterNode, Exception> exceptions;
+
+        /** */
+        private Builder() {
+            // No-op.
+        }
+
+        /** Build the final result. */
+        public IdleVerifyResult build() {
+            if (partHashes == null)
+                partHashes = Collections.emptyMap();
+
+            if (exceptions == null)
+                exceptions = Collections.emptyMap();
+
+            return new IdleVerifyResult(partHashes, txHashConflicts, partiallyCommittedTxs, exceptions);
+        }
+
+        /** Stores an exception if none is assigned for {@code node}. */
+        public Builder addException(ClusterNode node, Exception e) {
+            assert e != null;
+
+            if (exceptions == null)
+                exceptions = new HashMap<>();
+
+            exceptions.putIfAbsent(node, e);
+
+            return this;
+        }
+
+        /** Stores a collection of partition hashes for partition key {@code key}. */
+        private Builder addPartitionHashes(PartitionKey key, Collection<PartitionHashRecord> newHashes) {
+            if (partHashes == null)
+                partHashes = new HashMap<>();
+
+            partHashes.compute(key, (key0, hashes0) -> {
+                if (hashes0 == null)
+                    hashes0 = new ArrayList<>();
+
+                hashes0.addAll(newHashes);
+
+                return hashes0;
+            });
+
+            return this;
+        }
+
+        /** Stores a partition hashes map. */
+        public void addPartitionHashes(Map<PartitionKey, PartitionHashRecord> newHashes) {
+            newHashes.forEach((key, hash) -> addPartitionHashes(key, Collections.singletonList(hash)));
+        }
+
+        /** Stores a single partition hash for partition key {@code key}. */
+        public Builder addPartitionHash(PartitionKey key, PartitionHashRecord newHash) {
+            addPartitionHashes(key, Collections.singletonList(newHash));
+
+            return this;
+        }
+
+        /** Sets partition hashes. */
+        public Builder partitionHashes(Map<PartitionKey, List<PartitionHashRecord>> partHashes) {
+            assert F.isEmpty(this.partHashes) : "Partition hashes are already set.";
+            assert partHashes != null;
+
+            this.partHashes = partHashes;
+
+            return this;
+        }
+
+        /** Adds transaction conflicts. */
+        public Builder addTxConflicts(List<TransactionsHashRecord> newTxConflicts) {
+            if (txHashConflicts == null)
+                txHashConflicts = new ArrayList<>();
+
+            txHashConflicts.add(newTxConflicts);
+
+            return this;
+        }
+
+        /** Adds partially commited transactions. */
+        public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
+            if (partiallyCommittedTxs == null)
+                partiallyCommittedTxs = new HashMap<>();
+
+            partiallyCommittedTxs.compute(node, (node0, versions0) -> {
+                if (versions0 == null)
+                    versions0 = new ArrayList<>();
+
+                versions0.addAll(newVerisons);
+
+                return versions0;
+            });
+
+            return this;
+        }
+
+        /** @return {@code True} if any error is stopre. {@code False} otherwise. */
+        public boolean hasErrors() {
+            return !F.isEmpty(exceptions);
+        }
     }
 }
