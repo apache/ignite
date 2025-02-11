@@ -77,7 +77,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** Exceptions. */
     @GridToStringInclude
-    @Nullable private Map<ClusterNode, Exception> exceptions;
+    private Map<ClusterNode, Exception> exceptions;
 
     /**
      * Default constructor for Externalizable.
@@ -100,7 +100,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
         @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs,
-        @Nullable Map<ClusterNode, Exception> exceptions
+        Map<ClusterNode, Exception> exceptions
     ) {
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
@@ -217,7 +217,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * @return Exceptions on nodes.
      */
-    @Nullable public Map<ClusterNode, Exception> exceptions() {
+    public Map<ClusterNode, Exception> exceptions() {
         return exceptions;
     }
 
@@ -405,20 +405,24 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         return S.toString(IdleVerifyResultV2.class, this);
     }
 
-    /** Creates a result with errors only. */
-    public static IdleVerifyResultV2 errors(Map<ClusterNode, Exception> errors) {
-        return new IdleVerifyResultV2(errors);
-    }
-
-    /** @return a fresh result builder. */
+    /** @return A fresh result builder. */
     public static Builder builder() {
         return new Builder();
     }
 
-    /** Check result builder. */
+    /** Builder of {@link IdleVerifyResultV2}. Is not thread-safe. */
     public static final class Builder {
-        /** Holds data to build result in {@link #build()}. */
-        private final IdleVerifyResultV2 hldr = new IdleVerifyResultV2();
+        /** */
+        private @Nullable Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes;
+
+        /** */
+        private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+
+        /** */
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+
+        /** */
+        private Map<ClusterNode, Exception> exceptions;
 
         /** */
         private Builder() {
@@ -427,35 +431,47 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         /** Build the final result. */
         public IdleVerifyResultV2 build() {
-            return new IdleVerifyResultV2(hldr.hashConflicts, hldr.txHashConflicts, hldr.partiallyCommittedTxs, hldr.exceptions);
+            if (partHashes == null)
+                partHashes = Collections.emptyMap();
+
+            if (exceptions == null)
+                exceptions = Collections.emptyMap();
+
+            return new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs, exceptions);
         }
 
-        /** Stores an exception if nono is assigned for {@code node}.*/
+        /** Stores an exception if none is assigned for {@code node}. */
         public Builder addException(ClusterNode node, Exception e) {
             assert e != null;
 
-            hldr.exceptions.putIfAbsent(node, e);
+            if (exceptions == null)
+                exceptions = new HashMap<>();
+
+            exceptions.putIfAbsent(node, e);
 
             return this;
         }
 
         /** Sets the exceptions. */
-        public Builder exceptions(Map<ClusterNode, Exception> ex) {
-            assert F.isEmpty(hldr.exceptions) : "Exceptions are already set.";
+        public Builder exceptions(Map<ClusterNode, Exception> exceptions) {
+            assert this.exceptions == null : "Exceptions are already set.";
+            assert exceptions != null;
 
-            hldr.exceptions = ex;
+            this.exceptions = exceptions;
 
             return this;
         }
 
         /** Stores a collection of partition hashes for partition key {@code key}. */
-        public Builder addPartitionHashes(PartitionKeyV2 key, Collection<PartitionHashRecordV2> hashes) {
-            // The conflicts are used just as a hash container. Are not conflicts at the monnent.
-            hldr.hashConflicts.compute(key, (key0, hashes0) -> {
+        private Builder addPartitionHashes(PartitionKeyV2 key, Collection<PartitionHashRecordV2> newHashes) {
+            if (partHashes == null)
+                partHashes = new HashMap<>();
+
+            partHashes.compute(key, (key0, hashes0) -> {
                 if (hashes0 == null)
                     hashes0 = new ArrayList<>();
 
-                hashes0.addAll(hashes);
+                hashes0.addAll(newHashes);
 
                 return hashes0;
             });
@@ -464,41 +480,47 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         }
 
         /** Stores a partition hashes map. */
-        public void addPartitionHashes(Map<PartitionKeyV2, PartitionHashRecordV2> hashes) {
-            hashes.forEach((key, hash) -> addPartitionHashes(key, Collections.singletonList(hash)));
+        public void addPartitionHashes(Map<PartitionKeyV2, PartitionHashRecordV2> newHashes) {
+            newHashes.forEach((key, hash) -> addPartitionHashes(key, Collections.singletonList(hash)));
         }
 
-        /** Stores a single partition hash. */
-        public Builder addPartitionHash(PartitionKeyV2 key, PartitionHashRecordV2 hash) {
-            addPartitionHashes(key, Collections.singletonList(hash));
+        /** Stores a single partition hash for partition key {@code key}. */
+        public Builder addPartitionHash(PartitionKeyV2 key, PartitionHashRecordV2 newHash) {
+            addPartitionHashes(key, Collections.singletonList(newHash));
 
             return this;
         }
 
         /** Sets partition hashes. */
         public Builder partitionHashes(Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes) {
-            assert F.isEmpty(hldr.hashConflicts) : "Partitiin hashes are arleadt set.";
+            assert F.isEmpty(this.partHashes) : "Partition hashes are already set.";
+            assert partHashes != null;
 
-            // The conflicts are used just as a hash container. Are not conflicts at the monnent.
-            hldr.hashConflicts = partHashes;
+            this.partHashes = partHashes;
 
             return this;
         }
 
         /** Adds transaction conflicts. */
-        public Builder addTxConflicts(List<TransactionsHashRecord> txConflicts) {
-            hldr.txHashConflicts.add(txConflicts);
+        public Builder addTxConflicts(List<TransactionsHashRecord> newTxConflicts) {
+            if (txHashConflicts == null)
+                txHashConflicts = new ArrayList<>();
+
+            txHashConflicts.add(newTxConflicts);
 
             return this;
         }
 
         /** Adds partially commited transactions. */
-        public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> versions) {
-            hldr.partiallyCommittedTxs.compute(node, (node0, versions0) -> {
+        public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
+            if (partiallyCommittedTxs == null)
+                partiallyCommittedTxs = new HashMap<>();
+
+            partiallyCommittedTxs.compute(node, (node0, versions0) -> {
                 if (versions0 == null)
                     versions0 = new ArrayList<>();
 
-                versions0.addAll(versions);
+                versions0.addAll(newVerisons);
 
                 return versions0;
             });
@@ -508,7 +530,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         /** @return {@code True} if any error is stopre. {@code False} otherwise. */
         public boolean hasErrors() {
-            return !F.isEmpty(hldr.exceptions);
+            return !F.isEmpty(exceptions);
         }
     }
 }

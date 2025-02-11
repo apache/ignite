@@ -579,7 +579,7 @@ public class SnapshotChecker {
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
-            return IdleVerifyResultV2.errors(operationErrors);
+            return IdleVerifyResultV2.builder().exceptions(operationErrors).build();
 
         IdleVerifyResultV2.Builder bldr = IdleVerifyResultV2.builder();
 
