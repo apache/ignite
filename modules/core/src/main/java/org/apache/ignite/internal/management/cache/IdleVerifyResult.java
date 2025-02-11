@@ -45,9 +45,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
 /**
- * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
+ * Encapsulates result of {@link VerifyBackupPartitionsTask}.
  */
-public class IdleVerifyResultV2 extends VisorDataTransferObject {
+public class IdleVerifyResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,36 +82,24 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * Default constructor for Externalizable.
      */
-    public IdleVerifyResultV2() {
+    public IdleVerifyResult() {
+        // No-op.
     }
 
     /**
-     * @param exceptions Occurred exceptions.
+     * @see Builder
      */
-    public IdleVerifyResultV2(Map<ClusterNode, Exception> exceptions) {
+    private IdleVerifyResult(Map<ClusterNode, Exception> exceptions) {
         this.exceptions = exceptions;
     }
 
     /**
-     * @param txHashConflicts Transaction hashes conflicts.
+     * @see Builder
      */
-    public IdleVerifyResultV2(
+    private IdleVerifyResult(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
-        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
-    ) {
-        this(clusterHashes, Collections.emptyMap());
-
-        this.txHashConflicts = txHashConflicts;
-        this.partiallyCommittedTxs = partiallyCommittedTxs;
-    }
-
-    /**
-     * @param clusterHashes Map of cluster partition hashes.
-     * @param exceptions Exceptions on each cluster node.
-     */
-    public IdleVerifyResultV2(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs,
         Map<ClusterNode, Exception> exceptions
     ) {
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
@@ -151,6 +139,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         }
 
         this.exceptions = exceptions;
+        this.txHashConflicts = txHashConflicts;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
     }
 
     /** {@inheritDoc} */
@@ -390,7 +380,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IdleVerifyResultV2 v2 = (IdleVerifyResultV2)o;
+        IdleVerifyResult v2 = (IdleVerifyResult)o;
 
         return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
             Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
@@ -412,6 +402,135 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IdleVerifyResultV2.class, this);
+        return S.toString(IdleVerifyResult.class, this);
+    }
+
+    /** @return A fresh result builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Builder of {@link IdleVerifyResult}. Is not thread-safe. */
+    public static final class Builder {
+        /** */
+        private @Nullable Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes;
+
+        /** */
+        private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+
+        /** */
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+
+        /** */
+        private Map<ClusterNode, Exception> exceptions;
+
+        /** */
+        private Builder() {
+            // No-op.
+        }
+
+        /** Build the final result. */
+        public IdleVerifyResult build() {
+            if (partHashes == null)
+                partHashes = Collections.emptyMap();
+
+            if (exceptions == null)
+                exceptions = Collections.emptyMap();
+
+            return new IdleVerifyResult(partHashes, txHashConflicts, partiallyCommittedTxs, exceptions);
+        }
+
+        /** Stores an exception if none is assigned for {@code node}. */
+        public Builder addException(ClusterNode node, Exception e) {
+            assert e != null;
+
+            if (exceptions == null)
+                exceptions = new HashMap<>();
+
+            exceptions.putIfAbsent(node, e);
+
+            return this;
+        }
+
+        /** Sets the exceptions. */
+        public Builder exceptions(Map<ClusterNode, Exception> exceptions) {
+            assert this.exceptions == null : "Exceptions are already set.";
+            assert exceptions != null;
+
+            this.exceptions = exceptions;
+
+            return this;
+        }
+
+        /** Stores a collection of partition hashes for partition key {@code key}. */
+        private Builder addPartitionHashes(PartitionKeyV2 key, Collection<PartitionHashRecordV2> newHashes) {
+            if (partHashes == null)
+                partHashes = new HashMap<>();
+
+            partHashes.compute(key, (key0, hashes0) -> {
+                if (hashes0 == null)
+                    hashes0 = new ArrayList<>();
+
+                hashes0.addAll(newHashes);
+
+                return hashes0;
+            });
+
+            return this;
+        }
+
+        /** Stores a partition hashes map. */
+        public void addPartitionHashes(Map<PartitionKeyV2, PartitionHashRecordV2> newHashes) {
+            newHashes.forEach((key, hash) -> addPartitionHashes(key, Collections.singletonList(hash)));
+        }
+
+        /** Stores a single partition hash for partition key {@code key}. */
+        public Builder addPartitionHash(PartitionKeyV2 key, PartitionHashRecordV2 newHash) {
+            addPartitionHashes(key, Collections.singletonList(newHash));
+
+            return this;
+        }
+
+        /** Sets partition hashes. */
+        public Builder partitionHashes(Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes) {
+            assert F.isEmpty(this.partHashes) : "Partition hashes are already set.";
+            assert partHashes != null;
+
+            this.partHashes = partHashes;
+
+            return this;
+        }
+
+        /** Adds transaction conflicts. */
+        public Builder addTxConflicts(List<TransactionsHashRecord> newTxConflicts) {
+            if (txHashConflicts == null)
+                txHashConflicts = new ArrayList<>();
+
+            txHashConflicts.add(newTxConflicts);
+
+            return this;
+        }
+
+        /** Adds partially commited transactions. */
+        public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
+            if (partiallyCommittedTxs == null)
+                partiallyCommittedTxs = new HashMap<>();
+
+            partiallyCommittedTxs.compute(node, (node0, versions0) -> {
+                if (versions0 == null)
+                    versions0 = new ArrayList<>();
+
+                versions0.addAll(newVerisons);
+
+                return versions0;
+            });
+
+            return this;
+        }
+
+        /** @return {@code True} if any error is stopre. {@code False} otherwise. */
+        public boolean hasErrors() {
+            return !F.isEmpty(exceptions);
+        }
     }
 }

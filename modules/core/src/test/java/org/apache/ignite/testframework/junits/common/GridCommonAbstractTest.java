@@ -81,7 +81,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2224,7 +2224,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
+    protected IdleVerifyResult idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2248,7 +2248,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
 
-        return ((VisorTaskResult<IdleVerifyResultV2>)ig.compute().execute(
+        return ((VisorTaskResult<IdleVerifyResult>)ig.compute().execute(
             IdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         )).result();
@@ -2447,7 +2447,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param res Response.
      */
-    protected static void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
+    protected static void assertPartitionsSame(IdleVerifyResult res) throws AssertionFailedError {
         if (res.hasConflicts()) {
             StringBuilder b = new StringBuilder();
 

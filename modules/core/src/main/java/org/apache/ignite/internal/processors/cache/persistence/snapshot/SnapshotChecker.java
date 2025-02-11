@@ -49,7 +49,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
@@ -574,26 +574,23 @@ public class SnapshotChecker {
     }
 
     /** */
-    public IdleVerifyResultV2 reduceIncrementalResults(
-        Map<ClusterNode, IncrementalSnapshotCheckResult> results,
+    public IdleVerifyResult reduceIncrementalResults(
+        Map<ClusterNode, List<IncrementalSnapshotCheckResult>> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
-            return new IdleVerifyResultV2(operationErrors);
+            return IdleVerifyResult.builder().exceptions(operationErrors).build();
+
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
-        List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
-        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
-        Map<ClusterNode, Exception> errors = new HashMap<>();
 
-        results.forEach((node, res) -> {
-            if (res.exceptions().isEmpty() && errors.isEmpty()) {
+        results.forEach((node, resLst) -> resLst.forEach(res -> {
+            if (res.exceptions().isEmpty() && !bldr.hasErrors()) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
-                    partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
+                    bldr.addPartiallyCommited(node, res.partiallyCommittedTxs());
 
-                for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.partHashRes().entrySet())
-                    partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                bldr.addPartitionHashes(res.partHashRes());
 
                 if (log.isDebugEnabled())
                     log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + node + ", taskRes=" + res + ']');
@@ -612,47 +609,22 @@ public class SnapshotChecker {
                         TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
 
                         if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
-                            txHashConflicts.add(F.asList(hash, prevHash));
+                            bldr.addTxConflicts(F.asList(hash, prevHash));
 
                         resIt.remove();
                     }
                 }
             }
             else if (!res.exceptions().isEmpty())
-                errors.put(node, F.first(res.exceptions()));
-        });
+                bldr.addException(node, F.first(res.exceptions()));
+        }));
 
         // Add all missed pairs to conflicts.
         nodeTxHashMap.values().stream()
             .flatMap(e -> e.values().stream())
-            .forEach(e -> txHashConflicts.add(F.asList(e, null)));
+            .forEach(e -> bldr.addTxConflicts(F.asList(e, null)));
 
-        return errors.isEmpty()
-            ? new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
-            : new IdleVerifyResultV2(errors);
-    }
-
-    /** */
-    public static IdleVerifyResultV2 reduceHashesResults(
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
-        Map<ClusterNode, Exception> ex
-    ) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-
-        results.forEach((node, nodeHashes) -> {
-            assert ex.get(node) == null;
-
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
-
-                records.add(e.getValue());
-            }
-        });
-
-        if (results.size() != ex.size())
-            return new IdleVerifyResultV2(clusterHashes, ex);
-        else
-            return new IdleVerifyResultV2(ex);
+        return bldr.build();
     }
 
     /** */
@@ -1023,33 +995,39 @@ public class SnapshotChecker {
     }
 
     /**
-     * Checks results of the internal and custon snapshot validation handlres. Throws exception if a validation error occurs.
-     *
+     * Checks results of all the snapshot validation handlres.
+     * @param snpName Snapshot name
+     * @param results Results: checking node -> snapshot part's consistend id -> custom handler name -> handler result.
      * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
      */
     public void checkCustomHandlersResults(
         String snpName,
-        Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> results
+        Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
     ) throws Exception {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
         Collection<UUID> execNodes = new ArrayList<>(results.size());
 
-        for (Map.Entry<ClusterNode, Map<String, SnapshotHandlerResult<?>>> nodeRes : results.entrySet()) {
-            ClusterNode node = nodeRes.getKey();
+        // Checking node -> Map by snapshot part's consistend id.
+        for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
+            // Consistent id -> Map by handler name.
+            for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> nodeConsIdRes : nodeRes.getValue().entrySet()) {
+                ClusterNode node = nodeRes.getKey();
 
-            // Depending on the job mapping, we can get several different results from one node.
-            execNodes.add(node.id());
+                // We can get several different results from one node.
+                execNodes.add(node.id());
 
-            assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
+                assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
 
-            for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeRes.getValue().entrySet()) {
-                String hndName = nodeHndRes.getKey();
-                SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
+                // Handler name -> handler result.
+                for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeConsIdRes.getValue().entrySet()) {
+                    String hndName = nodeHndRes.getKey();
+                    SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
 
-                if (hndRes.error() != null)
-                    throw hndRes.error();
+                    if (hndRes.error() != null)
+                        throw hndRes.error();
 
-                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
+                    clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
+                }
             }
         }
 
