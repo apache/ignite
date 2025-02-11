@@ -41,7 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -192,7 +192,7 @@ public class SnapshotCheckProcess {
             errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
         }
 
-        IdleVerifyResultV2 chkRes = checker.reduceIncrementalResults(reduced, mapErrors(errors));
+        IdleVerifyResult chkRes = checker.reduceIncrementalResults(reduced, mapErrors(errors));
 
         fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
     }
@@ -252,7 +252,7 @@ public class SnapshotCheckProcess {
         Map<UUID, Throwable> errors,
         GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
     ) {
-        IdleVerifyResultV2.Builder bldr = IdleVerifyResultV2.builder();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
@@ -59,7 +59,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public void complete(String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
-        IdleVerifyResultV2.Builder bldr = IdleVerifyResultV2.builder();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> res : results) {
             if (res.error() != null) {
@@ -72,7 +72,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 bldr.addPartitionHash(entry.getKey(), entry.getValue());
         }
 
-        IdleVerifyResultV2 verifyResult = bldr.build();
+        IdleVerifyResult verifyResult = bldr.build();
 
         if (!bldr.hasErrors() && !verifyResult.hasConflicts())
             return;

@@ -49,7 +49,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
@@ -574,14 +574,14 @@ public class SnapshotChecker {
     }
 
     /** */
-    public IdleVerifyResultV2 reduceIncrementalResults(
+    public IdleVerifyResult reduceIncrementalResults(
         Map<ClusterNode, List<IncrementalSnapshotCheckResult>> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
-            return IdleVerifyResultV2.builder().exceptions(operationErrors).build();
+            return IdleVerifyResult.builder().exceptions(operationErrors).build();
 
-        IdleVerifyResultV2.Builder bldr = IdleVerifyResultV2.builder();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
 
