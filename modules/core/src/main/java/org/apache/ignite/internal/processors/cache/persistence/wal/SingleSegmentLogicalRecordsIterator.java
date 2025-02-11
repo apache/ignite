@@ -47,10 +47,10 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     private boolean segmentInitialized;
 
     /** Archive directory. */
-    private NodeFileTree ft;
+    private final NodeFileTree ft;
 
     /** Closure which is executed right after advance. */
-    private CIX1<WALRecord> advanceC;
+    private final CIX1<WALRecord> advanceC;
 
     /**
      * @param log Logger.

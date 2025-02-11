@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -51,7 +50,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_WAL_SEG_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  *
@@ -398,11 +397,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = ft.walArchive().listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return name.endsWith(ZIP_WAL_SEG_FILE_EXT);
-            }
-        });
+        File[] compressedSegments = ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
 
         long maxIdx = -1;
         for (File f : compressedSegments)
