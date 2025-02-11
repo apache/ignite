@@ -77,7 +77,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** Exceptions. */
     @GridToStringInclude
-    private Map<ClusterNode, Exception> exceptions;
+    @Nullable private Map<ClusterNode, Exception> exceptions;
 
     /**
      * Default constructor for Externalizable.
@@ -100,7 +100,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
         @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs,
-        Map<ClusterNode, Exception> exceptions
+        @Nullable Map<ClusterNode, Exception> exceptions
     ) {
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
@@ -217,7 +217,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * @return Exceptions on nodes.
      */
-    public Map<ClusterNode, Exception> exceptions() {
+    @Nullable public Map<ClusterNode, Exception> exceptions() {
         return exceptions;
     }
 
@@ -432,6 +432,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         /** Stores an exception if nono is assigned for {@code node}.*/
         public Builder addException(ClusterNode node, Exception e) {
+            assert e != null;
+
             hldr.exceptions.putIfAbsent(node, e);
 
             return this;
