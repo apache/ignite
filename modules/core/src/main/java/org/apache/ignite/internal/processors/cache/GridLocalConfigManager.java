@@ -70,8 +70,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
@@ -238,10 +236,12 @@ public class GridLocalConfigManager {
         if (caches == null)
             return Collections.emptyMap();
 
+        String utilityCacheStorage = NodeFileTree.cacheDirName(false, UTILITY_CACHE_NAME);
+
         return Arrays.stream(caches)
             .filter(f -> f.isDirectory() &&
-                (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
-                !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
+                NodeFileTree.CACHE_DIR_FILTER.test(f) &&
+                !f.getName().equals(utilityCacheStorage))
             .filter(File::exists)
             .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
             .collect(Collectors.toMap(f -> f, f -> {
@@ -467,7 +467,7 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        if (dir.getName().startsWith(CACHE_DIR_PREFIX)) {
+        if (NodeFileTree.cacheDir(dir)) {
             File conf = new File(dir, CACHE_DATA_FILENAME);
 
             if (conf.exists() && conf.length() > 0) {
@@ -478,7 +478,7 @@ public class GridLocalConfigManager {
                 );
             }
         }
-        else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+        else if (NodeFileTree.cacheGroupDir(dir))
             readCacheGroupCaches(dir, ccfgs);
     }
 

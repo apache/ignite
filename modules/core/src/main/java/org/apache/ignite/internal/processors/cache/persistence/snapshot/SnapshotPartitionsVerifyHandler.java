@@ -79,9 +79,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
@@ -137,7 +137,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Map<Integer, File> grpDirs = new HashMap<>();
 
         for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
-            int grpId = CU.cacheId(cacheGroupName(dir));
+            int grpId = CU.cacheId(cacheName(dir));
 
             if (!grps.remove(grpId))
                 continue;
@@ -210,7 +210,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 snpMgr.snapshotExecutorService(),
                 partFiles,
                 part -> {
-                    String grpName = cacheGroupName(part.getParentFile());
+                    String grpName = cacheName(part.getParentFile());
                     int grpId = CU.cacheId(grpName);
                     int partId = partId(part.getName());
 
@@ -372,7 +372,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
-                    part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+                    part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part.getName()))
                 );
 
                 return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));

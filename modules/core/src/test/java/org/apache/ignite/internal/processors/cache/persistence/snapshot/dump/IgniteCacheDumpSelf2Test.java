@@ -115,7 +115,6 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
@@ -425,10 +424,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             assertNotNull(nodes);
             assertEquals(1, nodes.size());
 
-            File cacheDumpDir = new File(
-                dump.dumpDirectory(),
-                DB_DEFAULT_FOLDER + File.separator + nodes.get(0) + File.separator + CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME
-            );
+            NodeFileTree ft = dump.fileTrees().get(0);
+
+            File cacheDumpDir = ft.cacheStorage(false, DEFAULT_CACHE_NAME);
 
             assertTrue(cacheDumpDir.exists());
 

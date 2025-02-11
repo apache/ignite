@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,8 +69,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -264,11 +261,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Path cacheFolder = Paths.get(U.defaultWorkDirectory(),
-            DFLT_STORE_DIR,
-            ignite0.name().replaceAll("\\.", "_"),
-            CACHE_DIR_PREFIX + CACHE_NAME
-        );
+        Path cacheFolder = ignite0.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME).toPath();
 
         Optional<Long> totalPartSizeBeforeStop = totalPartitionsSize(cacheFolder);
 
