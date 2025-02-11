@@ -655,7 +655,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageStore.TYPE_DATA,
-                        () -> NodeFileTree.partitionFile(ft.nodeStorage(), cacheDir, p).toPath(),
+                        () -> ft.partitionFile(cacheDir, p).toPath(),
                         pageMetrics.totalPages()::add);
 
                 partStores[partId] = partStore;

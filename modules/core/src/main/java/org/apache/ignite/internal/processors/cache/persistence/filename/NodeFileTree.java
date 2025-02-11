@@ -496,23 +496,32 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param workDir Cache work directory.
      * @param cacheDirName Cache directory name.
-     * @param partId Partition id.
+     * @param part Partition id.
      * @return Partition file.
      */
-    @NotNull public static File partitionFile(File workDir, String cacheDirName, int partId) {
-        return new File(cacheStorage(workDir, cacheDirName), partitionFileName(partId));
+    public File partitionFile(String cacheDirName, int part) {
+        return new File(cacheStorage(cacheDirName), partitionFileName(part));
     }
 
     /**
-     * @param partId Partition id.
+     * @param workDir Cache work directory.
+     * @param cacheDirName Cache directory name.
+     * @param part Partition id.
+     * @return Partition file.
+     */
+    @NotNull public static File partitionFile(File workDir, String cacheDirName, int part) {
+        return new File(cacheStorage(workDir, cacheDirName), partitionFileName(part));
+    }
+
+    /**
+     * @param part Partition id.
      * @return File name.
      */
-    public static String partitionFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+    public static String partitionFileName(int part) {
+        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
-        return partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
+        return part == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, part);
     }
 
     /**
