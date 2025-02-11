@@ -240,7 +240,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         long segIdx = wal.lastCompactedSegment();
 
-        U.delete(wal.compactedSegment(segIdx));
+        U.delete(srv.context().pdsFolderResolver().fileTree().zipWalArchiveSegment(segIdx));
 
         assertThrowsWithCause(
             () -> srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),

@@ -539,10 +539,10 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000l));
         }
 
-        long totalSize = walMgr.totalSize(walFiles(ft.wal()));
+        long totalSize = FileWriteAheadLogManager.totalSize(walFiles(ft.wal()));
 
         if (ft.walArchiveEnabled())
-            totalSize += walMgr.totalSize(walFiles(ft.walArchive()));
+            totalSize += FileWriteAheadLogManager.totalSize(walFiles(ft.walArchive()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
 

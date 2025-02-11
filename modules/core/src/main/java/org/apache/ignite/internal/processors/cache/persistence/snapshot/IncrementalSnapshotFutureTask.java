@@ -196,7 +196,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
             throw new IgniteException("Failed to create snapshot WAL directory [idx=" + incSnpWalDir + ']');
 
         for (; lowIdx <= highIdx; lowIdx++) {
-            File seg = cctx.wal().compactedSegment(lowIdx);
+            File seg = cctx.kernalContext().pdsFolderResolver().fileTree().zipWalArchiveSegment(lowIdx);
 
             if (!seg.exists())
                 throw new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']');

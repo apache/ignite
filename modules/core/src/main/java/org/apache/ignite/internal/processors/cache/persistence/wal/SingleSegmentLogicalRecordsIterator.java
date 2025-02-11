@@ -16,7 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -24,6 +23,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
@@ -47,7 +47,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     private boolean segmentInitialized;
 
     /** Archive directory. */
-    private File archiveDir;
+    private NodeFileTree ft;
 
     /** Closure which is executed right after advance. */
     private CIX1<WALRecord> advanceC;
@@ -58,7 +58,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
      * @param ioFactory Io factory.
      * @param bufSize Buffer size.
      * @param archivedSegIdx Archived seg index.
-     * @param archiveDir Directory with segment.
+     * @param ft Node file tree.
      * @param advanceC Closure which is executed right after advance.
      */
     SingleSegmentLogicalRecordsIterator(
@@ -67,7 +67,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         @NotNull FileIOFactory ioFactory,
         int bufSize,
         long archivedSegIdx,
-        File archiveDir,
+        NodeFileTree ft,
         CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
         super(
@@ -80,7 +80,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
             new SimpleSegmentFileInputFactory());
 
         curWalSegmIdx = archivedSegIdx;
-        this.archiveDir = archiveDir;
+        this.ft = ft;
         this.advanceC = advanceC;
 
         advance();
@@ -106,8 +106,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         else {
             segmentInitialized = true;
 
-            FileDescriptor fd = new FileDescriptor(
-                new File(archiveDir, FileDescriptor.fileName(curWalSegmIdx)));
+            FileDescriptor fd = new FileDescriptor(ft.walArchiveSegment(curWalSegmIdx));
 
             try {
                 return initReadHandle(fd, null);

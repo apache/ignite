@@ -38,7 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -105,9 +105,11 @@ abstract class IncrementalSnapshotProcessor {
 
         UUID incSnpId = meta.requestId();
 
+        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+
         File lastSeg = Arrays.stream(segments)
             .map(File::toPath)
-            .max(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex))
+            .max(Comparator.comparingLong(ft::walSegmentIndex))
             .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [snpName=" + snpName + ']'))
             .toFile();
 

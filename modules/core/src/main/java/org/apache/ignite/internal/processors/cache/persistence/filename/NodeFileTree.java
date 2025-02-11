@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteException;
@@ -35,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
@@ -131,10 +134,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
- * │          ├── 0000000000000000.wal
- * │          ├── 0000000000000001.wal
+ * │          ├── 0000000000000000.wal                                          ← wal segment (index = 0)
+ * │          ├── 0000000000000001.wal                                          ← wal segment (index = 1)
  * ...
- * │          └── 0000000000000009.wal
+ * │          └── 0000000000000009.wal                                          ← wal segment (index = 9)
  * │      └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                       ← wal (node 1)
  * ...
  * ├── diagnostic
@@ -157,14 +160,26 @@ public class NodeFileTree extends SharedFileTree {
     /** Checkpoint directory name. */
     public static final String CHECKPOINT_DIR = "cp";
 
+    /** File extension of WAL segment. */
+    public static final String WAL_SEGMENT_FILE_EXT = ".wal";
+
+    /** File extension of temp WAL segment. */
+    public static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
+
+    /** File extension of zipped WAL segment. */
+    public static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
+
+    /** File extension of temp zipped WAL segment. */
+    public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
+
+    /** Filter out all cache directories. */
+    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
+
     /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
     private static final String CACHE_DIR_PREFIX = "cache-";
 
     /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
-
-    /** Filter out all cache directories. */
-    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
     public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
@@ -308,6 +323,54 @@ public class NodeFileTree extends SharedFileTree {
         return wal;
     }
 
+    /**
+     * @param idx Segment number.
+     * @return Segment file.
+     */
+    public File walSegment(long idx) {
+        return new File(wal, U.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_EXT));
+    }
+
+    /**
+     * @param idx Segment number.
+     * @return Archive Segment file.
+     */
+    public File walArchiveSegment(long idx) {
+        return new File(walArchive, U.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_EXT));
+    }
+
+    /**
+     * @param idx Segment number.
+     * @return Temp segment file.
+     */
+    public File tempWalSegment(long idx) {
+        return new File(wal, U.fixedLengthNumberName(idx, TMP_WAL_SEG_FILE_EXT));
+    }
+
+    /**
+     * @param idx Segment number.
+     * @return Temp archive Segment file.
+     */
+    public File tempWalArchiveSegment(long idx) {
+        return new File(walArchive, U.fixedLengthNumberName(idx, TMP_WAL_SEG_FILE_EXT));
+    }
+
+    /**
+     * @param idx Segment number.
+     * @return Zipped archive Segment file.
+     */
+    public File zipWalArchiveSegment(long idx) {
+        return new File(walArchive, U.fixedLengthNumberName(idx, ZIP_WAL_SEG_FILE_EXT));
+    }
+
+    /**
+     * @param idx Segment number.
+     * @return Zipped archive Segment file.
+     */
+    public File zipTempWalArchiveSegment(long idx) {
+        return new File(walArchive, U.fixedLengthNumberName(idx, TMP_ZIP_WAL_SEG_FILE_EXT));
+    }
+
     /** @return Path to the directory containing archive WAL segments. */
     public @Nullable File walArchive() {
         return walArchive;
@@ -446,6 +509,16 @@ public class NodeFileTree extends SharedFileTree {
             return MetaStorage.METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
+    }
+
+    /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /**
