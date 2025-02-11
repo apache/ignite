@@ -135,6 +135,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -988,6 +989,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest req,
         SnapshotMetadata meta
     ) {
+        SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
         WALPointer lowPtr;
 
@@ -1013,7 +1015,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.operationalNodeId(),
             req.requestId(),
             meta,
-            req.snapshotPath(),
+            sft,
             req.incrementIndex(),
             lowPtr,
             markWalFut
@@ -2647,7 +2649,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
                 reqId,
-                snpName,
+                new SnapshotFileTree(ft, snpName, snpPath),
                 snapshotLocalDir(snpName, snpPath),
                 ioFactory,
                 transferRateLimiter,
@@ -2660,7 +2662,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx,
                 srcNodeId,
                 reqId,
-                snpName,
+                new SnapshotFileTree(ft, snpName, snpPath),
                 ft,
                 ioFactory,
                 snpSndr,
@@ -3756,7 +3758,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (msg instanceof SnapshotFilesRequestMessage) {
                     SnapshotFilesRequestMessage reqMsg0 = (SnapshotFilesRequestMessage)msg;
                     String rqId = reqMsg0.id();
-                    String snpName = reqMsg0.snapshotName();
 
                     try {
                         synchronized (this) {
@@ -3775,8 +3776,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             new SnapshotResponseRemoteFutureTask(cctx,
                                 nodeId,
                                 reqMsg0.requestId(),
-                                snpName,
-                                reqMsg0.snapshotPath(),
+                                new SnapshotFileTree(ft, reqMsg0.snapshotName(), reqMsg0.snapshotPath()),
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 

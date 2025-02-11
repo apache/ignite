@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -156,7 +157,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param snpName Unique identifier of snapshot process.
+     * @param sft Snapshot file tree.
+     * @param ft Node file tree.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
@@ -166,7 +168,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String snpName,
+        SnapshotFileTree sft,
         NodeFileTree ft,
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
@@ -174,15 +176,14 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, sft, snpSndr, parts);
 
-        assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
         assert snpSndr.executor() != null : "Executor service must be not null.";
         assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
-        this.tmpSnpWorkDir = new File(ft.snapshotTempRoot(), snpName);
+        this.tmpSnpWorkDir = new File(ft.snapshotTempRoot(), sft.name());
         this.ft = ft;
         this.ioFactory = ioFactory;
         this.withMetaStorage = withMetaStorage;
@@ -221,7 +222,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 U.delete(tmpSnpWorkDir.toPath());
         }
         catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpSnpWorkDir + ']');
+            log.error("Snapshot directory doesn't exist [snpName=" + sft.name() + ", dir=" + tmpSnpWorkDir + ']');
         }
 
         if (err != null)
@@ -316,7 +317,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
                 if (log.isInfoEnabled()) {
                     log.info("Finished waiting for all the concurrent operations over the metadata store before snapshot " +
-                        "[snpName=" + snpName + ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                        "[snpName=" + sft.name() + ", time=" + (U.currentTimeMillis() - start) + "ms]");
                 }
             }
             catch (IgniteCheckedException ignore) {
@@ -336,7 +337,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
             // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
             if (cctx.wal() != null) {
-                snpPtr = cctx.wal().log(new ClusterSnapshotRecord(snpName));
+                snpPtr = cctx.wal().log(new ClusterSnapshotRecord(sft.name()));
 
                 ctx.walFlush(true);
             }
@@ -539,12 +540,12 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         SnapshotFutureTask ctx = (SnapshotFutureTask)o;
 
-        return snpName.equals(ctx.snpName);
+        return sft.name().equals(ctx.sft.name());
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(snpName);
+        return Objects.hash(sft.name());
     }
 
     /** {@inheritDoc} */

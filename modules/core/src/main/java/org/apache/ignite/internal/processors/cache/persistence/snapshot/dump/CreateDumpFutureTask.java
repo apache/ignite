@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractCreateSnapshotFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -149,7 +150,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param dumpName Dump name.
+     * @param sft Snapshot file tree.
      * @param ioFactory IO factory.
      * @param snpSndr Snapshot sender.
      * @param rateLimiter Dump transfer rate limiter.
@@ -161,7 +162,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String dumpName,
+        SnapshotFileTree sft,
         File dumpDir,
         FileIOFactory ioFactory,
         BasicRateLimiter rateLimiter,
@@ -174,7 +175,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             cctx,
             srcNodeId,
             reqId,
-            dumpName,
+            sft,
             snpSndr,
             parts
         );
@@ -193,7 +194,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     @Override public boolean start() {
         try {
             if (log.isInfoEnabled())
-                log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
+                log.info("Start cache dump [name=" + sft.name() + ", grps=" + parts.keySet() + ']');
 
             createDumpLock();
 

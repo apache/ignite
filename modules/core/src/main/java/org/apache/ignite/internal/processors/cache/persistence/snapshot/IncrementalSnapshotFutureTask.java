@@ -35,10 +35,10 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRe
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
@@ -47,9 +47,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
     /** Index of incremental snapshot. */
     private final int incIdx;
-
-    /** Snapshot path. */
-    private final @Nullable String snpPath;
 
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
@@ -70,7 +67,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         int incIdx,
         WALPointer lowPtr,
         IgniteInternalFuture<WALPointer> highPtrFut
@@ -79,7 +76,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
             cctx,
             srcNodeId,
             reqNodeId,
-            meta.snapshotName(),
+            sft,
             new SnapshotSender(
                 cctx.logger(IncrementalSnapshotFutureTask.class),
                 cctx.kernalContext().pools().getSnapshotExecutorService()
@@ -100,7 +97,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         );
 
         this.incIdx = incIdx;
-        this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
         this.lowPtr = lowPtr;
         this.highPtrFut = highPtrFut;
@@ -116,7 +112,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(sft.name(), sft.path(), incIdx);
 
             if (!incSnpDir.mkdirs() && !incSnpDir.exists()) {
                 onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpDir.getAbsolutePath() + ']'));
