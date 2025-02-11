@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsRotateFileTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSystemViewTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.StringCacheTest;
 import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
@@ -97,6 +98,7 @@ import org.junit.runners.Suite;
     PerformanceStatisticsSelfTest.class,
     PerformanceStatisticsThinClientTest.class,
     PerformanceStatisticsRotateFileTest.class,
+    PerformanceStatisticsSystemViewTest.class,
     TopologyChangesTest.class,
     IgniteClusterIdTagTest.class,
     StringCacheTest.class,
