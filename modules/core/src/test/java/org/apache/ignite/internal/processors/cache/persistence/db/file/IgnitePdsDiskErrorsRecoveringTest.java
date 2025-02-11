@@ -55,6 +55,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
@@ -276,7 +277,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnWALWritingFail1() throws Exception {
         // Allow to allocate only 1 wal segment, fail on write to second.
-        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), WAL_SEGMENT_SIZE));
+        ioFactory = new FilteringFileIOFactory(
+            WAL_SEGMENT_FILE_EXT,
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), WAL_SEGMENT_SIZE)
+        );
 
         System.setProperty(IGNITE_WAL_MMAP, "true");
 
@@ -290,7 +294,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
         ioFactory = new FilteringFileIOFactory(
-            ".wal",
+            WAL_SEGMENT_FILE_EXT,
             new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long)(1.5 * WAL_SEGMENT_SIZE))
         );
 
