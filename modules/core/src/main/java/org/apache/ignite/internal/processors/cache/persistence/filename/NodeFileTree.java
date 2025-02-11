@@ -31,12 +31,18 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  * Provides access to Ignite node file tree.
@@ -490,6 +496,26 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param workDir Cache work directory.
+     * @param cacheDirName Cache directory name.
+     * @param partId Partition id.
+     * @return Partition file.
+     */
+    @NotNull public static File partitionFile(File workDir, String cacheDirName, int partId) {
+        return new File(cacheStorage(workDir, cacheDirName), partitionFileName(partId));
+    }
+
+    /**
+     * @param partId Partition id.
+     * @return File name.
+     */
+    public static String partitionFileName(int partId) {
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+
+        return partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
@@ -552,6 +578,9 @@ public class NodeFileTree extends SharedFileTree {
      * @return The full cache directory name.
      */
     public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+        if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
+            return METASTORAGE_DIR_NAME;
+
         return isSharedGroup
             ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
             : CACHE_DIR_PREFIX + cacheOrGroupName;
@@ -569,7 +598,7 @@ public class NodeFileTree extends SharedFileTree {
         else if (name.startsWith(CACHE_DIR_PREFIX))
             return name.substring(CACHE_DIR_PREFIX.length());
         else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
-            return MetaStorage.METASTORAGE_CACHE_NAME;
+            return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
     }
@@ -582,6 +611,21 @@ public class NodeFileTree extends SharedFileTree {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
+     * @param part Partition file name.
+     * @return Partition id.
+     */
+    public static int partId(File part) {
+        String name = part.getName();
+        if (name.equals(INDEX_FILE_NAME))
+            return INDEX_PARTITION;
+
+        if (name.startsWith(PART_FILE_PREFIX))
+            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
+
+        throw new IllegalStateException("Illegal partition file name: " + name);
     }
 
     /**

@@ -115,7 +115,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -649,9 +648,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                         && f.getName().endsWith(FILE_SUFFIX));
 
                 for (File partFile : parts) {
-                    int part = Integer.parseInt(partFile.getName()
-                        .substring(PART_FILE_PREFIX.length())
-                        .replace(FILE_SUFFIX, ""));
+                    int part = NodeFileTree.partId(partFile);
 
                     cacheParts.compute(part, (part0, cnt) -> (cnt == null ? 0 : cnt) + 1);
                 }

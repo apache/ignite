@@ -256,7 +256,7 @@ public class Dump implements AutoCloseable {
             return Collections.emptyList();
 
         return Arrays.stream(parts)
-            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(suffix, "")))
+            .map(NodeFileTree::partId)
             .collect(Collectors.toList());
     }
 
