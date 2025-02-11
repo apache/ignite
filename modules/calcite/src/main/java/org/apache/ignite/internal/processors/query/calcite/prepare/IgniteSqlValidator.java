@@ -105,6 +105,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Dynamic parameters. */
     @Nullable private final Object[] parameters;
 
+    /** */
+    private final RelDataType nullType;
+
     /**
      * Creates a validator.
      *
@@ -124,6 +127,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
+
+        nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
 
     /** {@inheritDoc} */
@@ -543,7 +548,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
         if (expr instanceof SqlDynamicParam) {
-            RelDataType type = deriveDynamicParameterType((SqlDynamicParam)expr);
+            RelDataType type = deriveDynamicParameterType((SqlDynamicParam)expr, nullType);
 
             if (type != null)
                 return type;
@@ -553,7 +558,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** @return A derived type or {@code null} if unable to determine. */
-    @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node) {
+    @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node, RelDataType nullValType) {
         RelDataType type = getValidatedNodeTypeIfKnown(node);
 
         // Do not clarify the widest type for any value.
@@ -569,7 +574,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return type;
 
         type = val == null
-            ? typeFactory.createSqlType(SqlTypeName.NULL)
+            ? typeFactory().createTypeWithNullability(nullValType, true)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
 
         setValidatedNodeType(node, type);
@@ -579,8 +584,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam && unknownType.equals(inferredType)
-            && deriveDynamicParameterType((SqlDynamicParam)node) != null)
+        if (node instanceof SqlDynamicParam && !(inferredType instanceof OtherType)
+            && deriveDynamicParameterType((SqlDynamicParam)node, unknownType.equals(inferredType) ? nullType : inferredType) != null)
             return;
 
         if (node instanceof SqlCall) {
