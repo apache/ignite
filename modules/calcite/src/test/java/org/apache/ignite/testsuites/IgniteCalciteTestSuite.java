@@ -17,13 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.KeyFilteringCursorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcConnectionEnabledPropertyTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInfoTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
@@ -41,13 +38,10 @@ import org.junit.runners.Suite;
     PlannerTestSuite.class,
     ExecutionTestSuite.class,
     IntegrationTestSuite.class,
+    UtilTestSuite.class,
 
-    ClosableIteratorsHolderTest.class,
-    MemoryTrackerTest.class,
-    QueryCheckerTest.class,
     SqlCustomParserTest.class,
     SqlReservedWordsTest.class,
-    IgniteSqlFunctionsTest.class,
     LogicalRelImplementorTest.class,
 
     ScriptTestSuite.class,
@@ -55,11 +49,12 @@ import org.junit.runners.Suite;
 
     NumericTypesPrecisionsTest.class,
 
-    KeyFilteringCursorTest.class,
     SqlTransactionsIsolationTest.class,
     SqlTransactionsUnsupportedModesTest.class,
 
     JdbcThinTransactionalSelfTest.class,
+    JdbcSetClientInfoTest.class,
+    JdbcConnectionEnabledPropertyTest.class
 })
 public class IgniteCalciteTestSuite {
 }

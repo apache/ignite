@@ -21,20 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Command line handler test with SSL.
@@ -55,6 +54,13 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(cliCommandHandler());
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -62,9 +68,12 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(100 * 1024 * 1024);
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-        cfg.getConnectorConfiguration().setSslEnabled(true);
         cfg.setSslContextFactory(createSslFactory());
+
+        if (commandHandler.equals(CLI_CMD_HND)) {
+            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setSslEnabled(true));
+        }
 
         return cfg;
     }
@@ -80,13 +89,13 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.cluster().active());
+        assertFalse(ignite.cluster().state().active());
 
-        final CommandHandler cmd = new CommandHandler();
+        final TestCommandHandler cmd = newCommandHandler();
 
         List<String> params = new ArrayList<>();
 
-        addSslParams(params);
+        extendSslParams(params);
 
         if (!F.isEmpty(utilityCipherSuite)) {
             params.add("--ssl-cipher-suites");
@@ -98,9 +107,9 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         assertEquals(expRes, execute(params));
 
         if (expRes == EXIT_CODE_OK)
-            assertTrue(ignite.cluster().active());
+            assertTrue(ignite.cluster().state().active());
         else
-            assertFalse(ignite.cluster().active());
+            assertFalse(ignite.cluster().state().active());
 
         assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
     }

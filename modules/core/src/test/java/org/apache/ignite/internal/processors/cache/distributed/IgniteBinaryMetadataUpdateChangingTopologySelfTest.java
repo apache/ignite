@@ -59,8 +59,6 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(null);
-
         CacheConfiguration ccfg = new CacheConfiguration("cache");
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

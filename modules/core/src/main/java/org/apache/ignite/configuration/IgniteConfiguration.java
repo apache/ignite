@@ -2602,7 +2602,6 @@ public class IgniteConfiguration {
      * {@link DiscoverySpi} in client mode if this property is {@code true}.
      *
      * @return Client mode flag.
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public Boolean isClientMode() {
         return clientMode;
@@ -3101,6 +3100,8 @@ public class IgniteConfiguration {
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        A.notNull(snapshotPath, "snapshotPath");
+
         this.snapshotPath = snapshotPath;
 
         return this;

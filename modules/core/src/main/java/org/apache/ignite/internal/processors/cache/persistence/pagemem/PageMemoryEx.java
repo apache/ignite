@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.apache.ignite.internal.util.function.ThrowableSupplier;
 
 /**
  * Page memory with some persistence related additions.
@@ -119,7 +120,7 @@ public interface PageMemoryEx extends PageMemory {
      * @throws IgniteException If checkpoint has been already started and was not finished.
      * @param allowToReplace The sign which allows to replace pages from a checkpoint by page replacer.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(IgniteInternalFuture allowToReplace)
+    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace)
             throws IgniteException;
 
     /**
@@ -132,17 +133,19 @@ public interface PageMemoryEx extends PageMemory {
      *{@link PageStoreWriter} will be called when the page will be ready to write.
      *
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
-     *      the {@link #beginCheckpoint(IgniteInternalFuture)} method call.
+     *      the {@link #beginCheckpoint(ThrowableSupplier)} method call.
      * @param buf Temporary buffer to write changes into.
      * @param pageWriter Checkpoint page write context.
      * @param tracker Checkpoint metrics tracker.
+     * @param keepDirty Don't reset dirty flag on page.
      * @throws IgniteCheckedException If failed to obtain page data.
      */
     public void checkpointWritePage(
         FullPageId pageId,
         ByteBuffer buf,
         PageStoreWriter pageWriter,
-        CheckpointMetricsTracker tracker
+        CheckpointMetricsTracker tracker,
+        boolean keepDirty
     ) throws IgniteCheckedException;
 
      /** */

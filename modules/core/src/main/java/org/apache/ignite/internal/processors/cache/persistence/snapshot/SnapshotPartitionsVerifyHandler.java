@@ -40,8 +40,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
@@ -60,7 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
-public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKey, PartitionHashRecord>> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -113,7 +113,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         if (!opCtx.snapshotDirectory().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());
 
@@ -183,14 +183,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
+    private Map<PartitionKey, PartitionHashRecord> checkSnapshotFiles(
         SnapshotHandlerContext opCtx,
         Map<Integer, File> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
         boolean punchHoleEnabled
     ) throws IgniteCheckedException {
-        Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
+        Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
@@ -237,19 +237,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                                         // No-op.
                                     }
                                 }
-                            });
+                            }, null);
                         }
 
                         if (partId == INDEX_PARTITION) {
                             if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX, null);
 
                             return null;
                         }
 
                         if (grpId == MetaStorage.METASTORAGE_CACHE_ID) {
                             if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
+                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA, null);
 
                             return null;
                         }
@@ -283,16 +283,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         // Snapshot partitions must always be in OWNING state.
                         // There is no `primary` partitions for snapshot.
-                        PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+                        PartitionKey key = new PartitionKey(grpId, partId, grpName);
 
-                        PartitionHashRecordV2 hash = calculatePartitionHash(key,
+                        PartitionHashRecord hash = calculatePartitionHash(key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
                             skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
+                            null
+                        );
 
                         assert hash != null : "OWNING must have hash: " + key;
 
@@ -357,7 +359,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
+    private Map<PartitionKey, PartitionHashRecord> checkDumpFiles(
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
@@ -367,13 +369,13 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
             try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
-                Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
+                Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
                     part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
                 );
 
-                return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+                return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
             }
             catch (Throwable t) {
                 log.error("Error executing handler: ", t);
@@ -387,15 +389,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
+    private PartitionHashRecord calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
         if (skipHash()) {
-            return new PartitionHashRecordV2(
-                new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+            return new PartitionHashRecord(
+                new PartitionKey(CU.cacheId(grpName), part, grpName),
                 false,
                 cctx.localNode().consistentId(),
                 null,
                 0,
-                PartitionHashRecordV2.PartitionState.OWNING,
+                PartitionHashRecord.PartitionState.OWNING,
                 new VerifyPartitionContext()
             );
         }
@@ -416,13 +418,13 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     size++;
                 }
 
-                return new PartitionHashRecordV2(
-                    new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                return new PartitionHashRecord(
+                    new PartitionKey(CU.cacheId(grpName), part, grpName),
                     false,
                     cctx.localNode().consistentId(),
                     null,
                     size,
-                    PartitionHashRecordV2.PartitionState.OWNING,
+                    PartitionHashRecord.PartitionState.OWNING,
                     ctx
                 );
             }
@@ -434,22 +436,22 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
+        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> errs = new HashMap<>();
 
-        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> res : results) {
+        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
             if (res.error() != null) {
                 errs.put(res.node(), res.error());
 
                 continue;
             }
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.data().entrySet())
+            for (Map.Entry<PartitionKey, PartitionHashRecord> entry : res.data().entrySet())
                 clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
         }
 
-        IdleVerifyResultV2 verifyResult = new IdleVerifyResultV2(clusterHashes, errs);
+        IdleVerifyResult verifyResult = new IdleVerifyResult(clusterHashes, errs);
 
         if (errs.isEmpty() && !verifyResult.hasConflicts())
             return;

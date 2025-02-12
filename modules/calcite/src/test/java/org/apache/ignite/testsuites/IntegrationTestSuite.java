@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
+import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalciteTest;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.MetadataI
 import org.apache.ignite.internal.processors.query.calcite.integration.OperatorsExtensionIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionPruneTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionsReservationIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryBlockingTaskExecutorIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
@@ -61,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.ServerSta
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlDiagnosticIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StatisticsCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
@@ -147,6 +150,9 @@ import org.junit.runners.Suite;
     MultiLineQueryTest.class,
     ViewsIntegrationTest.class,
     OperatorsExtensionIntegrationTest.class,
+    SessionContextSqlFunctionTest.class,
+    SqlPlanHistoryIntegrationTest.class,
+    QueryBlockingTaskExecutorIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

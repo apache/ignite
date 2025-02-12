@@ -821,7 +821,6 @@ public class PlatformConfigurationUtils {
             comm.setReconnectCount(in.readInt());
             comm.setSelectorsCount(in.readInt());
             comm.setSelectorSpins(in.readLong());
-            comm.setSharedMemoryPort(in.readInt());
             comm.setSlowClientQueueLimit(in.readInt());
             comm.setSocketReceiveBuffer(in.readInt());
             comm.setSocketSendBuffer(in.readInt());
@@ -1046,7 +1045,6 @@ public class PlatformConfigurationUtils {
         disco.setNetworkTimeout(in.readLong());
         disco.setJoinTimeout(in.readLong());
 
-        disco.setForceServerMode(in.readBoolean());
         disco.setClientReconnectDisabled(in.readBoolean());
         disco.setLocalAddress(in.readString());
         disco.setReconnectCount(in.readInt());
@@ -1427,7 +1425,6 @@ public class PlatformConfigurationUtils {
             w.writeInt(tcp.getReconnectCount());
             w.writeInt(tcp.getSelectorsCount());
             w.writeLong(tcp.getSelectorSpins());
-            w.writeInt(tcp.getSharedMemoryPort());
             w.writeInt(tcp.getSlowClientQueueLimit());
             w.writeInt(tcp.getSocketReceiveBuffer());
             w.writeInt(tcp.getSocketSendBuffer());
@@ -1619,7 +1616,6 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getNetworkTimeout());
         w.writeLong(tcp.getJoinTimeout());
 
-        w.writeBoolean(tcp.isForceServerMode());
         w.writeBoolean(tcp.isClientReconnectDisabled());
         w.writeString(tcp.getLocalAddress());
         w.writeInt(tcp.getReconnectCount());

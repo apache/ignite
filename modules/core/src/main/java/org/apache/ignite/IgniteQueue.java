@@ -87,6 +87,12 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
 
     /** {@inheritDoc} */
     @Override public boolean offer(T item, long timeout, TimeUnit unit) throws IgniteException;
+    
+    
+    abstract public boolean addFirst(T item) throws IgniteException;
+    
+    abstract public T pollLast() throws IgniteException;
+    
 
     /** {@inheritDoc} */
     @Override public boolean addAll(Collection<? extends T> items) throws IgniteException;

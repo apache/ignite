@@ -53,9 +53,9 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
+import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -68,10 +68,11 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -86,10 +87,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
@@ -105,7 +104,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
-    private final Map<Class<?>, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> jobResults = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Map<PartitionKey, List<PartitionHashRecord>>> jobResults = new ConcurrentHashMap<>();
 
     /** Partition id used for tests. */
     private static final int PART_ID = 0;
@@ -128,7 +127,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -152,7 +151,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(part0.toString(), part0.toFile().exists());
         assertTrue(part0.toFile().delete());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -165,18 +164,19 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotCheckMissedGroup() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
-            .filter(d -> d.toFile().getName().equals(cacheDirName(dfltCacheCfg)))
+            .filter(d -> d.toFile().getName().equals(ft.cacheDirName(dfltCacheCfg)))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Cache directory not found"));
 
         assertTrue(dir.toString(), dir.toFile().exists());
         assertTrue(U.delete(dir));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -219,7 +219,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -295,7 +295,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             pageStore.finishRecover();
         }
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -318,7 +318,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // Cleanup persistence directory except created snapshots.
         Arrays.stream(new File(U.defaultWorkDirectory()).listFiles())
-            .filter(f -> !f.getName().equals(DFLT_SNAPSHOT_DIRECTORY))
+            .filter(f -> !f.equals(sharedFileTree().snapshotsRoot()))
             .forEach(U::delete);
 
         Set<UUID> assigns = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -344,7 +344,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -368,7 +368,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
 
         assertEquals("Check must be disabled", 0, res.exceptions().size());
 
@@ -476,7 +476,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -503,9 +503,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         arg.cacheFilter(CacheFilterEnum.USER);
         arg.checkCrc(true);
 
-        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
+        IdleVerifyResult idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
 
-        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
+        IdleVerifyResult snpVerifyRes = ignite.compute().execute(
             new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
@@ -520,8 +520,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             )
         ).idleVerifyResult();
 
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
+        Map<PartitionKey, List<PartitionHashRecord>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
+        Map<PartitionKey, List<PartitionHashRecord>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
 
         assertFalse(F.isEmpty(idleVerifyHashes));
         assertFalse(F.isEmpty(snpCheckHashes));
@@ -630,13 +630,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @param results Results of compute.
      */
     private void saveHashes(Class<?> cls, List<ComputeJobResult> results) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashes = new HashMap<>();
+        Map<PartitionKey, List<PartitionHashRecord>> hashes = new HashMap<>();
 
         for (ComputeJobResult job : results) {
             if (job.getException() != null)
                 continue;
 
-            job.<Map<PartitionKeyV2, PartitionHashRecordV2>>getData().forEach((k, v) ->
+            job.<Map<PartitionKey, PartitionHashRecord>>getData().forEach((k, v) ->
                 hashes.computeIfAbsent(k, k0 -> new ArrayList<>()).add(v));
         }
 
@@ -683,7 +683,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     ) throws IgniteCheckedException, IOException {
         Path cachePath = Paths.get(snp(ignite).snapshotLocalDir(snpName).getAbsolutePath(),
             databaseRelativePath(ignite.context().pdsFolderResolver().resolveFolders().folderName()),
-            cacheDirName(ccfg));
+            ignite.context().pdsFolderResolver().fileTree().cacheDirName(ccfg));
 
         Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
 
@@ -711,10 +711,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTaskV2 {
+    private class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTask {
         /** {@inheritDoc} */
-        @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-            IdleVerifyResultV2 res = super.reduce(results);
+        @Override public @Nullable IdleVerifyResult reduce(List<ComputeJobResult> results) throws IgniteException {
+            IdleVerifyResult res = super.reduce(results);
 
             saveHashes(TestVisorBackupPartitionsTask.class, results);
 

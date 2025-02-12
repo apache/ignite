@@ -33,7 +33,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -48,8 +47,10 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
@@ -78,16 +79,16 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 @RunWith(Parameterized.class)
 public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** Last parameter number. */
-    protected static final int LAST_PARAM_NUM = 0;
+    protected static final int LAST_PARAM_NUM = 1;
 
     /** Params string. */
-    protected static final String PARAMS_STRING = "Execution strategy = {0}";
+    protected static final String PARAMS_STRING = "Task executor = {0}, Execution strategy = {1}";
 
     /** */
     private Throwable lastE;
 
     /** */
-    private Map<UUID, QueryTaskExecutorImpl> taskExecutors;
+    private Map<UUID, AbstractQueryTaskExecutor> taskExecutors;
 
     /** */
     private Map<UUID, ExchangeServiceImpl> exchangeServices;
@@ -100,6 +101,15 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
     /** */
     protected int nodesCnt = 3;
+
+    /** */
+    enum TaskExecutorType {
+        /** */
+        STRIPED,
+
+        /** */
+        QUERY_BLOCKING
+    }
 
     /** */
     enum ExecutionStrategy {
@@ -141,8 +151,18 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameters(name = PARAMS_STRING)
     public static List<Object[]> parameters() {
-        return Stream.of(ExecutionStrategy.values()).map(s -> new Object[]{s}).collect(Collectors.toList());
+        List<Object[]> params = Stream.of(ExecutionStrategy.values())
+            .map(s -> new Object[] {TaskExecutorType.STRIPED, s})
+            .collect(Collectors.toList());
+
+        params.add(new Object[] {TaskExecutorType.QUERY_BLOCKING, ExecutionStrategy.FIFO});
+
+        return params;
     }
+
+    /** Task executor. */
+    @Parameterized.Parameter
+    public TaskExecutorType taskExecutorType;
 
     /** Execution direction. */
     @Parameterized.Parameter(LAST_PARAM_NUM)
@@ -167,16 +187,29 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             kernal.add(new NoOpIgniteSecurityProcessor(kernal));
             kernal.add(new GridCacheProcessor(kernal));
 
-            QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
-            taskExecutor.stripedThreadPoolExecutor(new IgniteTestStripedThreadPoolExecutor(
-                execStgy,
-                kernal.config().getQueryThreadPoolSize(),
-                kernal.igniteInstanceName(),
-                "calciteQry",
-                this::handle,
-                true,
-                DFLT_THREAD_KEEP_ALIVE_TIME
-            ));
+            AbstractQueryTaskExecutor taskExecutor;
+
+            if (taskExecutorType == TaskExecutorType.STRIPED) {
+                StripedQueryTaskExecutor executor = new StripedQueryTaskExecutor(kernal);
+
+                executor.stripedThreadPoolExecutor(new IgniteTestStripedThreadPoolExecutor(
+                    execStgy,
+                    kernal.config().getQueryThreadPoolSize(),
+                    kernal.igniteInstanceName(),
+                    "calciteQry",
+                    this::handle,
+                    true,
+                    DFLT_THREAD_KEEP_ALIVE_TIME
+                ));
+
+                taskExecutor = executor;
+            }
+            else {
+                taskExecutor = new QueryBlockingTaskExecutor(kernal);
+
+                taskExecutor.onStart(kernal);
+            }
+
             taskExecutors.put(uuid, taskExecutor);
 
             MailboxRegistryImpl mailboxRegistry = new MailboxRegistryImpl(kernal);
@@ -263,7 +296,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
     @After
     public void tearDown() {
-        taskExecutors.values().forEach(QueryTaskExecutorImpl::tearDown);
+        taskExecutors.values().forEach(AbstractQueryTaskExecutor::tearDown);
 
         if (lastE != null)
             throw new AssertionError(lastE);
@@ -298,6 +331,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 .logger(log)
                 .build(),
             taskExecutor(nodeId),
+            null,
             qryId,
             nodeId,
             nodeId,

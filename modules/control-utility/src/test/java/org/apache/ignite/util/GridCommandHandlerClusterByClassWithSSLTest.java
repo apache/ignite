@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util;
 
+import org.junit.Assume;
+
 /**
  *
  */
@@ -24,5 +26,12 @@ public class GridCommandHandlerClusterByClassWithSSLTest extends GridCommandHand
     /** {@inheritDoc} */
     @Override protected boolean sslEnabled() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(cliCommandHandler());
+
+        super.beforeTest();
     }
 }

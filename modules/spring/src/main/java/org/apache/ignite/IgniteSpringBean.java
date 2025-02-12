@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -330,6 +331,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         checkIgnite();
 
         return g.tracingConfiguration();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        checkIgnite();
+
+        return g.withApplicationAttributes(attrs);
     }
 
 

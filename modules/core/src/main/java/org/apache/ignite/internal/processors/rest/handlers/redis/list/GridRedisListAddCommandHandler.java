@@ -103,7 +103,9 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
         	
         	List<String> params = msg.aux();
         	Collections.reverse(params);
-            list.addAll(params);      
+        	for(String data: params) {
+        		list.addFirst(data);
+        	}
             msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
             return new GridFinishedFuture<>(msg);
         }

@@ -39,10 +39,10 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceI
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -380,7 +380,7 @@ public class PlannerTest extends AbstractPlannerTest {
         kernal.add(new NoOpIgniteSecurityProcessor(kernal));
         kernal.add(new GridCacheProcessor(kernal));
 
-        QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
+        StripedQueryTaskExecutor taskExecutor = new StripedQueryTaskExecutor(kernal);
         taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
             kernal.config().getQueryThreadPoolSize(),
             kernal.igniteInstanceName(),
@@ -412,6 +412,7 @@ public class PlannerTest extends AbstractPlannerTest {
         ExecutionContext<Object[]> ectx = new ExecutionContext<>(
             qctx,
             taskExecutor,
+            null,
             qryId,
             nodeId,
             F.first(nodes),

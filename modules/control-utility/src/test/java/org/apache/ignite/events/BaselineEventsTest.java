@@ -40,19 +40,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setConnectorConfiguration(new ConnectorConfiguration())
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)
-                    )
-                    .setWalSegments(3)
-                    .setWalSegmentSize(512 * 1024)
-            )
-            .setConsistentId(igniteInstanceName)
-            .setIncludeEventTypes(includedEvtTypes);
+        return getConfiguration(igniteInstanceName, true);
     }
 
     /** {@inheritDoc} */
@@ -72,7 +60,49 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private IgniteConfiguration getConfiguration(String igniteInstanceName, boolean isPersistenceEnabled) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setConsistentId(igniteInstanceName)
+            .setIncludeEventTypes(includedEvtTypes);
+
+        if (isPersistenceEnabled) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true))
+                .setWalSegments(3)
+                .setWalSegmentSize(512 * 1024)
+            );
+        }
+
+        return cfg;
+    }
+
+    /** */
     protected abstract void listen(IgniteEx ignite, IgnitePredicate<Event> lsnr, int... types);
+
+    /** */
+    @Test
+    public void testInMemoryBaselineAutoAdjustNotProduceEvents() throws Exception {
+        startGrid(getConfiguration(getTestIgniteInstanceName(0), false));
+        startGrid(getConfiguration(getTestIgniteInstanceName(1), false));
+
+        AtomicBoolean isBaselineChangedEvtListened = new AtomicBoolean();
+
+        listen(
+            grid(0),
+            event -> {
+                isBaselineChangedEvtListened.set(true);
+
+                return true;
+            },
+            EventType.EVT_BASELINE_CHANGED
+        );
+
+        startGrid(getConfiguration(getTestIgniteInstanceName(2), false));
+
+        assertFalse(GridTestUtils.waitForCondition(isBaselineChangedEvtListened::get, 2000));
+    }
 
     /** */
     @Test

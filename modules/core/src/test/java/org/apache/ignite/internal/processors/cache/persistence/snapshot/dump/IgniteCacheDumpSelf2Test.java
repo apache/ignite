@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -107,7 +108,6 @@ import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
@@ -120,7 +120,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
@@ -348,14 +347,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
         try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
-            File snpDir = new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY);
-            File tmpSnpDir = new File(
-                ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
-                DFLT_SNAPSHOT_TMP_DIR
-            );
+            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
 
-            assertFalse(snpDir + " must created lazily for in-memory node", snpDir.exists());
-            assertFalse(tmpSnpDir + " must created lazily for in-memory node", tmpSnpDir.exists());
+            assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
+            assertFalse(ft.snapshotTempRoot() + " must created lazily for in-memory node", ft.snapshotTempRoot().exists());
         }
     }
 
@@ -550,7 +545,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         assertContains(
             null,
             out,
-            "Conflict partition: PartitionKeyV2 [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
+            "Conflict partition: PartitionKey [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
                 ", grpName=" + DEFAULT_CACHE_NAME +
                 ", partId=" + corruptedPart + "]"
         );
@@ -639,17 +634,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false
             ).get();
 
+            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
+
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
-                new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY).exists()
+                ft.snapshotsRoot().exists()
             );
 
             assertFalse(
                 "Temporary snapshot directory must created lazily for in-memory node",
-                new File(
-                    ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
-                    DFLT_SNAPSHOT_TMP_DIR
-                ).exists()
+                ft.snapshotTempRoot().exists()
             );
 
             assertTrue(snpDir.exists());

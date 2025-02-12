@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -130,6 +129,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -567,7 +567,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                     String cpEndFileName = CheckpointMarkersStorage.checkpointFileName(cpEntry, CheckpointEntryType.END);
 
-                    Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+                    Files.delete(Paths.get(ig2.context().pdsFolderResolver().fileTree().checkpoint().getAbsolutePath(), cpEndFileName));
 
                     log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
                 }
@@ -580,9 +580,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         // Resolve cache directory. Emulating cache destroy in the middle of checkpoint.
         IgniteInternalCache<Object, Object> destoryCache = ig2.cachex(CACHE_TO_DESTROY_NAME);
 
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)destoryCache.context().shared().pageStore();
-
-        File destroyCacheWorkDir = pageStoreMgr.cacheWorkDir(destoryCache.configuration());
+        File destroyCacheWorkDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(destoryCache.configuration());
 
         // Stop the whole cluster
         stopAllGrids();

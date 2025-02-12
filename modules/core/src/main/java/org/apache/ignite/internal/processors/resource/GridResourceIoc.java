@@ -44,6 +44,7 @@ import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
@@ -514,7 +515,10 @@ public class GridResourceIoc {
         FILESYSTEM_RESOURCE(FileSystemResource.class),
 
         /** */
-        SERVICE_CONTEXT(ServiceContextResource.class);
+        SERVICE_CONTEXT(ServiceContextResource.class),
+
+        /** */
+        SESSION_CONTEXT_PROVIDER(SessionContextProviderResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;
@@ -574,6 +578,11 @@ public class GridResourceIoc {
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
             ResourceAnnotation.SERVICE
+        ),
+
+        /** */
+        USER_DEFINED_FUNCTION(
+            ResourceAnnotation.SESSION_CONTEXT_PROVIDER
         );
 
         /** Resource annotations bits for fast checks. */

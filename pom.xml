@@ -54,7 +54,7 @@
         <module>modules/indexing</module>
         <module>modules/json</module>
         <module>modules/rest-http</module>
-        <module>modules/jta</module>
+        <!-- <module>modules/jta</module> -->
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>

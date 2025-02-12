@@ -30,7 +30,6 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -63,8 +62,6 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClassLoader(useWrappingLoader ? new WrappingClassLoader(getExternalClassLoader()) :
             getExternalClassLoader());

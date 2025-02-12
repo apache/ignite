@@ -38,7 +38,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.AbstractTransactionalQueryTest;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -56,15 +55,6 @@ import static org.junit.Assume.assumeTrue;
  * Test for scan query with transformer.
  */
 public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQueryTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(null);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void init() throws Exception {
         stopAllGrids();

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.metric;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
@@ -42,7 +42,7 @@ public class MetricConfigureHistogramCommand implements ComputeCommand<MetricCom
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, MetricCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, MetricCommandArg arg) {
         return nodeOrNull(arg.nodeId(), nodes);
     }
 }

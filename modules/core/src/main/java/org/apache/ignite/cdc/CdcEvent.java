@@ -22,8 +22,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,10 +29,8 @@ import org.jetbrains.annotations.Nullable;
  * Event of single entry change.
  * Instance presents new value of modified entry.
  *
- * @see CdcMain
  * @see CdcConsumer
  */
-@IgniteExperimental
 public interface CdcEvent extends Serializable {
     /**
      * @return Key for the changed entry.

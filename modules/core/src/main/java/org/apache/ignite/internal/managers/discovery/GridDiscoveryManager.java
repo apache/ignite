@@ -138,7 +138,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
@@ -475,13 +474,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             pred.onNodeLeft(leftNodeId);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if ((getSpi() instanceof TcpDiscoverySpi) && Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
-            ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
-                "(set TcpDiscoverySpi.forceServerMode to false)");
     }
 
     /** {@inheritDoc} */
@@ -1571,13 +1563,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             for (DataRegionConfiguration dataReg : dataRegions) {
                 res += dataReg.getMaxSize();
 
-                res += U.checkpointBufferSize(dataReg);
+                res += U.checkpointBufferSize(memCfg, dataReg);
             }
         }
 
-        res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
+        DataRegionConfiguration dfltDataRegion = memCfg.getDefaultDataRegionConfiguration();
 
-        res += U.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
+        res += dfltDataRegion.getMaxSize();
+
+        res += U.checkpointBufferSize(memCfg, dfltDataRegion);
 
         return res;
     }

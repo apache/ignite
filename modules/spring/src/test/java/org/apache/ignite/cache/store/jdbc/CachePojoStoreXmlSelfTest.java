@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Tests for {@link CacheJdbcPojoStore} created via XML.
@@ -49,10 +48,5 @@ public class CachePojoStoreXmlSelfTest extends CacheJdbcPojoStoreAbstractSelfTes
         cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return null;
     }
 }

@@ -55,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
@@ -639,9 +638,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
-        assertFalse(
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME).exists()
-        );
+        assertFalse(new File(sharedFileTree(ign.configuration()).snapshotsRoot(), DMP_NAME).exists());
     }
 
     /** */

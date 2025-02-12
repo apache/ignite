@@ -28,7 +28,6 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,8 +70,6 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider("srv_" + igniteInstanceName, null, ALL_PERMISSIONS,
             false, true, clientData()));

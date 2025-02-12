@@ -96,8 +96,6 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
             }
         };
 
-        cfg.setMarshaller(null);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         if (getTestIgniteInstanceIndex(gridName) < SRV_CNT) {

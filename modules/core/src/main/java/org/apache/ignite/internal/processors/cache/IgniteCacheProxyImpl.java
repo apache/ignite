@@ -73,7 +73,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
@@ -106,7 +105,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -119,12 +117,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     implements IgniteCacheProxy<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /**
-     * Ignite version that introduce {@link ContinuousQueryWithTransformer} feature.
-     */
-    private static final IgniteProductVersion CONT_QRY_WITH_TRANSFORMER_SINCE =
-        IgniteProductVersion.fromString("2.5.0");
 
     /** Cache name. */
     private String cacheName;
@@ -694,15 +686,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             if (qry0.getRemoteTransformerFactory() == null)
                 throw new IgniteException("Mandatory RemoteTransformerFactory is not set for the query: " + qry);
-
-            Collection<ClusterNode> nodes = context().grid().cluster().nodes();
-
-            for (ClusterNode node : nodes) {
-                if (node.version().compareTo(CONT_QRY_WITH_TRANSFORMER_SINCE) < 0) {
-                    throw new IgniteException("Can't start ContinuousQueryWithTransformer, " +
-                        "because some nodes in cluster doesn't support this feature: " + node);
-                }
-            }
 
             locTransLsnr = qry0.getLocalListener();
 
@@ -2051,6 +2034,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Cache with skip store enabled.
      */
     @Override public IgniteCache<K, V> skipStore() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** */
+    @Override public IgniteCache<K, V> withApplicationAttributes(Map<String, String> appAttrs) {
         throw new UnsupportedOperationException();
     }
 

@@ -30,7 +30,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -102,8 +101,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
 
             // One deserialization due to copyOnRead == true.
             // Additional deserialization in case p2p enabled and not BinaryMarshaller due to storeValue == true on update entry.
-            doTest(true, true, NEW_VAL, p2pEnabled &&
-                !(grid.configuration().getMarshaller() instanceof BinaryMarshaller) ? 2 : 1);
+            doTest(true, true, NEW_VAL, 1);
 
             // No deserialization.
             doTest(false, false, NEW_VAL, 0);

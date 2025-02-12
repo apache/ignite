@@ -51,12 +51,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -142,7 +141,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             createAndCheckSnapshot(ignite, SNAPSHOT_NAME, snpDir.toString(), TIMEOUT);
 
             // Check snapshot.
-            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT)
+            IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT)
                 .idleVerifyResult();
 
             StringBuilder sb = new StringBuilder();
@@ -684,8 +683,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = ((FilePageStoreManager)grid(2).context().cache().context().pageStore()).
-            cacheWorkDir(dfltCacheCfg).getParentFile();
+        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheStorage(dfltCacheCfg).getParentFile();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);

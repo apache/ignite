@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -379,12 +378,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
      * @return WAL archive patch
      * @throws IgniteCheckedException If failed
      */
-    private static String archive(IgniteEx ignite) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            ignite.configuration().getDataStorageConfiguration().getWalArchivePath() + "/" +
-                U.maskForFileName(ignite.configuration().getIgniteInstanceName()),
-            false
-        ).getAbsolutePath();
+    private static String archive(IgniteEx ignite) {
+        return ignite.context().pdsFolderResolver().fileTree().walArchive().getAbsolutePath();
     }
 }

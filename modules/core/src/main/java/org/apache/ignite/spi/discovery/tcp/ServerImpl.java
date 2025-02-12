@@ -75,7 +75,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -83,6 +82,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -178,6 +178,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
@@ -298,6 +300,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Client node connection allowed property. */
+    private final DistributedBooleanProperty cliConnEnabled;
+
+    /** Server node connection allowed property. */
+    private final DistributedBooleanProperty srvConnEnabled;
+
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
      */
@@ -320,6 +328,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             utilityPoolSize,
             2000,
             new LinkedBlockingQueue<>());
+
+        List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
+            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
+            log,
+            "ClientNode",
+            "ServerNode"
+        );
+
+        cliConnEnabled = props.get(0);
+        srvConnEnabled = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -362,12 +380,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return upcast(ring.visibleRemoteNodes());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        // It is ok to see visible node without order here because attributes are available when node is created.
-        return IgniteFeatures.allNodesSupports(upcast(ring.allNodes()), feature);
     }
 
     /** {@inheritDoc} */
@@ -2022,6 +2034,50 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
         else if (log.isDebugEnabled())
             log.debug("Received metrics from unknown node: " + nodeId);
+    }
+
+    /**
+     * @throws IgniteSpiException If failed.
+     */
+    private final void registerLocalNodeAddress() throws IgniteSpiException {
+        long spiJoinTimeout = spi.getJoinTimeout();
+
+        // Make sure address registration succeeded.
+        // ... but limit it if join timeout is configured.
+        long startNanos = spiJoinTimeout > 0 ? System.nanoTime() : 0;
+
+        while (true) {
+            try {
+                spi.ipFinder.initializeLocalAddresses(
+                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
+
+                // Success.
+                break;
+            }
+            catch (IllegalStateException e) {
+                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
+                    locNode.socketAddresses(), e);
+            }
+            catch (IgniteSpiException e) {
+                LT.error(log, e, "Failed to register local node address in IP finder on start " +
+                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
+                    "change 'reconnectDelay' to configure the frequency of retries).");
+            }
+
+            if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
+                throw new IgniteSpiException(
+                    "Failed to register local addresses with IP finder within join timeout " +
+                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
+                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
+                        "[joinTimeout=" + spiJoinTimeout + ']');
+
+            try {
+                U.sleep(spi.getReconnectDelay());
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteSpiException("Thread has been interrupted.", e);
+            }
+        }
     }
 
     /**
@@ -4266,7 +4322,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (spi.nodeAuth != null) {
+                IgniteNodeValidationResult err = ensureJoinEnabled(node);
+
+                if (spi.nodeAuth != null && err == null) {
                     // Authenticate node first.
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
@@ -4368,9 +4426,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err;
-
-                err = spi.getSpiContext().validateNode(node);
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node);
 
                 if (err == null) {
                     try {
@@ -6383,6 +6440,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public String toString() {
             return String.format("%s, nextNode=[%s]", super.toString(), next);
         }
+    }
+
+    /**
+     * @param node Node to connect.
+     * @return {@code null} if connection allowed, error otherwise.
+     */
+    private IgniteNodeValidationResult ensureJoinEnabled(TcpDiscoveryNode node) {
+        return (node.isClient() ? cliConnEnabled : srvConnEnabled).getOrDefault(true)
+            ? null
+            : new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
     }
 
     /**

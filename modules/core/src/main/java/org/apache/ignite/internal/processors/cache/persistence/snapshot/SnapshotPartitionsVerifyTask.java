@@ -26,17 +26,17 @@ import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.reduce0;
 
 /**
- * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
+ * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTask} does.
  * Since a snapshot partitions already stored apart on disk the is no requirement for a cluster upcoming updates
  * to be hold on.
  */
@@ -78,7 +78,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         }
 
         /** {@inheritDoc} */
-        @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
+        @Override public Map<PartitionKey, PartitionHashRecord> execute() throws IgniteException {
             GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
 
             if (log.isInfoEnabled()) {

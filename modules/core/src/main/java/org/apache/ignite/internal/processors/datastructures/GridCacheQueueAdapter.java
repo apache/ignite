@@ -344,6 +344,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         return null;
     }
 
+
     /** {@inheritDoc} */
     @Override public int remainingCapacity() {
         if (!bounded())
@@ -440,6 +441,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             false,
             null,
             false,
+            null,
             null)
             : opCtx.keepBinary();
 
@@ -864,6 +866,99 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             id = U.readIgniteUuid(in);
         }
     }
+    
+    /**
+     */
+    protected static class PollLastProcessor implements
+        EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private IgniteUuid id;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public PollLastProcessor() {
+            // No-op.
+        }
+
+        /**
+         * @param id Queue unique ID.
+         */
+        public PollLastProcessor(IgniteUuid id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long process(
+            MutableEntry<GridCacheQueueHeaderKey, GridCacheQueueHeader> e, Object... args) {
+            GridCacheQueueHeader hdr = e.getValue();
+
+            boolean rmvd = queueRemoved(hdr, id);
+
+            if (rmvd || hdr.empty())
+                return rmvd ? QUEUE_REMOVED_IDX : null;
+
+            Set<Long> rmvdIdxs = hdr.removedIndexes();
+
+            if (rmvdIdxs == null) {
+                GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                    hdr.capacity(),
+                    hdr.collocated(),
+                    hdr.head(),
+                    hdr.tail() - 1,
+                    null);
+
+                e.setValue(newHdr);
+
+                return newHdr.tail();
+            }
+
+            long next = hdr.tail();
+
+            rmvdIdxs = new HashSet<>(rmvdIdxs);
+
+            do {
+                if (!rmvdIdxs.remove(next)) {
+                    GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                        hdr.capacity(),
+                        hdr.collocated(),
+                        hdr.head(),
+                        next - 1,
+                        rmvdIdxs.isEmpty() ? null : rmvdIdxs);
+
+                    e.setValue(newHdr);
+
+                    return newHdr.tail();
+                }
+
+                next--;
+            } while (next != hdr.head());
+
+            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                hdr.capacity(),
+                hdr.collocated(),
+                hdr.head(),
+                next,
+                rmvdIdxs.isEmpty() ? null : rmvdIdxs);
+
+            e.setValue(newHdr);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeIgniteUuid(out, id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            id = U.readIgniteUuid(in);
+        }
+    }
 
     /**
      */
@@ -936,6 +1031,76 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             size = in.readInt();
         }
     }
+    
+    protected static class AddFirstProcessor implements
+	    EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long>, Externalizable {
+	    /** */
+	    private static final long serialVersionUID = 0L;
+	
+	    /** */
+	    private IgniteUuid id;
+	
+	    /** */
+	    private int size;
+	
+	    /**
+	     * Required by {@link Externalizable}.
+	     */
+	    public AddFirstProcessor() {
+	        // No-op.
+	    }
+	
+	    /**
+	     * @param id Queue unique ID.
+	     * @param size Number of elements to add.
+	     */
+	    public AddFirstProcessor(IgniteUuid id, int size) {
+	        this.id = id;
+	        this.size = size;
+	    }
+	
+	    /** {@inheritDoc} */
+	    @Override public Long process(MutableEntry<GridCacheQueueHeaderKey, GridCacheQueueHeader> e, Object... args) {
+	        GridCacheQueueHeader hdr = e.getValue();
+	
+	        boolean rmvd = queueRemoved(hdr, id);
+	
+	        if (rmvd || !spaceAvailable(hdr, size))
+	            return rmvd ? QUEUE_REMOVED_IDX : null;
+	
+	        GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+	            hdr.capacity(),
+	            hdr.collocated(),
+	            hdr.head() - size,
+	            hdr.tail(),
+	            hdr.removedIndexes());
+	
+	        e.setValue(newHdr);
+	
+	        return newHdr.head();
+	    }
+	
+	    /**
+	     * @param hdr Queue header.
+	     * @param size Number of elements to add.
+	     * @return {@code True} if new elements can be added.
+	     */
+	    private boolean spaceAvailable(GridCacheQueueHeader hdr, int size) {
+	        return !hdr.bounded() || (hdr.size() + size) <= hdr.capacity();
+	    }
+	
+	    /** {@inheritDoc} */
+	    @Override public void writeExternal(ObjectOutput out) throws IOException {
+	        U.writeIgniteUuid(out, id);
+	        out.writeInt(size);
+	    }
+	
+	    /** {@inheritDoc} */
+	    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+	        id = U.readIgniteUuid(in);
+	        size = in.readInt();
+	    }
+	}
 
     /**
      */

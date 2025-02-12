@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CorruptedFreeListException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
@@ -118,11 +117,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
      * @throws IgniteCheckedException If failed.
      */
     private FilePageStore filePageStore(IgniteEx ignite, int partId) throws IgniteCheckedException {
-        final PdsFolderSettings folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
-
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        File cacheWorkDir = new File(storeWorkDir, CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME);
+        File cacheWorkDir = new File(ignite.context().pdsFolderResolver().fileTree().nodeStorage(), CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME);
 
         File partFile = new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
 

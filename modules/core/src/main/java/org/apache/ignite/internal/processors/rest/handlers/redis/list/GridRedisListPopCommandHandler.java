@@ -99,7 +99,7 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         else if(cmd == RPOP || cmd == BRPOP) {        	
         	// throw new UnsupportedOperationException("RPOP or BRPOP not supported for ignite queue!");
         	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
-        	value = list.poll();
+        	value = list.pollLast();
         	if(value==null && cmd == BRPOP) {
         		value = list.take();
         	}

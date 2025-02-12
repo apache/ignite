@@ -185,21 +185,6 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
         return this;
     }
 
-    /**
-     * @param enricher Cache configuration enricher.
-     * @return Cache data with fully enriched cache configuration.
-     */
-    public StoredCacheData withOldCacheConfig(CacheConfigurationEnricher enricher) {
-        if (cacheConfigurationEnrichment == null)
-            return this;
-
-        ccfg = enricher.enrichFully(ccfg, cacheConfigurationEnrichment);
-
-        cacheConfigurationEnrichment = null;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StoredCacheData.class, this);

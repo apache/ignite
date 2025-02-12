@@ -461,7 +461,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         StringStreamHandler outHandder = new StringStreamHandler();        
         java.util.logging.Logger logger = java.util.logging.Logger.getLogger(CommandHandler.class.getName() + "Log");
         logger.addHandler(outHandder);
-        JavaLogger javaLogger = new JavaLogger(logger);
+        JavaLogger javaLogger = new JavaLogger(logger,!JavaLogger.isConfigured());
         CommandHandler hnd = new CommandHandler(javaLogger);
         hnd.console = null;
         boolean experimentalEnabled = true;

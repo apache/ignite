@@ -267,6 +267,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
+                        null,
                         null));
         }
         finally {
@@ -288,6 +289,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     false,
                     null,
                     false,
+                    null,
                     null));
     }
 
@@ -1537,6 +1539,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
+                        null,
                         null));
         }
         finally {
@@ -1557,6 +1560,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     true,
                     null,
                     false,
+                    null,
                     null));
         }
         finally {

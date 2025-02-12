@@ -158,11 +158,9 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
         assertEquals(0, walMgr.currentSegment());
 
-        File walDir = walDir(ign);
-
         stopGrid(0);
 
-        Path seg = Arrays.stream(walDir.listFiles()).sorted().findFirst().get().toPath();
+        Path seg = Arrays.stream(ign.context().pdsFolderResolver().fileTree().wal().listFiles()).sorted().findFirst().get().toPath();
 
         ByteBuffer walBuf = ByteBuffer.wrap(Files.readAllBytes(seg));
         ByteBuffer cdcBuf = ByteBuffer.wrap(cdcMgr(ign).buf.array());
@@ -204,7 +202,7 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        File seg = Arrays.stream(walDir(ign).listFiles()).sorted().findFirst().get();
+        File seg = Arrays.stream(ign.context().pdsFolderResolver().fileTree().wal().listFiles()).sorted().findFirst().get();
         int len0 = writtenLength(seg);
 
         ByteBuffer buf0 = cdcMgr.buf;
@@ -321,11 +319,9 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10_000; i++)
             ign.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        File walDir = walDir(ign);
-
         stopGrid(0);
 
-        List<File> segs = Arrays.stream(walDir.listFiles()).sorted()
+        List<File> segs = Arrays.stream(ign.context().pdsFolderResolver().fileTree().wal().listFiles()).sorted()
             .limit(2)
             .collect(Collectors.toList());
 
@@ -361,16 +357,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
             if (persistentEnabled)
                 dbMgr(ign).checkpointReadUnlock();
         }
-    }
-
-    /** Get WAL directory. */
-    private File walDir(IgniteEx ign) throws Exception {
-        return new File(
-            U.resolveWorkDirectory(
-                ign.configuration().getWorkDirectory(),
-                DataStorageConfiguration.DFLT_WAL_PATH,
-                false),
-            ign.context().pdsFolderResolver().resolveFolders().folderName());
     }
 
     /** @return Length of the all written records in the specified segment. */

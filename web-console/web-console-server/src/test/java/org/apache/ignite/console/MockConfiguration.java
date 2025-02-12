@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.repositories.AnnouncementRepository;
 import org.apache.ignite.console.web.socket.AgentsService;
 import org.apache.ignite.console.web.socket.TransitionService;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 
 import org.apache.ignite.lang.IgniteFuture;
@@ -98,7 +99,7 @@ public class MockConfiguration {
         when(txs.txStart())
             .thenReturn(new TransactionMock());
 
-        IgniteCluster cluster = mock(IgniteCluster.class);
+        IgniteClusterEx cluster = mock(IgniteClusterEx.class);
 
         GridTestNode locNode = new GridTestNode(UUID.randomUUID());
 
@@ -119,7 +120,7 @@ public class MockConfiguration {
             }
 
             /** {@inheritDoc} */
-            @Override public IgniteCluster cluster() {
+            @Override public IgniteClusterEx cluster() {
                 return cluster;
             }
 

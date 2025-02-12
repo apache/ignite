@@ -65,7 +65,6 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends AbstractTransactionalQ
 
         cfg.setIncludeEventTypes(getIncludeEventTypes());
 
-        cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
 
         if ("client".equals(igniteInstanceName))

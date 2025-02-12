@@ -305,6 +305,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.util.GridUnsafe.objectFieldOffset;
 import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
 import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
@@ -336,8 +338,15 @@ public abstract class IgniteUtils {
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
 
-    /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
-    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
+    /** Default maximum checkpointing page buffer size (when recovery data stored in WAL). */
+    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_WAL_RECOVERY = 2 * GB;
+
+    /**
+     * Default maximum checkpointing page buffer size (when recovery data stored on checkpoint).
+     * In this mode checkpoint duration can be twice as long as for mode with storing recovery data to WAL.
+     * Also, checkpoint buffer pages can't be released during write recovery data phase, so we need larger buffer size.
+     */
+    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_CP_RECOVERY = 5 * GB;
 
     /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
     public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
@@ -11062,19 +11071,21 @@ public abstract class IgniteUtils {
      * @param regCfg Configuration.
      * @return Checkpoint buffer size.
      */
-    public static long checkpointBufferSize(DataRegionConfiguration regCfg) {
+    public static long checkpointBufferSize(DataStorageConfiguration dsCfg, DataRegionConfiguration regCfg) {
         if (!regCfg.isPersistenceEnabled())
             return 0L;
 
         long res = regCfg.getCheckpointPageBufferSize();
 
         if (res == 0L) {
+            long maxCpPageBufSize = dsCfg.isWriteRecoveryDataOnCheckpoint() ?
+                DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_CP_RECOVERY :
+                DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE_WAL_RECOVERY;
+
             if (regCfg.getMaxSize() < GB)
                 res = Math.min(DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE, regCfg.getMaxSize());
-            else if (regCfg.getMaxSize() < 8 * GB)
-                res = regCfg.getMaxSize() / 4;
             else
-                res = DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE;
+                res = Math.min(regCfg.getMaxSize() / 4, maxCpPageBufSize);
         }
 
         return res;
@@ -11096,7 +11107,7 @@ public abstract class IgniteUtils {
 
         if (dsCfg.getDataRegionConfigurations() != null) {
             for (DataRegionConfiguration regCfg : dsCfg.getDataRegionConfigurations()) {
-                long cpBufSize = checkpointBufferSize(regCfg);
+                long cpBufSize = checkpointBufferSize(dsCfg, regCfg);
 
                 if (cpBufSize > regCfg.getMaxSize())
                     cpBufSize = regCfg.getMaxSize();
@@ -11109,7 +11120,7 @@ public abstract class IgniteUtils {
         {
             DataRegionConfiguration regCfg = dsCfg.getDefaultDataRegionConfiguration();
 
-            long cpBufSize = checkpointBufferSize(regCfg);
+            long cpBufSize = checkpointBufferSize(dsCfg, regCfg);
 
             if (cpBufSize > regCfg.getMaxSize())
                 cpBufSize = regCfg.getMaxSize();
@@ -12510,5 +12521,53 @@ public abstract class IgniteUtils {
     /** */
     public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
         return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
+    }
+
+    /**
+     * @param ctx {@link GridKernalContext}.
+     * @return A warning message indicating excessive RAM usage or {@code null} if the RAM usage is within acceptable
+     * limits.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static String validateRamUsage(GridKernalContext ctx) {
+        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+
+        if (ram != -1) {
+            String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
+
+            long totalHeap = 0;
+            long totalOffheap = 0;
+
+            for (ClusterNode node : ctx.discovery().allNodes()) {
+                if (macs.equals(node.attribute(ATTR_MACS))) {
+                    long heap = node.metrics().getHeapMemoryMaximum();
+                    Long offheap = node.<Long>attribute(ATTR_OFFHEAP_SIZE);
+
+                    if (heap != -1)
+                        totalHeap += heap;
+
+                    if (offheap != null)
+                        totalOffheap += offheap;
+                }
+            }
+
+            long total = totalHeap + totalOffheap;
+
+            if (total < 0)
+                total = Long.MAX_VALUE;
+
+            // 4GB or 20% of available memory is expected to be used by OS and user applications
+            long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
+
+            if (total > safeToUse) {
+                return "The total amount of RAM configured for nodes running on the local host exceeds " +
+                    "the recommended maximum value. This may lead to significant slowdown due to swapping, or even " +
+                    "JVM/Ignite crash with OutOfMemoryError (please decrease JVM heap size, data region size or " +
+                    "checkpoint buffer size) [configured=" + (total >> 20) + "MB, available=" + (ram >> 20) +
+                    "MB, recommended=" + (safeToUse >> 20) + "MB]";
+            }
+        }
+
+        return null;
     }
 }

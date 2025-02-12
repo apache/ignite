@@ -55,7 +55,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.SerializableTransient;
-import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -184,9 +183,6 @@ class OptimizedClassDescriptor {
 
     /** Method returns serializable transient fields. */
     private Method serTransMtd;
-
-    /** Method returns transient serializable fields. */
-    private Method transSerMtd;
 
     /**
      * Creates descriptor for class.
@@ -505,7 +501,6 @@ class OptimizedClassDescriptor {
                             readObjMtds.add(mtd);
 
                             final SerializableTransient serTransAn = c.getAnnotation(SerializableTransient.class);
-                            final TransientSerializable transSerAn = c.getAnnotation(TransientSerializable.class);
 
                             // Custom serialization policy for transient fields.
                             if (serTransAn != null) {
@@ -522,24 +517,6 @@ class OptimizedClassDescriptor {
                                 }
                                 catch (NoSuchMethodException ignored) {
                                     serTransMtd = null;
-                                }
-                            }
-
-                            // Custom serialization policy for non-transient fields.
-                            if (transSerAn != null) {
-                                try {
-                                    transSerMtd = c.getDeclaredMethod(transSerAn.methodName(), IgniteProductVersion.class);
-
-                                    int mod = transSerMtd.getModifiers();
-
-                                    if (isStatic(mod) && isPrivate(mod) && transSerMtd.getReturnType() == String[].class)
-                                        transSerMtd.setAccessible(true);
-                                    else
-                                        // Set method back to null if it has incorrect signature.
-                                        transSerMtd = null;
-                                }
-                                catch (NoSuchMethodException ignored) {
-                                    transSerMtd = null;
                                 }
                             }
 
@@ -933,14 +910,13 @@ class OptimizedClassDescriptor {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private Fields fields(Class<?> cls, IgniteProductVersion ver) {
         if (ver == null // No context available.
-            || serTransMtd == null && transSerMtd == null)
+            || serTransMtd == null)
             return fields;
 
         try {
             final String[] transFields = serTransMtd == null ? null : (String[])serTransMtd.invoke(null, ver);
-            final String[] serFields = transSerMtd == null ? null : (String[])transSerMtd.invoke(null, ver);
 
-            if (F.isEmpty(transFields) && F.isEmpty(serFields))
+            if (F.isEmpty(transFields))
                 return fields;
 
             Map<String, FieldInfo> clsFields = new TreeMap<>();
@@ -960,13 +936,6 @@ class OptimizedClassDescriptor {
                         GridUnsafe.objectFieldOffset(f), fieldType(f.getType()));
 
                     clsFields.put(fieldName, fieldInfo);
-                }
-            }
-
-            // Exclude non-transient fields which shouldn't be serialized.
-            if (!F.isEmpty(serFields)) {
-                for (int i = 0; i < serFields.length; i++) {
-                    clsFields.remove(serFields[i]);
                 }
             }
 

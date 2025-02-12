@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.commandline.CommandsProvider;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Additional commands provider for control utility.
@@ -63,7 +65,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean execute(GridClient cli, Ignite ignite0, NodeStartCommandArg arg, Consumer<String> printer) {
+        @Override public Boolean execute(@Nullable IgniteClient client, Ignite ignite0, NodeStartCommandArg arg, Consumer<String> printer) {
             printer.accept("Start Node: "+ arg.instanceName() + ", cfg: " + arg.cfgPath());            
             boolean isLastNode = !F.isEmpty(arg.clusterId());
 			// 启动一个独立的node，jvm内部的node之间相互隔离
@@ -160,7 +162,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean execute(GridClient cli, Ignite ignite, NodeStopCommandArg arg, Consumer<String> printer) {
+        @Override public Boolean execute(@Nullable IgniteClient client, Ignite ignite, NodeStopCommandArg arg, Consumer<String> printer) {
             printer.accept("Stop Node: "+ arg.instanceName() + ", clusterId: " + arg.clusterId());
             boolean isLastNode = !F.isEmpty(arg.clusterId());
             IgniteClusterLauncher.stopIgnite(arg.instanceName(),arg.clusterId());
