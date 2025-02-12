@@ -62,7 +62,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             return false;
 
         try {
-            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(sft.name(), sft.path());
+            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(sft);
 
             Function<GroupPartitionId, SnapshotMetadata> findMeta = pair -> {
                 for (SnapshotMetadata meta : metas) {

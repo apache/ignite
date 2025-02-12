@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +60,6 @@ public class SnapshotFileTree extends NodeFileTree {
     private final NodeFileTree tmpFt;
 
     /**
-     *
      * @param loc Local node.
      * @param name Snapshot name.
      * @param path Optional snapshot path.
@@ -74,11 +74,24 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(NodeFileTree ft, String name, @Nullable String path) {
-        super(root(ft, name, path), ft.folderName());
+        this(ft, ft.folderName(), name, path);
+    }
+
+    /**
+     * @param ft Node file tree.
+     * @param folderName Folder name (for the cases when snapshot can be copied from other node).
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
+     */
+    public SnapshotFileTree(NodeFileTree ft, String folderName, String name, @Nullable String path) {
+        super(root(ft, name, path), folderName);
+
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         this.name = name;
         this.path = path;
-        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), ft.folderName());
+        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName);
     }
 
     /** @return Snapshot name. */

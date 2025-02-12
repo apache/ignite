@@ -114,7 +114,7 @@ public class SnapshotMetadataVerificationTask
                 arg.snapshotPath()
             );
 
-            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft.name(), sft.path());
+            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft);
 
             for (SnapshotMetadata meta : snpMeta)
                 checkMeta(meta);

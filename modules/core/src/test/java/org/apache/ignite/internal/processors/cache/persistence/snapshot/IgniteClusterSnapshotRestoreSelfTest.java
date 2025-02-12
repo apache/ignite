@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -179,7 +180,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testRestoreWithMissedPart() throws Exception {
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+        Path part0 = U.searchFileRecursively(new SnapshotFileTree(ignite, SNAPSHOT_NAME, null).root().toPath(),
             partitionFileName(0));
 
         assertNotNull(part0);

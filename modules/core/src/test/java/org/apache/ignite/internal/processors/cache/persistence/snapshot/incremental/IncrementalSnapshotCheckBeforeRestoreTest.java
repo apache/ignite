@@ -138,7 +138,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createIncrementalSnapshots(1);
 
         U.delete(new File(
-            snp(srv).snapshotLocalDir(SNP),
+            new SnapshotFileTree(srv, SNP, null).root(),
             snapshotMetaFileName((String)srv.localNode().consistentId())));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {

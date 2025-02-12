@@ -706,10 +706,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Ignite instance.
      * @return Directory name for ignite instance.
-     * @throws IgniteCheckedException If fails.
      */
-    public static String folderName(IgniteEx ignite) throws IgniteCheckedException {
-        return ignite.context().pdsFolderResolver().resolveFolders().folderName();
+    public static String folderName(IgniteEx ignite) {
+        return ignite.context().pdsFolderResolver().fileTree().folderName();
     }
 
     /**

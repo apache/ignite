@@ -624,7 +624,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             () -> F.flatCollections(F.transform(localSnapshotNames(null), name -> {
                 List<SnapshotView> views = new ArrayList<>();
 
-                for (SnapshotMetadata m: readSnapshotMetadatas(name, null)) {
+                for (SnapshotMetadata m: readSnapshotMetadatas(new SnapshotFileTree(ft, name, null))) {
                     List<File> dirs = snapshotCacheDirectories(m.snapshotName(), null, m.folderName(), grpName -> true);
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
@@ -757,26 +757,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return FileVisitResult.CONTINUE;
             }
         });
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @return Local snapshot directory for snapshot with given name.
-     */
-    public File snapshotLocalDir(String snpName) {
-        return snapshotLocalDir(snpName, null);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @return Local snapshot directory where snapshot files are located.
-     */
-    public File snapshotLocalDir(String snpName, @Nullable String snpPath) {
-        assert ft != null;
-        assert U.alphanumericUnderscore(snpName) : snpName;
-
-        return snpPath == null ? new File(ft.snapshotsRoot(), snpName) : new File(snpPath, snpName);
     }
 
     /**
@@ -1830,12 +1810,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(String snpName, @Nullable String snpPath, String folderName, Predicate<String> names) {
-        File snpDir = snapshotLocalDir(snpName, snpPath);
+        SnapshotFileTree sft = new SnapshotFileTree(ft, folderName, snpName, snpPath);
 
-        if (!snpDir.exists())
+        if (!sft.root().exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), names);
+        return cacheDirectories(sft.nodeStorage(), names);
     }
 
     /**
@@ -1880,24 +1860,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @return List of snapshot metadata for the given snapshot name on local node.
+     * @param sft Snapshot file tree.
+     * @return List of snapshot metadata for the given snapshot on local node.
      * If snapshot has been taken from local node the snapshot metadata for given
      * local node will be placed on the first place.
      */
-    public List<SnapshotMetadata> readSnapshotMetadatas(String snpName, @Nullable String snpPath) {
-        A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
-        A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
-
-        File snpDir = snapshotLocalDir(snpName, snpPath);
-
-        if (!(snpDir.exists() && snpDir.isDirectory()))
+    public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft) {
+        if (!(sft.root().exists() && sft.root().isDirectory()))
             return Collections.emptyList();
 
         List<File> smfs = new ArrayList<>();
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(sft.root().toPath())) {
             for (Path d : ds) {
                 if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
                     smfs.add(d.toFile());
