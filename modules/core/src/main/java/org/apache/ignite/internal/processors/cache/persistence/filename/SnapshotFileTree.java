@@ -35,7 +35,6 @@ public class SnapshotFileTree extends NodeFileTree {
     /** File with delta pages index suffix. */
     public static final String DELTA_IDX_SUFFIX = ".idx";
 
-
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
