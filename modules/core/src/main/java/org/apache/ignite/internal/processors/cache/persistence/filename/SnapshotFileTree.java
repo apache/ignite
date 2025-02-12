@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -43,6 +44,9 @@ public class SnapshotFileTree extends NodeFileTree {
 
     /** Lock file for dump directory. */
     public static final String DUMP_LOCK = "dump.lock";
+
+    /** Incremental snapshots directory name. */
+    public static final String INC_SNP_DIR = "increments";
 
     /** Snapshot name. */
     private final String name;
@@ -80,6 +84,14 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param incIdx Increment index.
+     * @return Root directory for incremental snapshot.
+     */
+    public NodeFileTree incrementalSnapshotFileTree(int incIdx) {
+        return new NodeFileTree(new File(incrementsRoot(), U.fixedLengthNumberName(incIdx, null)), U.maskForFileName(folderName()));
+    }
+
+    /**
      * @param cacheDirName Cache dir name.
      * @param partId Cache partition identifier.
      * @return A file representation.
@@ -93,6 +105,16 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     public File dumpLock() {
         return new File(nodeStorage(), DUMP_LOCK);
+    }
+
+    /**
+     * Returns root folder for incremental snapshot.
+     * For example, {@code "work/snapshots/mybackup/increments/"}.
+     *
+     * @return Local snapshot directory where snapshot files are located.
+     */
+    public File incrementsRoot() {
+        return new File(root(), INC_SNP_DIR);
     }
 
     /**

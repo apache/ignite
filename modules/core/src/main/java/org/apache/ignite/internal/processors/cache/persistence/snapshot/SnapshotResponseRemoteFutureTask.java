@@ -34,8 +34,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectory;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 
 /** */
 public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask<Void> {
@@ -97,21 +95,18 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             snpSndr.init(partsToSend.size());
 
-            File snpDir = cctx.snapshotMgr().snapshotLocalDir(sft.name(), sft.name());
-
             CompletableFuture.runAsync(() -> partsToSend.forEach((gp, meta) -> {
                 if (err.get() != null)
                     return;
 
-                File cacheDir = cacheDirectory(new File(snpDir, databaseRelativePath(meta.folderName())),
-                    gp.getGroupId());
+                File cacheDir = cacheDirectory(sft.nodeStorage(), gp.getGroupId());
 
                 if (cacheDir == null) {
                     throw new IgniteException("Cache directory not found [snpName=" + sft.name() + ", meta=" + meta +
                         ", pair=" + gp + ']');
                 }
 
-                File snpPart = partitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
+                File snpPart = sft.partitionFile(cacheDir.getName(), gp.getPartitionId());
 
                 if (!snpPart.exists()) {
                     throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +

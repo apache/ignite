@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
@@ -112,10 +111,10 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(sft.name(), sft.path(), incIdx);
+            NodeFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
 
-            if (!incSnpDir.mkdirs() && !incSnpDir.exists()) {
-                onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpDir.getAbsolutePath() + ']'));
+            if (!incSnpFt.root().mkdirs() && !incSnpFt.root().exists()) {
+                onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpFt.root().getAbsolutePath() + ']'));
 
                 return false;
             }
@@ -128,22 +127,19 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                 }
 
                 try {
-                    String folderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
-
-                    copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
+                    copyWal(incSnpFt.wal(), highPtrFut.result());
 
                     NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
-                    NodeFileTree snpFt = new NodeFileTree(incSnpDir, folderName);
 
                     copyFiles(
                         ft.marshaller(),
-                        snpFt.marshaller(),
+                        incSnpFt.marshaller(),
                         BinaryUtils::notTmpFile
                     );
 
                     copyFiles(
                         ft.binaryMeta(),
-                        snpFt.binaryMeta(),
+                        incSnpFt.binaryMeta(),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
