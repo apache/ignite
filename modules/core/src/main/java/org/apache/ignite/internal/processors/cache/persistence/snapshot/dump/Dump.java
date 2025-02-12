@@ -46,12 +46,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,11 +63,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
@@ -85,6 +81,9 @@ public class Dump implements AutoCloseable {
 
     /** Dump directory. */
     private final File dumpDir;
+
+    /** Dump directories. */
+    private final List<NodeFileTree> fts;
 
     /** Specific consistent id. */
     private final @Nullable String consistentId;
@@ -144,8 +143,11 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
+        this.fts = metadata.stream()
+            .map(m -> new NodeFileTree(dumpDir, m.folderName()))
+            .collect(Collectors.toList());
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(dumpDir, log);
+        this.cctx = standaloneKernalContext(log);
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -157,19 +159,15 @@ public class Dump implements AutoCloseable {
     }
 
     /**
-     * @param dumpDir Dump directory.
      * @param log Logger.
      * @return Standalone kernal context.
      */
-    private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
-        File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
-
-        A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
-        A.ensure(marshaller.exists(), "marshaller directory not exists");
+    private GridKernalContext standaloneKernalContext(IgniteLogger log) {
+        A.ensure(F.first(fts).binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(F.first(fts).marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(fts).binaryMeta(), F.first(fts).marshaller());
 
             startAllComponents(kctx);
 
@@ -188,7 +186,7 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH))
+            && !(NodeFileTree.binaryMetaRoot(f) || NodeFileTree.marshaller(f))
             && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)
@@ -360,24 +358,20 @@ public class Dump implements AutoCloseable {
         return dumpDir;
     }
 
+    /** @return Dump directories. */
+    public List<NodeFileTree> fileTrees() {
+        return fts;
+    }
+
     /** */
     private File dumpGroupDirectory(String node, int grpId) {
         File nodeDir = Paths.get(dumpDir.getAbsolutePath(), DFLT_STORE_DIR, node).toFile();
 
         assert nodeDir.exists() && nodeDir.isDirectory();
 
-        File[] grpDirs = nodeDir.listFiles(f -> {
-            if (!f.isDirectory()
-                || (!f.getName().startsWith(CACHE_DIR_PREFIX)
-                    && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
-                return false;
-
-            String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
-                ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
-                : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
-
-            return grpId == CU.cacheId(grpName);
-        });
+        File[] grpDirs = nodeDir.listFiles(f -> f.isDirectory()
+            && NodeFileTree.CACHE_DIR_FILTER.test(f)
+            && grpId == CU.cacheId(NodeFileTree.cacheName(f)));
 
         if (grpDirs.length != 1)
             throw new IgniteException("Wrong number of group directories: " + grpDirs.length);

@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractCreateSnapshotFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -75,8 +76,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cacheDataFilename;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
@@ -717,7 +716,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private File groupDirectory(CacheGroupContext grpCtx) throws IgniteCheckedException {
         return new File(
             IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx),
-            (grpCtx.caches().size() > 1 ? CACHE_GRP_DIR_PREFIX : CACHE_DIR_PREFIX) + grpCtx.cacheOrGroupName()
+            NodeFileTree.cacheDirName(grpCtx.caches().size() > 1, grpCtx.cacheOrGroupName())
         );
     }
 

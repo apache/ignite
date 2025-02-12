@@ -56,8 +56,8 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -74,7 +74,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
@@ -671,7 +670,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD.ordinal());
 
-        String failingFilePath = Paths.get(CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME,
+        String failingFilePath = Paths.get(NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME),
             PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
 
         grid(2).context().cache().context().snapshotMgr().ioFactory(
@@ -684,8 +683,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = ((FilePageStoreManager)grid(2).context().cache().context().pageStore()).
-            cacheWorkDir(dfltCacheCfg).getParentFile();
+        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheStorage(dfltCacheCfg).getParentFile();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);

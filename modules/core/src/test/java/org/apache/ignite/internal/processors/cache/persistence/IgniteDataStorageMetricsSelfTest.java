@@ -48,9 +48,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
@@ -125,7 +125,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
-                .setName(PERSISTENCE_REGION_1))
+                .setName(PERSISTENCE_REGION_1)
+                .setCdcEnabled(true))
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setMaxSize(maxRegionSize)
@@ -271,16 +272,18 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             "checkpointListenersExecuteTime=(\\d+)ms, " +
             "checkpointLockHoldTime=(\\d+)ms, " +
             "walCpRecordFsyncDuration=(\\d+)ms, " +
-            "writeCheckpointEntryDuration=(\\d+)ms, " +
-            "splitAndSortCpPagesDuration=(\\d+)ms");
+            "splitAndSortCpPagesDuration=(\\d+)ms, " +
+            "writeRecoveryDataDuration=(\\d+)ms, " +
+            "writeCheckpointEntryDuration=(\\d+)ms, ");
 
         AtomicLong expLastCpBeforeLockDuration = new AtomicLong();
         AtomicLong expLastCpLockWaitDuration = new AtomicLong();
         AtomicLong expLastCpListenersExecDuration = new AtomicLong();
         AtomicLong expLastCpLockHoldDuration = new AtomicLong();
         AtomicLong expLastCpWalRecordFsyncDuration = new AtomicLong();
-        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
         AtomicLong expLastCpSplitAndSortPagesDuration = new AtomicLong();
+        AtomicLong expLastCpRecoveryDataWriteDuration = new AtomicLong();
+        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
         AtomicInteger cpCnt = new AtomicInteger();
 
         listeningLog.registerListener(s -> {
@@ -294,8 +297,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             expLastCpListenersExecDuration.set(Long.parseLong(matcher.group(3)));
             expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(4)));
             expLastCpWalRecordFsyncDuration.set(Long.parseLong(matcher.group(5)));
-            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(6)));
-            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(7)));
+            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(6)));
+            expLastCpRecoveryDataWriteDuration.set(Long.parseLong(matcher.group(7)));
+            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(8)));
             cpCnt.incrementAndGet();
         });
 
@@ -308,7 +312,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         db.checkpointReadLock();
 
         try {
-            waitForCondition(() -> cpCnt.get() > 0, getTestTimeout());
+            assertTrue(waitForCondition(() -> cpCnt.get() > 0, 5_000L));
 
             MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
@@ -320,6 +324,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             AtomicLongMetric lastCpWriteEntryDuration = mreg.findMetric("LastCheckpointWriteEntryDuration");
             AtomicLongMetric lastCpSplitAndSortPagesDuration =
                 mreg.findMetric("LastCheckpointSplitAndSortPagesDuration");
+            AtomicLongMetric lastCpRecoveryDataWriteDuration =
+                mreg.findMetric("LastCheckpointRecoveryDataWriteDuration");
 
             HistogramMetric cpBeforeLockHistogram = mreg.findMetric("CheckpointBeforeLockHistogram");
             HistogramMetric cpLockWaitHistogram = mreg.findMetric("CheckpointLockWaitHistogram");
@@ -333,7 +339,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             HistogramMetric cpSplitAndSortPagesHistogram = mreg.findMetric("CheckpointSplitAndSortPagesHistogram");
             HistogramMetric cpHistogram = mreg.findMetric("CheckpointHistogram");
 
-            waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), getTestTimeout());
+            assertTrue(waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), 5_000));
 
             assertEquals(cpCnt.get(), Arrays.stream(cpBeforeLockHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpLockWaitHistogram.value()).sum());
@@ -351,8 +357,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(expLastCpListenersExecDuration.get(), lastCpListenersExecDuration.value());
             assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
             assertEquals(expLastCpWalRecordFsyncDuration.get(), lastCpWalRecordFsyncDuration.value());
-            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
             assertEquals(expLastCpSplitAndSortPagesDuration.get(), lastCpSplitAndSortPagesDuration.value());
+            assertEquals(expLastCpRecoveryDataWriteDuration.get(), lastCpRecoveryDataWriteDuration.value());
+            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
         }
         finally {
             db.checkpointReadUnlock();
@@ -519,25 +526,36 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private void checkWalArchiveAndTotalSize(IgniteEx igniteEx, boolean hasWalArchive) throws Exception {
         FileWriteAheadLogManager walMgr = walMgr(igniteEx);
 
-        SegmentRouter router = walMgr.getSegmentRouter();
+        NodeFileTree ft = igniteEx.context().pdsFolderResolver().fileTree();
 
-        assertEquals(router.hasArchive(), hasWalArchive);
+        assertEquals(ft.walArchiveEnabled(), hasWalArchive);
 
         //Wait to avoid race condition where new segments(and corresponding .tmp files) are created after totalSize has been calculated.
-        if (router.hasArchive()) {
+        if (ft.walArchiveEnabled()) {
             int expWalWorkSegements = igniteEx.configuration().getDataStorageConfiguration().getWalSegments();
 
-            assertTrue(waitForCondition(() -> walFiles(router.getWalWorkDir()).length == expWalWorkSegements, 3000l));
+            assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000l));
 
             assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000l));
         }
 
-        long totalSize = walMgr.totalSize(walFiles(router.getWalWorkDir()));
+        long totalSize = walMgr.totalSize(walFiles(ft.wal()));
 
-        if (router.hasArchive())
-            totalSize += walMgr.totalSize(walFiles(router.getWalArchiveDir()));
+        if (ft.walArchiveEnabled())
+            totalSize += walMgr.totalSize(walFiles(ft.walArchive()));
 
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
+
+        long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
+
+        if (ft.walArchiveEnabled()) {
+            long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().fileTree().walCdc()).length;
+
+            // Count of segments = LastArchivedSegmentIndex + 1
+            assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);
+        }
+        else
+            assertEquals(-1, lastArchivedSegIdx);
     }
 
     /**

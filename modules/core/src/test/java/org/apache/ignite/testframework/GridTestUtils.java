@@ -101,8 +101,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -2355,9 +2353,7 @@ public final class GridTestUtils {
      * @param ignite Ignite node.
      */
     public static void deleteLastCheckpointEndMarker(IgniteEx ignite) throws IOException {
-        IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
-
-        Path cpDir = ((GridCacheDatabaseSharedManager)dbSharedMgr).checkpointDirectory().toPath();
+        Path cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint().toPath();
 
         try (Stream<Path> files = Files.list(cpDir)) {
             Optional<Path> endMarker = files

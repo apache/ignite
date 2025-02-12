@@ -444,15 +444,12 @@ public class GridDhtPartitionSupplier {
             if (grp.shared().kernalContext().isStopping())
                 return;
 
-            // Sending supply messages with error requires new protocol.
-            boolean sendErrMsg = demanderNode.version().compareTo(GridDhtPartitionSupplyMessageV2.AVAILABLE_SINCE) >= 0;
+            boolean skipErrMsg = t instanceof IgniteSpiException;
 
-            if (t instanceof IgniteSpiException) {
+            if (skipErrMsg) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (current node is stopping?) ["
                         + supplyRoutineInfo(topicId, nodeId, demandMsg) + ", msg=" + t.getMessage() + ']');
-
-                sendErrMsg = false;
             }
             else
                 U.error(log, "Failed to continue supplying ["
@@ -467,7 +464,7 @@ public class GridDhtPartitionSupplier {
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + ']', t1);
             }
 
-            if (!sendErrMsg)
+            if (skipErrMsg)
                 return;
 
             boolean fallbackToFullRebalance = X.hasCause(t, IgniteHistoricalIteratorException.class);
@@ -491,7 +488,7 @@ public class GridDhtPartitionSupplier {
                     errMsg = supplyMsg;
                 }
                 else {
-                    errMsg = new GridDhtPartitionSupplyMessageV2(
+                    errMsg = new GridDhtPartitionSupplyErrorMessage(
                         demandMsg.rebalanceId(),
                         grp.groupId(),
                         demandMsg.topologyVersion(),

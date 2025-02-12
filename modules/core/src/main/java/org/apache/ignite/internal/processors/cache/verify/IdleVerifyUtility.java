@@ -34,7 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.CacheObject.TYPE_BINARY;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 
 /**
  * Utility class for idle verify command.
@@ -135,7 +135,7 @@ public class IdleVerifyUtility {
         }
         catch (Throwable e) {
             String msg0 = CRC_CHECK_ERR_MSG + " [partId=" + partId +
-                ", grpName=" + (pageStore == null ? "" : cacheGroupName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
+                ", grpName=" + (pageStore == null ? "" : cacheName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
                 ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
 
             throw new IgniteException(msg0, e);
@@ -281,8 +281,8 @@ public class IdleVerifyUtility {
      * @throws IgniteCheckedException If fails.
      * @return Map of calculated partition.
      */
-    public static @Nullable PartitionHashRecordV2 calculatePartitionHash(
-        PartitionKeyV2 partKey,
+    public static @Nullable PartitionHashRecord calculatePartitionHash(
+        PartitionKey partKey,
         Object updCntr,
         Object consId,
         GridDhtPartitionState state,
@@ -292,14 +292,14 @@ public class IdleVerifyUtility {
         @Nullable BooleanSupplier cancelled
     ) throws IgniteCheckedException {
         if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-            return new PartitionHashRecordV2(partKey,
+            return new PartitionHashRecord(partKey,
                 isPrimary,
                 consId,
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                    PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
+                    PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
             );
         }
@@ -321,13 +321,13 @@ public class IdleVerifyUtility {
             ctx.update(row.key(), row.value(), row.version());
         }
 
-        return new PartitionHashRecordV2(
+        return new PartitionHashRecord(
             partKey,
             isPrimary,
             consId,
             updCntr,
             partSize,
-            PartitionHashRecordV2.PartitionState.OWNING,
+            PartitionHashRecord.PartitionState.OWNING,
             ctx
         );
     }
