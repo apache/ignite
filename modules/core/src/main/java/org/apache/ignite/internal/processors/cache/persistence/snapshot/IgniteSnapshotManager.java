@@ -1043,8 +1043,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
+        SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
+
         IgniteInternalFuture<?> task0 = registerSnapshotTask(
-            new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath()),
+            sft,
             req.operationalNodeId(),
             req.requestId(),
             parts,
@@ -1071,9 +1073,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
-
-                snpDir.mkdirs();
+                sft.root().mkdirs();
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
@@ -1099,12 +1099,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), sft,
                     req.streamerWarning(), true);
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File smf = new File(sft.root(), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 storeSnapshotMeta(req.meta(), smf);
 

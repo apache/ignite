@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,8 +29,8 @@ public class SnapshotHandlerContext {
     /** Snapshot metadata. */
     private final SnapshotMetadata metadata;
 
-    /** The full path to the snapshot files. */
-    private final File snpDir;
+    /** Snapshot file tree. */
+    private final SnapshotFileTree sft;
 
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
@@ -49,7 +49,7 @@ public class SnapshotHandlerContext {
      * @param grps The names of the cache groups on which the operation is performed.
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
-     * @param snpDir The full path to the snapshot files.
+     * @param sft Snapshot file tree.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
      */
@@ -57,14 +57,14 @@ public class SnapshotHandlerContext {
         SnapshotMetadata metadata,
         @Nullable Collection<String> grps,
         ClusterNode locNode,
-        File snpDir,
+        SnapshotFileTree sft,
         boolean streamerWrn,
         boolean check
     ) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
-        this.snpDir = snpDir;
+        this.sft = sft;
         this.streamerWrn = streamerWrn;
         this.check = check;
     }
@@ -77,10 +77,10 @@ public class SnapshotHandlerContext {
     }
 
     /**
-     * @return The full path to the snapshot files.
+     * @return Snapshot file tree.
      */
-    public File snapshotDirectory() {
-        return snpDir;
+    public SnapshotFileTree snapshotFileTree() {
+        return sft;
     }
 
     /**
