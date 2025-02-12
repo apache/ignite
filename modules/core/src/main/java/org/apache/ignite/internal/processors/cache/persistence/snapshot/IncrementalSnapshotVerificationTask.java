@@ -362,7 +362,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         private void checkBaseline(BaselineTopology blt) throws IgniteCheckedException, IOException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.root(), ignite.localNode().consistentId().toString());
+            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta(ignite.localNode().consistentId().toString()));
 
             if (!F.eqNotOrdered(blt.consistentIds(), meta.baselineNodes())) {
                 throw new IgniteCheckedException("Topologies of snapshot and current cluster are different [snp=" +

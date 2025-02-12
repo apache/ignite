@@ -92,8 +92,7 @@ abstract class IncrementalSnapshotProcessor {
         Consumer<DataEntry> dataEntryHnd,
         @Nullable Consumer<TxRecord> txHnd
     ) throws IgniteCheckedException, IOException {
-        IncrementalSnapshotMetadata meta = cctx.snapshotMgr()
-            .readIncrementalSnapshotMetadata(sft.name(), sft.path(), incIdx);
+        IncrementalSnapshotMetadata meta = cctx.snapshotMgr().readIncrementalSnapshotMetadata(sft, incIdx);
 
         File[] segments = walSegments(meta.folderName());
 
@@ -101,11 +100,9 @@ abstract class IncrementalSnapshotProcessor {
 
         UUID incSnpId = meta.requestId();
 
-        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
-
         File lastSeg = Arrays.stream(segments)
             .map(File::toPath)
-            .max(Comparator.comparingLong(ft::walSegmentIndex))
+            .max(Comparator.comparingLong(sft::walSegmentIndex))
             .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [snpName=" + sft.name() + ']'))
             .toFile();
 
@@ -156,7 +153,7 @@ abstract class IncrementalSnapshotProcessor {
             }
 
             UUID prevIncSnpId = incIdx > 1
-                ? cctx.snapshotMgr().readIncrementalSnapshotMetadata(sft.name(), sft.path(), incIdx - 1).requestId()
+                ? cctx.snapshotMgr().readIncrementalSnapshotMetadata(sft, incIdx - 1).requestId()
                 : null;
 
             IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null

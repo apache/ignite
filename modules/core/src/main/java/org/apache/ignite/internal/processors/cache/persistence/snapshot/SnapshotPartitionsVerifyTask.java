@@ -86,7 +86,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             }
 
             try {
-                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(sft.root(), consId);
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(sft.meta(consId));
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
                     .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));

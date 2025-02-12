@@ -48,6 +48,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -154,8 +155,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             String constId = grid.cluster().localNode().consistentId().toString();
             SnapshotFileTree sft = new SnapshotFileTree((IgniteEx)grid, SNAPSHOT_NAME, null);
 
-            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(sft.root(), constId);
-            File smf = new File(sft.root(), U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT);
+            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(sft.meta(constId));
+            File smf = sft.meta(U.maskForFileName(constId));
 
             try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                 GridTestUtils.setFieldValue(metadata, "rqId", newReqId);

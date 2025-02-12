@@ -53,7 +53,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.valueOf;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal

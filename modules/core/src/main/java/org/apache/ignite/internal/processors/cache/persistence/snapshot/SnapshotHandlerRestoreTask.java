@@ -107,7 +107,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         @Override public Map<String, SnapshotHandlerResult<Object>> execute0() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.root(), consId);
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta(consId));
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
                     new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));

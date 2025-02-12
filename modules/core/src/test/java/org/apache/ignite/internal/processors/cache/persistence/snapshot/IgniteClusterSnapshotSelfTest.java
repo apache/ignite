@@ -35,8 +35,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -95,6 +95,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
@@ -583,7 +584,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertTrue(sft.root().mkdirs());
 
-        File snpMeta = new File(sft.root(), IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString()));
+        File snpMeta = new File(sft.root(), snapshotMetaFileName(ignite.localNode().consistentId().toString()));
 
         assertTrue(snpMeta.createNewFile());
 
@@ -1219,12 +1220,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx clnt = startClientGrid(2);
 
         IgniteSnapshotManager mgr = snp(grid);
-        BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+        Function<SnapshotFileTree, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
         BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
 
-        mgr.localSnapshotSenderFactory((snpName, snpPath) ->
-            new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
+        mgr.localSnapshotSenderFactory(sft ->
+            new DelegateSnapshotSender(log, block, old.apply(sft)));
 
         IgniteFuture<Void> fut = snp(grid).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
@@ -1317,13 +1318,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      * @param blocked Latch to await delta partition processing.
      * @return Factory which produces local snapshot senders.
      */
-    private BiFunction<String, String, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
+    private Function<SnapshotFileTree, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
         CountDownLatch started,
         CountDownLatch blocked
     ) {
-        BiFunction<String, String, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
+        Function<SnapshotFileTree, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
 
-        return (snpName, snpPath) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(snpName, null)) {
+        return sft -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(sft)) {
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
                 if (log.isInfoEnabled())
                     log.info("Processing delta file has been blocked: " + delta.getName());

@@ -159,7 +159,7 @@ public abstract class AbstractSnapshotVerificationTask extends
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            sft = new SnapshotFileTree(ignite, snpName, snpPath);
+            sft = new SnapshotFileTree(ignite.context().pdsFolderResolver().fileTree(), consId, snpName, snpPath);
 
             return execute0();
         }

@@ -38,6 +38,9 @@ public class SnapshotFileTree extends NodeFileTree {
     /** File with delta pages index suffix. */
     public static final String DELTA_IDX_SUFFIX = ".idx";
 
+    /** Snapshot metafile extension. */
+    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
+
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
@@ -144,6 +147,22 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param consId Consistent id.
+     * @return Snapshot metadata file.
+     */
+    public File meta(String consId) {
+        return new File(root, snapshotMetaFileName(consId));
+    }
+
+    /**
+     * @param consId Consistent id.
+     * @return Temp snapshot metadata file.
+     */
+    public File tmpMeta(String consId) {
+        return new File(root, snapshotMetaFileName(consId) + TMP_SUFFIX);
+    }
+
+    /**
      * @param partId Partition id.
      * @return File name of delta partition pages.
      */
@@ -151,6 +170,14 @@ public class SnapshotFileTree extends NodeFileTree {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
+    }
+
+    /**
+     * @param consId Consistent node id.
+     * @return Snapshot metadata file name.
+     */
+    public static String snapshotMetaFileName(String consId) {
+        return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 
     /**

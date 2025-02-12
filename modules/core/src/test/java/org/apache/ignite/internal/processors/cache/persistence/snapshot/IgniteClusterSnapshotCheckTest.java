@@ -90,6 +90,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -508,11 +509,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
-                Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                    new SnapshotFileTree(ignite, SNAPSHOT_NAME, null).root(),
-                    (String)ignite.configuration().getConsistentId()
-                ))),
+                Collections.singletonMap(
+                    ignite.cluster().localNode(),
+                    Collections.singletonList(
+                        snp(ignite).readSnapshotMetadata(
+                            new SnapshotFileTree(ignite, SNAPSHOT_NAME, null).meta((String)ignite.configuration().getConsistentId())))
+                ),
                 null,
                 0,
                 true

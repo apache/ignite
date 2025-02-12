@@ -218,6 +218,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -267,12 +269,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Incremental snapshot metrics prefix. */
     public static final String INCREMENTAL_SNAPSHOT_METRICS = metricName("snapshot", "incremental");
-
-    /** Snapshot metafile extension. */
-    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
-
-    /** Snapshot temporary metafile extension. */
-    public static final String SNAPSHOT_METAFILE_TMP_EXT = ".tmp";
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -377,7 +373,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile ReadWriteMetastorage metaStorage;
 
     /** Local snapshot sender factory. */
-    private BiFunction<String, String, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
+    private Function<SnapshotFileTree, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
 
     /** Remote snapshot sender factory. */
     private BiFunction<String, UUID, SnapshotSender> rmtSndrFactory = this::remoteSnapshotSenderFactory;
@@ -813,27 +809,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
         }
 
+        SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
+
         if (req.incremental()) {
             SnapshotMetadata meta;
 
             try {
-                SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
+                meta = readSnapshotMetadata(sft.meta(cctx.localNode().consistentId().toString()));
 
-                meta = readSnapshotMetadata(new File(
-                    sft.root(),
-                    snapshotMetaFileName(cctx.localNode().consistentId().toString())
-                ));
-
-                checkIncrementalCanBeCreated(sft, meta);
+                checkIncrementalCanBeCreated(meta, sft);
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
             }
 
-            return initLocalIncrementalSnapshot(req, meta);
+            return initLocalIncrementalSnapshot(req, meta, sft);
         }
         else
-            return initLocalFullSnapshot(req, grpIds, comprGrpIds, withMetaStorage);
+            return initLocalFullSnapshot(req, grpIds, comprGrpIds, withMetaStorage, sft);
     }
 
     /**
@@ -877,9 +870,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(
         SnapshotOperationRequest req,
-        SnapshotMetadata meta
+        SnapshotMetadata meta,
+        SnapshotFileTree sft
     ) {
-        SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
         NodeFileTree incSft = sft.incrementalSnapshotFileTree(req.incrementIndex());
 
         WALPointer lowPtr;
@@ -892,7 +885,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             IncrementalSnapshotMetadata prevIncSnpMeta;
 
             try {
-                prevIncSnpMeta = readIncrementalSnapshotMetadata(req.snapshotName(), req.snapshotPath(), prevIdx);
+                prevIncSnpMeta = readIncrementalSnapshotMetadata(sft, prevIdx);
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
@@ -901,7 +894,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             lowPtr = prevIncSnpMeta.incrementalSnapshotPointer();
         }
 
-        IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
+        IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(sft.name(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
             req.requestId(),
@@ -964,19 +957,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Full snapshot name.
-     * @param snpPath Optional path to snapshot, if differs from default.
+     * @param sft Snapshot file tree.
      * @param incIdx Index of incremental snapshot.
      * @return Read incremental snapshot metadata.
      */
     public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(
-        String snpName,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         int incIdx
     ) throws IgniteCheckedException, IOException {
         return readFromFile(new File(
-            new SnapshotFileTree(ft, snpName, snpPath).incrementalSnapshotFileTree(incIdx).root(),
-            snapshotMetaFileName(ft.folderName())
+            sft.incrementalSnapshotFileTree(incIdx).root(),
+            snapshotMetaFileName(sft.folderName())
         ));
     }
 
@@ -985,13 +976,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpIds Groups.
      * @param comprGrpIds Compressed Groups.
      * @param withMetaStorage Flag to include metastorage.
+     * @param sft Snapshot file tree.
      * @return Create snapshot future.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalFullSnapshot(
         SnapshotOperationRequest req,
         List<Integer> grpIds,
         Collection<Integer> comprGrpIds,
-        boolean withMetaStorage
+        boolean withMetaStorage,
+        SnapshotFileTree sft
     ) {
         if (!isPersistenceEnabled(cctx.gridConfig()) && req.snapshotPath() == null)
             ft.mkdirSnapshotsRoot();
@@ -1023,8 +1016,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
-
         IgniteInternalFuture<?> task0 = registerSnapshotTask(
             sft,
             req.operationalNodeId(),
@@ -1034,7 +1025,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.dump(),
             req.compress(),
             req.encrypt(),
-            locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
+            locSndrFactory.apply(sft)
         );
 
         if (withMetaStorage) {
@@ -1084,7 +1075,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File smf = new File(sft.root(), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File smf = sft.meta(cctx.localNode().consistentId().toString());
 
                 storeSnapshotMeta(req.meta(), smf);
 
@@ -1328,9 +1319,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!oldestBaseline)
             return;
 
-        File tempSmf = new File(sft.root(), snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
-            SNAPSHOT_METAFILE_TMP_EXT);
-        File smf = new File(sft.root(), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+        File tempSmf = sft.tmpMeta(cctx.localNode().consistentId().toString());
+        File smf = sft.meta(cctx.localNode().consistentId().toString());
 
         try {
             storeSnapshotMeta(snpReq.meta(), tempSmf);
@@ -1819,19 +1809,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpDir The full path to the snapshot files.
-     * @param consId Node consistent id to read metadata for.
-     * @return Snapshot metadata instance.
-     */
-    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
-        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
-    }
-
-    /**
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
-    private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
+    public SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
         SnapshotMetadata meta = readFromFile(smf);
 
         String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
@@ -2403,14 +2384,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param consId Consistent node id.
-     * @return Snapshot metadata file name.
-     */
-    public static String snapshotMetaFileName(String consId) {
-        return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
-    }
-
-    /**
      * @param snpDir The full path to the snapshot files.
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @return Standalone kernal context related to the snapshot.
@@ -2630,14 +2603,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param factory Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    void localSnapshotSenderFactory(BiFunction<String, String, SnapshotSender> factory) {
+    void localSnapshotSenderFactory(Function<SnapshotFileTree, SnapshotSender> factory) {
         locSndrFactory = factory;
     }
 
     /**
      * @return Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    BiFunction<String, String, SnapshotSender> localSnapshotSenderFactory() {
+    Function<SnapshotFileTree, SnapshotSender> localSnapshotSenderFactory() {
         return locSndrFactory;
     }
 
@@ -2885,8 +2858,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param meta Full snapshot metadata.
      */
     private void checkIncrementalCanBeCreated(
-        SnapshotFileTree sft,
-        SnapshotMetadata meta
+        SnapshotMetadata meta,
+        SnapshotFileTree sft
     ) throws IgniteCheckedException, IOException {
         IgniteWriteAheadLogManager wal = cctx.wal();
 
@@ -3940,13 +3913,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             sequentialWrite() ? DeltaSortedIterator::new : DeltaIterator::new;
 
         /**
-         * @param snpName Snapshot name.
-         * @param snpPath Snapshot directory path.
+         * @param sft Snapshot file tree.
          */
-        public LocalSnapshotSender(String snpName, @Nullable String snpPath) {
+        public LocalSnapshotSender(SnapshotFileTree sft) {
             super(IgniteSnapshotManager.this.log, cctx.kernalContext().pools().getSnapshotExecutorService());
 
-            sft = new SnapshotFileTree(ft, snpName, snpPath);
+            this.sft = sft;
             pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
         }
 
