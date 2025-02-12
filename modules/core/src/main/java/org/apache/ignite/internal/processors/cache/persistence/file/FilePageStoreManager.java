@@ -855,23 +855,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param grpId Group id.
-     * @return Name of cache group directory.
-     * @throws IgniteCheckedException If cache group doesn't exist.
-     */
-    public String cacheDirName(int grpId) throws IgniteCheckedException {
-        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
-            return METASTORAGE_DIR_NAME;
-
-        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-        if (gctx == null)
-            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
-
-        return ft.cacheDirName(gctx.config());
-    }
-
-    /**
      * @param cleanFiles {@code True} if the stores should delete it's files upon close.
      */
     private IgniteCheckedException shutdown(Collection<CacheStoreHolder> holders, boolean cleanFiles) {
