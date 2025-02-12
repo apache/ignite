@@ -837,12 +837,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotMetadata meta;
 
             try {
+                SnapshotFileTree sft = new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath());
+
                 meta = readSnapshotMetadata(new File(
-                    snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                    sft.root(),
                     snapshotMetaFileName(cctx.localNode().consistentId().toString())
                 ));
 
-                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
+                checkIncrementalCanBeCreated(sft, meta);
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
@@ -1041,8 +1043,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<?> task0 = registerSnapshotTask(req.snapshotName(),
-            req.snapshotPath(),
+        IgniteInternalFuture<?> task0 = registerSnapshotTask(
+            new SnapshotFileTree(ft, req.snapshotName(), req.snapshotPath()),
             req.operationalNodeId(),
             req.requestId(),
             parts,
@@ -2534,8 +2536,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Unique snapshot name.
-     * @param snpPath Snapshot path.
+     * @param sft Snapshot file tree.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param reqId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -2547,8 +2548,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
-        String snpName,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         UUID srcNodeId,
         UUID reqId,
         Map<Integer, Set<Integer>> parts,
@@ -2558,11 +2558,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean encrypt,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
+        AbstractSnapshotFutureTask<?> task = registerTask(sft.name(), dump
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
                 reqId,
-                new SnapshotFileTree(ft, snpName, snpPath),
+                sft,
                 ioFactory,
                 transferRateLimiter,
                 snpSndr,
@@ -2574,7 +2574,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx,
                 srcNodeId,
                 reqId,
-                new SnapshotFileTree(ft, snpName, snpPath),
+                sft,
                 ft,
                 ioFactory,
                 snpSndr,
@@ -2903,17 +2903,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Checks that incremental snapshot can be created for given full snapshot and current cluster state.
      *
-     * @param name Full snapshot name.
-     * @param snpPath Snapshot path.
+     * @param sft Snapshot file tree.
      * @param meta Full snapshot metadata.
      */
     private void checkIncrementalCanBeCreated(
-        String name,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         SnapshotMetadata meta
     ) throws IgniteCheckedException, IOException {
-        File snpDir = snapshotLocalDir(name, snpPath);
-
         IgniteWriteAheadLogManager wal = cctx.wal();
 
         if (wal == null)
@@ -2924,7 +2920,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!ft.walArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
-        ensureHardLinkAvailable(ft.walArchive().toPath(), snpDir.toPath());
+        ensureHardLinkAvailable(ft.walArchive().toPath(), sft.root().toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()
@@ -2937,8 +2933,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Node from full snapshot offline [consistentId=" + consId + ']');
             }
         }
-
-        File rootSnpCachesDir = new File(snpDir, databaseRelativePath(meta.folderName()));
 
         for (int grpId : meta.cacheGroupIds()) {
             if (grpId == METASTORAGE_CACHE_ID)
@@ -2962,7 +2956,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             List<File> snpCacheDir =
-                cacheDirectories(rootSnpCachesDir, grpName -> gctx.cacheOrGroupName().equals(grpName));
+                cacheDirectories(sft.nodeStorage(), grpName -> gctx.cacheOrGroupName().equals(grpName));
 
             if (snpCacheDir.isEmpty()) {
                 throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
@@ -2981,7 +2975,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
 
                 File nodeDataFile = new File(snpDataFile.getAbsolutePath().replace(
-                    rootSnpCachesDir.getAbsolutePath(),
+                    sft.nodeStorage().getAbsolutePath(),
                     pdsSettings.persistentStoreNodePath().getAbsolutePath()
                 ));
 

@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -86,11 +85,10 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         for (int i = 4096; i < 8192; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, new AccountOverrideToString(i, i));
 
-        GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
         IgniteSnapshotManager mgr = snp(ig);
 
         // Collection of pairs group and appropriate cache partition to be snapshot.
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(ig,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             false, mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));

@@ -820,14 +820,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Future which will be completed when snapshot is done.
      */
     protected static IgniteInternalFuture<?> startLocalSnapshotTask(
-        GridCacheSharedContext<?, ?> cctx,
+        IgniteEx srv,
         String snpName,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
-            null,
+        GridCacheSharedContext<?, ?> cctx = srv.context().cache().context();
+
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(
+            new SnapshotFileTree(srv, snpName, null),
             cctx.localNodeId(),
             null,
             parts,

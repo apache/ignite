@@ -145,8 +145,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         }, 5, "cache-loader-");
 
         // Register task but not schedule it on the checkpoint.
-        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(SNAPSHOT_NAME,
-            null,
+        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(
+            new SnapshotFileTree(ig, SNAPSHOT_NAME, null),
             cctx.localNodeId(),
             null,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
@@ -250,8 +250,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
-        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
-
         IgniteSnapshotManager mgr = snp(ig);
 
         mgr.ioFactory(new FileIOFactory() {
@@ -272,7 +270,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         });
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(ig,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
@@ -296,7 +294,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager mgr0 = snp(ig);
 
-        IgniteInternalFuture<?> fut = startLocalSnapshotTask(ig.context().cache().context(),
+        IgniteInternalFuture<?> fut = startLocalSnapshotTask(ig,
             SNAPSHOT_NAME,
             parts,
             encryption,
@@ -327,12 +325,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
         IgniteSnapshotManager mgr = snp(ig);
 
         CountDownLatch cpLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(ig,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
