@@ -820,20 +820,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
-     * @return Local snapshot directory for snapshot with given name.
-     * @throws IgniteCheckedException If directory doesn't exist.
-     */
-    private File resolveSnapshotDir(String snpName, @Nullable String snpPath) throws IgniteCheckedException {
-        File snpDir = snapshotLocalDir(snpName, snpPath);
-
-        if (!snpDir.exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
-
-        return snpDir;
-    }
-
-    /**
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
      */
@@ -2527,30 +2513,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int partId,
         @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
-        File snpDir = resolveSnapshotDir(snpName, null);
+        SnapshotFileTree sft = new SnapshotFileTree(ft, snpName, null);
 
-        File nodePath = new File(snpDir, databaseRelativePath(ft.folderName()));
+        if (!sft.root().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
 
-        if (!nodePath.exists())
-            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + nodePath.getAbsolutePath());
+        if (!sft.nodeStorage().exists())
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
 
-        List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
+        List<File> grps = cacheDirectories(sft.nodeStorage(), name -> name.equals(grpName));
 
         if (F.isEmpty(grps)) {
             throw new IgniteCheckedException(
-                "The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']'
+                "The snapshot cache group not found [dir=" + sft.root().getAbsolutePath() + ", grpName=" + grpName + ']'
             );
         }
 
         if (grps.size() > 1) {
             throw new IgniteCheckedException(
-                "The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() +
+                "The snapshot cache group directory cannot be uniquely identified [dir=" + sft.root().getAbsolutePath() +
                     ", grpName=" + grpName + ']'
             );
         }
 
-        File snpPart = partitionFile(new File(snapshotLocalDir(snpName, null), databaseRelativePath(ft.folderName())),
-            grps.get(0).getName(), partId);
+        File snpPart = sft.partitionFile(grps.get(0).getName(), partId);
 
         int grpId = CU.cacheId(grpName);
 
