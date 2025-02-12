@@ -1305,7 +1305,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
 
-                    storeWarnings(snpReq);
+                    storeWarnings(snpReq, sft);
                 }
 
                 if (req.dump()) {
@@ -1336,7 +1336,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * process possible snapshot errors, deleting snapshot at second stage end. Doesn't worth. If an error occurs on
      * warnings writing, it is logged only.
      */
-    private void storeWarnings(SnapshotOperationRequest snpReq) {
+    private void storeWarnings(SnapshotOperationRequest snpReq, SnapshotFileTree sft) {
         assert !F.isEmpty(snpReq.warnings());
 
         List<ClusterNode> snpNodes = cctx.kernalContext().cluster().get().nodes().stream()
@@ -1348,10 +1348,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!oldestBaseline)
             return;
 
-        File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
-        File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
+        File tempSmf = new File(sft.root(), snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
             SNAPSHOT_METAFILE_TMP_EXT);
-        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+        File smf = new File(sft.root(), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
         try {
             storeSnapshotMeta(snpReq.meta(), tempSmf);
@@ -2299,13 +2298,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snpName = (String)metaStorage.read(SNP_RUNNING_KEY);
         String snpDirName = snpName == null ? (String)metaStorage.read(SNP_RUNNING_DIR_KEY) : null;
 
-        File snpDir = snpName != null
-            ? snapshotLocalDir(snpName, null)
-            : snpDirName != null
-                ? new File(snpDirName)
-                : null;
+        // TODO: simplify me.
+        SnapshotFileTree sft = null;
 
-        if (snpDir == null)
+        if (snpName != null)
+            sft = new SnapshotFileTree(ft, snpName, null);
+        else if (snpDirName != null) {
+            File snpDir = new File(snpDirName);
+
+            sft = new SnapshotFileTree(ft, snpDir.getName(), snpDir.getParent());
+        }
+
+        if (sft == null)
             return;
 
         recovered = true;
@@ -2313,14 +2317,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (File tmp : ft.snapshotTempRoot().listFiles())
             U.delete(tmp);
 
-        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
-            U.delete(snpDir);
+        if (INC_SNP_NAME_PATTERN.matcher(sft.root().getName()).matches() && sft.root().getAbsolutePath().contains(INC_SNP_DIR))
+            U.delete(sft.root());
         else
-            deleteSnapshot(snpDir);
+            deleteSnapshot(sft.root());
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
-                "related to snapshot operation have been deleted: " + snpDir.getName());
+                "related to snapshot operation have been deleted: " + sft.root().getName());
         }
     }
 
