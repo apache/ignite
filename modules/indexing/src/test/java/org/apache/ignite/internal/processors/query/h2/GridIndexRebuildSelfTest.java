@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -299,8 +298,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     protected File indexFile(IgniteInternalCache internalCache) {
         requireNonNull(internalCache);
 
-        File cacheWorkDir = ((FilePageStoreManager)internalCache.context().shared().pageStore())
-            .cacheWorkDir(internalCache.configuration());
+        File cacheWorkDir = internalCache.context().kernalContext().pdsFolderResolver().fileTree()
+            .cacheStorage(internalCache.configuration());
 
         return cacheWorkDir.toPath().resolve(INDEX_FILE_NAME).toFile();
     }

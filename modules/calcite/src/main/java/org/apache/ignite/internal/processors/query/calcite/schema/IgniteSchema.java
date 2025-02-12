@@ -27,6 +27,7 @@ import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.tools.FrameworkConfig;
 
 /**
  * Ignite schema.
@@ -111,12 +112,13 @@ public class IgniteSchema extends AbstractSchema {
      * Registers current {@code IgniteSchema} in parent {@code SchemaPlus}.
      *
      * @param parent Parent schema.
+     * @param frameworkCfg Framework config.
      * @return Registered schema.
      */
-    public SchemaPlus register(SchemaPlus parent) {
+    public SchemaPlus register(SchemaPlus parent, FrameworkConfig frameworkCfg) {
         SchemaPlus newSchema = parent.add(schemaName, this);
 
-        viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema)));
+        viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema, frameworkCfg)));
 
         return newSchema;
     }

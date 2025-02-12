@@ -45,6 +45,7 @@
         <jsonpath.version>2.9.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
         <commons.math.version>3.6.1</commons.math.version>
+        <commons.text.version>1.11.0</commons.text.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -170,6 +171,18 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons.math.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${commons.text.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang3.version}</version>
         </dependency>
 
         <dependency>

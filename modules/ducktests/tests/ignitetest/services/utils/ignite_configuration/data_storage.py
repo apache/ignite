@@ -32,6 +32,7 @@ class DataRegionConfiguration(NamedTuple):
     max_size: int = 512 * 1024 * 1024
     metrics_enabled: bool = True
     metrics_rate_time_interval: int = None
+    checkpoint_page_buffer_size: int = None
 
 
 class DataStorageConfiguration(NamedTuple):
@@ -56,3 +57,6 @@ class DataStorageConfiguration(NamedTuple):
     wal_page_compression: str = None
     wal_page_compression_level: int = None
     wal_path: str = None
+    write_recovery_data_on_checkpoint: bool = None
+    checkpoint_recovery_data_compression: str = None
+    checkpoint_recovery_data_compression_level: int = None

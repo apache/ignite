@@ -1012,13 +1012,16 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Checks WAL disabled for cache group.
+     * Checks WAL page records disabled.
      *
      * @param grpId Group id.
      * @param pageId Page id.
      * @return {@code True} if WAL disable for group. {@code False} If not.
      */
-    public boolean isDisabled(int grpId, long pageId) {
+    public boolean isPageRecordsDisabled(int grpId, long pageId) {
+        if (cctx.kernalContext().config().getDataStorageConfiguration().isWriteRecoveryDataOnCheckpoint())
+            return true;
+
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
         return ctx != null && (!ctx.walEnabled()

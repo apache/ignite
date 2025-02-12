@@ -78,12 +78,6 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default wal always write full pages. */
     public static final boolean DFLT_WAL_ALWAYS_WRITE_FULL_PAGES = false;
 
-    /** Default wal directory. */
-    public static final String DFLT_WAL_STORE_PATH = "db/wal";
-
-    /** Default wal archive directory. */
-    public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
-
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
@@ -115,10 +109,10 @@ public class PersistentStoreConfiguration implements Serializable {
     private int walSegmentSize = DFLT_WAL_SEGMENT_SIZE;
 
     /** Directory where WAL is stored (work directory) */
-    private String walStorePath = DFLT_WAL_STORE_PATH;
+    private String walStorePath = DataStorageConfiguration.DFLT_WAL_PATH;
 
     /** WAL archive path. */
-    private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
+    private String walArchivePath = DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;

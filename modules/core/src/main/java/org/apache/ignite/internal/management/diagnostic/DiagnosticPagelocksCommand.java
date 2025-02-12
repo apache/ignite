@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -47,7 +46,7 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, DiagnosticPagelocksCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, DiagnosticPagelocksCommandArg arg) {
         if (arg.all())
             return nodes;
 
@@ -57,7 +56,7 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
         Set<String> argNodes = new HashSet<>(Arrays.asList(arg.nodes()));
 
         return nodes.stream()
-            .filter(entry -> argNodes.contains(entry.nodeId().toString())
+            .filter(entry -> argNodes.contains(entry.id().toString())
                 || argNodes.contains(String.valueOf(entry.consistentId())))
             .collect(Collectors.toList());
     }

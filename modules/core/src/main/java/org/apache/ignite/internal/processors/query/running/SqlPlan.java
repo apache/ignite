@@ -45,6 +45,7 @@ public class SqlPlan {
      * @param qry Query.
      * @param schema Schema name.
      * @param loc Local query flag.
+     * @param engine SQL engine.
      */
     public SqlPlan(
         String plan,
