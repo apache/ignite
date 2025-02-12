@@ -697,11 +697,6 @@ final class ReliableChannel implements AutoCloseable {
         try {
             channels = reinitHolders;
 
-            // essential to recover after failure on single server
-            // ???
-            if (channels.size() == 1 && partitionAwarenessEnabled)
-                channels.add(channels.get(0));
-
             attemptsLimit = getRetryLimit();
 
             curChIdx = dfltChannelIdx;
@@ -918,6 +913,10 @@ final class ReliableChannel implements AutoCloseable {
             throw new ClientException("Connections to nodes aren't initialized.");
 
         int size = holders.size();
+
+        // Essential to produce a retry connection on the channel after a failure occurred on that single channel.
+        if (channels.size() == 1 && partitionAwarenessEnabled)
+            size = 2;
 
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
     }
