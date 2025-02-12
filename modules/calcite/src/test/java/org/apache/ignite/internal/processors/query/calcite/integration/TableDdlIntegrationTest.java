@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1019,10 +1020,24 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** */
     @Test
     public void testNonPersistentRejoinsWithDynamicTablesOverPredefinedCaches() throws Exception {
+        testLostSchema(false);
+    }
+
+    /** */
+    @Test
+    public void testNonPersistentRejoinsWithDynamicTablesOverPredefinedCaches2() throws Exception {
+        testLostSchema(true);
+    }
+
+    /** */
+    private void testLostSchema(boolean persistence) throws Exception {
         stopAllGrids();
 
+        if(persistence)
+            cleanPersistenceDir();
+
         try {
-            persistence = false;
+            this.persistence = persistence;
 
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("TEST_CACHE")
                 .setBackups(1)
@@ -1034,13 +1049,21 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
             client = startGrids(3);
 
+            client.cluster().state(ClusterState.ACTIVE);
+
             sql("CREATE TABLE IF NOT EXISTS TEST_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=TEST_CACHE\"");
 
             assertEquals(0, sql("SELECT * FROM TEST_TBL").size());
 
             int testGrid = 2;
 
+            String testConsId = grid(testGrid).cluster().localNode().consistentId().toString();
+
             stopGrid(testGrid);
+
+            if (persistence)
+                cleanPersistenceDir(testConsId);
+
             startGrid(testGrid);
 
             awaitPartitionMapExchange();
@@ -1053,11 +1076,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
         }
         finally {
-            persistence = true;
+            if(!persistence) {
+                this.persistence = true;
 
-            afterTestsStopped();
+                afterTestsStopped();
 
-            beforeTestsStarted();
+                beforeTestsStarted();
+            }
         }
     }
 
