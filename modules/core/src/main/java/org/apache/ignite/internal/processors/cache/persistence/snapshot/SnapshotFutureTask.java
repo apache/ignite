@@ -77,7 +77,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 
 /**
@@ -470,7 +469,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
-            File delta = partDeltaFile(sft.tempFileTree().cacheStorage(dirName), partId);
+            File delta = sft.partDeltaFile(dirName, partId);
 
             partDeltaWriters.put(pair, deltaWriterFactory.apply(store, delta, encGrpId));
 

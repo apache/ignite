@@ -205,7 +205,6 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
@@ -213,12 +212,11 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -251,18 +249,6 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     implements IgniteSnapshot, PartitionsExchangeAware, MetastorageLifecycleListener, IgniteChangeGlobalStateSupport {
-    /** File with delta pages suffix. */
-    public static final String DELTA_SUFFIX = ".delta";
-
-    /** File with delta pages index suffix. */
-    public static final String DELTA_IDX_SUFFIX = ".idx";
-
-    /** File name template consists of delta pages. */
-    public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
-
-    /** File name template for index delta pages. */
-    public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
-
     /** Text Reason for checkpoint to start snapshot operation. */
     public static final String CP_SNAPSHOT_REASON = "Checkpoint started to enforce snapshot operation: %s";
 
@@ -479,15 +465,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snapshotCacheDir Snapshot directory to store files.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
-     */
-    public static File partDeltaFile(File snapshotCacheDir, int partId) {
-        return new File(snapshotCacheDir, partDeltaFileName(partId));
-    }
-
-    /**
      * Partition delta index file. Represents a sequence of page indexes that written to a delta.
      *
      * @param delta File with delta pages.
@@ -495,16 +472,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static File partDeltaIndexFile(File delta) {
         return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
-    }
-
-    /**
-     * @param partId Partition id.
-     * @return File name of delta partition pages.
-     */
-    public static String partDeltaFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
-
-        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
     }
 
     /** {@inheritDoc} */

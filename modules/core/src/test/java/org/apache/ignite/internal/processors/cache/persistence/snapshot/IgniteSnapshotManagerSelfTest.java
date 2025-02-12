@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -257,7 +258,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = ioFactory.create(file, modes);
 
-                if (file.getName().equals(IgniteSnapshotManager.partDeltaFileName(0)))
+                if (file.getName().equals(SnapshotFileTree.partDeltaFileName(0)))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
