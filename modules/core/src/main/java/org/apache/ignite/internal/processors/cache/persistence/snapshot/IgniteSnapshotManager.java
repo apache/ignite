@@ -2617,7 +2617,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 srcNodeId,
                 reqId,
                 new SnapshotFileTree(ft, snpName, snpPath),
-                snapshotLocalDir(snpName, snpPath),
                 ioFactory,
                 transferRateLimiter,
                 snpSndr,
