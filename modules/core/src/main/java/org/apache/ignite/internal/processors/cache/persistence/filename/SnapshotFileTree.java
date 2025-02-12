@@ -21,7 +21,9 @@ import java.io.File;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
+ * During creation, full snapshot, creates the same file tree as regular node.
+ * But, using snapshot directory as root.
  */
 public class SnapshotFileTree extends NodeFileTree {
     /** Snapshot name. */
@@ -29,6 +31,9 @@ public class SnapshotFileTree extends NodeFileTree {
 
     /** Snapshot path. */
     @Nullable private final String path;
+
+    /** Node file tree relative to {@link #tempFileTree()}. */
+    private final NodeFileTree tmpFt;
 
     /**
      * @param ft Node file tree.
@@ -38,6 +43,7 @@ public class SnapshotFileTree extends NodeFileTree {
 
         this.name = name;
         this.path = path;
+        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), ft.folderName());
     }
 
     /** @return Snapshot name. */
@@ -48,6 +54,11 @@ public class SnapshotFileTree extends NodeFileTree {
     /** @return Snapshot path. */
     @Nullable public String path() {
         return path;
+    }
+
+    /** @return Snapshot temp file tree. */
+    public NodeFileTree tempFileTree() {
+        return tmpFt;
     }
 
     /**
