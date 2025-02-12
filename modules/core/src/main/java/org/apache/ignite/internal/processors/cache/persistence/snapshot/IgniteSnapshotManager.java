@@ -337,9 +337,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Pattern for incremental snapshot directory names. */
     public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
-    /** Lock file for dump directory. */
-    public static final String DUMP_LOCK = "dump.lock";
-
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
      * It is important to have only one buffer per thread (instead of creating each buffer per
@@ -649,16 +646,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (files != null) {
             Arrays.stream(files)
                 .filter(File::isDirectory)
-                .map(dumpDir ->
-                    Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
-                .filter(File::exists)
-                .map(File::getParentFile)
-                .forEach(lockedDumpDir -> {
+                .map(dumpDir -> new SnapshotFileTree(ft, dumpDir.getName(), null))
+                .filter(sft -> sft.dumpLock().exists())
+                .forEach(sft -> {
                     log.warning("Found locked dump dir. " +
                         "This means, dump creation not finished prior to node fail. " +
-                        "Directory will be deleted: " + lockedDumpDir);
+                        "Directory will be deleted: " + sft.nodeStorage().getAbsolutePath());
 
-                    U.delete(lockedDumpDir);
+                    U.delete(sft.nodeStorage());
                 });
         }
     }
@@ -2769,18 +2764,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** */
     private void removeDumpLock(String dumpName) throws IgniteCheckedException {
-        File lock = new File(nodeDumpDirectory(snapshotLocalDir(dumpName, null), cctx), DUMP_LOCK);
+        File lock = new SnapshotFileTree(ft, dumpName, null).dumpLock();
 
         if (!lock.exists())
             return;
 
         if (!lock.delete())
             throw new IgniteCheckedException("Lock file can't be deleted: " + lock);
-    }
-
-    /** */
-    public static File nodeDumpDirectory(File dumpDir, GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
-        return new File(dumpDir, databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()));
     }
 
     /**

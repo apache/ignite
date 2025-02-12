@@ -75,7 +75,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheDataFilename;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
@@ -408,7 +407,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         if (!nodeDumpDir.mkdirs())
             throw new IgniteCheckedException("Can't create node dump directory: " + nodeDumpDir.getAbsolutePath());
 
-        File lock = new File(nodeDumpDir, DUMP_LOCK);
+        File lock = sft.dumpLock();
 
         if (!lock.createNewFile())
             throw new IgniteCheckedException("Lock file can't be created or already exists: " + lock.getAbsolutePath());

@@ -41,6 +41,9 @@ public class SnapshotFileTree extends NodeFileTree {
     /** File name template for index delta pages. */
     public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
+    /** Lock file for dump directory. */
+    public static final String DUMP_LOCK = "dump.lock";
+
     /** Snapshot name. */
     private final String name;
 
@@ -83,6 +86,13 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     public File partDeltaFile(String cacheDirName, int partId) {
         return new File(tmpFt.cacheStorage(cacheDirName), partDeltaFileName(partId));
+    }
+
+    /**
+     * @return Dump lock file.
+     */
+    public File dumpLock() {
+        return new File(nodeStorage(), DUMP_LOCK);
     }
 
     /**
