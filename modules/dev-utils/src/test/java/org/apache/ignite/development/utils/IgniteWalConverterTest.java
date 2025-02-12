@@ -295,7 +295,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final NodeFileTree ft = createWal(list, null);
 
-        final File wal = new File(ft.wal(), "0000000000000000.wal");
+        final File wal = ft.walSegment(0);
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -412,7 +412,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final NodeFileTree ft = createWal(list, null);
 
-        final File wal = new File(ft.wal(), "0000000000000000.wal");
+        final File wal = ft.walSegment(0);
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord

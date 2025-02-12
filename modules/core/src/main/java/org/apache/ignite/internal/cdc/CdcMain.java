@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -88,7 +87,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -489,9 +487,9 @@ public class CdcMain implements Runnable {
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
-                        .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)) // Sort by segment index.
+                        .sorted(Comparator.comparingLong(ft::walSegmentIndex)) // Sort by segment index.
                         .peek(p -> {
-                            long nextSgmnt = segmentIndex(p);
+                            long nextSgmnt = ft.walSegmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
                                 throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
@@ -561,7 +559,7 @@ public class CdcMain implements Runnable {
         if (walState != null)
             builder.from(walState.get1());
 
-        long segmentIdx = segmentIndex(segment);
+        long segmentIdx = ft.walSegmentIndex(segment);
 
         lastSegmentConsumptionTs.value(System.currentTimeMillis());
 
@@ -807,7 +805,7 @@ public class CdcMain implements Runnable {
      * @return {@code True} if segment file was deleted, {@code false} otherwise.
      */
     private boolean removeProcessedOnFailover(Path segment) {
-        long segmentIdx = segmentIndex(segment);
+        long segmentIdx = ft.walSegmentIndex(segment);
 
         if (segmentIdx > walState.get1().index()) {
             throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
@@ -854,7 +852,7 @@ public class CdcMain implements Runnable {
             Path processedSegment = rmvIter.next();
 
             // Can't delete current segment, because state points to it.
-            if (segmentIndex(processedSegment) >= curState.get1().index())
+            if (ft.walSegmentIndex(processedSegment) >= curState.get1().index())
                 continue;
 
             // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
