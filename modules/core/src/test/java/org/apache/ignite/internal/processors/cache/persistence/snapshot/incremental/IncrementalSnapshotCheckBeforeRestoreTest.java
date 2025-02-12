@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_CHECK_ON_RESTORE;
 import static org.junit.Assume.assumeFalse;
 
@@ -137,9 +136,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(1);
 
-        U.delete(new File(
-            new SnapshotFileTree(srv, SNP, null).root(),
-            snapshotMetaFileName((String)srv.localNode().consistentId())));
+        U.delete(new SnapshotFileTree(srv, SNP, null).meta((String)srv.localNode().consistentId()));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
@@ -262,9 +259,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = new File(
-            new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).root(),
-            snapshotMetaFileName(srv.localNode().consistentId().toString()));
+        File incMetaFile = new SnapshotFileTree(srv, SNP, null).incrementMeta(1, srv.localNode().consistentId().toString());
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
@@ -295,9 +290,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = new File(
-            new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).root(),
-            snapshotMetaFileName(srv.localNode().consistentId().toString()));
+        File incMetaFile = new SnapshotFileTree(srv, SNP, null).incrementMeta(1, srv.localNode().consistentId().toString());
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 

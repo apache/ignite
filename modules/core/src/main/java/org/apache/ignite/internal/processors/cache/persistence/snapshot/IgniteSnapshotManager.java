@@ -219,7 +219,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -699,31 +698,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpDir Snapshot dir.
+     * @param sft Snapshot file tree.
      */
-    public void deleteSnapshot(File snpDir) {
-        if (!snpDir.exists())
+    public void deleteSnapshot(SnapshotFileTree sft) {
+        if (!sft.root().exists())
             return;
 
-        if (!snpDir.isDirectory())
+        if (!sft.root().isDirectory())
             return;
-
-        String folderName = ft.folderName();
 
         try {
-            NodeFileTree snpFt = new NodeFileTree(snpDir.getAbsolutePath(), folderName);
+            U.delete(sft.binaryMeta());
+            U.delete(sft.nodeStorage());
+            U.delete(sft.meta(U.maskForFileName(pdsSettings.consistentId().toString())));
 
-            U.delete(snpFt.binaryMeta());
-            U.delete(snpFt.nodeStorage());
-            U.delete(new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString()))));
-
-            deleteDirectory(snpFt.binaryMetaRoot());
-            deleteDirectory(snpFt.marshaller());
+            deleteDirectory(sft.binaryMetaRoot());
+            deleteDirectory(sft.marshaller());
 
             // Delete parent dir which is {snapshot_root}/db if empty.
-            snpFt.marshaller().getParentFile().delete();
+            sft.marshaller().getParentFile().delete();
             // Delete root dir which is {snapshot_root} if empty.
-            snpFt.root().delete();
+            sft.root().delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -919,10 +914,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 markWalFut.result()
             );
 
-            storeSnapshotMeta(
-                incMeta,
-                new File(incSft.root(), snapshotMetaFileName(ft.folderName()))
-            );
+            storeSnapshotMeta(incMeta, sft.incrementMeta(req.incrementIndex(), ft.folderName()));
 
             return new SnapshotOperationResponse();
         });
@@ -965,10 +957,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotFileTree sft,
         int incIdx
     ) throws IgniteCheckedException, IOException {
-        return readFromFile(new File(
-            sft.incrementalSnapshotFileTree(incIdx).root(),
-            snapshotMetaFileName(sft.folderName())
-        ));
+        return readFromFile(sft.incrementMeta(incIdx, sft.folderName()));
     }
 
     /**
@@ -1267,7 +1256,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (req.incremental())
                         U.delete(sft.incrementalSnapshotFileTree(req.incrementIndex()).root());
                     else
-                        deleteSnapshot(sft.root());
+                        deleteSnapshot(sft);
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -2275,7 +2264,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (INC_SNP_NAME_PATTERN.matcher(sft.root().getName()).matches() && sft.root().getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(sft.root());
         else
-            deleteSnapshot(sft.root());
+            deleteSnapshot(sft);
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
@@ -4060,7 +4049,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + dbDir + ']');
             }
             else {
-                deleteSnapshot(sft.root());
+                deleteSnapshot(sft);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

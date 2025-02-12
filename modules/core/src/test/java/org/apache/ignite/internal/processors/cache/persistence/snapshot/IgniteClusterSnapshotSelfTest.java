@@ -95,7 +95,6 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
@@ -583,10 +582,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         SnapshotFileTree sft = new SnapshotFileTree(ignite, SNAPSHOT_NAME, null);
 
         assertTrue(sft.root().mkdirs());
-
-        File snpMeta = new File(sft.root(), snapshotMetaFileName(ignite.localNode().consistentId().toString()));
-
-        assertTrue(snpMeta.createNewFile());
+        assertTrue(sft.meta(ignite.localNode().consistentId().toString()).createNewFile());
 
         assertThrowsAnyCause(log, fut::get, IgniteException.class, "Snapshot metafile must not exist");
 

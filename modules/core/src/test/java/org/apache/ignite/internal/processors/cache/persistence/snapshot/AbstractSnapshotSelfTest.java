@@ -116,7 +116,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -863,7 +862,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         NodeFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
 
         if (incSnpFt.root().exists()) {
-            checkIncrementalSnapshotWalRecords(node, incSnpFt);
+            checkIncrementalSnapshotWalRecords(node, sft, incIdx);
 
             return true;
         }
@@ -872,13 +871,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkIncrementalSnapshotWalRecords(IgniteEx node, NodeFileTree incSnpFt) {
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, SnapshotFileTree sft, int incIdx) {
         try {
             IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(
-                new File(incSnpFt.root(), snapshotMetaFileName(node.localNode().consistentId().toString())));
+                sft.incrementMeta(incIdx, node.localNode().consistentId().toString()));
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
-                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpFt.wal()));
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(sft.incrementalSnapshotFileTree(incIdx).wal()));
 
             boolean started = false;
             boolean finished = false;

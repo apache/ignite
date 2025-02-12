@@ -147,6 +147,15 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param incIdx Increment index.
+     * @param consId Consistent id.
+     * @return Snapshot metadata file.
+     */
+    public File incrementMeta(int incIdx, String consId) {
+        return new File(incrementalSnapshotFileTree(incIdx).root, snapshotMetaFileName(consId));
+    }
+
+    /**
      * @param consId Consistent id.
      * @return Snapshot metadata file.
      */
@@ -176,7 +185,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    public static String snapshotMetaFileName(String consId) {
+    private String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 

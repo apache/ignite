@@ -45,7 +45,6 @@ import org.junit.Test;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -207,9 +206,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         SnapshotFileTree sft = new SnapshotFileTree(ignite(GRID_CNT - 1), SNAPSHOT_NAME, null);
 
-        File toRmv = new File(
-            sft.incrementalSnapshotFileTree(2).root(),
-            snapshotMetaFileName(ignite(GRID_CNT - 1).localNode().consistentId().toString()));
+        File toRmv = sft.incrementMeta(2, ignite(GRID_CNT - 1).localNode().consistentId().toString());
 
         assertTrue(toRmv.exists());
 
