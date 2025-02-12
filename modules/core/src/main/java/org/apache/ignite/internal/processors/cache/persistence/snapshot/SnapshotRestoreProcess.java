@@ -1415,7 +1415,7 @@ public class SnapshotRestoreProcess {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         IncrementalSnapshotProcessor incSnpProc = new IncrementalSnapshotProcessor(
-            ctx.cache().context(), opCtx0.sft.name(), opCtx0.sft.path(), opCtx0.incIdx, cacheIds
+            ctx.cache().context(), opCtx0.sft, opCtx0.incIdx, cacheIds
         ) {
             @Override void totalWalSegments(int segCnt) {
                 opCtx0.totalWalSegments = segCnt;

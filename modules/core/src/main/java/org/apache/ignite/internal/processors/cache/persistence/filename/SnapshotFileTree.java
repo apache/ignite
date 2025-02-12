@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,7 +59,19 @@ public class SnapshotFileTree extends NodeFileTree {
     private final NodeFileTree tmpFt;
 
     /**
+     *
+     * @param loc Local node.
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
+     */
+    public SnapshotFileTree(IgniteEx loc, String name, @Nullable String path) {
+        this(loc.context().pdsFolderResolver().fileTree(), name, path);
+    }
+
+    /**
      * @param ft Node file tree.
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
      */
     public SnapshotFileTree(NodeFileTree ft, String name, @Nullable String path) {
         super(root(ft, name, path), ft.folderName());
@@ -128,9 +141,12 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param ft Node file tree.
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
      * @return Path to the snapshot root directory.
      */
-    private static File root(NodeFileTree ft, String name, String path) {
+    private static File root(NodeFileTree ft, String name, @Nullable String path) {
         assert name != null : "Snapshot name cannot be empty or null.";
 
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);

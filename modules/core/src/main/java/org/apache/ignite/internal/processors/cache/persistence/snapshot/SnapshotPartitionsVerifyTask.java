@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -78,20 +77,19 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         }
 
         /** {@inheritDoc} */
-        @Override public Map<PartitionKey, PartitionHashRecord> execute() throws IgniteException {
+        @Override public Map<PartitionKey, PartitionHashRecord> execute0() throws IgniteException {
             GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
 
             if (log.isInfoEnabled()) {
                 log.info("Verify snapshot partitions procedure has been initiated " +
-                    "[snpName=" + snpName + ", consId=" + consId + ']');
+                    "[snpName=" + sft.name() + ", consId=" + consId + ']');
             }
 
             try {
-                File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(sft.root(), consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft.root(), false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
@@ -99,7 +97,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             finally {
                 if (log.isInfoEnabled()) {
                     log.info("Verify snapshot partitions procedure has been finished " +
-                        "[snpName=" + snpName + ", consId=" + consId + ']');
+                        "[snpName=" + sft.name() + ", consId=" + consId + ']');
                 }
             }
         }

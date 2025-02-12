@@ -118,7 +118,6 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -628,7 +627,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             IgniteEx node0 = (IgniteEx)node;
 
-            SnapshotFileTree sft = new SnapshotFileTree(node0.context().pdsFolderResolver().fileTree(), snpName, snpPath);
+            SnapshotFileTree sft = new SnapshotFileTree(node0, snpName, snpPath);
 
             if (!sft.nodeStorage().exists())
                 continue;
@@ -858,10 +857,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Checks incremental snapshot exists. */
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
-        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+        SnapshotFileTree sft = new SnapshotFileTree(node, snpName, snpPath);
 
-        if (incSnpDir.exists()) {
-            checkIncrementalSnapshotWalRecords(node, incSnpDir);
+        NodeFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
+
+        if (incSnpFt.root().exists()) {
+            checkIncrementalSnapshotWalRecords(node, incSnpFt);
 
             return true;
         }
@@ -870,15 +871,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir) {
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, NodeFileTree incSnpFt) {
         try {
             IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(
-                new File(incSnpDir, snapshotMetaFileName(node.localNode().consistentId().toString())));
-
-            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, incSnpMeta.folderName());
+                new File(incSnpFt.root(), snapshotMetaFileName(node.localNode().consistentId().toString())));
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
-                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpWalDir));
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpFt.wal()));
 
             boolean started = false;
             boolean finished = false;

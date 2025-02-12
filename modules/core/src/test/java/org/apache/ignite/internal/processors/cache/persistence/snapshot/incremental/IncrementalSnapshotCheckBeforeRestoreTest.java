@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -157,7 +157,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        U.delete(snp(srv).incrementalSnapshotLocalDir(SNP, null, 1));
+        U.delete(new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).root());
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
@@ -263,7 +263,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createIncrementalSnapshots(2);
 
         File incMetaFile = new File(
-            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
+            new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).root(),
             snapshotMetaFileName(srv.localNode().consistentId().toString()));
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
@@ -296,7 +296,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createIncrementalSnapshots(2);
 
         File incMetaFile = new File(
-            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
+            new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).root(),
             snapshotMetaFileName(srv.localNode().consistentId().toString()));
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
@@ -374,8 +374,6 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     private File incrementalSnapshotWalsDir() {
-        return IgniteSnapshotManager.incrementalSnapshotWalsDir(
-            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
-            srv.localNode().consistentId().toString());
+        return new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).wal();
     }
 }

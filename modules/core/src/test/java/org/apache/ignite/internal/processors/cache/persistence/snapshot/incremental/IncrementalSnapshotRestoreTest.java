@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.WalTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotVerifyException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
@@ -89,7 +90,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** */
@@ -1004,9 +1004,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
     /** */
     private File incrementalSnapshotWalDir(IgniteEx node, String snpName, int incIdx) {
-        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, null, incIdx);
-
-        return incrementalSnapshotWalsDir(incSnpDir, node.localNode().consistentId().toString());
+        return new SnapshotFileTree(node, snpName, null).incrementalSnapshotFileTree(incIdx).root();
     }
 
     /** {@inheritDoc} */

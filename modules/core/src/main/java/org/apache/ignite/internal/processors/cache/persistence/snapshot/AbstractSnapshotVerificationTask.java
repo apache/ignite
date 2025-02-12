@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -123,6 +124,9 @@ public abstract class AbstractSnapshotVerificationTask extends
         /** Snapshot directory path. */
         @Nullable protected final String snpPath;
 
+        /** Snapshot file tree. */
+        protected SnapshotFileTree sft;
+
         /** Consistent id of the related node. */
         protected final String consId;
 
@@ -152,5 +156,15 @@ public abstract class AbstractSnapshotVerificationTask extends
             this.rqGrps = rqGrps;
             this.check = check;
         }
+
+        /** {@inheritDoc} */
+        @Override public Object execute() throws IgniteException {
+            sft = new SnapshotFileTree(ignite, snpName, snpPath);
+
+            return execute0();
+        }
+
+        /** Executes job. */
+        protected abstract Object execute0();
     }
 }
