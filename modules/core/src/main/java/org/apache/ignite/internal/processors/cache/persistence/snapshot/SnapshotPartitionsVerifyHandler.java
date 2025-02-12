@@ -83,7 +83,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
@@ -136,7 +135,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : cacheDirectories(new File(opCtx.snapshotFileTree().root(), databaseRelativePath(meta.folderName())), name -> true)) {
+        // TODO: check case when snapshot move from other directory.
+        for (File dir : cacheDirectories(opCtx.snapshotFileTree().nodeStorage(), name -> true)) {
             int grpId = CU.cacheId(cacheName(dir));
 
             if (!grps.remove(grpId))
