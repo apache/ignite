@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
@@ -270,7 +271,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             }
 
             if (withMetaStorage) {
-                U.ensureDirectory(cacheStorage(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
+                U.ensureDirectory(cacheStorage(tmpConsIdDir, METASTORAGE_DIR_NAME),
                     "directory for snapshotting metastorage",
                     log);
             }
@@ -361,7 +362,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS);
 
                 addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS,
-                    MetaStorage.METASTORAGE_DIR_NAME);
+                    METASTORAGE_DIR_NAME);
             }
 
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
@@ -399,7 +400,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException {
-        String cacheDirName = pageStore.cacheDirName(grpId);
+        String cacheDirName = cacheDirName(grpId);
 
         // Process partitions for a particular cache group.
         return grpParts.stream().map(partId -> {
@@ -527,6 +528,23 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())));
+    }
+
+    /**
+     * @param grpId Group id.
+     * @return Name of cache group directory.
+     * @throws IgniteCheckedException If cache group doesn't exist.
+     */
+    private String cacheDirName(int grpId) throws IgniteCheckedException {
+        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
+            return METASTORAGE_DIR_NAME;
+
+        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+
+        if (gctx == null)
+            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
+
+        return ft.cacheDirName(gctx.config());
     }
 
     /** {@inheritDoc} */
