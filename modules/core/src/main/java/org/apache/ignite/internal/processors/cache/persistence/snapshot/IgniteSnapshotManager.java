@@ -2516,7 +2516,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
-     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
@@ -2524,14 +2523,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
-        String folderName,
         String grpName,
         int partId,
         @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
         File snpDir = resolveSnapshotDir(snpName, null);
 
-        File nodePath = new File(snpDir, databaseRelativePath(folderName));
+        File nodePath = new File(snpDir, databaseRelativePath(ft.folderName()));
 
         if (!nodePath.exists())
             throw new IgniteCheckedException("Consistent id directory doesn't exists: " + nodePath.getAbsolutePath());
@@ -2551,7 +2549,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             );
         }
 
-        File snpPart = partitionFile(new File(snapshotLocalDir(snpName, null), databaseRelativePath(folderName)),
+        File snpPart = partitionFile(new File(snapshotLocalDir(snpName, null), databaseRelativePath(ft.folderName())),
             grps.get(0).getName(), partId);
 
         int grpId = CU.cacheId(grpName);
