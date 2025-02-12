@@ -100,8 +100,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -1057,7 +1057,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File idxFile = new File(snpCacheDir, FilePageStoreManager.getPartitionFileName(INDEX_PARTITION));
+                        File idxFile = new File(snpCacheDir, NodeFileTree.partitionFileName(INDEX_PARTITION));
 
                         if (idxFile.exists()) {
                             PartitionRestoreFuture idxFut;
@@ -1120,7 +1120,7 @@ public class SnapshotRestoreProcess {
                                 }
 
                                 int grpId = groupIdFromTmpDir(snpFile.getParentFile());
-                                int partId = partId(snpFile.getName());
+                                int partId = partId(snpFile);
 
                                 PartitionRestoreFuture partFut = F.find(allParts.get(grpId), null,
                                     fut -> fut.partId == partId);
@@ -1723,8 +1723,8 @@ public class SnapshotRestoreProcess {
         File targetDir,
         PartitionRestoreFuture partFut
     ) {
-        File snpFile = new File(srcDir, FilePageStoreManager.getPartitionFileName(partFut.partId));
-        Path partFile = Paths.get(targetDir.getAbsolutePath(), FilePageStoreManager.getPartitionFileName(partFut.partId));
+        File snpFile = new File(srcDir, NodeFileTree.partitionFileName(partFut.partId));
+        Path partFile = Paths.get(targetDir.getAbsolutePath(), NodeFileTree.partitionFileName(partFut.partId));
         int grpId = groupIdFromTmpDir(targetDir);
 
         IgniteSnapshotManager snapMgr = ctx.cache().context().snapshotMgr();
