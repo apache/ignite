@@ -106,7 +106,8 @@ public class SnapshotFileTree extends NodeFileTree {
     public IncrementalSnapshotFileTree incrementalSnapshotFileTree(int incIdx) {
         return new IncrementalSnapshotFileTree(
             new File(incrementsRoot(), U.fixedLengthNumberName(incIdx, null)),
-            U.maskForFileName(folderName())
+            U.maskForFileName(folderName()),
+            incIdx
         ) {
         };
     }
@@ -142,7 +143,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Snapshot metadata file.
      */
     public File incrementMeta(int incIdx) {
-        return new File(incrementalSnapshotFileTree(incIdx).root, snapshotMetaFileName(consId));
+        return new File(incrementalSnapshotFileTree(incIdx).root(), snapshotMetaFileName(consId));
     }
 
     /**
@@ -194,12 +195,24 @@ public class SnapshotFileTree extends NodeFileTree {
      * Node file tree for incremental snapshots.
      */
     public static class IncrementalSnapshotFileTree extends NodeFileTree {
+        /** Increment index. */
+        private final int idx;
+
         /**
          * @param root Root directory.
          * @param folderName Folder name.
          */
-        public IncrementalSnapshotFileTree(File root, String folderName) {
+        public IncrementalSnapshotFileTree(File root, String folderName, int idx) {
             super(root, folderName);
+
+            this.idx = idx;
+        }
+
+        /**
+         * @return Increment index.
+         */
+        public int index() {
+            return idx;
         }
 
         /** {@inheritDoc} */

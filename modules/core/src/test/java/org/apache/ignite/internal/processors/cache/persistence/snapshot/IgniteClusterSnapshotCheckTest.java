@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -88,9 +86,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -142,12 +138,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
-            partitionFileName(0));
+        File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(dfltCacheCfg, 0);
 
         assertNotNull(part0);
-        assertTrue(part0.toString(), part0.toFile().exists());
-        assertTrue(part0.toFile().delete());
+        assertTrue(part0.toString(), part0.exists());
+        assertTrue(part0.delete());
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
@@ -162,16 +157,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotCheckMissedGroup() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
-        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path dir = Files.walk(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath())
-            .filter(d -> d.toFile().getName().equals(ft.cacheDirName(dfltCacheCfg)))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Cache directory not found"));
+        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).cacheStorage(dfltCacheCfg);
 
-        assertTrue(dir.toString(), dir.toFile().exists());
+        assertTrue(dir.toString(), dir.exists());
         assertTrue(U.delete(dir));
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
@@ -190,12 +181,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        File[] smfs = snapshotFileTree(ignite, SNAPSHOT_NAME).root().listFiles((dir, name) ->
-            name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
+        File smf = snapshotFileTree(ignite, SNAPSHOT_NAME).meta();;
 
-        assertNotNull(smfs);
-        assertTrue(smfs[0].toString(), smfs[0].exists());
-        assertTrue(U.delete(smfs[0]));
+        assertNotNull(smf);
+        assertTrue(smf.toString(), smf.exists());
+        assertTrue(U.delete(smf));
 
         assertThrowsAnyCause(
             log,
@@ -238,18 +228,17 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
-            partitionFileName(PART_ID));
+        File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(dfltCacheCfg, PART_ID);
 
         assertNotNull(part0);
-        assertTrue(part0.toString(), part0.toFile().exists());
+        assertTrue(part0.toString(), part0.exists());
 
         int grpId = CU.cacheId(dfltCacheCfg.getName());
 
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
             .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
             .createPageStore(getTypeByPartId(PART_ID),
-                () -> part0,
+                part0::toPath,
                 val -> {
                 })
         ) {
@@ -468,11 +457,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
-            partitionFileName(PART_ID));
+        File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(ccfg, PART_ID);
 
         assertNotNull(part0);
-        assertTrue(part0.toString(), part0.toFile().exists());
+        assertTrue(part0.toString(), part0.exists());
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
@@ -508,10 +496,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
                 Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                    snapshotFileTree(ignite, SNAPSHOT_NAME).root(),
-                    (String)ignite.configuration().getConsistentId()
-                ))),
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(snapshotFileTree(ignite, SNAPSHOT_NAME).meta()))),
                 null,
                 0,
                 true

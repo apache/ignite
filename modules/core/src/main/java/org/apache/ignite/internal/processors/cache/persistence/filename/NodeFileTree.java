@@ -513,6 +513,14 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File cacheStorage(String cacheDirName) {
+        return new File(nodeStorage, cacheDirName);
+    }
+
+    /**
      * @param workDir Cache work directory.
      * @param cacheDirName Cache directory name.
      * @param part Partition id.
@@ -579,14 +587,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean cacheConfigFile(File f) {
         return f.getName().equals(CACHE_DATA_FILENAME);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public File cacheStorage(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
     }
 
     /**
