@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -113,7 +114,7 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
 
     /**
      * Tests the scenario when a node rejoins cluster with lost knowladge of previously dynamically created table over
-     * a predefined in {@link IgniteConfiguration} cache.
+     * a predefined cache in {@link IgniteConfiguration}.
      *
      * @param persistence Flag to test with persistence or in-memory cluster.
      * @param active Flag to rejoin to active or inactive cluster.
@@ -136,7 +137,7 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
 
         sqlClient = startGrids(3);
 
-//        sqlClient = startClientGrid(G.allGrids().size());
+        startClientGrid(G.allGrids().size());
 
         sqlClient.cluster().state(ClusterState.ACTIVE);
 
@@ -156,8 +157,6 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
 
         if (!active)
             grid(0).cluster().state(ClusterState.INACTIVE);
-
-        log.error("TEST | start");
 
         startGrid(testGrid);
 
