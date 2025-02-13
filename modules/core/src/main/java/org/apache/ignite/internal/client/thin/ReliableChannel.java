@@ -537,11 +537,8 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         log.warning("Channel failure [channel=" + ch + ", err=" + t.getMessage() + ']', t);
 
-        if (ch != null && ch == hld.ch) {
+        if (ch != null && ch == hld.ch)
             hld.closeChannel();
-            if (channelsCnt.get() == 0 && attemptsLimit == 1 && partitionAwarenessEnabled)
-                attemptsLimit = clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), 2) : 2;
-        }
 
         chFailLsnrs.forEach(Runnable::run);
 
@@ -632,14 +629,28 @@ final class ReliableChannel implements AutoCloseable {
 
         if (newAddrs == null || newAddrs.isEmpty()) {
             finishChannelsReInit = System.currentTimeMillis();
+
             return;
+        }
+
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+        if (holders != null && clientCfg.getAddressesFinder() == null) {
+            // Do not modify the original list.
+            newAddrs = new ArrayList<>(newAddrs);
+
+            for (ClientChannelHolder h : holders) {
+                ClientChannel ch = h.ch;
+
+                if (ch != null && !ch.closed() && !newAddrs.contains(h.getAddresses()))
+                    newAddrs.add(h.getAddresses());
+            }
         }
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
-        // Close obsolete holders or map old but valid addresses to holders
+        // Close obsolete holders or map old but valid addresses to holders.
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
                 // If new endpoints contain at least one of channel addresses, don't close this channel.
@@ -659,6 +670,7 @@ final class ReliableChannel implements AutoCloseable {
         // Suppose that reuse of the channel is better than open new connection.
         ClientChannelHolder currDfltHolder = (idx != -1) ? holders.get(idx) : null;
 
+        // Process new addresses merging with existing holders.
         for (List<InetSocketAddress> addrs : newAddrs) {
             // Try to find already created channel holder. If not found, create the new one.
             ClientChannelHolder hld = addrs.stream()
@@ -667,9 +679,10 @@ final class ReliableChannel implements AutoCloseable {
                 .findFirst()
                 .orElseGet(() -> new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs)));
 
-            // Expanding the list of addresses by adding new addresses to the existing holder
+            // Expanding the list of addresses by adding new addresses to the existing holder.
             Set<InetSocketAddress> existingAddrs = new HashSet<>(hld.getAddresses());
             existingAddrs.addAll(addrs);
+
             List<InetSocketAddress> updatedAddrs = new ArrayList<>(existingAddrs);
 
             if (hld.getAddresses().size() != updatedAddrs.size())
