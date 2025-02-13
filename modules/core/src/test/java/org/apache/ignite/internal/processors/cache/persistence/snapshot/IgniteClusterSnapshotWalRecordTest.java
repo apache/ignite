@@ -36,6 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -136,9 +137,11 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
                 WALRecord rec = tuple.getValue();
 
                 if (rec.type() == WALRecord.RecordType.CLUSTER_SNAPSHOT) {
+                    String consId = (String)grid(i).configuration().getConsistentId();
+
                     SnapshotMetadata metadata = snp(grid(i)).readSnapshotMetadata(
-                        snp(grid(i)).snapshotLocalDir(SNAPSHOT_NAME + snpCnt),
-                        (String)grid(i).configuration().getConsistentId());
+                        new SnapshotFileTree(grid(i), SNAPSHOT_NAME + snpCnt, null).meta(consId)
+                    );
 
                     assertEquals(tuple.getKey(), metadata.snapshotRecordPointer());
 

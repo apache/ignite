@@ -35,21 +35,17 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRe
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
     /** Index of incremental snapshot. */
     private final int incIdx;
-
-    /** Snapshot path. */
-    private final @Nullable String snpPath;
 
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
@@ -70,7 +66,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         int incIdx,
         WALPointer lowPtr,
         IgniteInternalFuture<WALPointer> highPtrFut
@@ -79,7 +75,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
             cctx,
             srcNodeId,
             reqNodeId,
-            meta.snapshotName(),
+            sft,
             new SnapshotSender(
                 cctx.logger(IncrementalSnapshotFutureTask.class),
                 cctx.kernalContext().pools().getSnapshotExecutorService()
@@ -100,7 +96,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         );
 
         this.incIdx = incIdx;
-        this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
         this.lowPtr = lowPtr;
         this.highPtrFut = highPtrFut;
@@ -116,10 +111,10 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+            NodeFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
 
-            if (!incSnpDir.mkdirs() && !incSnpDir.exists()) {
-                onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpDir.getAbsolutePath() + ']'));
+            if (!incSnpFt.root().mkdirs() && !incSnpFt.root().exists()) {
+                onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpFt.root().getAbsolutePath() + ']'));
 
                 return false;
             }
@@ -132,22 +127,19 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                 }
 
                 try {
-                    String folderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
-
-                    copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
+                    copyWal(incSnpFt.wal(), highPtrFut.result());
 
                     NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
-                    NodeFileTree snpFt = new NodeFileTree(incSnpDir, folderName);
 
                     copyFiles(
                         ft.marshaller(),
-                        snpFt.marshaller(),
+                        incSnpFt.marshaller(),
                         BinaryUtils::notTmpFile
                     );
 
                     copyFiles(
                         ft.binaryMeta(),
-                        snpFt.binaryMeta(),
+                        incSnpFt.binaryMeta(),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 

@@ -83,7 +83,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
@@ -114,8 +113,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
-        if (!opCtx.snapshotDirectory().exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());
+        if (!opCtx.snapshotFileTree().root().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotFileTree().root());
 
         SnapshotMetadata meta = opCtx.metadata();
 
@@ -136,7 +135,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
+        // TODO: check case when snapshot move from other directory.
+        for (File dir : cacheDirectories(opCtx.snapshotFileTree().nodeStorage(), name -> true)) {
             int grpId = CU.cacheId(cacheName(dir));
 
             if (!grps.remove(grpId))
@@ -197,7 +197,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
         GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
-            opCtx.snapshotDirectory(), meta.folderName());
+            opCtx.snapshotFileTree().root(), meta.folderName());
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
@@ -368,7 +368,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
             EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
+            try (Dump dump = new Dump(opCtx.snapshotFileTree().root(), consistentId, true, true, encSpi, log)) {
                 Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
@@ -475,7 +475,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** */
     protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
-        Path snapshotDir = opCtx.snapshotDirectory().toPath();
+        Path snapshotDir = opCtx.snapshotFileTree().root().toPath();
 
         if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {

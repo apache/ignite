@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -37,7 +37,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_CHECK_ON_RESTORE;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.junit.Assume.assumeFalse;
 
 /**
@@ -137,9 +136,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(1);
 
-        U.delete(new File(
-            snp(srv).snapshotLocalDir(SNP),
-            snapshotMetaFileName((String)srv.localNode().consistentId())));
+        U.delete(new SnapshotFileTree(srv, SNP, null).meta((String)srv.localNode().consistentId()));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
@@ -157,7 +154,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        U.delete(snp(srv).incrementalSnapshotLocalDir(SNP, null, 1));
+        U.delete(new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).root());
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
@@ -262,9 +259,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = new File(
-            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
-            snapshotMetaFileName(srv.localNode().consistentId().toString()));
+        File incMetaFile = new SnapshotFileTree(srv, SNP, null).incrementMeta(1, srv.localNode().consistentId().toString());
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
@@ -295,9 +290,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = new File(
-            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
-            snapshotMetaFileName(srv.localNode().consistentId().toString()));
+        File incMetaFile = new SnapshotFileTree(srv, SNP, null).incrementMeta(1, srv.localNode().consistentId().toString());
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
@@ -374,8 +367,6 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     private File incrementalSnapshotWalsDir() {
-        return IgniteSnapshotManager.incrementalSnapshotWalsDir(
-            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
-            srv.localNode().consistentId().toString());
+        return new SnapshotFileTree(srv, SNP, null).incrementalSnapshotFileTree(1).wal();
     }
 }
