@@ -89,7 +89,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -145,7 +145,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(0));
+            partitionFileName(0));
 
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
@@ -241,7 +241,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(PART_ID));
+            partitionFileName(PART_ID));
 
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
@@ -471,7 +471,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(PART_ID));
+            partitionFileName(PART_ID));
 
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
@@ -685,7 +685,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             databaseRelativePath(ignite.context().pdsFolderResolver().resolveFolders().folderName()),
             ignite.context().pdsFolderResolver().fileTree().cacheDirName(ccfg));
 
-        Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
+        Path part0 = U.searchFileRecursively(cachePath, partitionFileName(partId));
 
         int grpId = CU.cacheId(ccfg.getName());
 

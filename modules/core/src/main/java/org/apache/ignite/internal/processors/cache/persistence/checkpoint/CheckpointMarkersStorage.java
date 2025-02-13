@@ -47,7 +47,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -57,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * Abstraction responsible for managing checkpoint markers storage.
@@ -79,7 +79,7 @@ public class CheckpointMarkersStorage {
 
     /** Earliest checkpoint map snapshot temporary file name. */
     private static final String EARLIEST_CP_SNAPSHOT_TMP_FILE =
-        EARLIEST_CP_SNAPSHOT_FILE + FilePageStoreManager.TMP_SUFFIX;
+        EARLIEST_CP_SNAPSHOT_FILE + TMP_SUFFIX;
 
     /** Checkpoint map snapshot executor. */
     private final Executor checkpointMapSnapshotExecutor;
@@ -464,7 +464,7 @@ public class CheckpointMarkersStorage {
         boolean skipSync
     ) throws StorageException {
         String fileName = checkpointFileName(cp, type);
-        String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
+        String tmpFileName = fileName + NodeFileTree.TMP_SUFFIX;
 
         try {
             try (FileIO io = ioFactory.create(Paths.get(ft.checkpoint().getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),

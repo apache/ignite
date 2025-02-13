@@ -118,6 +118,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -1320,7 +1321,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
                     cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().toPath(),
-                    FilePageStoreManager.INDEX_FILE_NAME
+                    NodeFileTree.INDEX_FILE_NAME
                 );
 
                 if (anyIdxPartFile != null) {

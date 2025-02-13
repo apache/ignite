@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -72,13 +73,12 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
@@ -145,7 +145,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             for (File part : cachePartitionFiles(dir,
                 (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
             )) {
-                int partId = partId(part.getName());
+                int partId = partId(part);
 
                 if (!parts.remove(partId))
                     continue;
@@ -209,7 +209,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 part -> {
                     String grpName = cacheName(part.getParentFile());
                     int grpId = CU.cacheId(grpName);
-                    int partId = partId(part.getName());
+                    int partId = partId(part);
 
                     try (FilePageStore pageStore =
                              (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
@@ -369,7 +369,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
-                    part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part.getName()))
+                    part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part))
                 );
 
                 return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
@@ -523,7 +523,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 GroupKey grpKey = null;
 
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(grpDirs.get(grpId).toPath(),
-                    p -> Files.isRegularFile(p) && p.toString().endsWith(CACHE_DATA_FILENAME))) {
+                    p -> Files.isRegularFile(p) && NodeFileTree.cacheOrCacheGroupConfigFile(p.toFile()))) {
                     for (Path p : ds) {
                         StoredCacheData cacheData = ctx.cache().configManager().readCacheData(p.toFile());
 
