@@ -212,13 +212,16 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INDEX_DELTA_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.PART_DELTA_TEMPLATE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -268,12 +271,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Incremental snapshot metrics prefix. */
     public static final String INCREMENTAL_SNAPSHOT_METRICS = metricName("snapshot", "incremental");
-
-    /** Snapshot metafile extension. */
-    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
-
-    /** Snapshot temporary metafile extension. */
-    public static final String SNAPSHOT_METAFILE_TMP_EXT = ".tmp";
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -338,9 +335,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Pattern for incremental snapshot directory names. */
     public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
-
-    /** Lock file for dump directory. */
-    public static final String DUMP_LOCK = "dump.lock";
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -1414,7 +1408,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
         File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
-            SNAPSHOT_METAFILE_TMP_EXT);
+            TMP_SUFFIX);
         File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
         try {
