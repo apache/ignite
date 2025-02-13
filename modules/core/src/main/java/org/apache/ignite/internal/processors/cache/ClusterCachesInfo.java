@@ -1615,7 +1615,7 @@ public class ClusterCachesInfo {
                 cfg.getNearConfiguration() != null);
         }
 
-        updateRegisteredCaches(patchesToApply, cachesToSave, hasSchemaPatchConflict);
+        updateRegisteredCachesIfNeeded(patchesToApply, cachesToSave, hasSchemaPatchConflict);
     }
 
     /**
@@ -1625,7 +1625,7 @@ public class ClusterCachesInfo {
      * @param cachesToSave Caches which need to resave.
      * @param hasSchemaPatchConflict {@code true} if we have conflict during making patch.
      */
-    private void updateRegisteredCaches(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
+    private void updateRegisteredCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
         Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
         //Skip merge of config if least one conflict was found.
         if (!hasSchemaPatchConflict) {
@@ -1880,6 +1880,7 @@ public class ClusterCachesInfo {
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     * @see #updateRegisteredCachesIfNeeded(Map, Collection, boolean)
      */
     private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         // Schema is supposed to get merged earlier.
