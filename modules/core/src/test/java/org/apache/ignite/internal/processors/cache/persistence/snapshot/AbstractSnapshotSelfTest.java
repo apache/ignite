@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -857,7 +858,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
         SnapshotFileTree sft = snapshotFileTree(node, snpName, snpPath);
 
-        NodeFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
+        IncrementalSnapshotFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
 
         if (incSnpFt.root().exists()) {
             checkIncrementalSnapshotWalRecords(node, sft, incIdx);
@@ -871,8 +872,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** */
     private void checkIncrementalSnapshotWalRecords(IgniteEx node, SnapshotFileTree sft, int incIdx) {
         try {
-            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(
-                sft.incrementMeta(incIdx, node.localNode().consistentId().toString()));
+            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(sft.incrementMeta(incIdx));
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(sft.incrementalSnapshotFileTree(incIdx).wal()));

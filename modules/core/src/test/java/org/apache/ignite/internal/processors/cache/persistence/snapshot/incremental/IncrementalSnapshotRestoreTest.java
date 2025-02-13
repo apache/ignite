@@ -369,11 +369,9 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         SnapshotFileTree sft = snapshotFileTree(grid(1), SNP);
 
-        // TODO: FIXME
-        File rm = new File(
-            sft.incrementalSnapshotFileTree(1).wal(),
-            sft.zipWalArchiveSegment(0).getName());
+        File rm = sft.incrementalSnapshotFileTree(1).walSegment(0);
 
+        assertTrue(rm.exists());
         assertTrue(U.delete(rm));
 
         GridTestUtils.assertThrowsAnyCause(log,

@@ -679,10 +679,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<?, ?> ccfg,
         int partId
     ) throws IgniteCheckedException, IOException {
-        // TODO: use snapshotfiletree methods here
-        Path cachePath = snapshotFileTree(ignite, snpName).cacheStorage(ccfg).toPath();
-
-        Path part0 = U.searchFileRecursively(cachePath, partitionFileName(partId));
+        Path part0 = snapshotFileTree(ignite, snpName).partitionFile(ccfg, partId).toPath();
 
         int grpId = CU.cacheId(ccfg.getName());
 

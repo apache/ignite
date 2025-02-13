@@ -103,8 +103,12 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param incIdx Increment index.
      * @return Root directory for incremental snapshot.
      */
-    public NodeFileTree incrementalSnapshotFileTree(int incIdx) {
-        return new NodeFileTree(new File(incrementsRoot(), U.fixedLengthNumberName(incIdx, null)), U.maskForFileName(folderName()));
+    public IncrementalSnapshotFileTree incrementalSnapshotFileTree(int incIdx) {
+        return new IncrementalSnapshotFileTree(
+            new File(incrementsRoot(), U.fixedLengthNumberName(incIdx, null)),
+            U.maskForFileName(folderName())
+        ) {
+        };
     }
 
     /**
@@ -135,10 +139,9 @@ public class SnapshotFileTree extends NodeFileTree {
 
     /**
      * @param incIdx Increment index.
-     * @param consId Consistent id.
      * @return Snapshot metadata file.
      */
-    public File incrementMeta(int incIdx, String consId) {
+    public File incrementMeta(int incIdx) {
         return new File(incrementalSnapshotFileTree(incIdx).root, snapshotMetaFileName(consId));
     }
 
@@ -185,5 +188,23 @@ public class SnapshotFileTree extends NodeFileTree {
         assert name != null : "Snapshot name cannot be empty or null.";
 
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);
+    }
+
+    /**
+     * Node file tree for incremental snapshots.
+     */
+    public static class IncrementalSnapshotFileTree extends NodeFileTree {
+        /**
+         * @param root Root directory.
+         * @param folderName Folder name.
+         */
+        public IncrementalSnapshotFileTree(File root, String folderName) {
+            super(root, folderName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public File walSegment(long idx) {
+            return new File(wal(), U.fixedLengthNumberName(idx, ZIP_WAL_SEG_FILE_EXT));
+        }
     }
 }

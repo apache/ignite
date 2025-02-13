@@ -206,7 +206,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         SnapshotFileTree sft = snapshotFileTree(ignite(GRID_CNT - 1), SNAPSHOT_NAME);
 
-        File toRmv = sft.incrementMeta(2, ignite(GRID_CNT - 1).localNode().consistentId().toString());
+        File toRmv = sft.incrementMeta(2);
 
         assertTrue(toRmv.exists());
 

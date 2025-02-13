@@ -138,7 +138,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
-    private volatile LogListener lsnr;
+    private LogListener lsnr;
 
     /** */
     private boolean persistence;
@@ -379,8 +379,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
-
-        NodeFileTree ft = grid(1).context().pdsFolderResolver().fileTree();
 
         stopAllGrids();
 

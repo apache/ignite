@@ -793,14 +793,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
-     * @return Local snapshot directory for snapshot with given name.
-     */
-    public File snapshotLocalDir(String snpName) {
-        return snapshotLocalDir(snpName, null);
-    }
-
-    /**
-     * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Local snapshot directory where snapshot files are located.
      */

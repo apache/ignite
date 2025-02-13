@@ -495,6 +495,15 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @param part Partition id.
+     * @return Partition file.
+     */
+    public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
+        return partitionFile(cacheDirName(ccfg), part);
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @param part Partition id.
      * @return Partition file.
