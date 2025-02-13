@@ -697,7 +697,6 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
-
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.
             reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
