@@ -97,14 +97,14 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         snpFut.get();
 
+        // Calculate CRCs.
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         // Checkpoint forces on cluster deactivation (currently only single node in cluster),
         // so we must have the same data in snapshot partitions and those which left
         // after node stop.
         stopGrid(ig.name());
-
-        // Calculate CRCs.
-        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
-        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorage(dfltCacheCfg));
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorage(dfltCacheCfg));

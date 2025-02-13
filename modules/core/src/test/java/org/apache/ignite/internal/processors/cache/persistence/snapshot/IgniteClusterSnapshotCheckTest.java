@@ -181,7 +181,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        File smf = snapshotFileTree(ignite, SNAPSHOT_NAME).meta();;
+        File smf = snapshotFileTree(ignite, SNAPSHOT_NAME).meta();
 
         assertNotNull(smf);
         assertTrue(smf.toString(), smf.exists());

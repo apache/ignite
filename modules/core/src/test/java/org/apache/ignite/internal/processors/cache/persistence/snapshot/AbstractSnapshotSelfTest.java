@@ -609,7 +609,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** @param snpName Snapshot name. */
-    protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
+    protected void checkSnapshot(String snpName, String snpPath) {
         Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
 
         Predicate<Ignite> filter = node -> !node.configuration().isClientMode() &&
@@ -856,12 +856,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Checks incremental snapshot exists. */
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
-        SnapshotFileTree sft = snapshotFileTree(node, snpName, snpPath);
-
-        IncrementalSnapshotFileTree incSnpFt = sft.incrementalSnapshotFileTree(incIdx);
+        IncrementalSnapshotFileTree incSnpFt = snapshotFileTree(node, snpName, snpPath).incrementalSnapshotFileTree(incIdx);
 
         if (incSnpFt.root().exists()) {
-            checkIncrementalSnapshotWalRecords(node, sft, incSnpFt);
+            checkIncrementalSnapshotWalRecords(node, incSnpFt);
 
             return true;
         }
@@ -870,9 +868,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkIncrementalSnapshotWalRecords(IgniteEx node, SnapshotFileTree sft, IncrementalSnapshotFileTree incSnpFt) {
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, IncrementalSnapshotFileTree incSnpFt) {
         try {
-            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(sft.incrementMeta(incSnpFt.index()));
+            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(incSnpFt.meta());
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpFt.wal()));
