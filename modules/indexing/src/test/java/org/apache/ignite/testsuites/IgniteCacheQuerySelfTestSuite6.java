@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.IgniteInsertNullableDuplicate
 import org.apache.ignite.internal.processors.query.IgniteSqlSinglePartitionMultiParallelismTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.apache.ignite.internal.processors.query.QueryEntityAliasesTest;
+import org.apache.ignite.internal.processors.query.SqlFailedCteQueryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -82,6 +83,7 @@ import org.junit.runners.Suite;
     IgniteSqlSinglePartitionMultiParallelismTest.class,
     QueryEntityAliasesTest.class,
     CacheContinuousQueryEntriesExpireTest.class,
+    SqlFailedCteQueryTest.class,
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }
