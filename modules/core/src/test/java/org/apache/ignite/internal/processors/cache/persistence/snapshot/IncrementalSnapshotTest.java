@@ -34,6 +34,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -204,9 +205,9 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        SnapshotFileTree sft = snapshotFileTree(ignite(GRID_CNT - 1), SNAPSHOT_NAME);
+        IncrementalSnapshotFileTree ift = snapshotFileTree(ignite(GRID_CNT - 1), SNAPSHOT_NAME).incrementalSnapshotFileTree(2);
 
-        File toRmv = sft.incrementMeta(2);
+        File toRmv = ift.meta();
 
         assertTrue(toRmv.exists());
 

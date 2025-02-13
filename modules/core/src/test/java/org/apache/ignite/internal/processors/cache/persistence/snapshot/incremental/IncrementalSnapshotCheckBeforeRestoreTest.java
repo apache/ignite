@@ -261,7 +261,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = snapshotFileTree(srv, SNP).incrementMeta(1);
+        File incMetaFile = snapshotFileTree(srv, SNP).incrementalSnapshotFileTree(1).meta();
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
@@ -292,7 +292,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = snapshotFileTree(srv, SNP).incrementMeta(1);
+        File incMetaFile = snapshotFileTree(srv, SNP).incrementalSnapshotFileTree(1).meta();
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
