@@ -380,6 +380,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
+        SnapshotFileTree sft = snapshotFileTree(grid(1), DMP_NAME);
+
         stopAllGrids();
 
         Dump dump = dump(ign, DMP_NAME);
@@ -388,8 +390,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         assertNotNull(nodes);
         assertEquals(2, nodes.size());
-
-        SnapshotFileTree sft = snapshotFileTree(grid(1), DMP_NAME);
 
         assertTrue(sft.dumpLock().createNewFile());
 

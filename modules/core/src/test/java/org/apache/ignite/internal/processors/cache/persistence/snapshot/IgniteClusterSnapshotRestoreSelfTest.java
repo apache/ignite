@@ -177,9 +177,15 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testRestoreWithMissedPart() throws Exception {
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(dfltCacheCfg, 0);
+        File part0 = null;
 
-        assertNotNull(part0);
+        for (int i = 0; i < 2; i++) {
+            part0 = snapshotFileTree(grid(i), SNAPSHOT_NAME).partitionFile(dfltCacheCfg, 0);
+
+            if (part0.exists())
+                break;
+        }
+
         assertTrue(part0.toString(), part0.exists());
         assertTrue(part0.delete());
 
