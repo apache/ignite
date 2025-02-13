@@ -203,7 +203,7 @@ public class SnapshotFileTree extends NodeFileTree {
     /**
      * Node file tree for incremental snapshots.
      */
-    public static class IncrementalSnapshotFileTree extends NodeFileTree {
+    public class IncrementalSnapshotFileTree extends NodeFileTree {
         /** Increment index. */
         private final int idx;
 
@@ -222,6 +222,13 @@ public class SnapshotFileTree extends NodeFileTree {
          */
         public int index() {
             return idx;
+        }
+
+        /**
+         * @return Path to the meta file.
+         */
+        public File meta() {
+            return new File(root, snapshotMetaFileName(folderName()));
         }
 
         /** {@inheritDoc} */
