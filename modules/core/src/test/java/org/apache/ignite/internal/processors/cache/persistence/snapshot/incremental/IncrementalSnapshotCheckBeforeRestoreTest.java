@@ -136,7 +136,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(1);
 
-        U.delete(snapshotFileTree(srv, SNP).meta((String)srv.localNode().consistentId()));
+        U.delete(snapshotFileTree(srv, SNP).meta());
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(

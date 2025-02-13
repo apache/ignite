@@ -150,13 +150,11 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     private void changeMetadataRequestIdOnDisk(UUID newReqId) throws Exception {
         for (Ignite grid : G.allGrids()) {
             IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
-            String constId = grid.cluster().localNode().consistentId().toString();
             SnapshotFileTree sft = snapshotFileTree((IgniteEx)grid, SNAPSHOT_NAME);
 
-            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(sft.meta(constId));
-            File smf = sft.meta(U.maskForFileName(constId));
+            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(sft.meta());
 
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(sft.meta()))) {
                 GridTestUtils.setFieldValue(metadata, "rqId", newReqId);
 
                 U.marshal(((IgniteEx)grid).context().marshallerContext().jdkMarshaller(), metadata, out);

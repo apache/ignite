@@ -581,7 +581,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
 
         assertTrue(sft.root().mkdirs());
-        assertTrue(sft.meta(ignite.localNode().consistentId().toString()).createNewFile());
+        assertTrue(sft.meta().createNewFile());
 
         assertThrowsAnyCause(log, fut::get, IgniteException.class, "Snapshot metafile must not exist");
 

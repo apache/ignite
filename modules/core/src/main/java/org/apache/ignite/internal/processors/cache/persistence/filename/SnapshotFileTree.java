@@ -59,6 +59,9 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Snapshot path. */
     @Nullable private final String path;
 
+    /** Consistent id for snapshot. */
+    private final String consId;
+
     /** Node file tree relative to {@link #tempFileTree()}. */
     private final NodeFileTree tmpFt;
 
@@ -68,33 +71,17 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(IgniteEx loc, String name, @Nullable String path) {
-        this(loc.context().pdsFolderResolver().fileTree(), name, path);
-    }
-
-    /**
-     * @param ft Node file tree.
-     * @param name Snapshot name.
-     * @param path Optional snapshot path.
-     */
-    public SnapshotFileTree(NodeFileTree ft, String name, @Nullable String path) {
-        this(ft, ft.folderName(), name, path);
-    }
-
-    /**
-     * @param ft Node file tree.
-     * @param folderName Folder name (for the cases when snapshot can be copied from other node).
-     * @param name Snapshot name.
-     * @param path Optional snapshot path.
-     */
-    public SnapshotFileTree(NodeFileTree ft, String folderName, String name, @Nullable String path) {
-        super(root(ft, name, path), folderName);
+        super(root(loc.context().pdsFolderResolver().fileTree(), name, path), loc.context().pdsFolderResolver().fileTree().folderName());
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
+        NodeFileTree ft = loc.context().pdsFolderResolver().fileTree();
+
         this.name = name;
         this.path = path;
-        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName);
+        this.consId = loc.localNode().consistentId().toString();
+        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
     }
 
     /** @return Snapshot name. */
@@ -156,10 +143,9 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param consId Consistent id.
      * @return Snapshot metadata file.
      */
-    public File meta(String consId) {
+    public File meta() {
         return new File(root, snapshotMetaFileName(consId));
     }
 
