@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.io.File;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,7 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -133,9 +134,9 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
 
         predefinedCachesCfgs = new CacheConfiguration<?, ?>[] {cacheCfg};
 
-        startGrids(3);
+        sqlClient = startGrids(3);
 
-        sqlClient = startClientGrid(G.allGrids().size());
+//        sqlClient = startClientGrid(G.allGrids().size());
 
         sqlClient.cluster().state(ClusterState.ACTIVE);
 
@@ -146,26 +147,33 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
         // Grid to restart.
         int testGrid = 1;
 
-        String testConsId = grid(testGrid).cluster().localNode().toString();
+        File persistPath = grid(testGrid).context().pdsFolderResolver().fileTree().nodeStorage();
 
         stopGrid(testGrid);
 
         if (clearData)
-            cleanPersistenceDir(testConsId);
+            U.delete(persistPath);
 
         if (!active)
-            sqlClient.cluster().state(ClusterState.INACTIVE);
+            grid(0).cluster().state(ClusterState.INACTIVE);
+
+        log.error("TEST | start");
 
         startGrid(testGrid);
 
         if (!active)
-            sqlClient.cluster().state(ClusterState.ACTIVE);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
-        // Inserts work even the table might be lost.
+        awaitPartitionMapExchange();
+
         for (int i = 0; i < 100; ++i)
             assertEquals(1, sql("INSERT INTO TEST_TBL VALUES(" + (i + 1) + ", '" + (i + 1000) + "')").size());
 
         assertEquals(100, grid(testGrid).cache("TEST_CACHE").size());
+
+        assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
+
+        sqlClient = grid(testGrid);
 
         assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
     }

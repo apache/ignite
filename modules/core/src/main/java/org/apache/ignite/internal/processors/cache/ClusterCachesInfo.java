@@ -1615,25 +1615,37 @@ public class ClusterCachesInfo {
                 cfg.getNearConfiguration() != null);
         }
 
-        if (!hasSchemaPatchConflict)
-            updateRegisteredCaches(patchesToApply, cachesToSave);
+        updateRegisteredCachesIfNeeded(patchesToApply, cachesToSave, hasSchemaPatchConflict);
     }
 
-    /** */
-    private void updateRegisteredCaches(
-        Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
-        Collection<DynamicCacheDescriptor> cachesToSave
-    ) {
-        //Merge of config for cluster only for inactive grid.
-        if (!patchesToApply.isEmpty()) {
-            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
-                if (entry.getKey().applySchemaPatch(entry.getValue()))
-                    saveCacheConfiguration(entry.getKey());
+    /**
+     * Merging config or resaving it if it needed.
+     *
+     * @param patchesToApply Patches which need to apply.
+     * @param cachesToSave Caches which need to resave.
+     * @param hasSchemaPatchConflict {@code true} if we have conflict during making patch.
+     */
+    private void updateRegisteredCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
+        Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
+        //Skip merge of config if least one conflict was found.
+        if (!hasSchemaPatchConflict) {
+            boolean isClusterActive = ctx.state().clusterState().active();
+
+            //Merge of config for cluster only for inactive grid.
+            if (!isClusterActive && !patchesToApply.isEmpty()) {
+                for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
+                    if (entry.getKey().applySchemaPatch(entry.getValue()))
+                        saveCacheConfiguration(entry.getKey());
+                }
+
+                for (DynamicCacheDescriptor descriptor : cachesToSave)
+                    saveCacheConfiguration(descriptor);
+            }
+            else if (patchesToApply.isEmpty()) {
+                for (DynamicCacheDescriptor descriptor : cachesToSave)
+                    saveCacheConfiguration(descriptor);
             }
         }
-
-        for (DynamicCacheDescriptor descriptor : cachesToSave)
-            saveCacheConfiguration(descriptor);
     }
 
     /**
@@ -1874,7 +1886,6 @@ public class ClusterCachesInfo {
      * @param loc Local cache configuration.
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
-     * @see #updateRegisteredCaches
      * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
      */
     private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
