@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,8 +66,6 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
-
         for (ComputeJobResult nodeRes: results) {
             if (nodeRes.getException() != null) {
                 bldr.addException(nodeRes.getNode(), nodeRes.getException());
@@ -92,31 +89,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             if (log.isDebugEnabled())
                 log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", taskRes=" + res + ']');
 
-            nodeTxHashMap.put(nodeRes.getNode().consistentId(), res.txHashRes());
-
-            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
-
-            while (resIt.hasNext()) {
-                Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
-
-                Map<Object, TransactionsHashRecord> prevNodeTxHash = nodeTxHashMap.get(nodeTxHash.getKey());
-
-                if (prevNodeTxHash != null) {
-                    TransactionsHashRecord hash = nodeTxHash.getValue();
-                    TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
-
-                    if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
-                        bldr.addTxConflicts(F.asList(hash, prevHash));
-
-                    resIt.remove();
-                }
-            }
+            bldr.addIncrementalHashRecords(nodeRes.getNode(), res.txHashRes());
         }
-
-        // Add all missed pairs to conflicts.
-        nodeTxHashMap.values().stream()
-            .flatMap(e -> e.values().stream())
-            .forEach(e -> bldr.addTxConflicts(F.asList(e, null)));
 
         return new SnapshotPartitionsVerifyTaskResult(metas, bldr.build());
     }
