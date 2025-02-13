@@ -41,7 +41,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
-/** Tests the scenario when a node rejoins cluster with lost knowladge of previously created dynanmic table. */
+/** Tests the scenario when a node rejoins cluster with lost knowladge of previously created dynamic schema. */
 @RunWith(Parameterized.class)
 public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     /** */
@@ -108,38 +108,38 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRejoinWithLostDynamicTableOverPredefinedCacheInmemoryActive() throws Exception {
-        testRejoinWithLostDynamicTableOverPredefinedCache(false, true, false);
+    public void testRejoinWithLostDynamicSchemaInmemoryActive() throws Exception {
+        testRejoinWithLostDynamicSchema(false, true, false);
     }
 
     /** */
     @Test
-    public void testRejoinWithLostDynamicTableOverPredefinedCacheInmemoryInactive() throws Exception {
-        testRejoinWithLostDynamicTableOverPredefinedCache(false, false, false);
+    public void testRejoinWithLostDynamicSchemaInmemoryInactive() throws Exception {
+        testRejoinWithLostDynamicSchema(false, false, false);
     }
 
     /** */
     @Test
-    public void testRejoinWithLostDynamicTableOverPredefinedCachePersistentActive() throws Exception {
-        testRejoinWithLostDynamicTableOverPredefinedCache(true, true, false);
+    public void testRejoinWithLostDynamicSchemaPersistentActive() throws Exception {
+        testRejoinWithLostDynamicSchema(true, true, false);
     }
 
     /** */
     @Test
-    public void testRejoinWithLostLostDynamicTableOverPredefinedCachePersistentInactive() throws Exception {
-        testRejoinWithLostDynamicTableOverPredefinedCache(true, false, false);
+    public void testRejoinWithLostLostDynamicTablePersistentInactive() throws Exception {
+        testRejoinWithLostDynamicSchema(true, false, false);
     }
 
     /** */
     @Test
-    public void testRejoinWithLostDynamicTableOverPredefinedCachePersistentActiveClear() throws Exception {
-        testRejoinWithLostDynamicTableOverPredefinedCache(true, true, true);
+    public void testRejoinWithLostDynamicSchemaPersistentActiveClear() throws Exception {
+        testRejoinWithLostDynamicSchema(true, true, true);
     }
 
     /** */
     @Test
-    public void testRejoinWithLostDynamicTableOverPredefinedCachePersistentInactiveClear() throws Exception {
-        testRejoinWithLostDynamicTableOverPredefinedCache(true, false, true);
+    public void testRejoinWithLostDynamicSchemaPersistentInactiveClear() throws Exception {
+        testRejoinWithLostDynamicSchema(true, false, true);
     }
 
     /**
@@ -150,7 +150,7 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
      * @param rejoinActive Flag to rejoin to active or inactive cluster.
      * @param clearData Flag to clear test node's persistent data before rejoining. Efficient with enabled {@code persistence}.
      */
-    private void testRejoinWithLostDynamicTableOverPredefinedCache(
+    private void testRejoinWithLostDynamicSchema(
         boolean persistence,
         boolean rejoinActive,
         boolean clearData
@@ -173,9 +173,9 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
             grid(0).cluster().state(ClusterState.ACTIVE);
 
         cacheCfg.setName("DYN_CACHE");
-        
+
         sqlClient.createCache(cacheCfg);
-        
+
         awaitPartitionMapExchange();
 
         sql("CREATE TABLE STATIC_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=STATIC_CACHE\"");
