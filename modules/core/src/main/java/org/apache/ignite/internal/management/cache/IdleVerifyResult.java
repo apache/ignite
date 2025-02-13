@@ -148,8 +148,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cntrConflicts = notNullMap(U.readMap(in));
         hashConflicts = notNullMap(U.readMap(in));
         movingPartitions = notNullMap(U.readMap(in));
@@ -395,7 +394,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         return S.toString(IdleVerifyResult.class, this);
     }
 
-    /** */
+    /** Builds result holding errors only. */
     public static IdleVerifyResult ofErrors(Map<ClusterNode, Exception> exceptions) {
         return new IdleVerifyResult(exceptions);
     }
