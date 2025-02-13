@@ -1887,6 +1887,7 @@ public class ClusterCachesInfo {
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
      * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     * @see #updateRegisteredCachesIfNeeded(Map, Collection, boolean)
      */
     private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         // Schema is supposed to get merged earlier.

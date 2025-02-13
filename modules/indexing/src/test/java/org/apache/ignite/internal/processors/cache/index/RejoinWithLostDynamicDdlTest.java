@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -35,17 +36,46 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-/** */
-public class DynamicDdlTest extends GridCommonAbstractTest {
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+
+/** Tests the scenario when a node rejoins cluster with lost knowladge of previously created dynanmic table. */
+@RunWith(Parameterized.class)
+public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
+    /** */
+    private static final int SERVERS_CNT = 2;
+
+    /** */
+    private static final int LOAD_CNT = 100;
+
     /** */
     private boolean persistence;
 
-    /** Server cache configurations. */
-    private CacheConfiguration<?, ?>[] predefinedCachesCfgs;
+    /** Static cache configurations. */
+    private CacheConfiguration<?, ?>[] staticCaches;
 
     /** */
     private IgniteEx sqlClient;
+
+    /** Grid to test (restart). */
+    @Parameterized.Parameter
+    public int gridToRestart;
+
+    /** Eanables create-if-not-exist table with the rejoining. */
+    @Parameterized.Parameter(1)
+    public boolean recreateTable;
+
+    /** */
+    @Parameterized.Parameters(name = "gridToRestart={0}, recreateTable={1}")
+    public static Collection<?> runConfig() {
+        // Restart coordinator, another server node and client.
+        return cartesianProduct(
+            F.asList(0, 1, SERVERS_CNT),
+            F.asList(false, true)
+        );
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -70,8 +100,8 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
 
-        if (!F.isEmpty(predefinedCachesCfgs))
-            cfg.setCacheConfiguration(predefinedCachesCfgs);
+        if (!F.isEmpty(staticCaches))
+            cfg.setCacheConfiguration(staticCaches);
 
         return cfg;
     }
@@ -113,68 +143,82 @@ public class DynamicDdlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests the scenario when a node rejoins cluster with lost knowladge of previously dynamically created table over
+     * Tests the scenario when a node rejoins cluster with lost knowladge of previously created dynamic table over
      * a predefined cache in {@link IgniteConfiguration}.
      *
      * @param persistence Flag to test with persistence or in-memory cluster.
-     * @param active Flag to rejoin to active or inactive cluster.
+     * @param rejoinActive Flag to rejoin to active or inactive cluster.
      * @param clearData Flag to clear test node's persistent data before rejoining. Efficient with enabled {@code persistence}.
      */
     private void testRejoinWithLostDynamicTableOverPredefinedCache(
         boolean persistence,
-        boolean active,
+        boolean rejoinActive,
         boolean clearData
     ) throws Exception {
         this.persistence = persistence;
 
-        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("TEST_CACHE")
-            .setBackups(1)
+        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("STATIC_CACHE")
+            .setBackups(SERVERS_CNT - 1)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
-        predefinedCachesCfgs = new CacheConfiguration<?, ?>[] {cacheCfg};
+        staticCaches = new CacheConfiguration<?, ?>[] {cacheCfg};
 
-        sqlClient = startGrids(3);
+        startGrids(SERVERS_CNT);
 
-        startClientGrid(G.allGrids().size());
+        sqlClient = startClientGrid(G.allGrids().size());
 
-        sqlClient.cluster().state(ClusterState.ACTIVE);
-
-        sql("CREATE TABLE IF NOT EXISTS TEST_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=TEST_CACHE\"");
-
-        assertEquals(0, sql("SELECT * FROM TEST_TBL").size());
-
-        // Grid to restart.
-        int testGrid = 1;
-
-        File persistPath = grid(testGrid).context().pdsFolderResolver().fileTree().nodeStorage();
-
-        stopGrid(testGrid);
-
-        if (clearData)
-            U.delete(persistPath);
-
-        if (!active)
-            grid(0).cluster().state(ClusterState.INACTIVE);
-
-        startGrid(testGrid);
-
-        if (!active)
+        if (persistence)
             grid(0).cluster().state(ClusterState.ACTIVE);
 
+        cacheCfg.setName("DYN_CACHE");
+        
+        sqlClient.createCache(cacheCfg);
+        
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < 100; ++i)
-            assertEquals(1, sql("INSERT INTO TEST_TBL VALUES(" + (i + 1) + ", '" + (i + 1000) + "')").size());
+        sql("CREATE TABLE STATIC_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=STATIC_CACHE\"");
+        sql("CREATE TABLE DYN_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=DYN_CACHE\"");
 
-        assertEquals(100, grid(testGrid).cache("TEST_CACHE").size());
+        assertEquals(0, sql("SELECT * FROM STATIC_TBL").size());
+        assertEquals(0, sql("SELECT * FROM DYN_TBL").size());
 
-        assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
+        File persistPath = grid(gridToRestart).context().pdsFolderResolver().fileTree().nodeStorage();
 
-        sqlClient = grid(testGrid);
+        stopGrid(gridToRestart);
 
-        assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
+        if (clearData) {
+            if (log.isDebugEnabled())
+                log.debug("Clearing " + persistPath);
+
+            U.delete(persistPath);
+        }
+
+        if (!rejoinActive)
+            grid(gridToRestart == SERVERS_CNT ? 1 : SERVERS_CNT).cluster().state(ClusterState.INACTIVE);
+
+        startGrid(gridToRestart);
+
+        if (!rejoinActive)
+            grid(gridToRestart == SERVERS_CNT ? 1 : SERVERS_CNT).cluster().state(ClusterState.ACTIVE);
+
+        sqlClient = grid(gridToRestart);
+
+        if (recreateTable) {
+            sql("CREATE TABLE IF NOT EXISTS STATIC_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=STATIC_CACHE\"");
+            sql("CREATE TABLE IF NOT EXISTS DYN_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=DYN_CACHE\"");
+        }
+
+        for (int i = 0; i < LOAD_CNT; ++i) {
+            assertEquals(1, sql("INSERT INTO STATIC_TBL VALUES(" + i + ", 'value_" + i + "')").size());
+            assertEquals(1, sql("INSERT INTO DYN_TBL VALUES(" + i + ", 'value_" + i + "')").size());
+        }
+
+        assertEquals(LOAD_CNT, sqlClient.cache("STATIC_CACHE").size());
+        assertEquals(LOAD_CNT, sqlClient.cache("DYN_CACHE").size());
+        assertEquals(LOAD_CNT, sql("SELECT * FROM STATIC_TBL").size());
+        assertEquals(LOAD_CNT, sql("SELECT * FROM DYN_TBL").size());
     }
 
     /** */
