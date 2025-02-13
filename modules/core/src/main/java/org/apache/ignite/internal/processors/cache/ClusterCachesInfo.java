@@ -1619,31 +1619,21 @@ public class ClusterCachesInfo {
             updateRegisteredCaches(patchesToApply, cachesToSave);
     }
 
-    /**
-     * Merging config, resaving it if it needed.
-     *
-     * @param patchesToApply Patches which need to apply.
-     * @param cachesToSave Caches which need to resave.
-     */
+    /** */
     private void updateRegisteredCaches(
         Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
         Collection<DynamicCacheDescriptor> cachesToSave
     ) {
-        // Store config only if cluster is nactive.
-        boolean isClusterActive = ctx.state().clusterState().active();
-
         //Merge of config for cluster only for inactive grid.
         if (!patchesToApply.isEmpty()) {
             for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
-                if (entry.getKey().applySchemaPatch(entry.getValue()) && !isClusterActive)
+                if (entry.getKey().applySchemaPatch(entry.getValue()))
                     saveCacheConfiguration(entry.getKey());
             }
         }
 
-        if (isClusterActive) {
-            for (DynamicCacheDescriptor descriptor : cachesToSave)
-                saveCacheConfiguration(descriptor);
-        }
+        for (DynamicCacheDescriptor descriptor : cachesToSave)
+            saveCacheConfiguration(descriptor);
     }
 
     /**
