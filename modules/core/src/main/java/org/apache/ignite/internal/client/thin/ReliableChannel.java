@@ -537,8 +537,11 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         log.warning("Channel failure [channel=" + ch + ", err=" + t.getMessage() + ']', t);
 
-        if (ch != null && ch == hld.ch)
+        if (ch != null && ch == hld.ch) {
             hld.closeChannel();
+            if (channelsCnt.get() == 0 && attemptsLimit == 1 && partitionAwarenessEnabled)
+                attemptsLimit = clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), 2) : 2;
+        }
 
         chFailLsnrs.forEach(Runnable::run);
 
@@ -627,9 +630,8 @@ final class ReliableChannel implements AutoCloseable {
 
         Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
 
-        if (newAddrs == null) {
+        if (newAddrs == null || newAddrs.isEmpty()) {
             finishChannelsReInit = System.currentTimeMillis();
-
             return;
         }
 
@@ -913,10 +915,6 @@ final class ReliableChannel implements AutoCloseable {
             throw new ClientException("Connections to nodes aren't initialized.");
 
         int size = holders.size();
-
-        // Essential to produce a retry connection on the channel after a failure occurred on that single channel.
-        if (channels.size() == 1 && partitionAwarenessEnabled)
-            size = 2;
 
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
     }
