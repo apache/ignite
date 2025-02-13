@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -66,21 +66,21 @@ public class SnapshotFileTree extends NodeFileTree {
     private final NodeFileTree tmpFt;
 
     /**
-     * @param loc Local node.
+     * @param ctx Kernal context.
      * @param name Snapshot name.
      * @param path Optional snapshot path.
      */
-    public SnapshotFileTree(IgniteEx loc, String name, @Nullable String path) {
-        super(root(loc.context().pdsFolderResolver().fileTree(), name, path), loc.context().pdsFolderResolver().fileTree().folderName());
+    public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path) {
+        super(root(ctx.pdsFolderResolver().fileTree(), name, path), ctx.pdsFolderResolver().fileTree().folderName());
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        NodeFileTree ft = loc.context().pdsFolderResolver().fileTree();
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
         this.name = name;
         this.path = path;
-        this.consId = loc.localNode().consistentId().toString();
+        this.consId = ctx.discovery().localNode().consistentId().toString();
         this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
     }
 
@@ -159,6 +159,15 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     public File tmpMeta(String consId) {
         return new File(root, snapshotMetaFileName(consId) + TMP_SUFFIX);
+    }
+
+    /**
+     * Note, this consistent id can differ from the local consistent id.
+     * In case snapshot was moved from other node.
+     * @return Consistent id of the snapshot.
+     */
+    public String consistentId() {
+        return consId;
     }
 
     /**

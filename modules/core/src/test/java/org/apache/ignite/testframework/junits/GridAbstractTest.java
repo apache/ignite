@@ -3229,6 +3229,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Snapshot directories for specific snapshot.
      */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
-        return new SnapshotFileTree(srv, name, path);
+        return new SnapshotFileTree(srv.context(), name, path);
     }
 }
