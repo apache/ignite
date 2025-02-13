@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -47,7 +48,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -151,10 +151,10 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         for (Ignite grid : G.allGrids()) {
             IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
             String constId = grid.cluster().localNode().consistentId().toString();
-            File snpDir = snpMgr.snapshotLocalDir(SNAPSHOT_NAME);
+            SnapshotFileTree sft = snapshotFileTree((IgniteEx)grid, SNAPSHOT_NAME);
 
-            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(snpDir, constId);
-            File smf = new File(snpDir, U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT);
+            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(sft.meta(constId));
+            File smf = sft.meta(U.maskForFileName(constId));
 
             try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                 GridTestUtils.setFieldValue(metadata, "rqId", newReqId);

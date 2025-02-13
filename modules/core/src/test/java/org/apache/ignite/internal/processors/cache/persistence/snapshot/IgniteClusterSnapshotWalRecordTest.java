@@ -136,9 +136,11 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
                 WALRecord rec = tuple.getValue();
 
                 if (rec.type() == WALRecord.RecordType.CLUSTER_SNAPSHOT) {
+                    String consId = (String)grid(i).configuration().getConsistentId();
+
                     SnapshotMetadata metadata = snp(grid(i)).readSnapshotMetadata(
-                        snp(grid(i)).snapshotLocalDir(SNAPSHOT_NAME + snpCnt),
-                        (String)grid(i).configuration().getConsistentId());
+                        snapshotFileTree(grid(i), SNAPSHOT_NAME + snpCnt).meta(consId)
+                    );
 
                     assertEquals(tuple.getKey(), metadata.snapshotRecordPointer());
 

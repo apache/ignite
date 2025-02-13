@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -510,7 +509,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param part Partition id.
      * @return Partition file.
      */
-    @NotNull public static File partitionFile(File workDir, String cacheDirName, int part) {
+    public static File partitionFile(File workDir, String cacheDirName, int part) {
         return new File(cacheStorage(workDir, cacheDirName), partitionFileName(part));
     }
 

@@ -179,7 +179,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testRestoreWithMissedPart() throws Exception {
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
             partitionFileName(0));
 
         assertNotNull(part0);

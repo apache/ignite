@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -92,7 +91,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETE
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -144,7 +142,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
             partitionFileName(0));
 
         assertNotNull(part0);
@@ -168,7 +166,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
+        Path dir = Files.walk(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath())
             .filter(d -> d.toFile().getName().equals(ft.cacheDirName(dfltCacheCfg)))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Cache directory not found"));
@@ -192,7 +190,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        File[] smfs = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).listFiles((dir, name) ->
+        File[] smfs = snapshotFileTree(ignite, SNAPSHOT_NAME).root().listFiles((dir, name) ->
             name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
 
         assertNotNull(smfs);
@@ -240,7 +238,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
             partitionFileName(PART_ID));
 
         assertNotNull(part0);
@@ -470,7 +468,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
+        Path part0 = U.searchFileRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(),
             partitionFileName(PART_ID));
 
         assertNotNull(part0);
@@ -511,7 +509,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 new HashSet<>(),
                 Collections.singletonMap(ignite.cluster().localNode(),
                 Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                    snapshotFileTree(ignite, SNAPSHOT_NAME).root(),
                     (String)ignite.configuration().getConsistentId()
                 ))),
                 null,
@@ -681,9 +679,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<?, ?> ccfg,
         int partId
     ) throws IgniteCheckedException, IOException {
-        Path cachePath = Paths.get(snp(ignite).snapshotLocalDir(snpName).getAbsolutePath(),
-            databaseRelativePath(ignite.context().pdsFolderResolver().resolveFolders().folderName()),
-            ignite.context().pdsFolderResolver().fileTree().cacheDirName(ccfg));
+        // TODO: use snapshotfiletree methods here
+        Path cachePath = snapshotFileTree(ignite, snpName).cacheStorage(ccfg).toPath();
 
         Path part0 = U.searchFileRecursively(cachePath, partitionFileName(partId));
 

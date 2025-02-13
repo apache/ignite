@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -44,7 +45,6 @@ import org.junit.Test;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -204,9 +204,9 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        File toRmv = new File(
-            snp(ignite(GRID_CNT - 1)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 2),
-            snapshotMetaFileName(ignite(GRID_CNT - 1).localNode().consistentId().toString()));
+        SnapshotFileTree sft = snapshotFileTree(ignite(GRID_CNT - 1), SNAPSHOT_NAME);
+
+        File toRmv = sft.incrementMeta(2, ignite(GRID_CNT - 1).localNode().consistentId().toString());
 
         assertTrue(toRmv.exists());
 
@@ -341,8 +341,10 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(srv, SNAPSHOT_NAME, null, TIMEOUT);
 
-        assertTrue(snp(srv).incrementalSnapshotsLocalRootDir(SNAPSHOT_NAME, null).mkdirs());
-        assertTrue(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).createNewFile());
+        SnapshotFileTree sft = snapshotFileTree(srv, SNAPSHOT_NAME);
+
+        assertTrue(sft.incrementsRoot().mkdirs());
+        assertTrue(sft.incrementalSnapshotFileTree(1).root().createNewFile());
 
         assertThrows(
             null,
@@ -351,8 +353,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             "Failed to create snapshot WAL directory"
         );
 
-        for (int i = 0; i < GRID_CNT; i++)
-            assertFalse(snp(grid(i)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
+        for (int i = 0; i < GRID_CNT; i++) {
+            SnapshotFileTree sft0 = snapshotFileTree(grid(i), SNAPSHOT_NAME);
+
+            assertFalse(sft0.incrementalSnapshotFileTree(1).root().exists());
+        }
     }
 
     /** */
