@@ -537,11 +537,8 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         log.warning("Channel failure [channel=" + ch + ", err=" + t.getMessage() + ']', t);
 
-        if (ch != null && ch == hld.ch) {
+        if (ch != null && ch == hld.ch)
             hld.closeChannel();
-            if (channelsCnt.get() == 0 && attemptsLimit == 1 && partitionAwarenessEnabled)
-                attemptsLimit = clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), 2) : 2;
-        }
 
         chFailLsnrs.forEach(Runnable::run);
 
