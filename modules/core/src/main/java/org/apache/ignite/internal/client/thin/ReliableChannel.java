@@ -40,7 +40,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAuthenticationException;
@@ -632,24 +631,16 @@ final class ReliableChannel implements AutoCloseable {
 
         if (newAddrs == null || newAddrs.isEmpty()) {
             finishChannelsReInit = System.currentTimeMillis();
+
             return;
         }
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
-        Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
-
-        // Close obsolete holders or map old but valid addresses to holders
-        if (holders != null) {
-            for (ClientChannelHolder h : holders) {
-                // If new endpoints contain at least one of channel addresses, don't close this channel.
-                boolean valid = h.getAddresses().stream().anyMatch(newAddrsSet::contains);
-                if (valid)
-                    h.getAddresses().forEach(addr -> curAddrs.putIfAbsent(addr, h));
-                else
-                    h.close();
-            }
-        }
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+        if (holders != null && clientCfg.getAddressesFinder() == null)
+            for (ClientChannelHolder h : holders)
+                h.getAddresses().forEach(addr -> curAddrs.putIfAbsent(addr, h));
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
@@ -657,8 +648,9 @@ final class ReliableChannel implements AutoCloseable {
 
         // The variable holds a new index of default channel after topology change.
         // Suppose that reuse of the channel is better than open new connection.
-        ClientChannelHolder currDfltHolder = (idx != -1) ? holders.get(idx) : null;
+        ClientChannelHolder currDfltHolder = (idx != -1 && holders != null) ? holders.get(idx) : null;
 
+        // Process new addresses merging with existing holders.
         for (List<InetSocketAddress> addrs : newAddrs) {
             // Try to find already created channel holder. If not found, create the new one.
             ClientChannelHolder hld = addrs.stream()
@@ -667,9 +659,10 @@ final class ReliableChannel implements AutoCloseable {
                 .findFirst()
                 .orElseGet(() -> new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs)));
 
-            // Expanding the list of addresses by adding new addresses to the existing holder
+            // Expanding the list of addresses by adding new addresses to the existing holder.
             Set<InetSocketAddress> existingAddrs = new HashSet<>(hld.getAddresses());
             existingAddrs.addAll(addrs);
+
             List<InetSocketAddress> updatedAddrs = new ArrayList<>(existingAddrs);
 
             if (hld.getAddresses().size() != updatedAddrs.size())
@@ -680,7 +673,21 @@ final class ReliableChannel implements AutoCloseable {
             updatedAddrs.forEach(addr -> curAddrs.putIfAbsent(addr, hld));
         }
 
+        // Add old holders that were not processed via newAddrs.
+        if (holders != null) {
+            Set<ClientChannelHolder> existingInReinit = new HashSet<>(reinitHolders);
+
+            for (ClientChannelHolder h : holders) {
+                if (!existingInReinit.contains(h)) {
+                    reinitHolders.add(h);
+
+                    existingInReinit.add(h);
+                }
+            }
+        }
+
         int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
+
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.
             reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
