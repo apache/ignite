@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import javax.cache.configuration.CacheEntryListenerConfiguration;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1616,32 +1615,27 @@ public class ClusterCachesInfo {
                 cfg.getNearConfiguration() != null);
         }
 
-        if (!hasSchemaPatchConflict)
-            updateRegisteredCaches(patchesToApply, cachesToSave);
+        updateRegisteredCaches(patchesToApply, cachesToSave, hasSchemaPatchConflict);
     }
 
     /**
-     * Merging config, resaving it if it needed.
+     * Merging config or resaving it if it needed.
      *
      * @param patchesToApply Patches which need to apply.
      * @param cachesToSave Caches which need to resave.
+     * @param hasSchemaPatchConflict {@code true} if we have conflict during making patch.
      */
-    private void updateRegisteredCaches(
-        Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
-        Collection<DynamicCacheDescriptor> cachesToSave
-    ) {
-        // Store config only if cluster is nactive.
-        boolean isClusterActive = ctx.state().clusterState().active();
-
-        //Merge of config for cluster only for inactive grid.
-        if (!patchesToApply.isEmpty()) {
-            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
-                if (entry.getKey().applySchemaPatch(entry.getValue()) && !isClusterActive)
-                    saveCacheConfiguration(entry.getKey());
+    private void updateRegisteredCaches(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
+        Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
+        //Skip merge of config if least one conflict was found.
+        if (!hasSchemaPatchConflict) {
+            if (!patchesToApply.isEmpty()) {
+                for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
+                    if (entry.getKey().applySchemaPatch(entry.getValue()))
+                        saveCacheConfiguration(entry.getKey());
+                }
             }
-        }
 
-        if (isClusterActive) {
             for (DynamicCacheDescriptor descriptor : cachesToSave)
                 saveCacheConfiguration(descriptor);
         }
@@ -1885,15 +1879,19 @@ public class ClusterCachesInfo {
      * @param loc Local cache configuration.
      * @param received Cache configuration received from the cluster.
      * @see #registerReceivedCaches
-     * @see #updateRegisteredCaches
      * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
-     * @see CacheConfiguration#writeReplace()
      */
     private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
-        for (CacheEntryListenerConfiguration lsnrCfg : loc.getCacheEntryListenerConfigurations())
-            received.addCacheEntryListenerConfiguration(lsnrCfg);
+        // Schema is supposed to get merged earlier.
+        loc.setQueryEntities(received.getQueryEntities());
+        loc.setSqlSchema(received.getSqlSchema());
+        loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
+        loc.setSqlEscapeAll(received.isSqlEscapeAll());
 
-        return received;
+        assert loc.isSqlOnheapCacheEnabled() == received.isSqlOnheapCacheEnabled();
+        assert loc.getSqlOnheapCacheMaxSize() == received.getSqlOnheapCacheMaxSize();
+
+        return loc;
     }
 
     /**

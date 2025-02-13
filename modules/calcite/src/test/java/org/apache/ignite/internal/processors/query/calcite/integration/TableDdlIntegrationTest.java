@@ -33,10 +33,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -60,25 +57,6 @@ import static org.junit.Assert.assertThat;
 
 /** */
 public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
-    /** */
-    private boolean persistence = true;
-
-    /** */
-    private CacheConfiguration<?, ?>[] cacheConfigurations;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        for (DataRegionConfiguration drCfg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
-            drCfg.setPersistenceEnabled(persistence);
-
-        if (!F.isEmpty(cacheConfigurations))
-            cfg.setCacheConfiguration(cacheConfigurations);
-
-        return cfg;
-    }
-
     /**
      * Creates table with two columns, where the first column is PK,
      * and verifies created cache.
@@ -1015,75 +993,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         checkPkInlineSize("create table my_table (id1 int, id2 smallint, val varchar, primary key(id1, id2))",
             "MY_TABLE", 5 + 3);
-    }
-
-    /** */
-    @Test
-    public void testNonPersistentRejoinsWithDynamicTablesOverPredefinedCaches() throws Exception {
-        testLostSchema(false);
-    }
-
-    /** */
-    @Test
-    public void testNonPersistentRejoinsWithDynamicTablesOverPredefinedCaches2() throws Exception {
-        testLostSchema(true);
-    }
-
-    /** */
-    private void testLostSchema(boolean persistence) throws Exception {
-        stopAllGrids();
-
-        if(persistence)
-            cleanPersistenceDir();
-
-        try {
-            this.persistence = persistence;
-
-            CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("TEST_CACHE")
-                .setBackups(1)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-
-            cacheConfigurations = new CacheConfiguration<?, ?>[] {cacheCfg};
-
-            client = startGrids(3);
-
-            client.cluster().state(ClusterState.ACTIVE);
-
-            sql("CREATE TABLE IF NOT EXISTS TEST_TBL(ID INTEGER PRIMARY KEY, VAL VARCHAR) WITH \"CACHE_NAME=TEST_CACHE\"");
-
-            assertEquals(0, sql("SELECT * FROM TEST_TBL").size());
-
-            int testGrid = 2;
-
-            String testConsId = grid(testGrid).cluster().localNode().consistentId().toString();
-
-            stopGrid(testGrid);
-
-            if (persistence)
-                cleanPersistenceDir(testConsId);
-
-            startGrid(testGrid);
-
-            awaitPartitionMapExchange();
-
-            for (int i = 0; i < 100; ++i)
-                assertEquals(1, sql("INSERT INTO TEST_TBL VALUES(" + (i + 1) + ", '" + (i + 1000) + "')").size());
-
-            assertEquals(100, grid(testGrid).cache("TEST_CACHE").size());
-
-            assertEquals(100, sql("SELECT * FROM TEST_TBL").size());
-        }
-        finally {
-            if(!persistence) {
-                this.persistence = true;
-
-                afterTestsStopped();
-
-                beforeTestsStarted();
-            }
-        }
     }
 
     /** */

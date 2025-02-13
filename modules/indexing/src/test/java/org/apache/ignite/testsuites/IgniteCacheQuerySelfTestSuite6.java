@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.index.DynamicDdlTest;
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlKeepStaticConfigurationTest;
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
@@ -71,6 +72,7 @@ import org.junit.runners.Suite;
     CacheContinuousWithTransformerRandomOperationsTest.class,
     CacheContinuousQueryRandomOperationsTest.class,
     StaticCacheDdlTest.class,
+    DynamicDdlTest.class,
     StaticCacheDdlKeepStaticConfigurationTest.class,
     MemLeakOnSqlWithClientReconnectTest.class,
     CacheContinuousQueryFilterDeploymentFailedTest.class,
