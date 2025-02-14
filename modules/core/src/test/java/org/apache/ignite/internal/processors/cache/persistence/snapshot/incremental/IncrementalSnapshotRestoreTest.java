@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.WalTestUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotVerifyException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
@@ -367,7 +368,9 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        File rm = new File(incrementalSnapshotWalDir(grid(1), SNP, 1), "0000000000000000.wal.zip");
+        NodeFileTree ft = grid(1).context().pdsFolderResolver().fileTree();
+
+        File rm = new File(incrementalSnapshotWalDir(grid(1), SNP, 1), ft.zipWalArchiveSegment(0).getName());
 
         assertTrue(U.delete(rm));
 
