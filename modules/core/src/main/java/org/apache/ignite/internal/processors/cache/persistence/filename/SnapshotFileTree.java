@@ -53,6 +53,9 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Incremental snapshots directory name. */
     public static final String INC_SNP_DIR = "increments";
 
+    /** Temporary cache directory prefix. */
+    public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+
     /** Snapshot name. */
     private final String name;
 
@@ -110,8 +113,11 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * Returns file tree for specific incremental snapshot.
+     * Root will be something like {@code "work/snapshots/mybackup/increments/0000000000000001"}.
+     *
      * @param incIdx Increment index.
-     * @return Root directory for incremental snapshot.
+     * @return Incremental snapshot file tree.
      */
     public IncrementalSnapshotFileTree incrementalSnapshotFileTree(int incIdx) {
         return new IncrementalSnapshotFileTree(

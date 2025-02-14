@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,8 +39,9 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
@@ -51,8 +51,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.valueOf;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
@@ -108,7 +107,9 @@ public class SnapshotMetadataVerificationTask
         @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
+            SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), arg.snapshotName(), arg.snapshotPath());
+
+            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft.name(), sft.path());
 
             for (SnapshotMetadata meta : snpMeta)
                 checkMeta(meta);
@@ -125,7 +126,7 @@ public class SnapshotMetadataVerificationTask
                         "per node because they don't support restoring on a different topology.");
                 }
 
-                checkIncrementalSnapshots(metas.get(0), arg);
+                checkIncrementalSnapshots(metas.get(0), sft, arg.incrementIndex());
             }
 
             return snpMeta;
@@ -175,7 +176,7 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
-        public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotMetadataVerificationTaskArg arg) {
+        public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotFileTree sft, int incIdx) {
             try {
                 GridCacheSharedContext<Object, Object> ctx = ignite.context().cache().context();
 
@@ -184,21 +185,15 @@ public class SnapshotMetadataVerificationTask
                 // Incremental snapshot must contain ClusterSnapshotRecord.
                 long startSeg = fullMeta.snapshotRecordPointer().index();
 
-                for (int inc = 1; inc <= arg.incrementIndex(); inc++) {
-                    File incSnpDir = snpMgr.incrementalSnapshotLocalDir(arg.snapshotName(), arg.snapshotPath(), inc);
+                for (int inc = 1; inc <= incIdx; inc++) {
+                    IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(inc);
 
-                    if (!incSnpDir.exists()) {
+                    if (!ift.root().exists()) {
                         throw new IllegalArgumentException("No incremental snapshot found " +
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
-                    String folderName = ctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
-
-                    String metaFileName = snapshotMetaFileName(folderName);
-
-                    File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
-
-                    IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(metafile);
+                    IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(ift.meta());
 
                     if (!incMeta.matchBaseSnapshot(fullMeta)) {
                         throw new IllegalArgumentException("Incremental snapshot doesn't match full snapshot " +
@@ -210,7 +205,7 @@ public class SnapshotMetadataVerificationTask
                             "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
                     }
 
-                    checkWalSegments(incMeta, startSeg, incrementalSnapshotWalsDir(incSnpDir, incMeta.folderName()));
+                    checkWalSegments(incMeta, startSeg, ift);
 
                     // Incremental snapshots must not cross each other.
                     startSeg = incMeta.incrementalSnapshotPointer().index() + 1;
@@ -222,16 +217,15 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** Check that incremental snapshot contains all required WAL segments. Throws {@link IgniteException} in case of any errors. */
-        private void checkWalSegments(IncrementalSnapshotMetadata meta, long startWalSeg, File incSnpWalDir) {
+        private void checkWalSegments(IncrementalSnapshotMetadata meta, long startWalSeg, IncrementalSnapshotFileTree ift) {
             IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
             List<FileDescriptor> walSeg = factory.resolveWalFiles(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                    .filesOrDirs(incSnpWalDir.listFiles(file ->
-                        FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches())));
+                    .filesOrDirs(ift.wal().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER)));
 
             if (walSeg.isEmpty())
-                throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + incSnpWalDir + ']');
+                throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + ift.wal() + ']');
 
             long actFirstSeg = walSeg.get(0).idx();
 

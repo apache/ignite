@@ -40,6 +40,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.TMP_CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
@@ -188,12 +189,6 @@ public class NodeFileTree extends SharedFileTree {
     /** Filter out all cache directories. */
     public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
-    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
-    private static final String CACHE_DIR_PREFIX = "cache-";
-
-    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
-    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
-
     /** Filter out all cache directories including {@link MetaStorage}. */
     public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
@@ -216,6 +211,12 @@ public class NodeFileTree extends SharedFileTree {
 
     /** */
     public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+
+    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
+    private static final String CACHE_DIR_PREFIX = "cache-";
+
+    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
+    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -518,6 +519,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File cacheStorage(String cacheDirName) {
         return new File(nodeStorage, cacheDirName);
+    }
+
+    /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(String cacheDirName) {
+        return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
