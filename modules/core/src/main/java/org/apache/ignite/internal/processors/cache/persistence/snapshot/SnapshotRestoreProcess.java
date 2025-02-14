@@ -931,13 +931,13 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
-                            NodeFileTree ft = opCtx0.incIdx > 0
+                            NodeFileTree metaFt = opCtx0.incIdx > 0
                                 ? opCtx0.sft.incrementalSnapshotFileTree(opCtx0.incIdx)
                                 : opCtx0.sft;
 
-                            ctx.cacheObjects().updateMetadata(ft.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
 
-                            restoreMappings(ft.marshaller(), opCtx0.stopChecker);
+                            restoreMappings(metaFt.marshaller(), opCtx0.stopChecker);
                         }
                         catch (Throwable t) {
                             log.error("Unable to perform metadata update operation for the cache groups restore process", t);

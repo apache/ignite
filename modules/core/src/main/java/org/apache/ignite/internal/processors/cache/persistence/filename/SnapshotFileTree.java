@@ -93,7 +93,7 @@ public class SnapshotFileTree extends NodeFileTree {
 
         this.name = name;
         this.path = path;
-        this.consId = ctx.discovery().localNode().consistentId().toString();
+        this.consId = consId;
         this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
     }
 
