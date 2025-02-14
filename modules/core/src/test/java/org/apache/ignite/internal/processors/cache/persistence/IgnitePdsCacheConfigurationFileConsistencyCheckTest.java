@@ -171,12 +171,13 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
         DynamicCacheDescriptor desc = ig0.context().cache().cacheDescriptor(cacheName(2));
 
+        String expMsg = ig0.context().pdsFolderResolver().fileTree().cacheConfigurationFile(desc.cacheConfiguration()).getName();
+
         corruptCacheData(desc);
 
         stopAllGrids();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrids(NODES), IgniteCheckedException.class,
-            NodeFileTree.cacheDataFilename(desc.cacheConfiguration()));
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrids(NODES), IgniteCheckedException.class, expMsg);
     }
 
     /**

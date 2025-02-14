@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheDataFilename;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
@@ -247,7 +246,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 cacheData.queryEntities(desc.schema().entities());
                 cacheData.sql(desc.sql());
 
-                cctx.cache().configManager().writeCacheData(cacheData, new File(grpDir, cacheDataFilename(cacheData.config())));
+                cctx.cache().configManager().writeCacheData(cacheData, sft.cacheConfigurationFile(cacheData.config()));
             }
         })).collect(Collectors.toList());
     }

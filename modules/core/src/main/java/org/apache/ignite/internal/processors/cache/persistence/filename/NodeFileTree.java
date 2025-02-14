@@ -489,12 +489,9 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(ccfg), cacheDataFilename(ccfg));
-    }
+        String cfg = ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
 
-    /** @return Name of cache data filename. */
-    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
+        return new File(cacheStorage(ccfg), cfg);
     }
 
     /**
