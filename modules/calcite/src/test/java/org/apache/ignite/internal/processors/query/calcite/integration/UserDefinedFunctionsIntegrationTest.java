@@ -85,7 +85,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertThrows("SELECT \"emp\".sameSign2(1)", SqlValidatorException.class,
             "No match found for function signature SAMESIGN2");
 
-        logChecker.check(getTestTimeout());
+        assertTrue(logChecker.check(getTestTimeout()));
 
         SchemaPlus schema = queryProcessor(client).schemaHolder().schema("emp");
 
