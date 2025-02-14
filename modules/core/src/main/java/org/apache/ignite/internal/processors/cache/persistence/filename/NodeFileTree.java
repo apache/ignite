@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -496,6 +495,15 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @param part Partition id.
+     * @return Partition file.
+     */
+    public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
+        return partitionFile(cacheDirName(ccfg), part);
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @param part Partition id.
      * @return Partition file.
@@ -505,12 +513,20 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File cacheStorage(String cacheDirName) {
+        return new File(nodeStorage, cacheDirName);
+    }
+
+    /**
      * @param workDir Cache work directory.
      * @param cacheDirName Cache directory name.
      * @param part Partition id.
      * @return Partition file.
      */
-    @NotNull public static File partitionFile(File workDir, String cacheDirName, int part) {
+    public static File partitionFile(File workDir, String cacheDirName, int part) {
         return new File(cacheStorage(workDir, cacheDirName), partitionFileName(part));
     }
 
@@ -571,14 +587,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean cacheConfigFile(File f) {
         return f.getName().equals(CACHE_DATA_FILENAME);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public File cacheStorage(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
     }
 
     /**

@@ -79,6 +79,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -117,9 +119,6 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -583,12 +582,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) throws IgniteCheckedException {
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) {
         createAndCheckSnapshot(ig, snpName, null);
     }
 
     /** */
-    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) throws IgniteCheckedException {
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) {
         createAndCheckSnapshot(ig, snpName, snpPath, 0);
     }
 
@@ -598,7 +597,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpName,
         String snpPath,
         long timeout
-    ) throws IgniteCheckedException {
+    ) {
         IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, snpPath, false, onlyPrimary);
 
         if (timeout == 0)
@@ -610,7 +609,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** @param snpName Snapshot name. */
-    protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
+    protected void checkSnapshot(String snpName, String snpPath) {
         Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
 
         Predicate<Ignite> filter = node -> !node.configuration().isClientMode() &&
@@ -628,15 +627,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             IgniteEx node0 = (IgniteEx)node;
 
-            File nodeSnapDir = new File(
-                snp(node0).snapshotLocalDir(snpName, snpPath).getAbsolutePath(),
-                databaseRelativePath(node0.context().pdsFolderResolver().resolveFolders().folderName())
-            );
+            SnapshotFileTree sft = snapshotFileTree(node0, snpName, snpPath);
 
-            if (!nodeSnapDir.exists())
+            if (!sft.nodeStorage().exists())
                 continue;
 
-            File[] cacheDirs = nodeSnapDir.listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
+            File[] cacheDirs = sft.nodeStorage().listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
 
             for (File cacheDir : cacheDirs) {
                 String name = NodeFileTree.cacheName(cacheDir);
@@ -710,10 +706,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Ignite instance.
      * @return Directory name for ignite instance.
-     * @throws IgniteCheckedException If fails.
      */
-    public static String folderName(IgniteEx ignite) throws IgniteCheckedException {
-        return ignite.context().pdsFolderResolver().resolveFolders().folderName();
+    public static String folderName(IgniteEx ignite) {
+        return ignite.context().pdsFolderResolver().fileTree().folderName();
     }
 
     /**
@@ -861,10 +856,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Checks incremental snapshot exists. */
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
-        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+        IncrementalSnapshotFileTree incSnpFt = snapshotFileTree(node, snpName, snpPath).incrementalSnapshotFileTree(incIdx);
 
-        if (incSnpDir.exists()) {
-            checkIncrementalSnapshotWalRecords(node, incSnpDir);
+        if (incSnpFt.root().exists()) {
+            checkIncrementalSnapshotWalRecords(node, incSnpFt);
 
             return true;
         }
@@ -873,15 +868,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir) {
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, IncrementalSnapshotFileTree incSnpFt) {
         try {
-            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(
-                new File(incSnpDir, snapshotMetaFileName(node.localNode().consistentId().toString())));
-
-            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, incSnpMeta.folderName());
+            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(incSnpFt.meta());
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
-                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpWalDir));
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpFt.wal()));
 
             boolean started = false;
             boolean finished = false;
