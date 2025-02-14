@@ -17,23 +17,21 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteExperimental;
 
-import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
-import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
-
-/** */
-@IgniteExperimental
 public class MetaDetailsCommand implements ComputeCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
