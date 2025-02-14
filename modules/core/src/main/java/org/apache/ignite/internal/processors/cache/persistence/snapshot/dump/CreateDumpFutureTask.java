@@ -58,10 +58,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractCreateSnapshotFutureTask;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -76,8 +75,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheDataFilename;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
 /**
@@ -90,12 +88,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.toLong;
  * @see DumpEntry
  */
 public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask implements DumpEntryChangeListener {
-    /** Dump files name. */
-    public static final String DUMP_FILE_EXT = ".dump";
-
-    /** Root dump directory. */
-    private final File dumpDir;
-
     /** */
     private final FileIOFactory ioFactory;
 
@@ -149,7 +141,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param dumpName Dump name.
+     * @param sft Snapshot file tree.
      * @param ioFactory IO factory.
      * @param snpSndr Snapshot sender.
      * @param rateLimiter Dump transfer rate limiter.
@@ -161,8 +153,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String dumpName,
-        File dumpDir,
+        SnapshotFileTree sft,
         FileIOFactory ioFactory,
         BasicRateLimiter rateLimiter,
         SnapshotSender snpSndr,
@@ -174,12 +165,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             cctx,
             srcNodeId,
             reqId,
-            dumpName,
+            sft,
             snpSndr,
             parts
         );
-
-        this.dumpDir = dumpDir;
 
         this.ioFactory = compress ? new WriteOnlyZipFileIOFactory(ioFactory) : new BufferedFileIOFactory(ioFactory);
 
@@ -224,7 +213,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
-            File grpDumpDir = groupDirectory(cctx.cache().cacheGroup(grp));
+            File grpDumpDir = sft.cacheStorage(cctx.cache().cacheGroup(grp).config());
 
             if (!grpDumpDir.mkdirs())
                 throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
@@ -246,7 +235,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         return processed.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
-            File grpDir = groupDirectory(gctx);
+            File grpDir = sft.cacheStorage(gctx.config());
 
             IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
 
@@ -410,15 +399,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private void createDumpLock() throws IgniteCheckedException, IOException {
-        File nodeDumpDir = IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx);
+        if (!sft.nodeStorage().mkdirs())
+            throw new IgniteCheckedException("Can't create node dump directory: " + sft.nodeStorage().getAbsolutePath());
 
-        if (!nodeDumpDir.mkdirs())
-            throw new IgniteCheckedException("Can't create node dump directory: " + nodeDumpDir.getAbsolutePath());
-
-        File lock = new File(nodeDumpDir, DUMP_LOCK);
-
-        if (!lock.createNewFile())
-            throw new IgniteCheckedException("Lock file can't be created or already exists: " + lock.getAbsolutePath());
+        if (!sft.dumpLock().createNewFile())
+            throw new IgniteCheckedException("Lock file can't be created or already exists: " + sft.dumpLock().getAbsolutePath());
     }
 
     /** */
@@ -502,14 +487,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                File dumpFile = new File(groupDirectory(gctx), dumpPartFileName(part, compress));
+                File dumpFile = new File(sft.cacheStorage(gctx.config()), dumpPartFileName(part, compress));
 
                 if (!dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);
 
                 file = ioFactory.create(dumpFile);
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (IOException e) {
                 throw new IgniteException(e);
             }
         }
@@ -710,14 +695,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 throw new IgniteException(e);
             }
         }
-    }
-
-    /** */
-    private File groupDirectory(CacheGroupContext grpCtx) throws IgniteCheckedException {
-        return new File(
-            IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx),
-            NodeFileTree.cacheDirName(grpCtx.caches().size() > 1, grpCtx.cacheOrGroupName())
-        );
     }
 
     /** @return Encryption key. */

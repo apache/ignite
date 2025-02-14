@@ -287,7 +287,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     /** */
     private void cleanCacheDir(File cacheDir) {
         for (File f : cacheDir.listFiles()) {
-            if (!f.getName().equals(CACHE_DATA_FILENAME))
+            if (!NodeFileTree.cacheConfigFile(f))
                 f.delete();
         }
     }

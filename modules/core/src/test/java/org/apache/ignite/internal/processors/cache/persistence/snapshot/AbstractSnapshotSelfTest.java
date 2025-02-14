@@ -813,20 +813,19 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param snpName Unique snapshot name.
+     * @param sft Snapshot file tree.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
     protected static IgniteInternalFuture<?> startLocalSnapshotTask(
         GridCacheSharedContext<?, ?> cctx,
-        String snpName,
+        SnapshotFileTree sft,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
-            null,
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(sft,
             cctx.localNodeId(),
             null,
             parts,
@@ -847,7 +846,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
         // due to checkpoint already running and we need to schedule the next one
         // right after current will be completed.
-        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, sft.name()));
 
         snpFutTask.started().get();
 

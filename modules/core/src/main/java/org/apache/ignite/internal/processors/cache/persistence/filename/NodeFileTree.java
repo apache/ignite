@@ -531,6 +531,10 @@ public class NodeFileTree extends SharedFileTree {
         return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
+    public File tmpPartition(String cacheDirName, Integer partId) {
+        return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
+    }
+
     /**
      * @param workDir Cache work directory.
      * @param cacheDirName Cache directory name.

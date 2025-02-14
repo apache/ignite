@@ -53,6 +53,9 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Incremental snapshots directory name. */
     public static final String INC_SNP_DIR = "increments";
 
+    /** Dump files name. */
+    public static final String DUMP_FILE_EXT = ".dump";
+
     /** Snapshot name. */
     private final String name;
 
@@ -181,6 +184,28 @@ public class SnapshotFileTree extends NodeFileTree {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
+    }
+
+    /**
+     * @param part Partition number.
+     * @param compressed If {@code true} then compressed partition file.
+     * @return Dump partition file name.
+     */
+    public static String dumpPartFileName(int part, boolean compressed) {
+        return PART_FILE_PREFIX + part + partExtension(true, compressed);
+    }
+
+    public static String partExtension(boolean dump, boolean compressed) {
+        return (dump ? FILE_SUFFIX : DUMP_FILE_EXT) + (compressed ? ZIP_SUFFIX : "");
+
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms partition dump file name pattern.
+     */
+    public static boolean dumpPartitionFile(File f) {
+        return f.getName().endsWith(DUMP_FILE_EXT);
     }
 
     /**

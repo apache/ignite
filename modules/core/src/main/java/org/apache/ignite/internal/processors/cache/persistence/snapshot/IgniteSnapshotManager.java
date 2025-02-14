@@ -217,7 +217,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
@@ -1046,8 +1045,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<?> task0 = registerSnapshotTask(req.snapshotName(),
-            req.snapshotPath(),
+        IgniteInternalFuture<?> task0 = registerSnapshotTask(
+            req.snapshotFileTree(),
             req.operationalNodeId(),
             req.requestId(),
             parts,
@@ -2536,8 +2535,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Unique snapshot name.
-     * @param snpPath Snapshot path.
+     * @param sft Snapshot file tree.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param reqId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -2549,8 +2547,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
-        String snpName,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         UUID srcNodeId,
         UUID reqId,
         Map<Integer, Set<Integer>> parts,
@@ -2560,12 +2557,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean encrypt,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
+        AbstractSnapshotFutureTask<?> task = registerTask(sft.name(), dump
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
                 reqId,
-                snpName,
-                snapshotLocalDir(snpName, snpPath),
+                sft,
                 ioFactory,
                 transferRateLimiter,
                 snpSndr,
@@ -2577,7 +2573,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx,
                 srcNodeId,
                 reqId,
-                snpName,
+                sft,
                 ft,
                 ioFactory,
                 snpSndr,
@@ -3799,10 +3795,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File tmpCacheDir = ft.tmpCacheStorage(cacheDirName);
-
-                // TODO: add method in NodeFileTree (?)
-                return Paths.get(tmpCacheDir.getAbsolutePath(), partitionFileName(partId)).toString();
+                return ft.tmpPartition(cacheDirName, partId).getAbsolutePath();
             }
             finally {
                 busyLock.leaveBusy();

@@ -44,7 +44,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
 
 /**
@@ -177,7 +176,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         stopAllGrids();
 
         GridTestUtils.assertThrowsAnyCause(log, () -> startGrids(NODES), IgniteCheckedException.class,
-                desc.cacheName() + CACHE_DATA_FILENAME);
+            NodeFileTree.cacheDataFilename(desc.cacheConfiguration()));
     }
 
     /**
@@ -241,7 +240,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File cfg = new File(ft.cacheStorage(data.config()), data.config().getName() + CACHE_DATA_FILENAME);
+            File cfg = ft.cacheConfigurationFile(data.config());
 
             try (DataOutputStream os = new DataOutputStream(new FileOutputStream(cfg))) {
                 os.writeLong(-1L);
