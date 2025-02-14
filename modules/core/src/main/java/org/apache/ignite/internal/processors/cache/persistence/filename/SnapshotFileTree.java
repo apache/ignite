@@ -51,10 +51,10 @@ public class SnapshotFileTree extends NodeFileTree {
     public static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    public static final String INC_SNP_DIR = "increments";
+    private static final String INC_SNP_DIR = "increments";
 
     /** Dump files name. */
-    public static final String DUMP_FILE_EXT = ".dump";
+    private static final String DUMP_FILE_EXT = ".dump";
 
     /** Snapshot name. */
     private final String name;
@@ -195,8 +195,13 @@ public class SnapshotFileTree extends NodeFileTree {
         return PART_FILE_PREFIX + part + partExtension(true, compressed);
     }
 
+    /**
+     * @param dump Extension for dump files.
+     * @param compressed If {@code true} then files compressed.
+     * @return Partition file extension.
+     */
     public static String partExtension(boolean dump, boolean compressed) {
-        return (dump ? FILE_SUFFIX : DUMP_FILE_EXT) + (compressed ? ZIP_SUFFIX : "");
+        return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
 
     }
 
@@ -204,8 +209,8 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param f File.
      * @return {@code True} if file conforms partition dump file name pattern.
      */
-    public static boolean dumpPartitionFile(File f) {
-        return f.getName().endsWith(DUMP_FILE_EXT);
+    public static boolean dumpPartitionFile(File f, boolean compressed) {
+        return partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
     }
 
     /**
