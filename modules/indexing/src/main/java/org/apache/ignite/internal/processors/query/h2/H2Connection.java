@@ -193,11 +193,12 @@ public class H2Connection implements AutoCloseable {
             return conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
         }
         catch (SQLException e) {
+            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+        }
+        finally {
             Session sess = (Session)((JdbcConnection)conn).getSession();
 
             sess.getLocalTempTables().forEach(sess::removeLocalTempTable);
-
-            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
 
