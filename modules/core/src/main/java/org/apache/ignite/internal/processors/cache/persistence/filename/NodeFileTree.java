@@ -528,7 +528,12 @@ public class NodeFileTree extends SharedFileTree {
         return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
-    public File tmpPartition(String cacheDirName, Integer partId) {
+    /**
+     * @param cacheDirName Cache directory name.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     */
+    public File tmpPartition(String cacheDirName, int partId) {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
     }
 
