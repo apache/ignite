@@ -188,12 +188,6 @@ public class NodeFileTree extends SharedFileTree {
     /** Filter out all cache directories. */
     public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
-    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
-    private static final String CACHE_DIR_PREFIX = "cache-";
-
-    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
-    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
-
     /** Filter out all cache directories including {@link MetaStorage}. */
     public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
@@ -216,6 +210,15 @@ public class NodeFileTree extends SharedFileTree {
 
     /** */
     public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+
+    /** Temporary cache directory prefix. */
+    private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+
+    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
+    private static final String CACHE_DIR_PREFIX = "cache-";
+
+    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
+    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -521,6 +524,14 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(String cacheDirName) {
+        return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
+    }
+
+    /**
      * @param workDir Cache work directory.
      * @param cacheDirName Cache directory name.
      * @param part Partition id.
@@ -590,6 +601,24 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param f File.
+     * @return {@code True} if file conforms temp cache storage name pattern.
+     */
+    public static boolean tmpCacheStorage(File f) {
+        return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f Temporary cache directory.
+     * @return Cache or group id.
+     */
+    public static String tmpDirCacheName(File f) {
+        assert tmpCacheStorage(f) : f;
+
+        return cacheName(f.getName().substring(TMP_CACHE_DIR_PREFIX.length()));
+    }
+
+    /**
      * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
@@ -604,12 +633,18 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param dir Directory
+     * @param f Directory
      * @return Cache name for directory, if it conforms cache storage pattern.
      */
-    public static String cacheName(File dir) {
-        String name = dir.getName();
+    public static String cacheName(File f) {
+        return cacheName(f.getName());
+    }
 
+    /**
+     * @param name File name.
+     * @return Cache name.
+     */
+    private static String cacheName(String name) {
         if (name.startsWith(CACHE_GRP_DIR_PREFIX))
             return name.substring(CACHE_GRP_DIR_PREFIX.length());
         else if (name.startsWith(CACHE_DIR_PREFIX))
@@ -617,7 +652,7 @@ public class NodeFileTree extends SharedFileTree {
         else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
             return METASTORAGE_CACHE_NAME;
         else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
     }
 
     /**

@@ -167,7 +167,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         /**
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
-        @Override public IncrementalSnapshotVerificationTaskResult execute() throws IgniteException {
+        @Override public IncrementalSnapshotVerificationTaskResult execute0() throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
@@ -186,7 +186,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                 AtomicLong procSegCnt = new AtomicLong();
 
                 IncrementalSnapshotProcessor proc = new IncrementalSnapshotProcessor(
-                    ignite.context().cache().context(), snpName, snpPath, incIdx, txCaches.keySet()
+                    ignite.context().cache().context(), sft, incIdx, txCaches.keySet()
                 ) {
                     @Override void totalWalSegments(int segCnt) {
                         // No-op.

@@ -870,7 +870,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** */
     private void checkIncrementalSnapshotWalRecords(IgniteEx node, IncrementalSnapshotFileTree incSnpFt) {
         try {
-            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(incSnpFt.meta());
+            IncrementalSnapshotMetadata incSnpMeta = snp(node).readIncrementalSnapshotMetadata(incSnpFt.meta());
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpFt.wal()));
