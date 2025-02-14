@@ -35,6 +35,7 @@ import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -52,7 +53,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
 
     /** */
-    private GridSpringResourceContext rsrcCtx;
+    private ThrowableFunction<Object, Object, IgniteCheckedException> unpackFn = ThrowableFunction.identity();
 
     /** */
     private final GridResourceIoc ioc = new GridResourceIoc();
@@ -115,17 +116,19 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /**
      * Sets Spring resource context.
      *
-     * @param rsrcCtx Spring resource context.
+     * @param rsrcCtx Inject resource context.
      */
-    public void setSpringContext(@Nullable GridSpringResourceContext rsrcCtx) {
-        this.rsrcCtx = rsrcCtx;
+    public void setInjectionContext(@Nullable GridInjectResourceContext rsrcCtx) {
+        if (rsrcCtx == null) {
+            return;
+        }
+        this.unpackFn = unpackFn.andThen(rsrcCtx::unwrapTarget);
 
-        GridResourceInjector springCtxInjector = rsrcCtx != null ? rsrcCtx.springContextInjector() : nullInjector;
-        GridResourceInjector springBeanInjector = rsrcCtx != null ? rsrcCtx.springBeanInjector() : nullInjector;
+        GridResourceInjector rsrcInjector = rsrcCtx != null ? rsrcCtx.beanInjector() : nullInjector;
 
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = springBeanInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = rsrcInjector;
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING_APPLICATION_CONTEXT.ordinal()] =
-            springCtxInjector;
+            rsrcInjector;
     }
 
     /**
@@ -585,7 +588,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If unwrap failed.
      */
     private Object unwrapTarget(Object target) throws IgniteCheckedException {
-        return rsrcCtx != null ? rsrcCtx.unwrapTarget(target) : target;
+        return unpackFn != null ? unpackFn.apply(target) : target;
     }
 
     /** {@inheritDoc} */
