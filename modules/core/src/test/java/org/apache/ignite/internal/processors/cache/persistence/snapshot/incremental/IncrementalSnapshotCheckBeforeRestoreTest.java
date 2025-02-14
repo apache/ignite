@@ -317,7 +317,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
     }
 
     /** */
-    private void createFullSnapshot() throws IgniteCheckedException {
+    private void createFullSnapshot() {
         createAndCheckSnapshot(grid(0), SNP);
     }
 

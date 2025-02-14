@@ -582,12 +582,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) throws IgniteCheckedException {
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) {
         createAndCheckSnapshot(ig, snpName, null);
     }
 
     /** */
-    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) throws IgniteCheckedException {
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) {
         createAndCheckSnapshot(ig, snpName, snpPath, 0);
     }
 
@@ -597,7 +597,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpName,
         String snpPath,
         long timeout
-    ) throws IgniteCheckedException {
+    ) {
         IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, snpPath, false, onlyPrimary);
 
         if (timeout == 0)
