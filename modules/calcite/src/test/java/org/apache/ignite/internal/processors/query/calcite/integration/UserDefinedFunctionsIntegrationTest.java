@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Map;
-import org.apache.calcite.sql.validate.SqlValidatorException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,9 +41,6 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 
@@ -71,7 +66,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
-    public void testSameSignatureRegistered() throws Exception {
+    public void testSameSignatureNotRegistered() throws Exception {
         LogListener logChecker = LogListener.matches("Unable to register function 'SAMESIGN'. Other function " +
             "with the same name and parameters is already registered").build();
 
@@ -92,11 +87,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         logChecker.check(getTestTimeout());
 
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
-
-        Map<String, IgniteSchema> schemas = GridTestUtils.getFieldValue(qryProc, "schemaHolder", "igniteSchemas");
-
-        IgniteSchema schema = schemas.get("emp");
+        SchemaPlus schema = queryProcessor(client).schemaHolder().schema("emp");
 
         assertEquals(1, schema.getFunctions("SAMESIGN").size());
     }
