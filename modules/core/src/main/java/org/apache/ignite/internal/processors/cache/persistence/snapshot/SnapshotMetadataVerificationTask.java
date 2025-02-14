@@ -198,7 +198,7 @@ public class SnapshotMetadataVerificationTask
 
                     File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
-                    IncrementalSnapshotMetadata incMeta = snpMgr.readFromFile(metafile);
+                    IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(metafile);
 
                     if (!incMeta.matchBaseSnapshot(fullMeta)) {
                         throw new IllegalArgumentException("Incremental snapshot doesn't match full snapshot " +

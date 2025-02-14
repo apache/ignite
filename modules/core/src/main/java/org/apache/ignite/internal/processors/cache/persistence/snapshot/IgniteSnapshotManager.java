@@ -965,7 +965,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata meta
     ) {
 
-        IncrementalSnapshotFileTree ift = req.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex());
+        SnapshotFileTree sft = req.snapshotFileTree();
+        IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(req.incrementIndex());
         WALPointer lowPtr;
 
         if (req.incrementIndex() == 1)
@@ -976,7 +977,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             IncrementalSnapshotMetadata prevIncSnpMeta;
 
             try {
-                prevIncSnpMeta = readIncrementalSnapshotMetadata(req.snapshotName(), req.snapshotPath(), prevIdx);
+                prevIncSnpMeta = readIncrementalSnapshotMetadata(sft.incrementalSnapshotFileTree(prevIdx).meta());
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
@@ -990,8 +991,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.operationalNodeId(),
             req.requestId(),
             meta,
-            req.snapshotPath(),
-            req.incrementIndex(),
+            ift,
             lowPtr,
             markWalFut
         )).chain(fut -> {
@@ -1045,20 +1045,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Full snapshot name.
-     * @param snpPath Optional path to snapshot, if differs from default.
-     * @param incIdx Index of incremental snapshot.
+     * @param meta Meta file.
      * @return Read incremental snapshot metadata.
      */
-    public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(
-        String snpName,
-        @Nullable String snpPath,
-        int incIdx
-    ) throws IgniteCheckedException, IOException {
-        return readFromFile(new File(
-            incrementalSnapshotLocalDir(snpName, snpPath, incIdx),
-            snapshotMetaFileName(pdsSettings.folderName())
-        ));
+    public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(File meta) throws IgniteCheckedException, IOException {
+        return readFromFile(meta);
     }
 
     /**
@@ -2988,8 +2979,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (wal == null)
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
-
-        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
         if (!ft.walArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");

@@ -71,6 +71,16 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path) {
+        this(ctx, ctx.discovery().localNode().consistentId().toString(), name, path);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param consId Consistent id.
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
+     */
+    public SnapshotFileTree(GridKernalContext ctx, String consId, String name, @Nullable String path) {
         super(root(ctx.pdsFolderResolver().fileTree(), name, path), ctx.pdsFolderResolver().fileTree().folderName());
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");

@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -132,6 +133,9 @@ public abstract class AbstractSnapshotVerificationTask extends
         /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
         protected final boolean check;
 
+        /** Snapshot file tree. */
+        protected transient SnapshotFileTree sft;
+
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
@@ -152,5 +156,14 @@ public abstract class AbstractSnapshotVerificationTask extends
             this.rqGrps = rqGrps;
             this.check = check;
         }
+
+        /** {@inheritDoc} */
+        @Override public Object execute() throws IgniteException {
+            sft = new SnapshotFileTree(ignite.context(), consId, snpName, snpPath);
+
+            return execute0();
+        }
+
+        protected abstract Object execute0();
     }
 }
