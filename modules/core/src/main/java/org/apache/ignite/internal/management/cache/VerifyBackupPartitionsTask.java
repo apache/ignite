@@ -151,29 +151,21 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
      * @return Idle verify job result constructed from results of remote executions.
      */
     public static IdleVerifyResult reduce0(List<ComputeJobResult> results) {
-        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
-        Map<ClusterNode, Exception> ex = new HashMap<>();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                ex.put(res.getNode(), res.getException());
+                bldr.addException(res.getNode(), res.getException());
 
                 continue;
             }
 
             Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
 
-            for (Map.Entry<PartitionKey, PartitionHashRecord> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecord> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
-
-                records.add(e.getValue());
-            }
+            bldr.addPartitionHashes(nodeHashes);
         }
 
-        if (results.size() != ex.size())
-            return new IdleVerifyResult(clusterHashes, ex);
-        else
-            return new IdleVerifyResult(ex);
+        return bldr.build();
     }
 
     /**

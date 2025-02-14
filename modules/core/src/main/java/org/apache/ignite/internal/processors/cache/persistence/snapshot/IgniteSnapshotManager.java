@@ -1858,7 +1858,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                new IdleVerifyResult(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                                IdleVerifyResult.ofErrors(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
                         else
                             res.onDone(f1.error());
                     });
@@ -1868,7 +1868,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
                 else if (f0.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResult(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                        IdleVerifyResult.ofErrors(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
                 else
                     res.onDone(f0.error());
             }
