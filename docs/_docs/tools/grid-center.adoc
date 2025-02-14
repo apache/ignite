@@ -1,0 +1,69 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Manage Apache Ignite with Platform V Grid Center
+
+== Overview
+
+https://platformv.sbertech.ru/products/rabota-s-dannymi/grid-center[Platform V Grid Center, window=_blank] is a functional web product designed for Apache Ignite cluster administration.
+The key product features have been developed based on many years of experience in cluster management.
+Using the Platform V Grid Center as a ready-made solution means that you can simply start working with production clusters administration.
+
+== Key advantages
+
+Expand the key advantages of using Platform V Grid Center to create snapshots on time, analyze the results of Idle verify process, and many other options.
+
+=== Available interface
+
+Forget about the cluster control using the console — Platform V Grid Center has an intuitive design, and cluster administrators can easily manage Apache Ignite.
+
+image::images/tools/grid-center.png[Platform V Grid Center]
+
+=== Reducing costs
+
+Our web app optimizes the cluster support processes which reduces the operating costs — there is no need to attract system engineers to configure the cluster.
+
+=== Fast monitoring
+
+Platform V Grid Center visualizes the “health” of the cluster using numerous metrics, which shortens the response time to possible incidents.
+
+=== Simple management
+
+The Platform V Grid Center interface allows you to monitor the cluster online in real time which helps to minimize operation errors caused by the human factor.
+
+== Main functions
+
+=== Baseline topology editing
+
+Administrate the list of nodes and client connections with ease — just use the switches of the Platform V Grid Center interface.
+
+=== Cache processing
+
+Create and delete cluster caches, analyze the cache configuration and data distribution on cache partitions, and check the status of primary and backup partitions.
+
+=== SQL console
+
+Using a console, interact with a cluster through SQL queries.
+
+=== Control the transactions, queries, tasks, and services
+
+Manage the state of services, transactions, queries and tasks (including the duration of the operations) via Platform V Grid Center interface.
+If necessary, stop already active processes.
+
+=== Create and restore the snapshots
+
+Work with a schedule for full and incremental snapshots on time.
+Progress-bar helps to analyze the speed of creating snapshot — you can visualize the process duration and configure the speed to reduce the system load.
+
+And much more. Please see other functions of the Platform V Grid Center on the https://platformv.sbertech.ru/products/rabota-s-dannymi/grid-center[official website, window=_blank].
