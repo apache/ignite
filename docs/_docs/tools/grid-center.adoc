@@ -32,7 +32,7 @@ image::images/tools/grid-center.png[Platform V Grid Center]
 
 === Reducing costs
 
-Our web app optimizes the cluster support processes which reduces the operating costs — there is no need to attract system engineers to configure the cluster.
+This web app optimizes the cluster support processes which reduces the operating costs — there is no need to attract system engineers to configure the cluster.
 
 === Fast monitoring
 
