@@ -63,8 +63,7 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -307,7 +306,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
                     @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                        if (partId(part.getName()) > 0)
+                        if (partId(part) > 0)
                             throw new IgniteException("Test exception. Uploading partition file failed: " + pair);
 
                         super.sendPart0(part, cacheDirName, pair, length);
@@ -391,7 +390,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
                 String snpName = p.getFileName().toString();
 
                 U.copy(p.toFile(),
-                    Paths.get(resolveSnapshotWorkDirectory(loc.configuration()).getAbsolutePath(), snpName).toFile(),
+                    Paths.get(loc.context().pdsFolderResolver().fileTree().snapshotsRoot().getAbsolutePath(), snpName).toFile(),
                     false);
             }
             catch (IOException e) {

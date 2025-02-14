@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -349,9 +349,11 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
         assertTrue(waitForCondition(() -> {
             try {
-                List<Long> actual = Files.list(GridTestUtils.getFieldValue(cdcMain, "cdcDir"))
+                NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
+
+                List<Long> actual = Files.list(ft.walCdc().toPath())
                     .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
-                    .map(FileWriteAheadLogManager::segmentIndex)
+                    .map(ft::walSegmentIndex)
                     .sorted()
                     .collect(Collectors.toList());
 

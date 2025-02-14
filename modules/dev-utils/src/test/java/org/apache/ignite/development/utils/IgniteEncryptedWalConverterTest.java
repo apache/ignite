@@ -18,7 +18,6 @@
 package org.apache.ignite.development.utils;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
@@ -27,16 +26,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -72,18 +67,18 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIgniteWalConverter() throws Exception {
-        String nodeFolder = createWal();
+        NodeFileTree ft = createWal();
 
         ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         PrintStream out = new PrintStream(outByte);
 
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            ft.wal(),
+            ft.walArchive(),
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
+            ft.binaryMeta(),
+            ft.marshaller(),
             false,
             null,
             null,
@@ -105,7 +100,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
     /**
      * Populates a cache and returns the name of its node's folder.
      */
-    private String createWal() throws Exception {
+    private NodeFileTree createWal() throws Exception {
         try (IgniteEx node = startGrid(0)) {
             node.cluster().state(ClusterState.ACTIVE);
 
@@ -114,7 +109,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
 
-            return node.context().pdsFolderResolver().resolveFolders().folderName();
+            return node.context().pdsFolderResolver().fileTree();
         }
     }
 }

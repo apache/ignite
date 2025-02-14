@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Role;
@@ -447,8 +446,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static File dumpDirectory(IgniteEx ign, String name) throws IgniteCheckedException {
-        return new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name);
+    public static File dumpDirectory(IgniteEx ign, String name) {
+        return new File(ign.context().pdsFolderResolver().fileTree().snapshotsRoot(), name);
     }
 
     /** */

@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -247,7 +246,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
+            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry, console).parseAndValidate(rawArgs);
 
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
@@ -272,7 +271,7 @@ public class CommandHandler {
                     }
 
                     logger.info("Command [" + cmdName + "] started");
-                    logger.info("Arguments: " + argumentsToString(rawArgs));
+                    logger.info("Arguments: " + args.safeCommandString());
                     logger.info(U.DELIM);
 
                     String deprecationMsg = args.command().deprecationMessage(args.commandArg());
@@ -443,36 +442,6 @@ public class CommandHandler {
      */
     private boolean isConnectionClosedSilentlyException(Throwable e) {
         return e instanceof ClientConnectionException && e.getMessage().startsWith("Channel is closed");
-    }
-
-    /**
-     * Joins user's arguments and hides sensitive information.
-     *
-     * @param rawArgs Arguments which user has provided.
-     * @return String which could be shown in console and pritned to log.
-     */
-    private String argumentsToString(List<String> rawArgs) {
-        boolean hide = false;
-
-        SB sb = new SB();
-
-        for (int i = 0; i < rawArgs.size(); i++) {
-            if (hide) {
-                sb.a("***** ");
-
-                hide = false;
-
-                continue;
-            }
-
-            String arg = rawArgs.get(i);
-
-            sb.a(arg).a(' ');
-
-            hide = ArgumentParser.isSensitiveArgument(arg);
-        }
-
-        return sb.toString();
     }
 
     /**
@@ -651,7 +620,8 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, registry).getCommonOptions())),
+        logger.info(INDENT + join(" ",
+            join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, registry, null).getCommonOptions())),
             asOptional("command", true), "<command_parameters>"));
         logger.info("");
         logger.info("");
@@ -717,8 +687,8 @@ public class CommandHandler {
         logger.info(INDENT + "The '--cache subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
         logger.info("");
-        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, null).getCommonOptions())) + " " +
-            "--cache [subcommand] <subcommand_parameters>");
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, null, null).getCommonOptions())) +
+            " --cache [subcommand] <subcommand_parameters>");
         logger.info("");
         logger.info(INDENT + "The subcommands that take [nodeId] as an argument ('list', 'find_garbage', " +
             "'contention' and 'validate_indexes') will be executed on the given node or on all server nodes" +

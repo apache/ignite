@@ -206,7 +206,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             String cmdName = null;
 
             try {
-                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
+                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry(), null);
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -60,7 +60,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 
 /**
  * Rebuild index after index.bin remove, when partition is moving.
@@ -218,7 +218,9 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         SUPPLY_MESSAGE_LATCH.set(new CountDownLatch(1));
 
-        removeIndexBin(1);
+        U.delete(
+            new File(nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(1))).cacheStorage(false, CACHE_NAME), INDEX_FILE_NAME)
+        );
 
         LogListener rebuildLsnr = finishIndexRebuildLsnr(CACHE_NAME);
 
@@ -245,17 +247,6 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
         log.registerListener(lsnr);
 
         return lsnr;
-    }
-
-    /** */
-    private void removeIndexBin(int nodeId) throws IgniteCheckedException {
-        U.delete(
-            U.resolveWorkDirectory(
-                U.defaultWorkDirectory(),
-                "db/" + U.maskForFileName(getTestIgniteInstanceName(nodeId)) + "/cache-" + CACHE_NAME + "/" + INDEX_FILE_NAME,
-                false
-            )
-        );
     }
 
     /** */

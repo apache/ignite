@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -76,15 +76,11 @@ public class CheckpointMarkerReadingErrorOnStartTest extends GridCommonAbstractT
 
         forceCheckpoint();
 
-        final PdsFolderSettings folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
-
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        File cpMarkersDir = new File(storeWorkDir, "cp");
+        final NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         stopGrid(0);
 
-        File[] cpMarkers = cpMarkersDir.listFiles();
+        File[] cpMarkers = ft.checkpoint().listFiles();
 
         assertNotNull(cpMarkers);
 

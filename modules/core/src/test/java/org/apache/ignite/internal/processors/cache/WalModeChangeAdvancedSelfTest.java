@@ -26,14 +26,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Ignore;
@@ -42,8 +41,8 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 
 /**
  * Concurrent and advanced tests for WAL state change.
@@ -157,13 +156,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     public void testMaintenanceIsSkippedIfWasFixedManuallyOnDowntime() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
-        File cacheToClean = cacheDir(srv, CACHE_NAME);
+        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
 
-        String ig0Folder = srv.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(srv.configuration().getWorkDirectory(), "db", false);
-
-        File ig0LfsDir = new File(dbDir, ig0Folder);
-        File ig0CpDir = new File(ig0LfsDir, "cp");
+        NodeFileTree ft0 = srv.context().pdsFolderResolver().fileTree();
 
         srv.cluster().state(ACTIVE);
 
@@ -176,7 +171,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         stopAllGrids(true);
 
-        File[] cpMarkers = ig0CpDir.listFiles();
+        File[] cpMarkers = ft0.checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))
@@ -223,9 +218,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      */
     @Test
     public void testCacheCleanup() throws Exception {
-        Ignite srv = startGrid(config(SRV_1, false, false));
+        IgniteEx srv = startGrid(config(SRV_1, false, false));
 
-        File cacheToClean = cacheDir(srv, CACHE_NAME_2);
+        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME_2);
 
         srv.cluster().state(ACTIVE);
 
@@ -290,16 +285,6 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     }
 
     /** */
-    private File cacheDir(Ignite ig, String cacheName) throws IgniteCheckedException {
-        String igFolder = ((IgniteEx)ig).context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig.configuration().getWorkDirectory(), "db", false);
-
-        File igPdsFolder = new File(dbDir, igFolder);
-
-        return new File(igPdsFolder, "cache-" + cacheName);
-    }
-
-    /** */
     private void cleanCacheDir(File cacheDir) {
         for (File f : cacheDir.listFiles()) {
             if (!f.getName().equals(CACHE_DATA_FILENAME))
@@ -350,7 +335,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         // Start other nodes.
         IgniteEx ig2 = startGrid(config(SRV_2, false, false));
 
-        File ig2CacheDir = cacheDir(ig2, CACHE_NAME);
+        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
 
         if (crdFiltered)
             srv.cluster().disableWal(CACHE_NAME);
@@ -447,7 +432,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         victimName = SRV_2;
 
                     try {
-                        File cacheDir = cacheDir(grid(victimName), CACHE_NAME);
+                        File cacheDir = grid(victimName).context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
 
                         stopGrid(victimName);
 

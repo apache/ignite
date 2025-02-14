@@ -69,6 +69,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGrids(nodeCount());
 
         client = startClientGrid("client");
@@ -333,6 +335,19 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         public Employer(String name, Double salary) {
             this.name = name;
             this.salary = salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Employer employer = (Employer)o;
+
+            return name.equals(employer.name) && salary.equals(employer.salary);
         }
     }
 }
