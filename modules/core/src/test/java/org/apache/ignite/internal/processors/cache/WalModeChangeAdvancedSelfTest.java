@@ -42,7 +42,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 
 /**
  * Concurrent and advanced tests for WAL state change.
@@ -287,7 +286,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     /** */
     private void cleanCacheDir(File cacheDir) {
         for (File f : cacheDir.listFiles()) {
-            if (!f.getName().equals(CACHE_DATA_FILENAME))
+            if (!NodeFileTree.cacheConfigFile(f))
                 f.delete();
         }
     }

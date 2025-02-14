@@ -91,7 +91,7 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         // Collection of pairs group and appropriate cache partition to be snapshot.
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
-            SNAPSHOT_NAME,
+            new SnapshotFileTree(ig.context(), SNAPSHOT_NAME, null),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             false, mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));
 

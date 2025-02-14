@@ -44,6 +44,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -56,7 +57,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.groupIdFromTmpDir;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -243,7 +243,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             () -> false,
             (part, t) -> {
                 if (t == null) {
-                    int grpId = groupIdFromTmpDir(part.getParentFile());
+                    int grpId = CU.cacheId(NodeFileTree.tmpDirCacheName(part.getParentFile()));
 
                     assertTrue("Received cache group has not been requested", parts.containsKey(grpId));
                     assertTrue("Received partition has not been requested",
@@ -378,7 +378,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         return (part, t) -> {
             assertNull(t);
 
-            int grpId = groupIdFromTmpDir(part.getParentFile());
+            int grpId = CU.cacheId(NodeFileTree.tmpDirCacheName(part.getParentFile()));
 
             assertTrue("Received cache group has not been requested", parts.containsKey(grpId));
             assertTrue("Received partition has not been requested",
