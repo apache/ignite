@@ -212,7 +212,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
 
     /** Temporary cache directory prefix. */
-    public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+    private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
     /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
     private static final String CACHE_DIR_PREFIX = "cache-";
