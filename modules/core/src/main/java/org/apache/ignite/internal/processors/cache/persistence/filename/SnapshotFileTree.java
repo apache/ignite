@@ -53,9 +53,6 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Incremental snapshots directory name. */
     public static final String INC_SNP_DIR = "increments";
 
-    /** Temporary cache directory prefix. */
-    public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
-
     /** Snapshot name. */
     private final String name;
 

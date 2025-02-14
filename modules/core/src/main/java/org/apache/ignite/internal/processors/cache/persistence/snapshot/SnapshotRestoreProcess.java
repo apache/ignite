@@ -103,7 +103,6 @@ import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.TMP_CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -206,7 +205,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If it was not possible to delete some temporary directory.
      */
     protected void cleanup() throws IgniteCheckedException {
-        for (File dir : ft.nodeStorage().listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_CACHE_DIR_PREFIX))) {
+        for (File dir : ft.nodeStorage().listFiles(dir -> NodeFileTree.tmpCacheStorage(dir))) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -715,18 +714,6 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param tmpCacheDir Temporary cache directory.
-     * @return Cache or group id.
-     */
-    static int groupIdFromTmpDir(File tmpCacheDir) {
-        assert tmpCacheDir.getName().startsWith(TMP_CACHE_DIR_PREFIX) : tmpCacheDir;
-
-        String cacheGrpName = tmpCacheDir.getName().substring(TMP_CACHE_DIR_PREFIX.length());
-
-        return CU.cacheId(cacheName(new File(tmpCacheDir.getParentFile(), cacheGrpName)));
-    }
-
-    /**
      * @param curOpCtx Restore operation context to enrich.
      * @param req Request to prepare cache group restore from the snapshot.
      * @param metas Local snapshot metadatas.
@@ -1102,7 +1089,7 @@ public class SnapshotRestoreProcess {
                                     return;
                                 }
 
-                                int grpId = groupIdFromTmpDir(snpFile.getParentFile());
+                                int grpId = CU.cacheId(NodeFileTree.tmpDirCacheName(snpFile.getParentFile()));
                                 int partId = partId(snpFile);
 
                                 PartitionRestoreFuture partFut = F.find(allParts.get(grpId), null,
@@ -1708,7 +1695,7 @@ public class SnapshotRestoreProcess {
     ) {
         File snpFile = new File(srcDir, NodeFileTree.partitionFileName(partFut.partId));
         Path partFile = Paths.get(targetDir.getAbsolutePath(), NodeFileTree.partitionFileName(partFut.partId));
-        int grpId = groupIdFromTmpDir(targetDir);
+        int grpId = CU.cacheId(NodeFileTree.tmpDirCacheName(targetDir));
 
         IgniteSnapshotManager snapMgr = ctx.cache().context().snapshotMgr();
 
