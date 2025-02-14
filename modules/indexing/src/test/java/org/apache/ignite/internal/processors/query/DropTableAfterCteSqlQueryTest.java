@@ -139,9 +139,8 @@ public class DropTableAfterCteSqlQueryTest extends AbstractIndexingCommonTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        if (validSql) {
+        if (validSql)
             assertEquals(1, cache.query(qry).getAll().size());
-        }
         else
             assertThrowsWithCause(() -> cache.query(qry).getAll(), IgniteSQLException.class);
 
@@ -173,9 +172,8 @@ public class DropTableAfterCteSqlQueryTest extends AbstractIndexingCommonTest {
 
         addData();
 
-        if (validSql) {
+        if (validSql)
             assertEquals(1, sql(sql).size());
-        }
         else
             assertThrowsWithCause(() -> sql(sql), IgniteSQLException.class);
 
