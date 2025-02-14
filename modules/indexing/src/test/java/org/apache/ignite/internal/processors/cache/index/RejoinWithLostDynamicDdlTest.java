@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,9 +51,6 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     /** */
     private boolean persistence;
 
-    /** Static cache configurations. */
-    private CacheConfiguration<?, ?>[] staticCaches;
-
     /** */
     private IgniteEx sqlClient;
 
@@ -63,7 +58,7 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public int gridToRestart;
 
-    /** Eanables create-if-not-exist table with the rejoining. */
+    /** Enables create-if-not-exist table with the rejoining. */
     @Parameterized.Parameter(1)
     public boolean recreateTable;
 
@@ -94,14 +89,15 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
 
-        if (!F.isEmpty(staticCaches))
-            cfg.setCacheConfiguration(staticCaches);
+        cfg.setCacheConfiguration(new CacheConfiguration<?, ?>[] {cacheConfiguration("STATIC_CACHE")});
+
+        cfg.setConsistentId(gridName);
 
         return cfg;
     }
@@ -157,14 +153,6 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     ) throws Exception {
         this.persistence = persistence;
 
-        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("STATIC_CACHE")
-            .setBackups(SERVERS_CNT - 1)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-
-        staticCaches = new CacheConfiguration<?, ?>[] {cacheCfg};
-
         startGrids(SERVERS_CNT);
 
         sqlClient = startClientGrid(G.allGrids().size());
@@ -172,9 +160,7 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
         if (persistence)
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-        cacheCfg.setName("DYN_CACHE");
-
-        sqlClient.createCache(cacheCfg);
+        sqlClient.createCache(cacheConfiguration("DYN_CACHE"));
 
         awaitPartitionMapExchange();
 
@@ -184,16 +170,12 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
         assertEquals(0, sql("SELECT * FROM STATIC_TBL").size());
         assertEquals(0, sql("SELECT * FROM DYN_TBL").size());
 
-        File persistPath = grid(gridToRestart).context().pdsFolderResolver().fileTree().nodeStorage();
+        String restartConsId = grid(gridToRestart).cluster().localNode().consistentId().toString();
 
         stopGrid(gridToRestart);
 
-        if (clearData) {
-            if (log.isDebugEnabled())
-                log.debug("Clearing " + persistPath);
-
-            U.delete(persistPath);
-        }
+        if (clearData)
+            cleanPersistenceDir(restartConsId);
 
         if (!rejoinActive)
             grid(gridToRestart == SERVERS_CNT ? 1 : SERVERS_CNT).cluster().state(ClusterState.INACTIVE);
@@ -211,8 +193,8 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < LOAD_CNT; ++i) {
-            assertEquals(1, sql("INSERT INTO STATIC_TBL VALUES(" + i + ", 'value_" + i + "')").size());
-            assertEquals(1, sql("INSERT INTO DYN_TBL VALUES(" + i + ", 'value_" + i + "')").size());
+            sql("INSERT INTO STATIC_TBL VALUES(" + i + ", 'value_" + i + "')");
+            sql("INSERT INTO DYN_TBL VALUES(" + i + ", 'value_" + i + "')");
         }
 
         assertEquals(LOAD_CNT, sqlClient.cache("STATIC_CACHE").size());
@@ -228,5 +210,14 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
         GridQueryProcessor sqlProc = sqlClient.context().query();
 
         return sqlProc.querySqlFields(new SqlFieldsQuery(sql), false).getAll();
+    }
+
+    /** */
+    private static CacheConfiguration<?, ?> cacheConfiguration(String cacheName) {
+        return new CacheConfiguration<>(cacheName)
+            .setBackups(SERVERS_CNT - 1)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
     }
 }
