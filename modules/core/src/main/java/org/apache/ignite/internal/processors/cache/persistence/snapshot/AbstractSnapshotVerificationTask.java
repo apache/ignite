@@ -164,6 +164,7 @@ public abstract class AbstractSnapshotVerificationTask extends
             return execute0();
         }
 
+        /** Exectues actual job. */
         protected abstract Object execute0();
     }
 }
