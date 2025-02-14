@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -134,7 +133,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 
 /**
  *
@@ -584,11 +582,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         // Delete cache_data.bin file for this cache. Binary recovery should complete successfully after it.
-        final File[] files = destroyCacheWorkDir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(final File dir, final String name) {
-                return name.endsWith(CACHE_DATA_FILENAME);
-            }
-        });
+        final File[] files = destroyCacheWorkDir.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
 
         assertTrue(files.length > 0);
 

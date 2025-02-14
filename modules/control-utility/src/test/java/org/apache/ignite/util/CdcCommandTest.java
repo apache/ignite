@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -250,10 +251,12 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private void checkLinks(IgniteEx srv, List<Long> expLinks) {
-        File[] links = srv.context().pdsFolderResolver().fileTree().walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
+        NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
+
+        File[] links = ft.walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
-        Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
+        Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)
             .allMatch(expLinks::contains);
     }
 

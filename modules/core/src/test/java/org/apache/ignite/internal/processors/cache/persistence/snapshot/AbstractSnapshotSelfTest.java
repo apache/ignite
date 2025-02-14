@@ -114,8 +114,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -348,7 +347,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         try {
             try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
+                p -> NodeFileTree.partitionFile(p.toFile()) && p.toFile().getName().endsWith(FILE_SUFFIX))
             ) {
                 for (Path path : partFiles)
                     result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
@@ -645,13 +644,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
 
                 File[] parts = cacheDir.listFiles(f ->
-                    f.getName().startsWith(PART_FILE_PREFIX)
+                    NodeFileTree.partitionFile(f)
                         && f.getName().endsWith(FILE_SUFFIX));
 
                 for (File partFile : parts) {
-                    int part = Integer.parseInt(partFile.getName()
-                        .substring(PART_FILE_PREFIX.length())
-                        .replace(FILE_SUFFIX, ""));
+                    int part = NodeFileTree.partId(partFile);
 
                     cacheParts.compute(part, (part0, cnt) -> (cnt == null ? 0 : cnt) + 1);
                 }

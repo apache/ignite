@@ -240,7 +240,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         long segIdx = wal.lastCompactedSegment();
 
-        U.delete(wal.compactedSegment(segIdx));
+        U.delete(srv.context().pdsFolderResolver().fileTree().zipWalArchiveSegment(segIdx));
 
         assertThrowsWithCause(
             () -> srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
@@ -309,7 +309,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridLocalConfigManager locCfgMgr = srv.context().cache().configManager();
 
-        File ccfgFile = locCfgMgr.cacheConfigurationFile(ccfg);
+        File ccfgFile = srv.context().pdsFolderResolver().fileTree().cacheConfigurationFile(ccfg);
 
         StoredCacheData cacheData = locCfgMgr.readCacheData(ccfgFile);
 

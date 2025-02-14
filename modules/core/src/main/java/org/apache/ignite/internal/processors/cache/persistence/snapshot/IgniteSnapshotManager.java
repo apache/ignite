@@ -211,12 +211,12 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -2587,7 +2587,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             );
         }
 
-        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName, null), databaseRelativePath(folderName)),
+        File snpPart = partitionFile(new File(snapshotLocalDir(snpName, null), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
 
         int grpId = CU.cacheId(grpName);
@@ -3898,7 +3898,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 File tmpCacheDir = U.resolveWorkDirectory(ft.nodeStorage().getAbsolutePath(),
                     formatTmpDirName(cacheDir).getName(), false);
 
-                return Paths.get(tmpCacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
+                return Paths.get(tmpCacheDir.getAbsolutePath(), partitionFileName(partId)).toString();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -4178,7 +4178,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-            File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
+            File snpPart = partitionFile(dbDir, cacheDirName, pair.getPartitionId());
 
             if (log.isDebugEnabled()) {
                 log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
