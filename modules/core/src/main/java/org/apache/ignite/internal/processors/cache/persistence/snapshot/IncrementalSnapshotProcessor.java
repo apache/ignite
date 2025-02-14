@@ -138,12 +138,10 @@ abstract class IncrementalSnapshotProcessor {
 
                 WALRecord rec = walRec.getValue();
 
-                if (rec.type() == CLUSTER_SNAPSHOT) {
-                    if (((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(sft.name())) {
-                        startIdx = walRec.getKey().index();
+                if (rec.type() == CLUSTER_SNAPSHOT && ((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(sft.name())) {
+                    startIdx = walRec.getKey().index();
 
-                        break;
-                    }
+                    break;
                 }
             }
 
