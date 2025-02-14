@@ -154,11 +154,11 @@ public abstract class DistributionFunction {
 
     /** */
     public static boolean satisfy(DistributionFunction f0, DistributionFunction f1) {
-        if (f0 == f1 || f0.name() == f1.name())
+        if (f0 == f1 || Objects.equals(f0.name(), f1.name()))
             return true;
 
         return f0 instanceof AffinityDistribution && f1 instanceof AffinityDistribution &&
-            Objects.equals(((AffinityDistribution)f0).identity(), ((AffinityDistribution)f1).identity());
+            Objects.equals(f0.identity(), f1.identity());
     }
 
     /** */
