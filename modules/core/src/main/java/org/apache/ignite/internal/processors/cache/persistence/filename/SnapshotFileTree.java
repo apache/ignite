@@ -31,9 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
  * During creation, full snapshot, creates the same file tree as regular node.
@@ -154,7 +151,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return A file representation.
      */
     public File partDeltaFile(String cacheDirName, int partId) {
-        return new File(tmpFt.cacheStorage(cacheDirName), partDeltaFileName(partId));
+        return new File(tmpFt.cacheStorage(cacheDirName), partitionFileName(partId, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -249,7 +246,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param compress If {@code true} then list compressed files.
      * @return List of cache partitions in given directory.
      */
-    public static List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
+    public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
         File[] files = cacheDir.listFiles();
 
         if (files == null)
@@ -259,17 +256,6 @@ public class SnapshotFileTree extends NodeFileTree {
             .filter(File::isFile)
             .filter(f -> f.getName().endsWith(partExtension(dump, compress)))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * TODO: remove me.
-     * @param partId Partition id.
-     * @return File name of delta partition pages.
-     */
-    public static String partDeltaFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
-
-        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
     }
 
     /**

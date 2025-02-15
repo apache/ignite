@@ -543,9 +543,14 @@ public class NodeFileTree extends SharedFileTree {
      * @return File name.
      */
     public static String partitionFileName(int part) {
+        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
+    }
+
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
-        return part == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, part);
+        return part == INDEX_PARTITION ? idxName : format(format, part);
     }
 
     /**

@@ -115,7 +115,7 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
@@ -437,7 +437,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 })
                 .collect(Collectors.toSet());
 
-            String partDumpName = SnapshotFileTree.dumpPartFileName(0, false);
+            String partDumpName = dumpPartFileName(0, false);
 
             assertTrue(dumpFiles.stream().anyMatch(NodeFileTree::cacheConfigFile));
             assertTrue(dumpFiles.stream().anyMatch(f -> f.getName().equals(partDumpName)));
@@ -753,13 +753,13 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, parts).forEach(i -> {
             try {
-                String entryName = SnapshotFileTree.dumpPartFileName(i, false);
+                String entryName = dumpPartFileName(i, false);
 
                 NodeFileTree rawFt = new NodeFileTree(dumpDirectory(ign, rawDump), id);
                 NodeFileTree zipFt = new NodeFileTree(dumpDirectory(ign, zipDump), id);
 
                 File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), entryName);
-                File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), entryName + ZIP_SUFFIX);
+                File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, true));
 
                 byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
 

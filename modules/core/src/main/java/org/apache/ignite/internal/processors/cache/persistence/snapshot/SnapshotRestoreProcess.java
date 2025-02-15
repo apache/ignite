@@ -974,6 +974,7 @@ public class SnapshotRestoreProcess {
                     cacheGrpNames.put(grpId, cacheOrGrpName);
 
                 File tmpCacheDir = ft.tmpCacheStorage(dir.getName());
+
                 tmpCacheDir.mkdir();
 
                 Set<PartitionRestoreFuture> leftParts;
@@ -1032,7 +1033,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File idxFile = new File(snpCacheDir, NodeFileTree.partitionFileName(INDEX_PARTITION));
+                        File idxFile = opCtx0.sft.partitionFile(dir.getName(), INDEX_PARTITION);
 
                         if (idxFile.exists()) {
                             PartitionRestoreFuture idxFut;
