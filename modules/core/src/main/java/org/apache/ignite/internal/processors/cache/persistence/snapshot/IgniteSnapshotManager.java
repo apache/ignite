@@ -218,7 +218,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -447,15 +446,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
-    }
-
-    /**
-     * @param snapshotCacheDir Snapshot directory to store files.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
-     */
-    public static File partDeltaFile(File snapshotCacheDir, int partId) {
-        return new File(snapshotCacheDir, partDeltaFileName(partId));
     }
 
     /**
