@@ -28,8 +28,14 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
+import org.h2.expression.ValueExpression;
+import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcStatement;
+import org.h2.table.RangeTable;
 import org.jetbrains.annotations.Nullable;
+
+import static org.h2.engine.Constants.SCHEMA_MAIN;
 
 /**
  * Wrapper to store connection with currently used schema and statement cache.
@@ -59,6 +65,24 @@ public class H2Connection implements AutoCloseable {
         this.log = log;
 
         initStatementCache();
+
+        // Work around the H2 bug (NPE in Session#removeLocalTempTable).
+        // Make sure session always contains not-null list of temp tables.
+        try {
+            Session sess = (Session)(conn.unwrap(JdbcConnection.class)).getSession();
+
+            RangeTable dummyTbl = new RangeTable(
+                sess.getDatabase().getSchema(SCHEMA_MAIN),
+                ValueExpression.getNull(),
+                ValueExpression.getNull(),
+                true);
+
+            sess.addLocalTempTable(dummyTbl);
+            sess.removeLocalTempTable(dummyTbl);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Failed to initialize DB connection", e);
+        }
     }
 
     /**
