@@ -88,18 +88,18 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
         IgniteSnapshotManager mgr = snp(ig);
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
 
         // Collection of pairs group and appropriate cache partition to be snapshot.
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
-            new SnapshotFileTree(ig.context(), SNAPSHOT_NAME, null),
+            sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            false, mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));
+            false, mgr.localSnapshotSenderFactory().apply(sft));
 
         snpFut.get();
 
         // Calculate CRCs.
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
-        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
 
         // Checkpoint forces on cluster deactivation (currently only single node in cluster),
         // so we must have the same data in snapshot partitions and those which left
