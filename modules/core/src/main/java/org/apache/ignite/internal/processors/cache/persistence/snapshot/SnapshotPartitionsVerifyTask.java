@@ -89,7 +89,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(sft.meta());
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft.root(), false, check));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

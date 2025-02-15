@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
@@ -751,44 +752,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, partId);
 
         return store.pages();
-    }
-
-    /**
-     * @param dir Directory to check.
-     * @param names Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
-     */
-    public static List<File> cacheDirectories(File dir, Predicate<String> names) {
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> names.test(NodeFileTree.cacheName(f)))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * @param dir Directory to check.
-     * @param grpId Cache group id
-     * @return Files that match cache or cache group pattern.
-     */
-    public static File cacheDirectory(File dir, int grpId) {
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            return null;
-
-        return Arrays.stream(files)
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> CU.cacheId(NodeFileTree.cacheName(f)) == grpId)
-            .findAny()
-            .orElse(null);
     }
 
     /**

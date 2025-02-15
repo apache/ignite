@@ -50,7 +50,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 
-import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
@@ -109,14 +108,14 @@ public class SnapshotMetadataVerificationTask
 
             SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), arg.snapshotName(), arg.snapshotPath());
 
-            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft.name(), sft.path());
+            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft);
 
             for (SnapshotMetadata meta : snpMeta)
                 checkMeta(meta);
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
-                    .filter(m -> m.consistentId().equals(valueOf(ignite.localNode().consistentId())))
+                    .filter(m -> m.consistentId().equals(sft.consistentId()))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
