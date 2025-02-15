@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -157,7 +158,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param snpName Unique identifier of snapshot process.
+     * @param sft Snapshot file tree.
+     * @param ft Node file tree.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
@@ -167,7 +169,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String snpName,
+        SnapshotFileTree sft,
         NodeFileTree ft,
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
@@ -175,7 +177,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, sft, snpSndr, parts);
 
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +51,10 @@ public class SnapshotFileTree extends NodeFileTree {
     public static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    public static final String INC_SNP_DIR = "increments";
+    private static final String INC_SNP_DIR = "increments";
+
+    /** Dump files name. */
+    private static final String DUMP_FILE_EXT = ".dump";
 
     /** Snapshot name. */
     private final String name;
@@ -66,21 +69,31 @@ public class SnapshotFileTree extends NodeFileTree {
     private final NodeFileTree tmpFt;
 
     /**
-     * @param loc Local node.
+     * @param ctx Kernal context.
      * @param name Snapshot name.
      * @param path Optional snapshot path.
      */
-    public SnapshotFileTree(IgniteEx loc, String name, @Nullable String path) {
-        super(root(loc.context().pdsFolderResolver().fileTree(), name, path), loc.context().pdsFolderResolver().fileTree().folderName());
+    public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path) {
+        this(ctx, ctx.discovery().localNode().consistentId().toString(), name, path);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param consId Consistent id.
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
+     */
+    public SnapshotFileTree(GridKernalContext ctx, String consId, String name, @Nullable String path) {
+        super(root(ctx.pdsFolderResolver().fileTree(), name, path), ctx.pdsFolderResolver().fileTree().folderName());
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        NodeFileTree ft = loc.context().pdsFolderResolver().fileTree();
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
         this.name = name;
         this.path = path;
-        this.consId = loc.localNode().consistentId().toString();
+        this.consId = consId;
         this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
     }
 
@@ -100,8 +113,11 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * Returns file tree for specific incremental snapshot.
+     * Root will be something like {@code "work/snapshots/mybackup/increments/0000000000000001"}.
+     *
      * @param incIdx Increment index.
-     * @return Root directory for incremental snapshot.
+     * @return Incremental snapshot file tree.
      */
     public IncrementalSnapshotFileTree incrementalSnapshotFileTree(int incIdx) {
         return new IncrementalSnapshotFileTree(
@@ -152,6 +168,15 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * Note, this consistent id can differ from the local consistent id.
+     * In case snapshot was moved from other node.
+     * @return Consistent id of the snapshot.
+     */
+    public String consistentId() {
+        return consId;
+    }
+
+    /**
      * @param partId Partition id.
      * @return File name of delta partition pages.
      */
@@ -162,10 +187,45 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param part Partition number.
+     * @param compressed If {@code true} then compressed partition file.
+     * @return Dump partition file name.
+     */
+    public static String dumpPartFileName(int part, boolean compressed) {
+        return PART_FILE_PREFIX + part + partExtension(true, compressed);
+    }
+
+    /**
+     * @param dump Extension for dump files.
+     * @param compressed If {@code true} then files compressed.
+     * @return Partition file extension.
+     */
+    public static String partExtension(boolean dump, boolean compressed) {
+        return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
+
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms partition dump file name pattern.
+     */
+    public static boolean dumpPartitionFile(File f, boolean compressed) {
+        return partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms snapshot meta name pattern.
+     */
+    public static boolean snapshotMetaFile(File f) {
+        return f.getName().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT);
+    }
+
+    /**
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    private String snapshotMetaFileName(String consId) {
+    public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 
