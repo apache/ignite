@@ -1055,9 +1055,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
-
-                snpDir.mkdirs();
+                req.snapshotFileTree().root().mkdirs();
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
@@ -1083,16 +1081,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), req.snapshotFileTree().root(),
                     req.streamerWarning(), true);
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                storeSnapshotMeta(req.meta(), req.snapshotFileTree().meta());
 
-                storeSnapshotMeta(req.meta(), smf);
-
-                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                log.info("Snapshot metafile has been created: " + req.snapshotFileTree().meta().getAbsolutePath());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
