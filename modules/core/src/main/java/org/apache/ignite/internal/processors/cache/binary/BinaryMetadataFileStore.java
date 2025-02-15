@@ -84,7 +84,7 @@ class BinaryMetadataFileStore {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
-     * @param ft Node file tree.
+     * @param metadataDir Path to binary metadata store configured by user, should include binary_meta
      * and consistentId.
      * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
@@ -92,7 +92,7 @@ class BinaryMetadataFileStore {
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        final NodeFileTree ft,
+        final File metadataDir,
         final boolean forceEnabled
     ) throws IgniteCheckedException {
         this.metadataLocCache = metadataLocCache;
@@ -211,7 +211,7 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
-        for (File file : metadataDir.listFiles(BinaryUtils::notTmpFile))
+        for (File file : metadataDir.listFiles(NodeFileTree::notTmpFile))
             restoreMetadata(file);
     }
 

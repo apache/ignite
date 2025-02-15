@@ -80,7 +80,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * Binary utils.
@@ -2578,17 +2577,9 @@ public class BinaryUtils {
     }
 
     /**
-     * @param f File.
-     * @return {@code True} if file is regular(not temporary).
-     */
-    public static boolean notTmpFile(File f) {
-        return !f.getName().endsWith(TMP_SUFFIX);
-    }
-
-    /**
      * @param fileName File name.
      * @return Type id
-     * @see #binaryMetaFileName(int)
+     * @see NodeFileTree#binaryMetaFileName(int)
      * @see NodeFileTree#FILE_SUFFIX
      */
     public static int typeId(String fileName) {

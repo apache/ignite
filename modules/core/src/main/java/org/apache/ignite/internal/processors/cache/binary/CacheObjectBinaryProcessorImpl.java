@@ -90,7 +90,6 @@ import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -165,11 +164,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     private BinaryMetadataFileStore metadataFileStore;
 
     /**
-     * Custom file tree specifying local folder for {@link #metadataFileStore}.<br>
-     * {@code null} means no specific tree is configured. <br>
-     * In this case {@link PdsFoldersResolver#fileTree()} will be used.<br>
+     * Custom folder specifying local folder for {@link #metadataFileStore}.<br>
+     * {@code null} means no specific folder is configured. <br>
+     * In this case folder for metadata is composed from work directory and consistentId <br>
      */
-    private NodeFileTree ft;
+    @Nullable private File binaryMetadataFileStoreDir;
 
     /** How long to wait for schema if no updates in progress. */
     private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, DFLT_WAIT_SCHEMA_UPDATE);
@@ -226,13 +225,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (!ctx.clientNode()) {
-                if (BinaryMetadataFileStore.enabled(ctx.config()) && ft == null) {
-                    ft = ctx.pdsFolderResolver().fileTree();
+                if (BinaryMetadataFileStore.enabled(ctx.config()) && binaryMetadataFileStoreDir == null)
+                    binaryMetadataFileStoreDir = ctx.pdsFolderResolver().fileTree().mkdirBinaryMeta();
 
-                    ft.mkdirBinaryMeta();
-                }
-
-                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, ft, false);
+                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir, false);
 
                 metadataFileStore.start();
             }
@@ -982,11 +978,14 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void saveMetadata(Collection<BinaryType> types, NodeFileTree ft) {
+    @Override public void saveMetadata(Collection<BinaryType> types, File dir) {
         try {
-            ft.mkdirBinaryMeta();
-
-            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(), ctx, log, ft, true);
+            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
+                ctx,
+                log,
+                new NodeFileTree(dir, ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
+                true
+            );
 
             for (BinaryType type : types)
                 writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
@@ -997,7 +996,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMetadata(NodeFileTree ft, BooleanSupplier stopChecker) throws IgniteCheckedException {
+    @Override public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
         if (!metadataDir.exists())
             return;
 

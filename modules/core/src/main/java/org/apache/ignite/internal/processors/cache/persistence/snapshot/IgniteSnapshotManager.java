@@ -2868,7 +2868,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Cache group directory not found [groupId=" + grpId + ']');
             }
 
-            for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir)) {
+            for (File snpDataFile : NodeFileTree.cacheDataFiles(snpCacheDir)) {
                 StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
                     snpDataFile,
                     cctx.kernalContext().marshallerContext().jdkMarshaller(),
@@ -3921,7 +3921,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (types == null)
                 return;
 
-            cctx.kernalContext().cacheObjects().saveMetadata(types, sft);
+            cctx.kernalContext().cacheObjects().saveMetadata(types, sft.root());
         }
 
         /** {@inheritDoc} */

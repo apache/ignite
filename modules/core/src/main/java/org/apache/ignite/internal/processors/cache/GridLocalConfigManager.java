@@ -220,17 +220,17 @@ public class GridLocalConfigManager {
     }
 
     /**
-     * @param dbDir Root directory for all cache datas.
+     * @param ft Node file tree to read from.
      * @param marshaller Marshaller.
      * @param cfg Ignite configuration.
      * @return Collection of cache data files and actual cache data.
      */
     public static Map<File, StoredCacheData> readCachesData(
-        File dbDir,
+        NodeFileTree ft,
         @Nullable Marshaller marshaller,
         @Nullable IgniteConfiguration cfg
     ) {
-        File[] caches = dbDir.listFiles();
+        File[] caches = ft.nodeStorage().listFiles();
 
         if (caches == null)
             return Collections.emptyMap();
@@ -242,7 +242,7 @@ public class GridLocalConfigManager {
                 NodeFileTree.CACHE_DIR_FILTER.test(f) &&
                 !f.getName().equals(utilityCacheStorage))
             .filter(File::exists)
-            .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
+            .flatMap(cacheDir -> Arrays.stream(NodeFileTree.cacheDataFiles(cacheDir)))
             .collect(Collectors.toMap(f -> f, f -> {
                 try {
                     return readCacheData(f, marshaller, cfg);

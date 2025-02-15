@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -197,6 +198,16 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @param part partition.
+     * @param compress {@code True} if dump compressed.
+     * @return Path to the dump partition file;
+     */
+    public File dumpPartition(CacheConfiguration<?, ?> ccfg, int part, boolean compress) {
+        return new File(cacheStorage(ccfg), dumpPartFileName(part, compress));
+    }
+
+    /**
      * @param names Cache group names to filter.
      * @return Files that match cache or cache group pattern.
      */
@@ -234,10 +245,11 @@ public class SnapshotFileTree extends NodeFileTree {
 
     /**
      * @param cacheDir Cache directory to check.
-     * @param ext File extension.
+     * @param dump If {@code true} then list dump files.
+     * @param compress If {@code true} then list compressed files.
      * @return List of cache partitions in given directory.
      */
-    public static List<File> cachePartitionFiles(File cacheDir, String ext) {
+    public static List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
         File[] files = cacheDir.listFiles();
 
         if (files == null)
@@ -245,7 +257,7 @@ public class SnapshotFileTree extends NodeFileTree {
 
         return Arrays.stream(files)
             .filter(File::isFile)
-            .filter(f -> f.getName().endsWith(ext))
+            .filter(f -> f.getName().endsWith(partExtension(dump, compress)))
             .collect(Collectors.toList());
     }
 
@@ -261,23 +273,12 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * TODO: remove me
      * @param part Partition number.
      * @param compressed If {@code true} then compressed partition file.
      * @return Dump partition file name.
      */
     public static String dumpPartFileName(int part, boolean compressed) {
         return PART_FILE_PREFIX + part + partExtension(true, compressed);
-    }
-
-    /**
-     * @param dump Extension for dump files.
-     * @param compressed If {@code true} then files compressed.
-     * @return Partition file extension.
-     */
-    public static String partExtension(boolean dump, boolean compressed) {
-        return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
-
     }
 
     /**
@@ -300,8 +301,18 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    public static String snapshotMetaFileName(String consId) {
+    private static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
+    }
+
+    /**
+     * @param dump Extension for dump files.
+     * @param compressed If {@code true} then files compressed.
+     * @return Partition file extension.
+     */
+    private static String partExtension(boolean dump, boolean compressed) {
+        return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
+
     }
 
     /**

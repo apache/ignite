@@ -29,7 +29,6 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -130,7 +129,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     copyFiles(
                         ft.marshaller(),
                         ift.marshaller(),
-                        BinaryUtils::notTmpFile
+                        NodeFileTree::notTmpFile
                     );
 
                     copyFiles(

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -230,7 +229,7 @@ public class Dump implements AutoCloseable {
     public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
+        return Arrays.stream(NodeFileTree.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
@@ -248,7 +247,7 @@ public class Dump implements AutoCloseable {
     public List<Integer> partitions(String node, int grp) {
 
         File[] parts = dumpGroupDirectory(node, grp)
-            .listFiles(f -> NodeFileTree.partitionFile(f) && f.getName().endsWith(SnapshotFileTree.partExtension(true, comprParts)));
+            .listFiles(f -> SnapshotFileTree.dumpPartitionFile(f, comprParts));
 
         if (parts == null)
             return Collections.emptyList();

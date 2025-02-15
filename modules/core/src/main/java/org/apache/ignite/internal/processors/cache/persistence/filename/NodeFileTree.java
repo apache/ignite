@@ -599,6 +599,14 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param f File.
+     * @return {@code True} if file is regular(not temporary).
+     */
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(TMP_SUFFIX);
+    }
+
+    /**
+     * @param f File.
      * @return {@code True} if file conforms temp cache storage name pattern.
      */
     public static boolean tmpCacheStorage(File f) {
@@ -677,7 +685,6 @@ public class NodeFileTree extends SharedFileTree {
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
     }
 
-
     /** @param fileName Name of file with marshaller mapping information. */
     public static int mappedTypeId(String fileName) {
         try {
@@ -696,6 +703,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static String binaryMetaFileName(int typeId) {
         return typeId + FILE_SUFFIX;
+    }
+
+    /**
+     * @param root Root directory.
+     * @return Array of cache data files.
+     */
+    public static File[] cacheDataFiles(File root) {
+        return root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
     }
 
     /**

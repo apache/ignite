@@ -79,7 +79,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.cachePartitionFiles;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partExtension;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
@@ -141,8 +140,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir, partExtension(meta.dump(), meta.compressPartitions())
-            )) {
+            for (File part : cachePartitionFiles(dir, meta.dump(), meta.compressPartitions())) {
                 int partId = partId(part);
 
                 if (!parts.remove(partId))

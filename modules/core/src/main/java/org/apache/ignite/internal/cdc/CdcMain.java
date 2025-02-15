@@ -718,7 +718,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = ft.marshaller().listFiles(BinaryUtils::notTmpFile);
+            File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
 
             if (files == null)
                 return;
@@ -753,7 +753,7 @@ public class CdcMain implements Runnable {
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
-                    ft.nodeStorage(),
+                    ft,
                     kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()

@@ -639,9 +639,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
 
-                File[] parts = cacheDir.listFiles(f ->
-                    NodeFileTree.partitionFile(f)
-                        && f.getName().endsWith(FILE_SUFFIX));
+                File[] parts = cacheDir.listFiles(f -> NodeFileTree.partitionFile(f) && NodeFileTree.binFile(f));
 
                 for (File partFile : parts) {
                     int part = NodeFileTree.partId(partFile);

@@ -941,7 +941,7 @@ public class SnapshotRestoreProcess {
                                 ? opCtx0.sft.incrementalSnapshotFileTree(opCtx0.incIdx)
                                 : opCtx0.sft;
 
-                            ctx.cacheObjects().updateMetadata(metaFt, opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
 
                             restoreMappings(metaFt.marshaller(), opCtx0.stopChecker);
                         }
@@ -1176,7 +1176,7 @@ public class SnapshotRestoreProcess {
 
     /** Restore registered mappings for user classes. */
     private void restoreMappings(File marshallerDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        File[] mappings = marshallerDir.listFiles(BinaryUtils::notTmpFile);
+        File[] mappings = marshallerDir.listFiles(NodeFileTree::notTmpFile);
 
         if (mappings == null)
             throw new IgniteException("Failed to list marshaller directory [dir=" + marshallerDir + ']');
