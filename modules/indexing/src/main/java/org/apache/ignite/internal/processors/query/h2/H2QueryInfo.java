@@ -74,14 +74,18 @@ public class H2QueryInfo implements TrackableQuery {
     /** Query id. */
     private final long queryId;
 
+    /** Query label. */
+    private final String lbl;
+
     /**
      * @param type Query type.
      * @param stmt Query statement.
      * @param sql Query statement.
      * @param nodeId Originator node id.
      * @param queryId Query id.
+     * @param lbl Query label.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId, @Nullable String lbl) {
         try {
             assert stmt != null;
 
@@ -89,6 +93,7 @@ public class H2QueryInfo implements TrackableQuery {
             this.sql = sql;
             this.nodeId = nodeId;
             this.queryId = queryId;
+            this.lbl = lbl;
 
             beginTs = U.currentTimeMillis();
 
@@ -180,6 +185,9 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", schema=").append(schema)
                 .append(", sql='").append(sql)
                 .append("', plan=").append(stmt.getPlanSQL());
+
+        if (lbl != null)
+            msgSb.append(", label='").append(lbl).append("'");
 
         printInfo(msgSb);
 
