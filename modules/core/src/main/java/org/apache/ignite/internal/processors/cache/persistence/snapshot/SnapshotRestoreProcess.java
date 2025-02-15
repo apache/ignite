@@ -105,7 +105,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
@@ -942,7 +941,7 @@ public class SnapshotRestoreProcess {
                                 ? opCtx0.sft.incrementalSnapshotFileTree(opCtx0.incIdx)
                                 : opCtx0.sft;
 
-                            ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(metaFt, opCtx0.stopChecker);
 
                             restoreMappings(metaFt.marshaller(), opCtx0.stopChecker);
                         }
@@ -1011,8 +1010,7 @@ public class SnapshotRestoreProcess {
                     if (leftParts.isEmpty())
                         break;
 
-                    File snpCacheDir = new File(opCtx0.sft.root(),
-                        Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
+                    File snpCacheDir = opCtx0.sft.cacheStorage(dir.getName());
 
                     leftParts.removeIf(partFut -> {
                         boolean doCopy = ofNullable(meta.partitions().get(grpId))
@@ -1192,7 +1190,7 @@ public class SnapshotRestoreProcess {
 
             String fileName = map.getName();
 
-            int typeId = BinaryUtils.mappedTypeId(fileName);
+            int typeId = NodeFileTree.mappedTypeId(fileName);
             byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
 
             BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -61,6 +62,9 @@ public class SnapshotFileTree extends NodeFileTree {
 
     /** Dump files name. */
     private static final String DUMP_FILE_EXT = ".dump";
+
+    /** Pattern for incremental snapshot directory names. */
+    public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
     /** Snapshot name. */
     private final String name;
@@ -229,6 +233,24 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param cacheDir Cache directory to check.
+     * @param ext File extension.
+     * @return List of cache partitions in given directory.
+     */
+    public static List<File> cachePartitionFiles(File cacheDir, String ext) {
+        File[] files = cacheDir.listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .filter(File::isFile)
+            .filter(f -> f.getName().endsWith(ext))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * TODO: remove me.
      * @param partId Partition id.
      * @return File name of delta partition pages.
      */
@@ -239,6 +261,7 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * TODO: remove me
      * @param part Partition number.
      * @param compressed If {@code true} then compressed partition file.
      * @return Dump partition file name.

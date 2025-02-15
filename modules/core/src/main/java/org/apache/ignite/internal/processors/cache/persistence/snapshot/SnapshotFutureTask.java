@@ -247,7 +247,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             if (!started.compareAndSet(false, true))
                 return false;
 
-
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 

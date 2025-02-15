@@ -986,7 +986,7 @@ public class CdcMain implements Runnable {
             .map(f -> {
                 String fileName = f.getName();
 
-                int typeId = BinaryUtils.mappedTypeId(fileName);
+                int typeId = NodeFileTree.mappedTypeId(fileName);
                 byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
 
                 return (TypeMapping)new TypeMappingImpl(

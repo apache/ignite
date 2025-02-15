@@ -37,6 +37,7 @@ import static java.lang.String.format;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
@@ -538,16 +539,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param workDir Cache work directory.
-     * @param cacheDirName Cache directory name.
-     * @param part Partition id.
-     * @return Partition file.
-     */
-    public static File partitionFile(File workDir, String cacheDirName, int part) {
-        return new File(cacheStorage(workDir, cacheDirName), partitionFileName(part));
-    }
-
-    /**
      * @param part Partition id.
      * @return File name.
      */
@@ -555,14 +546,6 @@ public class NodeFileTree extends SharedFileTree {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
         return part == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, part);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public static File cacheStorage(File storeWorkDir, String cacheDirName) {
-        return new File(storeWorkDir, cacheDirName);
     }
 
     /**
@@ -655,21 +638,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param name File name.
-     * @return Cache name.
-     */
-    private static String cacheName(String name) {
-        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
-            return name.substring(CACHE_GRP_DIR_PREFIX.length());
-        else if (name.startsWith(CACHE_DIR_PREFIX))
-            return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
-            return METASTORAGE_CACHE_NAME;
-        else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
-    }
-
-    /**
      * @param segment WAL segment file.
      * @return Segment index.
      */
@@ -692,6 +660,42 @@ public class NodeFileTree extends SharedFileTree {
             return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
 
         throw new IllegalStateException("Illegal partition file name: " + name);
+    }
+
+    /**
+     * @param name File name.
+     * @return Cache name.
+     */
+    private static String cacheName(String name) {
+        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
+            return name.substring(CACHE_GRP_DIR_PREFIX.length());
+        else if (name.startsWith(CACHE_DIR_PREFIX))
+            return name.substring(CACHE_DIR_PREFIX.length());
+        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
+            return METASTORAGE_CACHE_NAME;
+        else
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
+    }
+
+
+    /** @param fileName Name of file with marshaller mapping information. */
+    public static int mappedTypeId(String fileName) {
+        try {
+            return Integer.parseInt(fileName.substring(0, fileName.indexOf(MAPPING_FILE_EXTENSION)));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; type ID is expected to be numeric.", e);
+        }
+    }
+
+    /**
+     * @param typeId Type id.
+     * @return Binary metadata file name.
+     */
+    public static String binaryMetaFileName(int typeId) {
+        return typeId + FILE_SUFFIX;
     }
 
     /**

@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -77,9 +76,10 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.cachePartitionFiles;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partExtension;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
@@ -141,7 +141,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir, SnapshotFileTree.partExtension(meta.dump(), meta.compressPartitions())
+            for (File part : cachePartitionFiles(dir, partExtension(meta.dump(), meta.compressPartitions())
             )) {
                 int partId = partId(part);
 

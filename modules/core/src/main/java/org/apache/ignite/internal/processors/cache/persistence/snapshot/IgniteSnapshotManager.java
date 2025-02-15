@@ -69,7 +69,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -217,6 +216,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -320,9 +320,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
-
-    /** Pattern for incremental snapshot directory names. */
-    public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -710,8 +707,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         try {
-
-
             U.delete(sft.binaryMeta());
             U.delete(sft.nodeStorage());
             U.delete(sft.meta());
@@ -2734,14 +2729,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return Relative configured path of persistence data storage directory for the local node.
-     * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
-     */
-    static String databaseRelativePath(String folderName) {
-        return Paths.get(DB_DEFAULT_FOLDER, folderName).toString();
-    }
-
-    /**
      * @param factory Factory to produce FileIO access.
      * @param from Copy from file.
      * @param to Copy data to file.
@@ -3934,7 +3921,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (types == null)
                 return;
 
-            cctx.kernalContext().cacheObjects().saveMetadata(types, sft.root());
+            cctx.kernalContext().cacheObjects().saveMetadata(types, sft);
         }
 
         /** {@inheritDoc} */
