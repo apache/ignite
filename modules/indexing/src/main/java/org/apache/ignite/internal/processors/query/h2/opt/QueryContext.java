@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
@@ -49,6 +51,9 @@ public class QueryContext {
     /** {@code True} for local queries, {@code false} for distributed ones. */
     private final boolean loc;
 
+    /** Application attributes. */
+    private final Map<String, String> appAttrs;
+
     /**
      * Constructor.
      *
@@ -56,6 +61,7 @@ public class QueryContext {
      * @param filter Filter.
      * @param distributedJoinCtx Distributed join context.
      * @param loc {@code True} for local queries, {@code false} for distributed ones.
+     * @param appAttrs Application attributes.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryContext(
@@ -63,13 +69,15 @@ public class QueryContext {
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
         @Nullable PartitionReservation reservations,
-        boolean loc
+        boolean loc,
+        @Nullable Map<String, String> appAttrs
     ) {
         this.segment = segment;
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;
         this.reservations = reservations;
         this.loc = loc;
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -83,7 +91,8 @@ public class QueryContext {
             filter,
             null,
             null,
-            local);
+            local,
+            null);
     }
 
     /**
@@ -124,6 +133,13 @@ public class QueryContext {
      */
     public boolean local() {
         return loc;
+    }
+
+    /**
+     * @return Application attributes.
+     */
+    public Map<String, String> applicationAttributes() {
+        return (appAttrs != null) ? Collections.unmodifiableMap(appAttrs) : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

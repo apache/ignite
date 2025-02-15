@@ -63,7 +63,7 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
             String initiatorId = fieldsQry != null ? fieldsQry.getQueryInitiatorId() : null;
 
             long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
-                false, createCancelToken(qry), initiatorId, false, true, false);
+                false, createCancelToken(qry), initiatorId, false, true, false, rootQry.label());
 
             rootQry.localQueryId(locId);
 

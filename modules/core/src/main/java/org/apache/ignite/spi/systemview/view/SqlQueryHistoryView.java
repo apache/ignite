@@ -53,32 +53,38 @@ public class SqlQueryHistoryView {
         return qry.local();
     }
 
-    /** @return Number of executions of the query. */
+    /** @return Query label. */
     @Order(3)
+    public String label() {
+        return qry.label();
+    }
+
+    /** @return Number of executions of the query. */
+    @Order(4)
     public long executions() {
         return qry.executions();
     }
 
     /** @return Number of failed execution of the query. */
-    @Order(4)
+    @Order(5)
     public long failures() {
         return qry.failures();
     }
 
     /** @return Minimal query duration. */
-    @Order(5)
+    @Order(6)
     public long durationMin() {
         return qry.minimumTime();
     }
 
     /** @return Maximum query duration. */
-    @Order(6)
+    @Order(7)
     public long durationMax() {
         return qry.maximumTime();
     }
 
     /** @return Last start time. */
-    @Order(7)
+    @Order(8)
     public Date lastStartTime() {
         return new Date(qry.lastStartTime());
     }

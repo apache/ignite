@@ -277,11 +277,12 @@ public class RunningQueryManager {
      * @param enforceJoinOrder Enforce join order flag.
      * @param lazy Lazy flag.
      * @param distributedJoins Distributed joins flag.
+     * @param lbl Query label.
      * @return Id of registered query. Id is a positive number.
      */
     public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
-        String qryInitiatorId, boolean enforceJoinOrder, boolean lazy, boolean distributedJoins) {
+        String qryInitiatorId, boolean enforceJoinOrder, boolean lazy, boolean distributedJoins, @Nullable String lbl) {
         long qryId = qryIdGen.incrementAndGet();
 
         if (qryInitiatorId == null)
@@ -301,7 +302,8 @@ public class RunningQueryManager {
             enforceJoinOrder,
             lazy,
             distributedJoins,
-            securitySubjectId(ctx)
+            securitySubjectId(ctx),
+            lbl
         );
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Map query info.
@@ -37,10 +38,11 @@ public class MapH2QueryInfo extends H2QueryInfo {
      * @param qryId Query id.
      * @param reqId Request ID.
      * @param segment Segment.
+     * @param lbl Query label.
      */
     public MapH2QueryInfo(PreparedStatement stmt, String sql, UUID nodeId, long qryId, long reqId,
-        int segment) {
-        super(QueryType.MAP, stmt, sql, nodeId, qryId);
+        int segment, @Nullable String lbl) {
+        super(QueryType.MAP, stmt, sql, nodeId, qryId, lbl);
 
         this.reqId = reqId;
         this.segment = segment;

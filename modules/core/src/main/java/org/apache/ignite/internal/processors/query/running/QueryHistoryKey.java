@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.query.running;
 
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Immutable query metrics key used to group metrics.
@@ -33,6 +34,9 @@ public class QueryHistoryKey {
     /** Local flag. */
     private final boolean loc;
 
+    /** Query label. */
+    private final String lbl;
+
     /** Pre-calculated hash code. */
     private final int hash;
 
@@ -42,16 +46,18 @@ public class QueryHistoryKey {
      * @param qry Textual query representation.
      * @param schema Schema.
      * @param loc Local flag of execution query.
+     * @param lbl Query label.
      */
-    public QueryHistoryKey(String qry, String schema, boolean loc) {
+    public QueryHistoryKey(String qry, String schema, boolean loc, @Nullable String lbl) {
         assert qry != null;
         assert schema != null;
 
         this.qry = qry;
         this.schema = schema;
         this.loc = loc;
+        this.lbl = lbl;
 
-        hash = 31 * (31 * qry.hashCode() + schema.hashCode()) + (loc ? 1 : 0);
+        hash = 31 * (31 * qry.hashCode() + schema.hashCode() + (lbl == null ? 0 : lbl.hashCode())) + (loc ? 1 : 0);
     }
 
     /**
@@ -73,6 +79,13 @@ public class QueryHistoryKey {
      */
     public boolean local() {
         return loc;
+    }
+
+    /**
+     * @return Query label.
+     */
+    public String label() {
+        return lbl;
     }
 
     /** {@inheritDoc} */

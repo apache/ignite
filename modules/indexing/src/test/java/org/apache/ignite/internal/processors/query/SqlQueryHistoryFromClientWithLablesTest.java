@@ -13,29 +13,45 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 
 /**
- * Check query history metrics from client node.
+ * Test class for verifying that the labels of queries executed from client nodes are correctly displayed in the
+ * SQL query history.
  */
-public class SqlQueryHistoryFromClientSelfTest extends SqlQueryHistorySelfTest {
+public class SqlQueryHistoryFromClientWithLablesTest extends SqlQueryHistorySelfTest {
     /** {@inheritDoc} */
-    @Override protected Ignite queryNode() {
-        Ignite node = grid(2);
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        assertTrue(node.cluster().node().isClient());
-
-        return node;
+        isLblChecked = true;
     }
 
     /** {@inheritDoc} */
     @Override protected void startTestGrid() throws Exception {
         startGrids(2);
         startClientGrid(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite queryNode() {
+        return grid(2).withApplicationAttributes(F.asMap(QUERY_LABEL, LABEL));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx checkNode() {
+        IgniteEx node = grid(2);
+
+        assertTrue(node.context().clientNode());
+
+        return node;
     }
 }
