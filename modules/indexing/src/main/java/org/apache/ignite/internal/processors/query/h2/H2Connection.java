@@ -68,16 +68,21 @@ public class H2Connection implements AutoCloseable {
 
         // Work around the H2 bug (NPE in Session#removeLocalTempTable).
         // Make sure session always contains not-null list of temp tables.
-        Session sess = (Session)((JdbcConnection)conn).getSession();
+        try {
+            Session sess = (Session)(conn.unwrap(JdbcConnection.class)).getSession();
 
-        RangeTable dummyTbl = new RangeTable(
-            sess.getDatabase().getSchema(SCHEMA_MAIN),
-            ValueExpression.getNull(),
-            ValueExpression.getNull(),
-            true);
+            RangeTable dummyTbl = new RangeTable(
+                sess.getDatabase().getSchema(SCHEMA_MAIN),
+                ValueExpression.getNull(),
+                ValueExpression.getNull(),
+                true);
 
-        sess.addLocalTempTable(dummyTbl);
-        sess.removeLocalTempTable(dummyTbl);
+            sess.addLocalTempTable(dummyTbl);
+            sess.removeLocalTempTable(dummyTbl);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Failed to initialize DB connection", e);
+        }
     }
 
     /**
