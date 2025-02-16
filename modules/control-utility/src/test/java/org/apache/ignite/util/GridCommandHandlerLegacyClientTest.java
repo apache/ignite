@@ -28,7 +28,6 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.commandline.CommandHandler.IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
@@ -60,17 +59,6 @@ public class GridCommandHandlerLegacyClientTest extends GridCommonAbstractTest {
                 .setPort(port)));
 
         checkExecute("Make sure you are connecting to the client connector", "--port", String.valueOf(port), "--state");
-
-        System.setProperty(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION, "true");
-
-        try {
-            checkExecute("Cluster state: ACTIVE", "--port", String.valueOf(port), "--state");
-        }
-        finally {
-            System.clearProperty(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION);
-        }
-
-        checkExecute("Cluster state: ACTIVE", "--state");
     }
 
     /** */
@@ -92,20 +80,6 @@ public class GridCommandHandlerLegacyClientTest extends GridCommonAbstractTest {
             "--truststore-password", keyStorePassword(),
             "--state");
 
-        System.setProperty(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION, "true");
-
-        try {
-            checkExecute("Cluster state: ACTIVE",
-                "--keystore", GridTestUtils.keyStorePath("connectorClient"),
-                "--keystore-password", GridTestUtils.keyStorePassword(),
-                "--truststore", keyStorePath("trustthree"),
-                "--truststore-password", keyStorePassword(),
-                "--state");
-        }
-        finally {
-            System.clearProperty(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION);
-        }
-
         checkExecute("Cluster state: ACTIVE",
             "--keystore", GridTestUtils.keyStorePath("thinClient"),
             "--keystore-password", GridTestUtils.keyStorePassword(),
@@ -122,15 +96,6 @@ public class GridCommandHandlerLegacyClientTest extends GridCommonAbstractTest {
             .setConnectorConfiguration(new ConnectorConfiguration()));
 
         checkExecute("Make sure you are connecting to the client connector", "--state");
-
-        System.setProperty(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION, "true");
-
-        try {
-            checkExecute("Cluster state: ACTIVE", "--state");
-        }
-        finally {
-            System.clearProperty(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION);
-        }
     }
 
     /** */

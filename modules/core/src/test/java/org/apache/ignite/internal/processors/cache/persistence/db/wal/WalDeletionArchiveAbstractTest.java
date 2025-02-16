@@ -221,7 +221,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         assertTrue(hist.checkpoints().size() < checkpointCnt + startHistSize);
 
-        File[] cpFiles = dbMgr.checkpointDirectory().listFiles();
+        File[] cpFiles = ((IgniteEx)ignite).context().pdsFolderResolver().fileTree().checkpoint().listFiles();
 
         assertTrue(cpFiles.length <= (checkpointCnt * 2 + 1)); // starts & ends + node_start
     }

@@ -40,7 +40,6 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -222,7 +221,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             encryption = false;
             dfltCacheCfg = null;
 
-            File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false);
+            File snpDir = sharedFileTree().snapshotsRoot();
             assertTrue(snpDir.isDirectory() && snpDir.listFiles().length > 0);
 
             tmpSnpDir = new File(snpDir.getAbsolutePath() + "_tmp");
@@ -237,7 +236,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             IgniteEx ig = startGrids(3);
 
-            snpDir.renameTo(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+            snpDir.renameTo(sharedFileTree().snapshotsRoot());
 
             ig.cluster().state(ACTIVE);
 

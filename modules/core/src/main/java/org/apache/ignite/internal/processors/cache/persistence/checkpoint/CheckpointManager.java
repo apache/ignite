@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -36,8 +36,10 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -79,6 +81,9 @@ public class CheckpointManager {
     /** Checkpoint markers storage which mark the start and end of each checkpoint. */
     private final CheckpointMarkersStorage checkpointMarkersStorage;
 
+    /** Storage for checkpoint recovery files. */
+    private final CheckpointRecoveryFileStorage checkpointRecoveryFileStorage;
+
     /** Timeout checkpoint lock which should be used while write to memory happened. */
     final CheckpointTimeoutLock checkpointTimeoutLock;
 
@@ -108,7 +113,7 @@ public class CheckpointManager {
      * @param cpFreqDeviation Distributed checkpoint frequency deviation.
      * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
      * @param marsh JDK marshaller.
-     * @throws IgniteCheckedException if fail.
+     * @param ft Node file tree.
      */
     public CheckpointManager(
         Function<Class<?>, IgniteLogger> logger,
@@ -129,8 +134,9 @@ public class CheckpointManager {
         GridCacheProcessor cacheProcessor,
         Supplier<Integer> cpFreqDeviation,
         Executor checkpointMapSnapshotExecutor,
-        JdkMarshaller marsh
-    ) throws IgniteCheckedException {
+        JdkMarshaller marsh,
+        NodeFileTree ft
+    ) {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
             logger,
@@ -147,7 +153,7 @@ public class CheckpointManager {
             logger,
             cpHistory,
             ioFactory,
-            pageStoreManager.workDir().getAbsolutePath(),
+            ft,
             lock,
             checkpointMapSnapshotExecutor,
             marsh
@@ -177,12 +183,16 @@ public class CheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
+            cacheProcessor.context().kernalContext(),
             logger,
             (pageMemEx, fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
             pageMemoryGroupResolver
         );
+
+        checkpointRecoveryFileStorage = new CheckpointRecoveryFileStorage(cacheProcessor.context().kernalContext(),
+            ft.checkpoint(), ioFactory);
 
         checkpointerProvider = () -> new Checkpointer(
             igniteInstanceName,
@@ -195,6 +205,7 @@ public class CheckpointManager {
             cacheProcessor,
             checkpointWorkflow,
             checkpointPagesWriterFactory,
+            checkpointRecoveryFileStorage,
             persistenceCfg.getCheckpointFrequency(),
             persistenceCfg.getCheckpointThreads(),
             cpFreqDeviation
@@ -260,13 +271,6 @@ public class CheckpointManager {
     }
 
     /**
-     * @return Checkpoint directory.
-     */
-    public File checkpointDirectory() {
-        return checkpointMarkersStorage.cpDir;
-    }
-
-    /**
      * @return Checkpoint storage.
      */
     public CheckpointMarkersStorage checkpointMarkerStorage() {
@@ -308,6 +312,13 @@ public class CheckpointManager {
     }
 
     /**
+     * @return List of checkpoint recovery files.
+     */
+    public List<CheckpointRecoveryFile> checkpointRecoveryFiles(@Nullable UUID cpId) throws StorageException {
+        return checkpointRecoveryFileStorage.list(cpId == null ? null : cpId::equals);
+    }
+
+    /**
      * Initialize checkpoint storage.
      */
     public void initializeStorage() throws IgniteCheckedException {
@@ -332,7 +343,7 @@ public class CheckpointManager {
     }
 
     /**
-     * Clean checkpoint directory {@link CheckpointMarkersStorage#cpDir}. The operation is necessary when local node joined to
+     * Clean checkpoint directory {@link NodeFileTree#checkpoint()}. The operation is necessary when local node joined to
      * baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {

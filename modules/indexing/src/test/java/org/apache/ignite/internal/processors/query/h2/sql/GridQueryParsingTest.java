@@ -145,6 +145,9 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("select (select 1)");
         checkQuery("select (select 1, select ?)");
         checkQuery("select ((select 1), select ? + ?)");
+        checkQuery("select 1 + ?");
+        checkQuery("select ? + 1");
+        checkQuery("select ? + ?");
         checkQuery("select CURRENT_DATE");
         checkQuery("select CURRENT_DATE()");
 

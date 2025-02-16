@@ -21,21 +21,19 @@ import java.io.File;
 import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
 
 /**
  * WAL file descriptor.
  */
 public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
-    /** file extension of WAL segment. */
-    private static final String WAL_SEGMENT_FILE_EXT = ".wal";
-
     /** File represented by this class. */
     protected final File file;
 
@@ -65,16 +63,6 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
         assert fileName.contains(WAL_SEGMENT_FILE_EXT);
 
         this.idx = idx == null ? U.fixedLengthFileNumber(fileName) : idx;
-    }
-
-    /**
-     * Getting segment file name.
-     *
-     * @param idx Segment index.
-     * @return Segment file name.
-     */
-    public static String fileName(long idx) {
-        return U.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_EXT);
     }
 
     /** {@inheritDoc} */
@@ -120,7 +108,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
     /** {@inheritDoc} */
     @Override public boolean isCompressed() {
-        return file.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
+        return file.getName().endsWith(NodeFileTree.ZIP_SUFFIX);
     }
 
     /** {@inheritDoc} */

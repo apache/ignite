@@ -77,7 +77,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
@@ -3460,12 +3459,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             assertEquals(i + 10, aff2.partition(k));
             assertEquals(i + 10, aff4.partition(k));
 
-            int part;
-
-            if (node.configuration().getMarshaller() instanceof BinaryMarshaller)
-                part = func.partition(node.binary().toBinary(k));
-            else
-                part = func.partition(k);
+            int part = func.partition(node.binary().toBinary(k));
 
             assertEquals(part, aff5.partition(k));
             assertEquals(part, aff6.partition(k));

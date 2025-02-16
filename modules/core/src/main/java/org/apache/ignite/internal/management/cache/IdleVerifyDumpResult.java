@@ -21,7 +21,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -34,12 +34,12 @@ public class IdleVerifyDumpResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster hashes. */
-    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes;
+    private Map<PartitionKey, List<PartitionHashRecord>> clusterHashes;
 
     /**
      * @param clusterHashes Cluster hashes.
      */
-    public IdleVerifyDumpResult(Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes) {
+    public IdleVerifyDumpResult(Map<PartitionKey, List<PartitionHashRecord>> clusterHashes) {
         this.clusterHashes = clusterHashes;
     }
 
@@ -63,7 +63,7 @@ public class IdleVerifyDumpResult extends VisorDataTransferObject {
     /**
      * @return Cluster hashes.
      */
-    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes() {
+    public Map<PartitionKey, List<PartitionHashRecord>> clusterHashes() {
         return clusterHashes;
     }
 

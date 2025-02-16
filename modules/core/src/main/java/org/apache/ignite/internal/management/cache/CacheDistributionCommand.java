@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -44,7 +44,7 @@ public class CacheDistributionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheDistributionCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, CacheDistributionCommandArg arg) {
         return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 

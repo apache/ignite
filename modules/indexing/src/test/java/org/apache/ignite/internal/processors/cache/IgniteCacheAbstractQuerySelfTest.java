@@ -78,7 +78,6 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -541,35 +540,33 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testComplexTypeKeepBinary() throws Exception {
-        if (ignite().configuration().getMarshaller() == null || ignite().configuration().getMarshaller() instanceof BinaryMarshaller) {
-            IgniteCache<Key, GridCacheQueryTestValue> cache = jcache(Key.class, GridCacheQueryTestValue.class);
+        IgniteCache<Key, GridCacheQueryTestValue> cache = jcache(Key.class, GridCacheQueryTestValue.class);
 
-            GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
+        GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
 
-            val1.setField1("field1");
-            val1.setField2(1);
-            val1.setField3(1L);
+        val1.setField1("field1");
+        val1.setField2(1);
+        val1.setField3(1L);
 
-            GridCacheQueryTestValue val2 = new GridCacheQueryTestValue();
+        GridCacheQueryTestValue val2 = new GridCacheQueryTestValue();
 
-            val2.setField1("field2");
-            val2.setField2(2);
-            val2.setField3(2L);
-            val2.setField6(null);
+        val2.setField1("field2");
+        val2.setField2(2);
+        val2.setField3(2L);
+        val2.setField6(null);
 
-            cache.put(new Key(100500), val1);
-            cache.put(new Key(100501), val2);
+        cache.put(new Key(100500), val1);
+        cache.put(new Key(100501), val2);
 
-            QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> qry = cache.withKeepBinary()
-                .query(new SqlQuery<BinaryObject, BinaryObject>(GridCacheQueryTestValue.class,
-                    "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> qry = cache.withKeepBinary()
+            .query(new SqlQuery<BinaryObject, BinaryObject>(GridCacheQueryTestValue.class,
+                "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
 
-            Cache.Entry<BinaryObject, BinaryObject> entry = F.first(qry.getAll());
+        Cache.Entry<BinaryObject, BinaryObject> entry = F.first(qry.getAll());
 
-            assertNotNull(entry);
-            assertEquals(Long.valueOf(100500L), entry.getKey().field("id"));
-            assertEquals(val1, entry.getValue().deserialize());
-        }
+        assertNotNull(entry);
+        assertEquals(Long.valueOf(100500L), entry.getKey().field("id"));
+        assertEquals(val1, entry.getValue().deserialize());
     }
 
     /**

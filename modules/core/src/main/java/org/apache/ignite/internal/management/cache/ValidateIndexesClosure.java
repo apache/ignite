@@ -474,7 +474,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
             if (pageStoreMgr != null && gctx.persistenceEnabled()) {
                 checkPartitionsPageCrcSum(() -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), INDEX_PARTITION),
-                    INDEX_PARTITION, FLAG_IDX);
+                    INDEX_PARTITION, FLAG_IDX, null);
             }
 
             idleChecker.apply(gctx.groupId());

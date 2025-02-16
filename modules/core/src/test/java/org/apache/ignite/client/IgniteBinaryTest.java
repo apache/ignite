@@ -17,12 +17,17 @@
 
 package org.apache.ignite.client;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
@@ -45,6 +50,7 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -52,8 +58,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /**
  * Ignite {@link BinaryObject} API system tests.
@@ -427,6 +431,49 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testBinaryMetaSendAfterServerRestart() {
+        String name = "name";
+
+        List<Function<String, Object>> factories = new ArrayList<>();
+        factories.add(n -> new Person(0, n));
+        factories.add(PersonBinarylizable::new);
+
+        for (Function<String, Object> factory : factories) {
+            Ignite ignite = null;
+            IgniteClient client = null;
+
+            try {
+                ignite = Ignition.start(Config.getServerConfiguration());
+                client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+
+                ClientCache<Integer, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+                Object person = factory.apply(name);
+
+                log.info(">>>> Check object class: " + person.getClass().getSimpleName());
+
+                cache.put(0, person);
+
+                ignite.close();
+
+                ignite = Ignition.start(Config.getServerConfiguration());
+
+                cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+                cache.put(0, person);
+
+                // Perform any action on server-side with binary object to ensure binary meta exists on node.
+                assertEquals(name, cache.invoke(0, new ExtractNameEntryProcessor()));
+            }
+            finally {
+                U.close(client, log);
+                U.close(ignite, log);
+            }
+        }
+    }
+
+    /** */
     private void assertBinaryTypesEqual(BinaryType exp, BinaryType actual) {
         assertEquals(exp.typeId(), actual.typeId());
         assertEquals(exp.typeName(), actual.typeName());
@@ -462,5 +509,13 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
     private enum Enum {
         /** Default. */
         DEFAULT
+    }
+
+    /** */
+    private static class ExtractNameEntryProcessor implements EntryProcessor<Integer, Object, String> {
+        /** {@inheritDoc} */
+        @Override public String process(MutableEntry<Integer, Object> entry, Object... arguments) {
+            return ((BinaryObject)entry.getValue()).field("name").toString();
+        }
     }
 }

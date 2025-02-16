@@ -19,22 +19,30 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.function.Supplier;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
+import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -42,6 +50,9 @@ import org.junit.Test;
  * Test for {@link TcpCommunicationSpi}
  */
 abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
+    /** */
+    private static long msgId = 1;
+
     /** */
     private static final int SPI_COUNT = 3;
 
@@ -70,9 +81,98 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
+    @Override protected CommunicationListener<Message> createMessageListener(UUID nodeId) {
+        return new MessageListener(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Map<Short, Supplier<Message>> customMessageTypes() {
+        return Collections.singletonMap(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+    }
+
+    /** */
     @Test
-    @Override public void testSendToManyNodes() throws Exception {
-        super.testSendToManyNodes();
+    public void testSendToOneNode() throws Exception {
+        info(">>> Starting send to one node test. <<<");
+
+        MessageListener.msgDestMap.clear();
+
+        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+            for (ClusterNode node : nodes) {
+                synchronized (MessageListener.mux) {
+                    if (!MessageListener.msgDestMap.containsKey(entry.getKey()))
+                        MessageListener.msgDestMap.put(entry.getKey(), new HashSet<>());
+
+                    MessageListener.msgDestMap.get(entry.getKey()).add(node.id());
+                }
+
+                entry.getValue().sendMessage(node, new GridTestMessage(entry.getKey(), msgId++, 0));
+            }
+        }
+
+        long now = System.currentTimeMillis();
+        long endTime = now + getMaxTransmitMessagesTime();
+
+        synchronized (MessageListener.mux) {
+            while (now < endTime && !MessageListener.msgDestMap.isEmpty()) {
+                MessageListener.mux.wait(endTime - now);
+
+                now = System.currentTimeMillis();
+            }
+
+            if (!MessageListener.msgDestMap.isEmpty()) {
+                for (Map.Entry<UUID, Set<UUID>> entry : MessageListener.msgDestMap.entrySet()) {
+                    error("Failed to receive all messages [sender=" + entry.getKey() +
+                        ", dest=" + entry.getValue() + ']');
+                }
+            }
+
+            assert MessageListener.msgDestMap.isEmpty() : "Some messages were not received.";
+        }
+    }
+
+    /** */
+    @Test
+    public void testSendToManyNodes() throws Exception {
+        MessageListener.msgDestMap.clear();
+
+        // Send message from each SPI to all SPI's, including itself.
+        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+            UUID sndId = entry.getKey();
+
+            CommunicationSpi<Message> commSpi = entry.getValue();
+
+            for (ClusterNode node : nodes) {
+                synchronized (MessageListener.mux) {
+                    if (!MessageListener.msgDestMap.containsKey(sndId))
+                        MessageListener.msgDestMap.put(sndId, new HashSet<>());
+
+                    MessageListener.msgDestMap.get(sndId).add(node.id());
+                }
+
+                commSpi.sendMessage(node, new GridTestMessage(sndId, msgId++, 0));
+            }
+        }
+
+        long now = System.currentTimeMillis();
+        long endTime = now + getMaxTransmitMessagesTime();
+
+        synchronized (MessageListener.mux) {
+            while (now < endTime && !MessageListener.msgDestMap.isEmpty()) {
+                MessageListener.mux.wait(endTime - now);
+
+                now = System.currentTimeMillis();
+            }
+
+            if (!MessageListener.msgDestMap.isEmpty()) {
+                for (Map.Entry<UUID, Set<UUID>> entry : MessageListener.msgDestMap.entrySet()) {
+                    error("Failed to receive all messages [sender=" + entry.getKey() +
+                        ", dest=" + entry.getValue() + ']');
+                }
+            }
+
+            assert MessageListener.msgDestMap.isEmpty() : "Some messages were not received.";
+        }
 
         // Test idle clients remove.
         for (CommunicationSpi<Message> spi : spis.values()) {
@@ -182,6 +282,65 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
             }
 
             fail("Failed to wait when clients are closed.");
+        }
+    }
+
+    /** */
+    private static class MessageListener implements CommunicationListener<Message> {
+        /** */
+        private static final Map<UUID, Set<UUID>> msgDestMap = new HashMap<>();
+
+        /** */
+        private static final Object mux = new Object();
+
+        /** */
+        private final UUID locNodeId;
+
+        /**
+         * @param locNodeId Local node ID.
+         */
+        MessageListener(UUID locNodeId) {
+            assert locNodeId != null;
+
+            this.locNodeId = locNodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
+            msgC.run();
+
+            if (msg instanceof GridTestMessage) {
+                GridTestMessage testMsg = (GridTestMessage)msg;
+
+                if (!testMsg.getSourceNodeId().equals(nodeId))
+                    fail("Listener nodeId not equals to message nodeId.");
+
+                synchronized (mux) {
+                    // Get list of all recipients for the message.
+                    Set<UUID> recipients = msgDestMap.get(testMsg.getSourceNodeId());
+
+                    if (recipients != null) {
+                        // Remove this node from a list of recipients.
+                        if (!recipients.remove(locNodeId))
+                            fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
+
+                        // If all recipients received their messages,
+                        // remove source nodes from sent messages map.
+                        if (recipients.isEmpty())
+                            msgDestMap.remove(testMsg.getSourceNodeId());
+
+                        if (msgDestMap.isEmpty())
+                            mux.notifyAll();
+                    }
+                    else
+                        fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDisconnected(UUID nodeId) {
+            // No-op.
         }
     }
 }

@@ -164,6 +164,7 @@ public class TcpIgniteClient implements IgniteClient {
                 metadataHnd.onReconnect();
                 marshCtx.clearUserTypesCache();
                 marsh.context().unregisterUserTypeDescriptors();
+                marsh.context().unregisterBinarySchemas();
             });
 
             // Send postponed metadata after channel init.

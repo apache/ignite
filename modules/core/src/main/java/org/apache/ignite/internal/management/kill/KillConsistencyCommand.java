@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
@@ -40,7 +40,7 @@ public class KillConsistencyCommand implements ComputeCommand<NoArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, NoArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
         return nodes;
     }
 }

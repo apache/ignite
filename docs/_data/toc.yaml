@@ -460,6 +460,8 @@
       url: tools/control-script
     - title: GridGain Control Center
       url: tools/gg-control-center
+    - title: Platform V Grid Center
+      url: tools/grid-center
     - title: SQLLine
       url: tools/sqlline
     - title: Tableau

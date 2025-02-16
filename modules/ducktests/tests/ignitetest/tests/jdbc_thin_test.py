@@ -61,6 +61,6 @@ class JdbcThinTest(IgniteTest):
             num_nodes=1)
 
         app.start()
-        app.stop()
+        app.await_stopped()
 
         ignite.stop()

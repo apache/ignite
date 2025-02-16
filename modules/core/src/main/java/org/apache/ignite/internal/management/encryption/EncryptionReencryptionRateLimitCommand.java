@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -47,7 +47,7 @@ public class EncryptionReencryptionRateLimitCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, EncryptionReencryptionRateLimitCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, EncryptionReencryptionRateLimitCommandArg arg) {
         return nodes;
     }
 

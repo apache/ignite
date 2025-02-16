@@ -18,17 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.IntStream;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
 
 /** */
 public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoCloseable {
@@ -45,15 +46,35 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     protected final int[] parts;
 
     /** */
-    protected volatile List<GridDhtLocalPartition> reserved;
+    protected final boolean explicitParts;
+
+    /** */
+    private PartitionReservation reservation;
+
+    /** */
+    protected volatile List<GridDhtLocalPartition> reservedParts;
 
     /** */
     AbstractCacheScan(ExecutionContext<Row> ectx, GridCacheContext<?, ?> cctx, int[] parts) {
         this.ectx = ectx;
         this.cctx = cctx;
-        this.parts = parts;
 
         topVer = ectx.topologyVersion();
+
+        explicitParts = parts != null;
+
+        if (cctx.isReplicated())
+            this.parts = IntStream.range(0, cctx.affinity().partitions()).toArray();
+        else {
+            if (parts != null)
+                this.parts = parts;
+            else {
+                Collection<Integer> primaryParts = cctx.affinity().primaryPartitions(
+                    cctx.kernalContext().localNodeId(), topVer);
+
+                this.parts = primaryParts.stream().mapToInt(Integer::intValue).toArray();
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -80,7 +101,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
 
     /** */
     private synchronized void reserve() {
-        if (reserved != null)
+        if (reservation != null)
             return;
 
         GridDhtPartitionTopology top = cctx.topology();
@@ -98,61 +119,42 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
             throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
         }
 
-        List<GridDhtLocalPartition> toReserve;
+        try {
+            PartitionReservation reservation;
 
-        if (cctx.isReplicated()) {
-            int partsCnt = cctx.affinity().partitions();
+            try {
+                reservation = cctx.kernalContext().query().partitionReservationManager().reservePartitions(
+                    cctx, topVer, explicitParts ? parts : null, ectx.originatingNodeId(), "qryId=" + ectx.queryId());
+            }
+            catch (IgniteCheckedException e) {
+                throw new ClusterTopologyException("Failed to reserve partition for query execution", e);
+            }
 
-            toReserve = new ArrayList<>(partsCnt);
+            if (reservation.failed()) {
+                reservation.release();
 
-            for (int i = 0; i < partsCnt; i++)
-                toReserve.add(top.localPartition(i));
-        }
-        else if (cctx.isPartitioned()) {
-            assert parts != null;
+                throw new ClusterTopologyException(reservation.error());
+            }
 
-            toReserve = new ArrayList<>(parts.length);
+            this.reservation = reservation;
+
+            List<GridDhtLocalPartition> reservedParts = new ArrayList<>(parts.length);
 
             for (int i = 0; i < parts.length; i++)
-                toReserve.add(top.localPartition(parts[i]));
-        }
-        else
-            toReserve = Collections.emptyList();
+                reservedParts.add(top.localPartition(parts[i]));
 
-        List<GridDhtLocalPartition> reserved = new ArrayList<>(toReserve.size());
-
-        try {
-            for (GridDhtLocalPartition part : toReserve) {
-                if (part == null || !part.reserve())
-                    throw new ClusterTopologyException("Failed to reserve partition for query execution. Retry on stable topology.");
-                else if (part.state() != GridDhtPartitionState.OWNING) {
-                    part.release();
-
-                    throw new ClusterTopologyException("Failed to reserve partition for query execution. Retry on stable topology.");
-                }
-
-                reserved.add(part);
-            }
-        }
-        catch (Exception e) {
-            release();
-
-            throw e;
+            this.reservedParts = reservedParts;
         }
         finally {
-            this.reserved = reserved;
-
             top.readUnlock();
         }
     }
 
     /** */
     private synchronized void release() {
-        if (F.isEmpty(reserved))
-            return;
+        if (reservation != null)
+            reservation.release();
 
-        reserved.forEach(GridDhtLocalPartition::release);
-
-        reserved = null;
+        reservation = null;
     }
 }

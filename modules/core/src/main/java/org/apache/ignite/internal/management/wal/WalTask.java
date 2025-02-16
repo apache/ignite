@@ -29,17 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -50,6 +47,9 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
+
 /**
  * Performs WAL cleanup clusterwide.
  */
@@ -57,12 +57,6 @@ import org.jetbrains.annotations.Nullable;
 public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResult, Collection<String>> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Pattern for segment file names. */
-    private static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
-
-    /** Pattern for compacted segment file names. */
-    private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
 
     /** WAL archive file filter. */
     private static final FileFilter WAL_ARCHIVE_FILE_FILTER = new FileFilter() {
@@ -139,6 +133,9 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
         @LoggerResource
         private transient IgniteLogger log;
 
+        /** Node file tree. */
+        private transient NodeFileTree ft;
+
         /**
          *  @param arg WAL task argument.
          *  @param debug Debug flag.
@@ -151,6 +148,7 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
         @Nullable @Override protected Collection<String> run(@Nullable WalDeleteCommandArg arg) throws IgniteException {
             try {
                 GridKernalContext cctx = ignite.context();
+                ft = ignite.context().pdsFolderResolver().fileTree();
 
                 GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.cache().context().database();
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cctx.cache().context().wal();
@@ -196,10 +194,10 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
                 sortWalFiles(walFiles);
 
                 // Obtain index of last archived WAL segment, it will not be deleted.
-                long lastArchIdx = getIndex(walFiles[walFiles.length - 1]);
+                long lastArchIdx = ft.walSegmentIndex(walFiles[walFiles.length - 1].toPath());
 
                 for (File f : walFiles) {
-                    long fileIdx = getIndex(f);
+                    long fileIdx = ft.walSegmentIndex(f.toPath());
 
                     if (fileIdx < maxIdx && fileIdx < lastArchIdx)
                         res.add(f.getAbsolutePath());
@@ -241,7 +239,7 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
                 Collection<String> res = new ArrayList<>(num);
 
                 for (File walFile: walFiles) {
-                    if (getIndex(walFile) < maxIdx && num > 0)
+                    if (ft.walSegmentIndex(walFile.toPath()) < maxIdx && num > 0)
                         res.add(walFile.getAbsolutePath());
                     else
                         break;
@@ -274,32 +272,10 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
          * @throws IgniteCheckedException if failed.
          */
         private File getWalArchiveDir() throws IgniteCheckedException {
-            IgniteConfiguration igCfg = ignite.context().config();
+            if (!ft.walArchive().exists())
+                throw new IgniteCheckedException("WAL archive directory does not exists" + ft.walArchive().getAbsolutePath());
 
-            DataStorageConfiguration dsCfg = igCfg.getDataStorageConfiguration();
-
-            PdsFolderSettings resFldrs = ignite.context().pdsFolderResolver().resolveFolders();
-
-            String consId = resFldrs.folderName();
-
-            File dir;
-
-            if (dsCfg.getWalArchivePath() != null) {
-                File workDir0 = new File(dsCfg.getWalArchivePath());
-
-                dir = workDir0.isAbsolute() ?
-                        new File(workDir0, consId) :
-                        new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(), dsCfg.getWalArchivePath(), false),
-                                consId);
-            }
-            else
-                dir = new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(),
-                        DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false), consId);
-
-            if (!dir.exists())
-                throw new IgniteCheckedException("WAL archive directory does not exists" + dir.getAbsolutePath());
-
-            return dir;
+            return ft.walArchive();
         }
 
         /**
@@ -310,19 +286,9 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
         private void sortWalFiles(File[] files) {
             Arrays.sort(files, new Comparator<File>() {
                 @Override public int compare(File o1, File o2) {
-                    return Long.compare(getIndex(o1), getIndex(o2));
+                    return Long.compare(ft.walSegmentIndex(o1.toPath()), ft.walSegmentIndex(o2.toPath()));
                 }
             });
         }
-    }
-
-    /**
-     * Get index from WAL segment file.
-     *
-     * @param file WAL segment file.
-     * @return Index of WAL segment file.
-     */
-    private static long getIndex(File file) {
-        return Long.parseLong(file.getName().substring(0, 16));
     }
 }

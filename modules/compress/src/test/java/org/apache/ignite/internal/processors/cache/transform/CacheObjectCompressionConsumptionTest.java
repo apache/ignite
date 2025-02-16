@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -49,7 +49,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
@@ -361,10 +360,10 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
                 mem += metrics.getTotalAllocatedSize();
 
-                String nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().resolveFolders().folderName();
+                File nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().fileTree().nodeStorage();
 
-                pers += FileUtils.sizeOfDirectory(
-                    U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + nodeFolder, false));
+                if (nodeFolder != null)
+                    pers += FileUtils.sizeOfDirectory(nodeFolder);
 
                 if (mode != ConsumptionTestMode.PERSISTENT)
                     assertEquals(0, pers);

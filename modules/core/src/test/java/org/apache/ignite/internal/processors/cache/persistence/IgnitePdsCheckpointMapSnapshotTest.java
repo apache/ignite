@@ -159,7 +159,7 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
     public void testCorruptedCpMap() throws Exception {
         IgniteEx grid = startGrid(0);
 
-        File cpDir = dbMgr(grid).checkpointManager.checkpointDirectory();
+        File cpDir = grid.context().pdsFolderResolver().fileTree().checkpoint();
 
         File cpSnapshotMap = new File(cpDir, CheckpointMarkersStorage.EARLIEST_CP_SNAPSHOT_FILE);
 
@@ -203,7 +203,7 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
 
         if (removeSnapshot) {
             // Remove checkpoint map snapshot
-            File cpDir = dbMgr(grid).checkpointManager.checkpointDirectory();
+            File cpDir = grid.context().pdsFolderResolver().fileTree().checkpoint();
 
             File cpSnapshotMap = new File(cpDir, CheckpointMarkersStorage.EARLIEST_CP_SNAPSHOT_FILE);
 

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;
+import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 
 /**
  * General failure processing API
@@ -47,6 +48,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RE
 public class FailureProcessor extends GridProcessorAdapter {
     /** @see IgniteSystemProperties#IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE */
     public static final int DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = 64 * 1024;
+
+    /** OOM fix recommendation message. */
+    private static final String OOM_FIX_RECOMMENDATION_LOG_MSG = "Insufficient Java heap space. The following Ignite" +
+        " configuration problems have been detected that may caused the node failure: ";
 
     /** Value of the system property that enables threads dumping on failure. */
     private final boolean igniteDumpThreadsOnFailure =
@@ -179,8 +184,15 @@ public class FailureProcessor extends GridProcessorAdapter {
                 "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
         }
 
-        if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
-            reserveBuf = null;
+        if (X.hasCause(failureCtx.error(), OutOfMemoryError.class)) {
+            if (reserveBuf != null)
+                reserveBuf = null;
+
+            String validationResult = validateRamUsage(ctx);
+
+            if (validationResult != null)
+                log.error(OOM_FIX_RECOMMENDATION_LOG_MSG + validationResult, failureCtx.error());
+        }
 
         CorruptedDataStructureException corruptedDataStructureEx =
             X.cause(failureCtx.error(), CorruptedDataStructureException.class);

@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -136,11 +135,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements EncryptionCacheKeyProvider,
     MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption, PartitionsExchangeAware {
-    /**
-     * Cache encryption introduced in this Ignite version.
-     */
-    private static final IgniteProductVersion CACHE_ENCRYPTION_SINCE = IgniteProductVersion.fromString("2.7.0");
-
     /** Prefix for a master key name. */
     public static final String MASTER_KEY_NAME_PREFIX = "encryption-master-key-name";
 
@@ -1336,22 +1330,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
-        }
-    }
-
-    /**
-     * Checks cache encryption supported by all nodes in cluster.
-     *
-     * @throws IgniteCheckedException If check fails.
-     */
-    public void checkEncryptedCacheSupported() throws IgniteCheckedException {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
-
-        for (ClusterNode node : nodes) {
-            if (CACHE_ENCRYPTION_SINCE.compareTo(node.version()) > 0) {
-                throw new IgniteCheckedException("All nodes in cluster should be 2.7.0 or greater " +
-                    "to create encrypted cache! [nodeId=" + node.id() + "]");
-            }
         }
     }
 

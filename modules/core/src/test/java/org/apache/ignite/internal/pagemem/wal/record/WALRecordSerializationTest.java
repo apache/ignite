@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,9 +29,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
@@ -40,7 +38,6 @@ import org.junit.Test;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
  * Tests of serialization and deserialization of all WAL record types
@@ -182,15 +179,9 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
             ignite.context().cache().context().database().checkpointReadUnlock();
         }
 
-        String nodeFolderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
-        File nodeArchiveDir = Paths.get(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false).getAbsolutePath(),
-            "wal",
-            "archive",
-            nodeFolderName
-        ).toFile();
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(lastPointer.index()));
-        File walZipSegment = new File(nodeArchiveDir, FileDescriptor.fileName(lastPointer.index()) + ZIP_SUFFIX);
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+        File walSegment = ft.walArchiveSegment(lastPointer.index());
+        File walZipSegment = ft.zipWalArchiveSegment(lastPointer.index());
 
         // Spam WAL to move all data records to compressible WAL zone.
         for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)

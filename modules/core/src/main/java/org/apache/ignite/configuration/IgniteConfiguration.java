@@ -3147,6 +3147,8 @@ public class IgniteConfiguration {
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        A.notNull(snapshotPath, "snapshotPath");
+
         this.snapshotPath = snapshotPath;
 
         return this;

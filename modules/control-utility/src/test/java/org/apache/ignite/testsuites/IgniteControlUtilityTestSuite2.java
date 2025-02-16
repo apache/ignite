@@ -34,6 +34,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexRebuildStatusTest;
 import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
 import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
 import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
+import org.apache.ignite.util.IdleVerifyDumpTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
 import org.apache.ignite.util.SystemViewCommandTest;
@@ -72,7 +73,9 @@ import org.junit.runners.Suite;
     CdcCommandTest.class,
     CdcResendCommandTest.class,
 
-    SecurityCommandHandlerPermissionsTest.class
+    SecurityCommandHandlerPermissionsTest.class,
+
+    IdleVerifyDumpTest.class
 })
 public class IgniteControlUtilityTestSuite2 {
 }

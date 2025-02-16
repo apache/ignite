@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.tracing;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 
@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.coordinator
 public abstract class AbstractTracingConfigurationCommand implements
     ComputeCommand<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, TracingConfigurationCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);
     }
 

@@ -3321,7 +3321,7 @@ public class GridNioServer<T> {
     /**
      *
      */
-    private static final class WriteRequestImpl implements SessionWriteRequest, SessionChangeRequest {
+    static final class WriteRequestImpl implements SessionWriteRequest, SessionChangeRequest {
         /** */
         private GridNioSession ses;
 

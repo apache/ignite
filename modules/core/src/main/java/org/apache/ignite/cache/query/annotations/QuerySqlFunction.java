@@ -60,6 +60,7 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  * Note, accessing to the attributes is available in the Calcite query engine only. In a such case a class must have public
  * zero-args constructor.
  *
+ * @see QuerySqlTableFunction
  * @see SessionContextProviderResource
  */
 @Documented

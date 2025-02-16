@@ -27,6 +27,12 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSyntax;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.validate.SqlNameMatchers;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
@@ -42,6 +48,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -49,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -64,6 +72,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private final FrameworkConfig frameworkCfg;
 
     /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
@@ -136,10 +147,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /**
      * @param ctx Kernal context.
      */
-    public SchemaHolderImpl(GridKernalContext ctx) {
+    public SchemaHolderImpl(GridKernalContext ctx, FrameworkConfig frameworkCfg) {
         super(ctx);
 
         this.ctx = ctx;
+        this.frameworkCfg = frameworkCfg;
 
         subscriptionProcessor(ctx.internalSubscriptionProcessor());
 
@@ -350,11 +362,56 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
+        if (!checkNewUserDefinedFunction(schemaName, name))
+            return;
+
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
 
         rebuild();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(
+        String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        String[] colNames
+    ) {
+        if (!checkNewUserDefinedFunction(schemaName, name))
+            return;
+
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.addFunction(name.toUpperCase(), IgniteTableFunction.create(method, colTypes, colNames));
+
+        rebuild();
+    }
+
+    /** */
+    private boolean checkNewUserDefinedFunction(String schName, String funName) {
+        if (F.eq(schName, QueryUtils.DFLT_SCHEMA)) {
+            List<SqlOperator> operators = new ArrayList<>();
+
+            frameworkCfg.getOperatorTable().lookupOperatorOverloads(
+                new SqlIdentifier(funName, SqlParserPos.ZERO),
+                null,
+                SqlSyntax.FUNCTION,
+                operators,
+                SqlNameMatchers.withCaseSensitive(false)
+            );
+
+            if (!operators.isEmpty()) {
+                log.error("Unable to add user-defined SQL function '" + funName + "'. Default schema '"
+                    + QueryUtils.DFLT_SCHEMA + "' already has a standard function with the same name.");
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -412,7 +469,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));
 
         for (IgniteSchema schema : igniteSchemas.values())
-            schema.register(newCalciteSchema);
+            schema.register(newCalciteSchema, frameworkCfg);
 
         calciteSchema = newCalciteSchema;
     }

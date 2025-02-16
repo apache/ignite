@@ -42,12 +42,11 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -251,7 +250,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         long finishSgmnt = wal.currentSegment();
 
-        String archive = archive(ignite);
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         assertTrue(finishSgmnt > startSgmnt);
         assertTrue(
@@ -259,7 +258,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
             waitForCondition(() -> startSgmnt <= wal.lastArchivedSegment(), getTestTimeout())
         );
 
-        File startSgmntArchived = new File(archive, FileDescriptor.fileName(startSgmnt));
+        File startSgmntArchived = ft.walArchiveSegment(startSgmnt);
 
         assertTrue("Check archived segment file exists", startSgmntArchived.exists());
 
@@ -347,7 +346,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     private int checkDataRecords(IgniteEx ignite) throws IgniteCheckedException {
         WALIterator iter = new IgniteWalIteratorFactory(log).iterator(new IteratorParametersBuilder()
             .ioFactory(new RandomAccessFileIOFactory())
-            .filesOrDirs(archive(ignite)));
+            .filesOrDirs(ignite.context().pdsFolderResolver().fileTree().walArchive().getAbsolutePath()));
 
         int walRecCnt = 0;
 
@@ -372,19 +371,5 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         }
 
         return walRecCnt;
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @return WAL archive patch
-     * @throws IgniteCheckedException If failed
-     */
-    private static String archive(IgniteEx ignite) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            ignite.configuration().getDataStorageConfiguration().getWalArchivePath() + "/" +
-                U.maskForFileName(ignite.configuration().getIgniteInstanceName()),
-            false
-        ).getAbsolutePath();
     }
 }

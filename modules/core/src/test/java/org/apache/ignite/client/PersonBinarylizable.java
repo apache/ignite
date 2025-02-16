@@ -41,6 +41,11 @@ public class PersonBinarylizable implements Binarylizable {
     private boolean readWaits;
 
     /** */
+    public PersonBinarylizable(String name) {
+        this(name, false, false, false);
+    }
+
+    /** */
     public PersonBinarylizable(String name, boolean writeThrows, boolean readThrows, boolean readWaits) {
         this.name = name;
         this.writeThrows = writeThrows;

@@ -681,12 +681,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
-        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
-
-        File ig1LfsDir = new File(dbDir, ig1Folder);
-        File ig1CpDir = new File(ig1LfsDir, "cp");
-
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().state(ACTIVE);
 
@@ -714,7 +708,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         ig0 = startGrid(0);
 
-        File[] cpMarkers = ig1CpDir.listFiles();
+        File[] cpMarkers = ig1.context().pdsFolderResolver().fileTree().checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))

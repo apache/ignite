@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -236,11 +236,11 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         checkCacheData(cacheValues, cacheName);
 
-        IdleVerifyResultV2 idleVerifyResV2 = idleVerify(stoppedNode, null);
+        IdleVerifyResult idleVerifyRes = idleVerify(stoppedNode, null);
 
         SB sb = new SB();
 
-        idleVerifyResV2.print(sb::a, true);
+        idleVerifyRes.print(sb::a, true);
 
         assertContains(listeningLog, sb.toString(), "no conflicts have been found");
     }

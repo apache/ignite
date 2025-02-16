@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +47,7 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<Baseline
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, BaselineTaskArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, BaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 

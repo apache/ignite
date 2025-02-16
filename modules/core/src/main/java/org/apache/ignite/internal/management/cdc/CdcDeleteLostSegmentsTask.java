@@ -32,8 +32,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -90,29 +91,27 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
 
         /** {@inheritDoc} */
         @Override protected Void run(CdcDeleteLostSegmentLinksCommandArg arg) throws IgniteException {
-            FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ignite.context().cache().context().wal(true);
-
-            File walCdcDir = wal.walCdcDirectory();
-
-            if (walCdcDir == null)
+            if (!CU.isCdcEnabled(ignite.configuration()))
                 throw new IgniteException("CDC is not configured.");
 
-            CdcFileLockHolder lock = new CdcFileLockHolder(walCdcDir.getAbsolutePath(), "Delete lost segments job", log);
+            NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+
+            CdcFileLockHolder lock = new CdcFileLockHolder(ft.walCdc().getAbsolutePath(), "Delete lost segments job", log);
 
             try {
                 lock.tryLock(1);
 
-                try (Stream<Path> cdcFiles = Files.list(walCdcDir.toPath())) {
+                try (Stream<Path> cdcFiles = Files.list(ft.walCdc().toPath())) {
                     Set<File> delete = new HashSet<>();
 
                     AtomicLong lastSgmnt = new AtomicLong(-1);
 
                     cdcFiles
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
-                        .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)
+                        .sorted(Comparator.comparingLong(ft::walSegmentIndex)
                             .reversed()) // Sort by segment index.
                         .forEach(path -> {
-                            long idx = FileWriteAheadLogManager.segmentIndex(path);
+                            long idx = ft.walSegmentIndex(path);
 
                             if (lastSgmnt.get() == -1 || lastSgmnt.get() - idx == 1) {
                                 lastSgmnt.set(idx);
@@ -140,7 +139,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                         log.info("Segment CDC link deleted [file=" + file.getAbsolutePath() + ']');
                     });
 
-                    Path stateDir = walCdcDir.toPath().resolve(STATE_DIR);
+                    Path stateDir = ft.walCdc().toPath().resolve(STATE_DIR);
 
                     if (stateDir.toFile().exists()) {
                         File walState = stateDir.resolve(WAL_STATE_FILE_NAME).toFile();
@@ -158,7 +157,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             catch (IgniteCheckedException e) {
                 throw new RuntimeException("Failed to delete lost segment CDC links. " +
                     "Unable to acquire lock to lock CDC folder. Make sure a CDC app is shut down " +
-                    "[dir=" + walCdcDir.getAbsolutePath() + ", reason=" + e.getMessage() + ']');
+                    "[dir=" + ft.walCdc().getAbsolutePath() + ", reason=" + e.getMessage() + ']');
             }
             finally {
                 U.closeQuiet(lock);

@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -101,13 +100,6 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
             .setSslContextFactory(sslTrustedFactory("node01", "trustone"));
-
-        if (commandHandler.equals(CLI_GRID_CLIENT_CMD_HND)) {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration()
-                .setSslEnabled(true)
-                .setSslFactory(sslTrustedFactory("connectorServer", "trustthree"))
-            );
-        }
 
         if (commandHandler.equals(CLI_CMD_HND)) {
             cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
@@ -207,5 +199,127 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         assertContains(log, testOutput, "--password *****");
         assertContains(log, testOutput, "--keystore-password *****");
         assertContains(log, testOutput, "--truststore-password *****");
+    }
+
+    /**
+     * Verify that the command work correctly when request starts with the --password argument
+     * without value that invoke console password input for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOncePwdArgStart() throws Exception {
+        doPasswordInteractiveInputTest(Arrays.asList(
+            "--password",
+            "--state",
+            "--user", login,
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword()));
+    }
+
+    /**
+     * Verify that the command work correctly when request contains the --password argument inside
+     * without value that invoke console password input for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOncePwdArgMiddle() throws Exception {
+        doPasswordInteractiveInputTest(Arrays.asList(
+            "--state",
+            "--user", login,
+            "--password",
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword()));
+    }
+
+    /**
+     * Verify that the command work correctly when request ends with the --password argument
+     * without value that invoke console password input for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOncePwdArgEnd() throws Exception {
+        doPasswordInteractiveInputTest(Arrays.asList(
+            "--state",
+            "--user", login,
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword(),
+            "--password"));
+    }
+
+    /**
+     * Verify that the command work correctly when request few arguments
+     * without value that invoke console input.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyForFewRequestedArguments() throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().state(ACTIVE);
+
+        TestCommandHandler hnd = newCommandHandler();
+
+        AtomicInteger reqCnt = new AtomicInteger();
+
+        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
+            @Override public char[] readPassword(String fmt, Object... args) {
+                if (reqCnt.incrementAndGet() == 1)
+                    return keyStorePassword().toCharArray();
+                else
+                    return pwd.toCharArray();
+            }
+        };
+
+        int exitCode = hnd.execute(Arrays.asList(
+            "--state",
+            "--user", login,
+            "--verbose",
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
+            "--keystore-password",
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
+            "--truststore-password", keyStorePassword(),
+            "--password"));
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(2, reqCnt.get());
+    }
+
+    /**
+     * Perform the test with prepared List arguments.
+     *
+     * @param args List of query arguments.
+     * @throws Exception If failed.
+     */
+    private void doPasswordInteractiveInputTest(List<String> args) throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().state(ACTIVE);
+
+        TestCommandHandler hnd = newCommandHandler();
+
+        AtomicInteger pwdCnt = new AtomicInteger();
+
+        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
+            @Override public char[] readPassword(String fmt, Object... args) {
+                pwdCnt.incrementAndGet();
+
+                return pwd.toCharArray();
+            }
+        };
+
+        int exitCode = hnd.execute(args);
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(1, pwdCnt.get());
     }
 }

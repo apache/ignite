@@ -117,7 +117,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -152,9 +151,6 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maximum number of query detail metrics to evict at once. */
     private static final int QRY_DETAIL_METRICS_EVICTION_LIMIT = 10_000;
-
-    /** Support 'not null' field constraint since v 2.3.0. */
-    private static final IgniteProductVersion NOT_NULLS_SUPPORT_VER = IgniteProductVersion.fromString("2.3.0");
 
     /** Comparator for priority queue with query detail metrics with priority to new metrics. */
     private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_NEW_CMP =
@@ -1971,16 +1967,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty()) {
-                boolean allNodesNew = true;
-
-                for (ClusterNode n : nodes) {
-                    if (n.version().compareTo(NOT_NULLS_SUPPORT_VER) < 0)
-                        allNodesNew = false;
-                }
-
-                if (!allNodesNew)
-                    return sqlMetadata();
-
                 rmtFut = cctx.closures().callAsync(
                     BROADCAST,
                     Collections.singleton(job),

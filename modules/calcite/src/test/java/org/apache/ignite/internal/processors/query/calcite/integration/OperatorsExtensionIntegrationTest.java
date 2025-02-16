@@ -121,6 +121,18 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .returns(Timestamp.valueOf("2021-01-01 00:00:00")).check();
     }
 
+    /** */
+    @Test
+    public void testOperatorsCallsInViews() {
+        sql("create table my_table(id int primary key, val_str varchar)");
+
+        sql("insert into my_table values (?, ?)", 0, Integer.toString(0));
+
+        sql("create or replace view my_view as select to_number(val_str) val_str from my_table");
+
+        assertQuery("SELECT val_str from my_view").returns(new BigDecimal("0")).check();
+    }
+
     /** Rewrites LTRIM with 2 parameters. */
     public static SqlCall rewriteLtrim(SqlValidator validator, SqlCall call) {
         if (call.operandCount() != 2)

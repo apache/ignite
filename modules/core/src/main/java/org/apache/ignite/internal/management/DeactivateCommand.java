@@ -21,11 +21,8 @@ import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -59,18 +56,12 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
 
     /** {@inheritDoc} */
     @Override public NoArg execute(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         DeactivateCommandArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
-        if (cli != null) {
-            GridClientClusterState state = cli.state();
-
-            state.state(INACTIVE, arg.force());
-        }
-        else if (client != null)
+    ) {
+        if (client != null)
             ((ClientClusterImpl)client.cluster()).state(INACTIVE, arg.force());
         else
             ((IgniteClusterEx)ignite.cluster()).state(INACTIVE, arg.force());
@@ -87,7 +78,6 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
 
     /** {@inheritDoc} */
     @Override public boolean prepare(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         DeactivateCommandArg arg,
@@ -95,14 +85,12 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     ) throws Exception {
         String clusterName;
 
-        if (cli != null)
-            clusterName = cli.state().clusterName();
-        else if (ignite != null)
+        if (ignite != null)
             clusterName = ((IgniteEx)ignite).context().cluster().clusterName();
         else {
-            GridClientNode node = F.first(CommandUtils.nodes(cli, client, ignite));
+            ClusterNode node = F.first(CommandUtils.nodes(client, ignite));
 
-            VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(cli, client, ignite,
+            VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, ignite,
                 VisorIdAndTagViewTask.class, null, Collections.singleton(node));
 
             clusterName = idAndTag.clusterName();

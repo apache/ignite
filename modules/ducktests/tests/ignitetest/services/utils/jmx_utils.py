@@ -99,7 +99,7 @@ class JmxClient:
         :return: Attribute value
         """
         cmd = "echo $'open %s\\n get -b %s %s \\n close' | %s | sed 's/%s = \\(.*\\);/\\1/'" \
-              % (self.pid, mbean, attr, self.jmx_util_cmd, attr)
+              % (self.pid, mbean.replace(' ', '\\ '), attr, self.jmx_util_cmd, attr)
 
         return iter(s.strip() for s in self.__run_cmd(cmd))
 

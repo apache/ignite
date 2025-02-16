@@ -24,12 +24,10 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -41,9 +39,6 @@ import org.jetbrains.annotations.NotNull;
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.4.4");
 
     /** Cache rebalance topic. */
     private static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
@@ -95,33 +90,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
         this.parts = parts;
-    }
-
-    /**
-     * @param cp Message to copy from.
-     */
-    public GridDhtPartitionDemandMessage(GridDhtPartitionDemandLegacyMessage cp) {
-        grpId = cp.groupId();
-        rebalanceId = cp.updateSequence();
-        topic = cp.topic();
-        timeout = cp.timeout();
-        workerId = cp.workerId();
-        topVer = cp.topologyVersion();
-
-        IgniteDhtDemandedPartitionsMap partMap = new IgniteDhtDemandedPartitionsMap();
-
-        if (cp.partitions() != null) {
-            for (Integer p : cp.partitions()) {
-                if (cp.isHistorical(p))
-                    partMap.addHistorical(p, 0, cp.partitionCounter(p), cp.partitions().size());
-                else
-                    partMap.addFull(p);
-            }
-        }
-
-        partMap.historicalMap().trim();
-
-        parts = partMap;
     }
 
     /**
@@ -210,19 +178,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * Converts message to it's legacy version if necessary.
-     *
-     * @param target Target version
-     * @return Converted message or {@code this} if conversion isn't necessary.
-     */
-    public GridCacheMessage convertIfNeeded(IgniteProductVersion target) {
-        if (target.compareTo(VERSION_SINCE) <= 0)
-            return new GridDhtPartitionDemandLegacyMessage(this);
-
-        return this;
     }
 
     /** {@inheritDoc} */

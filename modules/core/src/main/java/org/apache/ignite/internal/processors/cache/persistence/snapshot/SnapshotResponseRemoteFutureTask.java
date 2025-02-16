@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectory;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 
 /** */
@@ -117,7 +117,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                         ", pair=" + gp + ']');
                 }
 
-                File snpPart = getPartitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
+                File snpPart = partitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
 
                 if (!snpPart.exists()) {
                     throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +

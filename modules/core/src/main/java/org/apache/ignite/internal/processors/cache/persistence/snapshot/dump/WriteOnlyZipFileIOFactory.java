@@ -23,7 +23,7 @@ import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 
 /**
  * File I/O factory which provides {@link WriteOnlyZipFileIO} implementation of FileIO.

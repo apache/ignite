@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -56,7 +56,7 @@ abstract class CacheGroupEncryptionCommand<T>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, EncryptionCacheGroupArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, EncryptionCacheGroupArg arg) {
         return nodes;
     }
 

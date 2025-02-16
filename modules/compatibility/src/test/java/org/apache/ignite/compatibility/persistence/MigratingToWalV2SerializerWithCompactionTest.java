@@ -32,10 +32,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version
@@ -122,18 +124,9 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             int expCompressedWalSegments = PAYLOAD_SIZE * ENTRIES * 4 / WAL_SEGMENT_SIZE - 1;
 
-            String nodeFolderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
+            NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-            File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-            File walDir = new File(dbDir, "wal");
-            File archiveDir = new File(walDir, "archive");
-            File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-
-            File[] compressedSegments = nodeArchiveDir.listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.endsWith(".wal.zip");
-                }
-            });
+            File[] compressedSegments = ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
 
             final int actualCompressedWalSegments = compressedSegments == null ? 0 : compressedSegments.length;
 
@@ -142,15 +135,12 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             stopAllGrids();
 
-            File nodeLfsDir = new File(dbDir, nodeFolderName);
-            File cpMarkersDir = new File(nodeLfsDir, "cp");
-
-            File[] cpMarkers = cpMarkersDir.listFiles();
+            File[] cpMarkers = ft.checkpoint().listFiles();
 
             assertNotNull(cpMarkers);
             assertTrue(cpMarkers.length > 0);
 
-            File cacheDir = new File(nodeLfsDir, "cache-" + TEST_CACHE_NAME);
+            File cacheDir = ft.cacheStorage(false, TEST_CACHE_NAME);
             File[] partFiles = cacheDir.listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
                     return name.startsWith("part");

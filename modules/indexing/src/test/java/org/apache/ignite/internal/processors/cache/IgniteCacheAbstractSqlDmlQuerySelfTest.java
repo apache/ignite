@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,38 +30,12 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBinaryArraysTest {
-    /** */
-    protected final Marshaller marsh;
-
-    /**
-     *
-     */
-    IgniteCacheAbstractSqlDmlQuerySelfTest() {
-        try {
-            marsh = IgniteTestResources.getMarshaller();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /**
-     * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
-     */
-    protected boolean isBinaryMarshaller() {
-        return marsh instanceof BinaryMarshaller;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -77,9 +50,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBin
         startGridsMultiThreaded(3, true);
 
         ignite(0).createCache(cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class));
-
-        if (isBinaryMarshaller())
-            ignite(0).createCache(createBinCacheConfig());
+        ignite(0).createCache(createBinCacheConfig());
     }
 
     /** {@inheritDoc} */
@@ -92,12 +63,10 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBin
         ignite(0).cache("S2P").put("k3", new Person(3, "Sylvia", "Green"));
         ignite(0).cache("S2P").put("f0u4thk3y", new Person(4, "Jane", "Silver"));
 
-        if (isBinaryMarshaller()) {
-            ignite(0).cache("S2P-bin").put("FirstKey", createBinPerson(1, "John", "White"));
-            ignite(0).cache("S2P-bin").put("SecondKey", createBinPerson(2, "Joe", "Black"));
-            ignite(0).cache("S2P-bin").put("k3", createBinPerson(3, "Sylvia", "Green"));
-            ignite(0).cache("S2P-bin").put("f0u4thk3y", createBinPerson(4, "Jane", "Silver"));
-        }
+        ignite(0).cache("S2P-bin").put("FirstKey", createBinPerson(1, "John", "White"));
+        ignite(0).cache("S2P-bin").put("SecondKey", createBinPerson(2, "Joe", "Black"));
+        ignite(0).cache("S2P-bin").put("k3", createBinPerson(3, "Sylvia", "Green"));
+        ignite(0).cache("S2P-bin").put("f0u4thk3y", createBinPerson(4, "Jane", "Silver"));
     }
 
     /**
@@ -109,10 +78,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBin
      * @return Person.
      */
     Object createPerson(int id, String name, String secondName) {
-        if (!isBinaryMarshaller())
-            return new Person(id, name, secondName);
-        else
-            return createBinPerson(id, name, secondName);
+        return createBinPerson(id, name, secondName);
     }
 
     /**
@@ -137,10 +103,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBin
      * @return Cache.
      */
     protected IgniteCache cache() {
-        if (!isBinaryMarshaller())
-            return ignite(0).cache("S2P");
-        else
-            return ignite(0).cache("S2P-bin").withKeepBinary();
+        return ignite(0).cache("S2P-bin").withKeepBinary();
     }
 
     /**

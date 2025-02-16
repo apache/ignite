@@ -58,7 +58,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -69,10 +69,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
@@ -100,8 +98,8 @@ public class GridLocalConfigManager {
     /** Cache processor. */
     private final GridCacheProcessor cacheProcessor;
 
-    /** Absolute directory for file page store. Includes consistent id based folder. */
-    private final File storeWorkDir;
+    /** Node file tree. */
+    private final NodeFileTree ft;
 
     /** Marshaller. */
     private final Marshaller marshaller;
@@ -124,16 +122,10 @@ public class GridLocalConfigManager {
         ctx = kernalCtx;
         log = ctx.log(getClass());
         marshaller = ctx.marshallerContext().jdkMarshaller();
+        ft = ctx.pdsFolderResolver().fileTree();
 
-        PdsFolderSettings<?> folderSettings = ctx.pdsFolderResolver().resolveFolders();
-
-        if (!ctx.clientNode() && folderSettings.persistentStoreRootPath() != null) {
-            storeWorkDir = folderSettings.persistentStoreNodePath();
-
-            U.ensureDirectory(storeWorkDir, "page store work directory", log);
-        }
-        else
-            storeWorkDir = null;
+        if (!ctx.clientNode() && ft.nodeStorage() != null)
+            U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
     }
 
     /**
@@ -148,12 +140,12 @@ public class GridLocalConfigManager {
 
         try {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
-                File cacheDir = cacheWorkDir(ccfg);
+                File cacheDir = ft.cacheStorage(ccfg);
 
                 if (!cacheDir.exists())
                     continue;
 
-                File[] ccfgFiles = cacheDir.listFiles((dir, name) -> name.endsWith(CACHE_DATA_FILENAME));
+                File[] ccfgFiles = cacheDir.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
 
                 if (ccfgFiles == null)
                     continue;
@@ -175,18 +167,17 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        File[] files = storeWorkDir.listFiles();
+        File[] dirs = ft.nodeStorage().listFiles(File::isDirectory);
 
-        if (files == null)
+        if (dirs == null)
             return Collections.emptyMap();
 
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
-        Arrays.sort(files);
+        Arrays.sort(dirs);
 
-        for (File file : files) {
-            if (file.isDirectory())
-                readCacheConfigurations(file, ccfgs);
+        for (File file : dirs) {
+            readCacheConfigurations(file, ccfgs);
         }
 
         return ccfgs;
@@ -244,10 +235,12 @@ public class GridLocalConfigManager {
         if (caches == null)
             return Collections.emptyMap();
 
+        String utilityCacheStorage = NodeFileTree.cacheDirName(false, UTILITY_CACHE_NAME);
+
         return Arrays.stream(caches)
             .filter(f -> f.isDirectory() &&
-                (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
-                !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
+                NodeFileTree.CACHE_DIR_FILTER.test(f) &&
+                !f.getName().equals(utilityCacheStorage))
             .filter(File::exists)
             .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
             .collect(Collectors.toMap(f -> f, f -> {
@@ -293,13 +286,13 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        File cacheWorkDir = cacheWorkDir(ccfg);
+        File cacheWorkDir = ft.cacheStorage(ccfg);
 
         FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        File file = cacheConfigurationFile(ccfg);
+        File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
 
         chgLock.readLock().lock();
@@ -343,7 +336,7 @@ public class GridLocalConfigManager {
 
         try {
             CacheConfiguration<?, ?> ccfg = cacheData.config();
-            File file = cacheConfigurationFile(ccfg);
+            File file = ft.cacheConfigurationFile(ccfg);
 
             if (file.exists()) {
                 for (BiConsumer<String, File> lsnr : lsnrs)
@@ -426,12 +419,12 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If fails.
      */
     public void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
-        File cacheGrpDir = cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
+        File cacheGrpDir = ft.cacheStorage(ctx.config());
 
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
             DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
                 @Override public boolean accept(Path path) {
-                    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(CACHE_DATA_FILENAME);
+                    return Files.isRegularFile(path) && NodeFileTree.cacheOrCacheGroupConfigFile(path.toFile());
                 }
             };
 
@@ -457,7 +450,7 @@ public class GridLocalConfigManager {
             return;
 
         for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0)
+            if (!file.isDirectory() && NodeFileTree.cacheOrCacheGroupConfigFile(file) && file.length() > 0)
                 readAndAdd(
                     ccfgs,
                     file,
@@ -473,7 +466,7 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        if (dir.getName().startsWith(CACHE_DIR_PREFIX)) {
+        if (NodeFileTree.cacheDir(dir)) {
             File conf = new File(dir, CACHE_DATA_FILENAME);
 
             if (conf.exists() && conf.length() > 0) {
@@ -484,7 +477,7 @@ public class GridLocalConfigManager {
                 );
             }
         }
-        else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+        else if (NodeFileTree.cacheGroupDir(dir))
             readCacheGroupCaches(dir, ccfgs);
     }
 
@@ -530,38 +523,6 @@ public class GridLocalConfigManager {
             CU.findDataRegion(ctx.config().getDataStorageConfiguration(), cfg.getDataRegionName());
 
         return drCfg != null && !drCfg.isPersistenceEnabled() && drCfg.isCdcEnabled();
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
-     */
-    public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        File cacheWorkDir = cacheWorkDir(ccfg);
-
-        return new File(cacheWorkDir, cacheDataFilename(ccfg));
-    }
-
-    /** @return Name of cache data filename. */
-    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return Store dir for given cache.
-     */
-    public File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
-        return FilePageStoreManager.cacheWorkDir(storeWorkDir, FilePageStoreManager.cacheDirName(ccfg));
-    }
-
-    /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return Store directory for given cache.
-     */
-    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        return FilePageStoreManager.cacheWorkDir(storeWorkDir, FilePageStoreManager.cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**

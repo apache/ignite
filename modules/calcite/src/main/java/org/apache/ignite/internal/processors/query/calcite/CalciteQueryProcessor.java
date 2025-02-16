@@ -79,10 +79,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.InjectResourcesS
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -124,6 +125,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
@@ -140,6 +142,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     @SystemProperty(value = "Timeout of calcite based sql engine's planner, in ms", type = Long.class,
         defaults = "" + DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT)
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
+
+    /**
+     * Use query blocking executor property name.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Use query blocking task executor instead of striped task " +
+        "executor. Query blocking executor allows to run SQL queries inside user-defined functions at the cost of " +
+        "some performance penalty", defaults = "" + false)
+    public static final String IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR =
+        "IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR";
 
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
@@ -186,8 +197,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final FrameworkConfig frameworkCfg;
 
     /** Query planner timeout. */
-    private final long queryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT,
-        DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT);
+    private final long qryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT);
 
     /** */
     private final QueryPlanCache qryPlanCache;
@@ -249,12 +259,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
+        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
+
         failureProcessor = ctx.failure();
-        schemaHolder = new SchemaHolderImpl(ctx);
+        schemaHolder = new SchemaHolderImpl(ctx, frameworkCfg);
         qryPlanCache = new QueryPlanCacheImpl(ctx);
         parserMetrics = new QueryParserMetricsHolder(ctx.metric());
         mailboxRegistry = new MailboxRegistryImpl(ctx);
-        taskExecutor = new QueryTaskExecutorImpl(ctx);
+        taskExecutor = getBoolean(IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR)
+            ? new QueryBlockingTaskExecutor(ctx)
+            : new StripedQueryTaskExecutor(ctx);
         executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);
         partSvc = new AffinityServiceImpl(ctx);
         msgSvc = new MessageServiceImpl(ctx);
@@ -264,9 +279,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
         injectSvc = new InjectResourcesService(ctx);
-
-        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
-        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
@@ -666,7 +678,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             exchangeSvc,
             (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
-            queryPlannerTimeout,
+            qryPlannerTimeout,
             timeout
         );
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Lightw
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -195,8 +193,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
 
         waitForCondition(() -> !db2.getCheckpointer().currentProgress().inProgress(), 10_000);
 
-        String nodeFolderName = ignite0.context().pdsFolderResolver().resolveFolders().folderName();
-        File cpMarkersDir = Paths.get(U.defaultWorkDirectory(), "db", nodeFolderName, "cp").toFile();
+        File cpMarkersDir = ignite0.context().pdsFolderResolver().fileTree().checkpoint();
 
         //then: Expected only two pairs checkpoint markers - both from the start of node.
         assertEquals(4, cpMarkersDir.listFiles().length);

@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -142,7 +143,11 @@ public class IgniteMock implements IgniteEx {
         this.staticCfg = staticCfg;
 
         try {
-            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null, null);
+            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null, null) {
+                @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+                    return new GridInternalSubscriptionProcessor(this);
+                }
+            };
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

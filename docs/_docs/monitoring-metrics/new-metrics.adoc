@@ -431,6 +431,7 @@ Register name: `io.datastorage`
 |CheckpointTotalTime| long |   Total duration of checkpoint
 |CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging ChTotalNodeseckpointRecord on begin of checkpoint duration in milliseconds.
 |CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
+|LastArchivedSegment | long | Last archived segment index.
 |LastCheckpointBeforeLockDuration|  long |   Duration of the checkpoint action before taken write lock in milliseconds.
 |LastCheckpointCopiedOnWritePagesNumber|  long |   Number of pages copied to a temporary checkpoint buffer during the last checkpoint.
 |LastCheckpointDataPagesNumber|   long  |  Total number of data pages written during the last checkpoint.

@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -245,11 +247,36 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         private final RowHandler<Row> handler;
 
         /** */
+        private GroupKey.Builder grpKeyBld;
+
+        /** */
+        private final BiFunction<GroupKey, List<AccumulatorWrapper<Row>>, List<AccumulatorWrapper<Row>>> getOrCreateGroup;
+
+        /** */
+        private final Function<GroupKey, List<AccumulatorWrapper<Row>>> createGroup;
+
+        /** */
         private Grouping(byte grpId, ImmutableBitSet grpFields) {
             this.grpId = grpId;
             this.grpFields = grpFields;
 
+            grpKeyBld = GroupKey.builder(grpFields.cardinality());
             handler = context().rowHandler();
+
+            createGroup = (k) -> create();
+
+            getOrCreateGroup = (k, v) -> {
+                if (v == null) {
+                    grpKeyBld = GroupKey.builder(grpFields.cardinality());
+
+                    return create();
+                }
+                else {
+                    grpKeyBld.clear();
+
+                    return v;
+                }
+            };
 
             init();
         }
@@ -259,7 +286,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
             // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
             // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
             if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE))
-                groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
+                groups.put(GroupKey.EMPTY_GRP_KEY, create());
         }
 
         /** */
@@ -293,14 +320,10 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private void addOnMapper(Row row) {
-            GroupKey.Builder b = GroupKey.builder(grpFields.cardinality());
-
             for (Integer field : grpFields)
-                b.add(handler.get(field, row));
+                grpKeyBld.add(handler.get(field, row));
 
-            GroupKey grpKey = b.build();
-
-            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
+            List<AccumulatorWrapper<Row>> wrappers = groups.compute(grpKeyBld.build(), getOrCreateGroup);
 
             for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
@@ -315,7 +338,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
             GroupKey grpKey = (GroupKey)handler.get(1, row);
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, createGroup);
             Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])handler.get(2, row) : null;
 
             for (int i = 0; i < wrappers.size(); i++) {
@@ -388,7 +411,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         }
 
         /** */
-        private List<AccumulatorWrapper<Row>> create(GroupKey key) {
+        private List<AccumulatorWrapper<Row>> create() {
             if (accFactory == null)
                 return Collections.emptyList();
 

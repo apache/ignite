@@ -21,8 +21,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -42,17 +40,14 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
 
     /** {@inheritDoc} */
     @Override public Boolean execute(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         SetStateCommandArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
-        ClusterState clusterState = cli != null
-            ? cli.state().state()
-            : client != null
-                ? client.cluster().state()
-                : ignite.cluster().state();
+    ) {
+        ClusterState clusterState = client != null
+            ? client.cluster().state()
+            : ignite.cluster().state();
 
         if (clusterState == arg.state()) {
             printer.accept("Cluster state is already " + arg.state() + '.');
@@ -60,9 +55,7 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
             return false;
         }
 
-        if (cli != null)
-            cli.state().state(arg.state(), arg.force());
-        else if (ignite != null)
+        if (ignite != null)
             ((IgniteClusterEx)ignite.cluster()).state(arg.state(), arg.force());
         else
             ((ClientClusterImpl)client.cluster()).state(arg.state(), arg.force());

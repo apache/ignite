@@ -29,12 +29,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -107,13 +106,11 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         stopGrid(0);
 
-        IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
-
-        File walDir = U.field(walMgr, "walWorkDir");
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        List<FileDescriptor> walFiles = getWalFiles(walDir, iterFactory);
+        List<FileDescriptor> walFiles = getWalFiles(ft.wal(), iterFactory);
 
         FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
@@ -139,13 +136,11 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         deleteLastCheckpointEndMarker(ignite);
 
-        IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
-
-        File walDir = U.field(walMgr, "walWorkDir");
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        List<FileDescriptor> walFiles = getWalFiles(walDir, iterFactory);
+        List<FileDescriptor> walFiles = getWalFiles(ft.wal(), iterFactory);
 
         FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
@@ -173,13 +168,11 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         stopGrid(0, false);
 
-        IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
-
-        File walDir = U.field(walMgr, "walWorkDir");
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        List<FileDescriptor> walFiles = getWalFiles(walDir, iterFactory);
+        List<FileDescriptor> walFiles = getWalFiles(ft.wal(), iterFactory);
 
         Random corruptLastRecord = null;
 

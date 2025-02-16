@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 /**
  * Logic used to protect memory (mainly, Checkpoint Buffer) from exhaustion using exponential backoff.
  */
-class ExponentialBackoffThrottlingStrategy {
+class ExponentialBackoffThrottlingStrategy implements ThrottlingStrategy {
     /**
      * Starting throttle time. Limits write speed to 1000 MB/s.
      */
@@ -36,21 +36,13 @@ class ExponentialBackoffThrottlingStrategy {
      */
     private final ExponentialBackoff backoff = new ExponentialBackoff(STARTING_THROTTLE_NANOS, BACKOFF_RATIO);
 
-    /**
-     * Computes next duration (in nanos) to throttle a thread to protect Checkpoint Buffer.
-     *
-     * @return park time in nanos
-     */
-    long protectionParkTime() {
+    /** {@inheritDoc} */
+    @Override public long protectionParkTime() {
         return backoff.nextDuration();
     }
 
-    /**
-     * Resets the backoff counter. Invoked when no throttling is needed anymore.
-     *
-     * @return {@code true} iff the backoff was not already in a reset state
-     */
-    boolean resetBackoff() {
+    /** {@inheritDoc} */
+    @Override public boolean reset() {
         return backoff.reset();
     }
 }

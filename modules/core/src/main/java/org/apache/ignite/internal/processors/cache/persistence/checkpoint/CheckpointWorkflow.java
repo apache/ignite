@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -65,8 +66,8 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -215,6 +216,7 @@ public class CheckpointWorkflow {
      * @param curr Current checkpoint event info.
      * @param tracker Checkpoint metrics tracker.
      * @param workProgressDispatcher Work progress dispatcher.
+     * @param writeRecoveryData Write recovery data on checkpoint.
      * @return Checkpoint collected info.
      * @throws IgniteCheckedException if fail.
      */
@@ -222,7 +224,8 @@ public class CheckpointWorkflow {
         long cpTs,
         CheckpointProgressImpl curr,
         CheckpointMetricsTracker tracker,
-        WorkProgressDispatcher workProgressDispatcher
+        WorkProgressDispatcher workProgressDispatcher,
+        boolean writeRecoveryData
     ) throws IgniteCheckedException {
         Collection<DataRegion> checkpointedRegions = dataRegions.get();
 
@@ -275,8 +278,24 @@ public class CheckpointWorkflow {
 
             fillCacheGroupState(cpRec);
 
-            //There are allowable to replace pages only after checkpoint entry was stored to disk.
-            cpPagesHolder = beginAllCheckpoints(checkpointedRegions, curr.futureFor(MARKER_STORED_TO_DISK));
+            IgniteInternalFuture<?> markerStoredToDiskFut = curr.futureFor(MARKER_STORED_TO_DISK);
+
+            // There are allowable to replace pages only after checkpoint entry was stored to disk.
+            ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace = writeRecoveryData
+                // If we write recovery data on checkpoint it's not safe to wait for MARKER_STORED_TO_DISK future,
+                // recovery data writers acquire page memory segments locks to write the pages, in the same time
+                // another thread can lock page memory segment for writing during page replacement and wait for
+                // marker stored to disk, so deadlock is possible.
+                ? () -> curr.greaterOrEqualTo(MARKER_STORED_TO_DISK)
+                : () -> {
+                    // Uninterruptibly is important because otherwise in case of interrupt of client thread node
+                    // would be stopped.
+                    markerStoredToDiskFut.getUninterruptibly();
+
+                    return true;
+                };
+
+            cpPagesHolder = beginAllCheckpoints(checkpointedRegions, allowToReplace);
 
             curr.currentCheckpointPagesCount(cpPagesHolder.pagesNum());
 
@@ -315,35 +334,35 @@ public class CheckpointWorkflow {
 
             tracker.onWalCpRecordFsyncEnd();
 
-            CheckpointEntry checkpointEntry = null;
-
-            if (checkpointMarkersStorage != null)
-                checkpointEntry = checkpointMarkersStorage.writeCheckpointEntry(
-                    cpTs,
-                    cpRec.checkpointId(),
-                    cpPtr,
-                    cpRec,
-                    CheckpointEntryType.START,
-                    skipSync
-                );
-
-            curr.transitTo(MARKER_STORED_TO_DISK);
-
-            tracker.onSplitAndSortCpPagesStart();
-
             GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages =
                 splitAndSortCpPagesIfNeeded(cpPagesHolder);
 
             tracker.onSplitAndSortCpPagesEnd();
 
-            return new Checkpoint(checkpointEntry, cpPages, curr);
+            CheckpointEntry cpEntry = new CheckpointEntry(cpTs, cpPtr, cpRec.checkpointId(), cpRec.cacheGroupStates());
+
+            return new Checkpoint(cpEntry, cpPages, curr, cpRec);
         }
         else {
             if (ctx0.walFlush() && wal != null)
                 wal.flush(null, true);
 
-            return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr);
+            return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr, cpRec);
         }
+    }
+
+    /** Stores begin checkpoint marker to disk. */
+    public void storeBeginMarker(Checkpoint cp) throws StorageException {
+        if (checkpointMarkersStorage != null && cp.cpEntry != null) {
+            checkpointMarkersStorage.writeCheckpointEntry(
+                cp.cpEntry,
+                cp.cpRecord,
+                CheckpointEntryType.START,
+                skipSync
+            );
+        }
+
+        cp.progress.transitTo(MARKER_STORED_TO_DISK);
     }
 
     /**
@@ -415,8 +434,10 @@ public class CheckpointWorkflow {
      * @return holder of FullPageIds obtained from each PageMemory, overall number of dirty pages, and flag defines at
      * least one user page became a dirty since last checkpoint.
      */
-    private CheckpointPagesInfoHolder beginAllCheckpoints(Collection<DataRegion> regions,
-        IgniteInternalFuture<?> allowToReplace) {
+    private CheckpointPagesInfoHolder beginAllCheckpoints(
+        Collection<DataRegion> regions,
+        ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace
+    ) {
         Collection<Map.Entry<PageMemoryEx, GridMultiCollectionWrapper<FullPageId>>> res =
             new ArrayList<>(regions.size());
 
@@ -610,7 +631,7 @@ public class CheckpointWorkflow {
 
         Collection<DataRegion> regions = dataRegions.get();
 
-        CheckpointPagesInfoHolder cpPagesHolder = beginAllCheckpoints(regions, new GridFinishedFuture<>());
+        CheckpointPagesInfoHolder cpPagesHolder = beginAllCheckpoints(regions, () -> Boolean.TRUE);
 
         // Sort and split all dirty pages set to several stripes.
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> pages =
@@ -627,7 +648,7 @@ public class CheckpointWorkflow {
         for (int stripeIdx = 0; stripeIdx < exec.stripesCount(); stripeIdx++)
             exec.execute(
                 stripeIdx,
-                checkpointPagesWriterFactory.buildRecovery(pages, updStores, writePagesError, cpPagesCnt)
+                checkpointPagesWriterFactory.buildRecoveryFinalizer(pages, updStores, writePagesError, cpPagesCnt)
             );
 
         // Await completion all write tasks.

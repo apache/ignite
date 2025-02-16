@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -60,7 +60,7 @@ public class CacheCheckIndexInlineSizesCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, NoArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
         return servers(nodes);
     }
 

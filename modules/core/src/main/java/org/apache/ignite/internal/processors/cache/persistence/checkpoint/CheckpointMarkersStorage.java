@@ -47,16 +47,16 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * Abstraction responsible for managing checkpoint markers storage.
@@ -79,7 +79,7 @@ public class CheckpointMarkersStorage {
 
     /** Earliest checkpoint map snapshot temporary file name. */
     private static final String EARLIEST_CP_SNAPSHOT_TMP_FILE =
-        EARLIEST_CP_SNAPSHOT_FILE + FilePageStoreManager.TMP_SUFFIX;
+        EARLIEST_CP_SNAPSHOT_FILE + TMP_SUFFIX;
 
     /** Checkpoint map snapshot executor. */
     private final Executor checkpointMapSnapshotExecutor;
@@ -87,7 +87,10 @@ public class CheckpointMarkersStorage {
     /** Logger. */
     protected IgniteLogger log;
 
-    /** Checkpoint history. */
+    /**
+     * Checkpoint history.
+     * Non-final for tests.
+     */
     private CheckpointHistory cpHistory;
 
     /** File I/O factory for writing checkpoint markers. */
@@ -96,8 +99,8 @@ public class CheckpointMarkersStorage {
     /** Checkpoint read-write lock. */
     private final CheckpointReadWriteLock lock;
 
-    /** Checkpoint metadata directory ("cp"), contains files with checkpoint start and end */
-    public final File cpDir;
+    /** Node file tree. */
+    private final NodeFileTree ft;
 
     /** Temporary write buffer. */
     private final ByteBuffer tmpWriteBuf;
@@ -116,31 +119,28 @@ public class CheckpointMarkersStorage {
      * @param logger Ignite logger.
      * @param history Checkpoint history.
      * @param factory IO factory.
-     * @param absoluteWorkDir Directory path to checkpoint markers folder.
+     * @param ft Node file tree.
      * @param lock Checkpoint read-write lock.
      * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
      * @param marsh JDK marshaler.
-     * @throws IgniteCheckedException if fail.
      */
     CheckpointMarkersStorage(
         String igniteInstanceName,
         Function<Class<?>, IgniteLogger> logger,
         CheckpointHistory history,
         FileIOFactory factory,
-        String absoluteWorkDir,
+        NodeFileTree ft,
         CheckpointReadWriteLock lock,
         Executor checkpointMapSnapshotExecutor,
         JdkMarshaller marsh
-    ) throws IgniteCheckedException {
+    ) {
         this.log = logger.apply(getClass());
         cpHistory = history;
         ioFactory = factory;
         this.lock = lock;
+        this.ft = ft;
 
-        cpDir = Paths.get(absoluteWorkDir, "cp").toFile();
-
-        if (!U.mkdirs(cpDir))
-            throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
+        ft.mkdirCheckpoint();
 
         //File index + offset + length.
         tmpWriteBuf = ByteBuffer.allocateDirect(Long.BYTES + Integer.BYTES + Integer.BYTES);
@@ -156,13 +156,13 @@ public class CheckpointMarkersStorage {
      */
     public void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
         try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), TMP_FILE_MATCHER::matches)) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(ft.checkpoint().toPath(), TMP_FILE_MATCHER::matches)) {
                 for (Path path : files)
                     Files.delete(path);
             }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup checkpoint directory from temporary files: " + cpDir, e);
+            throw new IgniteCheckedException("Failed to cleanup checkpoint directory from temporary files: " + ft.checkpoint(), e);
         }
     }
 
@@ -174,13 +174,13 @@ public class CheckpointMarkersStorage {
             cpHistory.clear();
 
         try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(ft.checkpoint().toPath())) {
                 for (Path path : files)
                     Files.delete(path);
             }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup checkpoint directory: " + cpDir, e);
+            throw new IgniteCheckedException("Failed to cleanup checkpoint directory: " + ft.checkpoint(), e);
         }
     }
 
@@ -188,8 +188,8 @@ public class CheckpointMarkersStorage {
      * Filling internal structures with data from disk.
      */
     public void initialize() throws IgniteCheckedException {
-        File snapshotFile = new File(cpDir, EARLIEST_CP_SNAPSHOT_FILE);
-        File snapshotTmpFile = new File(cpDir, EARLIEST_CP_SNAPSHOT_TMP_FILE);
+        File snapshotFile = new File(ft.checkpoint(), EARLIEST_CP_SNAPSHOT_FILE);
+        File snapshotTmpFile = new File(ft.checkpoint(), EARLIEST_CP_SNAPSHOT_TMP_FILE);
 
         if (snapshotTmpFile.exists()) {
             if (!IgniteUtils.delete(snapshotTmpFile)) {
@@ -274,15 +274,13 @@ public class CheckpointMarkersStorage {
         WALPointer startPtr = CheckpointStatus.NULL_PTR;
         WALPointer endPtr = CheckpointStatus.NULL_PTR;
 
-        File dir = cpDir;
-
-        if (!dir.exists()) {
+        if (!ft.checkpoint().exists()) {
             log.warning("Read checkpoint status: checkpoint directory is not found.");
 
             return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
         }
 
-        File[] files = dir.listFiles();
+        File[] files = ft.checkpoint().listFiles();
 
         for (File file : files) {
             Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
@@ -326,11 +324,11 @@ public class CheckpointMarkersStorage {
      * @return List of checkpoints.
      */
     private List<CheckpointEntry> retrieveHistory() throws IgniteCheckedException {
-        if (!cpDir.exists())
+        if (!ft.checkpoint().exists())
             return Collections.emptyList();
 
         try (DirectoryStream<Path> cpFiles = Files.newDirectoryStream(
-            cpDir.toPath(),
+            ft.checkpoint().toPath(),
             path -> CP_FILE_NAME_PATTERN.matcher(path.toFile().getName()).matches())
         ) {
             List<CheckpointEntry> checkpoints = new ArrayList<>();
@@ -435,8 +433,8 @@ public class CheckpointMarkersStorage {
      * @throws IgniteCheckedException If failed to delete.
      */
     private void removeCheckpointFiles(CheckpointEntry cpEntry) throws IgniteCheckedException {
-        Path startFile = new File(cpDir.getAbsolutePath(), checkpointFileName(cpEntry, CheckpointEntryType.START)).toPath();
-        Path endFile = new File(cpDir.getAbsolutePath(), checkpointFileName(cpEntry, CheckpointEntryType.END)).toPath();
+        Path startFile = new File(ft.checkpoint().getAbsolutePath(), checkpointFileName(cpEntry, CheckpointEntryType.START)).toPath();
+        Path endFile = new File(ft.checkpoint().getAbsolutePath(), checkpointFileName(cpEntry, CheckpointEntryType.END)).toPath();
 
         try {
             if (Files.exists(startFile))
@@ -451,6 +449,8 @@ public class CheckpointMarkersStorage {
     }
 
     /**
+     * Writes checkpoint entry buffer {@code entryBuf} to specified checkpoint file with 2-phase protocol.
+     *
      * @param entryBuf Buffer which would be written to disk.
      * @param cp Prepared checkpoint entry.
      * @param type Type of checkpoint marker.
@@ -464,10 +464,10 @@ public class CheckpointMarkersStorage {
         boolean skipSync
     ) throws StorageException {
         String fileName = checkpointFileName(cp, type);
-        String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
+        String tmpFileName = fileName + NodeFileTree.TMP_SUFFIX;
 
         try {
-            try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
+            try (FileIO io = ioFactory.create(Paths.get(ft.checkpoint().getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
                 io.writeFully(entryBuf);
@@ -478,8 +478,12 @@ public class CheckpointMarkersStorage {
                     io.force(true);
             }
 
-            if (!skipSync)
-                Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
+            if (!skipSync) {
+                Files.move(
+                    Paths.get(ft.checkpoint().getAbsolutePath(), tmpFileName),
+                    Paths.get(ft.checkpoint().getAbsolutePath(), fileName)
+                );
+            }
         }
         catch (IOException e) {
             throw new StorageException("Failed to write checkpoint entry [ptr=" + cp.checkpointMark()
@@ -490,7 +494,7 @@ public class CheckpointMarkersStorage {
     }
 
     /**
-     * Writes checkpoint entry buffer {@code entryBuf} to specified checkpoint file with 2-phase protocol.
+     * Creates and writes checkpoint entry to checkpoint marker file.
      *
      * @param cpTs Checkpoint timestamp.
      * @param cpId Checkpoint id.
@@ -508,14 +512,28 @@ public class CheckpointMarkersStorage {
         CheckpointEntryType type,
         boolean skipSync
     ) throws StorageException {
-        CheckpointEntry entry = prepareCheckpointEntry(
-            tmpWriteBuf,
-            cpTs,
-            cpId,
-            ptr,
-            rec,
-            type
-        );
+        CheckpointEntry entry = createCheckPointEntry(cpTs, ptr, cpId, rec, type);
+
+        writeCheckpointEntry(entry, rec, type, skipSync);
+
+        return entry;
+    }
+
+    /**
+     * Writes checkpoint entry to checkpoint marker file.
+     *
+     * @param entry Checkpoint entry.
+     * @param rec Checkpoint WAL record.
+     * @param type Checkpoint type.
+     * @throws StorageException If failed to write checkpoint entry.
+     */
+    public void writeCheckpointEntry(
+        CheckpointEntry entry,
+        @Nullable CheckpointRecord rec,
+        CheckpointEntryType type,
+        boolean skipSync
+    ) throws StorageException {
+        prepareCheckpointEntryBuf(tmpWriteBuf, entry.checkpointMark());
 
         if (type == CheckpointEntryType.START)
             cpHistory.addCheckpoint(entry, rec.cacheGroupStates());
@@ -523,30 +541,15 @@ public class CheckpointMarkersStorage {
         writeCheckpointEntry(tmpWriteBuf, entry, type, skipSync);
 
         onEarliestCheckpointMapChanged();
-
-        return entry;
     }
 
     /**
-     * Prepares checkpoint entry containing WAL pointer to checkpoint record. Writes into given {@code ptrBuf} WAL
-     * pointer content.
+     * Writes into given {@code entryBuf} WAL pointer content.
      *
      * @param entryBuf Buffer to fill
-     * @param cpTs Checkpoint timestamp.
-     * @param cpId Checkpoint id.
      * @param ptr WAL pointer containing record.
-     * @param rec Checkpoint WAL record.
-     * @param type Checkpoint type.
-     * @return Checkpoint entry.
      */
-    private CheckpointEntry prepareCheckpointEntry(
-        ByteBuffer entryBuf,
-        long cpTs,
-        UUID cpId,
-        WALPointer ptr,
-        @Nullable CheckpointRecord rec,
-        CheckpointEntryType type
-    ) {
+    private void prepareCheckpointEntryBuf(ByteBuffer entryBuf, WALPointer ptr) {
         assert ptr != null;
 
         entryBuf.rewind();
@@ -558,8 +561,6 @@ public class CheckpointMarkersStorage {
         entryBuf.putInt(ptr.length());
 
         entryBuf.flip();
-
-        return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
     }
 
     /**
@@ -628,11 +629,11 @@ public class CheckpointMarkersStorage {
                         lock.readUnlock();
                     }
 
-                    File targetFile = new File(cpDir, EARLIEST_CP_SNAPSHOT_FILE);
+                    File targetFile = new File(ft.checkpoint(), EARLIEST_CP_SNAPSHOT_FILE);
 
                     // For fail-safety we should first write the snapshot to a temporary file
                     // and then atomically rename it
-                    File tmpFile = new File(cpDir, EARLIEST_CP_SNAPSHOT_TMP_FILE);
+                    File tmpFile = new File(ft.checkpoint(), EARLIEST_CP_SNAPSHOT_TMP_FILE);
 
                     if (tmpFile.exists() && !IgniteUtils.delete(tmpFile)) {
                         log.error("Failed to delete temporary checkpoint snapshot file: " + tmpFile.getAbsolutePath());

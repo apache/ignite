@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -231,11 +231,11 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        File workDir = resolveCacheWorkDir(ig);
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
 
         long[] oldPartLen = partitionSizes(workDir);
 
-        long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long oldIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
 
         startGrid(0);
 
@@ -259,7 +259,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         for (int p = 0; p < PARTS; p++)
             assertTrue(newPartLen[p] < oldPartLen[p]);
 
-        long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long newIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
 
         assertTrue(newIdxFileLen <= oldIdxFileLen);
 
@@ -296,18 +296,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 throw new IgniteException(e);
             }
         }).toArray();
-    }
-
-    /**
-     * @return Working directory for cache group {@link IgnitePdsDefragmentationTest#GRP_NAME}.
-     * @throws IgniteCheckedException If failed for some reason, like if it's a file instead of directory.
-     */
-    private File resolveCacheWorkDir(IgniteEx ig) throws IgniteCheckedException {
-        File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
-
-        return new File(nodeWorkDir, FilePageStoreManager.CACHE_GRP_DIR_PREFIX + GRP_NAME);
     }
 
     /**
@@ -359,7 +347,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     protected long[] partitionSizes(File workDir) {
         return IntStream.range(0, PARTS)
-            .mapToObj(p -> new File(workDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, p)))
+            .mapToObj(p -> new File(workDir, String.format(NodeFileTree.PART_FILE_TEMPLATE, p)))
             .mapToLong(File::length)
             .toArray();
     }
@@ -472,7 +460,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        File workDir = resolveCacheWorkDir(ig);
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
 
         //Defragmentation should fail when node starts.
         startAndAwaitNodeFail(workDir);
@@ -588,7 +576,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             }
 
             @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains("cacheGroup-group")) {
+                if (path.toString().contains(NodeFileTree.cacheDirName(true, "group"))) {
                     File file = path.toFile();
 
                     if (file.getName().contains("part-dfrg-"))

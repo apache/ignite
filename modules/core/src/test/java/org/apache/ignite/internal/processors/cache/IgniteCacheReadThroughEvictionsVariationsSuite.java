@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -34,15 +33,8 @@ public class IgniteCacheReadThroughEvictionsVariationsSuite {
             .withBasicCacheParams()
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 /** {@inheritDoc} */
-                @SuppressWarnings("RedundantIfStatement")
                 @Override public boolean apply(IgniteConfiguration cfg) {
-                    if (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller))
-                        return false;
-
-                    if (cfg.isPeerClassLoadingEnabled())
-                        return false;
-
-                    return true;
+                    return !cfg.isPeerClassLoadingEnabled();
                 }
             })
             .skipWaitPartitionMapExchange()

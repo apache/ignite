@@ -24,8 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -49,7 +48,6 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
 
     /** {@inheritDoc} */
     @Override public String execute(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
@@ -59,14 +57,14 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         boolean failed = false;
 
         if (arg.parallel())
-            failed = execute(cli, client, ignite, arg, nodes(cli, client, ignite), sb);
+            failed = execute(client, ignite, arg, nodes(client, ignite), sb);
         else {
-            Set<GridClientNode> nodes = nodes(cli, client, ignite).stream()
+            Set<ClusterNode> nodes = nodes(client, ignite).stream()
                 .filter(node -> !node.isClient())
                 .collect(toSet());
 
-            for (GridClientNode node : nodes) {
-                failed = execute(cli, client, ignite, arg, Collections.singleton(node), sb);
+            for (ClusterNode node : nodes) {
+                failed = execute(client, ignite, arg, Collections.singleton(node), sb);
 
                 if (failed)
                     break;
@@ -85,17 +83,15 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
 
     /** */
     private boolean execute(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
-        Collection<GridClientNode> nodes,
+        Collection<ClusterNode> nodes,
         StringBuilder sb
     ) throws Exception {
         boolean failed = false;
 
         ConsistencyTaskResult res = CommandUtils.execute(
-            cli,
             client,
             ignite,
             ConsistencyRepairTask.class,

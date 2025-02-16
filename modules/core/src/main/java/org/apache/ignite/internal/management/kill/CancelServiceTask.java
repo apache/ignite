@@ -22,6 +22,9 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Task for cancel services with specified name.
@@ -58,6 +61,13 @@ public class CancelServiceTask extends VisorOneNodeTask<KillServiceCommandArg, V
             new ServiceMXBeanImpl(ignite.context()).cancel(arg.name());
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegates the call to the Ignite public API.
+            // Therefore, it is safe to execute task without any additional permissions check.
+            return NO_PERMISSIONS;
         }
 
         /** {@inheritDoc} */

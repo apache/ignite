@@ -49,4 +49,9 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
     @Override protected Map<String, String> userAttributres() {
         return new UserAttributesFactory().create();
     }
+
+    /** {@inheritDoc} */
+    @Override public void testConnectAsManagementClient() {
+        // No-op.
+    }
 }

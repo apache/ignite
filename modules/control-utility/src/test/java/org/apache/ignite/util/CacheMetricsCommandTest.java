@@ -184,7 +184,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
             CACHE_ONE);
 
         // Check when after --caches argument extra argument is passed instead of list of caches
-        checkInvalidArguments("Unexpected value: --all-caches", ENABLE, CACHES_ARGUMENT, ALL_CACHES_ARGUMENT);
+        checkInvalidArguments("Please specify a value for argument: --caches", ENABLE, CACHES_ARGUMENT, ALL_CACHES_ARGUMENT);
     }
 
     /**

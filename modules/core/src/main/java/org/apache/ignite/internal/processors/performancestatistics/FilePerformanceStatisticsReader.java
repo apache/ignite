@@ -57,6 +57,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
@@ -145,6 +146,7 @@ public class FilePerformanceStatisticsReader {
 
             try (FileIO io = ioFactory.create(file)) {
                 fileIo = io;
+                boolean first = true;
 
                 while (true) {
                     if (io.read(buf) <= 0) {
@@ -166,7 +168,8 @@ public class FilePerformanceStatisticsReader {
 
                     buf.mark();
 
-                    while (deserialize(buf, nodeId)) {
+                    while (deserialize(buf, nodeId, first)) {
+                        first = false;
                         if (forwardRead != null && forwardRead.found) {
                             if (forwardRead.resetBuf) {
                                 buf.limit(0);
@@ -201,9 +204,10 @@ public class FilePerformanceStatisticsReader {
     /**
      * @param buf Buffer.
      * @param nodeId Node id.
+     * @param firstRecord Is it first record in the file.
      * @return {@code True} if operation deserialized. {@code False} if not enough bytes.
      */
-    private boolean deserialize(ByteBuffer buf, UUID nodeId) throws IOException {
+    private boolean deserialize(ByteBuffer buf, UUID nodeId, boolean firstRecord) throws IOException {
         if (buf.remaining() < 1)
             return false;
 
@@ -211,7 +215,23 @@ public class FilePerformanceStatisticsReader {
 
         OperationType opType = OperationType.of(opTypeByte);
 
-        if (cacheOperation(opType)) {
+        if (firstRecord && opType != VERSION)
+            throw new IgniteException("Unsupported file format");
+
+        if (opType == VERSION) {
+            if (buf.remaining() < OperationType.versionRecordSize())
+                return false;
+
+            short ver = buf.getShort();
+
+            if (ver != FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION) {
+                throw new IgniteException("Unsupported file format version [fileVer=" + ver + ", supportedVer=" +
+                    FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION + ']');
+            }
+
+            return true;
+        }
+        else if (cacheOperation(opType)) {
             if (buf.remaining() < cacheRecordSize())
                 return false;
 
@@ -459,6 +479,7 @@ public class FilePerformanceStatisticsReader {
             long walCpRecordFsyncDuration = buf.getLong();
             long writeCheckpointEntryDuration = buf.getLong();
             long splitAndSortCpPagesDuration = buf.getLong();
+            long recoveryDataWriteDuration = buf.getLong();
             long totalDuration = buf.getLong();
             long cpStartTime = buf.getLong();
             int pagesSize = buf.getInt();
@@ -477,6 +498,7 @@ public class FilePerformanceStatisticsReader {
                     walCpRecordFsyncDuration,
                     writeCheckpointEntryDuration,
                     splitAndSortCpPagesDuration,
+                    recoveryDataWriteDuration,
                     totalDuration,
                     cpStartTime,
                     pagesSize,

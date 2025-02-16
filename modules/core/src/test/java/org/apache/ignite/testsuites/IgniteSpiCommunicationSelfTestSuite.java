@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.util.nio.TcpCommunicationSpiSslVolatilePayloadTest;
 import org.apache.ignite.spi.communication.tcp.ClientExceptionsUtilsTest;
 import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
@@ -115,7 +116,9 @@ import org.junit.runners.Suite;
 
     TcpCommunicationSpiNodeLeftLoggingTest.class,
     TcpCommunicationSpiInverseConnectionLoggingTest.class,
-    ClientExceptionsUtilsTest.class
+    ClientExceptionsUtilsTest.class,
+
+    TcpCommunicationSpiSslVolatilePayloadTest.class,
 })
 public class IgniteSpiCommunicationSelfTestSuite {
 }

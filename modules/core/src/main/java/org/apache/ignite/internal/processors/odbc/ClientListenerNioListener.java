@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -47,8 +48,11 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
 
 /**
@@ -104,18 +108,30 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private final ClientListenerMetrics metrics;
 
     /**
+     * If return {@code true} then specifi protocol connections enabled.
+     * Predicate checks distributed property value.
+     *
+     * @see ClientListenerNioListener#ODBC_CLIENT
+     * @see ClientListenerNioListener#JDBC_CLIENT
+     * @see ClientListenerNioListener#THIN_CLIENT
+     */
+    private final Predicate<Byte> newConnEnabled;
+
+    /**
      * Constructor.
      *
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
      * @param cliConnCfg Client connector configuration.
      * @param metrics Client listener metrics.
+     * @param newConnEnabled Predicate to check if connection of specified type enabled.
      */
     public ClientListenerNioListener(
         GridKernalContext ctx,
         GridSpinBusyLock busyLock,
         ClientConnectorConfiguration cliConnCfg,
-        ClientListenerMetrics metrics
+        ClientListenerMetrics metrics,
+        Predicate<Byte> newConnEnabled
     ) {
         assert cliConnCfg != null;
 
@@ -126,10 +142,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         log = ctx.log(getClass());
 
-        thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
+        thinCfg = cliConnCfg.getThinClientConfiguration() == null
+            ? new ThinClientConfiguration()
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
 
         this.metrics = metrics;
+        this.newConnEnabled = newConnEnabled;
     }
 
     /** {@inheritDoc} */
@@ -380,8 +398,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
-                if (nodeInRecoveryMode() && !Boolean.parseBoolean(connCtx.attributes().get(MANAGEMENT_CLIENT_ATTR)))
-                    throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
+                ensureConnectionAllowed(connCtx);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
@@ -533,5 +550,41 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             default:
                 throw new IgniteCheckedException("Unknown client type: " + clientType);
         }
+    }
+
+    /**
+     * Ensures if the client are allowed to connect.
+     *
+     * @param connCtx Connection context.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void ensureConnectionAllowed(ClientListenerConnectionContext connCtx) throws IgniteCheckedException {
+        boolean isControlUtility = connCtx.clientType() == THIN_CLIENT && connCtx.managementClient();
+
+        if (nodeInRecoveryMode()) {
+            if (!isControlUtility)
+                throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
+
+            return;
+        }
+
+        // If security enabled then only admin allowed to connect as management.
+        if (isControlUtility) {
+            if (connCtx.securityContext() != null) {
+                try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
+                    ctx.security().authorize(SecurityPermission.ADMIN_OPS);
+                }
+                catch (SecurityException e) {
+                    throw new IgniteAccessControlException("ADMIN_OPS permission required");
+                }
+            }
+
+            // Allow to connect control utility even if connection disabled.
+            // Must provide a way to invoke commands.
+            return;
+        }
+
+        if (!newConnEnabled.test(connCtx.clientType()))
+            throw new IgniteAccessControlException(CONN_DISABLED_BY_ADMIN_ERR_MSG);
     }
 }

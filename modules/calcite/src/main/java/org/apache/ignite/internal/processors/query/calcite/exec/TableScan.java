@@ -74,9 +74,9 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         /** */
         private IteratorImpl() {
-            assert reserved != null;
+            assert reservedParts != null;
 
-            parts = new ArrayDeque<>(reserved);
+            parts = new ArrayDeque<>(reservedParts);
 
             txChanges = F.isEmpty(ectx.getQryTxEntries())
                 ? TransactionChanges.empty()

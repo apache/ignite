@@ -18,7 +18,6 @@
 package org.apache.ignite.development.utils;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -130,11 +129,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         IgniteConfiguration cfg = crd.configuration();
 
-        String wd = cfg.getWorkDirectory();
-        String wp = cfg.getDataStorageConfiguration().getWalPath();
-        String fn = kernalCtx.pdsFolderResolver().resolveFolders().folderName();
-
-        walDirPath = wd + File.separator + wp + File.separator + fn;
+        walDirPath = kernalCtx.pdsFolderResolver().fileTree().wal().getAbsolutePath();
         pageSize = cfg.getDataStorageConfiguration().getPageSize();
 
         stopGrid(nodeId);

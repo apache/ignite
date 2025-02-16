@@ -26,3 +26,4 @@ class TransactionConfiguration(NamedTuple):
     default_tx_isolation: str = None
     default_tx_timeout: int = None
     tx_timeout_on_partition_map_exchange: int = None
+    tx_aware_queries_enabled: bool = None

@@ -203,8 +203,8 @@ public class NodeWithFilterRestartTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = createAndFillCache();
 
-        File cacheMetaPath1 = grid(filteredGridIdx).context().cache().configManager().cacheConfigurationFile(cacheCfg);
-        File cacheMetaPath2 = grid(nonBaselineIdx).context().cache().configManager().cacheConfigurationFile(cacheCfg);
+        File cacheMetaPath1 = grid(filteredGridIdx).context().pdsFolderResolver().fileTree().cacheConfigurationFile(cacheCfg);
+        File cacheMetaPath2 = grid(nonBaselineIdx).context().pdsFolderResolver().fileTree().cacheConfigurationFile(cacheCfg);
 
         assertTrue(cacheMetaPath1.exists() && cacheMetaPath1.isFile());
         assertTrue(cacheMetaPath2.exists() && cacheMetaPath2.isFile());

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
-import java.io.FileFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -27,12 +26,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER;
 
 /**
  * Load without compaction -> Stop -> Enable WAL Compaction -> Start.
@@ -83,21 +84,13 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         for (int i = 0; i < 500; i++)
             cache.put(i, i);
 
-        File walDir = U.resolveWorkDirectory(
-                ex.configuration().getWorkDirectory(),
-                "db/wal/node00-" + ex.localNode().consistentId(),
-                false
-        );
+        File walDir = ex.context().pdsFolderResolver().fileTree().wal();
 
         forceCheckpoint();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = walDir.listFiles(new FileFilter() {
-                    @Override public boolean accept(File pathname) {
-                        return pathname.getName().endsWith(".wal");
-                    }
-                });
+                File[] archivedFiles = walDir.listFiles(WAL_SEGMENT_FILE_FILTER);
 
                 return archivedFiles.length == 39;
             }
@@ -111,29 +104,17 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         ex.cluster().state(ClusterState.ACTIVE);
 
-        File archiveDir = U.resolveWorkDirectory(
-                ex.configuration().getWorkDirectory(),
-                "db/wal/archive/node00-" + ex.localNode().consistentId(),
-                false
-        );
+        File archiveDir = ex.context().pdsFolderResolver().fileTree().walArchive();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = archiveDir.listFiles(new FileFilter() {
-                    @Override public boolean accept(File pathname) {
-                        return pathname.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
-                    }
-                });
+                File[] archivedFiles = archiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
 
                 return archivedFiles.length == 20;
             }
         }, 5000);
 
-        File[] tmpFiles = archiveDir.listFiles(new FileFilter() {
-            @Override public boolean accept(File pathname) {
-                return pathname.getName().endsWith(FilePageStoreManager.TMP_SUFFIX);
-            }
-        });
+        File[] tmpFiles = archiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
         assertEquals(0, tmpFiles.length);
     }

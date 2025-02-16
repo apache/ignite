@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
-import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -208,12 +207,12 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int reserved(WALPointer low, WALPointer high);
 
     /**
-     * Checks WAL disabled for cache group.
+     * Checks WAL page records disabled.
      *
      * @param grpId Group id.
      * @param pageId Page id.
      */
-    public boolean disabled(int grpId, long pageId);
+    public boolean pageRecordsDisabled(int grpId, long pageId);
 
     /**
      * Getting local WAL segment size.
@@ -234,19 +233,6 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
      */
     void startAutoReleaseSegments();
-
-    /**
-     * Archive directory if any.
-     *
-     * @return Archive directory.
-     */
-    @Nullable File archiveDir();
-
-    /**
-     * @param idx Segment index.
-     * @return Compressed archive segment.
-     */
-    @Nullable File compactedSegment(long idx);
 
     /**
      * Blocks current thread while segment with the {@code idx} not compressed.

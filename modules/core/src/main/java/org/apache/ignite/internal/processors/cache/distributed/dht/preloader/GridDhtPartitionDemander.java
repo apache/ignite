@@ -689,8 +689,7 @@ public class GridDhtPartitionDemander {
                 if (!fut.isDone()) {
                     // Send demand message.
                     try {
-                        ctx.io().sendOrderedMessage(node, d.topic(),
-                            d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
+                        ctx.io().sendOrderedMessage(node, d.topic(), d, grp.ioPolicy(), grp.preloader().timeout());
 
                         if (log.isDebugEnabled())
                             log.debug("Send next demand message [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
@@ -1246,8 +1245,7 @@ public class GridDhtPartitionDemander {
                         ", histPartitions=" + S.toStringSortedDistinct(parts.historicalSet()) +
                         ", rebalanceId=" + rebalanceId + ']');
 
-                ctx.io().sendOrderedMessage(supplierNode, msg.topic(),
-                    msg.convertIfNeeded(supplierNode.version()), grp.ioPolicy(), msg.timeout());
+                ctx.io().sendOrderedMessage(supplierNode, msg.topic(), msg, grp.ioPolicy(), msg.timeout());
 
                 // Cleanup required in case partitions demanded in parallel with cancellation.
                 synchronized (this) {
@@ -1491,8 +1489,7 @@ public class GridDhtPartitionDemander {
             try {
                 Object rebalanceTopic = GridCachePartitionExchangeManager.rebalanceTopic(0);
 
-                ctx.io().sendOrderedMessage(node, rebalanceTopic,
-                    d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
+                ctx.io().sendOrderedMessage(node, rebalanceTopic, d, grp.ioPolicy(), grp.preloader().timeout());
             }
             catch (IgniteCheckedException ignored) {
                 if (log.isDebugEnabled())
