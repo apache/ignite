@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest
 import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
+import org.apache.ignite.internal.processors.query.calcite.ComputeWithLabelledQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalciteTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
@@ -153,6 +154,7 @@ import org.junit.runners.Suite;
     SessionContextSqlFunctionTest.class,
     SqlPlanHistoryIntegrationTest.class,
     QueryBlockingTaskExecutorIntegrationTest.class,
+    ComputeWithLabelledQueryTest.class,
 })
 public class IntegrationTestSuite {
 }
