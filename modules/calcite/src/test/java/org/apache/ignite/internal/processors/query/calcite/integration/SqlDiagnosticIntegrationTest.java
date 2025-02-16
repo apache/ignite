@@ -36,6 +36,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -50,6 +53,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -73,6 +77,7 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
@@ -100,6 +105,9 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     private static final int BIG_RESULT_SET_THRESHOLD = 10_000;
+
+    /** Query label. */
+    private static final String LABEL = "Label 1";
 
     /** */
     private ListeningTestLogger log;
@@ -723,26 +731,78 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testLongRunningQueries() throws Exception {
+        executeLongRunningQueriesTests((qry) -> GridTestUtils.runAsync(() -> sql(grid(0), qry)), false);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningQueriesWithLabels() throws Exception {
+        Ignite gridWithAttrs = grid(0).withApplicationAttributes(F.asMap(QUERY_LABEL, LABEL));
+        Ignite cliWithAttrs = client.withApplicationAttributes(F.asMap(QUERY_LABEL, LABEL));
+
+        for (Ignite grid : Set.of(gridWithAttrs, cliWithAttrs)) {
+            executeLongRunningQueriesTests(
+                (qry) -> GridTestUtils.runAsync(() -> grid.cache("func_cache").query(new SqlFieldsQuery(qry))
+                    .getAll()), true);
+        }
+    }
+
+    /** */
+    @Test
+    public void testBigResultSet() throws Exception {
+        executeBigResultSetTests(
+            grid(0),
+            (rowCnt) -> sql(grid(0), "SELECT * FROM TABLE(SYSTEM_RANGE(1, ?))", rowCnt),
+            false);
+    }
+
+    /** */
+    @Test
+    public void testBigResultSetWithLabels() throws Exception {
+        final String cacheName = "test_big_result_set";
+
+        grid(0).getOrCreateCache(new CacheConfiguration<Integer, Integer>(cacheName).setSqlSchema("PUBLIC"));
+
+        Ignite gridWithAttrs = grid(0).withApplicationAttributes(F.asMap(QUERY_LABEL, LABEL));
+        Ignite cliWithAttrs = client.withApplicationAttributes(F.asMap(QUERY_LABEL, LABEL));
+
+        Map<IgniteEx, Ignite> grids = F.asMap(grid(0), gridWithAttrs, client, cliWithAttrs);
+
+        for (Map.Entry<IgniteEx, Ignite> entry : grids.entrySet()) {
+            executeBigResultSetTests(
+                entry.getKey(),
+                (rowCnt) -> entry.getValue().cache(cacheName)
+                    .query(new SqlFieldsQuery("SELECT * FROM TABLE(SYSTEM_RANGE(1, ?))").setArgs(rowCnt)).getAll(),
+                true);
+        }
+    }
+
+    /**
+     * @param qryTask Async query task.
+     * @param isLblChecked Flag indicating whether label check should be performed.
+     */
+    private void executeLongRunningQueriesTests(
+        Function<String, IgniteInternalFuture<?>> qryTask,
+        boolean isLblChecked
+    ) throws Exception {
         client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("func_cache")
             .setSqlFunctionClasses(FunctionsLibrary.class)
             .setSqlSchema("PUBLIC")
         );
 
-        LogListener logLsnr0 = LogListener.matches(LONG_QUERY_EXEC_MSG).build();
+        LogListener logLsnr0 = LogListener.matches(LONG_QUERY_EXEC_MSG).andMatches(isLblChecked ? LABEL : ".").build();
+        LogListener logLsnr1 = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches(isLblChecked ? LABEL : ".").build();
+        LogListener logLsnr2 = LogListener.matches(LONG_QUERY_ERROR_MSG).andMatches(isLblChecked ? LABEL : ".").build();
 
-        log.registerListener(logLsnr0);
+        log.registerAllListeners(logLsnr0, logLsnr1, logLsnr2);
 
         FunctionsLibrary.latch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(10000)"));
+        IgniteInternalFuture<?> fut = qryTask.apply("SELECT waitLatch(10000)");
 
         doSleep(LONG_QRY_TIMEOUT * 3);
 
         assertTrue(logLsnr0.check());
-
-        LogListener logLsnr1 = LogListener.matches(LONG_QUERY_FINISHED_MSG).build();
-
-        log.registerListener(logLsnr1);
 
         FunctionsLibrary.latch.countDown();
 
@@ -752,11 +812,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         FunctionsLibrary.latch = new CountDownLatch(1);
 
-        fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(2000)"));
-
-        LogListener logLsnr2 = LogListener.matches(LONG_QUERY_ERROR_MSG).build();
-
-        log.registerListener(logLsnr2);
+        fut = qryTask.apply("SELECT waitLatch(2000)");
 
         doSleep(LONG_QRY_TIMEOUT * 2);
 
@@ -770,23 +826,28 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(logLsnr2.check(1000L));
     }
 
-    /** */
-    @Test
-    public void testBigResultSet() throws Exception {
-        grid(0).context().query().runningQueryManager().heavyQueriesTracker()
+    /**
+     * @param grid Ignite instance.
+     * @param qryTask Query task.
+     * @param isLblChecked Flag indicating whether label check should be performed.
+     */
+    private void executeBigResultSetTests(
+        IgniteEx grid,
+        Consumer<Integer> qryTask,
+        boolean isLblChecked
+    ) throws Exception {
+        grid.context().query().runningQueryManager().heavyQueriesTracker()
             .setResultSetSizeThreshold(BIG_RESULT_SET_THRESHOLD);
 
         int rowCnt = BIG_RESULT_SET_THRESHOLD * 5 + 1;
 
-        LogListener logLsnr0 = LogListener.matches(BIG_RESULT_SET_MSG).build();
+        LogListener logLsnr0 = LogListener.matches(BIG_RESULT_SET_MSG).andMatches(isLblChecked ? LABEL : ".").build();
         LogListener logLsnr1 = LogListener.matches("fetched=" + BIG_RESULT_SET_THRESHOLD).build();
         LogListener logLsnr2 = LogListener.matches("fetched=" + rowCnt).build();
 
-        log.registerListener(logLsnr0);
-        log.registerListener(logLsnr1);
-        log.registerListener(logLsnr2);
+        log.registerAllListeners(logLsnr0, logLsnr1, logLsnr2);
 
-        sql(grid(0), "SELECT * FROM TABLE(SYSTEM_RANGE(1, ?))", rowCnt);
+        qryTask.accept(rowCnt);
 
         assertTrue(logLsnr0.check(1000L));
         assertTrue(logLsnr1.check(1000L));
