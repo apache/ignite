@@ -366,8 +366,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
 
             @Override public Void invoke(SnapshotHandlerContext ctx) {
-                if (!expFullPath.equals(ctx.snapshotDirectory().getAbsolutePath()))
-                    throw new IllegalStateException("Expected " + expFullPath + ", actual " + ctx.snapshotDirectory());
+                if (!expFullPath.equals(ctx.snapshotFileTree().root().getAbsolutePath()))
+                    throw new IllegalStateException("Expected " + expFullPath + ", actual " + ctx.snapshotFileTree().root());
 
                 return null;
             }
@@ -419,7 +419,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             @Override public Void invoke(SnapshotHandlerContext ctx) {
                 // Someone removes snapshot files during creation.
                 // In this case snapshot must fail.
-                U.delete(ctx.snapshotDirectory());
+                U.delete(ctx.snapshotFileTree().root());
 
                 return null;
             }

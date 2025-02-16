@@ -1038,11 +1038,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         }
 
         /** {@inheritDoc} */
-        @Override public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(
-            String snpName,
-            @Nullable String snpPath,
-            int incIdx
-        ) throws IgniteCheckedException, IOException {
+        @Override public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(File meta) throws IgniteCheckedException, IOException {
             if (fail != null) {
                 Runnable f = fail;
 
@@ -1051,7 +1047,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
                 f.run();
             }
 
-            return super.readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+            return super.readIncrementalSnapshotMetadata(meta);
         }
     }
 

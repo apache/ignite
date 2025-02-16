@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -76,15 +77,10 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
@@ -114,8 +110,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
-        if (!opCtx.snapshotDirectory().exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());
+        if (!opCtx.snapshotFileTree().root().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotFileTree().root());
 
         SnapshotMetadata meta = opCtx.metadata();
 
@@ -136,7 +132,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
+        for (File dir : opCtx.snapshotFileTree().cacheDirectories(name -> true)) {
             int grpId = CU.cacheId(cacheName(dir));
 
             if (!grps.remove(grpId))
@@ -145,8 +141,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir,
-                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
+            for (File part : cachePartitionFiles(dir, SnapshotFileTree.partExtension(meta.dump(), meta.compressPartitions())
             )) {
                 int partId = partId(part);
 
@@ -197,7 +192,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
         GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
-            opCtx.snapshotDirectory(), meta.folderName());
+            opCtx.snapshotFileTree().root(), meta.folderName());
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
@@ -363,28 +358,21 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
-        try {
-            String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
+        EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-            EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
+        try (Dump dump = new Dump(opCtx.snapshotFileTree().root(), opCtx.snapshotFileTree().consistentId(), true, true, encSpi, log)) {
+            Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
+                cctx.snapshotMgr().snapshotExecutorService(),
+                partFiles,
+                part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part))
+            );
 
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
-                Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
-                    cctx.snapshotMgr().snapshotExecutorService(),
-                    partFiles,
-                    part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part))
-                );
-
-                return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
-            }
-            catch (Throwable t) {
-                log.error("Error executing handler: ", t);
-
-                throw new IgniteException(t);
-            }
+            return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        catch (Throwable t) {
+            log.error("Error executing handler: ", t);
+
+            throw new IgniteException(t);
         }
     }
 
@@ -475,16 +463,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** */
     protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
-        Path snapshotDir = opCtx.snapshotDirectory().toPath();
 
         if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {
-                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDir, meta.pageSize());
+                cctx.kernalContext().compress().checkPageCompressionSupported(opCtx.snapshotFileTree().root().toPath(), meta.pageSize());
 
                 return true;
             }
             catch (Exception e) {
-                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDir
+                log.info("File system doesn't support page compression on snapshot directory: " + opCtx.snapshotFileTree().root()
                     + ", snapshot may have larger size than expected.");
             }
         }

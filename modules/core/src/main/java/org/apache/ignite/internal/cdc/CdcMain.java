@@ -81,7 +81,6 @@ import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
-import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
@@ -678,7 +677,7 @@ public class CdcMain implements Runnable {
                 return;
 
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
-                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
+                .filter(NodeFileTree::binFile)
                 .map(f -> {
                     int typeId = BinaryUtils.typeId(f.getName());
                     long lastModified = f.lastModified();
