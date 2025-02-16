@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
@@ -87,7 +86,6 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;

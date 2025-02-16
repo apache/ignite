@@ -710,8 +710,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         try {
-
-
             U.delete(sft.binaryMeta());
             U.delete(sft.nodeStorage());
             U.delete(sft.meta());
