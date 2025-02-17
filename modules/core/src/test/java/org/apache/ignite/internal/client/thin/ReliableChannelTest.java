@@ -342,6 +342,33 @@ public class ReliableChannelTest {
     }
 
     /**
+     * Checks that if the configuration contains one address, exactly one channel is created.
+     */
+    @Test
+    public void testChannelDuplicationWithSingleAddressInConfiguration() {
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+        rc.channelsInit();
+
+        assertEquals(1, rc.getChannelHolders().size());
+    }
+
+    /**
+     * Checks that if the configuration contains multiple addresses, exactly the same number of channels are created.
+     */
+    @Test
+    public void testChannelDuplicationWithMultipleAddressInConfiguration() {
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802");
+
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+        rc.channelsInit();
+
+        assertEquals(3, rc.getChannelHolders().size());
+    }
+
+
+    /**
      * Async operation should fail if cluster is down after send operation and handle topology change.
      */
     @Test
