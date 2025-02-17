@@ -92,7 +92,6 @@ public class SnapshotFileTree extends NodeFileTree {
         this.tmpFt = new NodeFileTree(new File(snapshotTempRoot(), name), folderName());
     }
 
-
     /** @return Snapshot name. */
     public String name() {
         return name;
