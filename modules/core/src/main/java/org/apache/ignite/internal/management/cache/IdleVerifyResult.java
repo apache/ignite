@@ -82,7 +82,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     private Map<ClusterNode, Exception> exceptions;
 
     /**
-     * Default public constructor. Mostly for {@link Externalizable}.
+     * Default public constructor for {@link Externalizable} only.
      *
      * @see #builder()
      * @see #ofErrors(Map)
@@ -399,10 +399,19 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     /** Builder of {@link IdleVerifyResult}. Is not thread-safe. */
     public static final class Builder {
         /** */
-        private final IdleVerifyResult result = new IdleVerifyResult();
+        private @Nullable Map<PartitionKey, List<PartitionHashRecord>> partHashes;
+
+        /** */
+        private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+
+        /** */
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partCommitTxs;
 
         /** Incremental snapshot transactions records per consistent id. */
         private @Nullable Map<Object, Map<Object, TransactionsHashRecord>> incrTxHashRecords;
+
+        /** */
+        private @Nullable Map<ClusterNode, Exception> errs;
 
         /** */
         private Builder() {
@@ -415,23 +424,38 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             if (!F.isEmpty(incrTxHashRecords))
                 incrTxHashRecords.values().stream().flatMap(e -> e.values().stream()).forEach(e -> addTxConflicts(F.asList(e, null)));
 
-            if (F.isEmpty(result.hashConflicts))
-                return result;
+            if (F.isEmpty(partHashes))
+                return new IdleVerifyResult(null, null, null, null, txHashConflicts, partCommitTxs, errs);
 
-            // Actual hash conflicts is exist.
-            Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = null;
             Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = null;
+            Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = null;
+            Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = null;
+            Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = null;
 
-            // The hash conflicts mas was used as a temporary storage of partitions hash records. Recalculating now.
-            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : result.hashConflicts.entrySet()) {
+            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : partHashes.entrySet()) {
                 Integer partHash = null;
                 Integer partVerHash = null;
                 Object updateCntr = null;
 
                 for (PartitionHashRecord record : e.getValue()) {
-                    if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING
-                        || record.partitionState() == PartitionHashRecord.PartitionState.LOST)
+                    if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
+                        if (movingPartitions == null)
+                            movingPartitions = new HashMap<>();
+
+                        movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(record);
+
                         continue;
+                    }
+
+                    if (record.partitionState() == PartitionHashRecord.PartitionState.LOST) {
+                        if (lostPartitions == null)
+                            lostPartitions = new HashMap<>();
+
+                        lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                            .add(record);
+
+                        continue;
+                    }
 
                     if (partHash == null) {
                         partHash = record.partitionHash();
@@ -457,56 +481,42 @@ public class IdleVerifyResult extends VisorDataTransferObject {
                 }
             }
 
-            // Set actual hash conflicts or clear the temporary partition hash records.
-            result.hashConflicts = hashConflicts == null ? Collections.emptyMap() : hashConflicts;
-
-            if (cntrConflicts != null)
-                result.cntrConflicts = cntrConflicts;
-
-            return result;
+            return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
+                partCommitTxs, errs);
         }
 
         /** Stores an exception if none is aready set for certain node. */
         public Builder addException(ClusterNode node, Exception e) {
             assert e != null;
 
-            if (result.exceptions == Collections.EMPTY_MAP)
-                result.exceptions = new HashMap<>();
+            if (errs == null)
+                errs = new HashMap<>();
 
-            result.exceptions.putIfAbsent(node, e);
+            errs.putIfAbsent(node, e);
+
+            return this;
+        }
+
+        /** Stores collection of partition hashes related to certain partition key. */
+        private Builder addPartitionHashes(PartitionKey key, Collection<PartitionHashRecord> newHashes) {
+            if (partHashes == null)
+                partHashes = new HashMap<>();
+
+            partHashes.compute(key, (key0, hashes0) -> {
+                if (hashes0 == null)
+                    hashes0 = new ArrayList<>();
+
+                hashes0.addAll(newHashes);
+
+                return hashes0;
+            });
 
             return this;
         }
 
         /** Stores map of partition hashes per partition key. */
         public void addPartitionHashes(Map<PartitionKey, PartitionHashRecord> newHashes) {
-            // The hash conflicts is used as a temporary storage. Actual conflicts are calculated at the building.
-            newHashes.forEach((key, hashRecord) -> {
-                if (result.hashConflicts == Collections.EMPTY_MAP)
-                    result.hashConflicts = new HashMap<>();
-
-                result.hashConflicts.compute(key, (key0, hashes0) -> {
-                    if (hashes0 == null)
-                        hashes0 = new ArrayList<>();
-
-                    hashes0.add(hashRecord);
-
-                    if (hashRecord.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
-                        if (result.movingPartitions == Collections.EMPTY_MAP)
-                            result.movingPartitions = new HashMap<>();
-
-                        result.movingPartitions.computeIfAbsent(key, k -> new ArrayList<>()).add(hashRecord);
-                    }
-                    else if (hashRecord.partitionState() == PartitionHashRecord.PartitionState.LOST) {
-                        if (result.lostPartitions == Collections.EMPTY_MAP)
-                            result.lostPartitions = new HashMap<>();
-
-                        result.lostPartitions.computeIfAbsent(key, k -> new ArrayList<>()).add(hashRecord);
-                    }
-
-                    return hashes0;
-                });
-            });
+            newHashes.forEach((key, hash) -> addPartitionHashes(key, Collections.singletonList(hash)));
         }
 
         /** Stores incremental snapshot transaction hash records of a certain node. */
@@ -539,20 +549,20 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         /** Stores transaction conflicts. */
         private Builder addTxConflicts(List<TransactionsHashRecord> newTxConflicts) {
-            if (result.txHashConflicts == Collections.EMPTY_LIST)
-                result.txHashConflicts = new ArrayList<>();
+            if (txHashConflicts == null)
+                txHashConflicts = new ArrayList<>();
 
-            result.txHashConflicts.add(newTxConflicts);
+            txHashConflicts.add(newTxConflicts);
 
             return this;
         }
 
         /** Stores partially commited transactions of a certain node. */
         public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
-            if (result.partiallyCommittedTxs == Collections.EMPTY_MAP)
-                result.partiallyCommittedTxs = new HashMap<>();
+            if (partCommitTxs == null)
+                partCommitTxs = new HashMap<>();
 
-            result.partiallyCommittedTxs.compute(node, (node0, versions0) -> {
+            partCommitTxs.compute(node, (node0, versions0) -> {
                 if (versions0 == null)
                     versions0 = new ArrayList<>();
 
