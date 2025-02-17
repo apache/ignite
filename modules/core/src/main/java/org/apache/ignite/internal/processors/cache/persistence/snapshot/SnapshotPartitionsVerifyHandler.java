@@ -450,7 +450,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IdleVerifyResult verifyResult = bldr.build();
 
-        if (!bldr.hasErrors() && !verifyResult.hasConflicts())
+        if (verifyResult.exceptions().isEmpty() && !verifyResult.hasConflicts())
             return;
 
         GridStringBuilder buf = new GridStringBuilder();
