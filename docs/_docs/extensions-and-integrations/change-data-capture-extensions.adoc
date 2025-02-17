@@ -609,7 +609,7 @@ To start a single node for each cluster type the following commands in different
 
 * Start CDC consumer with specified properties:
 
-** To start any CDC consumer, use `--cdc-consumer` or `-c` command with `cdc-start-up.sh`. In addition, you have to specify CDC consumer mode and properties holder directory for the source cluster (as in the previous example).
+** To start any CDC consumer, use `--ignite-cdc` or `-c` command with `cdc-start-up.sh`. In addition, you have to specify CDC consumer mode and properties holder directory for the source cluster (as in the previous example).
 
 ** There are 3 options you can specify CDC consumer mode from. Take a look at `--help` command output to learn about them.
 
@@ -619,7 +619,7 @@ Here is an example on how to start Active-Passive inter-cluster communication wi
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-consumer --ignite-to-ignite-thin cluster-1
+./cdc-start-up.sh --ignite-cdc ignite-to-ignite-thin cluster-1
 ```
 
 NOTE: Make sure clusters fully started up before starting CDC consumer.
@@ -628,8 +628,8 @@ Here is an example on how to start Active-Active inter-cluster communication wit
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-consumer --ignite-to-ignite cluster-1
-./cdc-start-up.sh --cdc-consumer --ignite-to-ignite cluster-2
+./cdc-start-up.sh --ignite-cdc ignite-to-ignite-thick cluster-1
+./cdc-start-up.sh --ignite-cdc ignite-to-ignite-thick cluster-2
 ```
 
 NOTE: To start CDC with Kafka you need to start topics beforehand.
@@ -656,7 +656,7 @@ Here is an example on how to start Active-Passive inter-cluster communication wi
 ```
 ./cdc-start-up.sh --ignite cluster-1
 ./cdc-start-up.sh --ignite cluster-2
-./cdc-start-up.sh --cdc-consumer --ignite-to-kafka cluster-1
+./cdc-start-up.sh --ignite-cdc ignite-to-kafka cluster-1
 ./cdc-start-up.sh --kafka-to-ignite thick cluster-2
 ```
 
@@ -664,19 +664,21 @@ NOTE: Kafka-to-Ignite applier starts alongside the destination cluster and uses 
 
 * You can check CDC replication with `--check-cdc`. Use it in parallel with Active-Passive/Active-Active replication. To start CDC check for proposed entry:
 ```
-./cdc-start-up.sh --check-cdc --key 11006 --value 1 --version 1 --cluster 1
+./cdc-start-up.sh --check-cdc --key 11006 --value '{"intVal": 1, "version": 1}' --cluster 1
 ```
 
 The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transferred.
+
+Make sure you specify entry as JSON of two fields: intVal and version. The former is a single integer that represents value and version is used as `conflictResolverField` by `CacheVersionConflictResolverPluginProvider`.
 
 NOTE: To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system.
 
 NOTE: Try to play with version value to see how the conflict resolver works. We propose the following sequence of operations with Active-Active:
 
 ```
-./cdc-start-up.sh --check-cdc --key 11006 --value 1 --version 1 --cluster 1
-./cdc-start-up.sh --check-cdc --key 11006 --value 2 --version 2 --cluster 1
-./cdc-start-up.sh --check-cdc --key 11006 --value 3 --version 3 --cluster 1
-./cdc-start-up.sh --check-cdc --key 11006 --value 2 --version 2 --cluster 2
+./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 1, "version": 1}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 2, "version": 2}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 3, "version": 3}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 2, "version": 2}' --cluster 2
 ```
 This sequence simulates the case when the first cluster receives outdated value from the second. In our case the data will not be replicated in the last command and the check would timeout after 1 minute.
