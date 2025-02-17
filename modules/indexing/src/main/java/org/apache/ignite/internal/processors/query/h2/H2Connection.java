@@ -63,8 +63,8 @@ public class H2Connection implements AutoCloseable {
 
         initStatementCache();
 
-        // Work around the H2 bug (NPE in Session#removeLocalTempTable) fixed at
-        // https://github.com/h2database/h2database/commit/36350d2ecc58880bc17b36fdd6ab8c2b5ab38c70
+        // Work around the H2 bug (NPE in Session#removeLocalTempTable)
+        // https://github.com/h2database/h2database/issues/1354
         //
         // Make sure session always contains not-null list of temp tables.
         try {
