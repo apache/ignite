@@ -289,7 +289,7 @@ final class ReliableChannel implements AutoCloseable {
                         return null;
                     }
 
-                    if (failures.size() < attemptsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
+                    if ((channelsCnt.get() == 0 && partitionAwarenessEnabled && attemptsLimit == 1 || failures.size() < attemptsLimit) && shouldRetry(op, failures.size() - 1, failure0)) {
                         handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
 
                         return null;
@@ -769,7 +769,7 @@ final class ReliableChannel implements AutoCloseable {
 
         // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
         // one, then each one from #channels in sequence.
-        if (partitionAwarenessEnabled && channelsCnt.get() > 1)
+        if (partitionAwarenessEnabled && (channelsCnt.get() > 1 || (channelsCnt.get() == 0 && attemptsLimit == 1)))
             fixedAttemptsLimit++;
 
         while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
@@ -875,9 +875,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 onChannelFailure(hld, channel, e, failures);
 
-                if (channelsCnt.get() == 0 && attemptsLimit == 1 && channel.closed()) {
-                    failures = null;
-                } else if (attemptsLimit == 1 || !shouldRetry(op, 0, e))
+                if (!(channelsCnt.get() == 0 && channel.closed()) && attemptsLimit == 1 || !shouldRetry(op, 0, e))
                     throw e;
             }
         }
