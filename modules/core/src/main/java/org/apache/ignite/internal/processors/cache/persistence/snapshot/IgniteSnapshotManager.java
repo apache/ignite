@@ -3801,6 +3801,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File tmpCacheDir = ft.tmpCacheStorage(cacheDirName);
 
+                U.mkdirs(tmpCacheDir);
+
                 return Paths.get(tmpCacheDir.getAbsolutePath(), partitionFileName(partId)).toString();
             }
             finally {
