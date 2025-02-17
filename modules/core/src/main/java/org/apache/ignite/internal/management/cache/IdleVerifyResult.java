@@ -421,8 +421,6 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             // Actual hash conflicts is exist.
             Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = null;
             Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = null;
-            Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = null;
-            Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = null;
 
             // The hash conflicts mas was used as a temporary storage of partitions hash records. Recalculating now.
             for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : result.hashConflicts.entrySet()) {
@@ -431,24 +429,9 @@ public class IdleVerifyResult extends VisorDataTransferObject {
                 Object updateCntr = null;
 
                 for (PartitionHashRecord record : e.getValue()) {
-                    if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
-                        if (movingPartitions == null)
-                            movingPartitions = new HashMap<>();
-
-                        movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(record);
-
+                    if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING
+                        || record.partitionState() == PartitionHashRecord.PartitionState.LOST)
                         continue;
-                    }
-
-                    if (record.partitionState() == PartitionHashRecord.PartitionState.LOST) {
-                        if (lostPartitions == null)
-                            lostPartitions = new HashMap<>();
-
-                        lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
-                            .add(record);
-
-                        continue;
-                    }
 
                     if (partHash == null) {
                         partHash = record.partitionHash();
@@ -480,12 +463,6 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             if (cntrConflicts != null)
                 result.cntrConflicts = cntrConflicts;
 
-            if (movingPartitions != null)
-                result.movingPartitions = movingPartitions;
-
-            if (lostPartitions != null)
-                result.lostPartitions = lostPartitions;
-
             return result;
         }
 
@@ -504,7 +481,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         /** Stores map of partition hashes per partition key. */
         public void addPartitionHashes(Map<PartitionKey, PartitionHashRecord> newHashes) {
             // The hash conflicts is used as a temporary storage. Actual conflicts are calculated at the building.
-            newHashes.forEach((key, hash) -> {
+            newHashes.forEach((key, hashRecord) -> {
                 if (result.hashConflicts == Collections.EMPTY_MAP)
                     result.hashConflicts = new HashMap<>();
 
@@ -512,7 +489,20 @@ public class IdleVerifyResult extends VisorDataTransferObject {
                     if (hashes0 == null)
                         hashes0 = new ArrayList<>();
 
-                    hashes0.add(hash);
+                    hashes0.add(hashRecord);
+
+                    if (hashRecord.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
+                        if (result.movingPartitions == Collections.EMPTY_MAP)
+                            result.movingPartitions = new HashMap<>();
+
+                        result.movingPartitions.computeIfAbsent(key, k -> new ArrayList<>()).add(hashRecord);
+                    }
+                    else if (hashRecord.partitionState() == PartitionHashRecord.PartitionState.LOST) {
+                        if (result.lostPartitions == Collections.EMPTY_MAP)
+                            result.lostPartitions = new HashMap<>();
+
+                        result.lostPartitions.computeIfAbsent(key, k -> new ArrayList<>()).add(hashRecord);
+                    }
 
                     return hashes0;
                 });
