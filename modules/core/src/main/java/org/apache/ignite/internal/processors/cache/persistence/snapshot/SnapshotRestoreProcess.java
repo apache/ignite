@@ -105,7 +105,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
@@ -639,7 +638,7 @@ public class SnapshotRestoreProcess {
                 ", caches=" + req.groups() + ']');
         }
 
-        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req, ctx);
+        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req);
 
         try {
             if (opCtx != null) {
@@ -931,9 +930,14 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
+                            SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+
+                            SnapshotFileTree sft
+                                = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
+
                             NodeFileTree metaFt = opCtx0.incIdx > 0
-                                ? opCtx0.sft.incrementalSnapshotFileTree(opCtx0.incIdx)
-                                : opCtx0.sft;
+                                ? sft.incrementalSnapshotFileTree(opCtx0.incIdx)
+                                : sft;
 
                             ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
 
@@ -1004,8 +1008,10 @@ public class SnapshotRestoreProcess {
                     if (leftParts.isEmpty())
                         break;
 
-                    File snpCacheDir = new File(opCtx0.sft.root(),
-                        Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
+                    SnapshotFileTree sft
+                        = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
+
+                    File snpCacheDir = sft.cacheStorage(dir.getName());
 
                     leftParts.removeIf(partFut -> {
                         boolean doCopy = ofNullable(meta.partitions().get(grpId))
@@ -1027,7 +1033,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File idxFile = new File(snpCacheDir, NodeFileTree.partitionFileName(INDEX_PARTITION));
+                        File idxFile = sft.partitionFile(dir.getName(), INDEX_PARTITION);
 
                         if (idxFile.exists()) {
                             PartitionRestoreFuture idxFut;
@@ -1815,9 +1821,6 @@ public class SnapshotRestoreProcess {
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /** Snapshot file tree. */
-        private final SnapshotFileTree sft;
-
         /** IDs of the required nodes. */
         private final Set<UUID> nodes;
 
@@ -1884,13 +1887,12 @@ public class SnapshotRestoreProcess {
             nodes = null;
             snpPath = null;
             incIdx = 0;
-            sft = null;
         }
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
          */
-        protected SnapshotRestoreContext(SnapshotOperationRequest req, GridKernalContext ctx) {
+        protected SnapshotRestoreContext(SnapshotOperationRequest req) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             snpPath = req.snapshotPath();
@@ -1898,7 +1900,6 @@ public class SnapshotRestoreProcess {
             incIdx = req.incrementIndex();
             startTime = U.currentTimeMillis();
             nodes = req.nodes();
-            sft = new SnapshotFileTree(ctx, snpName, snpPath);
         }
 
         /**
