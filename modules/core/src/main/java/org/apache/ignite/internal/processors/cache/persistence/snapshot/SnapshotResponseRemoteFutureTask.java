@@ -71,7 +71,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 .stream().map(meta -> F.t(
                     meta,
                     // Separate file tree for the case when snapshot moved from other node.
-                    new SnapshotFileTree(cctx.kernalContext(), meta.consistentId(), meta.folderName(), sft.name(), sft.path()))
+                    new SnapshotFileTree(cctx.kernalContext(), sft.name(), sft.path(), meta.folderName(), meta.consistentId()))
                 ).collect(Collectors.toList());
 
             Function<GroupPartitionId, IgniteBiTuple<SnapshotMetadata, SnapshotFileTree>> findMeta = pair -> {

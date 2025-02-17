@@ -1783,7 +1783,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         Predicate<String> names
     ) {
-        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), null, folderName, snpName, snpPath);
+        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, null, folderName);
 
         if (!sft.root().exists())
             return Collections.emptyList();
