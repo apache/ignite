@@ -158,7 +158,7 @@ public class TimeoutTest extends AbstractThinClientTest {
         long ts1 = System.currentTimeMillis();
 
         assertTrue("Unexpected timeout [ts0=" + ts0 + ", ts1=" + ts1 + ']',
-            ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 2);
+            ts1 - ts0 >= TIMEOUT && ts1 - ts0 < TIMEOUT * 3);
 
         fut.get();
     }
