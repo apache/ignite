@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -117,9 +118,7 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTE
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
@@ -381,6 +380,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
+        SnapshotFileTree sft = snapshotFileTree(grid(1), DMP_NAME);
+
         stopAllGrids();
 
         Dump dump = dump(ign, DMP_NAME);
@@ -390,17 +391,15 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         assertNotNull(nodes);
         assertEquals(2, nodes.size());
 
-        File nodeDumpDir = new File(dump.dumpDirectory(), DB_DEFAULT_FOLDER + File.separator + nodes.get(0));
-
-        assertTrue(new File(nodeDumpDir, DUMP_LOCK).createNewFile());
+        assertTrue(sft.dumpLock().createNewFile());
 
         lsnr = LogListener.matches("Found locked dump dir. " +
             "This means, dump creation not finished prior to node fail. " +
-            "Directory will be deleted: " + nodeDumpDir.getAbsolutePath()).build();
+            "Directory will be deleted: " + sft.nodeStorage().getAbsolutePath()).build();
 
         startGridsMultiThreaded(2);
 
-        assertFalse(nodeDumpDir.exists());
+        assertFalse(sft.nodeStorage().exists());
         assertTrue(lsnr.check());
     }
 

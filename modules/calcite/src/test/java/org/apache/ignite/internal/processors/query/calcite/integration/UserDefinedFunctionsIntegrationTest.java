@@ -66,6 +66,35 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testSameSignatureNotRegistered() throws Exception {
+        LogListener logChecker = LogListener.matches("Unable to register function 'SAMESIGN'. Other function " +
+            "with the same name and parameters is already registered").build();
+
+        listeningLog.registerListener(logChecker);
+
+        // Actually, we might use QuerySqlFunction#alias instead of declaring additional method holding class (OtherFunctionsLibrary2).
+        // But Class#getDeclaredMethods() seems to give methods with a different order. If we define methods with one class,
+        // we can get one 'sameSign' registered before another. And the test would become flaky.
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
+            .setSqlFunctionClasses(OtherFunctionsLibrary.class, OtherFunctionsLibrary2.class));
+
+        // Ensure that 1::INTEGER isn't returned by OtherFunctionsLibrary2#sameSign(int).
+        assertQuery("SELECT \"emp\".sameSign(1)").returns("echo_1").check();
+
+        // Ensure that OtherFunctionsLibrary#sameSign2(int) isn't registered.
+        assertThrows("SELECT \"emp\".sameSign2(1)", SqlValidatorException.class,
+            "No match found for function signature SAMESIGN2");
+
+        assertTrue(logChecker.check(getTestTimeout()));
+
+        SchemaPlus schema = queryProcessor(client).schemaHolder().schema("emp");
+
+        assertEquals(1, schema.getFunctions("SAMESIGN").size());
+    }
+
+
+    /** */
+    @Test
     public void testSystemFunctionOverriding() throws Exception {
         // To a custom schema.
         client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_OWN")
@@ -617,6 +646,21 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static String echo(String s) {
             return s;
+        }
+
+        /** The signature interferes with aliased {@link OtherFunctionsLibrary2#sameSign2(int)}. */
+        @QuerySqlFunction
+        public static String sameSign(int v) {
+            return "echo_" + v;
+        }
+    }
+
+    /** */
+    public static class OtherFunctionsLibrary2 {
+        /** The aliased signature interferes with {@link OtherFunctionsLibrary#sameSign(int)}. */
+        @QuerySqlFunction(alias = "sameSign")
+        public static int sameSign2(int v) {
+            return v;
         }
     }
 
