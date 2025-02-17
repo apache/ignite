@@ -60,44 +60,44 @@ public enum OperationType {
     /** Cache invoke all. */
     CACHE_INVOKE_ALL(10),
 
-    /** Cache put all conflict. */
-    CACHE_PUT_ALL_CONFLICT(11),
-
-    /** Cache remove all conflict. */
-    CACHE_REMOVE_ALL_CONFLICT(12),
-
     /** Transaction commit. */
-    TX_COMMIT(13),
+    TX_COMMIT(11),
 
     /** Transaction rollback. */
-    TX_ROLLBACK(14),
+    TX_ROLLBACK(12),
 
     /** Query. */
-    QUERY(15),
+    QUERY(13),
 
     /** Query reads. */
-    QUERY_READS(16),
+    QUERY_READS(14),
 
     /** Task. */
-    TASK(17),
+    TASK(15),
 
     /** Job. */
-    JOB(18),
+    JOB(16),
 
     /** Cache start. */
-    CACHE_START(19),
+    CACHE_START(17),
 
     /** Checkpoint. */
-    CHECKPOINT(20),
+    CHECKPOINT(18),
 
     /** Pages write throttle. */
-    PAGES_WRITE_THROTTLE(21),
+    PAGES_WRITE_THROTTLE(19),
 
     /** Count of processed by query rows. */
-    QUERY_ROWS(22),
+    QUERY_ROWS(20),
 
     /** Custom query property. */
-    QUERY_PROPERTY(23),
+    QUERY_PROPERTY(21),
+
+    /** Cache put all conflict. */
+    CACHE_PUT_ALL_CONFLICT(22),
+
+    /** Cache remove all conflict. */
+    CACHE_REMOVE_ALL_CONFLICT(23),
 
     /** Version. */
     VERSION(255);
