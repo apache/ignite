@@ -2239,10 +2239,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Snapshot which has not been completed due to the local node crashed must be deleted.
         String snpDirName = (String)metaStorage.read(SNP_RUNNING_DIR_KEY);
 
-        File snpDir = new File(snpDirName);
-
-        if (snpDir == null)
+        if (snpDirName == null)
             return;
+
+        File snpDir = new File(snpDirName);
 
         recovered = true;
 
