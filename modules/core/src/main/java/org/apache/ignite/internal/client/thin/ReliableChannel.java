@@ -665,11 +665,14 @@ final class ReliableChannel implements AutoCloseable {
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
-        int idx = curChIdx;
-
         // The variable holds a new index of default channel after topology change.
         // Suppose that reuse of the channel is better than open new connection.
-        ClientChannelHolder currDfltHolder = (idx != -1) ? holders.get(idx) : null;
+        ClientChannelHolder currDfltHolder = null;
+
+        int idx = curChIdx;
+
+        if (idx != -1)
+            currDfltHolder = holders.get(idx);
 
         for (List<InetSocketAddress> addrs : newAddrs) {
             // Try to find already created channel holder.
@@ -931,7 +934,7 @@ final class ReliableChannel implements AutoCloseable {
         int size = holders.size();
 
         // Essential to produce a retry connection on the channel after a failure occurred on that single channel.
-        if (size == 1 && channelsCnt.get() == 0 && partitionAwarenessEnabled)
+        if (channelsCnt.get() == 0 && partitionAwarenessEnabled)
             size = 2;
 
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
