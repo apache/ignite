@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,13 +30,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
-import org.h2.expression.ValueExpression;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcStatement;
-import org.h2.table.RangeTable;
 import org.jetbrains.annotations.Nullable;
-
-import static org.h2.engine.Constants.SCHEMA_MAIN;
 
 /**
  * Wrapper to store connection with currently used schema and statement cache.
@@ -66,21 +63,18 @@ public class H2Connection implements AutoCloseable {
 
         initStatementCache();
 
-        // Work around the H2 bug (NPE in Session#removeLocalTempTable).
+        // Work around the H2 bug (NPE in Session#removeLocalTempTable) fixed at
+        // https://github.com/h2database/h2database/commit/36350d2ecc58880bc17b36fdd6ab8c2b5ab38c70
+        //
         // Make sure session always contains not-null list of temp tables.
         try {
             Session sess = (Session)(conn.unwrap(JdbcConnection.class)).getSession();
 
-            RangeTable dummyTbl = new RangeTable(
-                sess.getDatabase().getSchema(SCHEMA_MAIN),
-                ValueExpression.getNull(),
-                ValueExpression.getNull(),
-                true);
-
-            sess.addLocalTempTable(dummyTbl);
-            sess.removeLocalTempTable(dummyTbl);
+            Field field = Session.class.getDeclaredField("localTempTables");
+            field.setAccessible(true);
+            field.set(sess, sess.getDatabase().newStringMap());
         }
-        catch (SQLException e) {
+        catch (SQLException | IllegalAccessException | NoSuchFieldException e) {
             throw new IgniteSQLException("Failed to initialize DB connection", e);
         }
     }
