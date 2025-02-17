@@ -674,6 +674,8 @@ final class ReliableChannel implements AutoCloseable {
         if (idx != -1)
             currDfltHolder = holders.get(idx);
 
+        int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
+        
         for (List<InetSocketAddress> addrs : newAddrs) {
             // Try to find already created channel holder.
             ClientChannelHolder hld = addrs.stream()
@@ -694,8 +696,6 @@ final class ReliableChannel implements AutoCloseable {
 
             updatedAddrs.forEach(addr -> curAddrs.putIfAbsent(addr, hld));
         }
-
-        int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
 
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.
