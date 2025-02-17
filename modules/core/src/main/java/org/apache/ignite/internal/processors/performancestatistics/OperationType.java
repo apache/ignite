@@ -60,44 +60,44 @@ public enum OperationType {
     /** Cache invoke all. */
     CACHE_INVOKE_ALL(10),
 
-    /** Transaction commit. */
-    TX_COMMIT(11),
-
-    /** Transaction rollback. */
-    TX_ROLLBACK(12),
-
-    /** Query. */
-    QUERY(13),
-
-    /** Query reads. */
-    QUERY_READS(14),
-
-    /** Task. */
-    TASK(15),
-
-    /** Job. */
-    JOB(16),
-
-    /** Cache start. */
-    CACHE_START(17),
-
-    /** Checkpoint. */
-    CHECKPOINT(18),
-
-    /** Pages write throttle. */
-    PAGES_WRITE_THROTTLE(19),
-
-    /** Count of processed by query rows. */
-    QUERY_ROWS(20),
-
-    /** Custom query property. */
-    QUERY_PROPERTY(21),
-
     /** Cache put all conflict. */
-    CACHE_PUT_ALL_CONFLICT(22),
+    CACHE_PUT_ALL_CONFLICT(11),
 
     /** Cache remove all conflict. */
-    CACHE_REMOVE_ALL_CONFLICT(23),
+    CACHE_REMOVE_ALL_CONFLICT(12),
+
+    /** Transaction commit. */
+    TX_COMMIT(13),
+
+    /** Transaction rollback. */
+    TX_ROLLBACK(14),
+
+    /** Query. */
+    QUERY(15),
+
+    /** Query reads. */
+    QUERY_READS(16),
+
+    /** Task. */
+    TASK(17),
+
+    /** Job. */
+    JOB(18),
+
+    /** Cache start. */
+    CACHE_START(19),
+
+    /** Checkpoint. */
+    CHECKPOINT(20),
+
+    /** Pages write throttle. */
+    PAGES_WRITE_THROTTLE(21),
+
+    /** Count of processed by query rows. */
+    QUERY_ROWS(22),
+
+    /** Custom query property. */
+    QUERY_PROPERTY(23),
 
     /** Version. */
     VERSION(255);
