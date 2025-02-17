@@ -2879,7 +2879,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean statsEnabled = ctx.statisticsEnabled();
         boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
+        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
