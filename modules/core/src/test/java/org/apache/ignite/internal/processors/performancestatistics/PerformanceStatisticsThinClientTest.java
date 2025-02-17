@@ -22,9 +22,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
@@ -41,6 +39,7 @@ import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.client.thin.TestTask;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -205,72 +204,24 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
 
         checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemove(5));
-    }
 
-    /**
-     * Cache {@link TcpClientCache#putAllConflict} operation performed.
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCachePutAllConflict() throws Exception {
-        checkCacheAllConflictOperations(CACHE_PUT_ALL_CONFLICT, false);
-    }
-
-    /**
-     * Cache {@link TcpClientCache#removeAllConflict} operation performed.
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheRemoveAllConflict() throws Exception {
-        checkCacheAllConflictOperations(CACHE_REMOVE_ALL_CONFLICT, false);
-    }
-
-    /**
-     * Cache {@link TcpClientCache#putAllConflictAsync} operation performed.
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCachePutAllConflictAsync() throws Exception {
-        checkCacheAllConflictOperations(CACHE_PUT_ALL_CONFLICT, true);
-    }
-
-    /**
-     * Cache {@link TcpClientCache#removeAllConflictAsync} operation performed.
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheRemoveAllConflictAsync() throws Exception {
-        checkCacheAllConflictOperations(CACHE_REMOVE_ALL_CONFLICT, true);
-    }
-
-    /**
-     * @param opType {@link OperationType} cache operation type.
-     * @param isAsync boolean flag for asynchronous cache operation processing.
-     */
-    private void checkCacheAllConflictOperations(OperationType opType, boolean isAsync) throws Exception {
         GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
 
-        checkCacheOperation(opType, cache -> {
-            TcpClientCache<Object, Object> clientCache = (TcpClientCache<Object, Object>)cache;
+        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .putAllConflict(F.asMap(6, new T3<>(1, confl, CU.EXPIRE_TIME_ETERNAL))));
 
-            try {
-                if (opType == CACHE_PUT_ALL_CONFLICT && !isAsync)
-                    clientCache.putAllConflict(F.asMap(6, new T3<>(1, confl, CU.EXPIRE_TIME_ETERNAL)));
-                else if (opType == CACHE_REMOVE_ALL_CONFLICT && !isAsync)
-                    clientCache.removeAllConflict(F.asMap(6, confl));
-                else if (opType == CACHE_PUT_ALL_CONFLICT)
-                    clientCache.putAllConflictAsync(F.asMap(7, new T3<>(2, confl, CU.EXPIRE_TIME_ETERNAL))).get();
-                else if (opType == CACHE_REMOVE_ALL_CONFLICT)
-                    clientCache.removeAllConflictAsync(F.asMap(7, confl)).get();
-            }
-            catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .removeAllConflict(F.asMap(6, confl)));
+
+        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .putAllConflictAsync(F.asMap(7, new T3<>(2, confl, CU.EXPIRE_TIME_ETERNAL))).get());
+
+        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .removeAllConflictAsync(F.asMap(7, confl)).get());
     }
 
     /** Checks cache operation. */
-    private void checkCacheOperation(OperationType op, Consumer<ClientCache<Object, Object>> clo) throws Exception {
+    private void checkCacheOperation(OperationType op, ConsumerX<ClientCache<Object, Object>> clo) throws Exception {
         long startTime = U.currentTimeMillis();
 
         cleanPerformanceStatisticsDir();

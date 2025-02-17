@@ -1969,9 +1969,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return;
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
+        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -1999,9 +1999,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<Object>();
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
+        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2846,10 +2846,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (F.isEmpty(drMap))
             return;
 
-        final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        boolean statsEnabled = ctx.statisticsEnabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
+        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2877,9 +2877,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<Object>();
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
+        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 

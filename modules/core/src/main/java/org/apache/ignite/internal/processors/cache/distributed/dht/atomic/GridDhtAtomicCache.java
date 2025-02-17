@@ -696,10 +696,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
-        final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        boolean statsEnabled = ctx.statisticsEnabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
+        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
@@ -765,7 +765,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> conflictMap) {
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
         final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
