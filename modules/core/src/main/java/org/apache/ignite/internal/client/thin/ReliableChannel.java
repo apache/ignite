@@ -289,7 +289,7 @@ final class ReliableChannel implements AutoCloseable {
                         return null;
                     }
 
-                    if (failures.size() < attemptsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
+                    if ((channelsCnt.get() == 0 && partitionAwarenessEnabled && attemptsLimit == 1 || failures.size() < attemptsLimit) && shouldRetry(op, failures.size() - 1, failure0)) {
                         handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
 
                         return null;
@@ -618,42 +618,21 @@ final class ReliableChannel implements AutoCloseable {
      * Init channel holders to all nodes.
      */
     synchronized void initChannelHolders() {
-        List<ClientChannelHolder> holders = channels;
-
         startChannelsReInit = System.currentTimeMillis();
-
-        // Enable parallel threads to schedule new init of channel holders.
         scheduledChannelsReinit.set(false);
 
         Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
-
-        if (newAddrs == null || newAddrs.isEmpty()) {
+        if (newAddrs == null) {
             finishChannelsReInit = System.currentTimeMillis();
-
             return;
         }
 
-        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
-        if (holders != null && clientCfg.getAddressesFinder() == null) {
-            // Do not modify the original list.
-            newAddrs = new ArrayList<>(newAddrs);
-
-            for (ClientChannelHolder h : holders) {
-                ClientChannel ch = h.ch;
-
-                if (ch != null && !ch.closed() && !newAddrs.contains(h.getAddresses()))
-                    newAddrs.add(h.getAddresses());
-            }
-        }
-
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
-
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
-        // Close obsolete holders or map old but valid addresses to holders.
-        if (holders != null) {
-            for (ClientChannelHolder h : holders) {
-                // If new endpoints contain at least one of channel addresses, don't close this channel.
+        // Close obsolete holders and map valid addresses to holders
+        if (channels != null) {
+            for (ClientChannelHolder h : channels) {
                 boolean valid = h.getAddresses().stream().anyMatch(newAddrsSet::contains);
                 if (valid)
                     h.getAddresses().forEach(addr -> curAddrs.putIfAbsent(addr, h));
@@ -663,60 +642,44 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
+        ClientChannelHolder currDfltHolder = (curChIdx != -1) ? channels.get(curChIdx) : null;
 
-        int idx = curChIdx;
-
-        // The variable holds a new index of default channel after topology change.
-        // Suppose that reuse of the channel is better than open new connection.
-        ClientChannelHolder currDfltHolder = (idx != -1) ? holders.get(idx) : null;
-
-        // Process new addresses merging with existing holders.
         for (List<InetSocketAddress> addrs : newAddrs) {
-            // Try to find already created channel holder. If not found, create the new one.
             ClientChannelHolder hld = addrs.stream()
                 .map(curAddrs::get)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElseGet(() -> new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs)));
 
-            // Expanding the list of addresses by adding new addresses to the existing holder.
+            // Expanding the list of addresses by adding new addresses to the existing holder
             Set<InetSocketAddress> existingAddrs = new HashSet<>(hld.getAddresses());
             existingAddrs.addAll(addrs);
-
             List<InetSocketAddress> updatedAddrs = new ArrayList<>(existingAddrs);
 
             if (hld.getAddresses().size() != updatedAddrs.size())
                 hld.setConfiguration(new ClientChannelConfiguration(clientCfg, updatedAddrs));
 
             reinitHolders.add(hld);
-
             updatedAddrs.forEach(addr -> curAddrs.putIfAbsent(addr, hld));
         }
 
         int dfltChannelIdx = reinitHolders.indexOf(currDfltHolder);
         if (dfltChannelIdx == -1) {
-            // If holder is not specified get the random holder from the range of holders with the same port.
             reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
-
             int limit = 0;
             int port = F.first(reinitHolders.get(0).getAddresses()).getPort();
-
             while (limit + 1 < reinitHolders.size() && F.first(reinitHolders.get(limit + 1).getAddresses()).getPort() == port)
                 limit++;
 
-            dfltChannelIdx = ThreadLocalRandom.current().nextInt(limit + 1);
+            dfltChannelIdx =  ThreadLocalRandom.current().nextInt(limit + 1);
         }
 
         curChannelsGuard.writeLock().lock();
-
         try {
             channels = reinitHolders;
-
             attemptsLimit = getRetryLimit();
-
             curChIdx = dfltChannelIdx;
-        }
-        finally {
+        } finally {
             curChannelsGuard.writeLock().unlock();
         }
 
@@ -806,7 +769,7 @@ final class ReliableChannel implements AutoCloseable {
 
         // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
         // one, then each one from #channels in sequence.
-        if (partitionAwarenessEnabled && channelsCnt.get() > 1)
+        if (partitionAwarenessEnabled && (channelsCnt.get() > 1 || (channelsCnt.get() == 0 && attemptsLimit == 1)))
             fixedAttemptsLimit++;
 
         while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
@@ -912,7 +875,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 onChannelFailure(hld, channel, e, failures);
 
-                if (attemptsLimit == 1 || !shouldRetry(op, 0, e))
+                if (!(channelsCnt.get() == 0 && channel.closed()) && attemptsLimit == 1 || !shouldRetry(op, 0, e))
                     throw e;
             }
         }

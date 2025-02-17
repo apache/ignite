@@ -367,6 +367,26 @@ public class ReliableChannelTest {
         assertEquals(3, rc.getChannelHolders().size());
     }
 
+    /**
+     * Checks that channels' count remains the same in static configuration after reinitialization.
+     */
+    @Test
+    public void testChannelsCountRemainsAfterReinit() {
+        String[] addrs = {"127.0.0.1:10800", "127.0.0.1:10801"};
+        TestAddressFinder finder = new TestAddressFinder()
+            .nextAddresesResponse(addrs)
+            .nextAddresesResponse(addrs);
+
+        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
+        rc.channelsInit();
+        int initCnt = rc.getChannelHolders().size();
+
+        rc.initChannelHolders();
+
+        assertEquals(initCnt, rc.getChannelHolders().size());
+    }
 
     /**
      * Async operation should fail if cluster is down after send operation and handle topology change.
