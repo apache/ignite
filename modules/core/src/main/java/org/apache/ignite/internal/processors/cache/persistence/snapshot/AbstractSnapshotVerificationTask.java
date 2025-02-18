@@ -98,8 +98,8 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /**
      * @param name Snapshot name.
-     * @param consId Consistent id of the related node.
      * @param folderName Folder name for snapshot.
+     * @param consId Consistent id of the related node.
      * @param args Check snapshot parameters.
      *
      * @return Compute job.

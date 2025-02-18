@@ -65,8 +65,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
@@ -81,7 +81,7 @@ public class Dump implements AutoCloseable {
     private final File dumpDir;
 
     /** Dump directories. */
-    private final List<NodeFileTree> fts;
+    private final List<SnapshotFileTree> sfts;
 
     /** Specific consistent id. */
     private final @Nullable String consistentId;
@@ -141,11 +141,11 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
-        this.fts = metadata.stream()
-            .map(m -> new NodeFileTree(dumpDir, m.folderName()))
-            .collect(Collectors.toList());
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(log);
+        this.sfts = metadata.stream()
+            .map(m -> new SnapshotFileTree(cctx, m.snapshotName(), dumpDir.getAbsolutePath(), m.folderName(), m.consistentId()))
+            .collect(Collectors.toList());
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -161,11 +161,11 @@ public class Dump implements AutoCloseable {
      * @return Standalone kernal context.
      */
     private GridKernalContext standaloneKernalContext(IgniteLogger log) {
-        A.ensure(F.first(fts).binaryMeta().exists(), "binary metadata directory not exists");
-        A.ensure(F.first(fts).marshaller().exists(), "marshaller directory not exists");
+        A.ensure(F.first(sfts).binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(F.first(sfts).marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(fts).binaryMeta(), F.first(fts).marshaller());
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(sfts).binaryMeta(), F.first(sfts).marshaller());
 
             startAllComponents(kctx);
 
@@ -204,9 +204,15 @@ public class Dump implements AutoCloseable {
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
-        File[] files = dumpDir.listFiles(f ->
-            f.getName().endsWith(SNAPSHOT_METAFILE_EXT) && (consistentId == null || f.getName().startsWith(consistentId))
-        );
+        File[] files;
+
+        if (consistentId == null)
+            files = dumpDir.listFiles(SnapshotFileTree::snapshotMetaFile);
+        else {
+            File meta = new File(dumpDir, snapshotMetaFileName(consistentId));
+
+            files = meta.exists() ? new File[] {meta} : null;
+        }
 
         if (files == null)
             return Collections.emptyList();
@@ -347,8 +353,8 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return Dump directories. */
-    public List<NodeFileTree> fileTrees() {
-        return fts;
+    public List<SnapshotFileTree> fileTrees() {
+        return sfts;
     }
 
     /** */
