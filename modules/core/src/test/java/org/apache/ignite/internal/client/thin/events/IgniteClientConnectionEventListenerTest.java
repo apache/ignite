@@ -146,7 +146,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
                     () -> new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), EnumSet.of(errType)),
                     (HandshakeFailEvent event, Throwable hsErr) -> {
                         assertTrue(System.nanoTime() - startNano.get() >= event.elapsedTime(TimeUnit.NANOSECONDS));
-                        assertEquals(hsErr.toString(), event.throwable().toString());
+                        assertEquals(hsErr, event.throwable());
                     },
                     HandshakeFailEvent.class
                 );
