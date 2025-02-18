@@ -44,7 +44,9 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -113,6 +115,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     private int keySize = DEFAULT_KEY_SIZE;
 
     /** Master key. */
+    @GridToStringExclude
     private volatile KeystoreEncryptionKey masterKey;
 
     /** Master key name. */
@@ -545,5 +548,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(KeystoreEncryptionSpi.class, this,
+                "keyStorePwd", keyStorePwd != null ? "*" : null,
+                "masterKey", masterKey != null ? "*" : null);
     }
 }
