@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.management.cache;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -71,45 +70,42 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
     /** Transaction hashes conflicts. */
     @GridToStringInclude
-    private List<List<TransactionsHashRecord>> txHashConflicts;
+    private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
     /** Partial committed transactions. */
     @GridToStringInclude
-    private Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+    private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
 
     /**
-     * Default public constructor for {@link Externalizable} only.
-     *
-     * @see #builder()
+     * Default constructor for Externalizable.
      */
     public IdleVerifyResult() {
-        this(null, null, null, null, null, null, null);
     }
 
     /**
      * @see #builder()
      */
     private IdleVerifyResult(
-        @Nullable Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts,
-        @Nullable Map<PartitionKey, List<PartitionHashRecord>> hashConflicts,
-        @Nullable Map<PartitionKey, List<PartitionHashRecord>> movingPartitions,
-        @Nullable Map<PartitionKey, List<PartitionHashRecord>> lostPartitions,
+        Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts,
+        Map<PartitionKey, List<PartitionHashRecord>> hashConflicts,
+        Map<PartitionKey, List<PartitionHashRecord>> movingPartitions,
+        Map<PartitionKey, List<PartitionHashRecord>> lostPartitions,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
         @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs,
-        @Nullable Map<ClusterNode, Exception> exceptions
+        Map<ClusterNode, Exception> exceptions
     ) {
-        this.cntrConflicts = notNullFinalMap(cntrConflicts);
-        this.hashConflicts = notNullFinalMap(hashConflicts);
-        this.movingPartitions = notNullFinalMap(movingPartitions);
-        this.lostPartitions = notNullFinalMap(lostPartitions);
-        this.txHashConflicts = notNullFinalList(txHashConflicts);
-        this.partiallyCommittedTxs = notNullFinalMap(partiallyCommittedTxs);
+        this.cntrConflicts = cntrConflicts;
+        this.hashConflicts = hashConflicts;
+        this.movingPartitions = movingPartitions;
+        this.lostPartitions = lostPartitions;
+        this.txHashConflicts = txHashConflicts;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
 
-        this.exceptions = notNullFinalMap(exceptions);
+        this.exceptions = exceptions;
     }
 
     /** {@inheritDoc} */
@@ -129,20 +125,21 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cntrConflicts = notNullFinalMap(U.readMap(in));
-        hashConflicts = notNullFinalMap(U.readMap(in));
-        movingPartitions = notNullFinalMap(U.readMap(in));
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
+        cntrConflicts = U.readMap(in);
+        hashConflicts = U.readMap(in);
+        movingPartitions = U.readMap(in);
 
         if (protoVer >= V2)
-            exceptions = notNullFinalMap(U.readMap(in));
+            exceptions = U.readMap(in);
 
         if (protoVer >= V3)
-            lostPartitions = notNullFinalMap(U.readMap(in));
+            lostPartitions = U.readMap(in);
 
         if (protoVer >= V4) {
-            txHashConflicts = notNullFinalList((List)U.readCollection(in));
-            partiallyCommittedTxs = notNullFinalMap(U.readMap(in));
+            txHashConflicts = (List)U.readCollection(in);
+            partiallyCommittedTxs = U.readMap(in);
         }
     }
 
@@ -164,7 +161,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @return Moving partitions.
      */
     public Map<PartitionKey, List<PartitionHashRecord>> movingPartitions() {
-        return movingPartitions;
+        return Collections.unmodifiableMap(movingPartitions);
     }
 
     /**
@@ -178,8 +175,8 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @return {@code true} if any conflicts were discovered during the check.
      */
     public boolean hasConflicts() {
-        return !hashConflicts.isEmpty() || !counterConflicts().isEmpty()
-            || !txHashConflicts.isEmpty() || !partiallyCommittedTxs.isEmpty();
+        return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts())
+            || !F.isEmpty(txHashConflicts) || !F.isEmpty(partiallyCommittedTxs);
     }
 
     /**
@@ -196,17 +193,19 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * @param printExceptionMessages {@code true} if exceptions must be included too.
      */
     public void print(Consumer<String> printer, boolean printExceptionMessages) {
-        if (exceptions.isEmpty()) {
+        if (F.isEmpty(exceptions)) {
             if (!hasConflicts())
                 printer.accept("The check procedure has finished, no conflicts have been found.\n");
             else
                 printConflicts(printer);
 
-            if (!movingPartitions.isEmpty())
+            Map<PartitionKey, List<PartitionHashRecord>> moving = movingPartitions();
+
+            if (!moving.isEmpty())
                 printer.accept("Possible results are not full due to rebalance still in progress." + nl());
 
-            printSkippedPartitions(printer, movingPartitions, "MOVING");
-            printSkippedPartitions(printer, lostPartitions, "LOST");
+            printSkippedPartitions(printer, moving, "MOVING");
+            printSkippedPartitions(printer, lostPartitions(), "LOST");
 
             return;
         }
@@ -215,7 +214,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
-        if (!F.view(exceptions.values(), e -> e instanceof NoMatchingCachesException).isEmpty())
+        if (!F.isEmpty(F.view(exceptions.values(), e -> e instanceof NoMatchingCachesException)))
             printer.accept("\nThere are no caches matching given filter options.\n");
 
         printer.accept("\nThe check procedure failed on nodes:\n");
@@ -246,7 +245,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         Map<PartitionKey, List<PartitionHashRecord>> map,
         String partitionState
     ) {
-        if (!map.isEmpty()) {
+        if (!F.isEmpty(map)) {
             printer.accept("Verification was skipped for " + map.size() + " " + partitionState + " partitions:\n");
 
             for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : map.entrySet()) {
@@ -266,13 +265,13 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         printer.accept("The check procedure has failed, conflict partitions has been found: [" +
             "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
-            + (txHashConflicts.isEmpty() ? "" : ", txHashConflicts=" + txHashConflicts.size())
-            + (partiallyCommittedTxs.isEmpty() ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
+            + (txHashConflicts == null ? "" : ", txHashConflicts=" + txHashConflicts.size())
+            + (partiallyCommittedTxs == null ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
             + "]" + nl());
 
         Set<PartitionKey> allConflicts = new HashSet<>();
 
-        if (!cntrConflicts.isEmpty()) {
+        if (!F.isEmpty(counterConflicts())) {
             allConflicts.addAll(counterConflicts().keySet());
 
             printer.accept("Update counter conflicts:" + nl());
@@ -286,7 +285,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             printer.accept(nl());
         }
 
-        if (!hashConflicts.isEmpty()) {
+        if (!F.isEmpty(hashConflicts())) {
             allConflicts.addAll(hashConflicts().keySet());
 
             printer.accept("Hash conflicts:" + nl());
@@ -298,14 +297,14 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             }
         }
 
-        if (!txHashConflicts.isEmpty()) {
+        if (!F.isEmpty(txHashConflicts)) {
             printer.accept("Transactions hashes conflicts:" + nl());
 
             for (List<TransactionsHashRecord> conf : txHashConflicts)
                 printer.accept("Conflict nodes: " + conf + nl());
         }
 
-        if (!partiallyCommittedTxs.isEmpty()) {
+        if (!F.isEmpty(partiallyCommittedTxs)) {
             printer.accept("Partially committed transactions:" + nl());
 
             for (Map.Entry<ClusterNode, Collection<GridCacheVersion>> entry : partiallyCommittedTxs.entrySet()) {
@@ -371,16 +370,6 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         return S.toString(IdleVerifyResult.class, this);
     }
 
-    /** */
-    private static <K, V> Map<K, V> notNullFinalMap(@Nullable Map<K, V> map) {
-        return map == null ? Collections.emptyMap() : Collections.unmodifiableMap(map);
-    }
-
-    /** */
-    private static <V> List<V> notNullFinalList(@Nullable List<V> lst) {
-        return lst == null ? Collections.emptyList() : Collections.unmodifiableList(lst);
-    }
-
     /** @return A fresh result builder. */
     public static Builder builder() {
         return new Builder();
@@ -408,19 +397,24 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             // No-op.
         }
 
-        /** Builds final {@link IdleVerifyResult}. */
+        /** Build a {@link IdleVerifyResult}. */
         public IdleVerifyResult build() {
             // Add all missed incremental pairs to the conflicts.
             if (!F.isEmpty(incrTxHashRecords))
                 incrTxHashRecords.values().stream().flatMap(e -> e.values().stream()).forEach(e -> addTxConflicts(F.asList(e, null)));
 
-            if (F.isEmpty(partHashes))
-                return new IdleVerifyResult(null, null, null, null, txHashConflicts, partCommitTxs, exceptions);
+            Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = new HashMap<>();
+            Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
+            Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = new HashMap<>();
+            Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = new HashMap<>();
 
-            Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = null;
-            Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = null;
-            Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = null;
-            Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = null;
+            if (exceptions == null)
+                exceptions = Collections.emptyMap();
+
+            if (F.isEmpty(partHashes)) {
+                return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
+                    partCommitTxs, exceptions);
+            }
 
             for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : partHashes.entrySet()) {
                 Integer partHash = null;
@@ -429,20 +423,13 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
                 for (PartitionHashRecord record : e.getValue()) {
                     if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
-                        if (movingPartitions == null)
-                            movingPartitions = new HashMap<>();
-
                         movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(record);
 
                         continue;
                     }
 
                     if (record.partitionState() == PartitionHashRecord.PartitionState.LOST) {
-                        if (lostPartitions == null)
-                            lostPartitions = new HashMap<>();
-
-                        lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
-                            .add(record);
+                        lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(record);
 
                         continue;
                     }
@@ -454,19 +441,11 @@ public class IdleVerifyResult extends VisorDataTransferObject {
                         updateCntr = record.updateCounter();
                     }
                     else {
-                        if (!Objects.equals(record.updateCounter(), updateCntr)) {
-                            if (cntrConflicts == null)
-                                cntrConflicts = new HashMap<>();
-
+                        if (!Objects.equals(record.updateCounter(), updateCntr))
                             cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
-                        }
 
-                        if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash) {
-                            if (hashConflicts == null)
-                                hashConflicts = new HashMap<>();
-
+                        if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash)
                             hashConflicts.putIfAbsent(e.getKey(), e.getValue());
-                        }
                     }
                 }
             }
@@ -490,6 +469,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         /** Sets all the result exceptions. */
         public Builder exceptions(Map<ClusterNode, Exception> exceptions) {
             assert this.exceptions == null;
+            assert exceptions != null;
 
             this.exceptions = exceptions;
 
