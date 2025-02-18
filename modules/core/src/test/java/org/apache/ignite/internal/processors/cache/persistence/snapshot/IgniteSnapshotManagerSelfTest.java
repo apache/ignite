@@ -145,8 +145,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         }, 5, "cache-loader-");
 
         // Register task but not schedule it on the checkpoint.
-        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(SNAPSHOT_NAME,
-            null,
+        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(
+            snapshotFileTree(ig, SNAPSHOT_NAME),
             cctx.localNodeId(),
             null,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
@@ -273,7 +273,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         });
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
-            SNAPSHOT_NAME,
+            snapshotFileTree(ig, SNAPSHOT_NAME),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
             mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));
@@ -297,7 +297,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteSnapshotManager mgr0 = snp(ig);
 
         IgniteInternalFuture<?> fut = startLocalSnapshotTask(ig.context().cache().context(),
-            SNAPSHOT_NAME,
+            snapshotFileTree(ig, SNAPSHOT_NAME),
             parts,
             encryption,
             new DelegateSnapshotSender(log, mgr0.snapshotExecutorService(),
@@ -333,7 +333,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch cpLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
-            SNAPSHOT_NAME,
+            snapshotFileTree(ig, SNAPSHOT_NAME),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {

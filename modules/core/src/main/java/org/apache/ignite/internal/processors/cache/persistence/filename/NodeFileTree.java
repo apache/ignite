@@ -489,12 +489,9 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(ccfg), cacheDataFilename(ccfg));
-    }
-
-    /** @return Name of cache data filename. */
-    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
+        return new File(cacheStorage(ccfg), ccfg.getGroupName() == null
+            ? CACHE_DATA_FILENAME
+            : (ccfg.getName() + CACHE_DATA_FILENAME));
     }
 
     /**
@@ -529,6 +526,15 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpCacheStorage(String cacheDirName) {
         return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
+    }
+
+    /**
+     * @param cacheDirName Cache directory name.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     */
+    public File tmpPartition(String cacheDirName, int partId) {
+        return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
     }
 
     /**

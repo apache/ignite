@@ -206,7 +206,6 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
@@ -217,13 +216,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INDEX_DELTA_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.PART_DELTA_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -480,16 +477,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
     }
 
-    /**
-     * @param partId Partition id.
-     * @return File name of delta partition pages.
-     */
-    public static String partDeltaFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
-
-        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
-    }
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
@@ -727,34 +714,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpDir Snapshot dir.
-     * @param pdsSettings PDS settings.
      */
-    public void deleteSnapshot(File snpDir, PdsFolderSettings<?> pdsSettings) {
+    public void deleteSnapshot(File snpDir) {
         if (!snpDir.exists())
             return;
 
         if (!snpDir.isDirectory())
             return;
 
-        String folderName = pdsSettings.folderName();
-
         try {
-            NodeFileTree snpFt = new NodeFileTree(snpDir.getAbsolutePath(), folderName);
+            SnapshotFileTree sft = new SnapshotFileTree(
+                cctx.kernalContext(),
+                snpDir.getName(),
+                snpDir.getParent(),
+                pdsSettings.folderName(),
+                pdsSettings.consistentId().toString());
 
-            File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
-            File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
+            U.delete(sft.binaryMeta());
+            U.delete(sft.nodeStorage());
+            U.delete(sft.meta());
 
-            U.delete(snpFt.binaryMeta());
-            U.delete(nodeDbDir);
-            U.delete(smf);
-
-            deleteDirectory(snpFt.binaryMetaRoot());
-            deleteDirectory(snpFt.marshaller());
+            deleteDirectory(sft.binaryMetaRoot());
+            deleteDirectory(sft.marshaller());
 
             // Delete parent dir which is {snapshot_root}/db if empty.
-            snpFt.marshaller().getParentFile().delete();
+            sft.marshaller().getParentFile().delete();
             // Delete root dir which is {snapshot_root} if empty.
-            snpFt.root().delete();
+            sft.root().delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -1045,8 +1031,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<?> task0 = registerSnapshotTask(req.snapshotName(),
-            req.snapshotPath(),
+        IgniteInternalFuture<?> task0 = registerSnapshotTask(
+            req.snapshotFileTree(),
             req.operationalNodeId(),
             req.requestId(),
             parts,
@@ -1296,7 +1282,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (req.incremental())
                         U.delete(snpReq.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpReq.snapshotFileTree().root(), pdsSettings);
+                        deleteSnapshot(snpReq.snapshotFileTree().root());
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -1308,8 +1294,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     storeWarnings(snpReq);
                 }
 
-                if (req.dump())
-                    removeDumpLock(req.snapshotName());
+                if (req.dump()) {
+                    if (!U.delete(snpReq.snapshotFileTree().dumpLock()))
+                        throw new IgniteCheckedException("Lock file can't be deleted: " + snpReq.snapshotFileTree().dumpLock());
+                }
                 else {
                     removeLastMetaStorageKey();
 
@@ -1417,6 +1405,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
                 }
                 else if (snpReq.error() == null) {
+                    log.warning("Snapshot error: ", snpReq.error());
+
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
                         "[fail=" + endFail + ", err=" + err + ']'));
@@ -1898,8 +1888,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
             for (Path d : ds) {
-                if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
-                    smfs.add(d.toFile());
+                File f = d.toFile();
+
+                if (SnapshotFileTree.snapshotMetaFile(f))
+                    smfs.add(f);
             }
         }
         catch (IOException e) {
@@ -1960,7 +1952,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             for (File incDir: incDirs) {
-                for (File metaFile: incDir.listFiles((dir, name) -> name.endsWith(SNAPSHOT_METAFILE_EXT)))
+                for (File metaFile: incDir.listFiles(SnapshotFileTree::snapshotMetaFile))
                     metas.add(readFromFile(metaFile));
             }
         }
@@ -2312,7 +2304,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(snpDir);
         else
-            deleteSnapshot(snpDir, pdsSettings);
+            deleteSnapshot(snpDir);
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
@@ -2535,8 +2527,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Unique snapshot name.
-     * @param snpPath Snapshot path.
+     * @param sft Snapshot file tree.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param reqId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -2548,8 +2539,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
-        String snpName,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         UUID srcNodeId,
         UUID reqId,
         Map<Integer, Set<Integer>> parts,
@@ -2559,12 +2549,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean encrypt,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
+        AbstractSnapshotFutureTask<?> task = registerTask(sft.name(), dump
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
                 reqId,
-                snpName,
-                snapshotLocalDir(snpName, snpPath),
+                sft,
                 ioFactory,
                 transferRateLimiter,
                 snpSndr,
@@ -2576,7 +2565,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx,
                 srcNodeId,
                 reqId,
-                snpName,
+                sft,
                 ft,
                 ioFactory,
                 snpSndr,
@@ -2713,22 +2702,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         finally {
             cctx.database().checkpointReadUnlock();
         }
-    }
-
-    /** */
-    private void removeDumpLock(String dumpName) throws IgniteCheckedException {
-        File lock = new File(nodeDumpDirectory(snapshotLocalDir(dumpName, null), cctx), DUMP_LOCK);
-
-        if (!lock.exists())
-            return;
-
-        if (!lock.delete())
-            throw new IgniteCheckedException("Lock file can't be deleted: " + lock);
-    }
-
-    /** */
-    public static File nodeDumpDirectory(File dumpDir, GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
-        return new File(dumpDir, databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()));
     }
 
     /**
@@ -3798,11 +3771,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File tmpCacheDir = ft.tmpCacheStorage(cacheDirName);
+                U.mkdirs(ft.tmpCacheStorage(cacheDirName));
 
-                U.mkdirs(tmpCacheDir);
-
-                return Paths.get(tmpCacheDir.getAbsolutePath(), partitionFileName(partId)).toString();
+                return ft.tmpPartition(cacheDirName, partId).getAbsolutePath();
             }
             finally {
                 busyLock.leaveBusy();
@@ -4121,7 +4092,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + dbDir + ']');
             }
             else {
-                deleteSnapshot(snpLocDir, pdsSettings);
+                deleteSnapshot(snpLocDir);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

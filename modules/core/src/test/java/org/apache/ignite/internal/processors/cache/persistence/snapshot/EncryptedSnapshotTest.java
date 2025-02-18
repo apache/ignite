@@ -283,8 +283,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         assertThrowsAnyCause(log,
-            () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME,
-                null,
+            () -> snp(ig).registerSnapshotTask(
+                snapshotFileTree(ig, SNAPSHOT_NAME),
                 ig.localNode().id(),
                 null,
                 F.asMap(CU.cacheId(dfltCacheCfg.getName()), null),
