@@ -719,7 +719,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return;
 
-        if (!sft.root().isDirectory())
+        if (!snpDir.isDirectory())
             return;
 
         try {
