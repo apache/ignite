@@ -619,6 +619,14 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param f File.
+     * @return {@code True} if file is regular(not temporary).
+     */
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(TMP_SUFFIX);
+    }
+
+    /**
      * @param f Temporary cache directory.
      * @return Cache or group id.
      */
