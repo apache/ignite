@@ -1852,23 +1852,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 kctx0.task().execute(
                         cls,
                         new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
-                        options(new ArrayList<>(metas.keySet()))
-                    ).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                IdleVerifyResult.ofErrors(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
-                        else
-                            res.onDone(f1.error());
-                    });
+                    options(new ArrayList<>(metas.keySet()))
+                ).listen(f1 -> {
+                    if (f1.error() == null)
+                        res.onDone(f1.result());
+                    else if (f1.error() instanceof IgniteSnapshotVerifyException) {
+                        IdleVerifyResult idleRes = IdleVerifyResult.builder()
+                            .exceptions(((IgniteSnapshotVerifyException)f1.error()).exceptions()).build();
+
+                        res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, idleRes));
+                    }
+                    else
+                        res.onDone(f1.error());
+                });
             }
             else {
                 if (f0.error() == null)
                     res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException)
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        IdleVerifyResult.ofErrors(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else if (f0.error() instanceof IgniteSnapshotVerifyException) {
+                    IdleVerifyResult idleRes = IdleVerifyResult.builder()
+                        .exceptions(((IgniteSnapshotVerifyException)f0.error()).exceptions()).build();
+
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null, idleRes));
+                }
                 else
                     res.onDone(f0.error());
             }

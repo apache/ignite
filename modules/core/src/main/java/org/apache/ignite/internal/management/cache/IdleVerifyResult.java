@@ -85,7 +85,6 @@ public class IdleVerifyResult extends VisorDataTransferObject {
      * Default public constructor for {@link Externalizable} only.
      *
      * @see #builder()
-     * @see #ofErrors(Map)
      */
     public IdleVerifyResult() {
         this(null, null, null, null, null, null, null);
@@ -382,15 +381,6 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         return lst == null ? Collections.emptyList() : Collections.unmodifiableList(lst);
     }
 
-    /**
-     * Builds result holding errors only.
-     *
-     * @see #builder()
-     */
-    public static IdleVerifyResult ofErrors(Map<ClusterNode, Exception> exceptions) {
-        return new IdleVerifyResult(null, null, null, null, null, null, exceptions);
-    }
-
     /** @return A fresh result builder. */
     public static Builder builder() {
         return new Builder();
@@ -411,7 +401,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         private @Nullable Map<Object, Map<Object, TransactionsHashRecord>> incrTxHashRecords;
 
         /** */
-        private @Nullable Map<ClusterNode, Exception> errs;
+        private @Nullable Map<ClusterNode, Exception> exceptions;
 
         /** */
         private Builder() {
@@ -425,7 +415,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
                 incrTxHashRecords.values().stream().flatMap(e -> e.values().stream()).forEach(e -> addTxConflicts(F.asList(e, null)));
 
             if (F.isEmpty(partHashes))
-                return new IdleVerifyResult(null, null, null, null, txHashConflicts, partCommitTxs, errs);
+                return new IdleVerifyResult(null, null, null, null, txHashConflicts, partCommitTxs, exceptions);
 
             Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = null;
             Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = null;
@@ -482,41 +472,45 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             }
 
             return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
-                partCommitTxs, errs);
+                partCommitTxs, exceptions);
         }
 
-        /** Stores an exception if none is aready set for certain node. */
+        /** Stores an exception if none is set for certain node. */
         public Builder addException(ClusterNode node, Exception e) {
             assert e != null;
 
-            if (errs == null)
-                errs = new HashMap<>();
+            if (exceptions == null)
+                exceptions = new HashMap<>();
 
-            errs.putIfAbsent(node, e);
+            exceptions.putIfAbsent(node, e);
 
             return this;
         }
 
-        /** Stores collection of partition hashes related to certain partition key. */
-        private Builder addPartitionHashes(PartitionKey key, Collection<PartitionHashRecord> newHashes) {
-            if (partHashes == null)
-                partHashes = new HashMap<>();
+        /** Sets all the result exceptions. */
+        public Builder exceptions(Map<ClusterNode, Exception> exceptions) {
+            assert this.exceptions == null;
 
-            partHashes.compute(key, (key0, hashes0) -> {
-                if (hashes0 == null)
-                    hashes0 = new ArrayList<>();
-
-                hashes0.addAll(newHashes);
-
-                return hashes0;
-            });
+            this.exceptions = exceptions;
 
             return this;
         }
 
         /** Stores map of partition hashes per partition key. */
         public void addPartitionHashes(Map<PartitionKey, PartitionHashRecord> newHashes) {
-            newHashes.forEach((key, hash) -> addPartitionHashes(key, Collections.singletonList(hash)));
+            newHashes.forEach((key, hash) -> {
+                if (partHashes == null)
+                    partHashes = new HashMap<>();
+
+                partHashes.compute(key, (key0, hashes0) -> {
+                    if (hashes0 == null)
+                        hashes0 = new ArrayList<>();
+
+                    hashes0.add(hash);
+
+                    return hashes0;
+                });
+            });
         }
 
         /** Stores incremental snapshot transaction hash records of a certain node. */
