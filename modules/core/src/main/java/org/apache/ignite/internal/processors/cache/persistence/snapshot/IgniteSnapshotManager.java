@@ -1290,8 +1290,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (req.dump()) {
-                    if (!U.delete(req.snapshotFileTree().dumpLock()))
-                        throw new IgniteCheckedException("Lock file can't be deleted: " + req.snapshotFileTree().dumpLock());
+                    if (!U.delete(snpReq.snapshotFileTree().dumpLock()))
+                        throw new IgniteCheckedException("Lock file can't be deleted: " + snpReq.snapshotFileTree().dumpLock());
                 }
                 else {
                     removeLastMetaStorageKey();
@@ -1400,6 +1400,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
                 }
                 else if (snpReq.error() == null) {
+                    log.warning("Snapshot error: ", snpReq.error());
+
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
                         "[fail=" + endFail + ", err=" + err + ']'));
