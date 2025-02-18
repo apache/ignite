@@ -38,8 +38,13 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected SnapshotHandlerRestoreJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
+    @Override protected SnapshotHandlerRestoreJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
+    ) {
+        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), folderName, consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -89,6 +94,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
@@ -96,11 +102,12 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         public SnapshotHandlerRestoreJob(
             String snpName,
             @Nullable String snpPath,
+            String folderName,
             String consId,
             Collection<String> grps,
             boolean check
         ) {
-            super(snpName, snpPath, consId, grps, check);
+            super(snpName, snpPath, folderName, consId, grps, check);
         }
 
         /** {@inheritDoc} */

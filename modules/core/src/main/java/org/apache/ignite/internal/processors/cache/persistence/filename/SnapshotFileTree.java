@@ -74,7 +74,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path) {
-        this(ctx, ctx.discovery().localNode().consistentId().toString(), name, path);
+        this(ctx, name, path, ctx.pdsFolderResolver().fileTree().folderName(), ctx.discovery().localNode().consistentId().toString());
     }
 
     /**
@@ -83,18 +83,16 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param name Snapshot name.
      * @param path Optional snapshot path.
      */
-    public SnapshotFileTree(GridKernalContext ctx, String consId, String name, @Nullable String path) {
-        super(root(ctx.pdsFolderResolver().fileTree(), name, path), ctx.pdsFolderResolver().fileTree().folderName());
+    public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path, String folderName, String consId) {
+        super(root(ctx.pdsFolderResolver().fileTree(), name, path), folderName);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
-
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
+        this.tmpFt = new NodeFileTree(new File(snapshotTempRoot(), name), folderName());
     }
 
     /** @return Snapshot name. */

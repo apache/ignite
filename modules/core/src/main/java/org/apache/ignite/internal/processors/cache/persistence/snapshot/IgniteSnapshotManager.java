@@ -896,7 +896,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest req,
         SnapshotMetadata meta
     ) {
-
         SnapshotFileTree sft = req.snapshotFileTree();
         IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(req.incrementIndex());
         WALPointer lowPtr;
@@ -3764,6 +3763,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
+
+                U.mkdirs(ft.tmpCacheStorage(cacheDirName));
 
                 return ft.tmpPartition(cacheDirName, partId).getAbsolutePath();
             }
