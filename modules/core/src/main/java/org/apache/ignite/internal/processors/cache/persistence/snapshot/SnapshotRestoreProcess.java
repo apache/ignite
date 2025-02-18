@@ -639,7 +639,7 @@ public class SnapshotRestoreProcess {
                 ", caches=" + req.groups() + ']');
         }
 
-        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req, ctx);
+        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req);
 
         try {
             if (opCtx != null) {
@@ -1820,9 +1820,6 @@ public class SnapshotRestoreProcess {
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /** Snapshot file tree. */
-        private final SnapshotFileTree sft;
-
         /** IDs of the required nodes. */
         private final Set<UUID> nodes;
 
@@ -1889,13 +1886,12 @@ public class SnapshotRestoreProcess {
             nodes = null;
             snpPath = null;
             incIdx = 0;
-            sft = null;
         }
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
          */
-        protected SnapshotRestoreContext(SnapshotOperationRequest req, GridKernalContext ctx) {
+        protected SnapshotRestoreContext(SnapshotOperationRequest req) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             snpPath = req.snapshotPath();
@@ -1903,7 +1899,6 @@ public class SnapshotRestoreProcess {
             incIdx = req.incrementIndex();
             startTime = U.currentTimeMillis();
             nodes = req.nodes();
-            sft = new SnapshotFileTree(ctx, snpName, snpPath);
         }
 
         /**
