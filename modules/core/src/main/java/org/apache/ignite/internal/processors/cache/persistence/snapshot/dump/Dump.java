@@ -138,7 +138,7 @@ public class Dump implements AutoCloseable {
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(log);
+        this.cctx = standaloneKernalContext(dumpDir, F.first(metadata).folderName(), log);
         this.sfts = metadata.stream()
             .map(m -> new SnapshotFileTree(cctx, m.snapshotName(), dumpDir.getAbsolutePath(), m.folderName(), m.consistentId()))
             .collect(Collectors.toList());
@@ -156,12 +156,14 @@ public class Dump implements AutoCloseable {
      * @param log Logger.
      * @return Standalone kernal context.
      */
-    private GridKernalContext standaloneKernalContext(IgniteLogger log) {
-        A.ensure(F.first(sfts).binaryMeta().exists(), "binary metadata directory not exists");
-        A.ensure(F.first(sfts).marshaller().exists(), "marshaller directory not exists");
+    private static GridKernalContext standaloneKernalContext(File root, String folderName, IgniteLogger log) {
+        NodeFileTree ft = new NodeFileTree(root, folderName);
+
+        A.ensure(ft.binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(ft.marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(sfts).binaryMeta(), F.first(sfts).marshaller());
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, ft.binaryMeta(), ft.marshaller());
 
             startAllComponents(kctx);
 

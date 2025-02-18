@@ -419,9 +419,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             assertNotNull(sfts);
             assertEquals(1, sfts.size());
 
-            NodeFileTree ft = dump.fileTrees().get(0);
+            SnapshotFileTree sft = sfts.get(0);
 
-            File cacheDumpDir = ft.cacheStorage(false, DEFAULT_CACHE_NAME);
+            File cacheDumpDir = sft.cacheStorage(false, DEFAULT_CACHE_NAME);
 
             assertTrue(cacheDumpDir.exists());
 
@@ -752,19 +752,17 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, parts).forEach(i -> {
             try {
-                String entryName = dumpPartFileName(i, false);
-
                 SnapshotFileTree rawFt = snapshotFileTree(ign, rawDump);
                 SnapshotFileTree zipFt = snapshotFileTree(ign, zipDump);
 
-                File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), entryName);
+                File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, false));
                 File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, true));
 
                 byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
 
                 ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
 
-                assertEquals(entryName, zis.getNextEntry().getName());
+                assertEquals(dumpPartFileName(i, false), zis.getNextEntry().getName());
 
                 byte[] zipFileContent = IOUtils.toByteArray(zis);
 
