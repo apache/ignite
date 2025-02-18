@@ -285,7 +285,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         assertThrowsAnyCause(log,
             () -> snp(ig).registerSnapshotTask(
-                new SnapshotFileTree(ig.context(), SNAPSHOT_NAME, null),
+                snapshotFileTree(ig, SNAPSHOT_NAME),
                 ig.localNode().id(),
                 null,
                 F.asMap(CU.cacheId(dfltCacheCfg.getName()), null),
