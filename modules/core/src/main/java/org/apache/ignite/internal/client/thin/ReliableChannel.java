@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -636,11 +637,20 @@ final class ReliableChannel implements AutoCloseable {
             // Do not modify the original list.
             newAddrs = new ArrayList<>(newAddrs);
 
+            Set<Set<InetSocketAddress>> newAddrsSet = new HashSet<>();
+
+            for (List<InetSocketAddress> addrList : newAddrs)
+                newAddrsSet.add(new HashSet<>(addrList));
+
             for (ClientChannelHolder h : holders) {
                 ClientChannel ch = h.ch;
 
-                if (ch != null && !ch.closed())
-                    newAddrs.add(h.getAddresses());
+                if (ch != null && !ch.closed()) {
+                    Set<InetSocketAddress> hAddrs = new HashSet<>(h.getAddresses());
+
+                    if (!newAddrsSet.contains(hAddrs))
+                        newAddrs.add(h.getAddresses());
+                }
             }
         }
 
@@ -663,7 +673,11 @@ final class ReliableChannel implements AutoCloseable {
                     }
                 }
 
-                if (!found)
+                if (found) {
+                    for (InetSocketAddress addr : h.getAddresses())
+                        curAddrs.putIfAbsent(addr, h);
+                }
+                else
                     h.close();
             }
         }
@@ -678,7 +692,7 @@ final class ReliableChannel implements AutoCloseable {
 
         int idx = curChIdx;
 
-        if (idx != -1)
+        if (idx != -1 && holders != null)
             currDfltHolder = holders.get(idx);
 
         for (List<InetSocketAddress> addrs : newAddrs) {
@@ -943,6 +957,10 @@ final class ReliableChannel implements AutoCloseable {
             throw new ClientException("Connections to nodes aren't initialized.");
 
         int size = holders.size();
+
+        // Essential to produce a retry connection on the channel after a failure occurred on that single channel.
+        if (channelsCnt.get() == 0 && partitionAwarenessEnabled)
+            size = 2;
 
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
     }
