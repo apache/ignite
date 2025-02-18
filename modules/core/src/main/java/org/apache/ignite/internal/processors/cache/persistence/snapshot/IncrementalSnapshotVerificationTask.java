@@ -378,7 +378,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         }
 
         /** @return Collection of snapshotted transactional caches, key is a cache ID. */
-        private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException, IOException {
+        private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException {
             return GridLocalConfigManager.readCachesData(
                     sft.nodeStorage(),
                     ignite.context().marshallerContext().jdkMarshaller(),
