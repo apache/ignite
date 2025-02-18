@@ -213,13 +213,11 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -708,7 +706,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return;
 
-        if (!sft.root().isDirectory())
+        if (!snpDir.isDirectory())
             return;
 
         try {

@@ -57,10 +57,7 @@ public class SnapshotFileTree extends NodeFileTree {
     public static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    private static final String INC_SNP_DIR = "increments";
-
-    /** Dump files name. */
-    private static final String DUMP_FILE_EXT = ".dump";
+    public static final String INC_SNP_DIR = "increments";
 
     /** Dump files name. */
     private static final String DUMP_FILE_EXT = ".dump";
