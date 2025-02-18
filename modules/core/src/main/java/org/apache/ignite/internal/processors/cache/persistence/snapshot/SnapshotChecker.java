@@ -583,9 +583,12 @@ public class SnapshotChecker {
 
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
+        results.forEach((node, resLst) -> resLst.forEach(incSnpNodeRes->{
+            if(incSnpNodeRes.)
+        });
 
-        results.forEach((node, resLst) -> resLst.forEach(res -> {
+
+                results.forEach((node, resLst) -> resLst.forEach(res -> {
             if (res.exceptions().isEmpty() && !bldr.hasErrors()) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
                     bldr.addPartiallyCommited(node, res.partiallyCommittedTxs());
@@ -618,11 +621,6 @@ public class SnapshotChecker {
             else if (!res.exceptions().isEmpty())
                 bldr.addException(node, F.first(res.exceptions()));
         }));
-
-        // Add all missed pairs to conflicts.
-        nodeTxHashMap.values().stream()
-            .flatMap(e -> e.values().stream())
-            .forEach(e -> bldr.addTxConflicts(F.asList(e, null)));
 
         return bldr.build();
     }
