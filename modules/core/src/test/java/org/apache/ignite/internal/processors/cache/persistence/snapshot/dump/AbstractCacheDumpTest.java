@@ -55,6 +55,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -340,9 +341,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertEquals(expectedComprParts, meta.compressPartitions());
         }
 
-        List<String> nodesDirs = dump.nodesDirectories();
+        List<SnapshotFileTree> sfts = dump.fileTrees();
 
-        assertEquals(nodes, nodesDirs.size());
+        assertEquals(nodes, sfts.size());
 
         TestDumpConsumer cnsmr = dumpConsumer(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
 

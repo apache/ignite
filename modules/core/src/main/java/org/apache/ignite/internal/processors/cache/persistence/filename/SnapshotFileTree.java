@@ -193,10 +193,10 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param names Cache group names to filter.
+     * @param filter Cache group names to filter.
      * @return Files that match cache or cache group pattern.
      */
-    public List<File> cacheDirectories(Predicate<String> names) {
+    public List<File> cacheDirectories(Predicate<File> filter) {
         File[] files = nodeStorage().listFiles();
 
         if (files == null)
@@ -206,7 +206,7 @@ public class SnapshotFileTree extends NodeFileTree {
             .sorted()
             .filter(File::isDirectory)
             .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> names.test(cacheName(f)))
+            .filter(filter)
             .collect(Collectors.toList());
     }
 

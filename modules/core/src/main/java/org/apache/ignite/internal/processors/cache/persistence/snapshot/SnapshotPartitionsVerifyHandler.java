@@ -130,7 +130,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : opCtx.snapshotFileTree().cacheDirectories(name -> true)) {
+        for (File dir : opCtx.snapshotFileTree().cacheDirectories(f -> true)) {
             int grpId = CU.cacheId(cacheName(dir));
 
             if (!grps.remove(grpId))

@@ -383,10 +383,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         Dump dump = dump(ign, DMP_NAME);
 
-        List<String> nodes = dump.nodesDirectories();
+        List<SnapshotFileTree> sfts = dump.fileTrees();
 
-        assertNotNull(nodes);
-        assertEquals(2, nodes.size());
+        assertNotNull(sfts);
+        assertEquals(2, sfts.size());
 
         assertTrue(sft.dumpLock().createNewFile());
 
@@ -415,10 +415,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             Dump dump = dump(ign, DMP_NAME);
 
-            List<String> nodes = dump.nodesDirectories();
+            List<SnapshotFileTree> sfts = dump.fileTrees();
 
-            assertNotNull(nodes);
-            assertEquals(1, nodes.size());
+            assertNotNull(sfts);
+            assertEquals(1, sfts.size());
 
             NodeFileTree ft = dump.fileTrees().get(0);
 
@@ -469,7 +469,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertThrows(
                 null,
-                () -> dump.iterator(nodes.get(0), CU.cacheId(DEFAULT_CACHE_NAME), 0).next(),
+                () -> dump.iterator(sfts.get(0).folderName(), CU.cacheId(DEFAULT_CACHE_NAME), 0).next(),
                 IgniteException.class,
                 "Data corrupted"
             );
