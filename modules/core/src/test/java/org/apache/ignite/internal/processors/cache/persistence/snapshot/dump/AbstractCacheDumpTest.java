@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -349,7 +348,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                dumpDirectory(ign, name),
+                snapshotFileTree(ign, name).root(),
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
@@ -439,16 +438,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         return new Dump(
-            dumpDirectory(ign, name),
+            snapshotFileTree(ign, name).root(),
             true,
             false,
             log
         );
-    }
-
-    /** */
-    public static File dumpDirectory(IgniteEx ign, String name) {
-        return new File(ign.context().pdsFolderResolver().fileTree().snapshotsRoot(), name);
     }
 
     /** */
