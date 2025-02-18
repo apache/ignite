@@ -39,8 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
-
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
     /** Incremental file tree. */
@@ -138,7 +136,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     copyFiles(
                         ft.binaryMeta(),
                         ift.binaryMeta(),
-                        file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
+                        NodeFileTree::binFile
                     );
 
                     onDone();

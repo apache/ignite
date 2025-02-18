@@ -639,7 +639,7 @@ public class SnapshotRestoreProcess {
                 ", caches=" + req.groups() + ']');
         }
 
-        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req);
+        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req, ctx);
 
         try {
             if (opCtx != null) {
@@ -677,7 +677,7 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
+            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotFileTree());
 
             enrichContext(opCtx0, req, locMetas);
 
@@ -745,8 +745,15 @@ public class SnapshotRestoreProcess {
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
-            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
-                name -> !METASTORAGE_CACHE_NAME.equals(name))) {
+            List<File> cacheDirs = cctx.snapshotMgr().snapshotCacheDirectories(
+                meta.consistentId(),
+                meta.folderName(),
+                req.snapshotName(),
+                req.snapshotPath(),
+                name -> !METASTORAGE_CACHE_NAME.equals(name)
+            );
+
+            for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
@@ -1820,6 +1827,9 @@ public class SnapshotRestoreProcess {
         /** Snapshot directory path. */
         private final String snpPath;
 
+        /** Snapshot file tree. */
+        private final SnapshotFileTree sft;
+
         /** IDs of the required nodes. */
         private final Set<UUID> nodes;
 
@@ -1886,12 +1896,13 @@ public class SnapshotRestoreProcess {
             nodes = null;
             snpPath = null;
             incIdx = 0;
+            sft = null;
         }
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
          */
-        protected SnapshotRestoreContext(SnapshotOperationRequest req) {
+        protected SnapshotRestoreContext(SnapshotOperationRequest req, GridKernalContext ctx) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             snpPath = req.snapshotPath();
@@ -1899,6 +1910,7 @@ public class SnapshotRestoreProcess {
             incIdx = req.incrementIndex();
             startTime = U.currentTimeMillis();
             nodes = req.nodes();
+            sft = new SnapshotFileTree(ctx, snpName, snpPath);
         }
 
         /**

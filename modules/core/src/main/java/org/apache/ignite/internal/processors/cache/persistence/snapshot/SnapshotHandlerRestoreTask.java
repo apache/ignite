@@ -117,7 +117,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft.root(), false, check));
+                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
