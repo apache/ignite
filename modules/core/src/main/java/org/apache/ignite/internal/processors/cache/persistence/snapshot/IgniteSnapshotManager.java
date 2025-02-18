@@ -697,16 +697,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param sft Snapshot file tree.
+     * @param snpDir Snapshot dir.
      */
-    public void deleteSnapshot(SnapshotFileTree sft) {
-        if (!sft.root().exists())
+    public void deleteSnapshot(File snpDir) {
+        if (!snpDir.exists())
             return;
 
-        if (!sft.root().isDirectory())
+        if (!snpDir.isDirectory())
             return;
 
         try {
+            SnapshotFileTree sft = new SnapshotFileTree(
+                cctx.kernalContext(),
+                snpDir.getName(),
+                snpDir.getParent(),
+                pdsSettings.folderName(),
+                pdsSettings.consistentId().toString());
+
             U.delete(sft.binaryMeta());
             U.delete(sft.nodeStorage());
             U.delete(sft.meta());
@@ -866,7 +873,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest req,
         SnapshotMetadata meta
     ) {
-
         SnapshotFileTree sft = req.snapshotFileTree();
         IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(req.incrementIndex());
         WALPointer lowPtr;
@@ -1244,7 +1250,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (req.incremental())
                         U.delete(snpReq.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpReq.snapshotFileTree());
+                        deleteSnapshot(snpReq.snapshotFileTree().root());
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -1257,8 +1263,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (req.dump()) {
-                    if (!U.delete(req.snapshotFileTree().dumpLock()))
-                        throw new IgniteCheckedException("Lock file can't be deleted: " + req.snapshotFileTree().dumpLock());
+                    if (!U.delete(snpReq.snapshotFileTree().dumpLock()))
+                        throw new IgniteCheckedException("Lock file can't be deleted: " + snpReq.snapshotFileTree().dumpLock());
                 }
                 else {
                     removeLastMetaStorageKey();
@@ -1365,6 +1371,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
                 }
                 else if (snpReq.error() == null) {
+                    log.warning("Snapshot error: ", snpReq.error());
+
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
                         "[fail=" + endFail + ", err=" + err + ']'));
@@ -2252,7 +2260,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(snpDir);
         else
-            deleteSnapshot(new SnapshotFileTree(cctx.kernalContext(), snpDir.getName(), snpDir.getParent()));
+            deleteSnapshot(snpDir);
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
@@ -3683,6 +3691,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
+                U.mkdirs(ft.tmpCacheStorage(cacheDirName));
+
                 return ft.tmpPartition(cacheDirName, partId).getAbsolutePath();
             }
             finally {
@@ -3994,7 +4004,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteSnapshot(sft);
+                deleteSnapshot(sft.root());
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

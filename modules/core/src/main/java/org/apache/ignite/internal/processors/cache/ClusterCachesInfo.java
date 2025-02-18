@@ -1839,7 +1839,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        locCfg.cacheData().config(),
+                        mergeConfigurations(locCfg.cacheData().config(), cfg),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
@@ -1878,6 +1878,28 @@ public class ClusterCachesInfo {
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }
+    }
+
+    /**
+     * Merges local and received cache configurations.
+     *
+     * @param loc Local cache configuration.
+     * @param received Cache configuration received from the cluster.
+     * @see #registerReceivedCaches
+     * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     * @see #updateRegisteredCachesIfNeeded(Map, Collection, boolean)
+     */
+    private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+        // Schema is supposed to get merged earlier.
+        loc.setQueryEntities(received.getQueryEntities());
+        loc.setSqlSchema(received.getSqlSchema());
+        loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
+        loc.setSqlEscapeAll(received.isSqlEscapeAll());
+
+        assert loc.isSqlOnheapCacheEnabled() == received.isSqlOnheapCacheEnabled();
+        assert loc.getSqlOnheapCacheMaxSize() == received.getSqlOnheapCacheMaxSize();
+
+        return loc;
     }
 
     /**

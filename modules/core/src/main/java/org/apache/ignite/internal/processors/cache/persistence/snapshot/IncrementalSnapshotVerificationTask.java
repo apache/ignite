@@ -155,6 +155,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
          * @param snpPath Snapshot directory path.
          * @param folderName Folder name for snapshot.
          * @param incIdx Incremental snapshot index.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          */
         public VerifyIncrementalSnapshotJob(
@@ -378,7 +379,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         }
 
         /** @return Collection of snapshotted transactional caches, key is a cache ID. */
-        private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException, IOException {
+        private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException {
             return GridLocalConfigManager.readCachesData(
                     sft,
                     ignite.context().marshallerContext().jdkMarshaller(),

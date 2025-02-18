@@ -251,7 +251,6 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int grp) {
-
         File[] parts = dumpGroupDirectory(node, grp)
             .listFiles(f -> SnapshotFileTree.dumpPartitionFile(f, comprParts));
 
