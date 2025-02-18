@@ -96,8 +96,13 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), consId);
+    @Override protected VerifyIncrementalSnapshotJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
+    ) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), folderName, consId);
     }
 
     /** */
@@ -115,15 +120,17 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          */
         public VerifyIncrementalSnapshotJob(
             String snpName,
             @Nullable String snpPath,
             int incIdx,
+            String folderName,
             String consId
         ) {
-            super(snpName, snpPath, consId, null, true);
+            super(snpName, snpPath, folderName, consId, null, true);
 
             this.incIdx = incIdx;
         }
@@ -131,7 +138,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         /**
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
-        @Override public IncrementalSnapshotVerificationTaskResult execute() throws IgniteException {
+        @Override public IncrementalSnapshotVerificationTaskResult execute0() throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
@@ -150,7 +157,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                 AtomicLong procSegCnt = new AtomicLong();
 
                 IncrementalSnapshotProcessor proc = new IncrementalSnapshotProcessor(
-                    ignite.context().cache().context(), snpName, snpPath, incIdx, txCaches.keySet()
+                    ignite.context().cache().context(), sft, incIdx, txCaches.keySet()
                 ) {
                     @Override void totalWalSegments(int segCnt) {
                         // No-op.
