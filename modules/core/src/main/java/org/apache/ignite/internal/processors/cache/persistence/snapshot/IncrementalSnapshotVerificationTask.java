@@ -155,8 +155,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
-         * @param folderName Folder name for snapshot.
          * @param incIdx Incremental snapshot index.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          */
         public VerifyIncrementalSnapshotJob(

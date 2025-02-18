@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -204,7 +205,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If it was not possible to delete some temporary directory.
      */
     protected void cleanup() throws IgniteCheckedException {
-        for (File dir : ft.nodeStorage().listFiles(dir -> NodeFileTree.tmpCacheStorage(dir))) {
+        for (File dir : ft.nodeStorage().listFiles((FileFilter)NodeFileTree::tmpCacheStorage)) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -1033,9 +1034,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File idxFile = sft.partitionFile(dir.getName(), INDEX_PARTITION);
-
-                        if (idxFile.exists()) {
+                        if (sft.partitionFile(dir.getName(), INDEX_PARTITION).exists()) {
                             PartitionRestoreFuture idxFut;
 
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
