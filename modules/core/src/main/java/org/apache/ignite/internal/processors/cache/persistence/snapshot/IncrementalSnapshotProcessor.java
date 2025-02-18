@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -218,7 +219,7 @@ abstract class IncrementalSnapshotProcessor {
         File[] segments = null;
 
         for (int i = 1; i <= incIdx; i++) {
-            SnapshotFileTree.IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(i);
+            IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(i);
 
             if (!ift.root().exists())
                 throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + ift.root() + ']');

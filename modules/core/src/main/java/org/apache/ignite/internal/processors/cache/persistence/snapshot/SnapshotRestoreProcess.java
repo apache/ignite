@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -105,7 +106,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
@@ -205,7 +205,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If it was not possible to delete some temporary directory.
      */
     protected void cleanup() throws IgniteCheckedException {
-        for (File dir : ft.nodeStorage().listFiles(dir -> NodeFileTree.tmpCacheStorage(dir))) {
+        for (File dir : ft.nodeStorage().listFiles((FileFilter)NodeFileTree::tmpCacheStorage)) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -931,9 +931,14 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
+                            SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+
+                            SnapshotFileTree sft
+                                = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
+
                             NodeFileTree metaFt = opCtx0.incIdx > 0
-                                ? opCtx0.sft.incrementalSnapshotFileTree(opCtx0.incIdx)
-                                : opCtx0.sft;
+                                ? sft.incrementalSnapshotFileTree(opCtx0.incIdx)
+                                : sft;
 
                             ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
 
@@ -1004,8 +1009,10 @@ public class SnapshotRestoreProcess {
                     if (leftParts.isEmpty())
                         break;
 
-                    File snpCacheDir = new File(opCtx0.sft.root(),
-                        Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
+                    SnapshotFileTree sft
+                        = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
+
+                    File snpCacheDir = sft.cacheStorage(dir.getName());
 
                     leftParts.removeIf(partFut -> {
                         boolean doCopy = ofNullable(meta.partitions().get(grpId))
@@ -1027,9 +1034,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File idxFile = new File(snpCacheDir, NodeFileTree.partitionFileName(INDEX_PARTITION));
-
-                        if (idxFile.exists()) {
+                        if (sft.partitionFile(dir.getName(), INDEX_PARTITION).exists()) {
                             PartitionRestoreFuture idxFut;
 
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
