@@ -231,6 +231,8 @@ public class PartitionExtractor extends IgniteRelShuttle {
                     return new PartitionParameterNode(cacheId, (RexDynamicParam)right, fldType);
             }
             case SEARCH:
+                // Intentionally use of RexUtil.expandSearch (not RexUtils.expandSearchNullable), since here we
+                // expand operator not for bytecode generation and expect output with OR/AND operators.
                 RexNode condition0 = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, condition);
 
                 return processCondition(condition0, types, keys, requiredCols, cacheId);
