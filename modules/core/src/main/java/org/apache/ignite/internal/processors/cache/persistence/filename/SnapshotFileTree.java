@@ -57,7 +57,10 @@ public class SnapshotFileTree extends NodeFileTree {
     public static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    public static final String INC_SNP_DIR = "increments";
+    private static final String INC_SNP_DIR = "increments";
+
+    /** Dump files name. */
+    private static final String DUMP_FILE_EXT = ".dump";
 
     /** Dump files name. */
     private static final String DUMP_FILE_EXT = ".dump";
@@ -80,7 +83,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path) {
-        this(ctx, ctx.discovery().localNode().consistentId().toString(), name, path);
+        this(ctx, name, path, ctx.pdsFolderResolver().fileTree().folderName(), ctx.discovery().localNode().consistentId().toString());
     }
 
     /**
@@ -89,28 +92,16 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param name Snapshot name.
      * @param path Optional snapshot path.
      */
-    public SnapshotFileTree(GridKernalContext ctx, String consId, String name, @Nullable String path) {
-        this(ctx, consId, ctx.pdsFolderResolver().fileTree().folderName(), name, path);
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param consId Consistent id.
-     * @param name Snapshot name.
-     * @param path Optional snapshot path.
-     */
-    public SnapshotFileTree(GridKernalContext ctx, String consId, String folderName, String name, @Nullable String path) {
+    public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path, String folderName, String consId) {
         super(root(ctx.pdsFolderResolver().fileTree(), name, path), folderName);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
-
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
+        this.tmpFt = new NodeFileTree(new File(snapshotTempRoot(), name), folderName());
     }
 
     /** @return Snapshot name. */

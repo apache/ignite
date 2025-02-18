@@ -130,8 +130,13 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), consId);
+    @Override protected VerifyIncrementalSnapshotJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
+    ) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), folderName, consId);
     }
 
     /** */
@@ -149,15 +154,17 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          */
         public VerifyIncrementalSnapshotJob(
             String snpName,
             @Nullable String snpPath,
             int incIdx,
+            String folderName,
             String consId
         ) {
-            super(snpName, snpPath, consId, null, true);
+            super(snpName, snpPath, folderName, consId, null, true);
 
             this.incIdx = incIdx;
         }

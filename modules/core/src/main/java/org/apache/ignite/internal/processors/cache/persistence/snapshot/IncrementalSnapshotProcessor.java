@@ -218,7 +218,7 @@ abstract class IncrementalSnapshotProcessor {
         File[] segments = null;
 
         for (int i = 1; i <= incIdx; i++) {
-            SnapshotFileTree.IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(i);
+            IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(i);
 
             if (!ift.root().exists())
                 throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + ift.root() + ']');
