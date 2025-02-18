@@ -676,7 +676,8 @@ final class ReliableChannel implements AutoCloseable {
                 if (found) {
                     for (InetSocketAddress addr : h.getAddresses())
                         curAddrs.putIfAbsent(addr, h);
-                } else
+                }
+                else
                     h.close();
             }
         }
@@ -701,8 +702,12 @@ final class ReliableChannel implements AutoCloseable {
             for (InetSocketAddress addr : addrs) {
                 hld = curAddrs.get(addr);
 
-                if (hld != null)
+                if (hld != null) {
+                    if (!hld.getAddresses().equals(addrs)) // Enrich holder addresses.
+                        hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
+
                     break;
+                }
             }
 
             if (hld == null) { // If not found, create the new one.
@@ -710,14 +715,6 @@ final class ReliableChannel implements AutoCloseable {
 
                 for (InetSocketAddress addr : addrs)
                     curAddrs.putIfAbsent(addr, hld);
-            } else {
-                // Update config if addresses changed.
-                Set<InetSocketAddress> updatedAddrs = new HashSet<>(hld.getAddresses());
-
-                updatedAddrs.addAll(addrs);
-
-                if (hld.getAddresses().size() != updatedAddrs.size())
-                    hld.setConfiguration(new ClientChannelConfiguration(clientCfg, new ArrayList<>(updatedAddrs)));
             }
 
             reinitHolders.add(hld);
