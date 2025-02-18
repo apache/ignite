@@ -3968,6 +3968,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = sft.cacheStorage(cacheDirName);
 
+                U.mkdirs(cacheDir);
+
                 File targetCacheCfg = new File(cacheDir, ccfg.getName());
 
                 copy(ioFactory, ccfg, targetCacheCfg, ccfg.length(), transferRateLimiter);
@@ -4017,6 +4019,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return;
 
                 File cacheDir = sft.cacheStorage(cacheDirName);
+
+                U.mkdirs(cacheDir);
 
                 File snpPart = new File(cacheDir, part.getName());
 
