@@ -44,7 +44,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
@@ -191,7 +191,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         // Storing the highest counters on backup.
         forceCheckpoint();
 
-        IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
+        IdleVerifyResult checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
         Map<Boolean, PartitionHashRecordV2> conflicts = F.flatCollections(checkRes.counterConflicts().values())
             .stream().collect(Collectors.toMap(PartitionHashRecordV2::isPrimary, Functions.identity()));
@@ -394,7 +394,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         rebalanceLsnr.check();
 
-        IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
+        IdleVerifyResult checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
         assertFalse(checkRes.hasConflicts());
     }
 

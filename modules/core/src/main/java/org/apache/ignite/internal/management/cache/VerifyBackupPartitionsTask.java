@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotChecker;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -76,13 +75,13 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
  * <br>
- * Result: {@link IdleVerifyResultV2} with conflict partitions.
+ * Result: {@link IdleVerifyResult} with conflict partitions.
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
  */
 @GridInternal
-public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
+public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResult> {
     /** First version of Ignite that is capable of executing Idle Verify V2. */
     public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
 
@@ -111,7 +110,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override public IdleVerifyResult reduce(List<ComputeJobResult> results) throws IgniteException {
         return reduce0(results);
     }
 
@@ -144,21 +143,20 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      * @param results Received results of broadcast remote requests.
      * @return Idle verify job result constructed from results of remote executions.
      */
-    public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
-        Map<ClusterNode, Exception> ex = new HashMap<>();
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> hashes = new HashMap<>();
+    public static IdleVerifyResult reduce0(List<ComputeJobResult> results) {
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                ex.put(res.getNode(), res.getException());
+                bldr.addException(res.getNode(), res.getException());
 
                 continue;
             }
 
-            hashes.put(res.getNode(), res.getData());
+            bldr.addPartitionHashes(res.getData());
         }
 
-        return SnapshotChecker.reduceHashesResults(hashes, ex);
+        return bldr.build();
     }
 
     /**

@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents a type of cache(s) that can be used for comparing update counters and checksums between primary and backup partitions.
  * <br>
- * @see VerifyBackupPartitionsTaskV2
+ * @see VerifyBackupPartitionsTask
  */
 public enum CacheFilterEnum {
     /** Default - user only, or all caches specified by name. */

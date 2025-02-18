@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.cache;
 import org.apache.ignite.IgniteException;
 
 /**
- * Runtime exception that can be thrown in {@link VerifyBackupPartitionsTaskV2} when no caches matching given
+ * Runtime exception that can be thrown in {@link VerifyBackupPartitionsTask} when no caches matching given
  * filter options can be found.
  */
 public class NoMatchingCachesException extends IgniteException {
