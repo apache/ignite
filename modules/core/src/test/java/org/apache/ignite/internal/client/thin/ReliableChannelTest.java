@@ -389,6 +389,20 @@ public class ReliableChannelTest {
     }
 
     /**
+     * Checks that if the configuration contains duplicated addresses, exactly the same number of channels are created.
+     */
+    @Test
+    public void testChannelDuplicationWithForcedAddressDuplication() {
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1:10800", "127.0.0.1:10801",
+            "127.0.0.1:10801", "127.0.0.1:10802", "127.0.0.1:10802");
+
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+        rc.channelsInit();
+
+        assertEquals(5, rc.getChannelHolders().size());
+    }
+
+    /**
      * Async operation should fail if cluster is down after send operation and handle topology change.
      */
     @Test
