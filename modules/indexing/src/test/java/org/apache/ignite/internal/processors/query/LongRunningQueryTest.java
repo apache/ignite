@@ -39,20 +39,25 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.lang.Thread.currentThread;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
 import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
 
 /**
  * Tests for log print for long-running query.
  */
+@RunWith(Parameterized.class)
 public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
@@ -84,6 +89,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private static final String DELETE_WITH_SUBQUERY_SQL = "delete from test where _key in " +
         "(select p._key from \"pers\".Person p where p._key < wait_func())";
 
+    /** Query label. */
+    private static final String LABEL = "Label 1";
+
     /** Log listener for long DMLs. */
     private static LogListener lsnrDml;
 
@@ -105,6 +113,19 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Ignite instance. */
     private Ignite ignite;
 
+    /** Ignite instance with user defined attributes. */
+    private Ignite igniteWithAttr;
+
+    /** Flag indicating whether query labels will be checked. */
+    @Parameterized.Parameter
+    public boolean isLblChecked;
+
+    /** */
+    @Parameterized.Parameters(name = "isLblChecked={0}")
+    public static Object[] params() {
+        return new Object[] {false, true};
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -117,6 +138,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         super.beforeTest();
 
         ignite = startGrid();
+
+        if (isLblChecked)
+            igniteWithAttr = ignite.withApplicationAttributes(F.asMap(QUERY_LABEL, LABEL));
 
         IgniteCache c = grid().createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
@@ -140,6 +164,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         lsnrDml = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
             .andMatches(s -> s.contains("type=DML"))
+            .andMatches(isLblChecked ? LABEL : ".")
             .build();
 
         testLog().registerListener(lsnrDml);
@@ -361,6 +386,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         LogListener logLsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
             .andMatches(logStr -> currentThread().getName().startsWith(checkWorker.name()))
+            .andMatches(isLblChecked ? LABEL : ".")
             .build();
 
         testLog().registerListener(logLsnr);
@@ -401,6 +427,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches(Pattern.compile(LONG_QUERY_EXEC_MSG))
+            .andMatches(isLblChecked ? LABEL : ".")
             .build();
 
         testLog.registerListener(lsnr);
@@ -421,6 +448,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(isLblChecked ? LABEL : ".")
             .build();
 
         testLog.registerListener(lsnr);
@@ -437,6 +465,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches("Query produced big result set")
+            .andMatches(isLblChecked ? LABEL : ".")
             .build();
 
         testLog.registerListener(lsnr);
@@ -526,7 +555,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @return Results cursor.
      */
     private FieldsQueryCursor<List<?>> sql(String cacheName, String sql, Object... args) {
-        return ignite.cache(cacheName).query(new SqlFieldsQuery(sql)
+        Ignite grid = isLblChecked ? igniteWithAttr : ignite;
+
+        return grid.cache(cacheName).query(new SqlFieldsQuery(sql)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
             .setLazy(lazy)
@@ -541,6 +572,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(isLblChecked ? LABEL : ".")
             .build();
 
         testLog().registerListener(lsnr);

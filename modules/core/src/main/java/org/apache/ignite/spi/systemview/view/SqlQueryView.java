@@ -88,4 +88,9 @@ public class SqlQueryView {
     @Nullable public UUID subjectId() {
         return qry.subjectId();
     }
+
+    /** @return Query label. */
+    @Nullable public String label() {
+        return qry.label();
+    }
 }

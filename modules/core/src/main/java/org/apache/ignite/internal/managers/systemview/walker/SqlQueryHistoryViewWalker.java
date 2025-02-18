@@ -33,11 +33,12 @@ public class SqlQueryHistoryViewWalker implements SystemViewRowAttributeWalker<S
         v.accept(0, "schemaName", String.class);
         v.accept(1, "sql", String.class);
         v.accept(2, "local", boolean.class);
-        v.accept(3, "executions", long.class);
-        v.accept(4, "failures", long.class);
-        v.accept(5, "durationMin", long.class);
-        v.accept(6, "durationMax", long.class);
-        v.accept(7, "lastStartTime", Date.class);
+        v.accept(3, "label", String.class);
+        v.accept(4, "executions", long.class);
+        v.accept(5, "failures", long.class);
+        v.accept(6, "durationMin", long.class);
+        v.accept(7, "durationMax", long.class);
+        v.accept(8, "lastStartTime", Date.class);
     }
 
     /** {@inheritDoc} */
@@ -45,15 +46,16 @@ public class SqlQueryHistoryViewWalker implements SystemViewRowAttributeWalker<S
         v.accept(0, "schemaName", String.class, row.schemaName());
         v.accept(1, "sql", String.class, row.sql());
         v.acceptBoolean(2, "local", row.local());
-        v.acceptLong(3, "executions", row.executions());
-        v.acceptLong(4, "failures", row.failures());
-        v.acceptLong(5, "durationMin", row.durationMin());
-        v.acceptLong(6, "durationMax", row.durationMax());
-        v.accept(7, "lastStartTime", Date.class, row.lastStartTime());
+        v.accept(3, "label", String.class, row.label());
+        v.acceptLong(4, "executions", row.executions());
+        v.acceptLong(5, "failures", row.failures());
+        v.acceptLong(6, "durationMin", row.durationMin());
+        v.acceptLong(7, "durationMax", row.durationMax());
+        v.accept(8, "lastStartTime", Date.class, row.lastStartTime());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 8;
+        return 9;
     }
 }

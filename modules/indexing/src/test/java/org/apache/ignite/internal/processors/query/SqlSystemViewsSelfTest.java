@@ -21,9 +21,11 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -31,7 +33,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.cache.Cache;
@@ -67,6 +72,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -94,6 +100,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
@@ -678,6 +685,93 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
             view.forEach(v -> assertTrue(v.duration() >= 0));
         }
+    }
+
+    /**
+     * Verifies that SELECT query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewSelectWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("select sleep(2000)");
+    }
+
+    /**
+     * Verifies that INSERT query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewInsertWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("insert into \"INTEGER\" (_key, _val) values (?, sleep(3000))");
+    }
+
+    /**
+     * Verifies that UPDATE query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewUpdateWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("update \"INTEGER\" set _val = sleep(3000) where _key = ?");
+    }
+
+    /**
+     * Verifies that DELETE query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewDeleteWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("delete from \"INTEGER\" where _key = ? and _key < sleep(3000)");
+    }
+
+    /**
+     * Executes tests for running queries with labels.
+     *
+     * @param sql SQL query.
+     */
+    public void executeRunningQueriesViewWithLabels(String sql) throws Exception {
+        final String lblVal = "Label 1";
+
+        AtomicInteger val = new AtomicInteger(1);
+
+        Supplier<Object> args = val::getAndIncrement;
+
+        startGrid(0);
+
+        IgniteEx cli = startClientGrid();
+
+        Ignite cliWithAttrs = cli.withApplicationAttributes(F.asMap(QUERY_LABEL, lblVal));
+
+        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class));
+
+        if (sql.startsWith("update") || sql.startsWith("delete")) {
+            for (int i = 1; i < 5; i++)
+                cli.cache(DEFAULT_CACHE_NAME).put(i, i);
+        }
+
+        Set<IgniteInternalFuture<?>> futs = new HashSet<>();
+
+        for (Ignite grid : Set.of(cli, cliWithAttrs)) {
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                grid.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql)
+                    .setArgs(sql.startsWith("select") ? null : args.get())).getAll();
+            }, 2);
+
+            futs.add(fut);
+        }
+
+        assertTrue(waitForCondition(() -> cli.context().systemView().view(SQL_QRY_VIEW).size() == 4, 1000));
+
+        SystemView<SqlQueryView> view = cli.context().systemView().view(SQL_QRY_VIEW);
+
+        List<SqlQueryView> qrys = new ArrayList<>();
+
+        view.forEach(qrys::add);
+
+        Consumer<Object> check = (lbl) -> assertEquals(2, (int)qrys.stream().filter(q -> q.label() == lbl).count());
+
+        check.accept(null);
+        check.accept(lblVal);
+
+        for (IgniteInternalFuture<?> fut : futs)
+            fut.get();
     }
 
     /**
