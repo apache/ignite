@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -583,13 +582,8 @@ public class SnapshotChecker {
 
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        results.forEach((node, resLst) -> resLst.forEach(incSnpNodeRes->{
-            if(incSnpNodeRes.)
-        });
-
-
-                results.forEach((node, resLst) -> resLst.forEach(res -> {
-            if (res.exceptions().isEmpty() && !bldr.hasErrors()) {
+        results.forEach((node, resLst) -> resLst.forEach(res -> {
+            if (F.isEmpty(res.exceptions())) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
                     bldr.addPartiallyCommited(node, res.partiallyCommittedTxs());
 
@@ -598,27 +592,9 @@ public class SnapshotChecker {
                 if (log.isDebugEnabled())
                     log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + node + ", taskRes=" + res + ']');
 
-                nodeTxHashMap.put(node.consistentId(), res.txHashRes());
-
-                Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
-
-                while (resIt.hasNext()) {
-                    Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
-
-                    Map<Object, TransactionsHashRecord> prevNodeTxHash = nodeTxHashMap.get(nodeTxHash.getKey());
-
-                    if (prevNodeTxHash != null) {
-                        TransactionsHashRecord hash = nodeTxHash.getValue();
-                        TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
-
-                        if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
-                            bldr.addTxConflicts(F.asList(hash, prevHash));
-
-                        resIt.remove();
-                    }
-                }
+                bldr.addIncrementalHashRecords(node, res.txHashRes());
             }
-            else if (!res.exceptions().isEmpty())
+            else
                 bldr.addException(node, F.first(res.exceptions()));
         }));
 

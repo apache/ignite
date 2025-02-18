@@ -68,13 +68,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 continue;
             }
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.data().entrySet())
-                bldr.addPartitionHash(entry.getKey(), entry.getValue());
+            bldr.addPartitionHashes(res.data());
         }
 
         IdleVerifyResult verifyResult = bldr.build();
 
-        if (!bldr.hasErrors() && !verifyResult.hasConflicts())
+        if (verifyResult.exceptions().isEmpty() && !verifyResult.hasConflicts())
             return;
 
         GridStringBuilder buf = new GridStringBuilder();
