@@ -608,10 +608,26 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param f File.
+     * @return {@code True} if file conforms cache config file name pattern.
+     */
+    public static boolean binFile(File f) {
+        return f.getName().endsWith(FILE_SUFFIX);
+    }
+
+    /**
+     * @param f File.
      * @return {@code True} if file conforms temp cache storage name pattern.
      */
     public static boolean tmpCacheStorage(File f) {
         return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file is regular(not temporary).
+     */
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(TMP_SUFFIX);
     }
 
     /**
