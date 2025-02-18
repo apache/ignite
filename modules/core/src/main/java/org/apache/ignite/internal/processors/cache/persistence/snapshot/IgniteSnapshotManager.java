@@ -723,7 +723,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         try {
-            SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpDir.getName(), snpDir.getParent());
+            SnapshotFileTree sft = new SnapshotFileTree(
+                cctx.kernalContext(),
+                snpDir.getName(),
+                snpDir.getParent(),
+                pdsSettings.folderName(),
+                pdsSettings.consistentId().toString());
 
             U.delete(sft.binaryMeta());
             U.delete(sft.nodeStorage());
