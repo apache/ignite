@@ -106,19 +106,19 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             snpSndr.init(partsToSend.size());
 
             CompletableFuture.runAsync(() -> partsToSend.forEach((gp, metaAndTree) -> {
-                SnapshotFileTree sft = metaAndTree.get2();
+                SnapshotFileTree sft0 = metaAndTree.get2();
 
                 if (err.get() != null)
                     return;
 
-                File cacheDir = sft.cacheDirectory(gp.getGroupId());
+                File cacheDir = sft0.cacheDirectory(gp.getGroupId());
 
                 if (cacheDir == null) {
                     throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + metaAndTree.get1() +
                         ", pair=" + gp + ']');
                 }
 
-                File snpPart = sft.partitionFile(cacheDir.getName(), gp.getPartitionId());
+                File snpPart = sft0.partitionFile(cacheDir.getName(), gp.getPartitionId());
 
                 if (!snpPart.exists()) {
                     throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
