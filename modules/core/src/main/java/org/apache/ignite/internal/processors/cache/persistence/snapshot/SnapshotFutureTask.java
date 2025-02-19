@@ -96,9 +96,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /** Node file tree. */
     private final NodeFileTree ft;
 
-    /** Snapshot file tree. */
-    private final SnapshotFileTree sft;
-
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
 
@@ -180,7 +177,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
         this.ft = ft;
-        this.sft = sft;
         this.ioFactory = ioFactory;
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
