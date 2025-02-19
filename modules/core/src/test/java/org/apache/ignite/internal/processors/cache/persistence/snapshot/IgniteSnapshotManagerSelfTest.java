@@ -276,8 +276,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         });
 
-        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
-
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
             sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
