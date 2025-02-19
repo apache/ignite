@@ -99,7 +99,7 @@ public class SnapshotFileTree extends NodeFileTree {
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = new NodeFileTree(new File(snapshotTempRoot(), name), folderName());
+        this.tmpFt = new NodeFileTree(new File(ctx.pdsFolderResolver().fileTree().snapshotTempRoot(), name), folderName());
     }
 
     /** @return Snapshot name. */

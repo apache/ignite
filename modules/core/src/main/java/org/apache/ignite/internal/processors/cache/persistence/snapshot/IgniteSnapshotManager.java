@@ -1779,9 +1779,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName    Snapshot name.
+     * @param snpName Snapshot name.
      * @param folderName The name of a directory for the cache group.
-     * @param names      Cache group names to filter.
+     * @param names Cache group names to filter.
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(
