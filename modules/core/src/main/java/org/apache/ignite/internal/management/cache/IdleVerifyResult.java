@@ -384,7 +384,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
         /** */
-        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partCommitTxs;
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
         /** Incremental snapshot transactions records per consistent id. */
         private @Nullable Map<Object, Map<Object, TransactionsHashRecord>> incrTxHashRecords;
@@ -413,7 +413,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
             if (F.isEmpty(partHashes)) {
                 return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
-                    partCommitTxs, exceptions);
+                    partiallyCommittedTxs, exceptions);
             }
 
             for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : partHashes.entrySet()) {
@@ -451,7 +451,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             }
 
             return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
-                partCommitTxs, exceptions);
+                partiallyCommittedTxs, exceptions);
         }
 
         /** Stores an exception if none is set for certain node. */
@@ -533,12 +533,12 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         /** Stores partially commited transactions of a certain node. */
         public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
-            if (partCommitTxs == null)
-                partCommitTxs = new HashMap<>();
+            if (partiallyCommittedTxs == null)
+                partiallyCommittedTxs = new HashMap<>();
 
-            assert partCommitTxs.get(node) == null;
+            assert partiallyCommittedTxs.get(node) == null;
 
-            partCommitTxs.put(node, newVerisons);
+            partiallyCommittedTxs.put(node, newVerisons);
 
             return this;
         }
