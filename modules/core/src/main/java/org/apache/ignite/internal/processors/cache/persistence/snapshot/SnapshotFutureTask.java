@@ -209,8 +209,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         snpSndr.close(err);
 
-        if (sft.tempFileTree().nodeStorage() != null)
-            U.delete(sft.tempFileTree().nodeStorage());
+        U.delete(sft.tempFileTree().nodeStorage());
 
         // Delete snapshot directory if no other files exists.
         try {
@@ -246,6 +245,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         try {
             if (!started.compareAndSet(false, true))
                 return false;
+
+            U.mkdirs(sft.tempFileTree().nodeStorage());
 
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
@@ -638,7 +639,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);
 
                 File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
-
                 newCcfgFile.createNewFile();
 
                 copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());

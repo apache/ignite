@@ -615,7 +615,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 for (SnapshotMetadata m: readSnapshotMetadatas(new SnapshotFileTree(ctx, name, null))) {
                     List<File> dirs = snapshotCacheDirectories(
-                        m.snapshotName(), null, m.folderName(), m.consistentId(),
+                        m.snapshotName(),
+                        null,
+                        m.folderName(),
+                        m.consistentId(),
                         grpName -> true
                     );
 
