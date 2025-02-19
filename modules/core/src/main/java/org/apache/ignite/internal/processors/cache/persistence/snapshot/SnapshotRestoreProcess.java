@@ -1183,7 +1183,7 @@ public class SnapshotRestoreProcess {
 
     /** Restore registered mappings for user classes. */
     private void restoreMappings(File marshallerDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        File[] mappings = marshallerDir.listFiles(BinaryUtils::notTmpFile);
+        File[] mappings = marshallerDir.listFiles(NodeFileTree::notTmpFile);
 
         if (mappings == null)
             throw new IgniteException("Failed to list marshaller directory [dir=" + marshallerDir + ']');
