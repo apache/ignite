@@ -677,7 +677,8 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotFileTree());
+            List<SnapshotMetadata> locMetas =
+                snpMgr.readSnapshotMetadatas(new SnapshotFileTree(ctx, req.snapshotName(), req.snapshotPath()));
 
             enrichContext(opCtx0, req, locMetas);
 
