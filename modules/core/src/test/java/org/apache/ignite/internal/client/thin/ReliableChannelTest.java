@@ -393,11 +393,20 @@ public class ReliableChannelTest {
      */
     @Test
     public void testChannelDuplicationWithForcedAddressDuplication() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1:10800", "127.0.0.1:10801",
-            "127.0.0.1:10801", "127.0.0.1:10802", "127.0.0.1:10802");
+        TestAddressFinder finder = new TestAddressFinder()
+            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801",
+                "127.0.0.1:10801")
+            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801",
+                "127.0.0.1:10801", "127.0.0.1:10802", "127.0.0.1:10802");
 
+        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
         rc.channelsInit();
+
+        assertEquals(3, rc.getChannelHolders().size());
+
+        rc.initChannelHolders();
 
         assertEquals(5, rc.getChannelHolders().size());
     }
