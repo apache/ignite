@@ -384,7 +384,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
         private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
         /** */
-        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partCommitTxs;
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
         /** Incremental snapshot transactions records per consistent id. */
         private @Nullable Map<Object, Map<Object, TransactionsHashRecord>> incrTxHashRecords;
@@ -413,7 +413,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
             if (F.isEmpty(partHashes)) {
                 return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
-                    partCommitTxs, exceptions);
+                    partiallyCommittedTxs, exceptions);
             }
 
             for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : partHashes.entrySet()) {
@@ -451,7 +451,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             }
 
             return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
-                partCommitTxs, exceptions);
+                partiallyCommittedTxs, exceptions);
         }
 
         /** Stores an exception if none is set for certain node. */
@@ -533,17 +533,12 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         /** Stores partially commited transactions of a certain node. */
         public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
-            if (partCommitTxs == null)
-                partCommitTxs = new HashMap<>();
+            if (partiallyCommittedTxs == null)
+                partiallyCommittedTxs = new HashMap<>();
 
-            partCommitTxs.compute(node, (node0, versions0) -> {
-                if (versions0 == null)
-                    versions0 = new ArrayList<>();
+            assert partiallyCommittedTxs.get(node) == null;
 
-                versions0.addAll(newVerisons);
-
-                return versions0;
-            });
+            partiallyCommittedTxs.put(node, newVerisons);
 
             return this;
         }
