@@ -750,7 +750,7 @@ public class SnapshotRestoreProcess {
                 req.snapshotPath(),
                 meta.folderName(),
                 meta.consistentId(),
-                name -> !METASTORAGE_CACHE_NAME.equals(name)
+                f -> !METASTORAGE_DIR_NAME.equals(f.getName())
             );
 
             for (File snpCacheDir : cacheDirs) {

@@ -216,6 +216,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -1788,7 +1789,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         String folderName,
         String consId,
-        Predicate<String> names
+        Predicate<File> names
     ) {
         SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
 
