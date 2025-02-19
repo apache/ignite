@@ -20,12 +20,17 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -187,10 +192,10 @@ public class NodeFileTree extends SharedFileTree {
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
     /** Filter out all cache directories. */
-    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
+    private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
-    public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
+    protected static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
 
@@ -207,10 +212,10 @@ public class NodeFileTree extends SharedFileTree {
     public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
-    public static final String CACHE_DATA_FILENAME = "cache_data.dat";
+    private static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+    private static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
 
     /** Temporary cache directory prefix. */
     private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
@@ -497,6 +502,16 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
+     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
+     */
+    public File tmpCacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+        return new File(cacheStorage(ccfg), ccfg.getGroupName() == null
+            ? (CACHE_DATA_TMP_FILENAME)
+            : (ccfg.getName() + CACHE_DATA_TMP_FILENAME));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
      * @param part Partition id.
      * @return Partition file.
      */
@@ -539,6 +554,25 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param includeMeta If {@code true} then include meta.
+     * @param filter Cache group names to filter.
+     * @return Files that match cache or cache group pattern.
+     */
+    public List<File> cacheDirectories(boolean includeMeta, Predicate<File> filter) {
+        File[] files = nodeStorage().listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .sorted()
+            .filter(File::isDirectory)
+            .filter(includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER)
+            .filter(filter)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * @param part Partition id.
      * @return File name.
      */
@@ -566,7 +600,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param dir Directory.
      * @return {@code True} if directory conforms cache group storage name pattern.
      */
-    public static boolean cacheGroupDir(File dir) {
+    private static boolean cacheGroupDir(File dir) {
         return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
     }
 
@@ -608,6 +642,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean tmpCacheStorage(File f) {
         return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms temp cache configuration file name pattern.
+     */
+    public static boolean tmpCacheConfig(File f) {
+        return f.getName().endsWith(CACHE_DATA_TMP_FILENAME);
     }
 
     /**
@@ -714,8 +756,14 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @return Array of cache data files.
      */
-    public static File[] cacheDataFiles(File root) {
-        return root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
+    public static List<File> cacheConfigFiles(File root) {
+        if (cacheDir(root)) {
+            File cfg = new File(root, CACHE_DATA_FILENAME);
+
+            return cfg.exists() ? Collections.singletonList(cfg) : Collections.emptyList();
+        }
+
+        return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
     }
 
     /**

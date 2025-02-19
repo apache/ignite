@@ -786,7 +786,7 @@ public class SnapshotRestoreProcess {
                         "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
                 }
 
-                locCfgMgr.readCacheConfigurations(snpCacheDir, cfgsByName);
+                locCfgMgr.readCacheGroupCaches(snpCacheDir, cfgsByName);
             }
         }
 

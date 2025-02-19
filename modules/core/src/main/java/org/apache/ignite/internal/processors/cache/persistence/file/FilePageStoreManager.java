@@ -85,7 +85,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
@@ -189,18 +188,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
         }
 
-        File[] files = ft.nodeStorage().listFiles();
+        List<File> files = ft.cacheDirectories(true, f -> true);
 
         for (File file : files) {
-            if (file.isDirectory()) {
-                File[] tmpFiles = file.listFiles((k, v) -> v.endsWith(CACHE_DATA_TMP_FILENAME));
+            File[] tmpFiles = file.listFiles(NodeFileTree::tmpCacheConfig);
 
-                if (tmpFiles != null) {
-                    for (File tmpFile : tmpFiles) {
-                        if (!tmpFile.delete())
-                            log.warning("Failed to delete temporary cache config file" +
-                                    "(make sure Ignite process has enough rights):" + file.getName());
-                    }
+            if (tmpFiles != null) {
+                for (File tmpFile : tmpFiles) {
+                    if (!tmpFile.delete())
+                        log.warning("Failed to delete temporary cache config file" +
+                                "(make sure Ignite process has enough rights):" + file.getName());
                 }
             }
         }
@@ -230,18 +227,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
-        try {
-            try (DirectoryStream<Path> files = newDirectoryStream(
-                ft.nodeStorage().toPath(), entry -> NodeFileTree.CACHE_DIR_FILTER.test(entry.toFile())
-            )) {
-                for (Path path : files)
-                    U.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
-        }
+    @Override public void cleanupPersistentSpace() {
+        ft.cacheDirectories(false, f -> true).forEach(U::delete);
     }
 
     /** {@inheritDoc} */

@@ -216,7 +216,7 @@ public class Dump implements AutoCloseable {
     public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
-        return Arrays.stream(NodeFileTree.cacheDataFiles(sft(node).cacheDirectory(grp))).map(f -> {
+        return NodeFileTree.cacheConfigFiles(sft(node).cacheDirectory(grp)).stream().map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
