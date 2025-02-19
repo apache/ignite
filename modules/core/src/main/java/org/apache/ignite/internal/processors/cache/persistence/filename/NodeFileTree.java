@@ -573,35 +573,12 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param part Partition id.
-     * @return File name.
-     */
-    public static String partitionFileName(int part) {
-        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
-    }
-
-    /** */
-    protected static String partitionFileName(int part, String idxName, String format) {
-        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
-
-        return part == INDEX_PARTITION ? idxName : format(format, part);
-    }
-
-    /**
      * @param dir Directory.
      * @return {@code True} if directory conforms cache storage name pattern.
      * @see #cacheGroupDir(File)
      */
     public static boolean cacheDir(File dir) {
         return dir.getName().startsWith(CACHE_DIR_PREFIX);
-    }
-
-    /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache group storage name pattern.
-     */
-    private static boolean cacheGroupDir(File dir) {
-        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
     }
 
     /**
@@ -717,21 +694,6 @@ public class NodeFileTree extends SharedFileTree {
         throw new IllegalStateException("Illegal partition file name: " + name);
     }
 
-    /**
-     * @param name File name.
-     * @return Cache name.
-     */
-    private static String cacheName(String name) {
-        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
-            return name.substring(CACHE_GRP_DIR_PREFIX.length());
-        else if (name.startsWith(CACHE_DIR_PREFIX))
-            return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
-            return METASTORAGE_CACHE_NAME;
-        else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
-    }
-
     /** @param fileName Name of file with marshaller mapping information. */
     public static int mappedTypeId(String fileName) {
         try {
@@ -764,6 +726,44 @@ public class NodeFileTree extends SharedFileTree {
         }
 
         return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
+    }
+
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
+        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
+
+        return part == INDEX_PARTITION ? idxName : format(format, part);
+    }
+
+    /**
+     * @param dir Directory.
+     * @return {@code True} if directory conforms cache group storage name pattern.
+     */
+    private static boolean cacheGroupDir(File dir) {
+        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
+    }
+
+    /**
+     * @param part Partition id.
+     * @return File name.
+     */
+    private static String partitionFileName(int part) {
+        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
+    }
+
+    /**
+     * @param name File name.
+     * @return Cache name.
+     */
+    private static String cacheName(String name) {
+        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
+            return name.substring(CACHE_GRP_DIR_PREFIX.length());
+        else if (name.startsWith(CACHE_DIR_PREFIX))
+            return name.substring(CACHE_DIR_PREFIX.length());
+        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
+            return METASTORAGE_CACHE_NAME;
+        else
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
     }
 
     /**
