@@ -45,7 +45,6 @@ import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandAr
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -336,18 +335,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
 
         assertFalse("B+Tree is corrupted.", lsnr.check());
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) {
-        NodeFileTree ft = nodeFileTree(igName);
-
-        U.delete(ft.nodeStorage());
-
-        U.mkdirs(ft.nodeStorage());
-
-        U.delete(ft.wal());
-        U.delete(ft.walArchive());
     }
 
     /** */
