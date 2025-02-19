@@ -536,14 +536,9 @@ public class IdleVerifyResult extends VisorDataTransferObject {
             if (partCommitTxs == null)
                 partCommitTxs = new HashMap<>();
 
-            partCommitTxs.compute(node, (node0, versions0) -> {
-                if (versions0 == null)
-                    versions0 = new ArrayList<>();
+            assert partCommitTxs.get(node) == null;
 
-                versions0.addAll(newVerisons);
-
-                return versions0;
-            });
+            partCommitTxs.put(node, newVerisons);
 
             return this;
         }
