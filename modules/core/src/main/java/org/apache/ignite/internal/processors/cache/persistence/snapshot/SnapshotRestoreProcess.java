@@ -746,11 +746,11 @@ public class SnapshotRestoreProcess {
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
             List<File> cacheDirs = cctx.snapshotMgr().snapshotCacheDirectories(
-                meta.consistentId(),
-                meta.folderName(),
                 req.snapshotName(),
                 req.snapshotPath(),
-                f -> !METASTORAGE_DIR_NAME.equals(f.getName())
+                meta.folderName(),
+                meta.consistentId(),
+                name -> !METASTORAGE_CACHE_NAME.equals(name)
             );
 
             for (File snpCacheDir : cacheDirs) {

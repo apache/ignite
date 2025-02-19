@@ -96,9 +96,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /** Node file tree. */
     private final NodeFileTree ft;
 
-    /** Snapshot file tree. */
-    private final SnapshotFileTree sft;
-
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
 
@@ -180,7 +177,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
         this.ft = ft;
-        this.sft = sft;
         this.ioFactory = ioFactory;
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
@@ -209,8 +205,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         snpSndr.close(err);
 
-        if (sft.tempFileTree().nodeStorage() != null)
-            U.delete(sft.tempFileTree().nodeStorage());
+        U.delete(sft.tempFileTree().nodeStorage());
 
         // Delete snapshot directory if no other files exists.
         try {
@@ -246,6 +241,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         try {
             if (!started.compareAndSet(false, true))
                 return false;
+
+            U.mkdirs(sft.tempFileTree().nodeStorage());
 
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
@@ -638,7 +635,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);
 
                 File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
-
                 newCcfgFile.createNewFile();
 
                 copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());
