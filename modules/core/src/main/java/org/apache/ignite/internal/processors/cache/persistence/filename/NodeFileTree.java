@@ -209,7 +209,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** Partition file template. */
-    public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
+    protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
     private static final String CACHE_DATA_FILENAME = "cache_data.dat";
@@ -573,6 +573,16 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
      * @param dir Directory.
      * @return {@code True} if directory conforms cache storage name pattern.
      * @see #cacheGroupDir(File)
@@ -670,16 +680,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
-    }
-
-    /**
      * @param part Partition file name.
      * @return Partition id.
      */
@@ -728,6 +728,14 @@ public class NodeFileTree extends SharedFileTree {
         return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
     }
 
+    /**
+     * @param part Partition id.
+     * @return File name.
+     */
+    public static String partitionFileName(int part) {
+        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
+    }
+
     /** */
     protected static String partitionFileName(int part, String idxName, String format) {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
@@ -741,14 +749,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     private static boolean cacheGroupDir(File dir) {
         return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
-    }
-
-    /**
-     * @param part Partition id.
-     * @return File name.
-     */
-    private static String partitionFileName(int part) {
-        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
     }
 
     /**

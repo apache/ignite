@@ -212,12 +212,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -445,16 +440,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         snpRmtMgr = new SequentialRemoteSnapshotManager();
     }
 
-    /**
-     * Partition delta index file. Represents a sequence of page indexes that written to a delta.
-     *
-     * @param delta File with delta pages.
-     * @return File with delta pages index.
-     */
-    public static File partDeltaIndexFile(File delta) {
-        return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
-    }
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
@@ -636,8 +621,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (files != null) {
             Arrays.stream(files)
                 .filter(File::isDirectory)
-                .map(dumpDir ->
-                    Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
+                .map(dumpDir -> new SnapshotFileTree(
+                    ctx,
+                    dumpDir.getName(),
+                    dumpDir.getParent(),
+                    pdsSettings.folderName(),
+                    pdsSettings.consistentId().toString()).dumpLock())
                 .filter(File::exists)
                 .map(File::getParentFile)
                 .forEach(lockedDumpDir -> {
@@ -1508,8 +1497,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return 0;
 
             return Arrays.stream(incDirs)
+                .filter(SnapshotFileTree::incrementSnapshotDir)
                 .map(File::getName)
-                .filter(name -> INC_SNP_NAME_PATTERN.matcher(name).matches())
                 .mapToInt(Integer::parseInt)
                 .max()
                 .orElse(0);
@@ -1806,7 +1795,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
         SnapshotMetadata meta = readFromFile(smf);
 
-        String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
+        String name = smf.getName();
+        String smfName = name.substring(0, name.lastIndexOf('.'));
 
         if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
             throw new IgniteException(
@@ -1904,7 +1894,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public Collection<IncrementalSnapshotMetadata> readIncrementalSnapshotMetadatas(String snpName) {
         File[] incDirs = new SnapshotFileTree(cctx.kernalContext(), snpName, null).incrementsRoot()
-            .listFiles((dir, name) -> INC_SNP_NAME_PATTERN.matcher(name).matches());
+            .listFiles(SnapshotFileTree::incrementSnapshotDir);
 
         if (incDirs == null)
             return Collections.emptyList();
@@ -2257,7 +2247,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (File tmp : ft.snapshotTempRoot().listFiles())
             U.delete(tmp);
 
-        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
+        if (SnapshotFileTree.incrementSnapshotDir(snpDir))
             U.delete(snpDir);
         else
             deleteSnapshot(snpDir);

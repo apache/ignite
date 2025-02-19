@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -76,7 +75,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
@@ -229,13 +227,17 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+
+        CacheConfiguration<?, ?> ccfg = ig.cachex(DEFAULT_CACHE_NAME).configuration();
+
         stopGrid(0);
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
+        File workDir = ft.cacheStorage(ccfg);
 
-        long[] oldPartLen = partitionSizes(workDir);
+        long[] oldPartLen = partitionSizes(ft, ccfg);
 
-        long oldIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
+        long oldIdxFileLen = ft.partitionFile(ccfg, INDEX_PARTITION).length();
 
         startGrid(0);
 
@@ -254,12 +256,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             "Failed to activate cluster (node is in maintenance mode)"
         );
 
-        long[] newPartLen = partitionSizes(workDir);
+        long[] newPartLen = partitionSizes(ft, ccfg);
 
         for (int p = 0; p < PARTS; p++)
             assertTrue(newPartLen[p] < oldPartLen[p]);
 
-        long newIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
+        long newIdxFileLen = ft.partitionFile(ccfg, INDEX_PARTITION).length();
 
         assertTrue(newIdxFileLen <= oldIdxFileLen);
 
@@ -342,12 +344,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      * Returns array that contains sizes of partition files in gived working directories. Assumes that partitions
      * {@code 0} to {@code PARTS - 1} exist in that dir.
      *
-     * @param workDir Working directory.
+     * @param ft Node file tree.
+     * @param ccfg Cache configuration to check
      * @return The array.
      */
-    protected long[] partitionSizes(File workDir) {
+    protected long[] partitionSizes(NodeFileTree ft, CacheConfiguration<?, ?> ccfg) {
         return IntStream.range(0, PARTS)
-            .mapToObj(p -> new File(workDir, String.format(NodeFileTree.PART_FILE_TEMPLATE, p)))
+            .mapToObj(p -> ft.partitionFile(ccfg, p))
             .mapToLong(File::length)
             .toArray();
     }
@@ -559,24 +562,24 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+
         stopGrid(0);
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
         AtomicReference<File> cachePartFile = new AtomicReference<>();
         AtomicReference<File> defragCachePartFile = new AtomicReference<>();
 
-        Files.walkFileTree(workDir.toPath(), new FileVisitor<Path>() {
+        Files.walkFileTree(ft.nodeStorage().toPath(), new FileVisitor<Path>() {
             @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
 
             @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains(NodeFileTree.cacheDirName(true, "group"))) {
+                if (path.toString().contains(NodeFileTree.cacheDirName(true, GRP_NAME))) {
                     File file = path.toFile();
 
                     if (file.getName().contains("part-dfrg-"))

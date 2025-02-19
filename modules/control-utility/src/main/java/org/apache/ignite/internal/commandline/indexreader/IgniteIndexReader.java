@@ -117,7 +117,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2.VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.GridUnsafe.freeBuffer;
@@ -1193,7 +1192,7 @@ public class IgniteIndexReader implements AutoCloseable {
         byte type,
         FileVersionCheckingFactory storeFactory
     ) throws IgniteCheckedException {
-        File file = new File(root, partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId));
+        File file = new File(root, NodeFileTree.partitionFileName(partId));
 
         if (!file.exists())
             return null;

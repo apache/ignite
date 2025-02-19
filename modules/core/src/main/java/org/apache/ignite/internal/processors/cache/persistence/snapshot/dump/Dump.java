@@ -204,7 +204,7 @@ public class Dump implements AutoCloseable {
             }
         })
             .filter(SnapshotMetadata::dump)
-            .filter(meta -> consistentId == null || meta.consistentId().equals(consistentId))
+            .filter(meta -> consistentId == null || U.maskForFileName(meta.consistentId()).equals(consistentId))
             .collect(Collectors.toList());
     }
 
