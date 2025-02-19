@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +55,6 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 
 /** */
 @GridInternal
@@ -371,8 +369,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         private void checkBaseline(BaselineTopology blt) throws IgniteCheckedException, IOException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
-            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, ignite.localNode().consistentId().toString());
+            SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
 
             if (!F.eqNotOrdered(blt.consistentIds(), meta.baselineNodes())) {
                 throw new IgniteCheckedException("Topologies of snapshot and current cluster are different [snp=" +
@@ -382,12 +379,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
         /** @return Collection of snapshotted transactional caches, key is a cache ID. */
         private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException, IOException {
-            File snpDir = ignite.context().cache().context().snapshotMgr().snapshotLocalDir(snpName, snpPath);
-
-            String folderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
-
             return GridLocalConfigManager.readCachesData(
-                    new File(snpDir, databaseRelativePath(folderName)),
+                    sft.nodeStorage(),
                     ignite.context().marshallerContext().jdkMarshaller(),
                     ignite.configuration())
                 .values().stream()

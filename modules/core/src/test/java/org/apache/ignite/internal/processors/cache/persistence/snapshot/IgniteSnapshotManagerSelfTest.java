@@ -144,9 +144,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         }, 5, "cache-loader-");
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         // Register task but not schedule it on the checkpoint.
         SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(
-            snapshotFileTree(ig, SNAPSHOT_NAME),
+            sft,
             cctx.localNodeId(),
             null,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
@@ -154,7 +156,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             false,
             false,
             false,
-            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
+            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(slowCopy);
@@ -272,11 +274,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         });
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
-            snapshotFileTree(ig, SNAPSHOT_NAME),
+            sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
-            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));
+            mgr.localSnapshotSenderFactory().apply(sft));
 
         // Check the right exception thrown.
         assertThrowsAnyCause(log,
@@ -296,12 +300,14 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager mgr0 = snp(ig);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         IgniteInternalFuture<?> fut = startLocalSnapshotTask(ig.context().cache().context(),
-            snapshotFileTree(ig, SNAPSHOT_NAME),
+            sft,
             parts,
             encryption,
             new DelegateSnapshotSender(log, mgr0.snapshotExecutorService(),
-                mgr0.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
+                mgr0.localSnapshotSenderFactory().apply(sft)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException(err_msg + pair);
@@ -332,11 +338,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         CountDownLatch cpLatch = new CountDownLatch(1);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
-            snapshotFileTree(ig, SNAPSHOT_NAME),
+            sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
-            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
+            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(cpLatch);

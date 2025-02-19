@@ -68,6 +68,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,15 +79,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 
 /**
  * Binary utils.
  */
 public class BinaryUtils {
-    /** Binary metadata file suffix. */
-    public static final String METADATA_FILE_SUFFIX = ".bin";
-
     /**
      * Actual file name "{type_id}.classname{platform_id}".
      * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}
@@ -2547,7 +2545,7 @@ public class BinaryUtils {
      * @return Binary metadata file name.
      */
     public static String binaryMetaFileName(int typeId) {
-        return typeId + METADATA_FILE_SUFFIX;
+        return typeId + FILE_SUFFIX;
     }
 
     /** @param fileName Name of file with marshaller mapping information. */
@@ -2599,21 +2597,13 @@ public class BinaryUtils {
     }
 
     /**
-     * @param f File.
-     * @return {@code True} if file is regular(not temporary).
-     */
-    public static boolean notTmpFile(File f) {
-        return !f.getName().endsWith(TMP_SUFFIX);
-    }
-
-    /**
      * @param fileName File name.
      * @return Type id
      * @see #binaryMetaFileName(int)
-     * @see #METADATA_FILE_SUFFIX
+     * @see NodeFileTree#FILE_SUFFIX
      */
     public static int typeId(String fileName) {
-        return Integer.parseInt(fileName.substring(0, fileName.length() - METADATA_FILE_SUFFIX.length()));
+        return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
     /**
