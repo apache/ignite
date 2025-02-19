@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -340,12 +339,12 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
+    private void cleanPersistenceFiles(String igName) {
         NodeFileTree ft = nodeFileTree(igName);
 
         U.delete(ft.nodeStorage());
 
-        Files.createDirectory(ft.nodeStorage().toPath());
+        U.mkdirs(ft.nodeStorage());
 
         U.delete(ft.wal());
         U.delete(ft.walArchive());
