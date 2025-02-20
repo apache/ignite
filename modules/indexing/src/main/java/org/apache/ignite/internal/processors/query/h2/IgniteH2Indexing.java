@@ -419,8 +419,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             applicationAttrubutes(qryDesc.schemaName())
         );
 
-        final String lbl = queryLabel(qryDesc.schemaName());
-
         return new GridQueryFieldsResultAdapter(select.meta(), null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 H2PooledConnection conn = connections().connection(qryDesc.schemaName());
@@ -450,7 +448,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     H2Utils.bindParameters(stmt, F.asList(params));
 
                     qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
-                        ctx.localNodeId(), qryId, lbl);
+                        ctx.localNodeId(), qryId, qryDesc.label());
 
                     heavyQryTracker.startTracking(qryInfo);
 
@@ -899,7 +897,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        long qryId = registerRunningQuery(qryDesc, qryParams, null, null, queryLabel(qryDesc.schemaName()));
+        long qryId = registerRunningQuery(qryDesc, qryParams, null, null);
 
         CommandResult res = null;
 
@@ -968,6 +966,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Get next command.
                 QueryDescriptor newQryDesc = parseRes.queryDescriptor();
                 QueryParameters newQryParams = parseRes.queryParameters();
+
+                newQryDesc.label(applicationAttrubutes(schemaName).getOrDefault(QUERY_LABEL, null));
 
                 // Check if there is enough parameters. Batched statements are not checked at this point
                 // since they pass parameters differently.
@@ -1062,7 +1062,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
 
-        long qryId = registerRunningQuery(qryDesc, qryParams, cancel, dml.statement(), queryLabel(qryDesc.schemaName()));
+        long qryId = registerRunningQuery(qryDesc, qryParams, cancel, dml.statement());
 
         registerQueryContextWithAttributes(qryId, qryDesc.schemaName(), qryDesc.local());
 
@@ -1083,7 +1083,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ctx.localNodeId(),
                 qryDesc.schemaName(),
                 qryDesc.sql(),
-                queryLabel(qryDesc.schemaName())
+                qryDesc.label()
             );
 
             heavyQueriesTracker().startTracking(dmlInfo);
@@ -1165,7 +1165,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert cancel != null;
 
         // Register query.
-        long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select.statement(), queryLabel(qryDesc.schemaName()));
+        long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select.statement());
 
         registerQueryContextWithAttributes(qryId, qryDesc.schemaName(), qryDesc.local());
 
@@ -1322,15 +1322,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryParams Query parameters.
      * @param cancel Query cancel state holder.
      * @param stmnt Parsed statement.
-     * @param lbl Query label.
      * @return Id of registered query or {@code null} if query wasn't registered.
      */
     private long registerRunningQuery(
         QueryDescriptor qryDesc,
         QueryParameters qryParams,
         GridQueryCancel cancel,
-        @Nullable GridSqlStatement stmnt,
-        @Nullable String lbl
+        @Nullable GridSqlStatement stmnt
     ) {
         String qry = QueryUtils.INCLUDE_SENSITIVE || stmnt == null ? qryDesc.sql() : sqlWithoutConst(stmnt);
 
@@ -1344,7 +1342,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qryDesc.enforceJoinOrder(),
             qryParams.lazy(),
             qryDesc.distributedJoins(),
-            lbl
+            qryDesc.label()
         );
 
         if (ctx.event().isRecordable(EVT_SQL_QUERY_EXECUTION)) {
@@ -2379,15 +2377,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .map(GridCacheContext::operationContextPerCall)
             .map(CacheOperationContext::applicationAttributes)
             .orElse(Collections.emptyMap());
-    }
-
-    /**
-     * @param schemaName Schema name.
-     *
-     * @return Query label.
-     */
-    public String queryLabel(String schemaName) {
-        return applicationAttrubutes(schemaName).getOrDefault(QUERY_LABEL, null);
     }
 
     /**
