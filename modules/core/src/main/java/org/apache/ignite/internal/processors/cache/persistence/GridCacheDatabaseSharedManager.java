@@ -1314,7 +1314,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-                File anyIdxPartFile = ft.cacheDirectories(true, f -> true).stream()
+                File anyIdxPartFile = ft.cacheDirectories(f -> true).stream()
                     .map(f -> new File(f, NodeFileTree.INDEX_FILE_NAME))
                     .filter(File::exists)
                     .findFirst().orElse(null);
