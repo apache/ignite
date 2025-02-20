@@ -21,8 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,8 +43,10 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -58,6 +62,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -272,6 +277,38 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(startTime);
             buf.putLong(duration);
             buf.put(success ? (byte)1 : 0);
+        });
+    }
+
+    /**
+     * @param view Name of system view.
+     * @param row  Data from the view.
+     */
+    public void systemView(String view, Map<String, String> row) {
+        boolean cachedName = cacheIfPossible(view);
+
+        int recSize = 1 + (cachedName ? 4 : 4 + view.getBytes().length) + 4;
+
+        List<IgnitePair<IgniteBiTuple<String, Boolean>>> cachedRow = new ArrayList<>();
+        for (Map.Entry<String, String> entry : row.entrySet()) {
+            IgniteBiTuple<String, Boolean> cachedKey = new IgniteBiTuple<>(entry.getKey(), cacheIfPossible(entry.getKey()));
+            recSize += 1 + (cachedKey.getValue() ? 4 : 4 + cachedKey.getKey().getBytes().length);
+
+            IgniteBiTuple<String, Boolean> cachedVal = new IgniteBiTuple<>(entry.getValue(),
+                cacheIfPossible(entry.getValue()));
+            recSize += 1 + (cachedVal.getValue() ? 4 : 4 + cachedVal.getKey().getBytes().length);
+
+            cachedRow.add(new IgnitePair<>(cachedKey, cachedVal));
+        }
+
+        doWrite(SYSTEM_VIEW, recSize, buf -> {
+            writeString(buf, view, cachedName);
+            buf.putInt(row.size());
+
+            for (IgnitePair<IgniteBiTuple<String, Boolean>> pair : cachedRow) {
+                writeString(buf, pair.getKey().getKey(), pair.getKey().getValue());
+                writeString(buf, pair.getValue().getKey(), pair.getValue().getValue());
+            }
         });
     }
 

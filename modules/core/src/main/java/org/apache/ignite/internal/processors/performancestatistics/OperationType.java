@@ -93,6 +93,9 @@ public enum OperationType {
     /** Custom query property. */
     QUERY_PROPERTY(21),
 
+    /** System view. */
+    SYSTEM_VIEW(22),
+
     /** Version. */
     VERSION(255);
 
