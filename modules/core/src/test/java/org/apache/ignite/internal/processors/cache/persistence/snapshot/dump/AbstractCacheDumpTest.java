@@ -348,7 +348,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                sfts.get(0).root(),
+                snapshotFileTree(ign, name).root(),
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,

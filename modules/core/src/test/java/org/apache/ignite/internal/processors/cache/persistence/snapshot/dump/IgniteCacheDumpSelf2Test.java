@@ -726,14 +726,17 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         stopAllGrids();
 
+        SnapshotFileTree rawFt = snapshotFileTree(ign, rawDump);
+        SnapshotFileTree zipFt = snapshotFileTree(ign, zipDump);
+
         Map<Integer, Long> rawSizes = Arrays
-            .stream(snapshotFileTree(ign, rawDump).cacheStorage(false, CACHE_0).listFiles())
+            .stream(rawFt.cacheStorage(false, CACHE_0).listFiles())
             .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, false)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         Map<Integer, Long> zipSizes = Arrays
-            .stream(snapshotFileTree(ign, zipDump).cacheStorage(false, CACHE_0).listFiles())
+            .stream(zipFt.cacheStorage(false, CACHE_0).listFiles())
             .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, true)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
@@ -752,9 +755,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, parts).forEach(i -> {
             try {
-                SnapshotFileTree rawFt = snapshotFileTree(ign, rawDump);
-                SnapshotFileTree zipFt = snapshotFileTree(ign, zipDump);
-
                 File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, false));
                 File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, true));
 

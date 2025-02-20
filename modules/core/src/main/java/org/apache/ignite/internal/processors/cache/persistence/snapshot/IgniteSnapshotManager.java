@@ -601,7 +601,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         null,
                         m.folderName(),
                         m.consistentId(),
-                        grpName -> true
+                        f -> true
                     );
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
@@ -1776,7 +1776,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param folderName The name of a directory for the cache group.
-     * @param names Cache group names to filter.
+     * @param filter Cache group names to filter.
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(
@@ -1784,14 +1784,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         String folderName,
         String consId,
-        Predicate<File> names
+        Predicate<File> filter
     ) {
         SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
 
         if (!sft.root().exists())
             return Collections.emptyList();
 
-        return sft.cacheDirectories(true, names);
+        return sft.cacheDirectories(filter);
     }
 
     /**

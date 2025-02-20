@@ -164,10 +164,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  */
 public class NodeFileTree extends SharedFileTree {
     /** Default snapshot directory for loading remote snapshots. */
-    public static final String SNAPSHOT_TMP_DIR = "snp";
+    private static final String SNAPSHOT_TMP_DIR = "snp";
 
     /** Checkpoint directory name. */
-    public static final String CHECKPOINT_DIR = "cp";
+    private static final String CHECKPOINT_DIR = "cp";
 
     /** File extension of WAL segment. */
     public static final String WAL_SEGMENT_FILE_EXT = ".wal";
@@ -480,11 +480,10 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param includeMeta If {@code true} then include meta.
      * @param filter Cache group names to filter.
      * @return Files that match cache or cache group pattern.
      */
-    public List<File> cacheDirectories(boolean includeMeta, Predicate<File> filter) {
+    public List<File> cacheDirectories(Predicate<File> filter) {
         File[] files = nodeStorage().listFiles();
 
         if (files == null)
@@ -493,7 +492,7 @@ public class NodeFileTree extends SharedFileTree {
         return Arrays.stream(files)
             .sorted()
             .filter(File::isDirectory)
-            .filter(includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER)
+            .filter(CACHE_DIR_WITH_META_FILTER)
             .filter(filter)
             .collect(Collectors.toList());
     }

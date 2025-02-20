@@ -18,13 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -184,57 +178,21 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param names Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
-     */
-    public List<File> cacheDirectories(Predicate<String> names) {
-        File[] files = nodeStorage().listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> names.test(cacheName(f)))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @param part partition.
-     * @param compress {@code True} if dump compressed.
-     * @return Path to the dump partition file;
-     */
-    public File dumpPartition(CacheConfiguration<?, ?> ccfg, int part, boolean compress) {
-        return new File(cacheStorage(ccfg), dumpPartFileName(part, compress));
-    }
-
-    /**
      * @param grpId Cache group id.
      * @return Files that match cache or cache group pattern.
      */
     public File cacheDirectory(int grpId) {
-        return F.first(cacheDirectories(true, f -> CU.cacheId(cacheName(f)) == grpId));
+        return F.first(cacheDirectories(f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
-     * @param cacheDir Cache directory to check.
-     * @param dump If {@code true} then list dump files.
-     * @param compress If {@code true} then list compressed files.
-     * @return List of cache partitions in given directory.
+     * @param partId Partition id.
+     * @return File name of delta partition pages.
      */
-    public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
-        File[] files = cacheDir.listFiles();
+    public static String partDeltaFileName(int partId) {
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .filter(File::isFile)
-            .filter(f -> f.getName().endsWith(partExtension(dump, compress)))
-            .collect(Collectors.toList());
+        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
     }
 
     /**
@@ -294,7 +252,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    private String snapshotMetaFileName(String consId) {
+    public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 
