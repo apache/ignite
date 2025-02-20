@@ -56,7 +56,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
     /** Lock file for dump directory. */
-    public static final String DUMP_LOCK = "dump.lock";
+    private static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
     private static final String INC_SNP_DIR = "increments";

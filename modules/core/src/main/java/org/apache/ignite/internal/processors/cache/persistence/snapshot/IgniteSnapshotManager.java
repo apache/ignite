@@ -623,8 +623,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (files != null) {
             Arrays.stream(files)
                 .filter(File::isDirectory)
-                .map(dumpDir ->
-                    Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
+                .map(dumpDir -> new SnapshotFileTree(
+                    ctx,
+                    dumpDir.getName(),
+                    dumpDir.getParent(),
+                    pdsSettings.folderName(),
+                    pdsSettings.consistentId().toString()).dumpLock())
                 .filter(File::exists)
                 .map(File::getParentFile)
                 .forEach(lockedDumpDir -> {
