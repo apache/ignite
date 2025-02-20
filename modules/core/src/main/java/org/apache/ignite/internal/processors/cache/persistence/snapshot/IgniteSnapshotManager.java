@@ -213,7 +213,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselin
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
