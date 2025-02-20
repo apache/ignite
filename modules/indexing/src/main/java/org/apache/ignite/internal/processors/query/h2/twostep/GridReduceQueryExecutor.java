@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -377,9 +376,7 @@ public class GridReduceQueryExecutor {
 
         final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
-        final Map<String, String> appAttrs = Optional.ofNullable(
-            h2.queryContextRegistry().getShared(ctx.localNodeId(), qryId, 0))
-            .map(QueryContext::applicationAttributes).orElse(Collections.emptyMap());
+        final Map<String, String> appAttrs = h2.queryContextRegistry().getSharedAttributes(ctx.localNodeId(), qryId, 0);
 
         final long retryTimeout = retryTimeout(timeoutMillis);
         final long qryStartTime = U.currentTimeMillis();

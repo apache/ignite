@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,8 +45,8 @@ public class QueryContextRegistry {
     }
 
     /**
-     * Sets current thread local context.
-     *
+     * Sets current thread local context. This method must be called when all the non-volatile properties are
+     * already set to ensure visibility for other threads.
      * @param nodeId Node ID.
      * @param qryId Query ID.
      * @param ctx Query context.
@@ -54,7 +56,9 @@ public class QueryContextRegistry {
 
         QueryContextKey key = new QueryContextKey(nodeId, qryId, ctx.segment());
 
-        sharedCtxs.put(key, ctx);
+        QueryContext oldCtx = sharedCtxs.put(key, ctx);
+
+        assert oldCtx == null || oldCtx.distributedJoinContext() == null;
     }
 
     /**
@@ -109,5 +113,17 @@ public class QueryContextRegistry {
         ctx.clearContext(nodeStop);
 
         return true;
+    }
+
+    /**
+     * @param node Node id.
+     * @param qryId Query id.
+     * @param segmentId Segment id.
+     * @return Application attributes of a shared query context.
+     */
+    public Map<String, String> getSharedAttributes(UUID node, long qryId, int segmentId) {
+        return Optional.ofNullable(getShared(node, qryId, segmentId))
+            .map(QueryContext::applicationAttributes)
+            .orElse(Collections.emptyMap());
     }
 }

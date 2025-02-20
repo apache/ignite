@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -360,8 +359,7 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        final Map<String, String> appAttrs = Optional.ofNullable(qryCtxRegistry.getShared(node.id(), qryId, 0))
-            .map(QueryContext::applicationAttributes).orElse(Collections.emptyMap());
+        final Map<String, String> appAttrs = qryCtxRegistry.getSharedAttributes(node.id(), qryId, 0);
 
         MapQueryResults qryResults = null;
 
