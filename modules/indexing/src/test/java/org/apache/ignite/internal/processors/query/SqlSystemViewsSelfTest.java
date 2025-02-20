@@ -692,7 +692,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testRunningQueriesViewSelectWithLabels() throws Exception {
-        executeRunningQueriesViewWithLabels("select sleep(2000)");
+        executeRunningQueriesViewWithLabels("select sleep(5000)");
     }
 
     /**
