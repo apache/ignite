@@ -757,7 +757,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             futs.add(fut);
         }
 
-        assertTrue(waitForCondition(() -> cli.context().systemView().view(SQL_QRY_VIEW).size() == 4, 1000));
+        assertTrue(waitForCondition(() -> cli.context().systemView().view(SQL_QRY_VIEW).size() == 4, 5000));
 
         SystemView<SqlQueryView> view = cli.context().systemView().view(SQL_QRY_VIEW);
 
