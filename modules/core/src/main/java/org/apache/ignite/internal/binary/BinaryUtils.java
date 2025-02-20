@@ -2540,6 +2540,26 @@ public class BinaryUtils {
         return ctx.metadata(obj.typeId());
     }
 
+    /**
+     * @param typeId Type id.
+     * @return Binary metadata file name.
+     */
+    public static String binaryMetaFileName(int typeId) {
+        return typeId + FILE_SUFFIX;
+    }
+
+    /** @param fileName Name of file with marshaller mapping information. */
+    public static int mappedTypeId(String fileName) {
+        try {
+            return Integer.parseInt(fileName.substring(0, fileName.indexOf(MAPPING_FILE_EXTENSION)));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; type ID is expected to be numeric.", e);
+        }
+    }
+
     /** @param fileName Name of file with marshaller mapping information. */
     public static byte mappedFilePlatformId(String fileName) {
         try {
@@ -2579,7 +2599,7 @@ public class BinaryUtils {
     /**
      * @param fileName File name.
      * @return Type id
-     * @see NodeFileTree#binaryMetaFileName(int)
+     * @see #binaryMetaFileName(int)
      * @see NodeFileTree#FILE_SUFFIX
      */
     public static int typeId(String fileName) {

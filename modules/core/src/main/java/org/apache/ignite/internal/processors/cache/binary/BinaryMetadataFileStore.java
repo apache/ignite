@@ -143,7 +143,7 @@ class BinaryMetadataFileStore {
             return;
 
         try {
-            File file = new File(metadataDir, NodeFileTree.binaryMetaFileName(binMeta.typeId()));
+            File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(binMeta.typeId()));
             File tmpFile = new File(file.getAbsolutePath() + TMP_SUFFIX);
 
             // TODO: delete it on Ignite start. https://issues.apache.org/jira/browse/IGNITE-20897
@@ -187,7 +187,7 @@ class BinaryMetadataFileStore {
 
         ctx.marshallerContext().unregisterClassNameLocally(typeId);
 
-        File file = new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId));
+        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.delete()) {
             final String msg = "Failed to remove metadata for typeId: " + typeId;
@@ -221,7 +221,7 @@ class BinaryMetadataFileStore {
      * @param typeId Type identifier.
      */
     void restoreMetadata(int typeId) {
-        restoreMetadata(new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId)));
+        restoreMetadata(new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId)));
     }
 
     /** */
@@ -261,7 +261,7 @@ class BinaryMetadataFileStore {
      * @param typeId typeId of BinaryMetadata to be read.
      */
     private BinaryMetadata readMetadata(int typeId) {
-        File file = new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId));
+        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.exists())
             return null;

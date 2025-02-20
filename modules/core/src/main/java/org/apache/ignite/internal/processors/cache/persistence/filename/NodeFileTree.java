@@ -42,7 +42,6 @@ import static java.lang.String.format;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
@@ -692,26 +691,6 @@ public class NodeFileTree extends SharedFileTree {
             return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
 
         throw new IllegalStateException("Illegal partition file name: " + name);
-    }
-
-    /** @param fileName Name of file with marshaller mapping information. */
-    public static int mappedTypeId(String fileName) {
-        try {
-            return Integer.parseInt(fileName.substring(0, fileName.indexOf(MAPPING_FILE_EXTENSION)));
-        }
-        catch (NumberFormatException e) {
-            throw new IgniteException("Reading marshaller mapping from file "
-                + fileName
-                + " failed; type ID is expected to be numeric.", e);
-        }
-    }
-
-    /**
-     * @param typeId Type id.
-     * @return Binary metadata file name.
-     */
-    public static String binaryMetaFileName(int typeId) {
-        return typeId + FILE_SUFFIX;
     }
 
     /**
