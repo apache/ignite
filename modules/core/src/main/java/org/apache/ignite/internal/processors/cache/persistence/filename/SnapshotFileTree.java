@@ -18,12 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -183,24 +178,6 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     public String consistentId() {
         return consId;
-    }
-
-    /**
-     * @param filter Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
-     */
-    public List<File> cacheDirectories(Predicate<File> filter) {
-        File[] files = nodeStorage().listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(filter)
-            .collect(Collectors.toList());
     }
 
     /**

@@ -190,18 +190,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
         }
 
-        File[] files = ft.nodeStorage().listFiles();
+        List<File> files = ft.cacheDirectories(f -> true);
 
         for (File file : files) {
-            if (file.isDirectory()) {
-                File[] tmpFiles = file.listFiles((k, v) -> v.endsWith(CACHE_DATA_TMP_FILENAME));
+            File[] tmpFiles = file.listFiles((k, v) -> v.endsWith(CACHE_DATA_TMP_FILENAME));
 
-                if (tmpFiles != null) {
-                    for (File tmpFile : tmpFiles) {
-                        if (!tmpFile.delete())
-                            log.warning("Failed to delete temporary cache config file" +
-                                    "(make sure Ignite process has enough rights):" + file.getName());
-                    }
+            if (tmpFiles != null) {
+                for (File tmpFile : tmpFiles) {
+                    if (!tmpFile.delete())
+                        log.warning("Failed to delete temporary cache config file" +
+                                "(make sure Ignite process has enough rights):" + file.getName());
                 }
             }
         }
@@ -218,7 +216,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
                 new DirectoryStream.Filter<Path>() {
                     @Override public boolean accept(Path entry) throws IOException {
-                        return entry.toFile().getName().endsWith(FILE_SUFFIX);
+                        return NodeFileTree.binFile(entry.toFile());
                     }
                 })) {
                 for (Path path : files)
@@ -231,18 +229,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
-        try {
-            try (DirectoryStream<Path> files = newDirectoryStream(
-                ft.nodeStorage().toPath(), entry -> NodeFileTree.CACHE_DIR_FILTER.test(entry.toFile())
-            )) {
-                for (Path path : files)
-                    U.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
-        }
+    @Override public void cleanupPersistentSpace() {
+        ft.cacheDirectories(f -> !METASTORAGE_DIR_NAME.equals(f.getName())).forEach(U::delete);
     }
 
     /** {@inheritDoc} */

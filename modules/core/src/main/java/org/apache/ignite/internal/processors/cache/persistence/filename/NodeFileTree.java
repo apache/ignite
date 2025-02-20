@@ -20,7 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -472,6 +476,24 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
         return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
+    }
+
+    /**
+     * @param filter Cache group names to filter.
+     * @return Files that match cache or cache group pattern.
+     */
+    public List<File> cacheDirectories(Predicate<File> filter) {
+        File[] files = nodeStorage().listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .sorted()
+            .filter(File::isDirectory)
+            .filter(CACHE_DIR_WITH_META_FILTER)
+            .filter(filter)
+            .collect(Collectors.toList());
     }
 
     /**
