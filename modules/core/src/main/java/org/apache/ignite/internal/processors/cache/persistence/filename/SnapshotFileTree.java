@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,7 +57,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    private static final String INC_SNP_DIR = "increments";
+    public static final String INC_SNP_DIR = "increments";
 
     /** Pattern for incremental snapshot directory names. */
     private static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
@@ -180,6 +181,24 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     public String consistentId() {
         return consId;
+    }
+
+    /**
+     * @param names Cache group names to filter.
+     * @return Files that match cache or cache group pattern.
+     */
+    public List<File> cacheDirectories(Predicate<String> names) {
+        File[] files = nodeStorage().listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .sorted()
+            .filter(File::isDirectory)
+            .filter(CACHE_DIR_WITH_META_FILTER)
+            .filter(f -> names.test(cacheName(f)))
+            .collect(Collectors.toList());
     }
 
     /**

@@ -1741,9 +1741,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ).listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                new IdleVerifyResult(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                        else if (f1.error() instanceof IgniteSnapshotVerifyException) {
+                            IdleVerifyResult idleRes = IdleVerifyResult.builder()
+                                .exceptions(((IgniteSnapshotVerifyException)f1.error()).exceptions()).build();
+
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, idleRes));
+                        }
                         else
                             res.onDone(f1.error());
                     });
@@ -1751,9 +1754,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else {
                 if (f0.error() == null)
                     res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException)
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResult(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else if (f0.error() instanceof IgniteSnapshotVerifyException) {
+                    IdleVerifyResult idleRes = IdleVerifyResult.builder()
+                        .exceptions(((IgniteSnapshotVerifyException)f0.error()).exceptions()).build();
+
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null, idleRes));
+                }
                 else
                     res.onDone(f0.error());
             }

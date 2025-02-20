@@ -24,12 +24,10 @@ import java.nio.ByteOrder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +35,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
@@ -422,23 +419,23 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public void complete(String name,
         Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
-        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
-        Map<ClusterNode, Exception> errs = new HashMap<>();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
             if (res.error() != null) {
-                errs.put(res.node(), res.error());
+                bldr.addException(res.node(), res.error());
 
                 continue;
             }
 
-            for (Map.Entry<PartitionKey, PartitionHashRecord> entry : res.data().entrySet())
-                clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+            Map<PartitionKey, PartitionHashRecord> data = res.data();
+
+            bldr.addPartitionHashes(data);
         }
 
-        IdleVerifyResult verifyResult = new IdleVerifyResult(clusterHashes, errs);
+        IdleVerifyResult verifyResult = bldr.build();
 
-        if (errs.isEmpty() && !verifyResult.hasConflicts())
+        if (verifyResult.exceptions().isEmpty() && !verifyResult.hasConflicts())
             return;
 
         GridStringBuilder buf = new GridStringBuilder();

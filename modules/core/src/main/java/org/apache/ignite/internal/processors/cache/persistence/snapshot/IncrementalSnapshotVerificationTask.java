@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
@@ -64,17 +62,11 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
     /** {@inheritDoc} */
     @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
-        Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
-
-        List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
-        Map<PartitionKey, List<PartitionHashRecord>> partHashes = new HashMap<>();
-        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
-
-        Map<ClusterNode, Exception> errors = new HashMap<>();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         for (ComputeJobResult nodeRes: results) {
             if (nodeRes.getException() != null) {
-                errors.put(nodeRes.getNode(), nodeRes.getException());
+                bldr.addException(nodeRes.getNode(), nodeRes.getException());
 
                 continue;
             }
@@ -82,51 +74,23 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             IncrementalSnapshotVerificationTaskResult res = nodeRes.getData();
 
             if (!F.isEmpty(res.exceptions())) {
-                errors.put(nodeRes.getNode(), F.first(res.exceptions()));
+                bldr.addException(nodeRes.getNode(), F.first(res.exceptions()));
 
                 continue;
             }
 
             if (!F.isEmpty(res.partiallyCommittedTxs()))
-                partiallyCommittedTxs.put(nodeRes.getNode(), res.partiallyCommittedTxs());
+                bldr.addPartiallyCommited(nodeRes.getNode(), res.partiallyCommittedTxs());
 
-            for (Map.Entry<PartitionKey, PartitionHashRecord> entry: res.partHashRes().entrySet())
-                partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+            bldr.addPartitionHashes(res.partHashRes());
 
             if (log.isDebugEnabled())
                 log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", taskRes=" + res + ']');
 
-            nodeTxHashMap.put(nodeRes.getNode().consistentId(), res.txHashRes());
-
-            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
-
-            while (resIt.hasNext()) {
-                Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
-
-                Map<Object, TransactionsHashRecord> prevNodeTxHash = nodeTxHashMap.get(nodeTxHash.getKey());
-
-                if (prevNodeTxHash != null) {
-                    TransactionsHashRecord hash = nodeTxHash.getValue();
-                    TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
-
-                    if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
-                        txHashConflicts.add(F.asList(hash, prevHash));
-
-                    resIt.remove();
-                }
-            }
+            bldr.addIncrementalHashRecords(nodeRes.getNode(), res.txHashRes());
         }
 
-        // Add all missed pairs to conflicts.
-        nodeTxHashMap.values().stream()
-            .flatMap(e -> e.values().stream())
-            .forEach(e -> txHashConflicts.add(F.asList(e, null)));
-
-        return new SnapshotPartitionsVerifyTaskResult(
-            metas,
-            errors.isEmpty() ?
-                new IdleVerifyResult(partHashes, txHashConflicts, partiallyCommittedTxs)
-                : new IdleVerifyResult(errors));
+        return new SnapshotPartitionsVerifyTaskResult(metas, bldr.build());
     }
 
     /** {@inheritDoc} */
