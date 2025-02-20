@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.visor;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,6 +27,15 @@ import org.jetbrains.annotations.Nullable;
  * Base class for Visor tasks intended to query data from a single node.
  */
 public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R> {
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<A> arg) {
+        Collection<UUID> nodes = super.jobNodes(arg);
+
+        assert nodes.size() <= 1;
+
+        return nodes;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override protected R reduce0(List<ComputeJobResult> results) {
         assert results.size() == 1;
