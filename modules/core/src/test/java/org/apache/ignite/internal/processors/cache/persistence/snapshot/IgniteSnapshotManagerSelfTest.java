@@ -256,11 +256,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager mgr = snp(ig);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         mgr.ioFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = ioFactory.create(file, modes);
 
-                if (file.getName().equals(SnapshotFileTree.partDeltaFileName(0)))
+                if (file.getName().equals(sft.partDeltaFile(dfltCacheCfg.getName(), 0).getName()))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
@@ -273,8 +275,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                 return fileIo;
             }
         });
-
-        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
             sft,
