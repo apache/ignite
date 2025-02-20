@@ -213,13 +213,13 @@ public class Dump implements AutoCloseable {
             // First filter only specific file to exclude overlapping with other nodes making dump on the local node.
             .filter(meta -> consistentId == null || meta.getName().equals(SnapshotFileTree.snapshotMetaFileName(consistentId)))
             .map(meta -> {
-            try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
-                return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
-            }
-            catch (IOException | IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        })
+                try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
+                    return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            })
             .filter(SnapshotMetadata::dump)
             .collect(Collectors.toList());
     }
