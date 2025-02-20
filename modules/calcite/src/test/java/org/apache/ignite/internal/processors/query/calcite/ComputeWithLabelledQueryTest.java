@@ -132,7 +132,8 @@ public class ComputeWithLabelledQueryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that query labels are correctly propagated to all nodes when remote SELECT tasks are executed.
+     * Verifies that local query labels are correctly displayed in log messages and system views when remote SELECT
+     * tasks are executed.
      */
     @Test
     public void testComputeWithLabelSelect() throws Exception {
@@ -140,7 +141,8 @@ public class ComputeWithLabelledQueryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that query labels are correctly propagated to all nodes when remote INSERT tasks are executed.
+     * Verifies that local query labels are correctly displayed in log messages and system views when remote INSERT
+     * tasks are executed.
      */
     @Test
     public void testComputeWithLabelInsert() throws Exception {
@@ -148,7 +150,8 @@ public class ComputeWithLabelledQueryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that query labels are correctly propagated to all nodes when remote UPDATE tasks are executed.
+     * Verifies that local query labels are correctly displayed in log messages and system views when remote UPDATE
+     * tasks are executed.
      */
     @Test
     public void testComputeWithLabelUpdate() throws Exception {
@@ -156,7 +159,8 @@ public class ComputeWithLabelledQueryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that query labels are correctly propagated to all nodes when remote DELETE tasks are executed.
+     * Verifies that local query labels are correctly displayed in log messages and system views when remote DELETE
+     * tasks are executed.
      */
     @Test
     public void testComputeWithLabelDelete() throws Exception {

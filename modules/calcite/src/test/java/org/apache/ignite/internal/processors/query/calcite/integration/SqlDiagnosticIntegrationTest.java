@@ -790,9 +790,9 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             .setSqlSchema("PUBLIC")
         );
 
-        LogListener logLsnr0 = LogListener.matches(LONG_QUERY_EXEC_MSG).andMatches(isLblChecked ? LABEL : ".").build();
-        LogListener logLsnr1 = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches(isLblChecked ? LABEL : ".").build();
-        LogListener logLsnr2 = LogListener.matches(LONG_QUERY_ERROR_MSG).andMatches(isLblChecked ? LABEL : ".").build();
+        LogListener logLsnr0 = LogListener.matches(LONG_QUERY_EXEC_MSG).andMatches(isLblChecked ? LABEL : "sql=").build();
+        LogListener logLsnr1 = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches(isLblChecked ? LABEL : "sql=").build();
+        LogListener logLsnr2 = LogListener.matches(LONG_QUERY_ERROR_MSG).andMatches(isLblChecked ? LABEL : "sql=").build();
 
         log.registerAllListeners(logLsnr0, logLsnr1, logLsnr2);
 
@@ -841,7 +841,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         int rowCnt = BIG_RESULT_SET_THRESHOLD * 5 + 1;
 
-        LogListener logLsnr0 = LogListener.matches(BIG_RESULT_SET_MSG).andMatches(isLblChecked ? LABEL : ".").build();
+        LogListener logLsnr0 = LogListener.matches(BIG_RESULT_SET_MSG).andMatches(isLblChecked ? LABEL : "sql=").build();
         LogListener logLsnr1 = LogListener.matches("fetched=" + BIG_RESULT_SET_THRESHOLD).build();
         LogListener logLsnr2 = LogListener.matches("fetched=" + rowCnt).build();
 

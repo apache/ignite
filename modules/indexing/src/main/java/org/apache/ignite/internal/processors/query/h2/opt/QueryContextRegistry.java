@@ -47,6 +47,7 @@ public class QueryContextRegistry {
     /**
      * Sets current thread local context. This method must be called when all the non-volatile properties are
      * already set to ensure visibility for other threads.
+     *
      * @param nodeId Node ID.
      * @param qryId Query ID.
      * @param ctx Query context.
@@ -119,7 +120,8 @@ public class QueryContextRegistry {
      * @param node Node id.
      * @param qryId Query id.
      * @param segmentId Segment id.
-     * @return Application attributes of a shared query context.
+     *
+     * @return Application attributes of a shared query context or empty map.
      */
     public Map<String, String> getSharedAttributes(UUID node, long qryId, int segmentId) {
         return Optional.ofNullable(getShared(node, qryId, segmentId))

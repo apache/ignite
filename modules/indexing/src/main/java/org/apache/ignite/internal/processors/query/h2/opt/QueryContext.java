@@ -136,7 +136,7 @@ public class QueryContext {
     }
 
     /**
-     * @return Application attributes.
+     * @return Application attributes or empty map.
      */
     public Map<String, String> applicationAttributes() {
         return (appAttrs != null) ? Collections.unmodifiableMap(appAttrs) : Collections.emptyMap();

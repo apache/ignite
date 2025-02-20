@@ -164,7 +164,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         lsnrDml = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
             .andMatches(s -> s.contains("type=DML"))
-            .andMatches(isLblChecked ? LABEL : ".")
+            .andMatches(isLblChecked ? LABEL : "sql=")
             .build();
 
         testLog().registerListener(lsnrDml);
@@ -386,7 +386,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         LogListener logLsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
             .andMatches(logStr -> currentThread().getName().startsWith(checkWorker.name()))
-            .andMatches(isLblChecked ? LABEL : ".")
+            .andMatches(isLblChecked ? LABEL : "sql=")
             .build();
 
         testLog().registerListener(logLsnr);
@@ -427,7 +427,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches(Pattern.compile(LONG_QUERY_EXEC_MSG))
-            .andMatches(isLblChecked ? LABEL : ".")
+            .andMatches(isLblChecked ? LABEL : "sql=")
             .build();
 
         testLog.registerListener(lsnr);
@@ -448,7 +448,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches(isLblChecked ? LABEL : ".")
+            .andMatches(isLblChecked ? LABEL : "sql=")
             .build();
 
         testLog.registerListener(lsnr);
@@ -465,7 +465,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches("Query produced big result set")
-            .andMatches(isLblChecked ? LABEL : ".")
+            .andMatches(isLblChecked ? LABEL : "sql=")
             .build();
 
         testLog.registerListener(lsnr);
@@ -572,7 +572,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         LogListener lsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches(isLblChecked ? LABEL : ".")
+            .andMatches(isLblChecked ? LABEL : "sql=")
             .build();
 
         testLog().registerListener(lsnr);
