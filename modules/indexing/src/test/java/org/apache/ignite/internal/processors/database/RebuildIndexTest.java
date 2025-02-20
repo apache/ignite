@@ -47,7 +47,8 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  *
@@ -176,9 +177,10 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        U.delete(
-            new File(nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(0))).cacheStorage(false, CACHE_NAME), INDEX_FILE_NAME)
-        );
+        U.delete(new File(
+            nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(0))).cacheStorage(false, CACHE_NAME),
+            partitionFileName(INDEX_PARTITION)
+        ));
 
         node = startGrid(0);
 

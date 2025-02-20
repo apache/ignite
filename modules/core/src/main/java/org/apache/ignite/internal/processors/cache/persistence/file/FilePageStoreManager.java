@@ -85,8 +85,8 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
@@ -598,7 +598,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
             }
 
-            File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
+            File idxFile = new File(cacheWorkDir, partitionFileName(INDEX_PARTITION));
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 

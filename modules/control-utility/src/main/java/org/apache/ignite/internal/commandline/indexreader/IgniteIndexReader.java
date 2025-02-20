@@ -116,7 +116,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2.VERSION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.GridUnsafe.freeBuffer;
@@ -270,9 +270,9 @@ public class IgniteIndexReader implements AutoCloseable {
         idxStore = filePageStore(INDEX_PARTITION, FLAG_IDX, storeFactory);
 
         if (isNull(idxStore))
-            throw new IgniteCheckedException(INDEX_FILE_NAME + " file not found");
+            throw new IgniteCheckedException(partitionFileName(INDEX_PARTITION) + " file not found");
 
-        log.info("Analyzing file: " + INDEX_FILE_NAME);
+        log.info("Analyzing file: " + partitionFileName(INDEX_PARTITION));
 
         partStores = new FilePageStore[partCnt];
 
@@ -303,7 +303,7 @@ public class IgniteIndexReader implements AutoCloseable {
             Collections.emptyList(),
             asList(
                 argument(DIR_ARG, String.class)
-                    .withUsage("partition directory, where " + INDEX_FILE_NAME + " and (optionally) partition files are located.")
+                    .withUsage("partition directory, where " + partitionFileName(INDEX_PARTITION) + " and (optionally) partition files are located.")
                     .build(),
                 optionalArgument(PART_CNT_ARG, Integer.class).withUsage("full partitions count in cache group.").withDefault(0).build(),
                 optionalArgument(PAGE_SIZE_ARG, Integer.class).withUsage("page size.").withDefault(DFLT_PAGE_SIZE).build(),
@@ -343,7 +343,7 @@ public class IgniteIndexReader implements AutoCloseable {
             reader.readIndex();
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(INDEX_FILE_NAME + " scan problem", e);
+            throw new IgniteException(partitionFileName(INDEX_PARTITION) + " scan problem", e);
         }
     }
 

@@ -173,6 +173,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
@@ -187,6 +188,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.fromStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -715,7 +717,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (int partId = 0; partId < partitions; partId++)
                     memEx.invalidate(grpDesc.groupId(), partId);
 
-                memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
+                memEx.invalidate(grpDesc.groupId(), INDEX_PARTITION);
             }
 
             if (grpDesc.config().isEncryptionEnabled())
@@ -1315,7 +1317,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
                 File anyIdxPartFile = ft.cacheDirectories().stream()
-                    .map(f -> new File(f, NodeFileTree.INDEX_FILE_NAME))
+                    .map(f -> new File(f, partitionFileName(INDEX_PARTITION)))
                     .filter(File::exists)
                     .findFirst().orElse(null);
 
@@ -2474,7 +2476,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partId Partition id.
      */
     private boolean skipRemovedIndexUpdates(int grpId, int partId) {
-        return (partId == PageIdAllocator.INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
+        return (partId == INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
     }
 
     /**
@@ -2686,7 +2688,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             exec.submit(() -> {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                if (skipRemovedIndexUpdates(cacheCtx.groupId(), PageIdAllocator.INDEX_PARTITION))
+                                if (skipRemovedIndexUpdates(cacheCtx.groupId(), INDEX_PARTITION))
                                     cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx, true);
 
                                 try {

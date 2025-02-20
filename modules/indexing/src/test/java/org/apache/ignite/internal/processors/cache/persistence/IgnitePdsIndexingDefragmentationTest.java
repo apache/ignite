@@ -48,7 +48,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
@@ -129,13 +130,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         File cacheStorage = ft.cacheStorage(true, GRP_NAME);
 
-        long oldIdxFileLen = new File(cacheStorage, INDEX_FILE_NAME).length();
+        long oldIdxFileLen = new File(cacheStorage, partitionFileName(INDEX_PARTITION)).length();
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        long newIdxFileLen = new File(cacheStorage, INDEX_FILE_NAME).length();
+        long newIdxFileLen = new File(cacheStorage, partitionFileName(INDEX_PARTITION)).length();
 
         assertTrue(
             "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,

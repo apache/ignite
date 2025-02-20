@@ -205,7 +205,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
-    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
+    protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** Partition file template. */
     protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
@@ -578,6 +578,16 @@ public class NodeFileTree extends SharedFileTree {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
     }
 
+    /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
     /** */
     protected static String partitionFileName(int part, String idxName, String format) {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
@@ -725,16 +735,6 @@ public class NodeFileTree extends SharedFileTree {
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
-    }
-
-    /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /**
