@@ -634,21 +634,11 @@ final class ReliableChannel implements AutoCloseable {
 
         // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
         if (holders != null && clientCfg.getAddressesFinder() == null) {
-            // Do not modify the original list.
-            newAddrs = new ArrayList<>(newAddrs);
-
-            Set<Set<InetSocketAddress>> newAddrsSet = new HashSet<>();
-
-            for (List<InetSocketAddress> addrList : newAddrs)
-                newAddrsSet.add(new HashSet<>(addrList));
-
             for (ClientChannelHolder h : holders) {
                 ClientChannel ch = h.ch;
 
                 if (ch != null && !ch.closed()) {
-                    Set<InetSocketAddress> hAddrs = new HashSet<>(h.getAddresses());
-
-                    if (!newAddrsSet.contains(hAddrs))
+                    if (!newAddrs.contains(h.getAddresses()))
                         newAddrs.add(h.getAddresses());
                 }
             }
