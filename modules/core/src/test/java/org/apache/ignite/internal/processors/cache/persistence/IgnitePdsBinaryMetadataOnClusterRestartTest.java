@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -333,7 +334,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
             cConsId,
             String.format(CUSTOM_WORK_DIR_NAME_PATTERN, "B"),
             bConsId,
-            NodeFileTree.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode()));
+            BinaryUtils.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode()));
 
         startGridInASeparateWorkDir("A");
 
