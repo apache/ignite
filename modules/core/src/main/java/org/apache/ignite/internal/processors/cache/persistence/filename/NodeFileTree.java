@@ -88,8 +88,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
  * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * │  │  │  ├── cache_data.dat                                                  ← cache("default") configuration file.
- * │  │  │  ├── index.bin
- * │  │  │  ├── part-0.bin
+ * │  │  │  ├── index.bin                                                       ← cache("default") index partition.
+ * │  │  │  ├── part-0.bin                                                      ← cache("default") partition 0.
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
@@ -99,8 +99,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
  * │  │  │  ├── tx-cachecache_data.dat                                          ← cache("tx-cache") configuration file inside group.
  * │  │  │  ├── othercache_data.dat                                             ← cache("other") configuration file inside group.
- * │  │  │  ├── index.bin
- * │  │  │  ├── part-0.bin
+ * │  │  │  ├── index.bin                                                       ← cache group ("tx-cache") index partition.
+ * │  │  │  ├── part-0.bin                                                      ← cache group ("tx-cache") partition 0.
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
