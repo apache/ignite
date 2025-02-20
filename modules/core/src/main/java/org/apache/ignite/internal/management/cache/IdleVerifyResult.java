@@ -478,19 +478,11 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
         /** Stores map of partition hashes per partition key. */
         public void addPartitionHashes(Map<PartitionKey, PartitionHashRecord> newHashes) {
-            newHashes.forEach((key, hash) -> {
-                if (partHashes == null)
-                    partHashes = new HashMap<>();
+            if (partHashes == null)
+                partHashes = new HashMap<>();
 
-                partHashes.compute(key, (key0, hashes0) -> {
-                    if (hashes0 == null)
-                        hashes0 = new ArrayList<>();
-
-                    hashes0.add(hash);
-
-                    return hashes0;
-                });
-            });
+            for (Map.Entry<PartitionKey, PartitionHashRecord> e: newHashes.entrySet())
+                partHashes.computeIfAbsent(e.getKey(), v -> new ArrayList<>()).add(e.getValue());
         }
 
         /** Stores incremental snapshot transaction hash records of a certain node. */
