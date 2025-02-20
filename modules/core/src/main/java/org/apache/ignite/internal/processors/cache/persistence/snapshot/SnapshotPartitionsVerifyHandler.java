@@ -369,7 +369,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw new IgniteException(t);
+            throw new IgniteException("Node: " + opCtx.snapshotFileTree().consistentId(), t);
         }
     }
 

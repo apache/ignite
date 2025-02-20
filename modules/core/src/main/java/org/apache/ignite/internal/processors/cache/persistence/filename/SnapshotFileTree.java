@@ -255,7 +255,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    private String snapshotMetaFileName(String consId) {
+    public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 
