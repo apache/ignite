@@ -66,7 +66,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
@@ -205,9 +204,7 @@ public class Dump implements AutoCloseable {
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
-        File[] files = dumpDir.listFiles(f ->
-            f.getName().endsWith(SNAPSHOT_METAFILE_EXT) && (consistentId == null || f.getName().startsWith(consistentId))
-        );
+        File[] files = dumpDir.listFiles(SnapshotFileTree::snapshotMetaFile);
 
         if (files == null)
             return Collections.emptyList();
@@ -219,7 +216,10 @@ public class Dump implements AutoCloseable {
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }).filter(SnapshotMetadata::dump).collect(Collectors.toList());
+        })
+            .filter(SnapshotMetadata::dump)
+            .filter(meta -> consistentId == null || U.maskForFileName(meta.consistentId()).equals(consistentId))
+            .collect(Collectors.toList());
     }
 
     /**

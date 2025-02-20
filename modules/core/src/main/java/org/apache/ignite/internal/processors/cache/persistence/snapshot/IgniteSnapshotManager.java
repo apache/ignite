@@ -69,7 +69,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -214,10 +213,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselin
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -320,9 +317,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
-
-    /** Pattern for incremental snapshot directory names. */
-    public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -446,16 +440,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
-    }
-
-    /**
-     * Partition delta index file. Represents a sequence of page indexes that written to a delta.
-     *
-     * @param delta File with delta pages.
-     * @return File with delta pages index.
-     */
-    public static File partDeltaIndexFile(File delta) {
-        return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
     }
 
     /** {@inheritDoc} */
@@ -619,7 +603,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         null,
                         m.folderName(),
                         m.consistentId(),
-                        grpName -> true
+                        f -> true
                     );
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
@@ -1511,8 +1495,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return 0;
 
             return Arrays.stream(incDirs)
+                .filter(SnapshotFileTree::incrementSnapshotDir)
                 .map(File::getName)
-                .filter(name -> INC_SNP_NAME_PATTERN.matcher(name).matches())
                 .mapToInt(Integer::parseInt)
                 .max()
                 .orElse(0);
@@ -1790,7 +1774,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param folderName The name of a directory for the cache group.
-     * @param names Cache group names to filter.
+     * @param filter Cache group names to filter.
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(
@@ -1798,14 +1782,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         String folderName,
         String consId,
-        Predicate<String> names
+        Predicate<File> filter
     ) {
         SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
 
         if (!sft.root().exists())
             return Collections.emptyList();
 
-        return sft.cacheDirectories(names);
+        return sft.cacheDirectories(filter);
     }
 
     /**
@@ -1815,7 +1799,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
         SnapshotMetadata meta = readFromFile(smf);
 
-        String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
+        String name = smf.getName();
+        String smfName = name.substring(0, name.lastIndexOf('.'));
 
         if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
             throw new IgniteException(
@@ -1913,7 +1898,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public Collection<IncrementalSnapshotMetadata> readIncrementalSnapshotMetadatas(String snpName) {
         File[] incDirs = new SnapshotFileTree(cctx.kernalContext(), snpName, null).incrementsRoot()
-            .listFiles((dir, name) -> INC_SNP_NAME_PATTERN.matcher(name).matches());
+            .listFiles(SnapshotFileTree::incrementSnapshotDir);
 
         if (incDirs == null)
             return Collections.emptyList();
@@ -2266,7 +2251,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (File tmp : ft.snapshotTempRoot().listFiles())
             U.delete(tmp);
 
-        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
+        if (SnapshotFileTree.incrementSnapshotDir(snpDir))
             U.delete(snpDir);
         else
             deleteSnapshot(snpDir);

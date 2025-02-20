@@ -104,7 +104,7 @@ import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
@@ -751,7 +751,7 @@ public class SnapshotRestoreProcess {
                 req.snapshotPath(),
                 meta.folderName(),
                 meta.consistentId(),
-                name -> !METASTORAGE_CACHE_NAME.equals(name)
+                f -> !METASTORAGE_DIR_NAME.equals(f.getName())
             );
 
             for (File snpCacheDir : cacheDirs) {
