@@ -210,7 +210,7 @@ public class Dump implements AutoCloseable {
             return Collections.emptyList();
 
         return Arrays.stream(files)
-            // First filter only specific file to exclude overlapping with other nodes making dump on the local node.
+            // First filter only specific file to exclude overlapping with other nodes making dump on the local host.
             .filter(meta -> consistentId == null || meta.getName().equals(SnapshotFileTree.snapshotMetaFileName(consistentId)))
             .map(meta -> {
                 try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
