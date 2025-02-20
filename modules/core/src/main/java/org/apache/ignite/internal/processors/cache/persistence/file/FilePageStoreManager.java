@@ -188,7 +188,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
         }
 
-        List<File> files = ft.cacheDirectories(f -> true);
+        List<File> files = ft.cacheDirectories();
 
         for (File file : files) {
             File[] tmpFiles = file.listFiles(NodeFileTree::tmpCacheConfig);
@@ -228,7 +228,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace() {
-        ft.cacheDirectories(f -> !METASTORAGE_DIR_NAME.equals(f.getName())).forEach(U::delete);
+        ft.cacheDirectories(false, f -> true).forEach(U::delete);
     }
 
     /** {@inheritDoc} */

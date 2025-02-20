@@ -66,7 +66,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
@@ -163,7 +162,7 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        List<File> dirs = ft.cacheDirectories(f -> true);
+        List<File> dirs = ft.cacheDirectories();
 
         if (dirs == null)
             return Collections.emptyMap();
@@ -228,7 +227,7 @@ public class GridLocalConfigManager {
     ) {
         String utilityCacheStorage = NodeFileTree.cacheDirName(false, UTILITY_CACHE_NAME);
 
-        return ft.cacheDirectories(f -> f.getName().equals(METASTORAGE_DIR_NAME) && f.getName().equals(utilityCacheStorage)).stream()
+        return ft.cacheDirectories(false, f -> f.getName().equals(utilityCacheStorage)).stream()
             .flatMap(cacheDir -> NodeFileTree.cacheConfigFiles(cacheDir).stream())
             .collect(Collectors.toMap(f -> f, f -> {
                 try {

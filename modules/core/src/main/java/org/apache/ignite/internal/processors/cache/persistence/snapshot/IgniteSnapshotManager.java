@@ -68,7 +68,6 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -601,7 +600,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         null,
                         m.folderName(),
                         m.consistentId(),
-                        f -> true
+                        true
                     );
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
@@ -1776,7 +1775,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param folderName The name of a directory for the cache group.
-     * @param filter Cache group names to filter.
+     * @param includeMeta If {@code true} then include metadata driectory.
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(
@@ -1784,14 +1783,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         String folderName,
         String consId,
-        Predicate<File> filter
+        boolean includeMeta
     ) {
         SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
 
         if (!sft.root().exists())
             return Collections.emptyList();
 
-        return sft.cacheDirectories(filter);
+        return sft.cacheDirectories(includeMeta, f -> true);
     }
 
     /**

@@ -200,7 +200,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Files that match cache or cache group pattern.
      */
     public File cacheDirectory(int grpId) {
-        return F.first(cacheDirectories(f -> CU.cacheId(cacheName(f)) == grpId));
+        return F.first(cacheDirectories(true, f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
