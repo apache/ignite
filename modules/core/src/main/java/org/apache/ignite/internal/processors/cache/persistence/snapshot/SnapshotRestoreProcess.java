@@ -677,7 +677,8 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
+            List<SnapshotMetadata> locMetas =
+                snpMgr.readSnapshotMetadatas(new SnapshotFileTree(ctx, req.snapshotName(), req.snapshotPath()));
 
             enrichContext(opCtx0, req, locMetas);
 
@@ -745,8 +746,15 @@ public class SnapshotRestoreProcess {
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
-            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
-                name -> !METASTORAGE_CACHE_NAME.equals(name))) {
+            List<File> cacheDirs = cctx.snapshotMgr().snapshotCacheDirectories(
+                req.snapshotName(),
+                req.snapshotPath(),
+                meta.folderName(),
+                meta.consistentId(),
+                name -> !METASTORAGE_CACHE_NAME.equals(name)
+            );
+
+            for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))

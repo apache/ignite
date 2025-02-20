@@ -86,7 +86,6 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DIR_WITH_META_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
@@ -751,44 +750,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, partId);
 
         return store.pages();
-    }
-
-    /**
-     * @param dir Directory to check.
-     * @param names Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
-     */
-    public static List<File> cacheDirectories(File dir, Predicate<String> names) {
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> names.test(NodeFileTree.cacheName(f)))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * @param dir Directory to check.
-     * @param grpId Cache group id
-     * @return Files that match cache or cache group pattern.
-     */
-    public static File cacheDirectory(File dir, int grpId) {
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            return null;
-
-        return Arrays.stream(files)
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> CU.cacheId(NodeFileTree.cacheName(f)) == grpId)
-            .findAny()
-            .orElse(null);
     }
 
     /**

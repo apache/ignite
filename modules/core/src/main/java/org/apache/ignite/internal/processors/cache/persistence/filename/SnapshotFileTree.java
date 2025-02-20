@@ -18,8 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +57,7 @@ public class SnapshotFileTree extends NodeFileTree {
     public static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    private static final String INC_SNP_DIR = "increments";
+    public static final String INC_SNP_DIR = "increments";
 
     /** Dump files name. */
     private static final String DUMP_FILE_EXT = ".dump";
@@ -92,7 +98,7 @@ public class SnapshotFileTree extends NodeFileTree {
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = new NodeFileTree(new File(snapshotTempRoot(), name), folderName());
+        this.tmpFt = new NodeFileTree(new File(ctx.pdsFolderResolver().fileTree().snapshotTempRoot(), name), folderName());
     }
 
     /** @return Snapshot name. */
@@ -172,6 +178,42 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     public String consistentId() {
         return consId;
+    }
+
+    /**
+     * @param names Cache group names to filter.
+     * @return Files that match cache or cache group pattern.
+     */
+    public List<File> cacheDirectories(Predicate<String> names) {
+        File[] files = nodeStorage().listFiles();
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .sorted()
+            .filter(File::isDirectory)
+            .filter(CACHE_DIR_WITH_META_FILTER)
+            .filter(f -> names.test(cacheName(f)))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param grpId Cache group id.
+     * @return Files that match cache or cache group pattern.
+     */
+    public File cacheDirectory(int grpId) {
+        File[] files = nodeStorage().listFiles();
+
+        if (files == null)
+            return null;
+
+        return Arrays.stream(files)
+            .filter(File::isDirectory)
+            .filter(CACHE_DIR_WITH_META_FILTER)
+            .filter(f -> CU.cacheId(cacheName(f)) == grpId)
+            .findAny()
+            .orElse(null);
     }
 
     /**

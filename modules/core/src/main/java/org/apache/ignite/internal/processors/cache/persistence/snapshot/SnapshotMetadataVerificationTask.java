@@ -109,14 +109,14 @@ public class SnapshotMetadataVerificationTask
 
             SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), arg.snapshotName(), arg.snapshotPath());
 
-            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft.name(), sft.path());
+            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(sft);
 
             for (SnapshotMetadata meta : snpMeta)
                 checkMeta(meta);
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
-                    .filter(m -> m.consistentId().equals(valueOf(ignite.localNode().consistentId())))
+                    .filter(m -> m.consistentId().equals(sft.consistentId()))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
