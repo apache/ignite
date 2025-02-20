@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,25 +36,28 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_I
  */
 public class SnapshotFileTree extends NodeFileTree {
     /** File with delta pages suffix. */
-    public static final String DELTA_SUFFIX = ".delta";
+    private static final String DELTA_SUFFIX = ".delta";
 
     /** File with delta pages index suffix. */
-    public static final String DELTA_IDX_SUFFIX = ".idx";
+    private static final String DELTA_IDX_SUFFIX = ".idx";
 
     /** Snapshot metafile extension. */
-    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
+    private static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** File name template consists of delta pages. */
-    public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
+    private static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
     /** File name template for index delta pages. */
-    public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
+    private static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
     /** Lock file for dump directory. */
-    public static final String DUMP_LOCK = "dump.lock";
+    private static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    public static final String INC_SNP_DIR = "increments";
+    private static final String INC_SNP_DIR = "increments";
+
+    /** Pattern for incremental snapshot directory names. */
+    private static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
     /** Dump files name. */
     private static final String DUMP_FILE_EXT = ".dump";
@@ -181,39 +181,11 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param names Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
-     */
-    public List<File> cacheDirectories(Predicate<String> names) {
-        File[] files = nodeStorage().listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> names.test(cacheName(f)))
-            .collect(Collectors.toList());
-    }
-
-    /**
      * @param grpId Cache group id.
      * @return Files that match cache or cache group pattern.
      */
     public File cacheDirectory(int grpId) {
-        File[] files = nodeStorage().listFiles();
-
-        if (files == null)
-            return null;
-
-        return Arrays.stream(files)
-            .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
-            .filter(f -> CU.cacheId(cacheName(f)) == grpId)
-            .findAny()
-            .orElse(null);
+        return F.first(cacheDirectories(f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
@@ -262,10 +234,28 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param snpDir Directory to check.
+     * @return {@code True} if directory conforms increment snapshot directory pattern.
+     */
+    public static boolean incrementSnapshotDir(File snpDir) {
+        return INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR);
+    }
+
+    /**
+     * Partition delta index file. Represents a sequence of page indexes that written to a delta.
+     *
+     * @param delta File with delta pages.
+     * @return File with delta pages index.
+     */
+    public static File partDeltaIndexFile(File delta) {
+        return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
+    }
+
+    /**
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    private String snapshotMetaFileName(String consId) {
+    public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 

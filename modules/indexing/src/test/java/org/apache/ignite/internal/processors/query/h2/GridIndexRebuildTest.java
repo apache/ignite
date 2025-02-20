@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandAr
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -337,18 +335,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
 
         assertFalse("B+Tree is corrupted.", lsnr.check());
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        NodeFileTree ft = nodeFileTree(igName);
-
-        U.delete(ft.nodeStorage());
-
-        Files.createDirectory(ft.nodeStorage().toPath());
-
-        U.delete(ft.wal());
-        U.delete(ft.walArchive());
     }
 
     /** */

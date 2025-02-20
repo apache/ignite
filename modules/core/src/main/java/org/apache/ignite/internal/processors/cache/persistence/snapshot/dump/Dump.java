@@ -66,8 +66,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
@@ -205,21 +206,25 @@ public class Dump implements AutoCloseable {
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
-        File[] files = dumpDir.listFiles(f ->
-            f.getName().endsWith(SNAPSHOT_METAFILE_EXT) && (consistentId == null || f.getName().startsWith(consistentId))
+        // First filter only specific file to exclude overlapping with other nodes making dump on the local host.
+        File[] files = dumpDir.listFiles(
+            f -> snapshotMetaFile(f) && (consistentId == null || f.getName().equals(snapshotMetaFileName(consistentId)))
         );
 
         if (files == null)
             return Collections.emptyList();
 
-        return Arrays.stream(files).map(meta -> {
-            try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
-                return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
-            }
-            catch (IOException | IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }).filter(SnapshotMetadata::dump).collect(Collectors.toList());
+        return Arrays.stream(files)
+            .map(meta -> {
+                try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
+                    return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            })
+            .filter(SnapshotMetadata::dump)
+            .collect(Collectors.toList());
     }
 
     /**

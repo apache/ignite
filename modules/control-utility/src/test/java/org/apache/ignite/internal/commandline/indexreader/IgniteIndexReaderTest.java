@@ -86,8 +86,6 @@ import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexRead
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -342,13 +340,11 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         int partId = partId(pageToCorrupt);
         int pageIdxCorrupt = pageIndex(pageToCorrupt);
 
-        String fileName = partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
-
         File cacheWorkDir = ft.cacheStorage(true, CACHE_GROUP_NAME);
 
-        File file = new File(cacheWorkDir, fileName);
+        File file = ft.partitionFile(cacheWorkDir.getName(), partId);
 
-        File backup = new File(cacheWorkDir, fileName + ".backup");
+        File backup = new File(cacheWorkDir, file.getName() + ".backup");
 
         if (!backup.exists())
             Files.copy(file.toPath(), backup.toPath());
@@ -418,18 +414,18 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      * @throws IOException If failed.
      */
     private void restoreFile(int partId) throws IOException {
-        String fileName = partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
-
         File cacheWorkDir = ft.cacheStorage(true, CACHE_GROUP_NAME);
 
-        File backupFiles = new File(cacheWorkDir, fileName + ".backup");
+        File file = ft.partitionFile(cacheWorkDir.getName(), partId);
+
+        File backupFiles = new File(cacheWorkDir, file.getName() + ".backup");
 
         if (!backupFiles.exists())
             return;
 
         Path backupFilesPath = backupFiles.toPath();
 
-        Files.copy(backupFilesPath, new File(cacheWorkDir, fileName).toPath(), REPLACE_EXISTING);
+        Files.copy(backupFilesPath, file.toPath(), REPLACE_EXISTING);
 
         Files.delete(backupFilesPath);
     }
