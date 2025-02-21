@@ -647,6 +647,8 @@ final class ReliableChannel implements AutoCloseable {
             }
         }
 
+        newAddrsSet.addAll(curAddrs.keySet());
+
         // Close obsolete holders or map old but valid addresses to holders
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
@@ -668,8 +670,6 @@ final class ReliableChannel implements AutoCloseable {
                     h.close();
             }
         }
-
-        newAddrsSet.addAll(curAddrs.keySet());
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
