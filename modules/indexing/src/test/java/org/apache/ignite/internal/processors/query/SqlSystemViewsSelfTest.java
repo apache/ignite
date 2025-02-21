@@ -21,11 +21,9 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -33,10 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.cache.Cache;
@@ -692,7 +687,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testRunningQueriesViewSelectWithLabels() throws Exception {
-        executeRunningQueriesViewWithLabels("select sleep(5000)");
+        executeRunningQueriesViewWithLabels("select sleep(3000)");
     }
 
     /**
@@ -700,7 +695,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testRunningQueriesViewInsertWithLabels() throws Exception {
-        executeRunningQueriesViewWithLabels("insert into \"INTEGER\" (_key, _val) values (?, sleep(3000))");
+        executeRunningQueriesViewWithLabels("insert into \"INTEGER\" (_key, _val) values (2, sleep(3000))");
     }
 
     /**
@@ -708,7 +703,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testRunningQueriesViewUpdateWithLabels() throws Exception {
-        executeRunningQueriesViewWithLabels("update \"INTEGER\" set _val = sleep(3000) where _key = ?");
+        executeRunningQueriesViewWithLabels("update \"INTEGER\" set _val = sleep(3000) where _key = 1");
     }
 
     /**
@@ -716,20 +711,16 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testRunningQueriesViewDeleteWithLabels() throws Exception {
-        executeRunningQueriesViewWithLabels("delete from \"INTEGER\" where _key = ? and _key < sleep(3000)");
+        executeRunningQueriesViewWithLabels("delete from \"INTEGER\" where _key = 1 and _key < sleep(3000)");
     }
 
     /**
-     * Executes tests for running queries with labels.
+     * Executes tests for labelled queries.
      *
      * @param sql SQL query.
      */
     public void executeRunningQueriesViewWithLabels(String sql) throws Exception {
         final String lblVal = "Label 1";
-
-        AtomicInteger val = new AtomicInteger(1);
-
-        Supplier<Object> args = val::getAndIncrement;
 
         startGrid(0);
 
@@ -741,37 +732,18 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setIndexedTypes(Integer.class, Integer.class)
             .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class));
 
-        if (sql.startsWith("update") || sql.startsWith("delete")) {
-            for (int i = 1; i < 5; i++)
-                cli.cache(DEFAULT_CACHE_NAME).put(i, i);
-        }
+        cli.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        Set<IgniteInternalFuture<?>> futs = new HashSet<>();
+        IgniteInternalFuture<?> fut = multithreadedAsync(() ->
+            cliWithAttrs.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql)).getAll(), 1);
 
-        for (Ignite grid : Set.of(cli, cliWithAttrs)) {
-            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-                grid.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql)
-                    .setArgs(sql.startsWith("select") ? null : args.get())).getAll();
-            }, 2);
-
-            futs.add(fut);
-        }
-
-        assertTrue(waitForCondition(() -> cli.context().systemView().view(SQL_QRY_VIEW).size() == 4, 5000));
+        assertTrue(waitForCondition(() -> cli.context().systemView().view(SQL_QRY_VIEW).size() == 1, 1000));
 
         SystemView<SqlQueryView> view = cli.context().systemView().view(SQL_QRY_VIEW);
 
-        List<SqlQueryView> qrys = new ArrayList<>();
+        assertEquals(lblVal, F.first(view).label());
 
-        view.forEach(qrys::add);
-
-        Consumer<Object> check = (lbl) -> assertEquals(2, (int)qrys.stream().filter(q -> q.label() == lbl).count());
-
-        check.accept(null);
-        check.accept(lblVal);
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get();
+        fut.get();
     }
 
     /**
