@@ -303,7 +303,8 @@ public class IgniteIndexReader implements AutoCloseable {
             Collections.emptyList(),
             asList(
                 argument(DIR_ARG, String.class)
-                    .withUsage("partition directory, where " + partitionFileName(INDEX_PARTITION) + " and (optionally) partition files are located.")
+                    .withUsage("partition directory, where " + partitionFileName(INDEX_PARTITION) +
+                        " and (optionally) partition files are located.")
                     .build(),
                 optionalArgument(PART_CNT_ARG, Integer.class).withUsage("full partitions count in cache group.").withDefault(0).build(),
                 optionalArgument(PAGE_SIZE_ARG, Integer.class).withUsage("page size.").withDefault(DFLT_PAGE_SIZE).build(),
