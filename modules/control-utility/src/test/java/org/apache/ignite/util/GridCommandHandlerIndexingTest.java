@@ -39,7 +39,8 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -342,7 +343,10 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      * Get index partition file for specific node and cache.
      */
     private File indexPartition(Ignite ig, String groupName) {
-        return new File(((IgniteEx)ig).context().pdsFolderResolver().fileTree().cacheStorage(true, groupName), INDEX_FILE_NAME);
+        return new File(
+            ((IgniteEx)ig).context().pdsFolderResolver().fileTree().cacheStorage(true, groupName),
+            partitionFileName(INDEX_PARTITION)
+        );
     }
 
     /**

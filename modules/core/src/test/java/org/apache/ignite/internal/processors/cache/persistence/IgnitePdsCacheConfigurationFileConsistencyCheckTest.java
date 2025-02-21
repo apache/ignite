@@ -21,7 +21,6 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +42,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_TMP_FILENAME;
 
 /**
  * Tests that ignite can start when caches' configurations with same name in different groups stored.
@@ -144,11 +141,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-            File[] tmpFile = ft.cacheStorage(desc.cacheConfiguration()).listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.endsWith(CACHE_DATA_TMP_FILENAME);
-                }
-            });
+            File[] tmpFile = ft.cacheStorage(desc.cacheConfiguration()).listFiles(NodeFileTree::tmpCacheConfig);
 
             assertNotNull(tmpFile);
 
@@ -217,7 +210,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File tmp = new File(ft.cacheStorage(data.config()), data.config().getName() + CACHE_DATA_TMP_FILENAME);
+            File tmp = ft.tmpCacheConfigurationFile(data.config());
 
             try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
                 marshaller.marshal(data, stream);

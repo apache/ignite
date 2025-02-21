@@ -204,16 +204,16 @@ public class NodeFileTree extends SharedFileTree {
     public static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
-    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
+    protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** Partition file template. */
-    public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
+    protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+    private static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
 
     /** Temporary cache directory prefix. */
     private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
@@ -518,6 +518,16 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
+     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
+     */
+    public File tmpCacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+        return new File(cacheStorage(ccfg), ccfg.getGroupName() == null
+            ? (CACHE_DATA_TMP_FILENAME)
+            : (ccfg.getName() + CACHE_DATA_TMP_FILENAME));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
      * @param part Partition id.
      * @return Partition file.
      */
@@ -642,6 +652,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean tmpCacheStorage(File f) {
         return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms temp cache configuration file name pattern.
+     */
+    public static boolean tmpCacheConfig(File f) {
+        return f.getName().endsWith(CACHE_DATA_TMP_FILENAME);
     }
 
     /**

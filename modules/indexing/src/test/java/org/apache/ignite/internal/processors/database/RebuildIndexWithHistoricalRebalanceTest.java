@@ -60,7 +60,8 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Rebuild index after index.bin remove, when partition is moving.
@@ -218,9 +219,10 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         SUPPLY_MESSAGE_LATCH.set(new CountDownLatch(1));
 
-        U.delete(
-            new File(nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(1))).cacheStorage(false, CACHE_NAME), INDEX_FILE_NAME)
-        );
+        U.delete(new File(
+                nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(1))).cacheStorage(false, CACHE_NAME),
+                partitionFileName(INDEX_PARTITION)
+        ));
 
         LogListener rebuildLsnr = finishIndexRebuildLsnr(CACHE_NAME);
 

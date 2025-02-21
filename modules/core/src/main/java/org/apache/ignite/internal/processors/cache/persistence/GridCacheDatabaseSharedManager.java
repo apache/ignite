@@ -118,7 +118,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -188,6 +187,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.fromStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -265,12 +265,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Defragmentation regions size percentage of configured ones. */
     private final int defragmentationRegionSizePercentageOfConfiguredSize =
         getInteger(IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE, DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE);
-
-    /** */
-    private static final String MBEAN_NAME = "DataStorageMetrics";
-
-    /** */
-    private static final String MBEAN_GROUP = "Persistent Store";
 
     /** WAL marker prefix for meta store. */
     private static final String WAL_KEY_PREFIX = "grp-wal-";
@@ -1321,7 +1315,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
                     cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().toPath(),
-                    NodeFileTree.INDEX_FILE_NAME
+                    partitionFileName(PageIdAllocator.INDEX_PARTITION)
                 );
 
                 if (anyIdxPartFile != null) {

@@ -212,7 +212,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -2731,14 +2730,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             .filter(t -> t.sourceNodeId().equals(nodeId))
             .findFirst()
             .orElse(null);
-    }
-
-    /**
-     * @return Relative configured path of persistence data storage directory for the local node.
-     * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
-     */
-    static String databaseRelativePath(String folderName) {
-        return Paths.get(DB_DEFAULT_FOLDER, folderName).toString();
     }
 
     /**
