@@ -480,7 +480,7 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @return Files that match cache or cache group pattern.
+     * @return All cache directories.
      */
     public List<File> cacheDirectories() {
         return cacheDirectories(true, f -> true);
@@ -489,7 +489,7 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
+     * @return Cache directories that matches filters criteria.
      */
     public List<File> cacheDirectories(boolean includeMeta, Predicate<File> filter) {
         File[] files = nodeStorage().listFiles();
