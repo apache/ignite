@@ -608,7 +608,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             second.put((int)(Math.random() * entries), getClass().getName());
 
         final String prevVerFolder = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
-        final String path = new File(new File(U.defaultWorkDirectory(), "db"), prevVerFolder).getCanonicalPath();
+        final String path = new File(sharedFileTree().db(), prevVerFolder).getCanonicalPath();
 
         assertPdsDirsDefaultExist(ignite, prevVerFolder);
         stopAllGrids();

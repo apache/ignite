@@ -160,7 +160,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
     }
 
