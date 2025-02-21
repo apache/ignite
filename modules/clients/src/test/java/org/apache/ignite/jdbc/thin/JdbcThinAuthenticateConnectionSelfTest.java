@@ -62,6 +62,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
         super.beforeTest();
 
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        sharedFileTree().db().mkdirs();
 
         startGrids(2);
 

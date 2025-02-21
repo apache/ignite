@@ -159,7 +159,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1973,10 +1972,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
         SharedFileTree sft = sharedFileTree();
 
+        U.delete(sft.db());
         U.delete(sft.marshaller());
         U.delete(sft.binaryMetaRoot());
 

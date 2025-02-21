@@ -25,7 +25,6 @@ import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtil
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.BINARY_METADATA_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.MARSHALLER_DIR;
 
@@ -35,7 +34,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
 public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** Persistence directories. */
     private static final List<String> PERSISTENCE_DIRS
-        = Arrays.asList(DFLT_STORE_DIR, BINARY_METADATA_DIR, SharedFsCheckpointSpi.DFLT_ROOT, MARSHALLER_DIR);
+        = Arrays.asList("db", BINARY_METADATA_DIR, SharedFsCheckpointSpi.DFLT_ROOT, MARSHALLER_DIR);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
