@@ -48,7 +48,7 @@ public class AuthenticationProcessorNPEOnStartTest extends GridCommonAbstractTes
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
     }
 
     /** {@inheritDoc} */

@@ -821,7 +821,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private void triggerIndexRebuild(int igniteIdx, Collection<String> excludedCacheNames) throws Exception {
         stopGrid(igniteIdx);
 
-        GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
+        GridTestUtils.deleteIndexBin(grid(2).context().pdsFolderResolver().fileTree());
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         final IgniteEx ignite = startGrid(igniteIdx);

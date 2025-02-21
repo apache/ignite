@@ -45,6 +45,7 @@ import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandAr
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -52,7 +53,8 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Tesing index full and partial rebuild.
@@ -191,19 +193,29 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
             }
         }).start();
 
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
         long diff = System.currentTimeMillis() - start;
 
         U.sleep(7500 - (diff % 5000));
+
+        NodeFileTree ft = ignite(3).context().pdsFolderResolver().fileTree();
 
         stopGrid(3);
 
         stop.set(true);
 
-        for (File grp : new File(workDir, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
-            new File(grp, "index.bin").delete();
+        boolean idxRmvd = false;
+
+        for (File grp : ft.cacheDirectories(false, f -> true)) {
+            File idx = new File(grp, partitionFileName(INDEX_PARTITION));
+
+            assertTrue(idx.exists());
+
+            idx.delete();
+
+            idxRmvd = true;
         }
+
+        assertTrue(idxRmvd);
 
         startGrid(3);
 

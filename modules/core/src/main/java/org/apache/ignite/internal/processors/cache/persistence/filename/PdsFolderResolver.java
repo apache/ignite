@@ -92,7 +92,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
     };
 
     /** Database default folder. */
-    public static final String DB_DEFAULT_FOLDER = "db";
+    static final String DB_DEFAULT_FOLDER = "db";
 
     /** */
     private final IgniteConfiguration cfg;

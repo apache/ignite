@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.io.File;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopB
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -35,7 +37,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
 import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage.KEY_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.deleteCacheGrpDir;
 
 /**
  * Class for testing rebuilding index resumes.
@@ -334,10 +335,11 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         n0.destroyCache(DEFAULT_CACHE_NAME + 2);
         n0.destroyCache(DEFAULT_CACHE_NAME + 3);
 
-        deleteCacheGrpDir(
-            n1.name(),
-            (dir, name) -> name.contains(DEFAULT_CACHE_NAME + 3) || name.contains(DEFAULT_CACHE_NAME + "_G")
-        );
+        for (File dir : n1.context().pdsFolderResolver().fileTree().cacheDirectories()) {
+            if (dir.getName().contains(DEFAULT_CACHE_NAME + 3) || dir.getName().contains(DEFAULT_CACHE_NAME + "_G")) {
+                U.delete(dir);
+            }
+        }
 
         n1 = startGrid(getTestIgniteInstanceName(1));
 

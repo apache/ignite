@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
 /**
@@ -486,7 +485,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                File dumpFile = new File(sft.cacheStorage(gctx.config()), dumpPartFileName(part, compress));
+                File dumpFile = sft.dumpPartition(gctx.config(), part, compress);
 
                 if (!dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);

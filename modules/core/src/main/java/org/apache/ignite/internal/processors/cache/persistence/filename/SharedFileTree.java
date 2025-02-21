@@ -106,6 +106,13 @@ public class SharedFileTree {
     }
 
     /**
+     * @return Path to the {@code db} directory inside {@link #root()}.
+     */
+    public File db() {
+        return new File(root, DB_DEFAULT_FOLDER);
+    }
+
+    /**
      * @return Path to common binary metadata directory. Note, directory can contain data from several nodes.
      * Each node will create own directory inside this root.
      */

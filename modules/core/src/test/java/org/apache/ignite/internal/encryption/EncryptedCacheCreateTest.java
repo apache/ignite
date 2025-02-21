@@ -146,7 +146,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         final boolean[] plainBytesFound = {false};
 
-        Files.walk(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false).toPath())
+        Files.walk(sharedFileTree().db().toPath())
             .filter(Files::isRegularFile)
             .forEach(f -> {
                 try {
