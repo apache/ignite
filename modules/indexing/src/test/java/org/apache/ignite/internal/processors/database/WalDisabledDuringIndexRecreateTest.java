@@ -65,7 +65,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.query.schema.management.SortedIndexDescriptorFactory.H2_TREE;
 
 /** */
@@ -298,7 +298,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
         File idxFile = new File(
             ft.cacheStorage(cacheGrps, cacheGrps ? cacheGroupName() : cacheName()),
-            INDEX_FILE_NAME);
+            partitionFileName(INDEX_PARTITION)
+        );
 
         assertTrue("Index file not found", idxFile.exists());
 
