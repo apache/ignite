@@ -194,7 +194,7 @@ public class NodeFileTree extends SharedFileTree {
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
-    protected static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
+    private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
 

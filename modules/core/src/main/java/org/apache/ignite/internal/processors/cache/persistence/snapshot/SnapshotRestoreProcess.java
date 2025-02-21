@@ -744,13 +744,13 @@ public class SnapshotRestoreProcess {
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
-            List<File> cacheDirs = cctx.snapshotMgr().snapshotCacheDirectories(
+            List<File> cacheDirs = new SnapshotFileTree(
+                cctx.kernalContext(),
                 req.snapshotName(),
                 req.snapshotPath(),
                 meta.folderName(),
-                meta.consistentId(),
-                false
-            );
+                meta.consistentId()
+            ).cacheDirectories(false, f -> true);
 
             for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);

@@ -595,13 +595,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 List<SnapshotView> views = new ArrayList<>();
 
                 for (SnapshotMetadata m: readSnapshotMetadatas(new SnapshotFileTree(ctx, name, null))) {
-                    List<File> dirs = snapshotCacheDirectories(
+                    List<File> dirs = new SnapshotFileTree(
+                        cctx.kernalContext(),
                         m.snapshotName(),
                         null,
                         m.folderName(),
-                        m.consistentId(),
-                        true
-                    );
+                        m.consistentId()
+                    ).cacheDirectories();
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
 
@@ -1770,27 +1770,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         return res;
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param folderName The name of a directory for the cache group.
-     * @param includeMeta If {@code true} then include metadata driectory.
-     * @return The list of cache or cache group names in given snapshot on local node.
-     */
-    public List<File> snapshotCacheDirectories(
-        String snpName,
-        @Nullable String snpPath,
-        String folderName,
-        String consId,
-        boolean includeMeta
-    ) {
-        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
-
-        if (!sft.root().exists())
-            return Collections.emptyList();
-
-        return sft.cacheDirectories(includeMeta, f -> true);
     }
 
     /**
