@@ -165,7 +165,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             skipReducerOnUpdate,
             null,
             null,
-            qryEngine
+            qryEngine,
+            null,
+            null,
+            0,
+            null
         );
 
         this.busyLock = busyLock;

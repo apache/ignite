@@ -44,8 +44,6 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(null);
-
         return cfg;
     }
 

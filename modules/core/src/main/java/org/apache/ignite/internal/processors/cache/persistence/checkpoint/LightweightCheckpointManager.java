@@ -129,6 +129,7 @@ public class LightweightCheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
+            cacheProcessor.context().kernalContext(),
             logger,
             (pageMemEx, fullPage, buf, tag) ->
                 pageMemEx.pageManager().write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
@@ -149,6 +150,7 @@ public class LightweightCheckpointManager {
             cacheProcessor,
             checkpointWorkflow,
             checkpointPagesWriterFactory,
+            null,
             persistenceCfg.getCheckpointFrequency(),
             persistenceCfg.getCheckpointThreads(),
             () -> 0

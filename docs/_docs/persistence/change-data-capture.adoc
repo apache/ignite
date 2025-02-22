@@ -18,8 +18,6 @@
 == Overview
 Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is a data processing pattern used to asynchronously receive entries that have been changed on the local node so that action can be taken using the changed entry.
 
-WARNING: CDC is an experimental feature. API or design architecture might be changed.
-
 Below are some CDC use cases:
 
  * Streaming changes in Warehouse;
@@ -125,6 +123,7 @@ The following metrics are provided by the application (additional metrics can be
 | BinaryMetaDir | Binary meta-directory the application reads data from.
 | MarshallerDir | Marshaller directory the application reads data from.
 | CdcDir | The CDC directory the application reads data from.
+| SegmentConsumingTime | Time of WAL segment consumption by consumer, in milliseconds.
 |===
 
 == Logging

@@ -92,6 +92,9 @@ public abstract class AbstractReducer implements Reducer {
     /** */
     private int pageSize;
 
+    /** */
+    protected int colCnt;
+
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
@@ -328,6 +331,9 @@ public abstract class AbstractReducer implements Reducer {
                     page.fetchNextPage(); // Failed will throw an exception here.
 
                 iter = page.rows();
+
+                if (iter.hasNext() && colCnt == 0)
+                    colCnt = page.columnCount();
 
                 MTC.span().addTag(SQL_PAGE_ROWS, () -> Integer.toString(page.rowsInPage()));
 

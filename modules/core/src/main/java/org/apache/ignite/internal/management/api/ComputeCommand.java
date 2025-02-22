@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -46,7 +46,16 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
-    public default @Nullable Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, A arg) {
+    public default @Nullable Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, A arg) {
         return null;
+    }
+
+    /**
+     * @param e Task execution exception to handle.
+     * @param printer Implementation specific printer.
+     * @return Result if the exception is suppressed.
+     */
+    default R handleException(Exception e, Consumer<String> printer) throws Exception {
+        throw e;
     }
 }

@@ -348,6 +348,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 .logger(log)
                 .build(),
             taskExecutor(),
+            null,
             qryId,
             locaNodeId,
             nodeId,
@@ -361,6 +362,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
-            ImmutableMap.of());
+            ImmutableMap.of(),
+            null);
     }
 }

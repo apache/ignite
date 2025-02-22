@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -46,8 +45,6 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
         txCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
 
         cfg.setTransactionConfiguration(txCfg);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = new CacheConfiguration("tx-cache");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

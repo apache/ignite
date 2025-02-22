@@ -18,11 +18,10 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.Set;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -30,13 +29,13 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  * Transactions configuration.
  */
-@TransientSerializable(methodName = "transientSerializableFields")
 public class TransactionConfiguration implements Serializable {
-    /** */
-    private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
-
-    /** */
-    private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.7.3");
+    /**
+     * Supported levels of transaction isolation for SQL queries.
+     *
+     * @see #setTxAwareQueriesEnabled(boolean)
+     */
+    public static final Set<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -101,6 +100,12 @@ public class TransactionConfiguration implements Serializable {
     private boolean useJtaSync;
 
     /**
+     * When set to true, Ignite will execute SQL and scan queries in transaction aware mode.
+     * Default is {@code false}.
+     */
+    private boolean txAwareQueriesEnabled;
+
+    /**
      * Empty constructor.
      */
     public TransactionConfiguration() {
@@ -121,6 +126,7 @@ public class TransactionConfiguration implements Serializable {
         tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
+        txAwareQueriesEnabled = cfg.isTxAwareQueriesEnabled();
     }
 
     /**
@@ -409,27 +415,25 @@ public class TransactionConfiguration implements Serializable {
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TransactionConfiguration.class, this);
+    /**
+     * @return Whether to execute SQL and scan queries in transaction aware mode.
+     */
+    public boolean isTxAwareQueriesEnabled() {
+        return txAwareQueriesEnabled;
     }
 
     /**
-     * Excludes incompatible fields from serialization/deserialization process.
-     *
-     * @param ver Sender/Receiver node version.
-     * @return Array of excluded from serialization/deserialization fields.
+     * @param txAwareQueriesEnabled Whether to execute SQL and scan queries in transaction aware mode.
+     * @return {@code this} for chaining.
      */
-    @SuppressWarnings("unused")
-    private static String[] transientSerializableFields(IgniteProductVersion ver) {
-        ArrayList<String> transients = new ArrayList<>(2);
+    public TransactionConfiguration setTxAwareQueriesEnabled(boolean txAwareQueriesEnabled) {
+        this.txAwareQueriesEnabled = txAwareQueriesEnabled;
 
-        if (TX_PME_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
-            transients.add("txTimeoutOnPartitionMapExchange");
+        return this;
+    }
 
-        if (DEADLOCK_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
-            transients.add("deadlockTimeout");
-
-        return transients.isEmpty() ? null : transients.toArray(new String[transients.size()]);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TransactionConfiguration.class, this);
     }
 }

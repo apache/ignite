@@ -25,11 +25,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
@@ -75,7 +74,7 @@ public class CacheScheduleIndexesRebuildCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheScheduleIndexesRebuildCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, CacheScheduleIndexesRebuildCommandArg arg) {
         if (arg.allNodes() || F.isEmpty(arg.nodeIds()) && arg.nodeId() == null)
             return nodes;
 
@@ -215,21 +214,5 @@ public class CacheScheduleIndexesRebuildCommand
     private static boolean hasAtLeastOneIndex(Map<String, Set<String>> cacheToIndexes) {
         return !F.isEmpty(cacheToIndexes) && cacheToIndexes.values().stream()
             .anyMatch(indexes -> !indexes.isEmpty());
-    }
-
-    /** */
-    static <T> void storeCacheAndIndexResults(Map<IgnitePair<T>, Set<UUID>> to, Map<T, Set<T>> values, UUID nodeId) {
-        if (F.isEmpty(values))
-            return;
-
-        values.forEach((cache, indexes) -> indexes.forEach(idx ->
-            to.compute(new IgnitePair<>(cache, idx), (c0, idxs0) -> {
-                if (idxs0 == null)
-                    idxs0 = new HashSet<>();
-
-                idxs0.add(nodeId);
-
-                return idxs0;
-            })));
     }
 }

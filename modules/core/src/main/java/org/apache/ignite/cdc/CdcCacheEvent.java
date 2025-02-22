@@ -22,7 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.CacheView;
 
 /**
@@ -34,7 +33,6 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  * @see CacheConfiguration
  * @see QueryEntity
  */
-@IgniteExperimental
 public interface CdcCacheEvent {
     /**
      * @return Cache ID.

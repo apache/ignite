@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -70,7 +69,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProducer;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
@@ -83,7 +81,6 @@ import static java.util.function.Function.identity;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
-import static org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage.isSupported;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
@@ -120,10 +117,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** Default upper bound of history size in bytes. */
     public static final long DFLT_MAX_HISTORY_BYTES = 100 * 1024 * 1024;
-
-    /** Message indicating that clusted is in a mixed state and writing cannot be completed because of that. */
-    public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support" +
-        " distributed metastorage feature. Writing cannot be completed.";
 
     /** Name of the system view for a system {@link MetaStorage}. */
     public static final String DISTRIBUTED_METASTORE_VIEW = metricName("distributed", "metastorage");
@@ -642,19 +635,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         try {
             DistributedMetaStorageVersion locVer = ver;
 
-            if (!discoData.hasJoiningNodeData()) {
-                // Joining node doesn't support distributed metastorage feature.
-
-                if (isSupported(ctx) && locVer.id() > 0 && !node.isClient()) {
-                    String errorMsg = "Node not supporting distributed metastorage feature" +
-                        " is not allowed to join the cluster";
-
-                    return new IgniteNodeValidationResult(node.id(), errorMsg);
-                }
-                else
-                    return null;
-            }
-
             DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
 
             if (joiningData == null) {
@@ -796,9 +776,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
-        if (!isSupported(ctx) && remoteVer.id() > 0)
-            return;
-
         lock.writeLock().lock();
 
         try {
@@ -848,9 +825,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         JoiningNodeDiscoveryData discoData = dataBag.newJoinerDiscoveryData(COMPONENT_ID);
 
         if (!discoData.hasJoiningNodeData())
-            return;
-
-        if (!isSupported(ctx))
             return;
 
         DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
@@ -1071,7 +1045,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<?> fut = prepareWriteFuture(key, reqId);
+        GridFutureAdapter<?> fut = prepareWriteFuture(reqId);
 
         if (fut.isDone())
             return fut;
@@ -1090,7 +1064,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = prepareWriteFuture(key, reqId);
+        GridFutureAdapter<Boolean> fut = prepareWriteFuture(reqId);
 
         if (fut.isDone())
             return fut;
@@ -1113,27 +1087,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @return Future that must be returned immediately or {@code null}.
      * @throws IgniteCheckedException If cluster can't perform this update.
      */
-    private GridFutureAdapter<Boolean> prepareWriteFuture(String key, UUID reqId) throws IgniteCheckedException {
-        boolean supported;
-
-        try {
-            supported = isSupported(ctx);
-        }
-        catch (Exception e) {
-            if (X.hasCause(e, IgniteSpiException.class) && e.getMessage() != null && e.getMessage().contains("Node stopped.")) {
-                GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
-
-                fut.onDone(nodeStoppingException());
-
-                return fut;
-            }
-
-            throw e;
-        }
-
-        if (!supported)
-            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
-
+    private GridFutureAdapter<Boolean> prepareWriteFuture(UUID reqId) {
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
         updateFutsStopLock.readLock().lock();
@@ -1169,12 +1123,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) {
         if (msg.errorMessage() != null)
             return;
-
-        if (!isSupported(ctx)) {
-            msg.errorMessage(NOT_SUPPORTED_MSG);
-
-            return;
-        }
 
         lock.writeLock().lock();
 

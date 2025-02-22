@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -221,6 +222,12 @@ public class H2SchemaManager implements SchemaChangeListener {
 
     /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schema, String name, boolean deterministic, Method method) {
+        if (!Modifier.isStatic(method.getModifiers())) {
+            log.warning("Skip creating SQL function '" + name + "' in H2 engine because it is not static.");
+
+            return;
+        }
+
         try {
             createSqlFunction(schema, name, deterministic,
                 method.getDeclaringClass().getName() + '.' + method.getName());
@@ -228,6 +235,17 @@ public class H2SchemaManager implements SchemaChangeListener {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to create database function: " + name, e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(
+        String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        String[] colNames
+    ) {
+        log.warning("Skipped creation of SQL table function '" + name + "' in H2 engine. Table functions arent't supported yet.");
     }
 
     /**

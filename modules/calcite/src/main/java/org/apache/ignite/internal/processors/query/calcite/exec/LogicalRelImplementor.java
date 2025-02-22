@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -444,8 +443,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             return new ScanStorageNode<>(idx.name() + "_COUNT", ctx, rel.getRowType(),
-                () -> Collections.singletonList(ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType())
-                    .create(idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()))).iterator());
+                idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()));
         }
         else {
             CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
@@ -664,13 +662,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableFunctionScan rel) {
-        Supplier<Iterable<Object[]>> dataSupplier = expressionFactory.execute(rel.getCall());
+        Supplier<Iterable<?>> dataSupplier = expressionFactory.execute(rel.getCall());
 
         RelDataType rowType = rel.getRowType();
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(dataSupplier, rowFactory));
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(rowType, dataSupplier, rowFactory));
     }
 
     /** {@inheritDoc} */

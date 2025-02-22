@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +29,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,8 +39,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.isSegmentFileName;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -132,11 +132,19 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSegmentFileName() throws Exception {
-        Arrays.asList(null, "", "1", "wal", fileName(0) + "1", fileName(1).replace(".wal", ".wa"))
-            .forEach(s -> assertFalse(s, isSegmentFileName(s)));
+        NodeFileTree ft = nodeFileTree("unknown");
+
+        Arrays.asList(
+            null,
+            "",
+            "1",
+            "wal",
+            ft.walSegment(0).getName() + "1",
+            ft.walSegment(1).getName().replace(WAL_SEGMENT_FILE_EXT, ".wa")
+        ).forEach(s -> assertFalse(s, isSegmentFileName(s)));
 
         IntStream.range(0, 10)
-            .mapToObj(FileDescriptor::fileName)
+            .mapToObj(idx -> ft.walSegment(idx).getName())
             .forEach(fn -> assertTrue(fn, isSegmentFileName(fn) && isSegmentFileName(fn + ZIP_SUFFIX)));
     }
 
@@ -192,7 +200,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
     private void checkLocalSegmentSizes(IgniteEx n) throws Exception {
         disableWal(n, true);
 
-        if (walMgr(n).getSegmentRouter().hasArchive()) {
+        if (n.context().pdsFolderResolver().fileTree().walArchiveEnabled()) {
             assertTrue(waitForCondition(
                 () -> walMgr(n).lastArchivedSegment() == walMgr(n).currentSegment() - 1, getTestTimeout()));
         }
@@ -202,12 +210,11 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
                 () -> walMgr(n).lastCompactedSegment() == walMgr(n).lastArchivedSegment(), getTestTimeout()));
         }
 
-        File walWorkDir = getFieldValue(walMgr(n), "walWorkDir");
-        File walArchiveDir = getFieldValue(walMgr(n), "walArchiveDir");
+        NodeFileTree ft = n.context().pdsFolderResolver().fileTree();
 
         Map<Long, Long> expSegmentSize = new HashMap<>();
 
-        F.asList(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER))
+        F.asList(ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER))
             .stream()
             .map(FileDescriptor::new)
             .forEach(fd -> {
@@ -219,12 +226,12 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
 
         FileWriteHandle currHnd = getFieldValue(walMgr(n), "currHnd");
 
-        if (!walArchiveDir.equals(walWorkDir)) {
+        if (ft.walArchiveEnabled()) {
             long absIdx = currHnd.getSegmentId();
             int segments = n.configuration().getDataStorageConfiguration().getWalSegments();
 
             for (long i = absIdx - (absIdx % segments); i <= absIdx; i++)
-                expSegmentSize.putIfAbsent(i, new File(walWorkDir, fileName(i % segments)).length());
+                expSegmentSize.putIfAbsent(i, ft.walSegment(i % segments).length());
         }
 
         assertEquals(currHnd.getSegmentId() + 1, expSegmentSize.size());

@@ -94,7 +94,7 @@ tab:Java[]
 ----
 SqlFieldsQuery query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10");
 
-// Result set will be loaded lazily.
+// Result set will be loaded eagerly.
 query.setLazy(false);
 ----
 tab:JDBC[]
@@ -107,7 +107,7 @@ tab:C#/.NET[]
 ----
 var query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10")
 {
-    // Result set will be loaded lazily.
+    // Result set will be loaded eagerly.
     Lazy = false
 };
 ----

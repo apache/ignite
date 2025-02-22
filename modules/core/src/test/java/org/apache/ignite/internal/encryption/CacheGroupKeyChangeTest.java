@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.encryption;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +44,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -761,14 +761,12 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(2, node.context().encryption().groupKeyIds(grpId).size());
 
+        NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
+
         stopAllGrids();
 
         // Cleanup WAL arcive folder.
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-
-        boolean rmvd = U.delete(new File(dbDir, "wal/archive"));
-
-        assertTrue(rmvd);
+        assertTrue(U.delete(ft.walArchive().getParentFile()));
 
         node = startGrid(GRID_0);
 

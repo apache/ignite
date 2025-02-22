@@ -403,7 +403,7 @@ public class SortedReducer extends AbstractReducer {
             if (!iter.hasNext())
                 return false;
 
-            cur = H2PlainRowFactory.create(iter.next());
+            cur = H2PlainRowFactory.create(colCnt, iter.next());
 
             return true;
         }

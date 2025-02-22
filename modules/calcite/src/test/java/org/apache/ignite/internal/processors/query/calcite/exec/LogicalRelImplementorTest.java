@@ -118,6 +118,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             qctx,
             null,
             null,
+            null,
             nodeId,
             nodeId,
             null,
@@ -126,6 +127,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
+            null,
             null
         ) {
             @Override public ColocationGroup group(long srcId) {
