@@ -1052,7 +1052,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
             igniteEx,
-            igniteEx.context().cache().utilityCache().context().dynamicDeploymentId().toString()
+            igniteEx.cluster().id().toString()
         );
     }
 
