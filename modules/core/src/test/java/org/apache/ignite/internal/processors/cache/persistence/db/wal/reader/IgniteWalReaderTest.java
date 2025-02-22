@@ -69,6 +69,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -1128,12 +1129,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        String subfolderName1 = genDbSubfolderName(ignite, 0);
-        String subfolderName2 = genDbSubfolderName(ignite1, 1);
+        NodeFileTree ft1 = nodeFileTree(genDbSubfolderName(ignite, 0));
+        NodeFileTree ft2 = nodeFileTree(genDbSubfolderName(ignite1, 1));
 
         stopAllGrids();
-
-        String workDir = U.defaultWorkDirectory();
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
@@ -1152,11 +1151,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName1)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName1,
-                    workDir + "/db/wal/archive/" + subfolderName1
-                ),
+            createIteratorParametersBuilder(ft1.root().getAbsolutePath(), ft1.folderName()).filesOrDirs(ft1.wal(), ft1.walArchive()),
             1,
             1,
             null, drHnd
@@ -1166,11 +1161,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName2)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName2,
-                    workDir + "/db/wal/archive/" + subfolderName2
-                ),
+            createIteratorParametersBuilder(ft2.root().getAbsolutePath(), ft2.folderName()).filesOrDirs(ft2.wal(), ft2.walArchive()),
             1,
             1,
             null,
@@ -1214,13 +1205,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(false, true, null);
 
-        String subfolderName1 = genDbSubfolderName(ignite, 0);
-        String subfolderName2 = genDbSubfolderName(ignite1, 1);
-        String subfolderName3 = genDbSubfolderName(ignite2, 2);
+        NodeFileTree ft1 = nodeFileTree(genDbSubfolderName(ignite, 0));
+        NodeFileTree ft2 = nodeFileTree(genDbSubfolderName(ignite1, 1));
+        NodeFileTree ft3 = nodeFileTree(genDbSubfolderName(ignite2, 2));
 
         stopAllGrids();
-
-        String workDir = U.defaultWorkDirectory();
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
@@ -1239,11 +1228,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName1)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName1,
-                    workDir + "/db/wal/archive/" + subfolderName1
-                ),
+            createIteratorParametersBuilder(ft1.root().getAbsolutePath(), ft1.folderName()).filesOrDirs(ft1.wal(), ft2.walArchive()),
             1,
             1,
             null, drHnd
@@ -1253,11 +1238,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName2)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName2,
-                    workDir + "/db/wal/archive/" + subfolderName2
-                ),
+            createIteratorParametersBuilder(ft2.root().getAbsolutePath(), ft2.folderName()).filesOrDirs(ft2.wal(), ft2.walArchive()),
             1,
             1,
             null,
@@ -1268,11 +1249,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName3)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName3,
-                    workDir + "/db/wal/archive/" + subfolderName3
-                ),
+            createIteratorParametersBuilder(ft3.root().getAbsolutePath(), ft3.folderName()).filesOrDirs(ft3.wal(), ft3.walArchive()),
             1,
             0,
             null,
@@ -1303,12 +1280,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        String subfolderName1 = genDbSubfolderName(ignite, 0);
-        String subfolderName2 = genDbSubfolderName(ignite1, 1);
+        NodeFileTree ft1 = nodeFileTree(genDbSubfolderName(ignite, 0));
+        NodeFileTree ft2 = nodeFileTree(genDbSubfolderName(ignite1, 1));
 
         stopAllGrids();
-
-        String workDir = U.defaultWorkDirectory();
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
@@ -1345,11 +1320,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName1)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName1,
-                    workDir + "/db/wal/archive/" + subfolderName1
-                ),
+            createIteratorParametersBuilder(ft1.root().getAbsolutePath(), ft1.folderName()).filesOrDirs(ft1.wal(), ft1.walArchive()),
             1,
             1,
             null, drHnd
@@ -1357,11 +1328,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(
             factory,
-            createIteratorParametersBuilder(workDir, subfolderName2)
-                .filesOrDirs(
-                    workDir + "/db/wal/" + subfolderName2,
-                    workDir + "/db/wal/archive/" + subfolderName2
-                ),
+            createIteratorParametersBuilder(ft2.root().getAbsolutePath(), ft2.folderName()).filesOrDirs(ft2.wal(), ft2.walArchive()),
             1,
             1,
             null,
@@ -1586,15 +1553,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @NotNull private IteratorParametersBuilder createIteratorParametersBuilder(
         String workDir,
         String subfolderName
-    ) throws IgniteCheckedException {
-        File binaryMeta = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
-            false);
-        File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
-        File marshallerMapping = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+    ) {
+        NodeFileTree ft = new NodeFileTree(workDir, subfolderName);
 
         return new IteratorParametersBuilder()
-            .binaryMetadataFileStoreDir(binaryMetaWithConsId)
-            .marshallerMappingFileStoreDir(marshallerMapping);
+            .binaryMetadataFileStoreDir(ft.binaryMeta())
+            .marshallerMappingFileStoreDir(ft.marshaller());
     }
 
     /**

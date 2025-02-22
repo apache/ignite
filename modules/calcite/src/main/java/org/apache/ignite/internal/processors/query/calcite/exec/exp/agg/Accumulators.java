@@ -33,6 +33,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -94,6 +95,10 @@ public class Accumulators {
             case "ARRAY_AGG":
             case "ARRAY_CONCAT_AGG":
                 return listAggregateSupplier(call, ctx);
+            case "BIT_AND":
+            case "BIT_OR":
+            case "BIT_XOR":
+                return bitWiseFactory(call, hnd);
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -140,6 +145,21 @@ public class Accumulators {
             case INTEGER:
             default:
                 return () -> new DoubleAvg<>(call, hnd);
+        }
+    }
+
+    /** */
+    private static <Row> Supplier<Accumulator<Row>> bitWiseFactory(AggregateCall call, RowHandler<Row> hnd) {
+        switch (call.type.getSqlTypeName()) {
+            case BIGINT:
+            case INTEGER:
+            case SMALLINT:
+            case TINYINT:
+            case NULL:
+                return () -> new BitWise<>(call, hnd);
+
+            default:
+                throw new UnsupportedOperationException(call.getName() + " is not supported for type '" + call.type + "'.");
         }
     }
 
@@ -265,16 +285,19 @@ public class Accumulators {
 
         /** */
         <T> T get(int idx, Row row) {
-            List<Integer> argList = aggCall.getArgList();
+            assert idx < arguments().size() : "idx=" + idx + "; arguments=" + arguments();
 
-            assert idx < argList.size() : "idx=" + idx + "; arglist=" + argList;
-
-            return (T)hnd.get(argList.get(idx), row);
+            return (T)hnd.get(arguments().get(idx), row);
         }
 
         /** */
         protected AggregateCall aggregateCall() {
             return aggCall;
+        }
+
+        /** */
+        protected List<Integer> arguments() {
+            return aggCall.getArgList();
         }
 
         /** */
@@ -397,6 +420,82 @@ public class Accumulators {
     }
 
     /** */
+    private static class BitWise<Row> extends AbstractAccumulator<Row> {
+        /** */
+        private long res;
+
+        /** */
+        private boolean updated;
+
+        /** */
+        private final SqlKind kind;
+
+        /** */
+        private BitWise(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+
+            kind = aggCall.getAggregation().kind;
+
+            assert kind == SqlKind.BIT_AND || kind == SqlKind.BIT_OR || kind == SqlKind.BIT_XOR;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            Number in = get(0, row);
+
+            if (in == null)
+                return;
+
+            apply(in.longValue());
+        }
+
+        /** */
+        private void apply(long val) {
+            if (updated) {
+                switch (kind) {
+                    case BIT_AND:
+                        res &= val;
+                        break;
+                    case BIT_OR:
+                        res |= val;
+                        break;
+                    case BIT_XOR:
+                        res ^= val;
+                        break;
+                }
+            }
+            else {
+                res = val;
+
+                updated = true;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            BitWise<Row> other0 = (BitWise<Row>)other;
+
+            if (other0.updated)
+                apply(other0.res);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return updated ? res : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true);
+        }
+    }
+
+    /** */
     private static class DecimalAvg<Row> extends AbstractAccumulator<Row> {
         /** */
         private BigDecimal sum = BigDecimal.ZERO;
@@ -504,7 +603,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int argsCnt = aggregateCall().getArgList().size();
+            int argsCnt = arguments().size();
 
             assert argsCnt == 0 || argsCnt == 1;
 
@@ -1200,7 +1299,7 @@ public class Accumulators {
         public ListAggAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             super(aggCall, hnd);
 
-            isDfltSep = aggCall.getArgList().size() <= 1;
+            isDfltSep = arguments().size() <= 1;
         }
 
         /** {@inheritDoc} */
@@ -1326,7 +1425,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class DistinctAccumulator<Row> extends AbstractAccumulator<Row> {
+    private static class DistinctAccumulator<Row> extends AbstractAccumulator<Row> implements StoringAccumulator {
         /** */
         private final Accumulator<Row> acc;
 
@@ -1334,18 +1433,27 @@ public class Accumulators {
         private final Map<Object, Row> rows = new HashMap<>();
 
         /** */
+        private final List<Integer> args;
+
+        /** */
         private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
             super(aggCall, hnd);
+
             acc = accSup.get();
+
+            args = super.arguments().isEmpty() ? List.of(0) : super.arguments();
+        }
+
+        /** */
+        @Override protected List<Integer> arguments() {
+            return args;
         }
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            if (row == null || columnCount(row) == 0 || get(0, row) == null)
-                return;
+            Object key;
 
-            Object key = get(0, row);
-            if (key == null)
+            if (row == null || columnCount(row) == 0 || (key = get(0, row)) == null)
                 return;
 
             rows.put(key, row);

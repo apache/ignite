@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -44,7 +43,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PERFORMANCE_STATISTICS_ROTATE;
 
@@ -257,6 +255,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         long walCpRecordFsyncDuration,
         long writeCpEntryDuration,
         long splitAndSortCpPagesDuration,
+        long recoveryDataWriteDuration,
         long totalDuration,
         long cpStartTime,
         int pagesSize,
@@ -272,6 +271,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             walCpRecordFsyncDuration,
             writeCpEntryDuration,
             splitAndSortCpPagesDuration,
+            recoveryDataWriteDuration,
             totalDuration,
             cpStartTime,
             pagesSize,
@@ -294,9 +294,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void startCollectStatistics() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
-
-        if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS))
-            throw new IllegalStateException("Not all nodes in the cluster support collecting performance statistics.");
 
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");

@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.junit.Test;
@@ -74,8 +73,6 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        c.setMarshaller(new BinaryMarshaller());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 

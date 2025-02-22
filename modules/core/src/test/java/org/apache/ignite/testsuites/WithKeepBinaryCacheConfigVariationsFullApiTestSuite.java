@@ -20,10 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.WithKeepBinaryCacheFullApiTest;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -39,11 +36,6 @@ public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
         return Stream.concat(
             new ConfigVariationsTestSuiteBuilder(WithKeepBinaryCacheFullApiTest.class)
                 .withBasicCacheParams()
-                .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
-                    @Override public boolean apply(IgniteConfiguration cfg) {
-                        return cfg.getMarshaller() instanceof BinaryMarshaller;
-                    }
-                })
                 .gridsCount(5)
                 .backups(1)
                 .testedNodesCount(3).withClients()
@@ -51,11 +43,6 @@ public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
 
             new ConfigVariationsTestSuiteBuilder(WithKeepBinaryCacheFullApiTest.class)
                 .withBasicCacheParams()
-                .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
-                    @Override public boolean apply(IgniteConfiguration cfg) {
-                        return cfg.getMarshaller() instanceof BinaryMarshaller;
-                    }
-                })
                 .gridsCount(5)
                 .backups(1)
                 .testedNodesCount(3).withClients()

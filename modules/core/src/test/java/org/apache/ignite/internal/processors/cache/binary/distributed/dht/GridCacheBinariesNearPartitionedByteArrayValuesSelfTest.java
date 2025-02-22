@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAbstractNearPartitionedByteArrayValuesSelfTest;
 
 /**
@@ -28,14 +26,5 @@ public class GridCacheBinariesNearPartitionedByteArrayValuesSelfTest
     /** {@inheritDoc} */
     @Override protected boolean peerClassLoading() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
     }
 }

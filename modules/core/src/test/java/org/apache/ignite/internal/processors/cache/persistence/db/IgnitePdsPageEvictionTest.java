@@ -72,8 +72,6 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(null);
-
         return cfg;
     }
 

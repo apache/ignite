@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -42,7 +43,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_TEMP_NAME_PATTERN;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
@@ -112,16 +112,16 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        String walPath = ignite.configuration().getDataStorageConfiguration().getWalPath();
-        String walArchivePath = ignite.configuration().getDataStorageConfiguration().getWalArchivePath();
+        File walPath = ignite.context().pdsFolderResolver().fileTree().wal();
+        File walArchive = ignite.context().pdsFolderResolver().fileTree().walArchive();
 
         // Stop grid so there are no ongoing wal records (BLT update and something else maybe).
         stopGrid(0);
 
         WALIterator replayIter = new IgniteWalIteratorFactory(log).iterator(
             lastWalPtr.next(),
-            new File(walArchivePath),
-            new File(walPath)
+            walArchive,
+            walPath
         );
 
         replayIter.forEach(walPtrAndRecordPair -> {
@@ -151,12 +151,11 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        File walWorkDir = getFieldValue(walMgr(ignite), "walWorkDir");
-        File walArchiveDir = getFieldValue(walMgr(ignite), "walArchiveDir");
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         stopAllGrids();
 
-        File[] wals = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+        File[] wals = ft.wal().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
 
@@ -169,13 +168,13 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
         cfg = getConfiguration();
         cfg.getDataStorageConfiguration().setWalSegmentSize(walSize);
         cfg.getDataStorageConfiguration().setWalMode(WALMode.FSYNC);
-        cfg.getDataStorageConfiguration().setFileIOFactory(new WorkDirCheckingFileIOFactory(walWorkDir, walArchiveDir));
+        cfg.getDataStorageConfiguration().setFileIOFactory(new WorkDirCheckingFileIOFactory(ft.wal(), ft.walArchive()));
 
         startGrid(cfg);
 
         stopAllGrids();
 
-        wals = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+        wals = ft.wal().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
 

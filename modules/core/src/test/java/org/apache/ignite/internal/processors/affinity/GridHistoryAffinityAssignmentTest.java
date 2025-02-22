@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.affinity;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -155,6 +157,42 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
                     server.context().cache().cacheGroups().forEach(x -> assertTrue(x.affinity().cachedVersions().size() < 260));
                 }
             }
+        }
+    }
+
+    /** */
+    @Test
+    public void testAffinityCacheMaxSize() throws Exception {
+        try (IgniteEx server = startGrids(2)) {
+            server.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+            CacheGroupContext gctx = server.context().cache().cache(DEFAULT_CACHE_NAME).context().group();
+            Set<AffinityTopologyVersion> affCache = gctx.affinity().cachedVersions();
+            int maxTotalHistSize = gctx.affinity().maxTotalHistSize;
+            int maxNonShallowHistSize = gctx.affinity().maxNonShallowHistSize;
+
+            for (int i = 0; i < (maxTotalHistSize - 10) / 2; i++) {
+                server.createCache(DEFAULT_CACHE_NAME + i);
+                server.destroyCache(DEFAULT_CACHE_NAME + i);
+            }
+
+            startClientGridsMultiThreaded(2, 10);
+
+            assertEquals(maxTotalHistSize, affCache.size());
+
+            for (int i = 0; i < maxTotalHistSize / 2; i++) {
+                server.createCache(DEFAULT_CACHE_NAME + i);
+                server.destroyCache(DEFAULT_CACHE_NAME + i);
+            }
+
+            assertEquals(maxTotalHistSize, affCache.size());
+
+            for (int i = 0; i < maxNonShallowHistSize / 2 + 1; i++) {
+                stopGrid(1);
+                startGrid(1);
+            }
+
+            assertEquals(maxNonShallowHistSize, affCache.size());
         }
     }
 }

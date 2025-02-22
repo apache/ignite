@@ -42,8 +42,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -303,12 +304,19 @@ public class SnapshotCheckProcess {
             if (req.incrementalIndex() > 0) {
                 assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
+                // TODO:
+                //workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), ctx.locFileTree, req.incrementalIndex());
                 workingFut = incrementalFuture(ctx);
             }
             else if (req.allRestoreHandlers())
                 workingFut = allHandlersFuture(ctx);
             else
                 workingFut = partitionsHashesFuture(ctx);
+//            else {
+//                workingFut = req.allRestoreHandlers()
+//                    ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, ctx.locFileTree, req.groups(), true)
+//                    : snpMgr.checker().checkPartitions(ctx.locMeta, ctx.locFileTree, req.groups(), false, req.fullCheck(), false);
+//            }
 
             workingFut.whenComplete((res, err) -> {
                 if (err != null)
@@ -469,7 +477,8 @@ public class SnapshotCheckProcess {
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
             snpMgr.checker().checkLocalMetas(
-                snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                new SnapshotFileTree(kctx, req.snapshotName(), req.snapshotPath()),
+                req.snapshotName(),
                 req.incrementalIndex(),
                 grpIds,
                 kctx.cluster().get().localNode().consistentId()
@@ -528,6 +537,14 @@ public class SnapshotCheckProcess {
 
             // If the topology is lesser that the snapshot's, we have to check another partitions parts.
             ctx.metas = assingMetas(metas);
+
+            if (ctx.locMeta != null) {
+                ctx.locFileTree = new SnapshotFileTree(kctx,
+                    ctx.req.snapshotName(),
+                    ctx.req.snapshotPath(),
+                    ctx.locMeta.folderName(),
+                    ctx.locMeta.consistentId());
+            }
 
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
@@ -672,6 +689,9 @@ public class SnapshotCheckProcess {
          */
         @Nullable private List<SnapshotMetadata> metas;
 
+        /** */
+        @Nullable private SnapshotFileTree locFileTree;
+
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
@@ -704,11 +724,19 @@ public class SnapshotCheckProcess {
         /** */
         private SnapshotCheckResponse(Object result, @Nullable Map<String, Throwable> exceptions) {
             assert result instanceof Serializable : "Snapshot check result is not serializable.";
-            assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";
+            assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";// TODO:
 
             this.result = result;
             this.exceptions = exceptions == null ? null : Collections.unmodifiableMap(exceptions);
         }
+
+        /** //TODO:
+         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
+         * snapshot.
+         */
+        //private @Nullable Map<PartitionKey, PartitionHashRecord> partsHashes() {
+        //    return (Map<PartitionKey, PartitionHashRecord>)partsResults;
+       // }
 
         /** @return Exceptions per snapshot part's consistent id. */
         private @Nullable Map<String, Throwable> exceptions() {

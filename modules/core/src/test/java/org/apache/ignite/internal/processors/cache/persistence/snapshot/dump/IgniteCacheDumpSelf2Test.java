@@ -78,6 +78,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -107,21 +109,14 @@ import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
@@ -131,7 +126,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dumpDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.encryptionSpi;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.invokeCheckCommand;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -348,14 +342,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
         try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
-            File snpDir = new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY);
-            File tmpSnpDir = new File(
-                ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
-                DFLT_SNAPSHOT_TMP_DIR
-            );
+            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
 
-            assertFalse(snpDir + " must created lazily for in-memory node", snpDir.exists());
-            assertFalse(tmpSnpDir + " must created lazily for in-memory node", tmpSnpDir.exists());
+            assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
+            assertFalse(ft.snapshotTempRoot() + " must created lazily for in-memory node", ft.snapshotTempRoot().exists());
         }
     }
 
@@ -387,6 +377,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
+        SnapshotFileTree sft = snapshotFileTree(grid(1), DMP_NAME);
+
         stopAllGrids();
 
         Dump dump = dump(ign, DMP_NAME);
@@ -396,17 +388,15 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         assertNotNull(nodes);
         assertEquals(2, nodes.size());
 
-        File nodeDumpDir = new File(dump.dumpDirectory(), DB_DEFAULT_FOLDER + File.separator + nodes.get(0));
-
-        assertTrue(new File(nodeDumpDir, DUMP_LOCK).createNewFile());
+        assertTrue(sft.dumpLock().createNewFile());
 
         lsnr = LogListener.matches("Found locked dump dir. " +
             "This means, dump creation not finished prior to node fail. " +
-            "Directory will be deleted: " + nodeDumpDir.getAbsolutePath()).build();
+            "Directory will be deleted: " + sft.nodeStorage().getAbsolutePath()).build();
 
         startGridsMultiThreaded(2);
 
-        assertFalse(nodeDumpDir.exists());
+        assertFalse(sft.nodeStorage().exists());
         assertTrue(lsnr.check());
     }
 
@@ -430,10 +420,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             assertNotNull(nodes);
             assertEquals(1, nodes.size());
 
-            File cacheDumpDir = new File(
-                dump.dumpDirectory(),
-                DB_DEFAULT_FOLDER + File.separator + nodes.get(0) + File.separator + CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME
-            );
+            NodeFileTree ft = dump.fileTrees().get(0);
+
+            File cacheDumpDir = ft.cacheStorage(false, DEFAULT_CACHE_NAME);
 
             assertTrue(cacheDumpDir.exists());
 
@@ -448,9 +437,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 })
                 .collect(Collectors.toSet());
 
-            String partDumpName = PART_FILE_PREFIX + 0 + DUMP_FILE_EXT;
+            String partDumpName = SnapshotFileTree.dumpPartFileName(0, false);
 
-            assertTrue(dumpFiles.stream().anyMatch(f -> f.getName().equals(CACHE_DATA_FILENAME)));
+            assertTrue(dumpFiles.stream().anyMatch(NodeFileTree::cacheConfigFile));
             assertTrue(dumpFiles.stream().anyMatch(f -> f.getName().equals(partDumpName)));
 
             try (FileChannel fc = FileChannel.open(Paths.get(cacheDumpDir.getAbsolutePath(), partDumpName), READ, WRITE)) {
@@ -550,7 +539,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         assertContains(
             null,
             out,
-            "Conflict partition: PartitionKeyV2 [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
+            "Conflict partition: PartitionKey [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
                 ", grpName=" + DEFAULT_CACHE_NAME +
                 ", partId=" + corruptedPart + "]"
         );
@@ -639,17 +628,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false
             ).get();
 
+            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
+
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
-                new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY).exists()
+                ft.snapshotsRoot().exists()
             );
 
             assertFalse(
                 "Temporary snapshot directory must created lazily for in-memory node",
-                new File(
-                    ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
-                    DFLT_SNAPSHOT_TMP_DIR
-                ).exists()
+                ft.snapshotTempRoot().exists()
             );
 
             assertTrue(snpDir.exists());
@@ -741,23 +729,15 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         Map<Integer, Long> rawSizes = Arrays
             .stream(new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
-            .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
-            .collect(Collectors.toMap(
-                f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(), f.getName().length() - DUMP_FILE_EXT.length())),
-                File::length
-            ));
+            .filter(f -> !NodeFileTree.cacheConfigFile(f))
+            .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, false)))
+            .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         Map<Integer, Long> zipSizes = Arrays
             .stream(new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
-            .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT + ZIP_SUFFIX)))
-            .collect(Collectors.toMap(
-                f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(),
-                    f.getName().length() - (DUMP_FILE_EXT + ZIP_SUFFIX).length())
-                ),
-                File::length
-            ));
+            .filter(f -> !NodeFileTree.cacheConfigFile(f))
+            .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, true)))
+            .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         assertEquals(parts, rawSizes.keySet().size());
 
@@ -773,10 +753,13 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, parts).forEach(i -> {
             try {
-                String entryName = PART_FILE_PREFIX + i + DUMP_FILE_EXT;
+                String entryName = SnapshotFileTree.dumpPartFileName(i, false);
 
-                File rawFile = new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName);
-                File zipFile = new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName + ZIP_SUFFIX);
+                NodeFileTree rawFt = new NodeFileTree(dumpDirectory(ign, rawDump), id);
+                NodeFileTree zipFt = new NodeFileTree(dumpDirectory(ign, zipDump), id);
+
+                File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), entryName);
+                File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), entryName + ZIP_SUFFIX);
 
                 byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
 

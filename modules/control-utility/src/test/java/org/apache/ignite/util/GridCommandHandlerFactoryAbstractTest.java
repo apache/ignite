@@ -56,7 +56,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -68,6 +67,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.cmdKey;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 
 /** Class to check command execution via all available handlers. */
 @RunWith(Parameterized.class)
@@ -118,6 +118,11 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             throw new IllegalArgumentException("Unknown handler: " + commandHandler);
 
         return CMD_HNDS.get(commandHandler).apply(log);
+    }
+
+    /** */
+    protected boolean cliCommandHandler() {
+        return commandHandler.equals(CLI_CMD_HND);
     }
 
     /** */
@@ -201,7 +206,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             String cmdName = null;
 
             try {
-                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
+                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry(), null);
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 
@@ -281,7 +286,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 return ignite;
 
             for (Ignite node : IgnitionEx.allGrids()) {
-                Integer nodePort = ((IgniteEx)node).localNode().<Integer>attribute(ATTR_REST_TCP_PORT);
+                Integer nodePort = ((IgniteEx)node).localNode().<Integer>attribute(CLIENT_LISTENER_PORT);
 
                 if (nodePort != null && port == nodePort) {
                     this.port = port;
@@ -333,6 +338,8 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** */
     protected int commandHandlerExtraLines() {
-        return commandHandler.equals(CLI_CMD_HND) ? 11 : 0;
+        return CLI_CMD_HND.equals(commandHandler)
+            ? 11
+            : 0;
     }
 }

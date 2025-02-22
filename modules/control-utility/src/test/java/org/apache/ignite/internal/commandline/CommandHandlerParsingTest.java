@@ -419,7 +419,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * Tets checks a parser of shutdown policy command.
+     * Tests checks a parser of shutdown policy command.
      */
     @Test
     public void testParseShutdownPolicyParameters() {
@@ -586,18 +586,13 @@ public class CommandHandlerParsingTest {
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = parseArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
-                "--ping-timeout", "40000", name));
+            args = parseArgs(asList("--port", "12345", "--host", "test-host", name));
 
             assertEquals(cmd.getClass(), args.command().getClass());
             assertEquals("test-host", args.host());
             assertEquals(12345, args.port());
-            assertEquals(5000, args.pingInterval());
-            assertEquals(40000, args.pingTimeout());
 
             assertParseArgsThrows("Can't parse number 'wrong-port'", "--port", "wrong-port", name);
-            assertParseArgsThrows("Invalid value for --ping-interval: -10", "--ping-interval", "-10", name);
-            assertParseArgsThrows("Invalid value for --ping-timeout: -20", "--ping-timeout", "-20", name);
         });
     }
 
@@ -973,7 +968,7 @@ public class CommandHandlerParsingTest {
                 "--group-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "Unexpected value: --some-other-arg"
+            "Please specify a value for argument: --group-names"
         );
 
         GridTestUtils.assertThrows(
@@ -984,7 +979,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "Unexpected value: --some-other-arg"
+            "Please specify a value for argument: --cache-names"
         );
 
         GridTestUtils.assertThrows(
@@ -1344,7 +1339,7 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseArgs(List<String> args) {
-        return new ArgumentParser(setupTestLogger(), new IgniteCommandRegistry()).parseAndValidate(args);
+        return new ArgumentParser(setupTestLogger(), new IgniteCommandRegistry(), null).parseAndValidate(args);
     }
 
     /**

@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.management;
 
+import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
-import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.PreparableCommand;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -51,16 +56,13 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
 
     /** {@inheritDoc} */
     @Override public NoArg execute(
-        @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         DeactivateCommandArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
-        if (cli != null) {
-            GridClientClusterState state = cli.state();
-
-            state.state(INACTIVE, arg.force());
-        }
+    ) {
+        if (client != null)
+            ((ClientClusterImpl)client.cluster()).state(INACTIVE, arg.force());
         else
             ((IgniteClusterEx)ignite.cluster()).state(INACTIVE, arg.force());
 
@@ -76,12 +78,25 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
 
     /** {@inheritDoc} */
     @Override public boolean prepare(
-        @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         DeactivateCommandArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
-        arg.clusterName(cli != null ? cli.state().clusterName() : ((IgniteEx)ignite).context().cluster().clusterName());
+    ) throws Exception {
+        String clusterName;
+
+        if (ignite != null)
+            clusterName = ((IgniteEx)ignite).context().cluster().clusterName();
+        else {
+            ClusterNode node = F.first(CommandUtils.nodes(client, ignite));
+
+            VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, ignite,
+                VisorIdAndTagViewTask.class, null, Collections.singleton(node));
+
+            clusterName = idAndTag.clusterName();
+        }
+
+        arg.clusterName(clusterName);
 
         return true;
     }

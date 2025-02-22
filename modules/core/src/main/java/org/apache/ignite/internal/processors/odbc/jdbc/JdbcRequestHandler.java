@@ -32,11 +32,15 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.ThinProtocolFeature;
@@ -55,13 +59,16 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -75,8 +82,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.NONE_TX;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
@@ -104,11 +114,13 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_END;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_SET_PARAMS;
 
 /**
  * JDBC request handler.
  */
-public class JdbcRequestHandler implements ClientListenerRequestHandler {
+public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientTxSupport {
     /** Jdbc query cancelled response. */
     private static final JdbcResponse JDBC_QUERY_CANCELLED_RESPONSE =
         new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
@@ -173,6 +185,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param qryEngine Name of SQL query engine to use.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
      * @param protocolVer Protocol version.
      * @param connCtx Jdbc connection context.
      */
@@ -190,6 +206,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         @Nullable String qryEngine,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
+        @Nullable TransactionConcurrency concurrency,
+        @Nullable TransactionIsolation isolation,
+        long timeout,
+        @Nullable String lb,
         ClientListenerProtocolVersion protocolVer,
         JdbcConnectionContext connCtx
     ) {
@@ -215,7 +235,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             skipReducerOnUpdate,
             dataPageScanEnabled,
             updateBatchSize,
-            qryEngine
+            qryEngine,
+            concurrency,
+            isolation,
+            timeout,
+            lb
         );
 
         this.busyLock = busyLock;
@@ -281,6 +305,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
+
+        if (req instanceof JdbcClientInfoAwareRequest)
+            cliCtx.applicationAttributes(((JdbcClientInfoAwareRequest)req).clientInfo());
 
         JdbcResponse resp;
         try {
@@ -361,13 +388,18 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     resp = getBinaryType((JdbcBinaryTypeGetRequest)req);
                     break;
 
+                case TX_SET_PARAMS:
+                    resp = setTransactionParameters((JdbcSetTxParametersRequest)req);
+                    break;
+
+                case TX_END:
+                    resp = endTransaction((JdbcTxEndRequest)req);
+                    break;
+
                 default:
                     resp = new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
                         "Unsupported JDBC request [req=" + req + ']');
             }
-
-            if (resp != null)
-                resp.activeTransaction(connCtx.kernalContext().cache().context().tm().inUserTx());
 
             return resp;
         }
@@ -462,7 +494,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     throw new IllegalArgumentException();
             }
 
-            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null));
+            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null, NONE_TX));
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -502,8 +534,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             writer.writeUuid(connCtx.kernalContext().localNodeId());
 
         // Write all features supported by the node.
-        if (protocolVer.compareTo(VER_2_9_0) >= 0)
-            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
+        if (protocolVer.compareTo(VER_2_9_0) >= 0) {
+            JdbcProtocolContext ctx = connCtx.protocolContext();
+
+            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(ctx.features()));
+
+            if (ctx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)) {
+                writer.writeIntArray(TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES.stream()
+                    .mapToInt(TransactionIsolation::ordinal)
+                    .toArray());
+            }
+        }
     }
 
     /**
@@ -616,7 +657,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = querySqlFields(qry, cancel);
+            int txId = txId(req.txId());
+
+            List<FieldsQueryCursor<List<?>>> results = txEnabledForConnection()
+                ? invokeInTransaction(txId, req.autoCommit(), qry, cancel)
+                : querySqlFields(qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -649,11 +694,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (fieldsCur instanceof QueryCursorImpl)
                     partRes = ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult();
 
-                if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
-                            partRes :
-                            null);
+                if (cur.isQuery()) {
+                    res = new JdbcQueryExecuteResult(
+                        cur.cursorId(),
+                        cur.fetchRows(),
+                        !cur.hasNext(),
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ? partRes : null,
+                        txId
+                    );
+                }
                 else {
                     List<List<Object>> items = cur.fetchRows();
 
@@ -662,10 +711,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         "Invalid result set for not-SELECT query. [qry=" + sql +
                             ", res=" + S.toString(List.class, items) + ']';
 
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
-                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
-                            partRes :
-                            null);
+                    res = new JdbcQueryExecuteResult(
+                        cur.cursorId(),
+                        (Long)items.get(0).get(0),
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ? partRes : null,
+                        txId
+                    );
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
@@ -708,7 +759,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     jdbcResults.add(jdbcRes);
                 }
 
-                return resultToResonse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
+                return resultToResonse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last, txId));
             }
         }
         catch (Exception e) {
@@ -744,6 +795,75 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         finally {
             cleanupQueryCancellationMeta(unregisterReq, req.requestId());
         }
+    }
+
+    /**
+     * Invokes {@code qry} inside a transaction with id equals to {@code txId}.
+     */
+    private List<FieldsQueryCursor<List<?>>> invokeInTransaction(
+        int txId,
+        boolean autoCommit,
+        SqlFieldsQueryEx qry,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
+        ClientTxContext txCtx = connCtx.txContext(txId);
+
+        if (txCtx == null)
+            throw new IgniteException("Transaction not found [txId=" + txId + ']');
+
+        boolean err = false;
+
+        try {
+            txCtx.acquire(true);
+
+            return querySqlFields(qry, cancel);
+        }
+        catch (Exception e) {
+            err = true;
+
+            throw e;
+        }
+        finally {
+            try {
+                txCtx.release(true);
+            }
+            catch (Exception e) {
+                log.warning("Failed to release client transaction context", e);
+            }
+
+            if (autoCommit)
+                endTransaction(qry.getTimeout(), txId, !err);
+        }
+    }
+
+    /** @return {@code True} if transaction enabled fro connection, {@code false} otherwise. */
+    private boolean txEnabledForConnection() {
+        return connCtx.protocolContext().isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)
+            && cliCtx.isolation() != null;
+    }
+
+    /** */
+    private int txId(int txId) {
+        if (txId != NONE_TX || !txEnabledForConnection())
+            return txId;
+
+        return startClientTransaction(
+            connCtx,
+            cliCtx.concurrency(),
+            cliCtx.isolation(),
+            cliCtx.transactionTimeout(),
+            cliCtx.transactionLabel()
+        );
+    }
+
+    /** */
+    private void endTransaction(int timeout, int txId, boolean committed) throws IgniteCheckedException {
+        IgniteInternalFuture<IgniteInternalTx> endTxFut = endTxAsync(connCtx, txId, committed);
+
+        if (timeout != -1)
+            endTxFut.get(timeout);
+        else
+            endTxFut.get();
     }
 
     /** */
@@ -1317,6 +1437,42 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
+     * Sets transaction parameters for connection.
+     *
+     * @param req Request
+     * @return resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse setTransactionParameters(JdbcSetTxParametersRequest req) {
+        cliCtx.txParameters(
+            req.concurrency(),
+            req.isolation(),
+            req.timeout(),
+            req.label()
+        );
+
+        return resultToResonse(null);
+    }
+
+    /**
+     * End transaction.
+     *
+     * @param req Request
+     * @return resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse endTransaction(JdbcTxEndRequest req) {
+        try {
+            endTxAsync(connCtx, req.txId(), req.committed()).get();
+
+            return resultToResonse(new JdbcTxEndResult(req.requestId()));
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to end transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
      * Create {@link JdbcResponse} bearing appropriate Ignite specific result code if possible
      *     from given {@link Exception}.
      *
@@ -1325,6 +1481,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse exceptionToResult(Throwable e) {
         return new JdbcResponse(SqlListenerUtils.exceptionToSqlErrorCode(e), e.getMessage());
+    }
+
+    /** {@inheritDoc} */
+    @Override public RuntimeException startTxException(Exception cause) {
+        return cause instanceof RuntimeException ? (RuntimeException)cause : new IgniteException(cause);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RuntimeException transactionNotFoundException() {
+        return new IgniteSQLException("Transaction not found", IgniteQueryErrorCode.QUERY_CANCELED);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RuntimeException endTxException(IgniteCheckedException cause) {
+        return new IgniteSQLException(cause.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED, cause);
     }
 
     /**

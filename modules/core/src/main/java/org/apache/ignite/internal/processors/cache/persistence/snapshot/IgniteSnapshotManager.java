@@ -82,7 +82,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -91,7 +90,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -134,7 +132,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -183,7 +184,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -192,9 +192,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
@@ -202,33 +199,26 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DELTA_IDX_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.DUMP_LOCK;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.INC_SNP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.formatTmpDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -257,26 +247,11 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     implements IgniteSnapshot, PartitionsExchangeAware, MetastorageLifecycleListener, IgniteChangeGlobalStateSupport {
-    /** File with delta pages suffix. */
-    public static final String DELTA_SUFFIX = ".delta";
-
-    /** File with delta pages index suffix. */
-    public static final String DELTA_IDX_SUFFIX = ".idx";
-
-    /** File name template consists of delta pages. */
-    public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
-
-    /** File name template for index delta pages. */
-    public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
-
     /** Text Reason for checkpoint to start snapshot operation. */
     public static final String CP_SNAPSHOT_REASON = "Checkpoint started to enforce snapshot operation: %s";
 
     /** Name prefix for each remote snapshot operation. */
     public static final String RMT_SNAPSHOT_PREFIX = "snapshot_";
-
-    /** Default snapshot directory for loading remote snapshots. */
-    public static final String DFLT_SNAPSHOT_TMP_DIR = "snp";
 
     /** Snapshot in progress error message. */
     public static final String SNP_IN_PROGRESS_ERR_MSG = "Operation rejected due to the snapshot operation in progress.";
@@ -289,12 +264,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Incremental snapshot metrics prefix. */
     public static final String INCREMENTAL_SNAPSHOT_METRICS = metricName("snapshot", "incremental");
-
-    /** Snapshot metafile extension. */
-    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
-
-    /** Snapshot temporary metafile extension. */
-    public static final String SNAPSHOT_METAFILE_TMP_EXT = ".tmp";
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -320,9 +289,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Default value of check flag. */
     public static final boolean DFLT_CHECK_ON_RESTORE = false;
 
-    /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
-    @Deprecated
-    private static final String SNP_RUNNING_KEY = "snapshot-running";
+    /** Snapshot operation start log message. */
+    private static final String SNAPSHOT_STARTED_MSG = "Cluster-wide snapshot operation started: ";
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -351,14 +319,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
 
-    /** Incremental snapshots directory name. */
-    public static final String INC_SNP_DIR = "increments";
-
     /** Pattern for incremental snapshot directory names. */
     public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
-
-    /** Lock file for dump directory. */
-    public static final String DUMP_LOCK = "dump.lock";
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -398,23 +360,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings<?> pdsSettings;
 
+    /** Ignite directories. */
+    private volatile NodeFileTree ft;
+
     /** Fully initialized metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
 
     /** Local snapshot sender factory. */
-    private BiFunction<String, String, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
+    private Function<SnapshotFileTree, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
 
     /** Remote snapshot sender factory. */
     private BiFunction<String, UUID, SnapshotSender> rmtSndrFactory = this::remoteSnapshotSenderFactory;
-
-    /** Main snapshot directory to save created snapshots. */
-    private volatile File locSnpDir;
-
-    /**
-     * Working directory for loaded snapshots from the remote nodes and storing
-     * temporary partition delta-files of locally started snapshot process.
-     */
-    private @Nullable File tmpWorkDir;
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -488,7 +444,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
-        marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
@@ -501,15 +457,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snapshotCacheDir Snapshot directory to store files.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
-     */
-    public static File partDeltaFile(File snapshotCacheDir, int partId) {
-        return new File(snapshotCacheDir, partDeltaFileName(partId));
-    }
-
-    /**
      * Partition delta index file. Represents a sequence of page indexes that written to a delta.
      *
      * @param delta File with delta pages.
@@ -517,16 +464,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static File partDeltaIndexFile(File delta) {
         return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
-    }
-
-    /**
-     * @param partId Partition id.
-     * @return File name of delta partition pages.
-     */
-    public static String partDeltaFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
-
-        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
     }
 
     /** {@inheritDoc} */
@@ -542,16 +479,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         locCfgMgr = cctx.cache().configManager();
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+        ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-        boolean persistenceEnabled = isPersistenceEnabled(cctx.gridConfig());
-
-        if (persistenceEnabled) {
-            tmpWorkDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
-
-            U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+        if (isPersistenceEnabled(cctx.gridConfig())) {
+            ft.mkdirSnapshotsRoot();
+            ft.mkdirSnapshotTempRoot();
         }
-
-        initLocalSnapshotDirectory(persistenceEnabled);
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
@@ -688,10 +621,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             () -> F.flatCollections(F.transform(localSnapshotNames(null), name -> {
                 List<SnapshotView> views = new ArrayList<>();
 
-                for (SnapshotMetadata m: readSnapshotMetadatas(name, null)) {
-                    List<File> dirs = snapshotCacheDirectories(m.snapshotName(), null, m.folderName(), grpName -> true);
+                for (SnapshotMetadata m: readSnapshotMetadatas(new SnapshotFileTree(ctx, name, null))) {
+                    List<File> dirs = snapshotCacheDirectories(
+                        m.snapshotName(),
+                        null,
+                        m.folderName(),
+                        m.consistentId(),
+                        grpName -> true
+                    );
 
-                    Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
+                    Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
 
                     views.add(new SnapshotView(m, cacheGrps));
                 }
@@ -703,7 +642,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             })),
             Function.identity());
 
-        File[] files = locSnpDir.listFiles();
+        File[] files = ft.snapshotsRoot().listFiles();
 
         if (files != null) {
             Arrays.stream(files)
@@ -773,40 +712,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpDir Snapshot dir.
-     * @param pdsSettings PDS settings.
      */
-    public void deleteSnapshot(File snpDir, PdsFolderSettings<?> pdsSettings) {
+    public void deleteSnapshot(File snpDir) {
         if (!snpDir.exists())
             return;
 
         if (!snpDir.isDirectory())
             return;
 
-        String folderName = pdsSettings.folderName();
-
         try {
-            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
-            File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
-            File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
+            SnapshotFileTree sft = new SnapshotFileTree(
+                cctx.kernalContext(),
+                snpDir.getName(),
+                snpDir.getParent(),
+                pdsSettings.folderName(),
+                pdsSettings.consistentId().toString());
 
-            U.delete(binDir);
-            U.delete(nodeDbDir);
-            U.delete(smf);
+            U.delete(sft.binaryMeta());
+            U.delete(sft.nodeStorage());
+            U.delete(sft.meta());
 
-            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+            deleteDirectory(sft.binaryMetaRoot());
+            deleteDirectory(sft.marshaller());
 
-            deleteDirectory(marshDir);
-
-            File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
-            File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
-
-            deleteDirectory(binMetadataDfltDir);
-            deleteDirectory(marshallerDfltDir);
-
-            File db = new File(snpDir, DB_DEFAULT_FOLDER);
-
-            db.delete();
-            snpDir.delete();
+            // Delete parent dir which is {snapshot_root}/db if empty.
+            sft.marshaller().getParentFile().delete();
+            // Delete root dir which is {snapshot_root} if empty.
+            sft.root().delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -839,98 +771,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
-     * @return Local snapshot directory for snapshot with given name.
-     */
-    public File snapshotLocalDir(String snpName) {
-        return snapshotLocalDir(snpName, null);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @return Local snapshot directory where snapshot files are located.
-     */
-    public File snapshotLocalDir(String snpName, @Nullable String snpPath) {
-        assert locSnpDir != null;
-        assert U.alphanumericUnderscore(snpName) : snpName;
-
-        return snpPath == null ? new File(locSnpDir, snpName) : new File(snpPath, snpName);
-    }
-
-    /**
-     * Returns path to specific incremental snapshot.
-     * For example, {@code "work/snapshots/mybackup/increments/0000000000000001"}.
-     *
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @param incIdx Increment index.
-     * @return Local snapshot directory where snapshot files are located.
-     */
-    public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
-        return new File(incrementalSnapshotsLocalRootDir(snpName, snpPath), U.fixedLengthNumberName(incIdx, null));
-    }
-
-    /**
-     * Returns root folder for incremental snapshot.
-     * For example, {@code "work/snapshots/mybackup/increments/"}.
-     *
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @return Local snapshot directory where snapshot files are located.
-     */
-    public File incrementalSnapshotsLocalRootDir(String snpName, @Nullable String snpPath) {
-        return new File(snapshotLocalDir(snpName, snpPath), INC_SNP_DIR);
-    }
-
-    /**
-     * @param incSnpDir Incremental snapshot directory.
-     * @param consId Consistent ID.
-     * @return WALs directory for specified incremental snapshot.
-     */
-    public static File incrementalSnapshotWalsDir(File incSnpDir, String consId) {
-        String folderName = U.maskForFileName(consId);
-
-        return incSnpDir.toPath().resolve(DFLT_WAL_PATH).resolve(folderName).toFile();
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @return Local snapshot directory for snapshot with given name.
-     * @throws IgniteCheckedException If directory doesn't exist.
-     */
-    private File resolveSnapshotDir(String snpName, @Nullable String snpPath) throws IgniteCheckedException {
-        File snpDir = snapshotLocalDir(snpName, snpPath);
-
-        if (!snpDir.exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
-
-        return snpDir;
-    }
-
-    /**
-     * @return Node snapshot working directory.
-     */
-    public File snapshotTmpDir() {
-        assert tmpWorkDir != null;
-
-        return tmpWorkDir;
-    }
-
-    /** */
-    private void initLocalSnapshotDirectory(boolean create) {
-        try {
-            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config(), create);
-
-            if (create)
-                U.ensureDirectory(locSnpDir, "snapshot work directory", log);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
      */
@@ -941,6 +781,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
+
+        req.snapshotFileTree(new SnapshotFileTree(cctx.kernalContext(), req.snapshotName(), req.snapshotPath()));
 
         clusterSnpReq = req;
 
@@ -988,12 +830,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotMetadata meta;
 
             try {
-                meta = readSnapshotMetadata(new File(
-                    snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                    snapshotMetaFileName(cctx.localNode().consistentId().toString())
-                ));
+                meta = readSnapshotMetadata(req.snapshotFileTree().meta());
 
-                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
+                checkIncrementalCanBeCreated(req.snapshotFileTree(), meta);
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
@@ -1048,7 +887,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest req,
         SnapshotMetadata meta
     ) {
-        File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
+        SnapshotFileTree sft = req.snapshotFileTree();
+        IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(req.incrementIndex());
         WALPointer lowPtr;
 
         if (req.incrementIndex() == 1)
@@ -1059,7 +899,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             IncrementalSnapshotMetadata prevIncSnpMeta;
 
             try {
-                prevIncSnpMeta = readIncrementalSnapshotMetadata(req.snapshotName(), req.snapshotPath(), prevIdx);
+                prevIncSnpMeta = readIncrementalSnapshotMetadata(sft.incrementalSnapshotFileTree(prevIdx).meta());
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
@@ -1073,15 +913,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.operationalNodeId(),
             req.requestId(),
             meta,
-            req.snapshotPath(),
-            req.incrementIndex(),
+            ift,
             lowPtr,
             markWalFut
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
 
-            assert incSnpDir.exists() : "Incremental snapshot directory must exists";
+            assert ift.root().exists() : "Incremental snapshot directory must exists";
 
             IncrementalSnapshotMetadata incMeta = new IncrementalSnapshotMetadata(
                 req.requestId(),
@@ -1089,13 +928,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
+                clusterSnpReq.startTime(),
                 markWalFut.result()
             );
 
-            storeSnapshotMeta(
-                incMeta,
-                new File(incSnpDir, snapshotMetaFileName(pdsSettings.folderName()))
-            );
+            storeSnapshotMeta(incMeta, ift.meta());
 
             return new SnapshotOperationResponse();
         });
@@ -1121,7 +958,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
             }
 
-            writeSnapshotDirectoryToMetastorage(incSnpDir);
+            writeSnapshotDirectoryToMetastorage(ift.root());
 
             task.start();
         });
@@ -1130,20 +967,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Full snapshot name.
-     * @param snpPath Optional path to snapshot, if differs from default.
-     * @param incIdx Index of incremental snapshot.
+     * @param meta Meta file.
      * @return Read incremental snapshot metadata.
      */
-    public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(
-        String snpName,
-        @Nullable String snpPath,
-        int incIdx
-    ) throws IgniteCheckedException, IOException {
-        return readFromFile(new File(
-            incrementalSnapshotLocalDir(snpName, snpPath, incIdx),
-            snapshotMetaFileName(pdsSettings.folderName())
-        ));
+    public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(File meta) throws IgniteCheckedException, IOException {
+        return readFromFile(meta);
     }
 
     /**
@@ -1160,7 +988,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean withMetaStorage
     ) {
         if (!isPersistenceEnabled(cctx.gridConfig()) && req.snapshotPath() == null)
-            initLocalSnapshotDirectory(true);
+            ft.mkdirSnapshotsRoot();
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
@@ -1189,8 +1017,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<?> task0 = registerSnapshotTask(req.snapshotName(),
-            req.snapshotPath(),
+        IgniteInternalFuture<?> task0 = registerSnapshotTask(
+            req.snapshotFileTree(),
             req.operationalNodeId(),
             req.requestId(),
             parts,
@@ -1198,7 +1026,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.dump(),
             req.compress(),
             req.encrypt(),
-            locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
+            locSndrFactory.apply(req.snapshotFileTree())
         );
 
         if (withMetaStorage) {
@@ -1217,9 +1045,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
-
-                snpDir.mkdirs();
+                req.snapshotFileTree().root().mkdirs();
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
@@ -1234,6 +1060,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
+                    clusterSnpReq.startTime(),
                     comprGrpIds,
                     blts,
                     res.parts(),
@@ -1244,16 +1071,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), req.snapshotFileTree(),
                     req.streamerWarning(), true);
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                storeSnapshotMeta(req.meta(), req.snapshotFileTree().meta());
 
-                storeSnapshotMeta(req.meta(), smf);
-
-                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                log.info("Snapshot metafile has been created: " + req.snapshotFileTree().meta().getAbsolutePath());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -1437,9 +1262,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     snpReq.error(req.error());
 
                     if (req.incremental())
-                        U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
+                        U.delete(snpReq.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex()).root());
                     else
-                        deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings);
+                        deleteSnapshot(snpReq.snapshotFileTree().root());
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -1451,8 +1276,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     storeWarnings(snpReq);
                 }
 
-                if (req.dump())
-                    removeDumpLock(req.snapshotName());
+                if (req.dump()) {
+                    if (!U.delete(snpReq.snapshotFileTree().dumpLock()))
+                        throw new IgniteCheckedException("Lock file can't be deleted: " + snpReq.snapshotFileTree().dumpLock());
+                }
                 else {
                     removeLastMetaStorageKey();
 
@@ -1489,10 +1316,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!oldestBaseline)
             return;
 
-        File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
-        File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
-            SNAPSHOT_METAFILE_TMP_EXT);
-        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+        File tempSmf = snpReq.snapshotFileTree().tmpMeta();
+        File smf = snpReq.snapshotFileTree().meta();
 
         try {
             storeSnapshotMeta(snpReq.meta(), tempSmf);
@@ -1560,6 +1385,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
                 }
                 else if (snpReq.error() == null) {
+                    log.warning("Snapshot error: ", snpReq.error());
+
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
                         "[fail=" + endFail + ", err=" + err + ']'));
@@ -1664,11 +1491,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
-        if (locSnpDir == null)
+        if (ft == null)
             return Collections.emptyList();
 
         synchronized (snpOpMux) {
-            File[] dirs = (snpPath == null ? locSnpDir : new File(snpPath)).listFiles(File::isDirectory);
+            File[] dirs = (snpPath == null ? ft.snapshotsRoot() : new File(snpPath)).listFiles(File::isDirectory);
 
             if (dirs == null)
                 return Collections.emptyList();
@@ -1689,7 +1516,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
         synchronized (snpOpMux) {
-            File[] incDirs = incrementalSnapshotsLocalRootDir(snpName, snpPath).listFiles(File::isDirectory);
+            File[] incDirs = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath).incrementsRoot().listFiles(File::isDirectory);
 
             if (incDirs == null)
                 return 0;
@@ -1923,22 +1750,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param names Cache group names to filter.
      * @return The list of cache or cache group names in given snapshot on local node.
      */
-    public List<File> snapshotCacheDirectories(String snpName, @Nullable String snpPath, String folderName, Predicate<String> names) {
-        File snpDir = snapshotLocalDir(snpName, snpPath);
+    public List<File> snapshotCacheDirectories(
+        String snpName,
+        @Nullable String snpPath,
+        String folderName,
+        String consId,
+        Predicate<String> names
+    ) {
+        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
 
-        if (!snpDir.exists())
+        if (!sft.root().exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), names);
-    }
-
-    /**
-     * @param snpDir The full path to the snapshot files.
-     * @param consId Node consistent id to read metadata for.
-     * @return Snapshot metadata instance.
-     */
-    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
-        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
+        return sft.cacheDirectories(names);
     }
 
     /**
@@ -1974,19 +1798,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
+     * Note, there can be snapshots from other nodes.
+     * This method will read all metadata.
+     * Some instances can return {@link SnapshotMetadata#folderName()} and {@link SnapshotMetadata#consistentId()} that differs from local.
+     *
+     * @param sft Snapshot file tree.
      * @return List of snapshot metadata for the given snapshot name on local node.
      * If snapshot has been taken from local node the snapshot metadata for given
      * local node will be placed on the first place.
      */
-    public List<SnapshotMetadata> readSnapshotMetadatas(String snpName, @Nullable String snpPath) {
-        A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
-        A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
-
-        File snpDir = snapshotLocalDir(snpName, snpPath);
-
-        return snpChecker.readSnapshotMetadatas(snpDir, cctx.localNode().consistentId());
+    public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft) {
+        return snpChecker.readSnapshotMetadatas(sft, cctx.localNode().consistentId());
     }
 
     /**
@@ -1994,7 +1816,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Collection of incremental snapshots metafiles.
      */
     public Collection<IncrementalSnapshotMetadata> readIncrementalSnapshotMetadatas(String snpName) {
-        File[] incDirs = incrementalSnapshotsLocalRootDir(snpName, null)
+        File[] incDirs = new SnapshotFileTree(cctx.kernalContext(), snpName, null).incrementsRoot()
             .listFiles((dir, name) -> INC_SNP_NAME_PATTERN.matcher(name).matches());
 
         if (incDirs == null)
@@ -2004,7 +1826,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             for (File incDir: incDirs) {
-                for (File metaFile: incDir.listFiles((dir, name) -> name.endsWith(SNAPSHOT_METAFILE_EXT)))
+                for (File metaFile: incDir.listFiles(SnapshotFileTree::snapshotMetaFile))
                     metas.add(readFromFile(metaFile));
             }
         }
@@ -2080,9 +1902,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
-
-            if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
-                throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
@@ -2199,25 +2018,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
-            startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
-                snpFut0.rqId,
-                cctx.localNodeId(),
-                name,
-                snpPath,
-                grps,
-                bltNodeIds,
-                incremental,
-                incIdx,
-                onlyPrimary,
-                dump,
-                compress,
-                encrypt
-            ));
+            SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
+                    snpFut0.rqId,
+                    cctx.localNodeId(),
+                    name,
+                    snpPath,
+                    grps,
+                    bltNodeIds,
+                    incremental,
+                    incIdx,
+                    onlyPrimary,
+                    dump,
+                    compress,
+                    encrypt
+            );
 
-            String msg =
-                "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
-                    (incremental ? "" : (", incremental=true, incrementIndex=" + incIdx)) +
-                ']';
+            startSnpProc.start(snpFut0.rqId, snpOpReq);
+
+            String msg = SNAPSHOT_STARTED_MSG + snpOpReq;
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
 
@@ -2340,27 +2158,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         restoreCacheGrpProc.cleanup();
 
         // Snapshot which has not been completed due to the local node crashed must be deleted.
-        String snpName = (String)metaStorage.read(SNP_RUNNING_KEY);
-        String snpDirName = snpName == null ? (String)metaStorage.read(SNP_RUNNING_DIR_KEY) : null;
+        String snpDirName = (String)metaStorage.read(SNP_RUNNING_DIR_KEY);
 
-        File snpDir = snpName != null
-            ? snapshotLocalDir(snpName, null)
-            : snpDirName != null
-                ? new File(snpDirName)
-                : null;
-
-        if (snpDir == null)
+        if (snpDirName == null)
             return;
+
+        File snpDir = new File(snpDirName);
 
         recovered = true;
 
-        for (File tmp : snapshotTmpDir().listFiles())
+        for (File tmp : ft.snapshotTempRoot().listFiles())
             U.delete(tmp);
 
         if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(snpDir);
         else
-            deleteSnapshot(snpDir, pdsSettings);
+            deleteSnapshot(snpDir);
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
@@ -2441,9 +2254,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']');
         }
 
-        if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
-            throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
-
         RemoteSnapshotFilesRecevier fut =
             new RemoteSnapshotFilesRecevier(this, rmtNodeId, reqId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
 
@@ -2487,7 +2297,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(
+        GridKernalContext ctx,
         String grpName,
         int partId,
         FilePageStore pageStore,
@@ -2501,44 +2312,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
-     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
-     * @param grpName Cache group name.
+     * @param ccfg Cache configuration.
      * @param partId Partition id.
      * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
-        String folderName,
-        String grpName,
+        CacheConfiguration<?, ?> ccfg,
         int partId,
         @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
-        File snpDir = resolveSnapshotDir(snpName, null);
+        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, null);
 
-        File nodePath = new File(snpDir, databaseRelativePath(folderName));
+        if (!sft.root().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
 
-        if (!nodePath.exists())
-            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + nodePath.getAbsolutePath());
+        if (!sft.nodeStorage().exists())
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
 
-        List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
+        File snpPart = sft.partitionFile(ccfg, partId);
 
-        if (F.isEmpty(grps)) {
-            throw new IgniteCheckedException(
-                "The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']'
-            );
-        }
-
-        if (grps.size() > 1) {
-            throw new IgniteCheckedException(
-                "The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() +
-                    ", grpName=" + grpName + ']'
-            );
-        }
-
-        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName, null), databaseRelativePath(folderName)),
-            grps.get(0).getName(), partId);
-
+        String grpName = CU.cacheOrGroupName(ccfg);
         int grpId = CU.cacheId(grpName);
 
         FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
@@ -2569,8 +2364,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Unique snapshot name.
-     * @param snpPath Snapshot path.
+     * @param sft Snapshot file tree.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param reqId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -2582,8 +2376,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
-        String snpName,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         UUID srcNodeId,
         UUID reqId,
         Map<Integer, Set<Integer>> parts,
@@ -2593,12 +2386,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean encrypt,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
+        AbstractSnapshotFutureTask<?> task = registerTask(sft.name(), dump
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
                 reqId,
-                snpName,
-                snapshotLocalDir(snpName, snpPath),
+                sft,
                 ioFactory,
                 transferRateLimiter,
                 snpSndr,
@@ -2606,7 +2398,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 compress,
                 encrypt
             )
-            : new SnapshotFutureTask(cctx, srcNodeId, reqId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+            : new SnapshotFutureTask(
+                cctx,
+                srcNodeId,
+                reqId,
+                sft,
+                ft,
+                ioFactory,
+                snpSndr,
+                parts,
+                withMetaStorage,
+                locBuff
+            )
+        );
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -2676,14 +2480,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param factory Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    void localSnapshotSenderFactory(BiFunction<String, String, SnapshotSender> factory) {
+    void localSnapshotSenderFactory(Function<SnapshotFileTree, SnapshotSender> factory) {
         locSndrFactory = factory;
     }
 
     /**
      * @return Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    BiFunction<String, String, SnapshotSender> localSnapshotSenderFactory() {
+    Function<SnapshotFileTree, SnapshotSender> localSnapshotSenderFactory() {
         return locSndrFactory;
     }
 
@@ -2730,27 +2534,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             metaStorage.remove(SNP_RUNNING_DIR_KEY);
-            metaStorage.remove(SNP_RUNNING_KEY);
         }
         finally {
             cctx.database().checkpointReadUnlock();
         }
-    }
-
-    /** */
-    private void removeDumpLock(String dumpName) throws IgniteCheckedException {
-        File lock = new File(nodeDumpDirectory(snapshotLocalDir(dumpName, null), cctx), DUMP_LOCK);
-
-        if (!lock.exists())
-            return;
-
-        if (!lock.delete())
-            throw new IgniteCheckedException("Lock file can't be deleted: " + lock);
-    }
-
-    /** */
-    public static File nodeDumpDirectory(File dumpDir, GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
-        return new File(dumpDir, databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()));
     }
 
     /**
@@ -2869,29 +2656,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param cfg Ignite configuration.
-     * @return Snapshot directory resolved through given configuration.
-     */
-    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
-        return resolveSnapshotWorkDirectory(cfg, true);
-    }
-
-    /**
-     * @param cfg Ignite configuration.
-     * @param create If {@code true} then create resolved directory if not exists.
-     * @return Snapshot directory resolved through given configuration.
-     */
-    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg, boolean create) {
-        try {
-            return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
-                cfg.getSnapshotPath(), false, create);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
      * @param factory Factory to produce FileIO access.
      * @param from Copy from file.
      * @param to Copy data to file.
@@ -2971,28 +2735,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Checks that incremental snapshot can be created for given full snapshot and current cluster state.
      *
-     * @param name Full snapshot name.
-     * @param snpPath Snapshot path.
+     * @param sft Snapshot file tree.
      * @param meta Full snapshot metadata.
      */
     private void checkIncrementalCanBeCreated(
-        String name,
-        @Nullable String snpPath,
+        SnapshotFileTree sft,
         SnapshotMetadata meta
     ) throws IgniteCheckedException, IOException {
-        File snpDir = snapshotLocalDir(name, snpPath);
-
         IgniteWriteAheadLogManager wal = cctx.wal();
 
         if (wal == null)
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
 
-        File archiveDir = wal.archiveDir();
-
-        if (archiveDir == null)
+        if (!ft.walArchiveEnabled())
             throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
-        ensureHardLinkAvailable(archiveDir.toPath(), snpDir.toPath());
+        ensureHardLinkAvailable(ft.walArchive().toPath(), sft.root().toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()
@@ -3006,7 +2764,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        File rootSnpCachesDir = new File(snpDir, databaseRelativePath(meta.folderName()));
+        assert Objects.equals(sft.consistentId(), meta.consistentId()) : sft.consistentId() + " != " + meta.consistentId();
+        assert Objects.equals(sft.folderName(), meta.folderName()) : sft.folderName() + " != " + meta.folderName();
 
         for (int grpId : meta.cacheGroupIds()) {
             if (grpId == METASTORAGE_CACHE_ID)
@@ -3029,29 +2788,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Encrypted cache groups not supported [groupId=" + grpId + ']');
             }
 
-            List<File> snpCacheDir =
-                cacheDirectories(rootSnpCachesDir, grpName -> gctx.cacheOrGroupName().equals(grpName));
+            File snpCacheDir = sft.cacheStorage(gctx.config());
 
-            if (snpCacheDir.isEmpty()) {
+            if (!snpCacheDir.exists()) {
                 throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
                     "Cache group directory not found [groupId=" + grpId + ']');
             }
 
-            assert snpCacheDir.size() == 1 : "Single snapshot cache directory must be found";
-
-            for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir.get(0))) {
+            for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir)) {
                 StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
                     snpDataFile,
-                    MarshallerUtils.jdkMarshaller(cctx.kernalContext().igniteInstanceName()),
+                    cctx.kernalContext().marshallerContext().jdkMarshaller(),
                     cctx.kernalContext().config()
                 );
 
                 byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
 
-                File nodeDataFile = new File(snpDataFile.getAbsolutePath().replace(
-                    rootSnpCachesDir.getAbsolutePath(),
-                    pdsSettings.persistentStoreNodePath().getAbsolutePath()
-                ));
+                File nodeDataFile = ft.cacheConfigurationFile(snpCacheData.config());
 
                 if (!nodeDataFile.exists()) {
                     throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
@@ -3512,7 +3265,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), this.reqId);
+            dir = Paths.get(snpMgr.ft.snapshotTempRoot().getAbsolutePath(), this.reqId);
             initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;
@@ -3722,7 +3475,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (msg instanceof SnapshotFilesRequestMessage) {
                     SnapshotFilesRequestMessage reqMsg0 = (SnapshotFilesRequestMessage)msg;
                     String rqId = reqMsg0.id();
-                    String snpName = reqMsg0.snapshotName();
 
                     try {
                         synchronized (this) {
@@ -3741,8 +3493,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             new SnapshotResponseRemoteFutureTask(cctx,
                                 nodeId,
                                 reqMsg0.requestId(),
-                                snpName,
-                                reqMsg0.snapshotPath(),
+                                new SnapshotFileTree(cctx.kernalContext(), reqMsg0.snapshotName(), reqMsg0.snapshotPath()),
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 
@@ -3859,15 +3610,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File cacheDir = FilePageStoreManager.cacheWorkDir(storeMgr.workDir(), cacheDirName);
+                U.mkdirs(ft.tmpCacheStorage(cacheDirName));
 
-                File tmpCacheDir = U.resolveWorkDirectory(storeMgr.workDir().getAbsolutePath(),
-                    formatTmpDirName(cacheDir).getName(), false);
-
-                return Paths.get(tmpCacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                return ft.tmpPartition(cacheDirName, partId).getAbsolutePath();
             }
             finally {
                 busyLock.leaveBusy();
@@ -3965,7 +3710,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been sent [part=" + part.getName() + ", pair=" + pair +
-                        ", grpName=" + cacheGroupName(new File(cacheDirName)) + ", length=" + len + ']');
+                        ", grpName=" + cacheName(new File(cacheDirName)) + ", length=" + len + ']');
                 }
             }
             catch (TransmissionCancelledException e) {
@@ -4024,11 +3769,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Snapshot sender which writes all data to local directory.
      */
     private class LocalSnapshotSender extends SnapshotSender {
-        /** Local snapshot directory. */
-        private final File snpLocDir;
-
-        /** Local node snapshot directory calculated on snapshot directory. */
-        private File dbDir;
+        /** Snapshot file tree. */
+        private final SnapshotFileTree sft;
 
         /** Size of page. */
         private final int pageSize;
@@ -4038,29 +3780,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             sequentialWrite() ? DeltaSortedIterator::new : DeltaIterator::new;
 
         /**
-         * @param snpName Snapshot name.
-         * @param snpPath Snapshot directory path.
+         * @param sft Snapshot file tree.
          */
-        public LocalSnapshotSender(String snpName, @Nullable String snpPath) {
+        public LocalSnapshotSender(SnapshotFileTree sft) {
             super(IgniteSnapshotManager.this.log, cctx.kernalContext().pools().getSnapshotExecutorService());
 
-            snpLocDir = snapshotLocalDir(snpName, snpPath);
+            this.sft = sft;
             pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
         }
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            dbDir = new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
-
-            if (dbDir.exists()) {
+            if (sft.nodeStorage().exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +
-                    "[snpName=" + snpLocDir.getName() + ", absPath=" + dbDir.getAbsolutePath() + ']');
+                    "[snpName=" + sft.root().getName() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
             }
 
-            writeSnapshotDirectoryToMetastorage(snpLocDir);
+            writeSnapshotDirectoryToMetastorage(sft.root());
 
             try {
-                U.ensureDirectory(dbDir, "snapshot work directory for a local snapshot sender", log);
+                U.ensureDirectory(sft.nodeStorage(), "snapshot work directory for a local snapshot sender", log);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -4069,10 +3808,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public void sendCacheConfig0(File ccfg, String cacheDirName) {
-            assert dbDir != null;
-
             try {
-                File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
+                File cacheDir = sft.cacheStorage(cacheDirName);
+
+                U.mkdirs(cacheDir);
 
                 File targetCacheCfg = new File(cacheDir, ccfg.getName());
 
@@ -4101,7 +3840,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
 
             try {
-                saveMappings(cctx.kernalContext(), mappings, snpLocDir);
+                saveMappings(cctx.kernalContext(), mappings, sft.root());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -4113,7 +3852,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (types == null)
                 return;
 
-            cctx.kernalContext().cacheObjects().saveMetadata(types, snpLocDir);
+            cctx.kernalContext().cacheObjects().saveMetadata(types, sft.root());
         }
 
         /** {@inheritDoc} */
@@ -4122,7 +3861,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (len == 0)
                     return;
 
-                File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
+                File cacheDir = sft.cacheStorage(cacheDirName);
+
+                U.mkdirs(cacheDir);
 
                 File snpPart = new File(cacheDir, part.getName());
 
@@ -4132,19 +3873,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 copy(ioFactory, part, snpPart, len, transferRateLimiter);
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
+                    log.debug("Partition has been snapshot [snapshotDir=" + sft.nodeStorage().getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
                         ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }
             }
-            catch (IOException | IgniteCheckedException ex) {
+            catch (IOException ex) {
                 throw new IgniteException(ex);
             }
         }
 
         /** {@inheritDoc} */
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-            File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
+            File snpPart = sft.partitionFile(cacheDirName, pair.getPartitionId());
 
             if (log.isDebugEnabled()) {
                 log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
@@ -4183,10 +3924,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override protected void close0(@Nullable Throwable th) {
             if (th == null) {
                 if (log.isInfoEnabled())
-                    log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + dbDir + ']');
+                    log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteSnapshot(snpLocDir, pdsSettings);
+                deleteSnapshot(sft.root());
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

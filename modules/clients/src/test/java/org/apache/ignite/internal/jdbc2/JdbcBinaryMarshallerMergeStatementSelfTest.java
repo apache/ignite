@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * JDBC test of MERGE statement w/binary marshaller - no nodes know about classes.
@@ -28,11 +26,6 @@ public class JdbcBinaryMarshallerMergeStatementSelfTest extends JdbcMergeStateme
     /** {@inheritDoc} */
     @Override protected String getCfgUrl() {
         return BASE_URL_BIN;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setMarshaller(new BinaryMarshaller());
     }
 
     /** {@inheritDoc} */

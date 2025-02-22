@@ -63,8 +63,6 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setMarshaller(null);
-
         if (getTestIgniteInstanceName(3).equals(igniteInstanceName))
             cfg.setClassLoader(extClassLoader);
 

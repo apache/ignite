@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,11 +57,13 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     protected volatile CompletableFuture<Void> closeFut;
 
+    /** Snapshot file tree. */
+    protected final SnapshotFileTree sft;
+
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param snpName Snapshot name.
      * @param snpSndr Factory which produces snapshot sender instance.
      * @param parts Partitions to be processed.
      */
@@ -68,11 +71,13 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String snpName,
+        SnapshotFileTree sft,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, sft.name(), snpSndr, parts);
+
+        this.sft = sft;
     }
 
     /** */

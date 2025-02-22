@@ -46,7 +46,10 @@ public class CacheIdleVerifyCommand
 
     /** */
     public CacheIdleVerifyCommand() {
-        super(new CacheIdleVerifyDumpCommand());
+        super(
+            new CacheIdleVerifyDumpCommand(),
+            new CacheIdleVerifyCancelCommand()
+        );
     }
 
     /** {@inheritDoc} */
@@ -67,8 +70,8 @@ public class CacheIdleVerifyCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<IdleVerifyTaskV2> taskClass() {
-        return IdleVerifyTaskV2.class;
+    @Override public Class<IdleVerifyTask> taskClass() {
+        return IdleVerifyTask.class;
     }
 
     /** {@inheritDoc} */

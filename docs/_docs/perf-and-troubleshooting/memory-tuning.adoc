@@ -101,7 +101,6 @@ The settings below are a good starting point if 10GB heap is more than enough fo
 -XX:+AlwaysPreTouch
 -XX:+UseG1GC
 -XX:+ScavengeBeforeFullGC
--XX:+DisableExplicitGC
 ----
 
 If G1 does not work for you, consider using CMS collector and starting with the following settings.
@@ -119,7 +118,6 @@ Note that 10GB heap is used as an example and a smaller heap can be enough for y
 -XX:+CMSPermGenSweepingEnabled
 -XX:+ScavengeBeforeFullGC
 -XX:+CMSScavengeBeforeRemark
--XX:+DisableExplicitGC
 ----
 
 [NOTE]

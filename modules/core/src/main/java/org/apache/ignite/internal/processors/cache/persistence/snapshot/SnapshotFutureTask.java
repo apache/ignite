@@ -56,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -72,11 +74,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 
 /**
@@ -94,8 +93,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /** Local buffer to perform copy-on-write operations for {@link PageStoreSerialWriter}. */
     private final ThreadLocal<ByteBuffer> locBuff;
 
-    /** Snapshot working directory on file system. */
-    private final File tmpSnpWorkDir;
+    /** Node file tree. */
+    private final NodeFileTree ft;
 
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
@@ -130,9 +129,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /** Future to wait until checkpoint mark phase will be finished and snapshot tasks scheduled. */
     private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
 
-    /** Absolute path to save intermediate results of cache partitions of this node. */
-    private volatile File tmpConsIdDir;
-
     /** Pointer to {@link ClusterSnapshotRecord}. */
     private volatile @Nullable WALPointer snpPtr;
 
@@ -153,8 +149,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param snpName Unique identifier of snapshot process.
-     * @param tmpWorkDir Working directory for intermediate snapshot results.
+     * @param sft Snapshot file tree.
+     * @param ft Node file tree.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
@@ -164,15 +160,15 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String snpName,
-        File tmpWorkDir,
+        SnapshotFileTree sft,
+        NodeFileTree ft,
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, sft, snpSndr, parts);
 
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
@@ -180,7 +176,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
-        this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
+        this.ft = ft;
         this.ioFactory = ioFactory;
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
@@ -209,16 +205,15 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         snpSndr.close(err);
 
-        if (tmpConsIdDir != null)
-            U.delete(tmpConsIdDir);
+        U.delete(sft.tempFileTree().nodeStorage());
 
         // Delete snapshot directory if no other files exists.
         try {
-            if (U.fileCount(tmpSnpWorkDir.toPath()) == 0 || err != null)
-                U.delete(tmpSnpWorkDir.toPath());
+            if (U.fileCount(sft.tempFileTree().root().toPath()) == 0 || err != null)
+                U.delete(sft.tempFileTree().root().toPath());
         }
         catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpSnpWorkDir + ']');
+            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + sft.tempFileTree().root() + ']');
         }
 
         if (err != null)
@@ -247,9 +242,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             if (!started.compareAndSet(false, true))
                 return false;
 
-            tmpConsIdDir = U.resolveWorkDirectory(tmpSnpWorkDir.getAbsolutePath(),
-                databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()),
-                false);
+            U.mkdirs(sft.tempFileTree().nodeStorage());
 
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
@@ -261,13 +254,13 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
+                U.ensureDirectory(sft.tempFileTree().cacheStorage(gctx.config()),
                     "directory for snapshotting cache group",
                     log);
             }
 
             if (withMetaStorage) {
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
+                U.ensureDirectory(sft.tempFileTree().cacheStorage(METASTORAGE_DIR_NAME),
                     "directory for snapshotting metastorage",
                     log);
             }
@@ -351,19 +344,19 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), FilePageStoreManager.cacheDirName(gctx.config()));
+                addPartitionWriters(grpId, e.getValue(), ft.cacheDirName(gctx.config()));
             }
 
             if (withMetaStorage) {
                 processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS);
 
                 addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS,
-                    MetaStorage.METASTORAGE_DIR_NAME);
+                    METASTORAGE_DIR_NAME);
             }
 
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
-                    FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
+                    ft.cacheDirName(ccfg), ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -396,7 +389,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException {
-        String cacheDirName = pageStore.cacheDirName(grpId);
+        String cacheDirName = cacheDirName(grpId);
 
         // Process partitions for a particular cache group.
         return grpParts.stream().map(partId -> {
@@ -408,7 +401,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             return runAsync(() -> {
                 snpSndr.sendPart(
-                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                    ft.partitionFile(cacheDirName, partId),
                     cacheDirName,
                     pair,
                     partLen);
@@ -475,7 +468,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
-            File delta = partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId);
+            File delta = sft.partDeltaFile(dirName, partId);
 
             partDeltaWriters.put(pair, deltaWriterFactory.apply(store, delta, encGrpId));
 
@@ -524,6 +517,23 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())));
+    }
+
+    /**
+     * @param grpId Group id.
+     * @return Name of cache group directory.
+     * @throws IgniteCheckedException If cache group doesn't exist.
+     */
+    private String cacheDirName(int grpId) throws IgniteCheckedException {
+        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
+            return METASTORAGE_DIR_NAME;
+
+        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+
+        if (gctx == null)
+            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
+
+        return ft.cacheDirName(gctx.config());
     }
 
     /** {@inheritDoc} */
@@ -619,7 +629,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (sent || fromTemp)
                     return;
 
-                File cacheWorkDir = cacheWorkDir(tmpSnpWorkDir, cacheDirName);
+                File cacheWorkDir = sft.tempFileTree().cacheStorage(cacheDirName);
 
                 if (!U.mkdirs(cacheWorkDir))
                     throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);

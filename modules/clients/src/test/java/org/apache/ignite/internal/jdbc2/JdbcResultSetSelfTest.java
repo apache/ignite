@@ -42,7 +42,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -820,8 +819,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Test
     public void testObject() throws Exception {
         final Ignite ignite = ignite(0);
-        final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
-        final IgniteBinary binary = binaryMarshaller ? ignite.binary() : null;
+        final IgniteBinary binary = ignite.binary();
         ResultSet rs = stmt.executeQuery(SQL);
 
         TestObjectField f1 = new TestObjectField(100, "AAAA");

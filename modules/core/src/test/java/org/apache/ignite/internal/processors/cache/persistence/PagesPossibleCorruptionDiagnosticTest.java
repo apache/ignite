@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CorruptedFreeListException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
@@ -51,8 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2.PART_META_REUSE_LIST_ROOT_OFF;
 
 /**
@@ -118,11 +116,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
      * @throws IgniteCheckedException If failed.
      */
     private FilePageStore filePageStore(IgniteEx ignite, int partId) throws IgniteCheckedException {
-        final PdsFolderSettings folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
-
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        File cacheWorkDir = new File(storeWorkDir, CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME);
+        File cacheWorkDir = ignite.context().pdsFolderResolver().fileTree().cacheStorage(false, DEFAULT_CACHE_NAME);
 
         File partFile = new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
 

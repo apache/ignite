@@ -236,11 +236,11 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         checkCacheData(cacheValues, cacheName);
 
-        IdleVerifyResult idleVerifyResV2 = idleVerify(stoppedNode, null);
+        IdleVerifyResult idleVerifyRes = idleVerify(stoppedNode, null);
 
         SB sb = new SB();
 
-        idleVerifyResV2.print(sb::a, true);
+        idleVerifyRes.print(sb::a, true);
 
         assertContains(listeningLog, sb.toString(), "no conflicts have been found");
     }

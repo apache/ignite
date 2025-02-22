@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
@@ -64,6 +65,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -258,7 +260,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         // If switchSegmentRecordSize more that 1, it mean that invariant is broke.
         // Filling tail some garbage. Simulate tail garbage on rotate segment in WAL work directory.
         if (switchSegmentRecordSize > 1) {
-            File seg = new File(workDir + ARCHIVE_SUB_DIR + "/0000000000000000.wal");
+            File seg = GridTestUtils.<NodeFileTree>getFieldValue(walMgr, "ft").walArchiveSegment(0);
 
             FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
@@ -383,9 +385,11 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         fut.get();
 
+        NodeFileTree ft = getFieldValue(walMgr, "ft");
+
         //should started iteration from work directory but finish from archive directory.
-        assertEquals(workDir + WORK_SUB_DIR + File.separator + "0000000000000000.wal", startedSegmentPath.get());
-        assertEquals(workDir + ARCHIVE_SUB_DIR + File.separator + "0000000000000000.wal", finishedSegmentPath.get());
+        assertEquals(ft.walSegment(0).getAbsolutePath(), startedSegmentPath.get());
+        assertEquals(ft.walArchiveSegment(0).getAbsolutePath(), finishedSegmentPath.get());
 
         Assert.assertEquals("Not all records read during iteration.", recordsToWrite, actualRecords.get());
     }

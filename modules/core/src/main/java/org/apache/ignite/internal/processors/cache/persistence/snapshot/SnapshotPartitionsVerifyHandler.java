@@ -22,15 +22,15 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
-public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKey, PartitionHashRecord>> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -45,9 +45,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         try {
-            return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotDirectory(), opCtx.groups(),
+            return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotFileTree(), opCtx.groups(),
                 type() == SnapshotHandlerType.CREATE, opCtx.check(), skipHash()).get();
         }
         catch (Exception e) {
@@ -58,10 +58,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
+        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> res : results) {
+        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
             if (res.error() != null) {
                 bldr.addException(res.node(), res.error());
 
