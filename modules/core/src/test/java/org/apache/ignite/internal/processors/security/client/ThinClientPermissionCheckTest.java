@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.security.AbstractTestSecurityPlugin
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -66,13 +68,18 @@ import org.junit.runners.JUnit4;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.toMetaStorageKey;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -95,6 +102,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Client that has system permissions. */
     private static final String CLIENT_SYS_PERM = "client_sys_perm";
 
+    /** Client that has admin permissions. */
+    private static final String ADMIN = "admin";
+
     /** Cache. */
     protected static final String CACHE = "TEST_CACHE";
 
@@ -115,6 +125,12 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** Size of the data region for object eviction testing. */
     protected static final int EVICTION_TEST_DATA_REGION_SIZE = 20 * (1 << 20);
+
+    /** */
+    private static final String THIN_CONN_ENABLED_PROP = "newThinConnectionsEnabled";
+
+    /** */
+    private Map<String, String> userAttrs;
 
     /**
      * @param clientData Array of client security data.
@@ -197,6 +213,11 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
                 new TestSecurityData(CLIENT_SYS_PERM,
                     SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                         .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY)
+                        .build()
+                ),
+                new TestSecurityData(ADMIN,
+                    SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                        .appendSystemPermissions(ADMIN_OPS)
                         .build()
                 )
             )
@@ -366,6 +387,64 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         }
     }
 
+    /** */
+    @Test
+    public void testConnectAsManagementClient() throws Exception {
+        Runnable cliCanConnect = () -> {
+            try (IgniteClient cli = startClient(CLIENT)) {
+                assertNotNull("Cach query from CLIENT", cli.cacheNames());
+            }
+        };
+
+        Runnable adminCanConnect = () -> {
+            try (IgniteClient cli = startClient(ADMIN)) {
+                assertNotNull("Cach query from CLIENT", cli.cacheNames());
+            }
+        };
+
+        Runnable withUserAttrsCheck = () -> {
+            userAttrs = F.asMap(MANAGEMENT_CLIENT_ATTR, "true");
+
+            try {
+                // Trying to connect as CLIENT with "management client" flag must fail, because of security.
+                // CLIENT has no ADMIN_OPS permission.
+                assertThrows(log, () -> startClient(CLIENT), ClientAuthenticationException.class, "ADMIN_OPS permission required");
+
+                adminCanConnect.run();
+            }
+            finally {
+                userAttrs = null;
+            }
+        };
+
+        Runnable checkDflt = () -> {
+            cliCanConnect.run();
+            adminCanConnect.run();
+
+            withUserAttrsCheck.run();
+        };
+
+        checkDflt.run();
+
+        assertTrue(grid(0).context().distributedMetastorage().read(toMetaStorageKey(THIN_CONN_ENABLED_PROP)));
+
+        // Disable all new thin client connections except ADMIN_OPS control.sh
+        grid(0).context().distributedMetastorage().write(toMetaStorageKey(THIN_CONN_ENABLED_PROP), false);
+
+        try {
+            assertThrows(log, () -> startClient(CLIENT), ClientAuthenticationException.class, CONN_DISABLED_BY_ADMIN_ERR_MSG);
+            // Trying to connect without specifying "management client" flag must fail.
+            assertThrows(log, () -> startClient(ADMIN), ClientAuthenticationException.class, CONN_DISABLED_BY_ADMIN_ERR_MSG);
+
+            withUserAttrsCheck.run();
+        }
+        finally {
+            grid(0).context().distributedMetastorage().write(toMetaStorageKey(THIN_CONN_ENABLED_PROP), true);
+        }
+
+        checkDflt.run();
+    }
+
     /**
      * Gets all operations.
      *
@@ -451,7 +530,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      * @return User attributes.
      */
     protected Map<String, String> userAttributres() {
-        return null;
+        return userAttrs;
     }
 
     /** */

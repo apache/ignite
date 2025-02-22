@@ -77,7 +77,10 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -113,17 +116,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -271,10 +266,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
-                File storeWorkDir = ((FilePageStoreManager)((IgniteEx)ig).context()
-                    .cache().context().pageStore()).workDir();
-
-                Path snpTempDir = Paths.get(storeWorkDir.getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR);
+                Path snpTempDir = ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotTempRoot().toPath();
 
                 assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
                     0, U.fileCount(snpTempDir));
@@ -320,7 +312,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
 
-            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
+            File dir = kctx.pdsFolderResolver().fileTree().cacheStorage(ccfg);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
@@ -354,7 +346,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         try {
             try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
+                p -> NodeFileTree.partitionFile(p.toFile()) && p.toFile().getName().endsWith(FILE_SUFFIX))
             ) {
                 for (Path path : partFiles)
                     result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
@@ -495,7 +487,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     protected IgniteEx startGridsFromSnapshot(int cnt, String snpName) throws Exception {
-        return startGridsFromSnapshot(cnt, cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), snpName, true);
+        return startGridsFromSnapshot(cnt, cfg -> sharedFileTree(cfg).snapshotsRoot(), snpName, true);
     }
 
     /**
@@ -506,7 +498,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     protected IgniteEx startGridsFromSnapshot(int cnt,
-        Function<IgniteConfiguration, String> path,
+        Function<IgniteConfiguration, File> path,
         String snpName,
         boolean activate
     ) throws Exception {
@@ -522,7 +514,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     protected IgniteEx startGridsFromSnapshot(Set<Integer> ids,
-        Function<IgniteConfiguration, String> path,
+        Function<IgniteConfiguration, File> path,
         String snpName,
         boolean activate
     ) throws Exception {
@@ -531,7 +523,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         for (Integer i : ids) {
             IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
 
-            cfg.setWorkDirectory(Paths.get(path.apply(cfg), snpName).toString());
+            cfg.setWorkDirectory(Paths.get(path.apply(cfg).getAbsolutePath(), snpName).toString());
 
             if (crd == null)
                 crd = startGrid(cfg);
@@ -590,12 +582,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) throws IgniteCheckedException {
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) {
         createAndCheckSnapshot(ig, snpName, null);
     }
 
     /** */
-    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) throws IgniteCheckedException {
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) {
         createAndCheckSnapshot(ig, snpName, snpPath, 0);
     }
 
@@ -605,7 +597,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpName,
         String snpPath,
         long timeout
-    ) throws IgniteCheckedException {
+    ) {
         IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, snpPath, false, onlyPrimary);
 
         if (timeout == 0)
@@ -617,7 +609,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** @param snpName Snapshot name. */
-    protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
+    protected void checkSnapshot(String snpName, String snpPath) {
         Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
 
         Predicate<Ignite> filter = node -> !node.configuration().isClientMode() &&
@@ -635,31 +627,24 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             IgniteEx node0 = (IgniteEx)node;
 
-            File nodeSnapDir = new File(
-                snp(node0).snapshotLocalDir(snpName, snpPath).getAbsolutePath(),
-                databaseRelativePath(node0.context().pdsFolderResolver().resolveFolders().folderName())
-            );
+            SnapshotFileTree sft = snapshotFileTree(node0, snpName, snpPath);
 
-            if (!nodeSnapDir.exists())
+            if (!sft.nodeStorage().exists())
                 continue;
 
-            File[] cacheDirs = nodeSnapDir.listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
+            File[] cacheDirs = sft.nodeStorage().listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
 
             for (File cacheDir : cacheDirs) {
-                String name = cacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX)
-                    ? cacheDir.getName().substring(CACHE_GRP_DIR_PREFIX.length())
-                    : cacheDir.getName().substring(CACHE_DIR_PREFIX.length());
+                String name = NodeFileTree.cacheName(cacheDir);
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
 
                 File[] parts = cacheDir.listFiles(f ->
-                    f.getName().startsWith(PART_FILE_PREFIX)
+                    NodeFileTree.partitionFile(f)
                         && f.getName().endsWith(FILE_SUFFIX));
 
                 for (File partFile : parts) {
-                    int part = Integer.parseInt(partFile.getName()
-                        .substring(PART_FILE_PREFIX.length())
-                        .replace(FILE_SUFFIX, ""));
+                    int part = NodeFileTree.partId(partFile);
 
                     cacheParts.compute(part, (part0, cnt) -> (cnt == null ? 0 : cnt) + 1);
                 }
@@ -721,10 +706,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Ignite instance.
      * @return Directory name for ignite instance.
-     * @throws IgniteCheckedException If fails.
      */
-    public static String folderName(IgniteEx ignite) throws IgniteCheckedException {
-        return ignite.context().pdsFolderResolver().resolveFolders().folderName();
+    public static String folderName(IgniteEx ignite) {
+        return ignite.context().pdsFolderResolver().fileTree().folderName();
     }
 
     /**
@@ -760,13 +744,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         for (Ignite grid : grids) {
             IgniteSnapshotManager mgr = snp((IgniteEx)grid);
-            BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+            Function<SnapshotFileTree, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
             BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
             execs.add(block);
 
-            mgr.localSnapshotSenderFactory((snpName, snpPath) ->
-                new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
+            mgr.localSnapshotSenderFactory(sft ->
+                new DelegateSnapshotSender(log, block, old.apply(sft)));
         }
 
         return execs;
@@ -808,8 +792,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         assertTrue(CU.isPersistenceEnabled(srv.configuration()));
         assertTrue(CU.isPersistentCache(ccfg, srv.configuration().getDataStorageConfiguration()));
 
-        File snpDir = resolveSnapshotWorkDirectory(srv.configuration());
-
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(srvs);
 
         IgniteFuture<Void> fut = snp(startCli).createSnapshot(SNAPSHOT_NAME, null, null, false,
@@ -825,24 +807,25 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             IgniteFutureCancelledException.class,
             "Execution of snapshot tasks has been cancelled by external process");
 
+        File snpDir = new SharedFileTree(srv.configuration()).snapshotsRoot();
+
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
     }
 
     /**
-     * @param snpName Unique snapshot name.
+     * @param sft Snapshot file tree.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
     protected static IgniteInternalFuture<?> startLocalSnapshotTask(
         GridCacheSharedContext<?, ?> cctx,
-        String snpName,
+        SnapshotFileTree sft,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
-            null,
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(sft,
             cctx.localNodeId(),
             null,
             parts,
@@ -863,7 +846,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
         // due to checkpoint already running and we need to schedule the next one
         // right after current will be completed.
-        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, sft.name()));
 
         snpFutTask.started().get();
 
@@ -872,10 +855,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Checks incremental snapshot exists. */
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
-        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+        IncrementalSnapshotFileTree incSnpFt = snapshotFileTree(node, snpName, snpPath).incrementalSnapshotFileTree(incIdx);
 
-        if (incSnpDir.exists()) {
-            checkIncrementalSnapshotWalRecords(node, incSnpDir);
+        if (incSnpFt.root().exists()) {
+            checkIncrementalSnapshotWalRecords(node, incSnpFt);
 
             return true;
         }
@@ -884,15 +867,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir) {
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, IncrementalSnapshotFileTree incSnpFt) {
         try {
-            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(
-                new File(incSnpDir, snapshotMetaFileName(node.localNode().consistentId().toString())));
-
-            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, incSnpMeta.folderName());
+            IncrementalSnapshotMetadata incSnpMeta = snp(node).readIncrementalSnapshotMetadata(incSnpFt.meta());
 
             WALIterator it = new IgniteWalIteratorFactory(log).iterator(
-                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpWalDir));
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpFt.wal()));
 
             boolean started = false;
             boolean finished = false;

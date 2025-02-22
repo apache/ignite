@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -290,10 +291,12 @@ public class CachePartitionDefragmentationManager {
             IgniteInternalFuture<?> idxDfrgFut = null;
             DataPageEvictionMode prevPageEvictionMode = null;
 
+            NodeFileTree ft = sharedCtx.kernalContext().pdsFolderResolver().fileTree();
+
             for (CacheGroupContext oldGrpCtx : cacheGrpCtxsForDefragmentation) {
                 int grpId = oldGrpCtx.groupId();
 
-                File workDir = filePageStoreMgr.cacheWorkDir(oldGrpCtx.sharedGroup(), oldGrpCtx.cacheOrGroupName());
+                File workDir = ft.cacheStorage(oldGrpCtx.config());
 
                 List<CacheDataStore> oldCacheDataStores = oldStores.get(grpId);
 
@@ -420,6 +423,7 @@ public class CachePartitionDefragmentationManager {
                     }
 
                     PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
+                    long oldSize = oldIdxPageStore.size();
 
                     idxDfrgFut = idxDfrgFut.chain(() -> {
                         if (log.isDebugEnabled()) {
@@ -469,7 +473,7 @@ public class CachePartitionDefragmentationManager {
 
                     status.onIndexDefragmented(
                         oldGrpCtx,
-                        oldIdxPageStore.size(),
+                        oldSize,
                         pageSize + idxAllocationTracker.get() * pageSize // + file header.
                     );
                 }

@@ -53,11 +53,9 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -73,7 +71,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -187,8 +185,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         Map<String, Integer> fileCrcs = new HashMap<>();
         Map<String, Serializable> fileParams = new HashMap<>();
 
-        assertTrue(snd.context().io().fileTransmissionSupported(rcv.localNode()));
-
         rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
             @Override public void onEnd(UUID rmtNodeId) {
                 ensureResourcesFree(snd);
@@ -210,7 +206,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        File cacheDirIg0 = cacheWorkDir(snd, DEFAULT_CACHE_NAME);
+        File cacheDirIg0 = snd.context().pdsFolderResolver().fileTree().cacheStorage(snd.cachex(DEFAULT_CACHE_NAME).configuration());
 
         File[] cacheParts = cacheDirIg0.listFiles(fileBinFilter);
 
@@ -928,22 +924,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             for (int i = 0; i < CACHE_SIZE; i++)
                 dataStreamer.addData(i, i + cacheName.hashCode());
         }
-    }
-
-    /**
-     * @param ignite An ignite instance.
-     * @param cacheName Cache name.
-     * @return The cache working directory.
-     */
-    private File cacheWorkDir(IgniteEx ignite, String cacheName) {
-        // Resolve cache directory.
-        IgniteInternalCache<?, ?> cache = ignite.cachex(cacheName);
-
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cache.context()
-            .shared()
-            .pageStore();
-
-        return pageStoreMgr.cacheWorkDir(cache.configuration());
     }
 
     /**

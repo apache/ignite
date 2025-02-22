@@ -46,8 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -69,6 +67,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
+
+    /** */
+    public static final int CLI_IDX = 42;
 
     /** Keys count. */
     private static final int KEYS_CNT = 10_000;
@@ -92,12 +93,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+        cfg.setClientMode(testClientNode() && getTestIgniteInstanceName(CLI_IDX).equals(igniteInstanceName));
 
         return cfg;
     }
@@ -110,6 +106,11 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
 
         startGrids(GRID_CNT);
+
+        if (testClientNode())
+            startClientGrid(CLI_IDX);
+        else
+            startGrid(CLI_IDX);
     }
 
     /** {@inheritDoc} */
@@ -188,9 +189,9 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     private void putAndRemove(long duration,
         final TransactionConcurrency txConcurrency,
         final TransactionIsolation txIsolation) throws Exception {
-        assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+        assertEquals(testClientNode(), (boolean)grid(CLI_IDX).configuration().isClientMode());
 
-        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+        grid(CLI_IDX).destroyCache(DEFAULT_CACHE_NAME);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -204,7 +205,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setNearConfiguration(nearCache());
 
-        final IgniteCache<Integer, Integer> sndCache0 = grid(0).createCache(ccfg);
+        final IgniteCache<Integer, Integer> sndCache0 = grid(CLI_IDX).createCache(ccfg);
 
         final AtomicBoolean stop = new AtomicBoolean();
 

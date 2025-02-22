@@ -51,11 +51,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
@@ -67,7 +67,6 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -581,7 +580,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         ign.context().cache().context().snapshotMgr().ioFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-                if (file.getName().endsWith(DUMP_FILE_EXT)) {
+                if (SnapshotFileTree.dumpPartitionFile(file, false)) {
                     return new FileIODecorator(delegate.create(file, modes)) {
                         /** {@inheritDoc} */
                         @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
@@ -639,9 +638,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
-        assertFalse(
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME).exists()
-        );
+        assertFalse(new File(sharedFileTree(ign.configuration()).snapshotsRoot(), DMP_NAME).exists());
     }
 
     /** */
@@ -759,7 +756,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                     }
                 };
             }
-            else if (file.getName().endsWith(DUMP_FILE_EXT)) {
+            else if (SnapshotFileTree.partitionFile(file)) {
                 throw new IOException("Test error");
             }
 

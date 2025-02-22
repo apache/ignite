@@ -37,7 +37,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -69,7 +68,6 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
             new BinaryTypeConfiguration(TestObject.class.getName())));
 
         cfg.setBinaryConfiguration(bCfg);
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

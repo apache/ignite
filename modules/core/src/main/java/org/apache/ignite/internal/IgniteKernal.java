@@ -201,9 +201,10 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -239,8 +240,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -256,21 +255,21 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.mxbean.IgniteMXBean.ACTIVE_DESC;
@@ -925,6 +924,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
+        IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
+
+        MarshallerUtils.autoconfigureObjectInputFilter(clsFilter);
+
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -932,7 +935,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cfg,
                 gw,
                 plugins,
-                MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
+                clsFilter,
                 workerRegistry,
                 hnd,
                 longJVMPauseDetector
@@ -942,7 +945,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             mBeansMgr = new IgniteMBeansManager(this);
 
-            cfg.getMarshaller().setContext(ctx.marshallerContext());
+            initializeMarshaller();
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
@@ -1246,10 +1249,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
                     assert locNode.isClient();
 
-                    if (!ctx.discovery().reconnectSupported())
-                        throw new IgniteCheckedException("Client node in forceServerMode " +
-                            "is not allowed to reconnect to the cluster and will be stopped.");
-
                     if (log.isDebugEnabled())
                         log.debug("Failed to start node components on node start, will wait for reconnect: " + e);
 
@@ -1443,7 +1442,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
 
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
-        A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
@@ -1479,44 +1477,33 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /**
      * Checks whether physical RAM is not exceeded.
      */
-    @SuppressWarnings("ConstantConditions")
     private void checkPhysicalRam() {
-        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+        String validationResult = validateRamUsage(ctx);
 
-        if (ram != -1) {
-            String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
+        if (validationResult != null)
+            U.quietAndWarn(log, validationResult);
+    }
 
-            long totalHeap = 0;
-            long totalOffheap = 0;
+    /** */
+    private void initializeMarshaller() {
+        Marshaller marsh = ctx.config().getMarshaller();
 
-            for (ClusterNode node : ctx.discovery().allNodes()) {
-                if (macs.equals(node.attribute(ATTR_MACS))) {
-                    long heap = node.metrics().getHeapMemoryMaximum();
-                    Long offheap = node.<Long>attribute(ATTR_OFFHEAP_SIZE);
+        if (marsh == null) {
+            if (!BinaryMarshaller.available()) {
+                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
+                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
 
-                    if (heap != -1)
-                        totalHeap += heap;
-
-                    if (offheap != null)
-                        totalOffheap += offheap;
-                }
+                marsh = ctx.marshallerContext().jdkMarshaller();
             }
+            else
+                marsh = new BinaryMarshaller();
 
-            long total = totalHeap + totalOffheap;
-
-            if (total < 0)
-                total = Long.MAX_VALUE;
-
-            // 4GB or 20% of available memory is expected to be used by OS and user applications
-            long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
-
-            if (total > safeToUse) {
-                U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
-                    "lead to significant slowdown due to swapping (please decrease JVM heap size, data region " +
-                    "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
-                    (ram >> 20) + "MB]");
-            }
+            ctx.config().setMarshaller(marsh);
         }
+
+        marsh.setContext(ctx.marshallerContext());
+
+        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
     }
 
     /**
@@ -1696,18 +1683,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
-        // Whether rollback of dynamic cache start is supported or not.
-        // This property is added because of backward compatibility.
-        add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
-
         // Save data storage configuration.
         addDataStorageConfigurationAttributes();
 
         // Save transactions configuration.
         add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
-
-        // Supported features.
-        add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
+        add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueriesEnabled());
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
@@ -1748,7 +1729,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
 
         // Save data storage configuration.
-        add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
+        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
     }
 
     /**
@@ -2868,6 +2849,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return new IgniteApplicationAttributesAware(this, attrs);
     }
 
     /** {@inheritDoc} */

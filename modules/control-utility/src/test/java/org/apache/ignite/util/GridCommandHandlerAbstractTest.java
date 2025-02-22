@@ -40,6 +40,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -48,7 +49,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
@@ -81,6 +81,7 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CON
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -181,8 +182,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         for (File f : logDir.listFiles(n -> n.getName().startsWith(CacheIdleVerifyCommand.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
-        GridClientFactory.stopAll(false);
-
         stopAllGrids(true);
 
         cleanPersistenceDir();
@@ -203,8 +202,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         testOut.reset();
 
         encryptionEnabled = false;
-
-        GridClientFactory.stopAll(false);
     }
 
     /** {@inheritDoc} */
@@ -262,6 +259,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(sslEnabled()));
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(sslEnabled()));
 
         if (sslEnabled())
             cfg.setSslContextFactory(sslFactory());
@@ -528,5 +526,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
      */
     protected void createCacheAndPreload(Ignite ignite, int countEntries) {
         createCacheAndPreload(ignite, DEFAULT_CACHE_NAME, countEntries, 32, null);
+    }
+
+    /** */
+    protected String connectorPort(IgniteEx srv) {
+        return srv.localNode().attribute(CLIENT_LISTENER_PORT).toString();
     }
 }

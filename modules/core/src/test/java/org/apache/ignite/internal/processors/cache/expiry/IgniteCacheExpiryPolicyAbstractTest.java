@@ -73,7 +73,6 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1264,8 +1263,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteConfiguration clientCfg = getConfiguration("client");
 
-        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
-
         Ignite client = startClientGrid("client", clientCfg);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
@@ -1301,8 +1298,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         startGridsMultiThreaded(gridCount());
 
         IgniteConfiguration clientCfg = getConfiguration("client");
-
-        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
         Ignite client = startClientGrid("client", clientCfg);
 

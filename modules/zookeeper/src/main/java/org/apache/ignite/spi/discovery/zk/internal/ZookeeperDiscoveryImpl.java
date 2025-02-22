@@ -56,7 +56,6 @@ import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -77,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -162,7 +160,7 @@ public class ZookeeperDiscoveryImpl {
     private final int sesTimeout;
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private final ZkIgnitePaths zkPaths;
@@ -231,6 +229,7 @@ public class ZookeeperDiscoveryImpl {
      * @param exchange Discovery data exchange.
      * @param internalLsnr Internal listener (used for testing only).
      * @param stats Zookeeper DiscoverySpi statistics collector.
+     * @param marsh Marshaller.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -241,10 +240,10 @@ public class ZookeeperDiscoveryImpl {
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
         IgniteDiscoverySpiInternalListener internalLsnr,
-        ZookeeperDiscoveryStatistics stats) {
+        ZookeeperDiscoveryStatistics stats,
+        JdkMarshaller marsh
+    ) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
-
-        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
 
         zkPaths = new ZkIgnitePaths(zkRootPath);
 
@@ -257,6 +256,7 @@ public class ZookeeperDiscoveryImpl {
         this.lsnr = lsnr;
         this.exchange = exchange;
         this.clientReconnectEnabled = locNode.isClient() && !spi.isClientReconnectDisabled();
+        this.marsh = marsh;
 
         int evtsAckThreshold = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD,
             DFLT_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD);
@@ -600,16 +600,6 @@ public class ZookeeperDiscoveryImpl {
         checkState();
 
         return rtState.top.remoteNodes();
-    }
-
-    /**
-     * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
-     */
-    public boolean allNodesSupport(IgniteFeatures feature) {
-        checkState();
-
-        return rtState != null && rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
     }
 
     /**

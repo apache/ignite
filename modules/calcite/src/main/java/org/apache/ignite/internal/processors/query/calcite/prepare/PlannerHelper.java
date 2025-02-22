@@ -254,7 +254,7 @@ public class PlannerHelper {
         /**
          * Process a scan node and raise a {@link #spoolNeeded flag} if needed.
          *
-         * @param scan TableScan to analize.
+         * @param scan TableScan to analyze.
          * @return The input rel.
          */
         private IgniteRel processScan(TableScan scan) {

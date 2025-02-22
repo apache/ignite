@@ -33,7 +33,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -80,8 +79,6 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        c.setMarshaller(new BinaryMarshaller());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
         CacheConfiguration ccfg = buildCacheConfiguration(gridName);

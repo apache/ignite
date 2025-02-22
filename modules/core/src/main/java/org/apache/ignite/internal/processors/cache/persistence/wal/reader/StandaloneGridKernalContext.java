@@ -58,8 +58,10 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -103,6 +105,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -191,7 +194,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     ) throws IgniteCheckedException {
         this.log = log;
 
-        marshallerCtx = new MarshallerContextImpl(null, null);
+        marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
         cfg = prepareIgniteConfiguration();
 
         try {
@@ -209,7 +212,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
+            binaryMetadataFileStoreDir = new SharedFileTree(new File(".")).binaryMetaRoot().getAbsoluteFile();
 
         cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
@@ -694,7 +697,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings(new File("."), U.maskForFileName(""));
+                return new PdsFolderSettings<>(new File("."), U.maskForFileName(""));
+            }
+
+            /** {@inheritDoc} */
+            @Override public NodeFileTree fileTree() {
+                return new NodeFileTree(cfg, resolveFolders().folderName());
             }
         };
     }

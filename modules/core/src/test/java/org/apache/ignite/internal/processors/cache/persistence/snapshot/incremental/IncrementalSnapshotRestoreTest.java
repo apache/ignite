@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.WalTestUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotVerifyException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
@@ -88,7 +89,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** */
@@ -367,8 +367,11 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        File rm = new File(incrementalSnapshotWalDir(grid(1), SNP, 1), "0000000000000000.wal.zip");
+        SnapshotFileTree sft = snapshotFileTree(grid(1), SNP);
 
+        File rm = sft.incrementalSnapshotFileTree(1).walSegment(0);
+
+        assertTrue(rm.exists());
         assertTrue(U.delete(rm));
 
         GridTestUtils.assertThrowsAnyCause(log,
@@ -612,7 +615,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     @Test
     public void testRestoreFromSecondAttempt() throws Exception {
         fail = () -> {
-            throw new RuntimeException("Force to fail snapshot restore.");
+            throw new IgniteException("Force to fail snapshot restore.");
         };
 
         Map<Integer, Integer> expSnpData = new HashMap<>();
@@ -967,7 +970,9 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     private void corruptIncrementalSnapshot(int nodeIdx, int incIdx, int segIdx) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        File[] incSegs = incrementalSnapshotWalDir(grid(nodeIdx), SNP, incIdx).listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        SnapshotFileTree sft = snapshotFileTree(grid(nodeIdx), SNP);
+
+        File[] incSegs = sft.incrementalSnapshotFileTree(incIdx).wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         Arrays.sort(incSegs);
 
@@ -997,13 +1002,6 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             for (String cache: caches)
                 assertNull("[node=" + i + ", cache=" + cache + ']', grid(i).cache(cache));
         }
-    }
-
-    /** */
-    private File incrementalSnapshotWalDir(IgniteEx node, String snpName, int incIdx) {
-        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, null, incIdx);
-
-        return incrementalSnapshotWalsDir(incSnpDir, node.localNode().consistentId().toString());
     }
 
     /** {@inheritDoc} */
@@ -1040,11 +1038,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         }
 
         /** {@inheritDoc} */
-        @Override public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(
-            String snpName,
-            @Nullable String snpPath,
-            int incIdx
-        ) throws IgniteCheckedException, IOException {
+        @Override public IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(File meta) throws IgniteCheckedException, IOException {
             if (fail != null) {
                 Runnable f = fail;
 
@@ -1053,7 +1047,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
                 f.run();
             }
 
-            return super.readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+            return super.readIncrementalSnapshotMetadata(meta);
         }
     }
 

@@ -18,16 +18,12 @@
 package org.apache.ignite.cdc;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * This class defines {@link CdcMain} runtime configuration.
- * Configuration is passed to {@link CdcMain} constructor.
+ * This class defines ignite-cdc runtime configuration.
  */
-@IgniteExperimental
 public class CdcConfiguration {
     /** */
     private static final int DFLT_LOCK_TIMEOUT = 1000;
@@ -48,7 +44,7 @@ public class CdcConfiguration {
     private boolean keepBinary = DFLT_KEEP_BINARY;
 
     /**
-     * {@link CdcMain} acquire file lock on startup to ensure exclusive consumption.
+     * Ignite-cdc process acquire file lock on startup to ensure exclusive consumption.
      * This property specifies amount of time to wait for lock acquisition.<br>
      * Default is {@code 1000 ms}.
      */

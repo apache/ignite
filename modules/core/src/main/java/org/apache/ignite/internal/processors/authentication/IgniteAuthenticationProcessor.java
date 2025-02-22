@@ -287,8 +287,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (ctx.clientNode()) {
             if (ctx.discovery().aliveServerNodes().isEmpty()) {
                 throw new IgniteAccessControlException("No alive server node was found to which the authentication" +
-                    " operation could be delegated. It is possible that the client node has been started with the" +
-                    " \"forceServerMode\" flag enabled and no server node had been started yet.");
+                    " operation could be delegated.");
             }
 
             AuthenticateFuture fut;
@@ -631,8 +630,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 if (res == null
                     && !ctx.discovery().allNodes().isEmpty()
                     && ctx.discovery().aliveServerNodes().isEmpty()) {
-                    U.warn(log, "Cannot find the server coordinator node. "
-                        + "Possible a client is started with forceServerMode=true.");
+                    U.warn(log, "Cannot find the server coordinator node.");
                 }
                 else
                     assert res != null;

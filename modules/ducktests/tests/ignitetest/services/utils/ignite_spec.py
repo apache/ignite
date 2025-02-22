@@ -249,12 +249,17 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: environment set.
         """
-        return {
+        environment_dict = {
             'EXCLUDE_TEST_CLASSES': 'true',
             'IGNITE_LOG_DIR': self.service.log_dir,
             'USER_LIBS': ":".join(self.libs()),
             "MAIN_CLASS": self.service.main_java_class
         }
+
+        if "direct-io" not in self.modules():
+            environment_dict['EXCLUDE_MODULES'] = "direct-io"
+
+        return environment_dict
 
     def config_file_path(self):
         """

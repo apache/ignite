@@ -21,11 +21,11 @@ import java.net.BindException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,8 +34,6 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -47,7 +45,6 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
@@ -57,84 +54,16 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  */
 public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationSpi<Message>> extends GridSpiAbstractTest<T> {
     /** */
-    private static long msgId = 1;
-
-    /** */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
-
-    /** */
-    private static final Map<UUID, Set<UUID>> msgDestMap = new HashMap<>();
 
     /** */
     protected static final Map<UUID, CommunicationSpi<Message>> spis = new HashMap<>();
 
     /** */
-    protected static final Collection<ClusterNode> nodes = new ArrayList<>();
-
-    /** */
-    private static final Object mux = new Object();
+    protected static final List<ClusterNode> nodes = new ArrayList<>();
 
     /** */
     private static GridTimeoutProcessor timeoutProcessor;
-
-    /** */
-    protected boolean useSsl;
-
-    /** */
-    private class MessageListener implements CommunicationListener<Message> {
-        /** */
-        private final UUID locNodeId;
-
-        /**
-         * @param locNodeId Local node ID.
-         */
-        MessageListener(UUID locNodeId) {
-            assert locNodeId != null;
-
-            this.locNodeId = locNodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            info("Received message [locNodeId=" + locNodeId + ", nodeId=" + nodeId +
-                ", msg=" + msg + ']');
-
-            msgC.run();
-
-            if (msg instanceof GridTestMessage) {
-                GridTestMessage testMsg = (GridTestMessage)msg;
-
-                if (!testMsg.getSourceNodeId().equals(nodeId))
-                    fail("Listener nodeId not equals to message nodeId.");
-
-                synchronized (mux) {
-                    // Get list of all recipients for the message.
-                    Set<UUID> recipients = msgDestMap.get(testMsg.getSourceNodeId());
-
-                    if (recipients != null) {
-                        // Remove this node from a list of recipients.
-                        if (!recipients.remove(locNodeId))
-                            fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
-
-                        // If all recipients received their messages,
-                        // remove source nodes from sent messages map.
-                        if (recipients.isEmpty())
-                            msgDestMap.remove(testMsg.getSourceNodeId());
-
-                        if (msgDestMap.isEmpty())
-                            mux.notifyAll();
-                    }
-                    else
-                        fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
-                }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onDisconnected(UUID nodeId) {
-            // No-op.
-        }
-    }
 
     /** */
     protected GridAbstractCommunicationSelfTest() {
@@ -142,99 +71,21 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSendToOneNode() throws Exception {
-        info(">>> Starting send to one node test. <<<");
-
-        msgDestMap.clear();
-
-        for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
-            for (ClusterNode node : nodes) {
-                synchronized (mux) {
-                    if (!msgDestMap.containsKey(entry.getKey()))
-                        msgDestMap.put(entry.getKey(), new HashSet<>());
-
-                    msgDestMap.get(entry.getKey()).add(node.id());
-                }
-
-                entry.getValue().sendMessage(node, new GridTestMessage(entry.getKey(), msgId++, 0));
-            }
-        }
-
-        long now = System.currentTimeMillis();
-        long endTime = now + getMaxTransmitMessagesTime();
-
-        synchronized (mux) {
-            while (now < endTime && !msgDestMap.isEmpty()) {
-                mux.wait(endTime - now);
-
-                now = System.currentTimeMillis();
-            }
-
-            if (!msgDestMap.isEmpty()) {
-                for (Entry<UUID, Set<UUID>> entry : msgDestMap.entrySet()) {
-                    error("Failed to receive all messages [sender=" + entry.getKey() +
-                        ", dest=" + entry.getValue() + ']');
-                }
-            }
-
-            assert msgDestMap.isEmpty() : "Some messages were not received.";
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSendToManyNodes() throws Exception {
-        msgDestMap.clear();
-
-        // Send message from each SPI to all SPI's, including itself.
-        for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
-            UUID sndId = entry.getKey();
-
-            CommunicationSpi<Message> commSpi = entry.getValue();
-
-            for (ClusterNode node : nodes) {
-                synchronized (mux) {
-                    if (!msgDestMap.containsKey(sndId))
-                        msgDestMap.put(sndId, new HashSet<>());
-
-                    msgDestMap.get(sndId).add(node.id());
-                }
-
-                commSpi.sendMessage(node, new GridTestMessage(sndId, msgId++, 0));
-            }
-        }
-
-        long now = System.currentTimeMillis();
-        long endTime = now + getMaxTransmitMessagesTime();
-
-        synchronized (mux) {
-            while (now < endTime && !msgDestMap.isEmpty()) {
-                mux.wait(endTime - now);
-
-                now = System.currentTimeMillis();
-            }
-
-            if (!msgDestMap.isEmpty()) {
-                for (Entry<UUID, Set<UUID>> entry : msgDestMap.entrySet()) {
-                    error("Failed to receive all messages [sender=" + entry.getKey() +
-                        ", dest=" + entry.getValue() + ']');
-                }
-            }
-
-            assert msgDestMap.isEmpty() : "Some messages were not received.";
-        }
-    }
-
-    /**
      * @param idx Node index.
      * @return Spi.
      */
     protected abstract CommunicationSpi<Message> getSpi(int idx);
+
+    /** */
+    protected abstract CommunicationListener<Message> createMessageListener(UUID nodeId);
+
+    /** */
+    protected abstract Map<Short, Supplier<Message>> customMessageTypes();
+
+    /** */
+    protected boolean isSslEnabled() {
+        return false;
+    }
 
     /**
      * @return Spi count.
@@ -304,12 +155,12 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             GridSpiTestContext ctx = initSpiContext();
 
             MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
-                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                @Override public void registerAll(MessageFactory factory) {
+                    customMessageTypes().forEach(factory::register);
                 }
             };
 
-            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory}));
+            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory}));
 
             ctx.setLocalNode(node);
 
@@ -323,7 +174,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName", "grid-" + i);
 
-            if (useSsl) {
+            if (isSslEnabled()) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
 
                 IgniteConfiguration cfg = ignite.configuration()
@@ -332,7 +183,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                 ignite.setStaticCfg(cfg);
             }
 
-            spi.setListener(new MessageListener(rsrcs.getNodeId()));
+            spi.setListener(createMessageListener(rsrcs.getNodeId()));
 
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
 
