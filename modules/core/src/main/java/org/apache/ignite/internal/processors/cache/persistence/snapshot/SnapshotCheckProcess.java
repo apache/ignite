@@ -258,7 +258,8 @@ public class SnapshotCheckProcess {
         Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
         if (!results.isEmpty()) {
-            bldr.exceptions(mapErrors(errors));
+            if (!errors0.isEmpty())
+                bldr.exceptions(errors0);
 
             for (Map.Entry<UUID, SnapshotCheckResponse> respEntry : results.entrySet()) {
                 SnapshotCheckResponse resp = respEntry.getValue();
@@ -272,7 +273,7 @@ public class SnapshotCheckProcess {
                     bldr.addException(node, asException(F.firstValue(resp.exceptions())));
                 }
 
-                Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> partsHashesRes = resp.result();
+                Map<String, Map<PartitionKey, PartitionHashRecord>> partsHashesRes = resp.result();
 
                 partsHashesRes.forEach((consId, partsPerConsId) -> bldr.addPartitionHashes(partsPerConsId));
             }
@@ -304,19 +305,12 @@ public class SnapshotCheckProcess {
             if (req.incrementalIndex() > 0) {
                 assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
-                // TODO:
-                //workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), ctx.locFileTree, req.incrementalIndex());
                 workingFut = incrementalFuture(ctx);
             }
             else if (req.allRestoreHandlers())
                 workingFut = allHandlersFuture(ctx);
             else
                 workingFut = partitionsHashesFuture(ctx);
-//            else {
-//                workingFut = req.allRestoreHandlers()
-//                    ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, ctx.locFileTree, req.groups(), true)
-//                    : snpMgr.checker().checkPartitions(ctx.locMeta, ctx.locFileTree, req.groups(), false, req.fullCheck(), false);
-//            }
 
             workingFut.whenComplete((res, err) -> {
                 if (err != null)
@@ -341,7 +335,7 @@ public class SnapshotCheckProcess {
 
         for (SnapshotMetadata meta : ctx.metas) {
             CompletableFuture<IncrementalSnapshotCheckResult> workingFut = snpChecker.checkIncrementalSnapshot(ctx.req.snapshotName(),
-                    ctx.req.snapshotPath(), ctx.req.incrementalIndex());
+                    ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
 
             workingFut.whenComplete((res, err) -> {
                 if (err != null)
@@ -360,7 +354,7 @@ public class SnapshotCheckProcess {
     /** @return A composed future of partitions checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
     private CompletableFuture<SnapshotCheckResponse> partitionsHashesFuture(SnapshotCheckContext ctx) {
         // Per metas result: consistent id -> check results per partition key.
-        Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         // Per consistent id.
         Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
@@ -368,9 +362,9 @@ public class SnapshotCheckProcess {
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> metaFut = snpMgr.checker().checkPartitions(
+            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpMgr.checker().checkPartitions(
                 meta,
-                snpMgr.snapshotLocalDir(ctx.req.snapshotName(), ctx.req.snapshotPath()),
+                ctx.locFileTree.get(meta.consistentId()),
                 ctx.req.groups(),
                 false,
                 ctx.req.fullCheck(),
@@ -406,7 +400,7 @@ public class SnapshotCheckProcess {
 
         for (SnapshotMetadata meta : ctx.metas) {
             CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
-                ctx.req.snapshotPath(), ctx.req.groups(), true);
+                ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), true);
 
             metaFut.whenComplete((res, err) -> {
                 if (err != null)
@@ -538,12 +532,15 @@ public class SnapshotCheckProcess {
             // If the topology is lesser that the snapshot's, we have to check another partitions parts.
             ctx.metas = assingMetas(metas);
 
-            if (ctx.locMeta != null) {
-                ctx.locFileTree = new SnapshotFileTree(kctx,
-                    ctx.req.snapshotName(),
-                    ctx.req.snapshotPath(),
-                    ctx.locMeta.folderName(),
-                    ctx.locMeta.consistentId());
+            if (!F.isEmpty(ctx.metas)) {
+                ctx.locFileTree = new HashMap<>(ctx.metas.size(), 1.0f);
+
+                for (SnapshotMetadata metaToProc : ctx.metas) {
+                    SnapshotFileTree sft = new SnapshotFileTree(kctx, ctx.req.snapshotName(), ctx.req.snapshotPath(),
+                        metaToProc.folderName(), metaToProc.consistentId());
+
+                    ctx.locFileTree.put(metaToProc.consistentId(), sft);
+                }
             }
 
             if (clusterOpFut != null)
@@ -689,8 +686,8 @@ public class SnapshotCheckProcess {
          */
         @Nullable private List<SnapshotMetadata> metas;
 
-        /** */
-        @Nullable private SnapshotFileTree locFileTree;
+        /** Map of snapshot pathes per consistent id for {@link #metas}. */
+        @Nullable private Map<String, SnapshotFileTree> locFileTree;
 
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
@@ -724,19 +721,11 @@ public class SnapshotCheckProcess {
         /** */
         private SnapshotCheckResponse(Object result, @Nullable Map<String, Throwable> exceptions) {
             assert result instanceof Serializable : "Snapshot check result is not serializable.";
-            assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";// TODO:
+            assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";
 
             this.result = result;
             this.exceptions = exceptions == null ? null : Collections.unmodifiableMap(exceptions);
         }
-
-        /** //TODO:
-         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
-         * snapshot.
-         */
-        //private @Nullable Map<PartitionKey, PartitionHashRecord> partsHashes() {
-        //    return (Map<PartitionKey, PartitionHashRecord>)partsResults;
-       // }
 
         /** @return Exceptions per snapshot part's consistent id. */
         private @Nullable Map<String, Throwable> exceptions() {

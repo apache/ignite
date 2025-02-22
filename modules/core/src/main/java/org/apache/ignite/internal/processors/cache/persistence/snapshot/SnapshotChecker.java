@@ -560,21 +560,12 @@ public class SnapshotChecker {
     /** */
     public IdleVerifyResult reduceIncrementalResults(
         Map<ClusterNode, List<IncrementalSnapshotCheckResult>> results,
-        Map<ClusterNode, Exception> errors
+        Map<ClusterNode, Exception> operationErrors
     ) {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        if (!errors.isEmpty())
-            return bldr.exceptions(errors).build();
-
         if (!operationErrors.isEmpty())
-            return new IdleVerifyResultV2(operationErrors);
-
-        Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
-        List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
-        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
-        Map<ClusterNode, Exception> errors = new HashMap<>();
+            return bldr.exceptions(operationErrors).build();
 
         results.forEach((node, resLst) -> resLst.forEach(res -> {
             if (F.isEmpty(res.exceptions())) {
@@ -963,7 +954,7 @@ public class SnapshotChecker {
      * Checks results of all the snapshot validation handlres.
      * @param snpName Snapshot name
      * @param results Results: checking node -> snapshot part's consistend id -> custom handler name -> handler result.
-     * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
+     * @see #invokeCustomHandlers(SnapshotMetadata, SnapshotFileTree, Collection, boolean)
      */
     public void checkCustomHandlersResults(
         String snpName,

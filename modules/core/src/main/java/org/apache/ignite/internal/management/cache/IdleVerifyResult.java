@@ -378,7 +378,7 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     /** Builder of {@link IdleVerifyResult}. Is not thread-safe. */
     public static final class Builder {
         /** */
-        private @Nullable Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes;
+        private @Nullable Map<PartitionKey, List<PartitionHashRecord>> partHashes;
 
         /** */
         private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;

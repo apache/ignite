@@ -160,7 +160,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 continue;
             }
 
-            bldr.addPartitionHashes(res.getData());
+            Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
+
+            bldr.addPartitionHashes(nodeHashes);
         }
 
         return bldr.build();
