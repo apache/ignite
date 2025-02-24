@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -207,15 +206,11 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return List of cache partitions in given directory.
      */
     public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
-        File[] files = cacheDir.listFiles();
+        File[] files = cacheDir.listFiles(f -> f.isFile() && f.getName().endsWith(partExtension(dump, compress)));
 
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .filter(File::isFile)
-            .filter(f -> f.getName().endsWith(partExtension(dump, compress)))
-            .collect(Collectors.toList());
+        return files == null
+            ? Collections.emptyList()
+            : Arrays.asList(files);
     }
 
     /**

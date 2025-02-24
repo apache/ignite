@@ -499,7 +499,7 @@ public class NodeFileTree extends SharedFileTree {
     public List<File> userCacheDirs() {
         final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
 
-        return cacheDirs(false, f -> f.getName().equals(utilityCacheStorage));
+        return cacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
 
     /**

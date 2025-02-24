@@ -170,9 +170,8 @@ public class GridLocalConfigManager {
 
         Collections.sort(dirs);
 
-        for (File file : dirs) {
+        for (File file : dirs)
             readCacheGroupCaches(file, ccfgs);
-        }
 
         return ccfgs;
     }
