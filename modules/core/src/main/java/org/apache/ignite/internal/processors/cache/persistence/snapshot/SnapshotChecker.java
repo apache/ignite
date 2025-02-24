@@ -560,12 +560,12 @@ public class SnapshotChecker {
     /** */
     public IdleVerifyResult reduceIncrementalResults(
         Map<ClusterNode, List<IncrementalSnapshotCheckResult>> results,
-        Map<ClusterNode, Exception> operationErrors
+        Map<ClusterNode, Exception> errors
     ) {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        if (!operationErrors.isEmpty())
-            return bldr.exceptions(operationErrors).build();
+        if (!errors.isEmpty())
+            return bldr.exceptions(errors).build();
 
         results.forEach((node, resLst) -> resLst.forEach(res -> {
             if (F.isEmpty(res.exceptions())) {
