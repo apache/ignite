@@ -584,7 +584,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
                     if (file.getName().contains("part-dfrg-"))
                         cachePartFile.set(file);
-                    else if (file.getName().contains("part-"))
+                    else if (NodeFileTree.partitionFile(file))
                         defragCachePartFile.set(file);
                 }
 
