@@ -169,8 +169,6 @@ public class SnapshotCheckProcess {
         Map<UUID, Throwable> errors,
         GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
     ) {
-        SnapshotChecker checker = kctx.cache().context().snapshotMgr().checker();
-
         Map<ClusterNode, IncrementalSnapshotCheckResult> perNodeResults = new HashMap<>();
 
         for (Map.Entry<UUID, SnapshotCheckResponse> resEntry : results.entrySet()) {
@@ -189,7 +187,8 @@ public class SnapshotCheckProcess {
             errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
         }
 
-        IdleVerifyResult chkRes = checker.reduceIncrementalResults(perNodeResults, mapErrors(errors));
+        IdleVerifyResult chkRes = kctx.cache().context().snapshotMgr().checker()
+            .reduceIncrementalResults(perNodeResults, mapErrors(errors));
 
         fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
     }
