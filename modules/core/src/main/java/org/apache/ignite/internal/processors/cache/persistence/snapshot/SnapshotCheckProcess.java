@@ -543,14 +543,6 @@ public class SnapshotCheckProcess {
                 }
             }
 
-            if (ctx.locMeta != null) {
-                ctx.locFileTree = new SnapshotFileTree(kctx,
-                    ctx.req.snapshotName(),
-                    ctx.req.snapshotPath(),
-                    ctx.locMeta.folderName(),
-                    ctx.locMeta.consistentId());
-            }
-
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
 
@@ -696,9 +688,6 @@ public class SnapshotCheckProcess {
 
         /** Map of snapshot pathes per consistent id for {@link #metas}. */
         @Nullable private Map<String, SnapshotFileTree> locFileTree;
-
-        /** */
-        @Nullable private SnapshotFileTree locFileTree;
 
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
