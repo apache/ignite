@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -509,17 +508,16 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache directories that matches filters criteria.
      */
     protected List<File> cacheDirs(boolean includeMeta, Predicate<File> filter) {
-        File[] files = nodeStorage().listFiles();
+        Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
-        if (files == null)
+        File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
+
+        if (cacheDirs == null)
             return Collections.emptyList();
 
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER)
-            .filter(filter)
-            .collect(Collectors.toList());
+        Arrays.sort(cacheDirs);
+
+        return Arrays.asList(cacheDirs);
     }
 
     /**
