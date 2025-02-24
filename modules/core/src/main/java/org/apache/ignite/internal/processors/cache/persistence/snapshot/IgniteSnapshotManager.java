@@ -601,7 +601,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         null,
                         m.folderName(),
                         m.consistentId()
-                    ).allCacheDirectories();
+                    ).allCacheDirs();
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
 

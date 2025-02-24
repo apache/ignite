@@ -483,24 +483,24 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @return All cache directories.
      */
-    public List<File> allCacheDirectories() {
-        return allCacheDirectories(true, f -> true);
+    public List<File> allCacheDirs() {
+        return cacheDirs(true, f -> true);
     }
 
     /**
      * @return Cache directories. Metatorage directory excluded.
      */
-    public List<File> cacheDirectoriesWithoutMeta() {
-        return allCacheDirectories(false, f -> true);
+    public List<File> cacheDirsWithoutMeta() {
+        return cacheDirs(false, f -> true);
     }
 
     /**
      * @return Cache directories. Metatorage directory excluded.
      */
-    public List<File> userCacheDirectories() {
+    public List<File> userCacheDirs() {
         final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
 
-        return allCacheDirectories(false, f -> f.getName().equals(utilityCacheStorage));
+        return cacheDirs(false, f -> f.getName().equals(utilityCacheStorage));
     }
 
     /**
@@ -508,7 +508,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
      */
-    protected List<File> allCacheDirectories(boolean includeMeta, Predicate<File> filter) {
+    protected List<File> cacheDirs(boolean includeMeta, Predicate<File> filter) {
         File[] files = nodeStorage().listFiles();
 
         if (files == null)
@@ -593,16 +593,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpPartition(String cacheDirName, int partId) {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
-    }
-
-    /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /** */
@@ -752,6 +742,16 @@ public class NodeFileTree extends SharedFileTree {
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
+    }
+
+    /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /**

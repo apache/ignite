@@ -161,7 +161,7 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        List<File> dirs = ft.allCacheDirectories();
+        List<File> dirs = ft.allCacheDirs();
 
         if (dirs == null)
             return Collections.emptyMap();
@@ -224,7 +224,7 @@ public class GridLocalConfigManager {
         @Nullable Marshaller marshaller,
         @Nullable IgniteConfiguration cfg
     ) {
-        return ft.userCacheDirectories().stream()
+        return ft.userCacheDirs().stream()
             .flatMap(cacheDir -> NodeFileTree.cacheConfigFiles(cacheDir).stream())
             .collect(Collectors.toMap(f -> f, f -> {
                 try {

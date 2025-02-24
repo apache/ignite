@@ -750,7 +750,7 @@ public class SnapshotRestoreProcess {
                 req.snapshotPath(),
                 meta.folderName(),
                 meta.consistentId()
-            ).cacheDirectoriesWithoutMeta();
+            ).cacheDirsWithoutMeta();
 
             for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);

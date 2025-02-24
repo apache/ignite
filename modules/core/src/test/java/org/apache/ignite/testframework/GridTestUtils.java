@@ -2324,7 +2324,7 @@ public final class GridTestUtils {
      * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
      */
     public static void deleteIndexBin(NodeFileTree ft) {
-        ft.allCacheDirectories().stream()
+        ft.allCacheDirs().stream()
             .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
             .filter(File::exists)
             .forEach(File::delete);
