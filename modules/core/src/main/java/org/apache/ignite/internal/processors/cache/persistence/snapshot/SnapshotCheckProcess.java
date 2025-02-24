@@ -321,29 +321,24 @@ public class SnapshotCheckProcess {
     /** @return A composed future of increment checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
     private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
         SnapshotChecker snpChecker = kctx.cache().context().snapshotMgr().checker();
-        // Per metas result: consistent id -> check result.
-        Map<String, IncrementalSnapshotCheckResult> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
-        // Per consistent id.
-        Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
-        AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
-        CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
 
-        for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<IncrementalSnapshotCheckResult> workingFut = snpChecker.checkIncrementalSnapshot(ctx.req.snapshotName(),
-                    ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
+        assert ctx.metas.size() == 1 : "Incremental snapshots do not support checking on other topology.";
 
-            workingFut.whenComplete((res, err) -> {
-                if (err != null)
-                    exceptions.put(meta.consistentId(), err);
-                else
-                    perMetaResults.put(meta.consistentId(), res);
+        SnapshotMetadata meta = ctx.metas.get(0);
 
-                if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete( new SnapshotCheckResponse(perMetaResults, exceptions));
-            });
-        }
+        CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
-        return composedFut;
+        CompletableFuture<IncrementalSnapshotCheckResult> workingFut = snpChecker.checkIncrementalSnapshot(ctx.req.snapshotName(),
+            ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
+
+        workingFut.whenComplete((res, err) -> {
+            if (err != null)
+                resFut.completeExceptionally(err);
+            else
+                resFut.complete(new SnapshotCheckResponse(res, null));
+        });
+
+        return resFut;
     }
 
     /** @return A composed future of partitions checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
@@ -528,6 +523,11 @@ public class SnapshotCheckProcess {
             ctx.metas = assingMetas(metas);
 
             if (!F.isEmpty(ctx.metas)) {
+                if (ctx.metas.size() > 1 && ctx.req.incrementalIndex() > 0) {
+                    throw new IllegalStateException("Found several snapshot metadatas to process on current node. " +
+                        "Incremental snapshots do not support checking/restoring on other topology.");
+                }
+
                 ctx.locFileTree = new HashMap<>(ctx.metas.size(), 1.0f);
 
                 for (SnapshotMetadata metaToProc : ctx.metas) {
