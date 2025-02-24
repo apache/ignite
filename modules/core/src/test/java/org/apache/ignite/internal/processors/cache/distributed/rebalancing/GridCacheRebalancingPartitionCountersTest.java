@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,10 +35,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  *
@@ -118,22 +121,23 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         final int problemNode = 2;
 
         IgniteEx node = (IgniteEx)ignite(problemNode);
+
+        NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
+
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
         boolean primaryRemoved = false;
         for (int i = 0; i < PARTITIONS_CNT; i++) {
-            String nodeName = getTestIgniteInstanceName(problemNode);
-
-            Path dirPath = Paths.get(U.defaultWorkDirectory(), "db", nodeName.replace(".", "_"), CACHE_NAME + "-" + CACHE_NAME);
+            Path dirPath = ft.cacheStorage(false, CACHE_NAME).toPath();
 
             info("Path: " + dirPath.toString());
 
             assertTrue(Files.exists(dirPath));
 
             for (File f : dirPath.toFile().listFiles()) {
-                if (f.getName().equals("part-" + i + ".bin")) {
+                if (f.getName().equals(partitionFileName(i))) {
                     if (contains(primaryPartitions, i)) {
                         info("Removing: " + f.getName());
 
@@ -142,7 +146,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                         f.delete();
                     }
                 }
-                else if ("index.bin".equals(f.getName())) {
+                else if (partitionFileName(INDEX_PARTITION).equals(f.getName())) {
                     info("Removing: " + f.getName());
 
                     f.delete();

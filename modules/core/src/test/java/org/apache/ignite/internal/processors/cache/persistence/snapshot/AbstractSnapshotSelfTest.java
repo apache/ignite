@@ -116,8 +116,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -346,7 +344,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         try {
             try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> NodeFileTree.partitionFile(p.toFile()) && p.toFile().getName().endsWith(FILE_SUFFIX))
+                p -> NodeFileTree.partitionFile(p.toFile()) && NodeFileTree.binFile(p.toFile()))
             ) {
                 for (Path path : partFiles)
                     result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
@@ -632,7 +630,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             if (!sft.nodeStorage().exists())
                 continue;
 
-            for (File cacheDir : sft.cacheDirectories(f -> !f.getName().equals(METASTORAGE_DIR_NAME))) {
+            for (File cacheDir : sft.cacheDirsWithoutMeta()) {
                 String name = NodeFileTree.cacheName(cacheDir);
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());

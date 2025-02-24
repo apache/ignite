@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -57,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -65,7 +62,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.snapshotMetaFileName;
@@ -83,7 +79,7 @@ public class Dump implements AutoCloseable {
     private final File dumpDir;
 
     /** Dump directories. */
-    private final List<NodeFileTree> fts;
+    private final List<SnapshotFileTree> sfts;
 
     /** Specific consistent id. */
     private final @Nullable String consistentId;
@@ -143,11 +139,11 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
-        this.fts = metadata.stream()
-            .map(m -> new NodeFileTree(dumpDir, m.folderName()))
-            .collect(Collectors.toList());
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(log);
+        this.cctx = standaloneKernalContext(dumpDir, F.first(metadata).folderName(), log);
+        this.sfts = metadata.stream()
+            .map(m -> new SnapshotFileTree(cctx, m.snapshotName(), dumpDir.getParent(), m.folderName(), m.consistentId()))
+            .collect(Collectors.toList());
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -162,12 +158,14 @@ public class Dump implements AutoCloseable {
      * @param log Logger.
      * @return Standalone kernal context.
      */
-    private GridKernalContext standaloneKernalContext(IgniteLogger log) {
-        A.ensure(F.first(fts).binaryMeta().exists(), "binary metadata directory not exists");
-        A.ensure(F.first(fts).marshaller().exists(), "marshaller directory not exists");
+    private static GridKernalContext standaloneKernalContext(File root, String folderName, IgniteLogger log) {
+        NodeFileTree ft = new NodeFileTree(root, folderName);
+
+        A.ensure(ft.binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(ft.marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, F.first(fts).binaryMeta(), F.first(fts).marshaller());
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, ft.binaryMeta(), ft.marshaller());
 
             startAllComponents(kctx);
 
@@ -181,18 +179,6 @@ public class Dump implements AutoCloseable {
     /** @return Binary types iterator. */
     public Iterator<BinaryType> types() {
         return cctx.cacheObjects().metadata().iterator();
-    }
-
-    /** @return List of node directories. */
-    public List<String> nodesDirectories() {
-        File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(NodeFileTree.binaryMetaRoot(f) || NodeFileTree.marshaller(f))
-            && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
-
-        if (dirs == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(dirs).map(File::getName).collect(Collectors.toList());
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
@@ -235,7 +221,7 @@ public class Dump implements AutoCloseable {
     public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
+        return NodeFileTree.cacheConfigFiles(sft(node).cacheDirectory(grp)).stream().map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
@@ -251,13 +237,12 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int grp) {
-        File[] parts = dumpGroupDirectory(node, grp)
-            .listFiles(f -> NodeFileTree.partitionFile(f) && f.getName().endsWith(SnapshotFileTree.partExtension(true, comprParts)));
+        List<File> parts = sft(node).cachePartitionFiles(sft(node).cacheDirectory(grp), true, comprParts);
 
         if (parts == null)
             return Collections.emptyList();
 
-        return Arrays.stream(parts)
+        return parts.stream()
             .map(NodeFileTree::partId)
             .collect(Collectors.toList());
     }
@@ -275,13 +260,13 @@ public class Dump implements AutoCloseable {
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, grp), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(sft(node).cacheDirectory(grp), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        SnapshotMetadata meta = metadata.stream().filter(m -> Objects.equals(m.folderName(), node)).findFirst().orElseGet(null);
+        SnapshotMetadata meta = metadata.stream().filter(m -> Objects.equals(m.folderName(), node)).findFirst().orElseThrow();
 
         boolean encrypted = meta.encryptionKey() != null;
 
@@ -352,24 +337,13 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return Dump directories. */
-    public List<NodeFileTree> fileTrees() {
-        return fts;
+    public List<SnapshotFileTree> fileTrees() {
+        return sfts;
     }
 
-    /** */
-    private File dumpGroupDirectory(String node, int grpId) {
-        File nodeDir = Paths.get(dumpDir.getAbsolutePath(), DFLT_STORE_DIR, node).toFile();
-
-        assert nodeDir.exists() && nodeDir.isDirectory();
-
-        File[] grpDirs = nodeDir.listFiles(f -> f.isDirectory()
-            && NodeFileTree.CACHE_DIR_FILTER.test(f)
-            && grpId == CU.cacheId(NodeFileTree.cacheName(f)));
-
-        if (grpDirs.length != 1)
-            throw new IgniteException("Wrong number of group directories: " + grpDirs.length);
-
-        return grpDirs[0];
+    /** @return Snapshot file tree for specific folder name. */
+    private SnapshotFileTree sft(String folderName) {
+        return sfts.stream().filter(sft -> sft.folderName().equals(folderName)).findFirst().orElseThrow();
     }
 
     /** @return Kernal context. */

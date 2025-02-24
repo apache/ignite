@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -118,6 +117,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -1313,10 +1313,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cctx.pageStore() instanceof FilePageStoreManager :
                     "Invalid page store manager was created: " + cctx.pageStore();
 
-                Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
-                    cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().toPath(),
-                    partitionFileName(PageIdAllocator.INDEX_PARTITION)
-                );
+                NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+
+                File anyIdxPartFile = ft.allCacheDirs().stream()
+                    .map(f -> new File(f, partitionFileName(PageIdAllocator.INDEX_PARTITION)))
+                    .filter(File::exists)
+                    .findFirst().orElse(null);
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
@@ -1340,10 +1342,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param partFile Partition file.
      */
-    private int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
+    private int resolvePageSizeFromPartitionFile(File partFile) throws IOException, IgniteCheckedException {
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
-        try (FileIO fileIO = ioFactory.create(partFile.toFile())) {
+        try (FileIO fileIO = ioFactory.create(partFile)) {
             int minimalHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minimalHdr)

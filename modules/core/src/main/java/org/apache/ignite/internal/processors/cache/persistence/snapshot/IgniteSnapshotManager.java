@@ -68,7 +68,6 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -596,13 +595,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 List<SnapshotView> views = new ArrayList<>();
 
                 for (SnapshotMetadata m: readSnapshotMetadatas(new SnapshotFileTree(ctx, name, null))) {
-                    List<File> dirs = snapshotCacheDirectories(
+                    List<File> dirs = new SnapshotFileTree(
+                        cctx.kernalContext(),
                         m.snapshotName(),
                         null,
                         m.folderName(),
-                        m.consistentId(),
-                        f -> true
-                    );
+                        m.consistentId()
+                    ).allCacheDirs();
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
 
@@ -1774,27 +1773,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpName Snapshot name.
-     * @param folderName The name of a directory for the cache group.
-     * @param filter Cache group names to filter.
-     * @return The list of cache or cache group names in given snapshot on local node.
-     */
-    public List<File> snapshotCacheDirectories(
-        String snpName,
-        @Nullable String snpPath,
-        String folderName,
-        String consId,
-        Predicate<File> filter
-    ) {
-        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath, folderName, consId);
-
-        if (!sft.root().exists())
-            return Collections.emptyList();
-
-        return sft.cacheDirectories(filter);
-    }
-
-    /**
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
@@ -2872,7 +2850,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Cache group directory not found [groupId=" + grpId + ']');
             }
 
-            for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir)) {
+            for (File snpDataFile : NodeFileTree.cacheConfigFiles(snpCacheDir)) {
                 StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
                     snpDataFile,
                     cctx.kernalContext().marshallerContext().jdkMarshaller(),
@@ -3870,7 +3848,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override protected void init(int partsCnt) {
             if (sft.nodeStorage().exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +
-                    "[snpName=" + sft.root().getName() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
+                    "[snpName=" + sft.name() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
             }
 
             writeSnapshotDirectoryToMetastorage(sft.root());
