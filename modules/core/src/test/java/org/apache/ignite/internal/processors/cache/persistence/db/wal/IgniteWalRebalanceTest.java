@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -86,7 +87,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -105,6 +105,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  * Historical WAL rebalance base test.
@@ -895,10 +896,10 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                         DataEntry.EMPTY_FLAGS
                     )));
 
-                    File walDir = U.field(walMgr, "walWorkDir");
+                    NodeFileTree ft = supplier1.context().pdsFolderResolver().fileTree();
 
                     List<FileDescriptor> walFiles = new IgniteWalIteratorFactory().resolveWalFiles(
-                        new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(walDir));
+                        new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(ft.wal()));
 
                     FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
@@ -1509,7 +1510,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegateIO = delegate.create(file, modes);
 
-            if (file.getName().endsWith(".wal") && failRead)
+            if (WAL_NAME_PATTERN.matcher(file.getName()).matches() && failRead)
                 return new FileIODecorator(delegateIO) {
                     @Override public int read(ByteBuffer destBuf) throws IOException {
                         throw new IOException("Test exception."); // IO exception is required for correct cleanup.

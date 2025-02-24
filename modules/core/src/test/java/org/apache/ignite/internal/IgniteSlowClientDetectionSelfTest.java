@@ -68,7 +68,6 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSlowClientQueueLimit(50);
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setIdleConnectionTimeout(300_000);
         commSpi.setConnectionsPerNode(1);
 

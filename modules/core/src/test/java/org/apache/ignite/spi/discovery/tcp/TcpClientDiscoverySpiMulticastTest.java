@@ -30,6 +30,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -42,13 +44,15 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  */
 public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     /** */
-    private boolean forceSrv;
-
-    /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
 
     /** */
     private ThreadLocal<Integer> discoPort = new ThreadLocal<>();
+
+    /** */
+    private LogListener logLsnr = LogListener
+        .matches("Failed to remove injected resources from SPI")
+        .build();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,11 +72,8 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         client.set(null);
 
-        if (clientFlag != null && clientFlag) {
+        if (clientFlag != null && clientFlag)
             cfg.setClientMode(true);
-
-            spi.setForceServerMode(forceSrv);
-        }
         else {
             Integer port = discoPort.get();
 
@@ -84,6 +85,12 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+        listeningLog.registerListener(logLsnr);
+
+        cfg.setGridLogger(listeningLog);
+
         return cfg;
     }
 
@@ -92,13 +99,17 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        assertFalse(logLsnr.check());
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testClientStartsFirst() throws Exception {
+    public void testClientStart() throws Exception {
+        Ignite srv = startGrid(1);
+
         IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
             @Override public Ignite call() throws Exception {
                 client.set(true);
@@ -110,8 +121,6 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
         U.sleep(10_000);
 
         discoPort.set(TcpDiscoverySpi.DFLT_PORT);
-
-        Ignite srv = startGrid(1);
 
         Ignite client = fut.get();
 
@@ -154,23 +163,6 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoinWithMulticast() throws Exception {
-        joinWithMulticast();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testJoinWithMulticastForceServer() throws Exception {
-        forceSrv = true;
-
-        joinWithMulticast();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void joinWithMulticast() throws Exception {
         Ignite ignite0 = startGrid(0);
 
         assertSpi(ignite0, false);
@@ -181,7 +173,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        assertSpi(ignite1, !forceSrv);
+        assertSpi(ignite1, true);
 
         assertTrue(ignite1.configuration().isClientMode());
 

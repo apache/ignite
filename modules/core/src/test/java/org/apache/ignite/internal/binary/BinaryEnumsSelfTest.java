@@ -112,8 +112,6 @@ public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
             cfg.setBinaryConfiguration(bCfg);
         }
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(CacheMode.PARTITIONED);

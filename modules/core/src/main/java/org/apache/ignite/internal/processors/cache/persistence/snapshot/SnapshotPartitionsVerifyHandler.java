@@ -17,24 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
-public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKey, PartitionHashRecord>> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -49,7 +45,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         try {
             return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotDirectory(), opCtx.groups(),
                 type() == SnapshotHandlerType.CREATE, opCtx.check(), skipHash()).get();
@@ -62,24 +58,24 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-        Map<ClusterNode, Exception> errs = new HashMap<>();
+        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> res : results) {
+        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
             if (res.error() != null) {
-                errs.put(res.node(), res.error());
+                bldr.addException(res.node(), res.error());
 
                 continue;
             }
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.data().entrySet())
-                clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+            Map<PartitionKey, PartitionHashRecord> data = res.data();
+
+            bldr.addPartitionHashes(data);
         }
 
-        IdleVerifyResultV2 verifyResult = new IdleVerifyResultV2(clusterHashes, errs);
+        IdleVerifyResult verifyResult = bldr.build();
 
-        if (errs.isEmpty() && !verifyResult.hasConflicts())
+        if (verifyResult.exceptions().isEmpty() && !verifyResult.hasConflicts())
             return;
 
         GridStringBuilder buf = new GridStringBuilder();

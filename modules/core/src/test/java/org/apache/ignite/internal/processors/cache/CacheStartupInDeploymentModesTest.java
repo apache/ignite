@@ -22,8 +22,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,14 +38,10 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /** */
     private DeploymentMode deploymentMode;
 
-    /** */
-    private Marshaller marshaller;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(marshaller);
         cfg.setDeploymentMode(deploymentMode);
 
         CacheConfiguration cacheCfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -76,7 +70,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     @Test
     public void testStartedInIsolatedMode() throws Exception {
         deploymentMode = DeploymentMode.ISOLATED;
-        marshaller = new BinaryMarshaller();
 
         doCheckStarted(deploymentMode);
     }
@@ -87,7 +80,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     @Test
     public void testStartedInPrivateMode() throws Exception {
         deploymentMode = DeploymentMode.PRIVATE;
-        marshaller = new BinaryMarshaller();
 
         doCheckStarted(deploymentMode);
     }
@@ -102,8 +94,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         checkTopology(2);
 
         assertEquals(mode, ignite(0).configuration().getDeploymentMode());
-
-        assert ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
 
         IgniteCache rCache = ignite(0).cache(REPLICATED_CACHE);
 

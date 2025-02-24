@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,8 +82,10 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
+import static org.apache.ignite.internal.cdc.CdcMain.SEGMENT_CONSUMING_TIME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
@@ -97,6 +101,12 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     public static final long UPDATE_TTL = 60_000L;
+
+    /** */
+    private static final String CUSTOM_CACHE_DATA_ROOT = "storage";
+
+    /** */
+    private String storagePath;
 
     /** */
     @Parameterized.Parameter
@@ -134,6 +144,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+             // Check custom storage dir for some cases.
+            .setStoragePath(storagePath)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -149,6 +161,15 @@ public class CdcSelfTest extends AbstractCdcTest {
         );
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        U.delete(new File(U.defaultWorkDirectory(), CUSTOM_CACHE_DATA_ROOT));
+
+        storagePath = ThreadLocalRandom.current().nextBoolean() ? CUSTOM_CACHE_DATA_ROOT : null;
     }
 
     /** Simplest CDC test. */
@@ -291,6 +312,13 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         checkMetrics(cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
 
+        // Metric check awaits the CDC consumer to finish.
+        long[] segmentConsumingTime = ((MetricRegistry)getFieldValue(cdcMain, "mreg"))
+            .<HistogramMetric>findMetric(SEGMENT_CONSUMING_TIME).value();
+
+        assertFalse(F.isEmpty(segmentConsumingTime));
+        assertTrue(Arrays.stream(segmentConsumingTime).sum() > 0);
+
         rmvFut.cancel();
 
         assertTrue(cnsmr.stopped());
@@ -323,11 +351,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         txCache.putAll(batch);
 
         // Check `DataRecord(List<DataEntry>)` logged.
-        File archive = U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            grid(1).configuration().getDataStorageConfiguration().getWalArchivePath(),
-            false
-        );
+        File archive = grid(1).context().pdsFolderResolver().fileTree().walArchive();
 
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
@@ -802,7 +826,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, 1);
 
-        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+        File walCdcDir = ign.context().pdsFolderResolver().fileTree().walCdc();
 
         assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
 
@@ -836,7 +860,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteWriteAheadLogManager wal = ign.context().cache().context().wal(true);
-        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+        File walCdcDir = ign.context().pdsFolderResolver().fileTree().walCdc();
 
         RunnableX writeSgmnt = () -> {
             int sgmnts = wal.walArchiveSegments();

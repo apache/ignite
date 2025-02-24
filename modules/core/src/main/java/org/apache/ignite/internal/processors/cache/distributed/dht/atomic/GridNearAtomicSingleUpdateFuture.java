@@ -97,7 +97,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(cctx,
             cache,
@@ -111,7 +112,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             skipStore,
             keepBinary,
             recovery,
-            remapCnt);
+            remapCnt,
+            appAttrs);
         this.key = key;
         this.val = val;
     }

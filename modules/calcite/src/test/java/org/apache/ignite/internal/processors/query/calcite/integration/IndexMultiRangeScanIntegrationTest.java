@@ -16,7 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
@@ -29,26 +31,34 @@ import org.junit.runners.Parameterized;
  * Tests index multi-range scans (with SEARCH/SARG operator or with dynamic parameters).
  */
 @RunWith(Parameterized.class)
-public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegrationTest {
+public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public boolean dynamicParams;
 
-    /** */
-    @Parameterized.Parameters(name = "dynamicParams={0}")
-    public static List<Boolean> parameters() {
-        return F.asList(true, false);
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "sqlTxMode={0},dynamicParams={1}")
+    public static Collection<?> parameters() {
+        List<Object[]> params = new ArrayList<>();
+
+        for (boolean dynamicParams : new boolean[]{true, false}) {
+            for (SqlTransactionMode sqlTxMode : SqlTransactionMode.values()) {
+                params.add(new Object[]{sqlTxMode, dynamicParams});
+            }
+        }
+
+        return params;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void init() throws Exception {
+        super.init();
 
-        sql("CREATE TABLE test (c1 INTEGER, c2 VARCHAR, c3 INTEGER)");
+        sql("CREATE TABLE test (c1 INTEGER, c2 VARCHAR, c3 INTEGER) WITH " + atomicity());
         sql("CREATE INDEX c1c2c3 ON test(c1, c2, c3)");
-        sql("CREATE TABLE test_desc (c1 INTEGER, c2 VARCHAR, c3 INTEGER)");
+        sql("CREATE TABLE test_desc (c1 INTEGER, c2 VARCHAR, c3 INTEGER) WITH " + atomicity());
         sql("CREATE INDEX c1c2c3_desc ON test_desc(c1 DESC, c2 DESC, c3 DESC)");
-        sql("CREATE TABLE test_pk (c1 INTEGER, c2 VARCHAR, c3 INTEGER, PRIMARY KEY(c1, c2, c3))");
+        sql("CREATE TABLE test_pk (c1 INTEGER, c2 VARCHAR, c3 INTEGER, PRIMARY KEY(c1, c2, c3)) WITH " + atomicity());
 
         for (String tbl : F.asList("test", "test_desc", "test_pk")) {
             sql("INSERT INTO " + tbl + "(c1, c2, c3) VALUES (0, null, 0)");

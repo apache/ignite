@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -47,7 +47,8 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  *
@@ -176,7 +177,10 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        removeIndexBin(0);
+        U.delete(new File(
+            nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(0))).cacheStorage(false, CACHE_NAME),
+            partitionFileName(INDEX_PARTITION)
+        ));
 
         node = startGrid(0);
 
@@ -194,17 +198,6 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         assertFalse(clo.call().hasIssues());
 
         assertEquals(msgFound, idxRebuildLsnr.check());
-    }
-
-    /** */
-    private void removeIndexBin(int nodeId) throws IgniteCheckedException {
-        U.delete(
-            U.resolveWorkDirectory(
-                U.defaultWorkDirectory(),
-                "db/" + U.maskForFileName(getTestIgniteInstanceName(nodeId)) + "/cache-" + CACHE_NAME + "/" + INDEX_FILE_NAME,
-                false
-            )
-        );
     }
 
     /**

@@ -89,8 +89,6 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
-import static org.apache.ignite.internal.IgniteFeatures.CONT_QRY_SECURITY_AWARE;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 
 /**
@@ -883,7 +881,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
         GridKernalContext ctx = cctx.kernalContext();
 
-        if (ctx.security().enabled() && allNodesSupports(ctx.discovery().allNodes(), CONT_QRY_SECURITY_AWARE)) {
+        if (ctx.security().enabled()) {
             final UUID subjId = ctx.security().securityContext().subject().id();
 
             return f.apply(subjId, component);

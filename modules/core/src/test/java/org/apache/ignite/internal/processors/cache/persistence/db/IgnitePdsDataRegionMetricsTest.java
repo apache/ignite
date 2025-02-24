@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -56,7 +57,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
 import static org.apache.ignite.events.EventType.EVT_PAGE_REPLACEMENT_STARTED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
@@ -399,13 +400,15 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     private void checkMetricsConsistency(final IgniteEx node, String cacheName) throws Exception {
         FilePageStoreManager pageStoreMgr = (FilePageStoreManager)node.context().cache().context().pageStore();
+        NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
 
         assert pageStoreMgr != null : "Persistence is not enabled";
 
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
 
-        File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), METASTORAGE_DIR_NAME) :
-            pageStoreMgr.cacheWorkDir(node.cachex(cacheName).configuration());
+        File cacheWorkDir = metaStore
+            ? ft.cacheStorage(METASTORAGE_DIR_NAME)
+            : ft.cacheStorage(node.cachex(cacheName).configuration());
 
         long totalPersistenceSize = 0;
 
@@ -416,7 +419,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                 File file = path.toFile();
 
                 FilePageStore store = (FilePageStore)pageStoreMgr.getStore(metaStore ?
-                    METASTORAGE_CACHE_ID : CU.cacheId(cacheName), partId(file.getName()));
+                    METASTORAGE_CACHE_ID : CU.cacheId(cacheName), partId(file));
 
                 int pageSize = store.getPageSize();
                 long storeSize = path.toFile().length() - store.headerSize();

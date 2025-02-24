@@ -27,8 +27,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -43,8 +43,8 @@ import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 /** Prints info regarding caches, groups or sequences. */
 public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
-    Function<CacheListCommandArg, Predicate<GridClientNode>> FILTER = arg -> node ->
-        node.connectable() && (arg.nodeId() == null || Objects.equals(node.nodeId(), arg.nodeId()));
+    Function<CacheListCommandArg, Predicate<ClusterNode>> FILTER = arg -> node ->
+        arg.nodeId() == null || Objects.equals(node.id(), arg.nodeId());
 
     /** {@inheritDoc} */
     @Override public String description() {
@@ -59,7 +59,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
 
     /** {@inheritDoc} */
     @Override public ViewCacheTaskResult execute(
-        @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         CacheListCommandArg arg,
         Consumer<String> printer
@@ -68,7 +68,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
 
-        Optional<GridClientNode> node = nodes(cli, ignite)
+        Optional<ClusterNode> node = nodes(client, ignite)
             .stream()
             .filter(FILTER.apply(arg))
             .findFirst();
@@ -76,10 +76,11 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
         if (!node.isPresent())
             throw new IllegalArgumentException("Node not found: id=" + arg.nodeId());
 
-        ViewCacheTaskResult res = CommandUtils.execute(cli, ignite, ViewCacheTask.class, arg, singletonList(node.get()));
+        ViewCacheTaskResult res = CommandUtils.execute(client, ignite,
+            ViewCacheTask.class, arg, singletonList(node.get()));
 
         if (arg.config() && cmd == CACHES)
-            cachesConfig(cli, ignite, arg, res, printer);
+            cachesConfig(client, ignite, arg, res, printer);
         else
             printCacheInfos(res.cacheInfos(), cmd, printer);
 
@@ -87,24 +88,24 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
     }
 
     /**
-     * @param cli Client.
+     * @param client Client.
      * @param arg Cache argument.
      * @param viewRes Cache view task result.
      */
     private void cachesConfig(
-        GridClient cli,
+        IgniteClient client,
         Ignite ignite,
         CacheListCommandArg arg,
         ViewCacheTaskResult viewRes,
         Consumer<String> printer
     ) throws Exception {
-        Collection<GridClientNode> nodes = nodes(cli, ignite)
+        Collection<ClusterNode> nodes = nodes(client, ignite)
             .stream()
             .filter(FILTER.apply(arg))
             .collect(Collectors.toSet());
 
         Map<String, CacheConfiguration> res = CommandUtils.execute(
-            cli,
+            client,
             ignite,
             CacheConfigurationCollectorTask.class,
             new CacheConfigurationCollectorTaskArg(arg.regex()),

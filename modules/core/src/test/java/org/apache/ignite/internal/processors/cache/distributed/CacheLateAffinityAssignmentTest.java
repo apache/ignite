@@ -115,9 +115,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /** */
-    private boolean forceSrvMode;
-
-    /** */
     private static final String CACHE_NAME1 = "testCache1";
 
     /** */
@@ -152,13 +149,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         else
             commSpi = new TestRecordingCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(commSpi);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        discoSpi.setForceServerMode(forceSrvMode);
         discoSpi.setNetworkTimeout(60_000);
 
         cfg.setClientFailureDetectionTimeout(100000);
@@ -1953,58 +1947,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClientStartFirst1() throws Exception {
-        clientStartFirst(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientStartFirst2() throws Exception {
-        clientStartFirst(3);
-    }
-
-    /**
-     * @param clients Number of client nodes.
-     * @throws Exception If failed.
-     */
-    private void clientStartFirst(int clients) throws Exception {
-        forceSrvMode = true;
-
-        int topVer = 0;
-
-        for (int i = 0; i < clients; i++)
-            startClient(topVer, ++topVer);
-
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String nodeName) {
-                return null;
-            }
-        };
-
-        startServer(topVer, ++topVer);
-
-        checkAffinity(topVer, topVer(topVer, 0), true);
-
-        startServer(topVer, ++topVer);
-
-        checkAffinity(topVer, topVer(topVer, 0), false);
-
-        checkAffinity(topVer, topVer(topVer, 1), true);
-
-        stopNode(clients, ++topVer);
-
-        checkAffinity(clients + 1, topVer(topVer, 0), true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testRandomOperations() throws Exception {
-        forceSrvMode = true;
-
         final int MAX_SRVS = 10;
         final int MAX_CLIENTS = 10;
         final int MAX_CACHES = 15;

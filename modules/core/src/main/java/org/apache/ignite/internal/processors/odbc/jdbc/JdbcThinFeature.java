@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.sql.Connection;
 import java.util.EnumSet;
 import org.apache.ignite.internal.ThinProtocolFeature;
 
@@ -33,7 +34,13 @@ public enum JdbcThinFeature implements ThinProtocolFeature {
     CUSTOM_OBJECT(2),
 
     /** Add ability to set explicit query timeout on the cluster node by the JDBC client. */
-    QUERY_TIMEOUT(3);
+    QUERY_TIMEOUT(3),
+
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(4),
+
+    /** Send {@link Connection#setClientInfo(String, String)} with messages. */
+    CLIENT_INFO(5);
 
     /** */
     private static final EnumSet<JdbcThinFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(JdbcThinFeature.class);

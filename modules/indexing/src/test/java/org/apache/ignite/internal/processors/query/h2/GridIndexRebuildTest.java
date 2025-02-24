@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -337,25 +335,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
 
         assertFalse("B+Tree is corrupted.", lsnr.check());
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
-
-        File igDbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbPath, false);
-
-        U.delete(igDbDir);
-
-        Files.createDirectory(igDbDir.toPath());
-
-        String ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
-
-        ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", "archive", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
     }
 
     /** */

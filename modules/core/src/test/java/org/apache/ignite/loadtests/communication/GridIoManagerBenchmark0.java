@@ -450,7 +450,6 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setTcpNoDelay(true);
-        spi.setSharedMemoryPort(-1);
 
         info("Comm SPI: " + spi);
 

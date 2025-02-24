@@ -26,7 +26,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -59,8 +58,6 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
 
         // Use small system thread pool to reproduce the issue.
         cfg.setSystemThreadPoolSize(IGNITE_THREAD_POOL_SIZE);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

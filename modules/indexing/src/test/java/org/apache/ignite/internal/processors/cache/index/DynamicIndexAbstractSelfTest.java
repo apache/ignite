@@ -41,7 +41,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -123,8 +122,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));

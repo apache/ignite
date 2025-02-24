@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Role;
@@ -349,7 +347,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                dumpDirectory(ign, name),
+                snapshotFileTree(ign, name).root(),
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
@@ -439,16 +437,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         return new Dump(
-            dumpDirectory(ign, name),
+            snapshotFileTree(ign, name).root(),
             true,
             false,
             log
         );
-    }
-
-    /** */
-    public static File dumpDirectory(IgniteEx ign, String name) throws IgniteCheckedException {
-        return new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name);
     }
 
     /** */

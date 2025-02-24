@@ -21,8 +21,10 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
@@ -38,7 +40,7 @@ class IncrementalSnapshotCheckResult implements Serializable {
      * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
      * into the incremental snapshot.
      */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes;
+    private Map<PartitionKey, PartitionHashRecord> partHashRes;
 
     /** Partially committed transactions' collection. */
     private Collection<GridCacheVersion> partiallyCommittedTxs;
@@ -54,7 +56,7 @@ class IncrementalSnapshotCheckResult implements Serializable {
     /** */
     IncrementalSnapshotCheckResult(
         Map<Object, TransactionsHashRecord> txHashRes,
-        Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes,
+        Map<PartitionKey, PartitionHashRecord> partHashRes,
         Collection<GridCacheVersion> partiallyCommittedTxs,
         Collection<Exception> exceptions
     ) {
@@ -65,7 +67,7 @@ class IncrementalSnapshotCheckResult implements Serializable {
     }
 
     /** */
-    public Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
+    public Map<PartitionKey, PartitionHashRecord> partHashRes() {
         return partHashRes;
     }
 

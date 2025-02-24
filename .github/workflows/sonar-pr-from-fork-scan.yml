@@ -46,6 +46,8 @@ jobs:
       - name: Read pull request event
         shell: bash
         run: |
+          # We can trust these values because we use 'workflow approval' to
+          # review the PR before approving the workflow:
           echo "pr_number=$(sed '1q;d' pr-event.txt)" >> "$GITHUB_ENV"
           echo "pr_head_ref=$(sed '2q;d' pr-event.txt)" >> "$GITHUB_ENV"
           echo "pr_base_ref=$(sed '3q;d' pr-event.txt)" >> "$GITHUB_ENV"
@@ -83,17 +85,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
             # "fetch-depth: 0" is needed for Sonar's new code detection, blame information and issue backdating
             # see more details at https://community.sonarsource.com/t/git-fetch-depth-implications/75260
 
       - name: Checkout PR base branch
         run: |
-          git remote add upstream ${{ github.event.repository.clone_url }}
+          git remote add upstream https://github.com/apache/ignite
           git fetch upstream
           git checkout -B $pr_base_ref upstream/$pr_base_ref
-          git checkout ${{ github.event.workflow_run.head_branch }}
+          git checkout ${{ github.event.workflow_run.head_sha }}
           git clean -ffdx && git reset --hard HEAD
 
       - name: Download compiled classes artifact

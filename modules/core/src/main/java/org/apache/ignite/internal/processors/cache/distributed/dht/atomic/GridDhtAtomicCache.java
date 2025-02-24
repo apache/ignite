@@ -281,6 +281,27 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.startTopologyVersion(),
+            AtomicApplicationAttributesAwareRequest.class,
+            new CI2<UUID, AtomicApplicationAttributesAwareRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    AtomicApplicationAttributesAwareRequest req
+                ) {
+                    if (req.applicationAttributes() != null)
+                        ctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(req.applicationAttributes()));
+
+                    try {
+                        processNearAtomicUpdateRequest(nodeId, req.payload());
+                    }
+                    finally {
+                        ctx.operationContextPerCall(null);
+                    }
+                }
+            });
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
             GridNearAtomicUpdateResponse.class,
             new CI2<UUID, GridNearAtomicUpdateResponse>() {
                 @Override public void apply(
@@ -674,11 +695,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
         warnIfUnordered(conflictMap, BulkOperation.PUT);
 
-        return updateAll0(
+        IgniteInternalFuture<?> fut = updateAll0(
             null,
             null,
             null,
@@ -687,6 +712,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             UPDATE,
             true);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -729,9 +759,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> conflictMap) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return removeAllAsync0(null, conflictMap, false, true);
+        IgniteInternalFuture<?> fut = removeAllAsync0(null, conflictMap, false, true);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /**
@@ -1071,7 +1110,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null ? opCtx.applicationAttributes() : null);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1257,7 +1297,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                opCtx != null ? opCtx.applicationAttributes() : null
             );
         }
         else {
@@ -1278,7 +1319,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                opCtx != null ? opCtx.applicationAttributes() : null);
         }
     }
 
@@ -1335,7 +1377,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null ? opCtx.applicationAttributes() : null);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -3109,6 +3152,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals = null;
         }
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         GridNearAtomicUpdateFuture updateFut = new GridNearAtomicUpdateFuture(
             ctx,
             this,
@@ -3126,7 +3171,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.skipStore(),
             req.keepBinary(),
             req.recovery(),
-            MAX_RETRIES);
+            MAX_RETRIES,
+            opCtx == null ? null : opCtx.applicationAttributes());
 
         updateFut.map();
     }

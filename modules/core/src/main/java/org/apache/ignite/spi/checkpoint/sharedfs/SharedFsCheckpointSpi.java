@@ -29,6 +29,7 @@ import java.util.Queue;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -121,6 +121,9 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
+    /** Default root checkpoint directory. */
+    public static final String DFLT_ROOT = "cp";
+
     /**
      * Default checkpoint directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
      * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
@@ -128,7 +131,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
      */
-    public static final String DFLT_DIR_PATH = "cp/sharedfs";
+    public static final String DFLT_DIR_PATH = DFLT_ROOT + "/sharedfs";
 
     /** */
     private static final String CODES = "0123456789QWERTYUIOPASDFGHJKLZXCVBNM";
@@ -227,7 +230,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         this.igniteInstanceName = igniteInstanceName;
 
         if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
-            marsh = MarshallerUtils.jdkMarshaller(ignite.name());
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
         else
             marsh = ignite.configuration().getMarshaller();
 

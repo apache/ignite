@@ -45,7 +45,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -85,9 +84,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** Flag indicating if starting node should have cache. */
     protected boolean hasCache;
-
-    /** Whether BinaryMarshaller is set. */
-    protected boolean binaryMarshaller;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -180,11 +176,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        binaryMarshaller = grid(0).configuration().getMarshaller() instanceof BinaryMarshaller;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         orgCache = null;
         personCache = null;
@@ -230,29 +221,16 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 if (personCache.getName().equals(meta.cacheName())) {
                     assertEquals("Invalid types size", 1, types.size());
                     assert types.contains("Person");
-
-                    if (binaryMarshaller) {
-                        assert Object.class.getName().equals(meta.keyClass("Person"));
-                        assert Object.class.getName().equals(meta.valueClass("Person"));
-                    }
-                    else {
-                        assert AffinityKey.class.getName().equals(meta.keyClass("Person"));
-                        assert Person.class.getName().equals(meta.valueClass("Person"));
-                    }
+                    assert Object.class.getName().equals(meta.keyClass("Person"));
+                    assert Object.class.getName().equals(meta.valueClass("Person"));
 
                     Map<String, String> fields = meta.fields("Person");
 
                     assert fields != null;
                     assert fields.size() == 3;
 
-                    if (binaryMarshaller) {
-                        assert Integer.class.getName().equals(fields.get("AGE"));
-                        assert Integer.class.getName().equals(fields.get("ORGID"));
-                    }
-                    else {
-                        assert int.class.getName().equals(fields.get("AGE"));
-                        assert int.class.getName().equals(fields.get("ORGID"));
-                    }
+                    assert Integer.class.getName().equals(fields.get("AGE"));
+                    assert Integer.class.getName().equals(fields.get("ORGID"));
 
                     assert String.class.getName().equals(fields.get("NAME"));
 
@@ -289,12 +267,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 else if (orgCache.getName().equals(meta.cacheName())) {
                     assertEquals("Invalid types size", 1, types.size());
                     assert types.contains("Organization");
-
-                    if (binaryMarshaller)
-                        assert Object.class.getName().equals(meta.valueClass("Organization"));
-                    else
-                        assert Organization.class.getName().equals(meta.valueClass("Organization"));
-
+                    assert Object.class.getName().equals(meta.valueClass("Organization"));
                     assert String.class.getName().equals(meta.keyClass("Organization"));
 
                     Map<String, String> fields = meta.fields("Organization");
@@ -302,12 +275,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assert fields != null;
                     assertEquals("Fields: " + fields, 2, fields.size());
 
-                    if (binaryMarshaller) {
-                        assert Integer.class.getName().equals(fields.get("ID"));
-                    }
-                    else {
-                        assert int.class.getName().equals(fields.get("ID"));
-                    }
+                    assert Integer.class.getName().equals(fields.get("ID"));
 
                     assert String.class.getName().equals(fields.get("NAME"));
                 }

@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -76,12 +75,6 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
  * This class implement NioListener which process handshake stage, and transmit messages to session.
  */
 public class InboundConnectionHandler extends GridNioServerListenerAdapter<Message> {
-    /**
-     * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
-     * before it starts being visible for server)
-     */
-    private static final IgniteProductVersion VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT = IgniteProductVersion.fromString("2.1.4");
-
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -228,7 +221,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
             }
 
             try {
-                if (client || ctxInitLatch.getCount() == 0 || !stateProvider.isHandshakeWaitSupported()) {
+                if (client || ctxInitLatch.getCount() == 0) {
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
@@ -505,8 +498,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 if (node0 != null) {
                     assert node0.isClient() : node0;
 
-                    if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
-                        unknownNode = false;
+                    unknownNode = false;
                 }
             }
             else if (discoverySpi instanceof IgniteDiscoverySpi)

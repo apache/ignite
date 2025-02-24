@@ -51,8 +51,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -64,8 +64,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  *
@@ -169,14 +170,13 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+
         stopGrid(0);
 
         System.setProperty(IGNITE_PDS_SKIP_CRC, "false");
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-        File walDir = new File(dbDir, "wal");
-
-        U.delete(walDir);
+        U.delete(ft.wal());
 
         try {
             startGrid(0);
@@ -317,13 +317,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         ignite0.cluster().state(ClusterState.INACTIVE);
 
-        FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
-
-        File workDir = storeMgr.workDir();
-        File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
-        File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
-
-        readOnlyFile.set(metaStoreFile);
+        readOnlyFile.set(ignite0.context().pdsFolderResolver().fileTree().partitionFile(METASTORAGE_DIR_NAME, 0));
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
@@ -417,7 +411,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         failingFileIOFactory.createClosure((file, options) -> {
             FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
 
-            if (file.getName().endsWith(".wal")) {
+            if (WAL_NAME_PATTERN.matcher(file.getName()).matches()) {
                 return new FileIODecorator(delegate) {
                     @Override public int write(ByteBuffer srcBuf) throws IOException {
                         throw new IOException("No space left on device");

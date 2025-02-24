@@ -39,9 +39,9 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -243,12 +243,12 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
     @Nullable private File[] expWalDirs(IgniteEx n) {
         FileWriteAheadLogManager walMgr = walMgr(n);
 
-        if (walMgr != null) {
-            SegmentRouter sr = walMgr.getSegmentRouter();
-            assertNotNull(sr);
+        NodeFileTree ft = n.context().pdsFolderResolver().fileTree();
 
-            File workDir = sr.getWalWorkDir();
-            return sr.hasArchive() ? F.asArray(workDir, sr.getWalArchiveDir()) : F.asArray(workDir);
+        if (walMgr != null) {
+            assertNotNull(walMgr.getSegmentRouter());
+
+            return ft.walArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
         }
 
         return null;

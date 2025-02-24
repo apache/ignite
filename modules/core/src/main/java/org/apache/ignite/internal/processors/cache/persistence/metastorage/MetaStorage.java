@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
@@ -145,7 +144,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     private SortedMap<String, byte[]> lastUpdates;
 
     /** */
-    private final Marshaller marshaller = JdkMarshaller.DEFAULT;
+    private final Marshaller marshaller;
 
     /** Partition id. */
     private int partId;
@@ -164,6 +163,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         this.dataRegion = dataRegion;
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
+        marshaller = cctx.kernalContext().marshallerContext().jdkMarshaller();
     }
 
     /** */

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.client.impl;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -31,9 +30,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
-
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 
 /**
  *
@@ -75,21 +71,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException {
-        // Check compatibility of new forced deactivation on all nodes.
-        UUID oldVerNode = checkFeatureSupportedByCluster(client, IgniteFeatures.SAFE_CLUSTER_DEACTIVATION, false,
-            false);
-
-        if (oldVerNode == null)
-            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, forceDeactivation)).get();
-        else {
-            if (newState == INACTIVE && !forceDeactivation) {
-                throw new GridClientException("Deactivation stopped. Found a node not supporting checking of " +
-                    "safety of this operation: " + oldVerNode + ". Deactivation clears in-memory caches (without " +
-                    "persistence) including the system caches. To deactivate cluster pass flag 'force'.");
-            }
-
-            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
-        }
+        withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, forceDeactivation)).get();
     }
 
     /** {@inheritDoc} */

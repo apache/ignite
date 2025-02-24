@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -49,6 +50,10 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Snapshot metadata. */
     @GridToStringExclude
     private transient SnapshotMetadata meta;
+
+    /** Snapshot file tree. */
+    @GridToStringExclude
+    private transient SnapshotFileTree sft;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
@@ -223,6 +228,20 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
      */
     public void meta(SnapshotMetadata meta) {
         this.meta = meta;
+    }
+
+    /**
+     * Stores snapshot file tree.
+     */
+    public void snapshotFileTree(SnapshotFileTree sft) {
+        this.sft = sft;
+    }
+
+    /**
+     * @return Snapshot file tree.
+     */
+    public SnapshotFileTree snapshotFileTree() {
+        return sft;
     }
 
     /** {@inheritDoc} */

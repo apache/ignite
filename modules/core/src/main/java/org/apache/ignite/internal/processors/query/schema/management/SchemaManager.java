@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -504,17 +505,28 @@ public class SchemaManager {
 
         for (Class<?> cls : clss) {
             for (Method m : cls.getDeclaredMethods()) {
-                QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
+                QuerySqlFunction fun = m.getAnnotation(QuerySqlFunction.class);
+                QuerySqlTableFunction tableFun = m.getAnnotation(QuerySqlTableFunction.class);
 
-                if (ann != null) {
-                    int modifiers = m.getModifiers();
+                if (fun == null && tableFun == null)
+                    continue;
 
-                    if (!Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers))
-                        throw new IgniteCheckedException("Method " + m.getName() + " must be public static.");
+                if (!Modifier.isPublic(m.getModifiers())) {
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                        "method must be public.");
+                }
 
-                    String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
+                if (fun != null && tableFun != null) {
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                        "both table and non-table function variants are defined.");
+                }
 
-                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                if (fun != null)
+                    lsnr.onFunctionCreated(schema, fun.alias().isEmpty() ? m.getName() : fun.alias(), fun.deterministic(), m);
+                else {
+                    String alias = tableFun.alias().isEmpty() ? m.getName() : tableFun.alias();
+
+                    lsnr.onTableFunctionCreated(schema, alias, m, tableFun.columnTypes(), tableFun.columnNames());
                 }
             }
         }
@@ -1413,6 +1425,17 @@ public class SchemaManager {
         /** {@inheritDoc} */
         @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
             lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onFunctionCreated(schemaName, name, deterministic, method)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTableFunctionCreated(
+            String schemaName,
+            String name,
+            Method method,
+            Class<?>[] colTypes,
+            String[] colNames
+        ) {
+            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onTableFunctionCreated(schemaName, name, method, colTypes, colNames)));
         }
 
         /** {@inheritDoc} */
