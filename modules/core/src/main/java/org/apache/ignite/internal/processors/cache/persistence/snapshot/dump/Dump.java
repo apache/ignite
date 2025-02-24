@@ -237,13 +237,12 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int grp) {
-        File[] parts = sft(node).cacheDirectory(grp)
-            .listFiles(f -> SnapshotFileTree.dumpPartitionFile(f, comprParts));
+        List<File> parts = sft(node).cachePartitionFiles(sft(node).cacheDirectory(grp), true, comprParts);
 
         if (parts == null)
             return Collections.emptyList();
 
-        return Arrays.stream(parts)
+        return parts.stream()
             .map(NodeFileTree::partId)
             .collect(Collectors.toList());
     }
