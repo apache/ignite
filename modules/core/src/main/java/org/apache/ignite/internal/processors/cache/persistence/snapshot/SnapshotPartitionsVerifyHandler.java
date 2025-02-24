@@ -68,7 +68,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 continue;
             }
 
-            bldr.addPartitionHashes(res.data());
+            Map<PartitionKey, PartitionHashRecord> data = res.data();
+
+            bldr.addPartitionHashes(data);
         }
 
         IdleVerifyResult verifyResult = bldr.build();
