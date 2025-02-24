@@ -159,6 +159,11 @@ public final class DataRegionConfiguration implements Serializable {
     private boolean cdcEnabled;
 
     /**
+     * A path the root directory where the persistent Store for this data region will persist data and indexes.
+     */
+    @Nullable private String storagePath;
+
+    /**
      * Gets data region name.
      *
      * @return Data region name.
@@ -578,6 +583,26 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public boolean isCdcEnabled() {
         return cdcEnabled;
+    }
+
+    /**
+     * @return A path the root directory where the Persistent Store will persist data and indexes.
+     */
+    public String getStoragePath() {
+        return storagePath;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist data and indexes for this data region.
+     * By default, the Persistent Store's files are located under Ignite work directory.
+     *
+     * @param persistenceStorePath Persistence store path.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setStoragePath(String persistenceStorePath) {
+        this.storagePath = persistenceStorePath;
+
+        return this;
     }
 
     /** {@inheritDoc} */
