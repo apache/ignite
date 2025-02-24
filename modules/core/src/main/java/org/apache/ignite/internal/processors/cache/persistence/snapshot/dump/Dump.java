@@ -142,7 +142,7 @@ public class Dump implements AutoCloseable {
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, F.first(metadata).folderName(), log);
         this.sfts = metadata.stream()
-            .map(m -> new SnapshotFileTree(cctx, m.snapshotName(), dumpDir.getAbsolutePath(), m.folderName(), m.consistentId()))
+            .map(m -> new SnapshotFileTree(cctx, m.snapshotName(), dumpDir.getParent(), m.folderName(), m.consistentId()))
             .collect(Collectors.toList());
         this.raw = raw;
         this.encSpi = encSpi;
@@ -341,7 +341,7 @@ public class Dump implements AutoCloseable {
         return sfts;
     }
 
-    /** */
+    /** @return Snapshot file tree for specific folder name. */
     private SnapshotFileTree sft(String folderName) {
         return sfts.stream().filter(sft -> sft.folderName().equals(folderName)).findFirst().orElseThrow();
     }
