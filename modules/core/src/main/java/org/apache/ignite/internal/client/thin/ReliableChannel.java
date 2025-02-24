@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +39,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAuthenticationException;
@@ -633,7 +633,7 @@ final class ReliableChannel implements AutoCloseable {
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
-        Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
+        Set<List<InetSocketAddress>> validAddrsSet = new HashSet<>(newAddrs);
 
         // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
         if (holders != null && clientCfg.getAddressesFinder() == null) {
@@ -647,27 +647,25 @@ final class ReliableChannel implements AutoCloseable {
             }
         }
 
-        newAddrsSet.addAll(curAddrs.keySet());
+        for (InetSocketAddress addr : curAddrs.keySet())
+            validAddrsSet.add(Collections.singletonList(addr));
 
         // Close obsolete holders or map old but valid addresses to holders
         if (holders != null) {
-            for (ClientChannelHolder h : holders) {
-                boolean found = false;
+            outerLoop:
 
+            for (ClientChannelHolder h : holders) {
                 for (InetSocketAddress addr : h.getAddresses()) {
-                    // If new endpoints contain at least one of channel addresses, don't close this channel.
-                    if (newAddrsSet.contains(addr)) {
-                        found = true;
-                        break;
+                    for (List<InetSocketAddress> addrList : validAddrsSet) {
+                        // If new endpoints contain at least one of channel addresses, don't close this channel.
+                        if (addrList.contains(addr)) {
+                            curAddrs.putIfAbsent(addr, h);
+
+                            continue outerLoop;
+                        }
                     }
                 }
-
-                if (found) {
-                    for (InetSocketAddress addr : h.getAddresses())
-                        curAddrs.putIfAbsent(addr, h);
-                }
-                else
-                    h.close();
+                h.close();
             }
         }
 
@@ -684,25 +682,30 @@ final class ReliableChannel implements AutoCloseable {
         if (idx != -1 && holders != null)
             currDfltHolder = holders.get(idx);
 
-        for (InetSocketAddress addr : newAddrsSet) {
-            ClientChannelHolder hld = curAddrs.get(addr);
+        for (List<InetSocketAddress> addrs : validAddrsSet) {
+            ClientChannelHolder hld = null;
 
-            if (hld == null) {
-                List<InetSocketAddress> addrList = new ArrayList<>();
+            // Try to find already created channel holder.
+            for (InetSocketAddress addr : addrs) {
+                hld = curAddrs.get(addr);
 
-                addrList.add(addr);
-
-                hld = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrList));
-            }
-            else if (!hld.getAddresses().contains(addr)) {
-                List<InetSocketAddress> newAddrList = new ArrayList<>(hld.getAddresses());
-
-                newAddrList.add(addr);
-
-                hld.setConfiguration(new ClientChannelConfiguration(clientCfg, newAddrList));
+                if (hld != null) {
+                    if (!hld.getAddresses().equals(addrs)) { // Enrich holder addresses.
+                        hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
+                    }
+                    break;
+                }
             }
 
-            reinitHolders.add(hld);
+            if (hld == null) { // If not found, create the new one.
+                hld = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs));
+
+                for (InetSocketAddress addr : addrs)
+                    curAddrs.putIfAbsent(addr, hld);
+            }
+
+            if (!reinitHolders.contains(hld))
+                reinitHolders.add(hld);
 
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
@@ -942,10 +945,6 @@ final class ReliableChannel implements AutoCloseable {
             throw new ClientException("Connections to nodes aren't initialized.");
 
         int size = holders.size();
-
-        // Essential to produce a retry connection on the channel after a failure occurred on that single channel.
-        if (channelsCnt.get() == 0 && partitionAwarenessEnabled)
-            size = 2;
 
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
     }
