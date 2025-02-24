@@ -24,7 +24,6 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -32,7 +31,6 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -190,17 +188,15 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
     /**
      * @param indexes expected new style node indexes in folders
-     * @throws IgniteCheckedException if failed
      */
-    private void assertNodeIndexesInFolder(Integer... indexes) throws IgniteCheckedException {
+    private void assertNodeIndexesInFolder(Integer... indexes) {
         assertEquals(new TreeSet<>(Arrays.asList(indexes)), getAllNodeIndexesInFolder());
     }
 
     /**
      * @return set of all indexes of nodes found in work folder
-     * @throws IgniteCheckedException if failed.
      */
-    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
+    @NotNull private Set<Integer> getAllNodeIndexesInFolder() {
         final File curFolder = sharedFileTree().db();
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
@@ -220,9 +216,8 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * Checks existence of all storage-related directories
      *
      * @param subDirName sub directories name expected
-     * @throws IgniteCheckedException if IO error occur
      */
-    private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
+    private void assertPdsDirsDefaultExist(String subDirName) {
         NodeFileTree ft = nodeFileTree(subDirName);
 
         Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
