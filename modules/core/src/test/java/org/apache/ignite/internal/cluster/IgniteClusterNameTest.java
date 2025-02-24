@@ -86,5 +86,4 @@ public class IgniteClusterNameTest extends GridCommonAbstractTest {
         else
             assertNotEquals(id, srv.context().cluster().clusterName());
     }
-
 }
