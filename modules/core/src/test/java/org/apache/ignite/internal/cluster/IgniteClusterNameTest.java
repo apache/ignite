@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cluster;
+package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
+import static org.junit.Assert.assertNotEquals;
+
 /**
  * Tests that cluster name is defined at all cluster states.
  */
-public class ClusterNameTest extends GridCommonAbstractTest {
+public class IgniteClusterNameTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter
     public boolean persistentEnabled;
@@ -64,27 +63,28 @@ public class ClusterNameTest extends GridCommonAbstractTest {
     @Test
     public void testDefaultClusterName() throws Exception {
         IgniteEx srv = startGrid(0);
+        String id = srv.cluster().id().toString();
 
-        checkDefaultClusterName();
+        assertEquals(id, srv.context().cluster().clusterName());
 
         if (persistentEnabled) {
             srv.cluster().state(ClusterState.ACTIVE);
 
-            checkDefaultClusterName();
+            assertEquals(id, srv.context().cluster().clusterName());
         }
 
         srv.cluster().state(ClusterState.INACTIVE);
 
-        checkDefaultClusterName();
+        assertEquals(id, srv.context().cluster().clusterName());
+
+        stopAllGrids();
+
+        srv = startGrid(0);
+
+        if (persistentEnabled)
+            assertEquals(id, srv.context().cluster().clusterName());
+        else
+            assertNotEquals(id, srv.context().cluster().clusterName());
     }
 
-    /** */
-    private void checkDefaultClusterName() throws Exception {
-        IgniteEx srv = grid(0);
-
-        String name = srv.compute().execute(VisorIdAndTagViewTask.class,
-            new VisorTaskArgument<>(F.asList(srv.cluster().node().id()), null, false)).result().clusterName();
-
-        assertEquals(srv.cluster().id().toString(), name);
-    }
 }
