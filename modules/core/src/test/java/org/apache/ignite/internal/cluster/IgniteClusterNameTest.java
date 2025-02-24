@@ -29,16 +29,16 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertNotEquals;
 
 /**
- * Tests that cluster name is defined at all cluster states.
+ * Tests cluster name.
  */
 public class IgniteClusterNameTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter
-    public boolean persistentEnabled;
+    public boolean isPersistenceEnabled;
 
     /** */
-    @Parameterized.Parameters(name = "persistentEnabled={0}")
-    public static Object[] params() {
+    @Parameterized.Parameters(name = "isPersistenceEnabled={0}")
+    public static Object[] parameters() {
         return new Object[] {false, true};
     }
 
@@ -47,7 +47,7 @@ public class IgniteClusterNameTest extends GridCommonAbstractTest {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(persistentEnabled)));
+                    .setPersistenceEnabled(isPersistenceEnabled)));
     }
 
     /** {@inheritDoc} */
@@ -67,7 +67,7 @@ public class IgniteClusterNameTest extends GridCommonAbstractTest {
 
         assertEquals(id, srv.context().cluster().clusterName());
 
-        if (persistentEnabled) {
+        if (isPersistenceEnabled) {
             srv.cluster().state(ClusterState.ACTIVE);
 
             assertEquals(id, srv.context().cluster().clusterName());
@@ -81,7 +81,7 @@ public class IgniteClusterNameTest extends GridCommonAbstractTest {
 
         srv = startGrid(0);
 
-        if (persistentEnabled)
+        if (isPersistenceEnabled)
             assertEquals(id, srv.context().cluster().clusterName());
         else
             assertNotEquals(id, srv.context().cluster().clusterName());
