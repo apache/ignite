@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -190,10 +191,10 @@ public class NodeFileTree extends SharedFileTree {
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
     /** Filter out all cache directories. */
-    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
+    private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
-    protected static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
+    private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
 
@@ -210,7 +211,7 @@ public class NodeFileTree extends SharedFileTree {
     protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
-    public static final String CACHE_DATA_FILENAME = "cache_data.dat";
+    private static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
     private static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
@@ -479,10 +480,18 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param filter Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
+     * @return All cache directories.
      */
-    public List<File> cacheDirectories(Predicate<File> filter) {
+    public List<File> cacheDirectories() {
+        return cacheDirectories(true, f -> true);
+    }
+
+    /**
+     * @param includeMeta If {@code true} then include metadata directory into results.
+     * @param filter Cache group names to filter.
+     * @return Cache directories that matches filters criteria.
+     */
+    public List<File> cacheDirectories(boolean includeMeta, Predicate<File> filter) {
         File[] files = nodeStorage().listFiles();
 
         if (files == null)
@@ -491,7 +500,7 @@ public class NodeFileTree extends SharedFileTree {
         return Arrays.stream(files)
             .sorted()
             .filter(File::isDirectory)
-            .filter(CACHE_DIR_WITH_META_FILTER)
+            .filter(includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER)
             .filter(filter)
             .collect(Collectors.toList());
     }
@@ -570,31 +579,20 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param workDir Cache work directory.
-     * @param cacheDirName Cache directory name.
-     * @param part Partition id.
-     * @return Partition file.
+     * @param segment WAL segment file.
+     * @return Segment index.
      */
-    public static File partitionFile(File workDir, String cacheDirName, int part) {
-        return new File(cacheStorage(workDir, cacheDirName), partitionFileName(part));
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
-    /**
-     * @param part Partition id.
-     * @return File name.
-     */
-    public static String partitionFileName(int part) {
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
-        return part == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, part);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public static File cacheStorage(File storeWorkDir, String cacheDirName) {
-        return new File(storeWorkDir, cacheDirName);
+        return part == INDEX_PARTITION ? idxName : format(format, part);
     }
 
     /**
@@ -610,7 +608,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param dir Directory.
      * @return {@code True} if directory conforms cache group storage name pattern.
      */
-    public static boolean cacheGroupDir(File dir) {
+    private static boolean cacheGroupDir(File dir) {
         return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
     }
 
@@ -703,6 +701,28 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param root Root directory.
+     * @return Array of cache data files.
+     */
+    public static List<File> cacheConfigFiles(File root) {
+        if (cacheDir(root)) {
+            File cfg = new File(root, CACHE_DATA_FILENAME);
+
+            return cfg.exists() ? Collections.singletonList(cfg) : Collections.emptyList();
+        }
+
+        return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
+    }
+
+    /**
+     * @param part Partition id.
+     * @return File name.
+     */
+    public static String partitionFileName(int part) {
+        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
+    }
+
+    /**
      * @param name File name.
      * @return Cache name.
      */
@@ -715,16 +735,6 @@ public class NodeFileTree extends SharedFileTree {
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
-    }
-
-    /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /**

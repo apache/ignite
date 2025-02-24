@@ -24,7 +24,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,7 +103,6 @@ import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
@@ -746,13 +744,13 @@ public class SnapshotRestoreProcess {
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
-            List<File> cacheDirs = cctx.snapshotMgr().snapshotCacheDirectories(
+            List<File> cacheDirs = new SnapshotFileTree(
+                cctx.kernalContext(),
                 req.snapshotName(),
                 req.snapshotPath(),
                 meta.folderName(),
-                meta.consistentId(),
-                f -> !METASTORAGE_DIR_NAME.equals(f.getName())
-            );
+                meta.consistentId()
+            ).cacheDirectories(false, f -> true);
 
             for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);
@@ -787,7 +785,7 @@ public class SnapshotRestoreProcess {
                         "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
                 }
 
-                locCfgMgr.readCacheConfigurations(snpCacheDir, cfgsByName);
+                locCfgMgr.readCacheGroupCaches(snpCacheDir, cfgsByName);
             }
         }
 
@@ -980,8 +978,7 @@ public class SnapshotRestoreProcess {
                 if (log.isInfoEnabled())
                     cacheGrpNames.put(grpId, cacheOrGrpName);
 
-                File tmpCacheDir = ft.tmpCacheStorage(dir.getName());
-                tmpCacheDir.mkdir();
+                ft.tmpCacheStorage(dir.getName()).mkdir();
 
                 Set<PartitionRestoreFuture> leftParts;
 
@@ -1020,15 +1017,20 @@ public class SnapshotRestoreProcess {
                     SnapshotFileTree sft
                         = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
 
-                    File snpCacheDir = sft.cacheStorage(dir.getName());
-
                     leftParts.removeIf(partFut -> {
                         boolean doCopy = ofNullable(meta.partitions().get(grpId))
                             .orElse(Collections.emptySet())
                             .contains(partFut.partId);
 
-                        if (doCopy)
-                            copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, partFut);
+                        if (doCopy) {
+                            copyLocalAsync(
+                                opCtx0,
+                                sft.partitionFile(dir.getName(), partFut.partId),
+                                ft.tmpPartition(dir.getName(), partFut.partId),
+                                grpId,
+                                partFut
+                            );
+                        }
 
                         return doCopy;
                     });
@@ -1042,13 +1044,15 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        if (sft.partitionFile(dir.getName(), INDEX_PARTITION).exists()) {
+                        File snpFile = sft.partitionFile(dir.getName(), INDEX_PARTITION);
+
+                        if (snpFile.exists()) {
                             PartitionRestoreFuture idxFut;
 
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION, opCtx0.processedParts));
 
-                            copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, idxFut);
+                            copyLocalAsync(opCtx0, snpFile, ft.tmpPartition(dir.getName(), INDEX_PARTITION), grpId, idxFut);
                         }
                     }
                 }
@@ -1697,19 +1701,16 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param opCtx Snapshot operation context.
-     * @param srcDir Snapshot directory to copy from.
-     * @param targetDir Destination directory to copy to.
+     * @param snpFile Snapshot file.
+     * @param tmpPartFile Temp partition file.
      */
     private void copyLocalAsync(
         SnapshotRestoreContext opCtx,
-        File srcDir,
-        File targetDir,
+        File snpFile,
+        File tmpPartFile,
+        int grpId,
         PartitionRestoreFuture partFut
     ) {
-        File snpFile = new File(srcDir, NodeFileTree.partitionFileName(partFut.partId));
-        Path partFile = Paths.get(targetDir.getAbsolutePath(), NodeFileTree.partitionFileName(partFut.partId));
-        int grpId = CU.cacheId(NodeFileTree.tmpDirCacheName(targetDir));
-
         IgniteSnapshotManager snapMgr = ctx.cache().context().snapshotMgr();
 
         CompletableFuture<Path> copyPartFut = CompletableFuture.supplyAsync(() -> {
@@ -1724,9 +1725,9 @@ public class SnapshotRestoreProcess {
                     ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
             }
 
-            IgniteSnapshotManager.copy(snapMgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
+            IgniteSnapshotManager.copy(snapMgr.ioFactory(), snpFile, tmpPartFile, snpFile.length());
 
-            return partFile;
+            return tmpPartFile.toPath();
         }, snapMgr.snapshotExecutorService());
 
         if (opCtx.isGroupCompressed(grpId)) {
@@ -1734,9 +1735,9 @@ public class SnapshotRestoreProcess {
                 p -> {
                     CompletableFuture<Path> result = new CompletableFuture<>();
                     try {
-                        punchHole(grpId, partFut.partId, partFile.toFile());
+                        punchHole(grpId, partFut.partId, tmpPartFile);
 
-                        result.complete(partFile);
+                        result.complete(tmpPartFile.toPath());
                     }
                     catch (Throwable t) {
                         result.completeExceptionally(t);
@@ -1750,7 +1751,7 @@ public class SnapshotRestoreProcess {
         copyPartFut.whenComplete((r, t) -> opCtx.errHnd.accept(t))
             .whenComplete((r, t) -> {
                 if (t == null)
-                    partFut.complete(partFile);
+                    partFut.complete(tmpPartFile.toPath());
                 else
                     partFut.completeExceptionally(t);
             });

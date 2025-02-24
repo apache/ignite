@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -118,6 +116,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -173,6 +172,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
@@ -716,7 +716,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (int partId = 0; partId < partitions; partId++)
                     memEx.invalidate(grpDesc.groupId(), partId);
 
-                memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
+                memEx.invalidate(grpDesc.groupId(), INDEX_PARTITION);
             }
 
             if (grpDesc.config().isEncryptionEnabled())
@@ -1313,10 +1313,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cctx.pageStore() instanceof FilePageStoreManager :
                     "Invalid page store manager was created: " + cctx.pageStore();
 
-                Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
-                    cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().toPath(),
-                    partitionFileName(PageIdAllocator.INDEX_PARTITION)
-                );
+                NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+
+                File anyIdxPartFile = ft.cacheDirectories().stream()
+                    .map(f -> new File(f, partitionFileName(INDEX_PARTITION)))
+                    .filter(File::exists)
+                    .findFirst().orElse(null);
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
@@ -1340,10 +1342,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param partFile Partition file.
      */
-    private int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
+    private int resolvePageSizeFromPartitionFile(File partFile) throws IOException, IgniteCheckedException {
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
-        try (FileIO fileIO = ioFactory.create(partFile.toFile())) {
+        try (FileIO fileIO = ioFactory.create(partFile)) {
             int minimalHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minimalHdr)
@@ -2473,7 +2475,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partId Partition id.
      */
     private boolean skipRemovedIndexUpdates(int grpId, int partId) {
-        return (partId == PageIdAllocator.INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
+        return (partId == INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
     }
 
     /**
@@ -2685,7 +2687,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             exec.submit(() -> {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                if (skipRemovedIndexUpdates(cacheCtx.groupId(), PageIdAllocator.INDEX_PARTITION))
+                                if (skipRemovedIndexUpdates(cacheCtx.groupId(), INDEX_PARTITION))
                                     cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx, true);
 
                                 try {

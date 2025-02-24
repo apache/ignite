@@ -85,7 +85,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
@@ -189,7 +188,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
         }
 
-        List<File> files = ft.cacheDirectories(f -> true);
+        List<File> files = ft.cacheDirectories();
 
         for (File file : files) {
             File[] tmpFiles = file.listFiles(NodeFileTree::tmpCacheConfig);
@@ -229,7 +228,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace() {
-        ft.cacheDirectories(f -> !METASTORAGE_DIR_NAME.equals(f.getName())).forEach(U::delete);
+        ft.cacheDirectories(false, f -> true).forEach(U::delete);
     }
 
     /** {@inheritDoc} */
@@ -737,39 +736,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, partId);
 
         return store.pages();
-    }
-
-    /**
-     * @param cacheDir Cache directory to check.
-     * @return List of cache partitions in given directory.
-     */
-    public static List<File> cachePartitionFiles(File cacheDir) {
-        return cachePartitionFiles(cacheDir, FILE_SUFFIX);
-    }
-
-    /**
-     * @param cacheDir Cache directory to check.
-     * @param ext File extension.
-     * @return List of cache partitions in given directory.
-     */
-    public static List<File> cachePartitionFiles(File cacheDir, String ext) {
-        File[] files = cacheDir.listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .filter(File::isFile)
-            .filter(f -> f.getName().endsWith(ext))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * @param root Root directory.
-     * @return Array of cache data files.
-     */
-    public static File[] cacheDataFiles(File root) {
-        return root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
     }
 
     /** {@inheritDoc} */
