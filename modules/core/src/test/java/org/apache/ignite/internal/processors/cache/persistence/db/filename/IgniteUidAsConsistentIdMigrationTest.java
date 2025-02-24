@@ -663,7 +663,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if failed.
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory(), PdsFolderResolver.DB_DEFAULT_FOLDER);
+        final File curFolder = new File(U.defaultWorkDirectory(), FilePageStoreManager.DFLT_STORE_DIR);
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
