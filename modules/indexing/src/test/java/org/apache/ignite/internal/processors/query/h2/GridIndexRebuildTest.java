@@ -205,7 +205,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         boolean idxRmvd = false;
 
-        for (File grp : ft.cacheDirectories(false, f -> true)) {
+        for (File grp : ft.cacheDirectoriesWithoutMeta()) {
             File idx = new File(grp, partitionFileName(INDEX_PARTITION));
 
             assertTrue(idx.exists());

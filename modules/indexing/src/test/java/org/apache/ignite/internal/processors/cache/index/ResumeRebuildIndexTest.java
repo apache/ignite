@@ -335,7 +335,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         n0.destroyCache(DEFAULT_CACHE_NAME + 2);
         n0.destroyCache(DEFAULT_CACHE_NAME + 3);
 
-        for (File dir : n1.context().pdsFolderResolver().fileTree().cacheDirectories()) {
+        for (File dir : n1.context().pdsFolderResolver().fileTree().allCacheDirectories()) {
             if (dir.getName().contains(DEFAULT_CACHE_NAME + 3) || dir.getName().contains(DEFAULT_CACHE_NAME + "_G"))
                 U.delete(dir);
         }

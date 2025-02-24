@@ -630,7 +630,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             if (!sft.nodeStorage().exists())
                 continue;
 
-            for (File cacheDir : sft.cacheDirectories(false, f -> true)) {
+            for (File cacheDir : sft.cacheDirectoriesWithoutMeta()) {
                 String name = NodeFileTree.cacheName(cacheDir);
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());

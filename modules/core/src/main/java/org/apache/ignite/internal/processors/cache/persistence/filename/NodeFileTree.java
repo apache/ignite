@@ -44,6 +44,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
@@ -482,8 +483,24 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @return All cache directories.
      */
-    public List<File> cacheDirectories() {
-        return cacheDirectories(true, f -> true);
+    public List<File> allCacheDirectories() {
+        return allCacheDirectories(true, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> cacheDirectoriesWithoutMeta() {
+        return allCacheDirectories(false, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> userCacheDirectories() {
+        final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
+
+        return allCacheDirectories(false, f -> f.getName().equals(utilityCacheStorage));
     }
 
     /**
@@ -491,7 +508,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
      */
-    public List<File> cacheDirectories(boolean includeMeta, Predicate<File> filter) {
+    protected List<File> allCacheDirectories(boolean includeMeta, Predicate<File> filter) {
         File[] files = nodeStorage().listFiles();
 
         if (files == null)
