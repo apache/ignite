@@ -1006,8 +1006,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long length) {
-            delegate.sendPart(part, snpCacheDir, pair, length);
+        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long length) {
+            delegate.sendPart(from, to, pair, length);
         }
 
         /** {@inheritDoc} */

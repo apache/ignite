@@ -572,7 +572,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
-    public File cacheStorage(String cacheDirName) {
+    protected File cacheStorage(String cacheDirName) {
         return new File(nodeStorage, cacheDirName);
     }
 

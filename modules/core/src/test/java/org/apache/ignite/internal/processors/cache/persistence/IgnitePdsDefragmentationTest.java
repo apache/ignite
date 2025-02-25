@@ -461,9 +461,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
-        stopGrid(0);
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration());
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
+        stopGrid(0);
 
         //Defragmentation should fail when node starts.
         startAndAwaitNodeFail(workDir);

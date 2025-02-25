@@ -124,7 +124,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, sft.cacheStorage(cacheDir.getName()), gp, snpPart.length());
+                snpSndr.sendPart(snpPart, sft.partitionFile(cacheDir.getName(), gp.getPartitionId()), gp, snpPart.length());
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)

@@ -124,12 +124,12 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param part Partition file to send.
-     * @param snpCacheDir Snapshot cache directory.
+     * @param from Partition file to send.
+     * @param to Destination file.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
      */
-    public final void sendPart(File part, File snpCacheDir, GroupPartitionId pair, Long length) {
+    public final void sendPart(File from, File to, GroupPartitionId pair, Long length) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -137,7 +137,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendPart0(part, snpCacheDir, pair, length);
+            sendPart0(from, to, pair, length);
         }
         finally {
             lock.readLock().unlock();

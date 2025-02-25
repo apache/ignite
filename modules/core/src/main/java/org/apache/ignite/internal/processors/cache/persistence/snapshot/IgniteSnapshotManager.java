@@ -3742,27 +3742,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long len) {
+            File snpCacheDir = to.getParentFile();
+
             try {
-                assert part.exists();
+                assert from.exists();
                 assert len > 0 : "Requested partitions has incorrect file length " +
                     "[pair=" + pair + ", cacheDirName=" + snpCacheDir.getName() + ']';
 
-                sndr.send(part, 0, len, transmissionParams(rqId, snpCacheDir.getName(), pair), TransmissionPolicy.FILE);
+                sndr.send(from, 0, len, transmissionParams(rqId, snpCacheDir.getName(), pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
-                    log.info("Partition file has been sent [part=" + part.getName() + ", pair=" + pair +
+                    log.info("Partition file has been sent [part=" + from.getName() + ", pair=" + pair +
                         ", grpName=" + cacheName(snpCacheDir) + ", length=" + len + ']');
                 }
             }
             catch (TransmissionCancelledException e) {
                 if (log.isInfoEnabled()) {
-                    log.info("Transmission partition file has been interrupted [part=" + part.getName() +
+                    log.info("Transmission partition file has been interrupted [part=" + from.getName() +
                         ", pair=" + pair + ']');
                 }
             }
             catch (IgniteCheckedException | InterruptedException | IOException e) {
-                U.error(log, "Error sending partition file [part=" + part.getName() + ", pair=" + pair +
+                U.error(log, "Error sending partition file [part=" + from.getName() + ", pair=" + pair +
                     ", length=" + len + ']', e);
 
                 throw new IgniteException(e);
@@ -3898,24 +3900,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long len) {
             try {
                 if (len == 0)
                     return;
 
-                U.mkdirs(snpCacheDir);
+                U.mkdirs(to.getParentFile());
 
-                File snpPart = new File(snpCacheDir, part.getName());
+                if (!to.exists() || to.delete())
+                    to.createNewFile();
 
-                if (!snpPart.exists() || snpPart.delete())
-                    snpPart.createNewFile();
-
-                copy(ioFactory, part, snpPart, len, transferRateLimiter);
+                copy(ioFactory, from, to, len, transferRateLimiter);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + sft.nodeStorage().getAbsolutePath() +
-                        ", cacheDirName=" + snpCacheDir.getName() + ", part=" + part.getName() +
-                        ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
+                        ", cacheDirName=" + to.getParent() + ", part=" + from.getName() +
+                        ", length=" + from.length() + ", snapshot=" + to.getName() + ']');
                 }
             }
             catch (IOException ex) {
