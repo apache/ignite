@@ -152,7 +152,6 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                     try {
                         U.ensureDirectory(backupDir, backupDirName, null);
 
-                        // TODO: refactor me. Can't calc cache directory directly from nodeStorage root.
                         copyCacheFiles(ft.nodeStorage().toPath().resolve(dir).toFile(), backupDir);
 
                         backupCompletedCaches.add(backupDirName);
