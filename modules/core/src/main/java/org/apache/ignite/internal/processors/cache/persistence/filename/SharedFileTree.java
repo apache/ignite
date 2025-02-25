@@ -43,13 +43,13 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
  */
 public class SharedFileTree {
     /** Name of binary metadata folder. */
-    public static final String BINARY_METADATA_DIR = "binary_meta";
+    protected static final String BINARY_METADATA_DIR = "binary_meta";
 
     /** Name of marshaller mappings folder. */
     public static final String MARSHALLER_DIR = "marshaller";
 
     /** Database default folder. */
-    public static final String DB_DIR = "db";
+    protected static final String DB_DIR = "db";
 
     /** Root(work) directory. */
     protected final File root;
