@@ -121,8 +121,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         mgr.localSnapshotSenderFactory(sft -> new DelegateSnapshotSender(log,
             mgr.snapshotExecutorService(), old.apply(sft)) {
-            @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                if (cacheDir.equals(cacheDirName))
+            @Override public void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long length) {
+                if (cacheDir.equals(snpCacheDir.getName()))
                     partStart.countDown();
 
                 try {
@@ -132,7 +132,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     throw new RuntimeException(e);
                 }
 
-                super.sendPart0(part, cacheDirName, pair, length);
+                super.sendPart0(part, snpCacheDir, pair, length);
             }
 
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {

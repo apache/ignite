@@ -401,7 +401,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             return runAsync(() -> {
                 snpSndr.sendPart(
                     ft.partitionFile(cacheDirName, partId),
-                    cacheDirName,
+                    sft.cacheStorage(cacheDirName),
                     pair,
                     partLen);
 
