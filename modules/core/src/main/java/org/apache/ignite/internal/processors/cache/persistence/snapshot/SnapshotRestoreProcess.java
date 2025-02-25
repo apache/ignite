@@ -758,7 +758,16 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = ft.cacheStorage(snpCacheDir.getName());
+                Map<String, StoredCacheData> ccfgs = new HashMap<>();
+
+                locCfgMgr.readCacheGroupCaches(snpCacheDir, ccfgs);
+
+                if (F.isEmpty(ccfgs))
+                    continue;
+
+                cfgsByName.putAll(ccfgs);
+
+                File cacheDir = ft.cacheStorage(F.first(ccfgs.values()).config());
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -784,8 +793,6 @@ public class SnapshotRestoreProcess {
                     throw new IgniteCheckedException("Unable to restore cache group, temp directory already exists " +
                         "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
                 }
-
-                locCfgMgr.readCacheGroupCaches(snpCacheDir, cfgsByName);
             }
         }
 
