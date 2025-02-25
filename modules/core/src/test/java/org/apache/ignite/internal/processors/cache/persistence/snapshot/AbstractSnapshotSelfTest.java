@@ -991,8 +991,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig0(File ccfg, String cacheDirName) {
-            delegate.sendCacheConfig(ccfg, cacheDirName);
+        @Override public void sendCacheConfig0(File ccfgFile, String cacheDirName) {
+            delegate.sendCacheConfig(ccfgFile, cacheDirName);
         }
 
         /** {@inheritDoc} */

@@ -355,8 +355,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             }
 
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
-                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
-                    ft.cacheDirName(ccfg), ccfgFile)));
+                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg, ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -561,11 +560,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /** */
     private class CacheConfigurationSender implements BiConsumer<String, File>, Closeable {
-        /** Cache name associated with configuration file. */
-        private final String cacheName;
-
-        /** Cache directory associated with configuration file. */
-        private final String cacheDirName;
+        /** Cache configuration. */
+        private final CacheConfiguration<?, ?> ccfg;
 
         /** Lock for cache configuration processing. */
         private final Lock lock = new ReentrantLock();
@@ -583,12 +579,11 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         private volatile boolean fromTemp;
 
         /**
+         * @param ccfg Cache configuration.
          * @param ccfgFile Cache configuration to send.
-         * @param cacheDirName Cache directory.
          */
-        public CacheConfigurationSender(String cacheName, String cacheDirName, File ccfgFile) {
-            this.cacheName = cacheName;
-            this.cacheDirName = cacheDirName;
+        public CacheConfigurationSender(CacheConfiguration<?, ?> ccfg, File ccfgFile) {
+            this.ccfg = ccfg;
             this.ccfgFile = ccfgFile;
 
             cctx.cache().configManager().addConfigurationChangeListener(this);
@@ -602,7 +597,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             lock.lock();
 
             try {
-                snpSndr.sendCacheConfig(ccfgFile, cacheDirName);
+                snpSndr.sendCacheConfig(ccfgFile, ft.cacheDirName(ccfg));
 
                 close0();
             }
@@ -620,7 +615,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             if (stopping())
                 return;
 
-            if (!cacheName.equals(this.cacheName) || sent || fromTemp)
+            if (!cacheName.equals(ccfg.getName()) || sent || fromTemp)
                 return;
 
             lock.lock();
@@ -629,7 +624,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (sent || fromTemp)
                     return;
 
-                File cacheWorkDir = sft.tempFileTree().cacheStorage(cacheDirName);
+                File cacheWorkDir = sft.tempFileTree().cacheStorage(ccfg);
 
                 if (!U.mkdirs(cacheWorkDir))
                     throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);

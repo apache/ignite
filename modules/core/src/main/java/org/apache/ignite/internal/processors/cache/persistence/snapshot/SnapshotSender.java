@@ -104,10 +104,10 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param ccfg Cache configuration file.
+     * @param ccfgFile Cache configuration file.
      * @param cacheDirName Cache group directory name.
      */
-    public final void sendCacheConfig(File ccfg, String cacheDirName) {
+    public final void sendCacheConfig(File ccfgFile, String cacheDirName) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -115,7 +115,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendCacheConfig0(ccfg, cacheDirName);
+            sendCacheConfig0(ccfgFile, cacheDirName);
         }
         finally {
             lock.readLock().unlock();
@@ -217,10 +217,10 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param ccfg Cache configuration file.
+     * @param ccfgFile Cache configuration file.
      * @param cacheDirName Cache group directory name.
      */
-    protected void sendCacheConfig0(File ccfg, String cacheDirName) {
+    protected void sendCacheConfig0(File ccfgFile, String cacheDirName) {
         // No-op by default.
     }
 
