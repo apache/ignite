@@ -140,7 +140,6 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             assertTrue(cpMarkers.length > 0);
 
             File cacheDir = ft.cacheStorage(ignite.cachex(TEST_CACHE_NAME).configuration());
-
             File[] partFiles = cacheDir.listFiles(NodeFileTree::partitionFile);
 
             assertNotNull(partFiles);
