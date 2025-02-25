@@ -388,7 +388,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException {
-        File snpCacheStorage = snapshotCacheStorage(grpId);
+        File snpCacheDir = snapshotCacheStorage(grpId);
 
         // Process partitions for a particular cache group.
         return grpParts.stream().map(partId -> {
@@ -400,8 +400,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             return runAsync(() -> {
                 snpSndr.sendPart(
-                    ft.partitionFile(snpCacheStorage.getName(), partId),
-                    snpCacheStorage,
+                    ft.partitionFile(snpCacheDir.getName(), partId),
+                    snpCacheDir,
                     pair,
                     partLen);
 
@@ -427,7 +427,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException(ex);
                 }
 
-                snpSndr.sendDelta(delta, snpCacheStorage.getName(), pair);
+                snpSndr.sendDelta(delta, snpCacheDir.getName(), pair);
 
                 processedSize.addAndGet(delta.length());
 
