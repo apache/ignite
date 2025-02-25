@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
