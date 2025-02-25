@@ -515,7 +515,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @return The full cache directory name.
      */
-    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+    private String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
         return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
@@ -547,7 +547,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return partitionFile(cacheDirName(ccfg), part);
+        return new File(cacheStorage(cacheDirName(ccfg)), partitionFileName(part));
     }
 
     /**
@@ -573,6 +573,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpCacheStorage(String cacheDirName) {
         return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
+    }
+
+    /**
+     * @param part Partition.
+     * @return File for metastorage partition.
+     */
+    public File metaStoragePartition(int part) {
+        return new File(metaStorage(), partitionFileName(part));
     }
 
     /**

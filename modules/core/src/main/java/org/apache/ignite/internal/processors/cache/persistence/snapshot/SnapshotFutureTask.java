@@ -344,7 +344,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), ft.cacheDirName(gctx.config()));
+                addPartitionWriters(grpId, e.getValue(), ft.cacheStorage(gctx.config()).getName());
             }
 
             if (withMetaStorage) {

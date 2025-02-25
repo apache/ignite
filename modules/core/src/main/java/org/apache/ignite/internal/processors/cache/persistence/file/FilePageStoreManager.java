@@ -87,7 +87,6 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  * File page store manager.
@@ -402,7 +401,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             CacheStoreHolder holder = initDir(
                 ft.metaStorage(),
-                p -> ft.partitionFile(METASTORAGE_DIR_NAME, p).toPath(),
+                p -> ft.metaStoragePartition(p).toPath(),
                 grpId,
                 MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
