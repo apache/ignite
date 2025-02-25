@@ -3755,17 +3755,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File part, File snpCacheStorage, GroupPartitionId pair, Long len) {
             try {
                 assert part.exists();
                 assert len > 0 : "Requested partitions has incorrect file length " +
-                    "[pair=" + pair + ", cacheDirName=" + snpCacheDir.getName() + ']';
+                    "[pair=" + pair + ", cacheDirName=" + snpCacheStorage.getName() + ']';
 
-                sndr.send(part, 0, len, transmissionParams(rqId, snpCacheDir.getName(), pair), TransmissionPolicy.FILE);
+                sndr.send(part, 0, len, transmissionParams(rqId, snpCacheStorage.getName(), pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been sent [part=" + part.getName() + ", pair=" + pair +
-                        ", grpName=" + cacheName(snpCacheDir) + ", length=" + len + ']');
+                        ", grpName=" + cacheName(snpCacheStorage) + ", length=" + len + ']');
                 }
             }
             catch (TransmissionCancelledException e) {
@@ -3911,14 +3911,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File part, File snpCacheStorage, GroupPartitionId pair, Long len) {
             try {
                 if (len == 0)
                     return;
 
-                U.mkdirs(snpCacheDir);
+                U.mkdirs(snpCacheStorage);
 
-                File snpPart = new File(snpCacheDir, part.getName());
+                File snpPart = new File(snpCacheStorage, part.getName());
 
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
@@ -3927,7 +3927,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + sft.nodeStorage().getAbsolutePath() +
-                        ", cacheDirName=" + snpCacheDir.getName() + ", part=" + part.getName() +
+                        ", cacheDirName=" + snpCacheStorage.getName() + ", part=" + part.getName() +
                         ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }
             }

@@ -388,7 +388,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException {
-        String cacheDirName = cacheDirName(grpId);
+        File snpCacheStorage = snapshotCacheStorage(grpId);
 
         // Process partitions for a particular cache group.
         return grpParts.stream().map(partId -> {
@@ -400,8 +400,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             return runAsync(() -> {
                 snpSndr.sendPart(
-                    ft.partitionFile(cacheDirName, partId),
-                    sft.cacheStorage(cacheDirName),
+                    ft.partitionFile(snpCacheStorage.getName(), partId),
+                    snpCacheStorage,
                     pair,
                     partLen);
 
@@ -427,7 +427,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException(ex);
                 }
 
-                snpSndr.sendDelta(delta, cacheDirName, pair);
+                snpSndr.sendDelta(delta, snpCacheStorage.getName(), pair);
 
                 processedSize.addAndGet(delta.length());
 
@@ -520,19 +520,19 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
     /**
      * @param grpId Group id.
-     * @return Name of cache group directory.
+     * @return Snapshot cache storage.
      * @throws IgniteCheckedException If cache group doesn't exist.
      */
-    private String cacheDirName(int grpId) throws IgniteCheckedException {
+    private File snapshotCacheStorage(int grpId) throws IgniteCheckedException {
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
-            return METASTORAGE_DIR_NAME;
+            return sft.metaStorage();
 
         CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return ft.cacheDirName(gctx.config());
+        return sft.cacheStorage(gctx.config());
     }
 
     /** {@inheritDoc} */
