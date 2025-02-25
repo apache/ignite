@@ -83,17 +83,16 @@ public class PdsFolderResolver<L extends FileLockHolder> {
     /** Database subfolders for old style filter. */
     private static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
         @Override public boolean accept(File pathname) {
-            String path = pathname.toString();
             return pathname.isDirectory()
                 && !"wal".equals(pathname.getName())
-                && !path.contains(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH)
-                && !path.contains(DataStorageConfiguration.DFLT_MARSHALLER_PATH)
+                && !NodeFileTree.containsBinaryMetaPath(pathname)
+                && !NodeFileTree.containsMarshaller(pathname)
                 && !pathname.getName().matches(SUBDIR_PATTERN);
         }
     };
 
     /** Database default folder. */
-    public static final String DB_DEFAULT_FOLDER = "db";
+    static final String DB_DEFAULT_FOLDER = "db";
 
     /** */
     private final IgniteConfiguration cfg;

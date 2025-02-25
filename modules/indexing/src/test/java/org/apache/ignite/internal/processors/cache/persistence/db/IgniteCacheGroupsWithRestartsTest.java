@@ -29,7 +29,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -61,7 +60,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Testing corner cases in cache group functionality: -stopping cache in shared group and immediate node leaving;
@@ -204,22 +202,11 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
                     contains("Joining node has caches with data which are not presented on cluster")));
         }
 
-        removeCacheDir(getTestIgniteInstanceName(2), "cacheGroup-group");
+        U.delete(nodeFileTree(getTestIgniteInstanceName(2).replace(".", "_")).cacheStorage(true, "group"));
 
         IgniteEx node2 = startGrid(2);
 
         assertEquals(3, node2.cluster().nodes().size());
-    }
-
-    /**
-     * @param instanceName Instance name.
-     * @param cacheGroup Cache group.
-     */
-    private void removeCacheDir(String instanceName, String cacheGroup) throws IgniteCheckedException {
-        String dn2DirName = instanceName.replace(".", "_");
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(),
-            DFLT_STORE_DIR + "/" + dn2DirName + "/" + cacheGroup, true));
     }
 
     /**

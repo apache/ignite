@@ -675,13 +675,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableFunctionScan rel) {
-        Supplier<Iterable<Object[]>> dataSupplier = expressionFactory.execute(rel.getCall());
+        Supplier<Iterable<?>> dataSupplier = expressionFactory.execute(rel.getCall());
 
         RelDataType rowType = rel.getRowType();
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(dataSupplier, rowFactory));
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(rowType, dataSupplier, rowFactory));
     }
 
     /** {@inheritDoc} */

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -47,6 +45,7 @@ import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandAr
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -54,7 +53,8 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Tesing index full and partial rebuild.
@@ -193,19 +193,29 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
             }
         }).start();
 
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
         long diff = System.currentTimeMillis() - start;
 
         U.sleep(7500 - (diff % 5000));
+
+        NodeFileTree ft = ignite(3).context().pdsFolderResolver().fileTree();
 
         stopGrid(3);
 
         stop.set(true);
 
-        for (File grp : new File(workDir, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
-            new File(grp, "index.bin").delete();
+        boolean idxRmvd = false;
+
+        for (File grp : ft.cacheDirsWithoutMeta()) {
+            File idx = new File(grp, partitionFileName(INDEX_PARTITION));
+
+            assertTrue(idx.exists());
+
+            idx.delete();
+
+            idxRmvd = true;
         }
+
+        assertTrue(idxRmvd);
 
         startGrid(3);
 
@@ -337,25 +347,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
 
         assertFalse("B+Tree is corrupted.", lsnr.check());
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
-
-        File igDbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbPath, false);
-
-        U.delete(igDbDir);
-
-        Files.createDirectory(igDbDir.toPath());
-
-        String ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
-
-        ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", "archive", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
     }
 
     /** */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.Deque;
-import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
@@ -30,8 +29,6 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE_TYPE;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
-import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PING_INTERVAL;
-import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PING_TIMEOUT;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PORT;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_CIPHER_SUITES;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_FACTORY;
@@ -68,19 +65,25 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     /** */
     private final CLIArgumentParser parser;
 
+    /** String representation of command with hidden values of sensitive arguments. */
+    private final String safeCmd;
+
     /**
      * @param cmdPath Path to the command in {@link CommandsRegistry} hierarchy.
      * @param arg Command argument.
      * @param parser CLI arguments parser.
+     * @param safeCmd String safe representation of command.
      */
     public ConnectionAndSslParameters(
         Deque<Command<?, ?>> cmdPath,
         A arg,
-        CLIArgumentParser parser
+        CLIArgumentParser parser,
+        String safeCmd
     ) {
         this.cmdPath = cmdPath;
         this.arg = arg;
         this.parser = parser;
+        this.safeCmd = safeCmd;
 
         this.user = parser.get(CMD_USER);
         this.pwd = parser.get(CMD_PASSWORD);
@@ -147,24 +150,6 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      */
     public void password(String pwd) {
         this.pwd = pwd;
-    }
-
-    /**
-     * See {@link GridClientConfiguration#getPingInterval()}.
-     *
-     * @return Ping timeout.
-     */
-    public long pingTimeout() {
-        return parser.get(CMD_PING_TIMEOUT);
-    }
-
-    /**
-     * See {@link GridClientConfiguration#getPingInterval()}.
-     *
-     * @return Ping interval.
-     */
-    public long pingInterval() {
-        return parser.get(CMD_PING_INTERVAL);
     }
 
     /**
@@ -269,5 +254,10 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      */
     public boolean verbose() {
         return parser.get(CMD_VERBOSE);
+    }
+
+    /** @return String representation of command with hidden values of sensitive arguments. */
+    public String safeCommandString() {
+        return safeCmd;
     }
 }

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,7 +50,7 @@ public class CacheValidateIndexesCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, CacheValidateIndexesCommandArg arg) {
         if (F.isEmpty(arg.nodeIds()))
             return null;
 

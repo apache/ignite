@@ -230,14 +230,15 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         }
 
         try {
-            GridNioSslHandler hnd = new GridNioSslHandler(this,
+            GridNioSslHandler hnd = new GridNioSslHandler(
+                this,
                 ses,
                 engine,
                 directBuf,
                 order,
                 log,
                 handshake,
-                sslMeta.encodedBuffer());
+                sslMeta);
 
             sslMeta.handler(hnd);
 
@@ -257,10 +258,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
             hnd.handshake();
 
-            ByteBuffer alreadyDecoded = sslMeta.decodedBuffer();
-
-            if (alreadyDecoded != null)
-                proceedMessageReceived(ses, alreadyDecoded);
+            processApplicationBuffer(ses, hnd.getApplicationBuffer());
         }
         catch (SSLException e) {
             onSessionOpenedException = e;
@@ -400,14 +398,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             if (hnd.isHandshakeFinished())
                 hnd.flushDeferredWrites();
 
-            ByteBuffer appBuf = hnd.getApplicationBuffer();
-
-            appBuf.flip();
-
-            if (appBuf.hasRemaining())
-                proceedMessageReceived(ses, appBuf);
-
-            appBuf.compact();
+            processApplicationBuffer(ses, hnd.getApplicationBuffer());
 
             if (hnd.isInboundDone() && !hnd.isOutboundDone()) {
                 if (log.isDebugEnabled())
@@ -422,6 +413,16 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         finally {
             hnd.unlock();
         }
+    }
+
+    /** */
+    private void processApplicationBuffer(GridNioSession ses, ByteBuffer appBuffer) throws IgniteCheckedException {
+        appBuffer.flip();
+
+        if (appBuffer.hasRemaining())
+            proceedMessageReceived(ses, appBuffer);
+
+        appBuffer.compact();
     }
 
     /** {@inheritDoc} */

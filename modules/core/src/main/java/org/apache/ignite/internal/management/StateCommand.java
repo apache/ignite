@@ -22,8 +22,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -33,7 +31,7 @@ import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
+import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.util.typedef.internal.U.DELIM;
 
 /** */
@@ -50,7 +48,6 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
 
     /** {@inheritDoc} */
     @Override public GridTuple3<UUID, String, ClusterState> execute(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         NoArg arg,
@@ -60,16 +57,9 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
         UUID id;
         String tag;
 
-        if (cli != null) {
-            GridClientClusterState state0 = cli.state();
-
-            state = state0.state();
-            id = state0.id();
-            tag = state0.tag();
-        }
-        else if (client != null) {
-            VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(null, client, null,
-                VisorIdAndTagViewTask.class, null, nodes(cli, client, ignite));
+        if (client != null) {
+            VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, null,
+                VisorIdAndTagViewTask.class, null, singleton(client.cluster().forServers().node()));
 
             state = client.cluster().state();
             id = idAndTag.id();

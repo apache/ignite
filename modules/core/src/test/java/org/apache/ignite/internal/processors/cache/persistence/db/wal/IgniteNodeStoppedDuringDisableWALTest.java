@@ -38,7 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -49,9 +49,9 @@ import org.junit.runners.Parameterized;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.CP_FILE_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_TEMP_NAME_PATTERN;
@@ -227,16 +227,16 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
                     boolean failed = false;
 
-                    if (name.endsWith(FilePageStoreManager.TMP_SUFFIX))
+                    if (name.endsWith(NodeFileTree.TMP_SUFFIX))
                         failed = true;
 
                     if (CP_FILE_NAME_PATTERN.matcher(name).matches())
                         failed = true;
 
-                    if (name.startsWith(PART_FILE_PREFIX) && path.toFile().length() > pageSize)
+                    if (NodeFileTree.partitionFile(path.toFile()) && path.toFile().length() > pageSize)
                         failed = true;
 
-                    if (name.startsWith(INDEX_FILE_NAME) && path.toFile().length() > pageSize)
+                    if (name.equals(partitionFileName(INDEX_PARTITION)) && path.toFile().length() > pageSize)
                         failed = true;
 
                     if (failed)

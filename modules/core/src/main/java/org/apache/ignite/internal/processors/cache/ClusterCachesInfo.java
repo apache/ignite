@@ -92,7 +92,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.validateIncomingConfiguration;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
@@ -559,7 +558,7 @@ public class ClusterCachesInfo {
      * @param failMsg Dynamic change request fail message.
      * @param topVer Current topology version.
      */
-    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
+    public void onCacheChangeRequested(ExchangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
         AffinityTopologyVersion actualTopVer = failMsg.exchangeId().topologyVersion();
 
         ExchangeActions exchangeActions = new ExchangeActions();
@@ -603,7 +602,7 @@ public class ClusterCachesInfo {
             processStopCacheRequest(exchangeActions, req, res, req.cacheName(), cacheDesc, actualTopVer, true);
         }
 
-        failMsg.exchangeActions(exchangeActions);
+        failMsg.exchangeRollbackActions(exchangeActions);
     }
 
     /**
@@ -1202,7 +1201,7 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String expDir = cacheDirName(ccfg);
+        String expDir = ctx.pdsFolderResolver().fileTree().cacheDirName(ccfg);
 
         try {
             return !expDir.equals(Paths.get(expDir).toFile().getName());
@@ -1840,7 +1839,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        locCfg.cacheData().config(),
+                        mergeConfigurations(locCfg.cacheData().config(), cfg),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
@@ -1879,6 +1878,28 @@ public class ClusterCachesInfo {
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }
+    }
+
+    /**
+     * Merges local and received cache configurations.
+     *
+     * @param loc Local cache configuration.
+     * @param received Cache configuration received from the cluster.
+     * @see #registerReceivedCaches
+     * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     * @see #updateRegisteredCachesIfNeeded(Map, Collection, boolean)
+     */
+    private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+        // Schema is supposed to get merged earlier.
+        loc.setQueryEntities(received.getQueryEntities());
+        loc.setSqlSchema(received.getSqlSchema());
+        loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
+        loc.setSqlEscapeAll(received.isSqlEscapeAll());
+
+        assert loc.isSqlOnheapCacheEnabled() == received.isSqlOnheapCacheEnabled();
+        assert loc.getSqlOnheapCacheMaxSize() == received.getSqlOnheapCacheMaxSize();
+
+        return loc;
     }
 
     /**

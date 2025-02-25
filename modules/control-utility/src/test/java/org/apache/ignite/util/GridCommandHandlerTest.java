@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -83,9 +82,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.impl.GridClientImpl;
-import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
@@ -107,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
@@ -121,6 +118,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -166,7 +164,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -180,7 +177,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.A
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.CRC_CHECK_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -309,36 +305,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
-    /**
-     * Test clients leakage.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientsLeakage() throws Exception {
-        Assume.assumeTrue(cliCommandHandler());
-
-        startGrids(1);
-
-        Map<UUID, GridClientImpl> clnts = U.field(GridClientFactory.class, "openClients");
-
-        Map<UUID, GridClientImpl> clntsBefore = new HashMap<>(clnts);
-
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
-
-        Map<UUID, GridClientImpl> clntsAfter1 = new HashMap<>(clnts);
-
-        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter1));
-
-        stopAllGrids();
-
-        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute("--set-state", "ACTIVE"));
-
-        Map<UUID, GridClientImpl> clntsAfter2 = new HashMap<>(clnts);
-
-        assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
-    }
-
     /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
@@ -363,10 +329,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
-        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
-
-        File ig1LfsDir = new File(dbDir, ig1Folder);
+        NodeFileTree ft1 = ig1.context().pdsFolderResolver().fileTree();
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().state(ACTIVE);
@@ -397,7 +360,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(1);
 
-        File[] cpMarkers = new File(ig1LfsDir, "cp").listFiles();
+        File[] cpMarkers = ft1.checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))
@@ -406,7 +369,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertThrows(log, () -> startGrid(1), Exception.class, null);
 
-        return ig1LfsDir;
+        return ft1.nodeStorage();
     }
 
     /**
@@ -549,7 +512,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("cache-"))
+            .filter(NodeFileTree::cacheDir)
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
 
@@ -592,7 +555,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("cache-"))
+            .filter(NodeFileTree::cacheDir)
             .map(File::getName)
             .collect(Collectors.toCollection(TreeSet::new));
 
@@ -1089,7 +1052,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
             igniteEx,
-            igniteEx.context().cache().utilityCache().context().dynamicDeploymentId().toString()
+            igniteEx.cluster().id().toString()
         );
     }
 
@@ -1145,7 +1108,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testState() throws Exception {
         final String newTag = "new_tag";
 
-        Ignite ignite = startGrids(1);
+        Ignite ignite = startGrids(2);
+        
+        startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
 
@@ -1199,6 +1164,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         out = testOut.toString();
 
         assertTrue(out.contains("Cluster tag: " + newTag));
+
+        ignite.cluster().state(INACTIVE);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertClusterState(INACTIVE, testOut.toString());
     }
 
     /**
@@ -3500,10 +3473,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertContains(log, (String)h.getLastOperationResult(), snpName);
 
+        File snpWorkDir = ig.context().pdsFolderResolver().fileTree().snapshotsRoot();
+
         stopAllGrids();
 
         IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(0)));
-        cfg.setWorkDirectory(Paths.get(resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), snpName).toString());
+        cfg.setWorkDirectory(Paths.get(snpWorkDir.getAbsolutePath(), snpName).toString());
 
         Ignite snpIg = startGrid(cfg);
         snpIg.cluster().state(ACTIVE);
@@ -3820,7 +3795,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(
                 log,
                 testOut.toString(),
-                !sslEnabled() ? "Please specify a value for argument: --increment" : "Unexpected value: "
+                "Please specify a value for argument: --increment"
             );
 
             // Wrong params.

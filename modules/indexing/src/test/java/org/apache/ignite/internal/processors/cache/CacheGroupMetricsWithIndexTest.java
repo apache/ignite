@@ -23,10 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -36,13 +33,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -132,7 +131,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
         pds = true;
 
-        Ignite ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -151,11 +150,12 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        IOFileFilter filter = FileFilterUtils.nameFileFilter("index.bin");
-
-        Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
+        Collection<File> idxBinFiles = ft.allCacheDirs().stream()
+            .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
+            .filter(File::exists)
+            .collect(Collectors.toList());
 
         for (File idxBin : idxBinFiles)
             U.delete(idxBin);
@@ -240,7 +240,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
     public void testIndexRebuildCountPartitionsLeftInCluster() throws Exception {
         pds = true;
 
-        Ignite ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
         startGrid(1);
 
@@ -259,19 +259,18 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        String consistentId = ignite.cluster().localNode().consistentId().toString();
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         stopGrid(0);
 
-        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+        Collection<File> idxBinFiles = ft.allCacheDirs().stream()
+            .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
+            .filter(File::exists)
+            .collect(Collectors.toList());
 
-        IOFileFilter filter = FileFilterUtils.nameFileFilter("index.bin");
+        assertFalse(idxBinFiles.isEmpty());
 
-        Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
-
-        for (File idxBin : idxBinFiles)
-            if (idxBin.getAbsolutePath().contains(consistentId))
-                U.delete(idxBin);
+        idxBinFiles.forEach(U::delete);
 
         startGrid(0);
 

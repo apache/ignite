@@ -27,8 +27,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
@@ -54,7 +52,6 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
 
     /** {@inheritDoc} */
     @Override public Map<ClusterNode, TxTaskResult> execute(
-        @Nullable GridClient cli,
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         AbstractTxCommandArg arg0,
@@ -62,16 +59,14 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     ) throws Exception {
         TxInfoCommandArg arg = (TxInfoCommandArg)arg0;
 
-        Optional<GridClientNode> node = CommandUtils.nodes(cli, client, ignite).stream()
+        Optional<ClusterNode> node = CommandUtils.nodes(client, ignite).stream()
             .filter(n -> !n.isClient())
-            .filter(GridClientNode::connectable)
             .findFirst();
 
         if (!node.isPresent())
             throw new IllegalStateException("No nodes to connect");
 
         GridCacheVersion nearXidVer = CommandUtils.execute(
-            cli,
             client,
             ignite,
             FetchNearXidVersionTask.class,
@@ -105,7 +100,6 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         }
 
         Map<ClusterNode, TxTaskResult> res = CommandUtils.execute(
-            cli,
             client,
             ignite,
             TxTask.class,

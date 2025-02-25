@@ -24,15 +24,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.systemview.view.CacheView;
 
 /**
  * Consumer of WAL data change events.
- * This consumer will receive data change events during {@link CdcMain} application invocation.
+ * This consumer will receive data change events during ignite-cdc process invocation.
  * The lifecycle of the consumer is the following:
  * <ul>
  *     <li>Start of the consumer {@link #start(MetricRegistry)}.</li>
@@ -61,11 +59,9 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  * </ul>
  * Note, {@link CdcConsumer} receive notifications on each running CDC application(node).
  *
- * @see CdcMain
  * @see CdcEvent
  * @see CacheEntryVersion
  */
-@IgniteExperimental
 public interface CdcConsumer {
     /**
      * Starts the consumer.
