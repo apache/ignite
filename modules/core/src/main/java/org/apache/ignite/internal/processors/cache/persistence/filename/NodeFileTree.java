@@ -482,24 +482,24 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @return All cache directories.
      */
-    public List<File> allCacheDirs() {
-        return cacheDirs(true, f -> true);
+    public List<File> existingCacheDirs() {
+        return existingCacheDirs(true, f -> true);
     }
 
     /**
      * @return Cache directories. Metatorage directory excluded.
      */
-    public List<File> cacheDirsWithoutMeta() {
-        return cacheDirs(false, f -> true);
+    public List<File> existingCacheDirsWithoutMeta() {
+        return existingCacheDirs(false, f -> true);
     }
 
     /**
      * @return Cache directories. Metatorage directory excluded.
      */
-    public List<File> userCacheDirs() {
+    public List<File> existingUserCacheDirs() {
         final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
 
-        return cacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
+        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
 
     /**
@@ -507,7 +507,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
      */
-    protected List<File> cacheDirs(boolean includeMeta, Predicate<File> filter) {
+    protected List<File> existingCacheDirs(boolean includeMeta, Predicate<File> filter) {
         Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
         File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
@@ -716,7 +716,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @return Array of cache data files.
      */
-    public static List<File> cacheConfigFiles(File root) {
+    public static List<File> existingCacheConfigFiles(File root) {
         if (cacheDir(root)) {
             File cfg = new File(root, CACHE_DATA_FILENAME);
 

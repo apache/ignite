@@ -427,7 +427,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException(ex);
                 }
 
-                snpSndr.sendDelta(delta, snpCacheDir.getName(), pair);
+                snpSndr.sendDelta(delta, sft.partitionFile(snpCacheDir.getName(), pair.getPartitionId()), pair);
 
                 processedSize.addAndGet(delta.length());
 

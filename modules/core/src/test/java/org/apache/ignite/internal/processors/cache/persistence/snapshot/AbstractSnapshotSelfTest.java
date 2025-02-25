@@ -630,7 +630,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             if (!sft.nodeStorage().exists())
                 continue;
 
-            for (File cacheDir : sft.cacheDirsWithoutMeta()) {
+            for (File cacheDir : sft.existingCacheDirsWithoutMeta()) {
                 String name = NodeFileTree.cacheName(cacheDir);
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
@@ -1011,8 +1011,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-            delegate.sendDelta(delta, cacheDirName, pair);
+        @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
+            delegate.sendDelta(delta, snpPart, pair);
         }
 
         /** {@inheritDoc} */

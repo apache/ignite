@@ -161,7 +161,7 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        List<File> dirs = ft.allCacheDirs();
+        List<File> dirs = ft.existingCacheDirs();
 
         if (dirs == null)
             return Collections.emptyMap();
@@ -223,8 +223,8 @@ public class GridLocalConfigManager {
         @Nullable Marshaller marshaller,
         @Nullable IgniteConfiguration cfg
     ) {
-        return ft.userCacheDirs().stream()
-            .flatMap(cacheDir -> NodeFileTree.cacheConfigFiles(cacheDir).stream())
+        return ft.existingUserCacheDirs().stream()
+            .flatMap(cacheDir -> NodeFileTree.existingCacheConfigFiles(cacheDir).stream())
             .collect(Collectors.toMap(f -> f, f -> {
                 try {
                     return readCacheData(f, marshaller, cfg);
@@ -404,7 +404,7 @@ public class GridLocalConfigManager {
         File cacheGrpDir = ft.cacheStorage(ctx.config());
 
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
-            for (File file : NodeFileTree.cacheConfigFiles(cacheGrpDir)) {
+            for (File file : NodeFileTree.existingCacheConfigFiles(cacheGrpDir)) {
                 if (!U.delete(file))
                     throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx);
             }
@@ -417,7 +417,7 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public void readCacheGroupCaches(File grpDir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        for (File file : NodeFileTree.cacheConfigFiles(grpDir)) {
+        for (File file : NodeFileTree.existingCacheConfigFiles(grpDir)) {
             if (file.length() > 0)
                 readAndAdd(
                     ccfgs,

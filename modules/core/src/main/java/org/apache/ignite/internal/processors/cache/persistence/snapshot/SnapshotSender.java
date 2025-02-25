@@ -146,10 +146,10 @@ public abstract class SnapshotSender {
 
     /**
      * @param delta Delta pages file.
-     * @param cacheDirName Cache group directory name.
+     * @param snpPart Snapshot partition.
      * @param pair Group id with partition id pair.
      */
-    public final void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
+    public final void sendDelta(File delta, File snpPart, GroupPartitionId pair) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -157,7 +157,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendDelta0(delta, cacheDirName, pair);
+            sendDelta0(delta, snpPart, pair);
         }
         finally {
             lock.readLock().unlock();
@@ -198,10 +198,10 @@ public abstract class SnapshotSender {
 
     /**
      * @param delta Delta pages file.
-     * @param cacheDirName Cache group directory name.
+     * @param snpPart Snapshot partition.
      * @param pair Group id with partition id pair.
      */
-    protected abstract void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair);
+    protected abstract void sendDelta0(File delta, File snpPart, GroupPartitionId pair);
 
     /**
      * @param mappings Local node marshaller mappings.

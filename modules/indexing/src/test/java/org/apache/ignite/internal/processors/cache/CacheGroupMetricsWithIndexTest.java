@@ -152,7 +152,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        Collection<File> idxBinFiles = ft.allCacheDirs().stream()
+        Collection<File> idxBinFiles = ft.existingCacheDirs().stream()
             .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
             .filter(File::exists)
             .collect(Collectors.toList());
@@ -263,7 +263,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         stopGrid(0);
 
-        Collection<File> idxBinFiles = ft.allCacheDirs().stream()
+        Collection<File> idxBinFiles = ft.existingCacheDirs().stream()
             .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
             .filter(File::exists)
             .collect(Collectors.toList());

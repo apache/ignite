@@ -135,8 +135,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                 super.sendPart0(part, snpCacheDir, pair, length);
             }
 
-            @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-                if (cacheDir.equals(cacheDirName) && pair.getPartitionId() != INDEX_PARTITION)
+            @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
+                if (cacheDir.equals(snpPart.getParent()) && pair.getPartitionId() != INDEX_PARTITION)
                     assertTrue("Delta length : " + delta.length() + " > 0", delta.length() > 0);
 
                 if (!sequentialWrite)
@@ -144,9 +144,9 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
                 long start = System.nanoTime();
 
-                super.sendDelta0(delta, cacheDirName, pair);
+                super.sendDelta0(delta, snpPart, pair);
 
-                if (cacheDir.equals(cacheDirName)) {
+                if (cacheDir.equals(snpPart.getParent())) {
                     log.info("Send delta [size=" + U.humanReadableByteCount(delta.length()) +
                         ", time=" + (U.nanosToMillis(System.nanoTime() - start)) + "ms, part=" + pair + "]");
                 }

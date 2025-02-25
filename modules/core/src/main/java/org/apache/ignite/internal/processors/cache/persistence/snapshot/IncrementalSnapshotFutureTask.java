@@ -83,7 +83,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     // No-op.
                 }
 
-                @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                @Override protected void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                     // No-op.
                 }
             },

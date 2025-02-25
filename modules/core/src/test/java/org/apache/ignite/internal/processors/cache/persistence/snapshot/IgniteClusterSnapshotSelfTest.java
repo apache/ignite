@@ -1320,7 +1320,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         Function<SnapshotFileTree, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
 
         return sft -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(sft)) {
-            @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+            @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                 if (log.isInfoEnabled())
                     log.info("Processing delta file has been blocked: " + delta.getName());
 
@@ -1332,7 +1332,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                     if (log.isInfoEnabled())
                         log.info("Latch released. Processing delta file continued: " + delta.getName());
 
-                    super.sendDelta0(delta, cacheDirName, pair);
+                    super.sendDelta0(delta, snpPart, pair);
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteException("Interrupted by node stop", e);

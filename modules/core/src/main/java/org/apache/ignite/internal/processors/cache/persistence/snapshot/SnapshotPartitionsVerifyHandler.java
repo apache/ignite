@@ -127,7 +127,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : opCtx.snapshotFileTree().allCacheDirs()) {
+        for (File dir : opCtx.snapshotFileTree().existingCacheDirs()) {
             int grpId = CU.cacheId(cacheName(dir));
 
             if (!grps.remove(grpId))
@@ -136,7 +136,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : opCtx.snapshotFileTree().cachePartitionFiles(dir, meta.dump(), meta.compressPartitions())) {
+            for (File part : opCtx.snapshotFileTree().existingCachePartitionFiles(dir, meta.dump(), meta.compressPartitions())) {
                 int partId = partId(part);
 
                 if (!parts.remove(partId))
