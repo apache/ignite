@@ -601,7 +601,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         null,
                         m.folderName(),
                         m.consistentId()
-                    ).cacheDirectories();
+                    ).allCacheDirs();
 
                     Collection<String> cacheGrps = F.viewReadOnly(dirs, NodeFileTree::cacheName);
 
@@ -3848,7 +3848,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override protected void init(int partsCnt) {
             if (sft.nodeStorage().exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +
-                    "[snpName=" + sft.root().getName() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
+                    "[snpName=" + sft.name() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
             }
 
             writeSnapshotDirectoryToMetastorage(sft.root());

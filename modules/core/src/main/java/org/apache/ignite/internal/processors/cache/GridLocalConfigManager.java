@@ -65,7 +65,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
@@ -162,7 +161,7 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        List<File> dirs = ft.cacheDirectories();
+        List<File> dirs = ft.allCacheDirs();
 
         if (dirs == null)
             return Collections.emptyMap();
@@ -171,9 +170,8 @@ public class GridLocalConfigManager {
 
         Collections.sort(dirs);
 
-        for (File file : dirs) {
+        for (File file : dirs)
             readCacheGroupCaches(file, ccfgs);
-        }
 
         return ccfgs;
     }
@@ -225,9 +223,7 @@ public class GridLocalConfigManager {
         @Nullable Marshaller marshaller,
         @Nullable IgniteConfiguration cfg
     ) {
-        String utilityCacheStorage = NodeFileTree.cacheDirName(false, UTILITY_CACHE_NAME);
-
-        return ft.cacheDirectories(false, f -> f.getName().equals(utilityCacheStorage)).stream()
+        return ft.userCacheDirs().stream()
             .flatMap(cacheDir -> NodeFileTree.cacheConfigFiles(cacheDir).stream())
             .collect(Collectors.toMap(f -> f, f -> {
                 try {

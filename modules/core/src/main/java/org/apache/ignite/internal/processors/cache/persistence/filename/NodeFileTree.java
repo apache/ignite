@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -44,6 +43,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
@@ -480,29 +480,44 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @return Files that match cache or cache group pattern.
+     * @return All cache directories.
      */
-    public List<File> cacheDirectories() {
-        return cacheDirectories(true, f -> true);
+    public List<File> allCacheDirs() {
+        return cacheDirs(true, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> cacheDirsWithoutMeta() {
+        return cacheDirs(false, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> userCacheDirs() {
+        final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
+
+        return cacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
 
     /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
+     * @return Cache directories that matches filters criteria.
      */
-    public List<File> cacheDirectories(boolean includeMeta, Predicate<File> filter) {
-        File[] files = nodeStorage().listFiles();
+    protected List<File> cacheDirs(boolean includeMeta, Predicate<File> filter) {
+        Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
-        if (files == null)
+        File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
+
+        if (cacheDirs == null)
             return Collections.emptyList();
 
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER)
-            .filter(filter)
-            .collect(Collectors.toList());
+        Arrays.sort(cacheDirs);
+
+        return Arrays.asList(cacheDirs);
     }
 
     /**
@@ -576,16 +591,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpPartition(String cacheDirName, int partId) {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
-    }
-
-    /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /** */
@@ -735,6 +740,16 @@ public class NodeFileTree extends SharedFileTree {
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
+    }
+
+    /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /**

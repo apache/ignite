@@ -66,6 +66,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -1315,8 +1316,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-                File anyIdxPartFile = ft.cacheDirectories().stream()
-                    .map(f -> new File(f, partitionFileName(INDEX_PARTITION)))
+                File anyIdxPartFile = ft.allCacheDirs().stream()
+                    .map(f -> new File(f, partitionFileName(PageIdAllocator.INDEX_PARTITION)))
                     .filter(File::exists)
                     .findFirst().orElse(null);
 
