@@ -260,7 +260,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             }
 
             if (withMetaStorage) {
-                U.ensureDirectory(sft.tempFileTree().cacheStorage(METASTORAGE_DIR_NAME),
+                U.ensureDirectory(sft.tempFileTree().metaStorage(),
                     "directory for snapshotting metastorage",
                     log);
             }

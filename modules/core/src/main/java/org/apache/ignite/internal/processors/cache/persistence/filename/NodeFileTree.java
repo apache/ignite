@@ -585,6 +585,13 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @return Path to the metastorage directory.
+     */
+    public File metaStorage() {
+        return new File(nodeStorage, METASTORAGE_DIR_NAME);
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
      * @return Path to the temp partition file.

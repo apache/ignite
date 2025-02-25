@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -86,7 +87,6 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
@@ -401,7 +401,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
             CacheStoreHolder holder = initDir(
-                METASTORAGE_DIR_NAME,
+                ft.metaStorage(),
+                p -> ft.partitionFile(METASTORAGE_DIR_NAME, p).toPath(),
                 grpId,
                 MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
@@ -496,7 +497,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpDesc.groupId());
 
         return initDir(
-            ft.cacheDirName(ccfg),
+            ft.cacheStorage(ccfg),
+            p -> ft.partitionFile(ccfg, p).toPath(),
             grpDesc.groupId(),
             ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
@@ -579,7 +581,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(
-        String cacheDir,
+        File cacheDir,
+        IntFunction<Path> partitionFile,
         int grpId,
         String cacheName,
         int partitions,
@@ -587,18 +590,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         boolean encrypted,
         Collection<String> grpCaches) throws IgniteCheckedException {
         try {
-            File cacheWorkDir = ft.cacheStorage(cacheDir);
-
-            boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
+            boolean dirExisted = checkAndInitCacheWorkDir(cacheDir, log);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
-                    DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
+                    DefragmentationFileUtils.beforeInitPageStores(cacheDir, log);
             }
 
-            File idxFile = new File(cacheWorkDir, partitionFileName(INDEX_PARTITION));
+            File idxFile = partitionFile.apply(INDEX_PARTITION).toFile();
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
@@ -638,7 +639,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageStore.TYPE_DATA,
-                        () -> ft.partitionFile(cacheDir, p).toPath(),
+                        () -> partitionFile.apply(p),
                         pageMetrics.totalPages()::add);
 
                 partStores[partId] = partStore;
