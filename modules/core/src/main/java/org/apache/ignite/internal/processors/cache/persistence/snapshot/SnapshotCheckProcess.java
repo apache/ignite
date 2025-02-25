@@ -237,7 +237,7 @@ public class SnapshotCheckProcess {
             fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
         }
         catch (Throwable err) {
-                fut.onDone(err);
+            fut.onDone(err);
         }
     }
 
@@ -412,6 +412,7 @@ public class SnapshotCheckProcess {
             e -> asException(e.getValue())));
     }
 
+    /** */
     private static Exception asException(Throwable th) {
         return th instanceof Exception ? (Exception)th : new IgniteException(th);
     }

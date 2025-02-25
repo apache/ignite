@@ -97,7 +97,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -546,7 +545,7 @@ public class SnapshotChecker {
     /** @return Collection of snapshotted transactional caches, key is a cache ID. */
     private Map<Integer, StoredCacheData> readTxCachesData(SnapshotFileTree sft) throws IgniteCheckedException, IOException {
         return GridLocalConfigManager.readCachesData(
-                sft.nodeStorage(),
+                sft,
                 kctx.marshallerContext().jdkMarshaller(),
                 kctx.config())
             .values().stream()
@@ -646,7 +645,7 @@ public class SnapshotChecker {
 
         Set<Integer> grpsLeft = new HashSet<>(F.isEmpty(grps) ? meta.partitions().keySet() : grps);
 
-        for (File dir : sft.cacheDirectories(name -> true)) {
+        for (File dir : sft.allCacheDirs()) {
             int grpId = CU.cacheId(cacheName(dir));
 
             if (!grpsLeft.remove(grpId))
@@ -657,8 +656,7 @@ public class SnapshotChecker {
             Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId) == null ? Collections.emptySet()
                 : meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir, SnapshotFileTree.partExtension(meta.dump(), meta.compressPartitions())
-            )) {
+            for (File part : sft.cachePartitionFiles(dir, meta.dump(), meta.compressPartitions())) {
                 int partId = partId(part);
 
                 if (!parts.remove(partId))

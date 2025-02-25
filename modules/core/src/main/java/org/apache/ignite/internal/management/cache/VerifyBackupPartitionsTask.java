@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotChecker;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -152,20 +151,21 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
      * @return Idle verify job result constructed from results of remote executions.
      */
     public static IdleVerifyResult reduce0(List<ComputeJobResult> results) {
-        Map<ClusterNode, Exception> ex = new HashMap<>();
-        Map<ClusterNode, Map<PartitionKey, PartitionHashRecord>> hashes = new HashMap<>();
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                ex.put(res.getNode(), res.getException());
+                bldr.addException(res.getNode(), res.getException());
 
                 continue;
             }
 
-            hashes.put(res.getNode(), res.getData());
+            Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
+
+            bldr.addPartitionHashes(nodeHashes);
         }
 
-        return SnapshotChecker.reduceHashesResults(hashes, ex);
+        return bldr.build();
     }
 
     /**
