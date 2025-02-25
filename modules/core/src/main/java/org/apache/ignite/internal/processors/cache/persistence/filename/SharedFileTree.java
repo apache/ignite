@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
  * Provides access to directories shared between all local nodes.
@@ -37,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * ├── db                                                                       ← db (shared between all local nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
- * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
+ * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
  *
  * @see NodeFileTree
@@ -48,6 +47,9 @@ public class SharedFileTree {
 
     /** Name of marshaller mappings folder. */
     public static final String MARSHALLER_DIR = "marshaller";
+
+    /** Database default folder. */
+    public static final String DB_DIR = "db";
 
     /** Root(work) directory. */
     protected final File root;
@@ -73,8 +75,8 @@ public class SharedFileTree {
 
         String rootStr = root.getAbsolutePath();
 
-        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER, MARSHALLER_DIR).toFile();
-        binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
+        marshaller = Paths.get(rootStr, DB_DIR, MARSHALLER_DIR).toFile();
+        binaryMetaRoot = Paths.get(rootStr, DB_DIR, BINARY_METADATA_DIR).toFile();
     }
 
     /**
@@ -109,7 +111,7 @@ public class SharedFileTree {
      * @return Path to the {@code db} directory inside {@link #root()}.
      */
     public File db() {
-        return new File(root, DB_DEFAULT_FOLDER);
+        return new File(root, DB_DIR);
     }
 
     /**

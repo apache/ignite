@@ -25,7 +25,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -61,8 +60,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
-        sharedFileTree().db().mkdirs();
+        recreateDefaultDb();
 
         startGrids(2);
 
