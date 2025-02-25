@@ -51,7 +51,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.cache.verify.CollectConflictPartitionKeysTask;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
@@ -112,7 +112,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private static final IgniteClosure SYSTEM_CLOSURE = new ToStringClosure<>();
 
     /** */
-    private static final ComputeTask SYSTEM_TASK = new CollectConflictPartitionKeysTask();
+    private static final ComputeTask SYSTEM_TASK = new VerifyBackupPartitionsTask();
 
     /** */
     private static final AtomicInteger EXECUTED_TASK_CNTR = new AtomicInteger();

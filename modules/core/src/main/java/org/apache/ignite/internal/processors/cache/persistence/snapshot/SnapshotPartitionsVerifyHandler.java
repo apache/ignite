@@ -47,7 +47,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         try {
-            return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotDirectory(), opCtx.groups(),
+            return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotFileTree(), opCtx.groups(),
                 type() == SnapshotHandlerType.CREATE, opCtx.check(), skipHash()).get();
         }
         catch (Exception e) {

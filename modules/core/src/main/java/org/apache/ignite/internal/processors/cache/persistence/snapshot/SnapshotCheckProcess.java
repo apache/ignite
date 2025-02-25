@@ -37,9 +37,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
+import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -151,7 +152,7 @@ public class SnapshotCheckProcess {
         SnapshotChecker checker = kctx.cache().context().snapshotMgr().checker();
 
         if (ctx.req.incrementalIndex() > 0) {
-            IdleVerifyResultV2 chkRes = checker.reduceIncrementalResults(
+            IdleVerifyResult chkRes = checker.reduceIncrementalResults(
                 mapResults(results, ctx.req.nodes(), SnapshotCheckResponse::incrementalResult),
                 mapErrors(errors)
             );
@@ -178,10 +179,10 @@ public class SnapshotCheckProcess {
             Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
             if (!results.isEmpty()) {
-                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = mapResults(results, ctx.req.nodes(),
+                Map<ClusterNode, Map<PartitionKey, PartitionHashRecord>> results0 = mapResults(results, ctx.req.nodes(),
                     SnapshotCheckResponse::partsHashes);
 
-                IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
+                IdleVerifyResult chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
                 clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, chkRes));
             }
@@ -215,13 +216,12 @@ public class SnapshotCheckProcess {
             if (req.incrementalIndex() > 0) {
                 assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
-                workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), req.snapshotPath(), req.incrementalIndex());
+                workingFut = snpMgr.checker().checkIncrementalSnapshot(ctx.locSnpFileTree, req.incrementalIndex());
             }
             else {
                 workingFut = req.allRestoreHandlers()
-                    ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
-                    : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                    req.groups(), false, req.fullCheck(), false);
+                    ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, ctx.locSnpFileTree, req.groups(), true)
+                    : snpMgr.checker().checkPartitions(ctx.locMeta, ctx.locSnpFileTree, req.groups(), false, req.fullCheck(), false);
             }
 
             workingFut.whenComplete((res, err) -> {
@@ -301,7 +301,7 @@ public class SnapshotCheckProcess {
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
             snpMgr.checker().checkLocalMetas(
-                snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                new SnapshotFileTree(kctx, req.snapshotName(), req.snapshotPath()),
                 req.incrementalIndex(),
                 grpIds,
                 kctx.cluster().get().localNode().consistentId()
@@ -360,7 +360,12 @@ public class SnapshotCheckProcess {
 
             List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
 
-            ctx.locMeta = F.isEmpty(locMetas) ? null : locMetas.get(0);
+            if (!F.isEmpty(locMetas)) {
+                ctx.locMeta = locMetas.get(0);
+
+                ctx.locSnpFileTree = new SnapshotFileTree(kctx, ctx.req.snapshotName(), ctx.req.snapshotPath(),
+                    ctx.locMeta.folderName(), ctx.locMeta.consistentId());
+            }
 
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
@@ -456,6 +461,9 @@ public class SnapshotCheckProcess {
         /** Local snapshot metadata. */
         @Nullable private SnapshotMetadata locMeta;
 
+        /** Local snapsjot file tree. */
+        @Nullable private SnapshotFileTree locSnpFileTree;
+
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
@@ -521,8 +529,8 @@ public class SnapshotCheckProcess {
          * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
          * snapshot.
          */
-        private @Nullable Map<PartitionKeyV2, PartitionHashRecordV2> partsHashes() {
-            return (Map<PartitionKeyV2, PartitionHashRecordV2>)partsResults;
+        private @Nullable Map<PartitionKey, PartitionHashRecord> partsHashes() {
+            return (Map<PartitionKey, PartitionHashRecord>)partsResults;
         }
 
         /**

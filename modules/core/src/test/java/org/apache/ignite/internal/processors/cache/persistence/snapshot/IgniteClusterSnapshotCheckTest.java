@@ -911,6 +911,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 int i0 = i;
                 int j0 = j;
 
+                File dir = snapshotFileTree(grid(0), SNAPSHOT_NAME + "_2").root();
+
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).createSnapshot(SNAPSHOT_NAME + "_2", null, false, false),
@@ -918,8 +920,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     null,
                     false,
                     false,
-                    () -> U.delete(snp(grid(0)).snapshotLocalDir(SNAPSHOT_NAME + "_2")),
-                    () -> U.delete(snp(grid(0)).snapshotLocalDir(SNAPSHOT_NAME + "_2"))
+                    () -> U.delete(dir),
+                    () -> U.delete(dir)
                 );
             }
         }
