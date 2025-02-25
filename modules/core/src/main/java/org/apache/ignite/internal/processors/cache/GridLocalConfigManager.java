@@ -139,9 +139,9 @@ public class GridLocalConfigManager {
                 if (!cacheDir.exists())
                     continue;
 
-                File[] ccfgFiles = cacheDir.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
+                List<File> ccfgFiles = NodeFileTree.existingCacheConfigFiles(cacheDir);
 
-                if (ccfgFiles == null)
+                if (F.isEmpty(ccfgFiles))
                     continue;
 
                 for (File ccfgFile : ccfgFiles)

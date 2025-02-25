@@ -21,9 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -506,10 +503,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return decryptedKeys.computeIfAbsent(grpId, id -> {
                 GroupKey grpKey = null;
 
-                try (DirectoryStream<Path> ds = Files.newDirectoryStream(grpDirs.get(grpId).toPath(),
-                    p -> Files.isRegularFile(p) && NodeFileTree.cacheOrCacheGroupConfigFile(p.toFile()))) {
-                    for (Path p : ds) {
-                        StoredCacheData cacheData = ctx.cache().configManager().readCacheData(p.toFile());
+                try {
+                    for (File cfg : NodeFileTree.existingCacheConfigFiles(grpDirs.get(grpId))) {
+                        StoredCacheData cacheData = ctx.cache().configManager().readCacheData(cfg);
 
                         GroupKeyEncrypted grpKeyEncrypted = cacheData.groupKeyEncrypted();
 

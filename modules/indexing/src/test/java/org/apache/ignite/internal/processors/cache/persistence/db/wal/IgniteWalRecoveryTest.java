@@ -582,9 +582,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         // Delete cache_data.bin file for this cache. Binary recovery should complete successfully after it.
-        final File[] files = destroyCacheWorkDir.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
+        final List<File> files = NodeFileTree.existingCacheConfigFiles(destroyCacheWorkDir);
 
-        assertTrue(files.length > 0);
+        assertTrue(!files.isEmpty());
 
         for (final File file : files)
             assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());

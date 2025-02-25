@@ -627,7 +627,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param f File.
      * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
      */
-    public static boolean cacheOrCacheGroupConfigFile(File f) {
+    private static boolean cacheOrCacheGroupConfigFile(File f) {
         return f.getName().endsWith(CACHE_DATA_FILENAME);
     }
 
