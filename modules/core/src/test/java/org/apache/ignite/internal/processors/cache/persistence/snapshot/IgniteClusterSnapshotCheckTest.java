@@ -550,6 +550,48 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotContains(log, b.toString(), "Failed to read page (CRC validation failed)");
     }
 
+    /** */
+    @Test
+    public void testCheckFromLesserTopology() throws Exception {
+        // {@link #corruptPartitionFile} incorrectly affects an encrypted partition.
+        assumeFalse(encryption);
+
+        int srvCnt = 3;
+        IdleVerifyResult chkRes;
+
+        IgniteEx client = startGridsWithSnapshot(srvCnt, CACHE_KEYS_RANGE, true, true);
+
+        for (int i = 1; i <= srvCnt; ++i) {
+            chkRes = snp(client).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()).idleVerifyResult();
+
+            assertTrue(chkRes.exceptions().isEmpty());
+            assertFalse(chkRes.hasConflicts());
+
+            if (i == srvCnt)
+                break;
+
+            stopGrid(i);
+        }
+
+        for (int i = 1; i < srvCnt; ++i)
+            startGrid(i);
+
+        // Now ensure that a bad partition is detected.
+        corruptPartitionFile(grid(1), SNAPSHOT_NAME, dfltCacheCfg, 3);
+
+        for (int i = 1; i <= srvCnt; ++i) {
+            chkRes = snp(client).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()).idleVerifyResult();
+
+            assertFalse(chkRes.exceptions().isEmpty());
+            assertTrue(X.hasCause(F.first(chkRes.exceptions().values()), IgniteDataIntegrityViolationException.class));
+
+            if (i == srvCnt)
+                break;
+
+            stopGrid(i);
+        }
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckTwoCaches() throws Exception {
