@@ -105,9 +105,9 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, partCnt));
 
-        String cacheDir = NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME);
-
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
+
+        String cacheDir = srv.context().pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
 
         if (sequentialWrite)
             injectSequentialWriteCheck(srv);
