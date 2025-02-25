@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.jetbrains.annotations.Nullable;
@@ -105,9 +106,9 @@ public abstract class SnapshotSender {
 
     /**
      * @param ccfgFile Cache configuration file.
-     * @param cacheDirName Cache group directory name.
+     * @param ccfg Cache configuration.
      */
-    public final void sendCacheConfig(File ccfgFile, String cacheDirName) {
+    public final void sendCacheConfig(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -115,7 +116,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendCacheConfig0(ccfgFile, cacheDirName);
+            sendCacheConfig0(ccfgFile, ccfg);
         }
         finally {
             lock.readLock().unlock();
@@ -218,9 +219,9 @@ public abstract class SnapshotSender {
 
     /**
      * @param ccfgFile Cache configuration file.
-     * @param cacheDirName Cache group directory name.
+     * @param ccfg Cache configuration.
      */
-    protected void sendCacheConfig0(File ccfgFile, String cacheDirName) {
+    protected void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
         // No-op by default.
     }
 

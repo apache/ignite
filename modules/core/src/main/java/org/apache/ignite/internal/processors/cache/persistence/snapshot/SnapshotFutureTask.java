@@ -597,7 +597,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             lock.lock();
 
             try {
-                snpSndr.sendCacheConfig(ccfgFile, ft.cacheDirName(ccfg));
+                snpSndr.sendCacheConfig(ccfgFile, ccfg);
 
                 close0();
             }

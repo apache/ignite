@@ -3862,9 +3862,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig0(File ccfgFile, String cacheDirName) {
+        @Override public void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
             try {
-                File cacheDir = sft.cacheStorage(cacheDirName);
+                File cacheDir = sft.cacheStorage(ccfg);
 
                 U.mkdirs(cacheDir);
 
