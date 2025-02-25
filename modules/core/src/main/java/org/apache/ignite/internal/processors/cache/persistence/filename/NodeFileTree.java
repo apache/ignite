@@ -686,7 +686,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
      */
-    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+    private static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
         if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
             return METASTORAGE_DIR_NAME;
 
