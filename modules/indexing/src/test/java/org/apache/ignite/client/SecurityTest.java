@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -63,11 +62,7 @@ public class SecurityTest {
      */
     @Before
     public void beforeEach() throws IgniteCheckedException {
-        SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
-
-        U.delete(sft.db());
-
-        assertTrue(sft.db().mkdirs());
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
     }
 
     /** Test SSL/TLS encryption. */

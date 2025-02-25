@@ -98,6 +98,7 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
 
 /**
@@ -175,7 +176,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         if (forceArchiveSegmentMs > 0)
             dsCfg.setWalForceArchiveTimeout(forceArchiveSegmentMs);
 
-        File db = sharedFileTree().db();
+        String workDir = U.defaultWorkDirectory();
+        File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         File wal = new File(db, "wal");
 
         if (setWalAndArchiveToSameVal) {
@@ -229,13 +231,15 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         stopGrid();
 
+        String workDir = U.defaultWorkDirectory();
+
+        File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
+
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        SharedFileTree sft = sharedFileTree();
-
         IteratorParametersBuilder params =
-            createIteratorParametersBuilder(sft.root().getAbsolutePath(), subfolderName)
-                .filesOrDirs(sft.db());
+            createIteratorParametersBuilder(workDir, subfolderName)
+                .filesOrDirs(db);
 
         // Check iteratorArchiveDirectory and iteratorArchiveFiles are same.
         int cntArchiveDir = iterateAndCount(factory.iterator(params));

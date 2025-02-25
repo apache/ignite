@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -86,7 +87,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        recreateDefaultDb();
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
     }
 
     /**

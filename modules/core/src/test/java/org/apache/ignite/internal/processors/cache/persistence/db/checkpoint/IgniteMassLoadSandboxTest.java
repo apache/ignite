@@ -61,6 +61,8 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
@@ -128,7 +130,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             .setWriteThrottlingEnabled(true)
             .setCheckpointFrequency(checkpointFrequency);
 
-        final File wal = new File(sharedFileTree().db(), "wal");
+        final String workDir = U.defaultWorkDirectory();
+        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
+        final File wal = new File(db, "wal");
         if (setWalArchAndWorkToSameVal) {
             final String walAbsPath = wal.getAbsolutePath();
 
@@ -160,7 +164,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        U.delete(sharedFileTree().db());
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
     }
 

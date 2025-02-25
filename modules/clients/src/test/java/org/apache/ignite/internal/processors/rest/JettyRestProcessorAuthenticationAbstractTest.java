@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        recreateDefaultDb();
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
         super.beforeTestsStarted();
     }

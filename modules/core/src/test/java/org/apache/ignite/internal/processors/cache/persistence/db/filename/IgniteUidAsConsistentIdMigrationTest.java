@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,14 +103,16 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         }
     }
 
-    /** */
-    private void deleteWorkFiles() {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void deleteWorkFiles() throws IgniteCheckedException {
         boolean ok = true;
 
         if (pstStoreCustomPath != null)
             ok &= U.delete(pstStoreCustomPath);
         else
-            ok &= U.delete(sharedFileTree().db());
+            ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), FilePageStoreManager.DFLT_STORE_DIR, false));
 
         if (pstWalArchCustomPath != null)
             ok &= U.delete(pstWalArchCustomPath);
@@ -608,7 +611,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             second.put((int)(Math.random() * entries), getClass().getName());
 
         final String prevVerFolder = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
-        final String path = new File(sharedFileTree().db(), prevVerFolder).getCanonicalPath();
+        final String path = new File(new File(U.defaultWorkDirectory(), "db"), prevVerFolder).getCanonicalPath();
 
         assertPdsDirsDefaultExist(ignite, prevVerFolder);
         stopAllGrids();
@@ -649,16 +652,18 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     /**
      * @param indexes expected new style node indexes in folders
+     * @throws IgniteCheckedException if failed
      */
-    private void assertNodeIndexesInFolder(Integer... indexes) {
+    private void assertNodeIndexesInFolder(Integer... indexes) throws IgniteCheckedException {
         assertEquals(new TreeSet<>(Arrays.asList(indexes)), getAllNodeIndexesInFolder());
     }
 
     /**
      * @return set of all indexes of nodes found in work folder
+     * @throws IgniteCheckedException if failed.
      */
-    @NotNull private Set<Integer> getAllNodeIndexesInFolder() {
-        final File curFolder = sharedFileTree().db();
+    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
+        final File curFolder = new File(U.defaultWorkDirectory(), FilePageStoreManager.DFLT_STORE_DIR);
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 

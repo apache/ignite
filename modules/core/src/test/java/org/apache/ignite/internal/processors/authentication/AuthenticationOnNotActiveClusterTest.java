@@ -72,7 +72,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        recreateDefaultDb();
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
     }
 
     /** {@inheritDoc} */

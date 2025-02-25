@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -145,7 +146,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         final boolean[] plainBytesFound = {false};
 
-        Files.walk(sharedFileTree().db().toPath())
+        Files.walk(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false).toPath())
             .filter(Files::isRegularFile)
             .forEach(f -> {
                 try {

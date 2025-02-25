@@ -44,6 +44,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
@@ -292,7 +293,7 @@ public class NodeFileTree extends SharedFileTree {
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        nodeStorage = rootRelative(DB_DIR);
+        nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
         snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
         checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
     }
@@ -323,7 +324,7 @@ public class NodeFileTree extends SharedFileTree {
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             nodeStorage = dsCfg.getStoragePath() == null
-                ? rootRelative(DB_DIR)
+                ? rootRelative(DB_DEFAULT_FOLDER)
                 : resolveDirectory(dsCfg.getStoragePath());
             snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);

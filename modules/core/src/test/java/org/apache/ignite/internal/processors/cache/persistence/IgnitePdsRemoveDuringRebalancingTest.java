@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,12 +32,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -73,7 +75,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        U.delete(new SharedFileTree(U.getIgniteHome()).db());
+        U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
 
     /** {@inheritDoc} */
@@ -82,7 +84,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        U.delete(new SharedFileTree(U.getIgniteHome()).db());
+        U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
 
     /**

@@ -47,7 +47,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
  * This class contains logic to resolve and possibly lock PDS folder
@@ -91,6 +90,9 @@ public class PdsFolderResolver<L extends FileLockHolder> {
                 && !pathname.getName().matches(SUBDIR_PATTERN);
         }
     };
+
+    /** Database default folder. */
+    static final String DB_DEFAULT_FOLDER = "db";
 
     /** */
     private final IgniteConfiguration cfg;
@@ -431,7 +433,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),
-            pstPath != null ? pstPath : DB_DIR,
+            pstPath != null ? pstPath : DB_DEFAULT_FOLDER,
             false
         );
     }

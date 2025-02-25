@@ -63,6 +63,8 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  * Checks that client affinity assignment cache is calculated correctly regardless of current baseline topology.
  */
@@ -123,7 +125,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         }
 
         if (igniteInstanceName.contains(FLAKY_NODE_NAME)) {
-            File store = sharedFileTree().db();
+            File store = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
             cfg.getDataStorageConfiguration().setWalPath(new File(store, FLAKY_WAL_PATH).getAbsolutePath());
             cfg.getDataStorageConfiguration().setWalArchivePath(new File(store, FLAKY_WAL_ARCHIVE_PATH).getAbsolutePath());
@@ -385,7 +387,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         awaitProgressInAllLoaders(10_000, loadError, threadProgressTracker);
 
-        File store = sharedFileTree().db();
+        File store = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         U.delete(new File(store, FLAKY_WAL_PATH));
         U.delete(new File(store, FLAKY_WAL_ARCHIVE_PATH));
