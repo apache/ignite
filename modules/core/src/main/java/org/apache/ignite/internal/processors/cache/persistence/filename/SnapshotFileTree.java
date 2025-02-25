@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
@@ -137,7 +138,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return A file representation.
      */
     public File partDeltaFile(String cacheDirName, int partId) {
-        return new File(tmpFt.cacheStorage(cacheDirName), partDeltaFileName(partId));
+        return new File(tmpFt.cacheStorage(cacheDirName), partitionFileName(partId, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -181,21 +182,35 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @param part partition.
+     * @param compress {@code True} if dump compressed.
+     * @return Path to the dump partition file;
+     */
+    public File dumpPartition(CacheConfiguration<?, ?> ccfg, int part, boolean compress) {
+        return new File(cacheStorage(ccfg), dumpPartFileName(part, compress));
+    }
+
+    /**
      * @param grpId Cache group id.
      * @return Files that match cache or cache group pattern.
      */
     public File cacheDirectory(int grpId) {
-        return F.first(cacheDirectories(f -> CU.cacheId(cacheName(f)) == grpId));
+        return F.first(cacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
-     * @param partId Partition id.
-     * @return File name of delta partition pages.
+     * @param cacheDir Cache directory to check.
+     * @param dump If {@code true} then list dump files.
+     * @param compress If {@code true} then list compressed files.
+     * @return List of cache partitions in given directory.
      */
-    public static String partDeltaFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+    public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
+        File[] files = cacheDir.listFiles(f -> f.isFile() && f.getName().endsWith(partExtension(dump, compress)));
 
-        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
+        return files == null
+            ? Collections.emptyList()
+            : Arrays.asList(files);
     }
 
     /**
@@ -212,7 +227,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param compressed If {@code true} then files compressed.
      * @return Partition file extension.
      */
-    public static String partExtension(boolean dump, boolean compressed) {
+    private static String partExtension(boolean dump, boolean compressed) {
         return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
 
     }

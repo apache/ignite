@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.Break
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
@@ -262,16 +262,16 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
 
     /**
      * Stopping all nodes and deleting their index.bin.
-     *
-     * @throws Exception If failed.
      */
-    protected void stopAllGridsWithDeleteIndexBin() throws Exception {
-        List<String> igniteInstanceNames = G.allGrids().stream().map(Ignite::name).collect(toList());
+    protected void stopAllGridsWithDeleteIndexBin() {
+        List<NodeFileTree> fts = G.allGrids().stream()
+            .map(srv -> ((IgniteEx)srv).context().pdsFolderResolver().fileTree())
+            .collect(toList());
 
         stopAllGrids();
 
-        for (String n : igniteInstanceNames)
-            deleteIndexBin(n);
+        for (NodeFileTree ft : fts)
+            deleteIndexBin(ft);
     }
 
     /**

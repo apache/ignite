@@ -753,7 +753,7 @@ public class CdcMain implements Runnable {
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
-                    ft.nodeStorage(),
+                    ft,
                     kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()

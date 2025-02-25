@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -132,7 +133,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Long.parseLong;
 import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -2322,29 +2323,11 @@ public final class GridTestUtils {
     /**
      * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
      */
-    public static void deleteIndexBin(String igniteInstanceName) throws IgniteCheckedException {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
-            new File(grp, "index.bin").delete();
-        }
-    }
-
-    /**
-     * Removing the directory cache groups.
-     * Deletes all directory satisfy the {@code cacheGrpFilter}.
-     *
-     * @param igniteInstanceName Ignite instance name.
-     * @param cacheGrpFilter Filter cache groups.
-     * @throws Exception If failed.
-     */
-    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        String nodeDirName = U.maskForFileName(igniteInstanceName);
-
-        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
-            U.delete(cacheGrpDir);
+    public static void deleteIndexBin(NodeFileTree ft) {
+        ft.allCacheDirs().stream()
+            .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
+            .filter(File::exists)
+            .forEach(File::delete);
     }
 
     /**

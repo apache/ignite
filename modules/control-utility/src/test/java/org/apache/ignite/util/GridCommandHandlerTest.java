@@ -1053,7 +1053,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
             igniteEx,
-            igniteEx.context().cache().utilityCache().context().dynamicDeploymentId().toString()
+            igniteEx.cluster().id().toString()
         );
     }
 
@@ -1165,6 +1165,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         out = testOut.toString();
 
         assertTrue(out.contains("Cluster tag: " + newTag));
+
+        ignite.cluster().state(INACTIVE);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertClusterState(INACTIVE, testOut.toString());
     }
 
     /**
