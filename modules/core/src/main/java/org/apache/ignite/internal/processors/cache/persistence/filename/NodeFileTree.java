@@ -471,57 +471,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @return All cache directories.
-     */
-    public List<File> existingCacheDirs() {
-        return existingCacheDirs(true, f -> true);
-    }
-
-    /**
-     * @return Cache directories. Metatorage directory excluded.
-     */
-    public List<File> existingCacheDirsWithoutMeta() {
-        return existingCacheDirs(false, f -> true);
-    }
-
-    /**
-     * @return Cache directories. Metatorage directory excluded.
-     */
-    public List<File> existingUserCacheDirs() {
-        final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
-
-        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
-    }
-
-    /**
-     * @param includeMeta If {@code true} then include metadata directory into results.
-     * @param filter Cache group names to filter.
-     * @return Cache directories that matches filters criteria.
-     */
-    protected List<File> existingCacheDirs(boolean includeMeta, Predicate<File> filter) {
-        Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
-
-        File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
-
-        if (cacheDirs == null)
-            return Collections.emptyList();
-
-        Arrays.sort(cacheDirs);
-
-        return Arrays.asList(cacheDirs);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return The full cache directory name.
-     */
-    private String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
-
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
@@ -590,6 +539,29 @@ public class NodeFileTree extends SharedFileTree {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
+     * @return All cache directories.
+     */
+    public List<File> existingCacheDirs() {
+        return existingCacheDirs(true, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> existingCacheDirsWithoutMeta() {
+        return existingCacheDirs(false, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> existingUserCacheDirs() {
+        final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
+
+        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
 
     /**
@@ -754,6 +726,34 @@ public class NodeFileTree extends SharedFileTree {
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
+    }
+
+    /**
+     * @param includeMeta If {@code true} then include metadata directory into results.
+     * @param filter Cache group names to filter.
+     * @return Cache directories that matches filters criteria.
+     */
+    protected List<File> existingCacheDirs(boolean includeMeta, Predicate<File> filter) {
+        Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
+
+        File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
+
+        if (cacheDirs == null)
+            return Collections.emptyList();
+
+        Arrays.sort(cacheDirs);
+
+        return Arrays.asList(cacheDirs);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return The full cache directory name.
+     */
+    private String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        boolean isSharedGrp = ccfg.getGroupName() != null;
+
+        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
     }
 
     /**
