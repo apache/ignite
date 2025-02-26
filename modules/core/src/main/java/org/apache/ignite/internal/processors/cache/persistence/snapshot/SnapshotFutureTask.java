@@ -387,9 +387,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException {
-        File snpCacheDir = snapshotCacheStorage(grpId);
-
+    @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) {
         // Process partitions for a particular cache group.
         return grpParts.stream().map(partId -> {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
@@ -400,8 +398,8 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             return runAsync(() -> {
                 snpSndr.sendPart(
-                    ft.partitionFile(snpCacheDir.getName(), partId),
-                    sft.partitionFile(snpCacheDir.getName(), partId),
+                    partitionFile(ft, pair),
+                    partitionFile(sft, pair),
                     pair,
                     partLen);
 
@@ -427,7 +425,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException(ex);
                 }
 
-                snpSndr.sendDelta(delta, sft.partitionFile(snpCacheDir.getName(), pair.getPartitionId()), pair);
+                snpSndr.sendDelta(delta, partitionFile(sft, pair), pair);
 
                 processedSize.addAndGet(delta.length());
 
@@ -519,20 +517,21 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /**
-     * @param grpId Group id.
-     * @return Snapshot cache storage.
+     * @param ft File tree.
+     * @param grpAndPart Group and partition.
+     * @return Cache partition file in given tree.
      * @throws IgniteCheckedException If cache group doesn't exist.
      */
-    private File snapshotCacheStorage(int grpId) throws IgniteCheckedException {
-        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
-            return sft.metaStorage();
+    private File partitionFile(NodeFileTree ft, GroupPartitionId grpAndPart) throws IgniteCheckedException {
+        if (grpAndPart.getGroupId() == MetaStorage.METASTORAGE_CACHE_ID)
+            return ft.metaStoragePartition(grpAndPart.getPartitionId());
 
-        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+        CacheGroupContext gctx = cctx.cache().cacheGroup(grpAndPart.getGroupId());
 
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return sft.cacheStorage(gctx.config());
+        return ft.partitionFile(gctx.config(), grpAndPart.getPartitionId());
     }
 
     /** {@inheritDoc} */
