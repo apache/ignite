@@ -291,7 +291,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 NodeFileTree ft = nodeFileTree(dir.toString());
 
                 U.delete(ft.checkpoint());
-                U.delete(ft.nodeStorage().getParentFile());
+                U.delete(ft.db());
                 U.delete(ft.marshaller());
                 U.delete(ft.binaryMetaRoot());
             }
