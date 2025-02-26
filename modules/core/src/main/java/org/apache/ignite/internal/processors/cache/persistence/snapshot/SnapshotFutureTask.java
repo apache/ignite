@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -75,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 
 /**
@@ -344,14 +344,14 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), ft.cacheStorage(gctx.config()).getName());
+
+                addPartitionWriters(grpId, e.getValue(), part -> sft.partDeltaFile(gctx.config(), part));
             }
 
             if (withMetaStorage) {
                 processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS);
 
-                addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS,
-                    METASTORAGE_DIR_NAME);
+                addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS, sft::metastorageDeltaFile);
             }
 
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
@@ -455,17 +455,17 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /**
      * @param grpId Cache group id.
      * @param parts Set of partitions to be processed.
-     * @param dirName Directory name to init.
+     * @param partDelta Partition delta file provider.
      * @throws IgniteCheckedException If fails.
      */
-    void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
+    void addPartitionWriters(int grpId, Set<Integer> parts, IntFunction<File> partDelta) throws IgniteCheckedException {
         Integer encGrpId = cctx.cache().isEncrypted(grpId) ? grpId : null;
 
         for (int partId : parts) {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
-            File delta = sft.partDeltaFile(dirName, partId);
+            File delta = partDelta.apply(partId);
 
             partDeltaWriters.put(pair, deltaWriterFactory.apply(store, delta, encGrpId));
 

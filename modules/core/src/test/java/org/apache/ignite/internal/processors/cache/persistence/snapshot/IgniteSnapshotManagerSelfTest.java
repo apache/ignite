@@ -262,7 +262,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = ioFactory.create(file, modes);
 
-                if (file.getName().equals(sft.partDeltaFile(dfltCacheCfg.getName(), 0).getName()))
+                if (file.getName().equals(sft.partDeltaFile(dfltCacheCfg, 0).getName()))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
