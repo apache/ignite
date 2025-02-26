@@ -3896,7 +3896,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (types == null)
                 return;
 
-            cctx.kernalContext().cacheObjects().saveMetadata(types, sft.root());
+            cctx.kernalContext().cacheObjects().saveMetadata(types, sft);
         }
 
         /** {@inheritDoc} */

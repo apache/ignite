@@ -689,7 +689,7 @@ public class CdcMain implements Runnable {
                     typesState.put(typeId, lastModified);
 
                     try {
-                        kctx.cacheObjects().cacheMetadataLocally(ft.binaryMeta(), typeId);
+                        kctx.cacheObjects().cacheMetadataLocally(ft, typeId);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
