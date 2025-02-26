@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -32,30 +34,38 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.getDefaultDataRegionConfiguration().setStoragePath("dflt_dr");
+        dsCfg.getDefaultDataRegionConfiguration().setStoragePath("dflt_dr").setPersistenceEnabled(true);
 
         dsCfg.setDataRegionConfigurations(
-            new DataRegionConfiguration().setName("custom-storage").setStoragePath("custom-storage"),
-            new DataRegionConfiguration().setName("default-storage")
+            new DataRegionConfiguration().setName("custom-storage").setStoragePath("custom-storage").setPersistenceEnabled(true),
+            new DataRegionConfiguration().setName("default-storage").setPersistenceEnabled(true)
         );
 
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(dsCfg)
             .setCacheConfiguration(
-                ccfg("cache1", null, null),
+                ccfg("cache0", null, null),
+                ccfg("cache1", "grp1", null),
                 ccfg("cache2", "grp1", null),
-                ccfg("cache3", "grp1", null),
-                ccfg("cache4", null, "default-storage"),
-                ccfg("cache5", "grp2", "default-storage"),
-                ccfg("cache6", null, "custom-storage"),
-                ccfg("cache7", "grp3", "custom-storage"),
-                ccfg("cache8", "grp3", "custom-storage")
+                ccfg("cache3", null, "default-storage"),
+                ccfg("cache4", "grp2", "default-storage"),
+                ccfg("cache5", null, "custom-storage"),
+                ccfg("cache6", "grp3", "custom-storage"),
+                ccfg("cache7", "grp3", "custom-storage")
             );
     }
 
     /** */
     @Test
-    public void testCaches() {
+    public void testCaches() throws Exception {
+        IgniteEx srv = startGrids(3);
+
+        for (int i = 0; i < 8; i++) {
+            IgniteCache<Integer, Integer> c = srv.cache("cache" + i);
+
+            for (int j=0; j<100; j++)
+                c.put(j, i);
+        }
 
     }
 
