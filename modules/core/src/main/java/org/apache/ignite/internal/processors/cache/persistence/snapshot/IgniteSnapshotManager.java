@@ -2330,19 +2330,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpDir The full path to the snapshot files.
+     * @param sft The full path to the snapshot files.
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @return Standalone kernal context related to the snapshot.
      * @throws IgniteCheckedException If fails.
      */
     public StandaloneGridKernalContext createStandaloneKernalContext(
-        CompressionProcessor cmpProc,
-        File snpDir,
+        SnapshotFileTree sft,
         String folderName
     ) throws IgniteCheckedException {
-        NodeFileTree ft = new NodeFileTree(snpDir, folderName);
+        NodeFileTree ft = new NodeFileTree(sft.root(), folderName);
 
-        return new StandaloneGridKernalContext(log, cmpProc, ft.binaryMeta(), ft.marshaller());
+        return new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), ft.binaryMeta(), ft.marshaller());
     }
 
     /**

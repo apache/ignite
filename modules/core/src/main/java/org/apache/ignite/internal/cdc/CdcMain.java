@@ -445,7 +445,7 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
-        ft = new NodeFileTree(igniteCfg, settings.folderName());
+        ft = fileTree(settings.folderName());
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -876,9 +876,7 @@ public class CdcMain implements Runnable {
             return null;
         }
 
-        String folderName = dbStoreDirWithSubdirectory.getName();
-
-        ft = new NodeFileTree(igniteCfg, folderName);
+        ft = fileTree(dbStoreDirWithSubdirectory.getName());
 
         if (!ft.walCdc().exists()) {
             log.warning("CDC directory not exists. Should be created by Ignite Node. " +
@@ -997,5 +995,13 @@ public class CdcMain implements Runnable {
             .filter(filter)
             .filter(Objects::nonNull)
             .iterator();
+    }
+
+    /**
+     * @param folderName Folder name
+     * @return Node file tree.
+     */
+    private NodeFileTree fileTree(String folderName) {
+        return new NodeFileTree(igniteCfg, folderName);
     }
 }
