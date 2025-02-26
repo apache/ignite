@@ -235,42 +235,25 @@ public class NodeFileTree extends SharedFileTree {
     private final File binaryMeta;
 
     /** Path to the storage directory. */
-    private final @Nullable File nodeStorage;
+    private final File nodeStorage;
 
     /** Path to the checkpoint directory. */
-    private final @Nullable File checkpoint;
+    private final File checkpoint;
 
     /** Path to the directory containing active WAL segments. */
-    private final @Nullable File wal;
+    private final File wal;
 
     /** Path to the directory containing archive WAL segments. */
-    private final @Nullable File walArchive;
+    private final File walArchive;
 
     /** Path to the directory containing archive WAL segments for CDC. */
-    private final @Nullable File walCdc;
+    private final File walCdc;
 
     /**
      * Working directory for loaded snapshots from the remote nodes and storing
      * temporary partition delta-files of locally started snapshot process.
      */
     private final @Nullable File snpTmpRoot;
-
-    /**
-     * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
-     *
-     * @param root Root directory.
-     * @param folderName Name of the folder for current node.
-     *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
-     *
-     * @see IgniteConfiguration#getWorkDirectory()
-     * @see IgniteConfiguration#setWorkDirectory(String)
-     * @see U#workDirectory(String, String)
-     * @see U#resolveWorkDirectory(String, String, boolean, boolean)
-     * @see U#IGNITE_WORK_DIR
-     */
-    public NodeFileTree(String root, String folderName) {
-        this(new File(root), folderName);
-    }
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -336,12 +319,12 @@ public class NodeFileTree extends SharedFileTree {
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
-            nodeStorage = null;
-            snpTmpRoot = null;
-            checkpoint = null;
-            wal = null;
-            walArchive = null;
-            walCdc = null;
+            nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+            snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
+            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+            wal = rootRelative(DFLT_WAL_PATH);
+            walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
+            walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         }
     }
 

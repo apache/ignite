@@ -118,7 +118,7 @@ public class GridLocalConfigManager {
         marshaller = ctx.marshallerContext().jdkMarshaller();
         ft = ctx.pdsFolderResolver().fileTree();
 
-        if (!ctx.clientNode() && ft.nodeStorage() != null)
+        if (!ctx.clientNode())
             U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
     }
 

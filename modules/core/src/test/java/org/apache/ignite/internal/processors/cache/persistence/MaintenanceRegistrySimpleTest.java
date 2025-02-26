@@ -103,7 +103,7 @@ public class MaintenanceRegistrySimpleTest {
                     }
 
                     @Override public NodeFileTree fileTree() {
-                        return new NodeFileTree(dfltWorkDir, U.maskForFileName(""));
+                        return new NodeFileTree(new File(dfltWorkDir), U.maskForFileName(""));
                     }
                 };
             }
