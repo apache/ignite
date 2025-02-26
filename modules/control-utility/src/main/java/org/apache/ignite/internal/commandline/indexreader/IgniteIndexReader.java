@@ -1193,7 +1193,7 @@ public class IgniteIndexReader implements AutoCloseable {
         byte type,
         FileVersionCheckingFactory storeFactory
     ) throws IgniteCheckedException {
-        File file = new File(root, NodeFileTree.partitionFileName(partId));
+        File file = new File(root, partitionFileName(partId));
 
         if (!file.exists())
             return null;

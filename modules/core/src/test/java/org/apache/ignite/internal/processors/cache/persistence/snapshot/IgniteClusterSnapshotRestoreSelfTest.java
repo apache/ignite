@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -686,7 +686,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheStorage(dfltCacheCfg).getParentFile();
+        NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);
@@ -703,8 +703,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
-        File[] files = node2dbDir.listFiles((FileFilter)NodeFileTree::tmpCacheStorage);
-        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.length);
+        List<File> files = ft.existingTmpCacheStorages();
+
+        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.size());
 
         ensureCacheAbsent(dfltCacheCfg);
 
@@ -712,8 +713,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         startGrid(2);
 
-        files = node2dbDir.listFiles((FileFilter)NodeFileTree::tmpCacheStorage);
-        assertEquals("A temp directory should be removed at node startup", 0, files.length);
+        files = ft.existingTmpCacheStorages();
+
+        assertEquals("A temp directory should be removed at node startup", 0, files.size());
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }

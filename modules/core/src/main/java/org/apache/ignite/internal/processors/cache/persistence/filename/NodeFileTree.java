@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -515,9 +516,7 @@ public class NodeFileTree extends SharedFileTree {
         return new File(metaStorage(), partitionFileName(part));
     }
 
-    /**
-     * @return Path to the metastorage directory.
-     */
+    /** @return Path to the metastorage directory. */
     public File metaStorage() {
         return new File(nodeStorage, METASTORAGE_DIR_NAME);
     }
@@ -541,23 +540,22 @@ public class NodeFileTree extends SharedFileTree {
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
-    /**
-     * @return All cache directories.
-     */
+    /** @return All cache directories. */
     public List<File> existingCacheDirs() {
         return existingCacheDirs(true, f -> true);
     }
 
-    /**
-     * @return Cache directories. Metatorage directory excluded.
-     */
+    /** @return Cache directories. Metatorage directory excluded. */
     public List<File> existingCacheDirsWithoutMeta() {
         return existingCacheDirs(false, f -> true);
     }
 
-    /**
-     * @return Cache directories. Metatorage directory excluded.
-     */
+    /** @return Temp cache storages. */
+    public List<File> existingTmpCacheStorages() {
+        return F.asList(nodeStorage().listFiles((FileFilter)NodeFileTree::tmpCacheStorage));
+    }
+
+    /** @return Cache directories. Metatorage directory excluded. */
     public List<File> existingUserCacheDirs() {
         final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
 
@@ -601,7 +599,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param f File.
      * @return {@code True} if file conforms temp cache storage name pattern.
      */
-    public static boolean tmpCacheStorage(File f) {
+    private static boolean tmpCacheStorage(File f) {
         return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
     }
 
