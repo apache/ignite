@@ -752,23 +752,23 @@ public class NodeFileTree extends SharedFileTree {
      * @see DataRegionConfiguration#setStoragePath(String) 
      */
     private Map<String, File> dataRegionStorages(DataStorageConfiguration dsCfg) {
-        Map<String, File> drStorages = new HashMap<>();
+        Map<String, File> customDsStorages = new HashMap<>();
 
         if (dsCfg.getDataRegionConfigurations() != null) {
             for (DataRegionConfiguration drCfg : dsCfg.getDataRegionConfigurations()) {
                 if (drCfg.getStoragePath() == null)
                     continue;
 
-                drStorages.put(drCfg.getName(), resolveDirectory(drCfg.getStoragePath()));
+                customDsStorages.put(drCfg.getName(), resolveDirectory(drCfg.getStoragePath()));
             }
         }
 
         DataRegionConfiguration dfltDr = dsCfg.getDefaultDataRegionConfiguration();
 
         if (dfltDr.getStoragePath() != null)
-            drStorages.put(dfltDr.getName(), resolveDirectory(dfltDr.getStoragePath()));
+            customDsStorages.put(dfltDr.getName(), resolveDirectory(dfltDr.getStoragePath()));
 
-        return drStorages;
+        return customDsStorages;
     }
 
     /**
