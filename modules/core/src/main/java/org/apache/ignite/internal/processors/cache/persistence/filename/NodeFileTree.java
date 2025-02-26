@@ -23,10 +23,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -222,10 +225,16 @@ public class NodeFileTree extends SharedFileTree {
     /** Temporary cache directory prefix. */
     private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
-    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
+    /**
+     * Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache.
+     * {@link CacheConfiguration#getGroupName()} is null.
+     */
     private static final String CACHE_DIR_PREFIX = "cache-";
 
-    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
+    /**
+     * Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group.
+     * {@link CacheConfiguration#getGroupName()} is not null.
+     */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
@@ -236,6 +245,20 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Path to the storage directory. */
     private final File nodeStorage;
+
+    /**
+     * Key is the name of data region({@link DataRegionConfiguration#getName()}), value is node storage for this data region.
+     * @see DataRegionConfiguration#setStoragePath(String)
+     */
+    private final Map<String, File> drStorages;
+
+    /**
+     * Name of the default data region.
+     * @see DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME
+     * @see DataStorageConfiguration#setDefaultDataRegionConfiguration(DataRegionConfiguration)
+     * @see DataRegionConfiguration#setName(String)
+     */
+    private final String dfltDrName;
 
     /** Path to the checkpoint directory. */
     private final File checkpoint;
@@ -280,6 +303,8 @@ public class NodeFileTree extends SharedFileTree {
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+        drStorages = Collections.emptyMap();
+        dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
         checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
     }
@@ -312,6 +337,9 @@ public class NodeFileTree extends SharedFileTree {
             nodeStorage = dsCfg.getStoragePath() == null
                 ? rootRelative(DB_DEFAULT_FOLDER)
                 : resolveDirectory(dsCfg.getStoragePath());
+
+            drStorages = Collections.unmodifiableMap(dataRegionStorages(dsCfg));
+            dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
             snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
@@ -320,6 +348,8 @@ public class NodeFileTree extends SharedFileTree {
         }
         else {
             nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+            drStorages = Collections.emptyMap();
+            dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
             snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = rootRelative(DFLT_WAL_PATH);
@@ -453,7 +483,9 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return cacheStorage(cacheDirName(ccfg));
+        String cacheDr = ccfg.getDataRegionName() == null ? dfltDrName : ccfg.getDataRegionName();
+
+        return new File(drStorages.getOrDefault(cacheDr, nodeStorage), cacheDirName(ccfg));
     }
 
     /**
@@ -482,7 +514,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(cacheStorage(cacheDirName(ccfg)), partitionFileName(part));
+        return new File(cacheStorage(ccfg), partitionFileName(part));
     }
 
     /**
@@ -712,6 +744,34 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * Key is data region name.
+     * Value is data region storage.
+     * 
+     * @param dsCfg Data storage configuration.
+     * @return Data regions storages.
+     * @see DataRegionConfiguration#setStoragePath(String) 
+     */
+    private Map<String, File> dataRegionStorages(DataStorageConfiguration dsCfg) {
+        Map<String, File> drStorages = new HashMap<>();
+
+        if (dsCfg.getDataRegionConfigurations() != null) {
+            for (DataRegionConfiguration drCfg : dsCfg.getDataRegionConfigurations()) {
+                if (drCfg.getStoragePath() == null)
+                    continue;
+
+                drStorages.put(drCfg.getName(), resolveDirectory(drCfg.getStoragePath()));
+            }
+        }
+
+        DataRegionConfiguration dfltDr = dsCfg.getDefaultDataRegionConfiguration();
+
+        if (dfltDr.getStoragePath() != null)
+            drStorages.put(dfltDr.getName(), resolveDirectory(dfltDr.getStoragePath()));
+
+        return drStorages;
+    }
+
+    /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
@@ -737,14 +797,6 @@ public class NodeFileTree extends SharedFileTree {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
         return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    protected File cacheStorage(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
     }
 
     /**
