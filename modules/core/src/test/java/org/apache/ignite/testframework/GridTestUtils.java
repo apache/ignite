@@ -134,6 +134,7 @@ import static java.lang.Long.parseLong;
 import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -2322,12 +2323,17 @@ public final class GridTestUtils {
 
     /**
      * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
+     * @return Count of deleted files.
      */
-    public static void deleteIndexBin(NodeFileTree ft) {
-        ft.existingCacheDirs().stream()
-            .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
+    public static int deleteIndexBin(NodeFileTree ft) {
+        List<File> idxs = ft.existingCacheDirs().stream()
+            .map(dir -> new File(dir, partitionFileName(INDEX_PARTITION)))
             .filter(File::exists)
-            .forEach(File::delete);
+            .collect(Collectors.toList());
+
+        idxs.forEach(File::delete);
+
+        return idxs.size();
     }
 
     /**
