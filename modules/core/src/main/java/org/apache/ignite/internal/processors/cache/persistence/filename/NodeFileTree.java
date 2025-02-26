@@ -552,23 +552,6 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param cacheDirName Cache directory name.
-     * @param part Partition id.
-     * @return Partition file.
-     */
-    public File partitionFile(String cacheDirName, int part) {
-        return new File(cacheStorage(cacheDirName), partitionFileName(part));
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    protected File cacheStorage(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
     public File tmpCacheStorage(String cacheDirName) {
@@ -599,11 +582,14 @@ public class NodeFileTree extends SharedFileTree {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
     }
 
-    /** */
-    protected static String partitionFileName(int part, String idxName, String format) {
-        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
+    /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
 
-        return part == INDEX_PARTITION ? idxName : format(format, part);
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /**
@@ -616,27 +602,11 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache group storage name pattern.
-     */
-    private static boolean cacheGroupDir(File dir) {
-        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
-    }
-
-    /**
      * @param f File.
      * @return {@code True} if file conforms partition file name pattern.
      */
     public static boolean partitionFile(File f) {
         return f.getName().startsWith(PART_FILE_PREFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
-     */
-    private static boolean cacheOrCacheGroupConfigFile(File f) {
-        return f.getName().endsWith(CACHE_DATA_FILENAME);
     }
 
     /**
@@ -690,20 +660,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return The full cache directory name.
-     */
-    private static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
-        if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
-            return METASTORAGE_DIR_NAME;
-
-        return isSharedGroup
-            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
-            : CACHE_DIR_PREFIX + cacheOrGroupName;
-    }
-
-    /**
      * @param f Directory
      * @return Cache name for directory, if it conforms cache storage pattern.
      */
@@ -734,6 +690,58 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param part Partition file name.
+     * @return Partition id.
+     */
+    public static int partId(File part) {
+        String name = part.getName();
+        if (name.equals(INDEX_FILE_NAME))
+            return INDEX_PARTITION;
+
+        if (name.startsWith(PART_FILE_PREFIX))
+            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
+
+        throw new IllegalStateException("Illegal partition file name: " + name);
+    }
+
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
+        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
+
+        return part == INDEX_PARTITION ? idxName : format(format, part);
+    }
+
+    /**
+     * @param dir Directory.
+     * @return {@code True} if directory conforms cache group storage name pattern.
+     */
+    private static boolean cacheGroupDir(File dir) {
+        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
+     */
+    private static boolean cacheOrCacheGroupConfigFile(File f) {
+        return f.getName().endsWith(CACHE_DATA_FILENAME);
+    }
+
+    /**
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return The full cache directory name.
+     */
+    private static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+        if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
+            return METASTORAGE_DIR_NAME;
+
+        return isSharedGroup
+            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
+            : CACHE_DIR_PREFIX + cacheOrGroupName;
+    }
+
+    /**
      * @param name File name.
      * @return Cache name.
      */
@@ -749,28 +757,11 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param segment WAL segment file.
-     * @return Segment index.
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
      */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
-    }
-
-    /**
-     * @param part Partition file name.
-     * @return Partition id.
-     */
-    public static int partId(File part) {
-        String name = part.getName();
-        if (name.equals(INDEX_FILE_NAME))
-            return INDEX_PARTITION;
-
-        if (name.startsWith(PART_FILE_PREFIX))
-            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
-
-        throw new IllegalStateException("Illegal partition file name: " + name);
+    protected File cacheStorage(String cacheDirName) {
+        return new File(nodeStorage, cacheDirName);
     }
 
     /**

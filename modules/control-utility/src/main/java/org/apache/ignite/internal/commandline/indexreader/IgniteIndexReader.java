@@ -279,7 +279,7 @@ public class IgniteIndexReader implements AutoCloseable {
         for (int i = 0; i < partCnt; i++)
             partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
 
-        NodeFileTree.existingCacheConfigFiles(root).stream().forEach(f -> {
+        NodeFileTree.existingCacheConfigFiles(root).forEach(f -> {
             try {
                 StoredCacheData data = GridLocalConfigManager.readCacheData(f, null, null);
 
