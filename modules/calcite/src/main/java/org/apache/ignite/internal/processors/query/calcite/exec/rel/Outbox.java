@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -230,14 +229,20 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
         while (!inBuf.isEmpty()) {
             checkState();
 
-            Collection<Buffer> buffers = dest.targets(inBuf.peek()).stream()
-                .map(this::getOrCreateBuffer)
-                .collect(Collectors.toList());
+            List<UUID> nodes = dest.targets(inBuf.peek());
 
-            assert !F.isEmpty(buffers);
+            assert !F.isEmpty(nodes);
 
-            if (!buffers.stream().allMatch(Buffer::ready))
-                return;
+            List<Buffer> buffers = new ArrayList<>(nodes.size());
+
+            for (UUID id: nodes) {
+                Buffer buf = getOrCreateBuffer(id);
+
+                if (!buf.ready())
+                    return;
+
+                buffers.add(buf);
+            }
 
             Row row = inBuf.remove();
 
