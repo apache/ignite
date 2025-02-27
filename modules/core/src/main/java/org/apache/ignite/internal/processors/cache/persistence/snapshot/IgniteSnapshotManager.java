@@ -3776,18 +3776,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /**
+         * @param rqId Request id.
          * @param cacheDirName Cache directory name.
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
          */
-        private Map<String, Serializable> transmissionParams(String rqId, String cacheDirName,
-            GroupPartitionId pair) {
+        private Map<String, Serializable> transmissionParams(String rqId, String cacheDirName, GroupPartitionId pair) {
             Map<String, Serializable> params = new HashMap<>();
 
+            params.put(RQ_ID_NAME_PARAM, rqId);
+            params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
             params.put(SNP_PART_ID_PARAM, pair.getPartitionId());
-            params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
-            params.put(RQ_ID_NAME_PARAM, rqId);
             params.put(SNP_PARTITIONS_CNT, partsCnt);
 
             return params;

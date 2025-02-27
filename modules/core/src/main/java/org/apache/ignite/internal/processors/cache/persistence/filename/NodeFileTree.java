@@ -499,6 +499,22 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        return new File(cacheStorage(ccfg), TMP_CACHE_DIR_PREFIX + cacheDirName(ccfg));
+    }
+
+    /**
+     * @param cacheStorage cache storage.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(File cacheStorage) {
+        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
@@ -546,6 +562,15 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Path to the metastorage directory. */
     public File metaStorage() {
         return new File(nodeStorage, METASTORAGE_DIR_NAME);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     */
+    public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
+        return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
     }
 
     /**
