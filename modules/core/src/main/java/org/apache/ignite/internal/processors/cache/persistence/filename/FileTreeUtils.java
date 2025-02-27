@@ -64,7 +64,6 @@ public class FileTreeUtils {
     /**
      * @param dir Directory.
      * @return {@code True} if directory conforms cache storage name pattern.
-     * @see #cacheGroupDir(File)
      */
     public static boolean cacheDir(File dir) {
         return dir.getName().startsWith(NodeFileTree.CACHE_DIR_PREFIX);

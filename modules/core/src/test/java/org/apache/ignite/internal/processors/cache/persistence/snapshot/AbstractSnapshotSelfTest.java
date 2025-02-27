@@ -104,6 +104,7 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -1007,8 +1008,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long length) {
-            delegate.sendPart(from, to, pair, length);
+        @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+            delegate.sendPart(from, to, drName, pair, length);
         }
 
         /** {@inheritDoc} */

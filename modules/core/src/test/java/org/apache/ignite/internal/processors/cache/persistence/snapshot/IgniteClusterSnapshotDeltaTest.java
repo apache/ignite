@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -120,7 +121,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         mgr.localSnapshotSenderFactory(sft -> new DelegateSnapshotSender(log,
             mgr.snapshotExecutorService(), old.apply(sft)) {
-            @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
+            @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
                 if (cacheDir.equals(to.getName()))
                     partStart.countDown();
 
@@ -131,7 +132,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     throw new RuntimeException(e);
                 }
 
-                super.sendPart0(part, to, pair, length);
+                super.sendPart0(from, to, drName, pair, length);
             }
 
             @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {

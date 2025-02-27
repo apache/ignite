@@ -400,6 +400,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 snpSndr.sendPart(
                     partitionFile(ft, pair),
                     partitionFile(sft, pair),
+                    dataRegionname(pair),
                     pair,
                     partLen);
 
@@ -532,6 +533,18 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
         return ft.partitionFile(gctx.config(), grpAndPart.getPartitionId());
+    }
+
+    private String dataRegionname(GroupPartitionId grpAndPart) throws IgniteCheckedException {
+        if (grpAndPart.getGroupId() == MetaStorage.METASTORAGE_CACHE_ID)
+            return null;
+
+        CacheGroupContext gctx = cctx.cache().cacheGroup(grpAndPart.getGroupId());
+
+        if (gctx == null)
+            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
+
+        return gctx.config().getDataRegionName();
     }
 
     /** {@inheritDoc} */
