@@ -60,4 +60,61 @@ public class FileTreeUtils {
                 "Current persistence store directory is: [" + dir.getAbsolutePath() + "]");
         }
     }
+
+    /**
+     * @param dir Directory.
+     * @return {@code True} if directory conforms cache storage name pattern.
+     * @see #cacheGroupDir(File)
+     */
+    public static boolean cacheDir(File dir) {
+        return dir.getName().startsWith(NodeFileTree.CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms partition file name pattern.
+     */
+    public static boolean partitionFile(File f) {
+        return f.getName().startsWith(NodeFileTree.PART_FILE_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms cache config file name pattern.
+     */
+    public static boolean cacheConfigFile(File f) {
+        return f.getName().equals(NodeFileTree.CACHE_DATA_FILENAME);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms cache config file name pattern.
+     */
+    public static boolean binFile(File f) {
+        return f.getName().endsWith(NodeFileTree.FILE_SUFFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms temp cache storage name pattern.
+     */
+    static boolean tmpCacheStorage(File f) {
+        return f.isDirectory() && f.getName().startsWith(NodeFileTree.TMP_CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms temp cache configuration file name pattern.
+     */
+    public static boolean tmpCacheConfig(File f) {
+        return f.getName().endsWith(NodeFileTree.CACHE_DATA_TMP_FILENAME);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file is regular(not temporary).
+     */
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(NodeFileTree.TMP_SUFFIX);
+    }
 }

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +57,7 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
                 && cacheStoreDir.listFiles().length > 0
             ) {
                 for (File f : cacheStoreDir.listFiles()) {
-                    if (!NodeFileTree.cacheConfigFile(f))
+                    if (!FileTreeUtils.cacheConfigFile(f))
                         return true;
                 }
             }

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -286,7 +287,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     /** */
     private void cleanCacheDir(File cacheDir) {
         for (File f : cacheDir.listFiles()) {
-            if (!NodeFileTree.cacheConfigFile(f))
+            if (!FileTreeUtils.cacheConfigFile(f))
                 f.delete();
         }
     }

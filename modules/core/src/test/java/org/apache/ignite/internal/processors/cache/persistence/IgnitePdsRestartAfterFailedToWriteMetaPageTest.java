@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -169,7 +169,7 @@ public class IgnitePdsRestartAfterFailedToWriteMetaPageTest extends GridCommonAb
             if (file.getAbsolutePath().contains(nodeName)) {
                 if (failNextCheckpoint && file.getName().contains("-START.bin"))
                     cpCnt.incrementAndGet();
-                else if (NodeFileTree.partitionFile(file) && !file.getAbsolutePath().contains("metastorage")) {
+                else if (FileTreeUtils.partitionFile(file) && !file.getAbsolutePath().contains("metastorage")) {
                     return new FileIODecorator(delegate) {
                         @Override public int write(ByteBuffer srcBuf) throws IOException {
                             maybeThrowException();

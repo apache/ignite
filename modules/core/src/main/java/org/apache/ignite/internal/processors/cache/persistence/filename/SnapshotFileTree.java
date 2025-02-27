@@ -245,7 +245,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return {@code True} if file conforms partition dump file name pattern.
      */
     public static boolean dumpPartitionFile(File f, boolean compressed) {
-        return partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
+        return FileTreeUtils.partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
     }
 
     /**

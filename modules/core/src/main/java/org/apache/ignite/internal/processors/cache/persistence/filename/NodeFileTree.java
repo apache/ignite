@@ -200,7 +200,8 @@ public class NodeFileTree extends SharedFileTree {
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
     /** Filter out all cache directories. */
-    private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
+    private static final Predicate<File> CACHE_DIR_FILTER = dir -> FileTreeUtils.cacheDir(dir)
+        || dir.getName().startsWith(NodeFileTree.CACHE_GRP_DIR_PREFIX);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
@@ -220,25 +221,25 @@ public class NodeFileTree extends SharedFileTree {
     protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
-    private static final String CACHE_DATA_FILENAME = "cache_data.dat";
+    static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    private static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+    static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
 
     /** Temporary cache directory prefix. */
-    private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+    static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
     /**
      * Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache.
      * {@link CacheConfiguration#getGroupName()} is null.
      */
-    private static final String CACHE_DIR_PREFIX = "cache-";
+    static final String CACHE_DIR_PREFIX = "cache-";
 
     /**
      * Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group.
      * {@link CacheConfiguration#getGroupName()} is not null.
      */
-    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+    static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -578,7 +579,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Temp cache storages. */
     public List<File> existingTmpCacheStorages() {
-        return filesInStorages(NodeFileTree::tmpCacheStorage).collect(Collectors.toList());
+        return filesInStorages(FileTreeUtils::tmpCacheStorage).collect(Collectors.toList());
     }
 
     /** @return Cache directories. Metatorage directory excluded. */
@@ -589,68 +590,11 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache storage name pattern.
-     * @see #cacheGroupDir(File)
-     */
-    public static boolean cacheDir(File dir) {
-        return dir.getName().startsWith(CACHE_DIR_PREFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms partition file name pattern.
-     */
-    public static boolean partitionFile(File f) {
-        return f.getName().startsWith(PART_FILE_PREFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms cache config file name pattern.
-     */
-    public static boolean cacheConfigFile(File f) {
-        return f.getName().equals(CACHE_DATA_FILENAME);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms cache config file name pattern.
-     */
-    public static boolean binFile(File f) {
-        return f.getName().endsWith(FILE_SUFFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms temp cache storage name pattern.
-     */
-    private static boolean tmpCacheStorage(File f) {
-        return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms temp cache configuration file name pattern.
-     */
-    public static boolean tmpCacheConfig(File f) {
-        return f.getName().endsWith(CACHE_DATA_TMP_FILENAME);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file is regular(not temporary).
-     */
-    public static boolean notTmpFile(File f) {
-        return !f.getName().endsWith(TMP_SUFFIX);
-    }
-
-    /**
      * @param f Temporary cache directory.
      * @return Cache or group id.
      */
     public static String tmpDirCacheName(File f) {
-        assert tmpCacheStorage(f) : f;
+        assert FileTreeUtils.tmpCacheStorage(f) : f;
 
         return cacheName(f.getName().substring(TMP_CACHE_DIR_PREFIX.length()));
     }
@@ -668,13 +612,13 @@ public class NodeFileTree extends SharedFileTree {
      * @return Array of cache data files.
      */
     public static List<File> existingCacheConfigFiles(File root) {
-        if (cacheDir(root)) {
+        if (FileTreeUtils.cacheDir(root)) {
             File cfg = new File(root, CACHE_DATA_FILENAME);
 
             return cfg.exists() ? Collections.singletonList(cfg) : Collections.emptyList();
         }
 
-        return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
+        return F.asList(root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME)));
     }
 
     /**
@@ -691,6 +635,7 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int partId(File part) {
         String name = part.getName();
+
         if (name.equals(INDEX_FILE_NAME))
             return INDEX_PARTITION;
 
@@ -705,22 +650,6 @@ public class NodeFileTree extends SharedFileTree {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
         return part == INDEX_PARTITION ? idxName : format(format, part);
-    }
-
-    /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache group storage name pattern.
-     */
-    private static boolean cacheGroupDir(File dir) {
-        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
-     */
-    private static boolean cacheOrCacheGroupConfigFile(File f) {
-        return f.getName().endsWith(CACHE_DATA_FILENAME);
     }
 
     /**

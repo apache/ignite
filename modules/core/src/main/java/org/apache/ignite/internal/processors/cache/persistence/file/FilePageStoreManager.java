@@ -180,7 +180,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         List<File> files = ft.existingCacheDirs();
 
         for (File file : files) {
-            File[] tmpFiles = file.listFiles(NodeFileTree::tmpCacheConfig);
+            File[] tmpFiles = file.listFiles(FileTreeUtils::tmpCacheConfig);
 
             if (tmpFiles != null) {
                 for (File tmpFile : tmpFiles) {
@@ -203,7 +203,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
                 new DirectoryStream.Filter<Path>() {
                     @Override public boolean accept(Path entry) throws IOException {
-                        return NodeFileTree.binFile(entry.toFile());
+                        return FileTreeUtils.binFile(entry.toFile());
                     }
                 })) {
                 for (Path path : files)
@@ -338,7 +338,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 if (!locEnabled || !globalEnabled) {
                     File dir = ft.cacheStorage(desc.config());
 
-                    if (Arrays.stream(dir.listFiles()).anyMatch(f -> !NodeFileTree.cacheConfigFile(f)))
+                    if (Arrays.stream(dir.listFiles()).anyMatch(f -> !FileTreeUtils.cacheConfigFile(f)))
                         corruptedCacheGrps.add(desc.config());
                 }
             }

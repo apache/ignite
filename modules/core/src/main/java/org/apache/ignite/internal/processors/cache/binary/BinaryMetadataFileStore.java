@@ -39,7 +39,7 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -211,7 +211,7 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
-        for (File file : metadataDir.listFiles(NodeFileTree::notTmpFile))
+        for (File file : metadataDir.listFiles(FileTreeUtils::notTmpFile))
             restoreMetadata(file);
     }
 

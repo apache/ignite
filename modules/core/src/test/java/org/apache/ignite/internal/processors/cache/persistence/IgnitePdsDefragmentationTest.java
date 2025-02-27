@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -586,7 +587,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
                     if (file.getName().contains("part-dfrg-"))
                         cachePartFile.set(file);
-                    else if (NodeFileTree.partitionFile(file))
+                    else if (FileTreeUtils.partitionFile(file))
                         defragCachePartFile.set(file);
                 }
 

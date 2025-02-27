@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -233,7 +234,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
                     if (CP_FILE_NAME_PATTERN.matcher(name).matches())
                         failed = true;
 
-                    if (NodeFileTree.partitionFile(path.toFile()) && path.toFile().length() > pageSize)
+                    if (FileTreeUtils.partitionFile(path.toFile()) && path.toFile().length() > pageSize)
                         failed = true;
 
                     if (name.equals(partitionFileName(INDEX_PARTITION)) && path.toFile().length() > pageSize)
