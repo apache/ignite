@@ -493,8 +493,16 @@ public class NodeFileTree extends SharedFileTree {
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
         return new File(
             drStorages.getOrDefault(ccfg.getDataRegionName() == null ? dfltDrName : ccfg.getDataRegionName(), nodeStorage),
-            cacheDirName(ccfg.getGroupName() != null, CU.cacheOrGroupName(ccfg))
+            cacheDirName(ccfg)
         );
+    }
+
+    /**
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(String cacheDirName) {
+        return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
@@ -524,14 +532,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
         return new File(cacheStorage(ccfg), partitionFileName(part));
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public File tmpCacheStorage(String cacheDirName) {
-        return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
@@ -583,7 +583,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Cache directories. Metatorage directory excluded. */
     public List<File> existingUserCacheDirs() {
-        final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
+        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
 
         return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
@@ -724,17 +724,11 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
+     * @param ccfg Cache configurtion.
      * @return The full cache directory name.
      */
-    static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
-        if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
-            return METASTORAGE_DIR_NAME;
-
-        return isSharedGroup
-            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
-            : CACHE_DIR_PREFIX + cacheOrGroupName;
+    static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        return (ccfg.getGroupName() == null ? CACHE_DIR_PREFIX : CACHE_GRP_DIR_PREFIX) + CU.cacheOrGroupName(ccfg);
     }
 
     /**

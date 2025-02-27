@@ -147,7 +147,7 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
 
                 File nodeStorage = ensureExists(new File(db, ft.folderName()));
 
-                ensureExists(new File(nodeStorage, cacheDirName(ccfg.getGroupName() != null, CU.cacheOrGroupName(ccfg))));
+                ensureExists(new File(nodeStorage, cacheDirName(ccfg)));
             }
 
             for (boolean flag : flags)
