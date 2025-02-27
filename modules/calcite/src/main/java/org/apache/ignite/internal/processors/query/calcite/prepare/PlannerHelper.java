@@ -24,21 +24,26 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
@@ -98,6 +103,8 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
+            rel = optimizeJoins(planner, rel);
+
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
@@ -119,6 +126,9 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
+            // TODO: remove
+            System.err.println("TEST | Plan:\n" + RelOptUtil.toString(igniteRel));
+
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -126,6 +136,49 @@ public class PlannerHelper {
             log.error(planner.dump());
 
             throw ex;
+        }
+    }
+
+    /** */
+    private static RelNode optimizeJoins(IgnitePlanner planner, RelNode originRel) {
+//        RelNode multiJoinsRel = planner.transform(PlannerPhase.HEP_JOIN_TO_MULTI_JOIN, originRel.getTraitSet(), originRel);
+//
+//        // Failed to convert joins or disabled.
+//        if (!hasMultiJoinNode(multiJoinsRel))
+//            return originRel;
+
+        RelNode optimizedRel = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, originRel.getTraitSet(), originRel);
+
+        // Still has multi-joins, failed to process them or is disabled.
+        if (hasMultiJoinNode(optimizedRel))
+            return originRel;
+
+        // No need to do join commutes or other join optimizations.
+        planner.setDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
+            .collect(Collectors.toList()));
+
+        return optimizedRel;
+    }
+
+    /** */
+    private static boolean hasMultiJoinNode(RelNode root) {
+        try {
+            RelShuttle visitor = new RelHomogeneousShuttle() {
+                /** {@inheritDoc} */
+                @Override public RelNode visit(RelNode node) {
+                    if (node instanceof MultiJoin)
+                        throw Util.FoundOne.NULL;
+                    else
+                        return super.visit(node);
+                }
+            };
+
+            root.accept(visitor);
+
+            return false;
+        }
+        catch (Util.FoundOne ignored) {
+            return true;
         }
     }
 

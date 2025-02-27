@@ -67,7 +67,11 @@ public enum HintDefinition {
         /** {@inheritDoc} */
         @Override public Collection<RelOptRule> disabledRules() {
             // CoreRules#JOIN_COMMUTE also disables CoreRules.JOIN_COMMUTE_OUTER.
-            return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT);
+            // Disabling JoinToMultiJoinRule also disables dependent IgniteMultiJoinOptimizationRule because it won't
+            // receive a MultiJoin. Disabling IgniteMultiJoinOptimizationRule in this way doesn't work because
+            // MultiJoin is not Hintable and HintStrategyTable ignores it.
+            return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT,
+                CoreRules.JOIN_TO_MULTI_JOIN);
         }
     },
 

@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.ViewsInte
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
@@ -123,6 +124,7 @@ import org.junit.runners.Suite;
     UnstableTopologyIntegrationTest.class,
     PartitionsReservationIntegrationTest.class,
     JoinCommuteRulesTest.class,
+    JoinOrderOptimizationTest.class,
     ServerStatisticsIntegrationTest.class,
     JoinIntegrationTest.class,
     IntervalTest.class,
