@@ -17,48 +17,78 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
+import java.io.File;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
  * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
 public class DataRegionStoragePathTest extends GridCommonAbstractTest {
+    /** Custom storage path for default data region. */
+    private static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
+
+    /** Custom storage path for custom data region. */
+    private static final String CUSTOM_STORAGE_PATH = "custom_dr";
+
+    /** Data region name with custom storage. */
+    private static final String DR_WITH_STORAGE = "custom-storage";
+
+    /** Data region with default storage. */
+    private static final String DR_WITH_DFLT_STORAGE = "default-storage";
+
+    /** */
+    public final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
+        ccfg("cache0", null, null),
+        ccfg("cache1", "grp1", null),
+        ccfg("cache2", "grp1", null),
+        ccfg("cache3", null, DR_WITH_DFLT_STORAGE),
+        ccfg("cache4", "grp2", DR_WITH_DFLT_STORAGE),
+        ccfg("cache5", null, DR_WITH_STORAGE),
+        ccfg("cache6", "grp3", DR_WITH_STORAGE),
+        ccfg("cache7", "grp3", DR_WITH_STORAGE)
+    };
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.getDefaultDataRegionConfiguration().setStoragePath("dflt_dr").setPersistenceEnabled(true);
+        dsCfg.getDefaultDataRegionConfiguration().setStoragePath(DEFAULT_DR_STORAGE_PATH).setPersistenceEnabled(true);
 
         dsCfg.setDataRegionConfigurations(
-            new DataRegionConfiguration().setName("custom-storage").setStoragePath("custom-storage").setPersistenceEnabled(true),
-            new DataRegionConfiguration().setName("default-storage").setPersistenceEnabled(true)
+            new DataRegionConfiguration().setName(DR_WITH_STORAGE).setStoragePath(CUSTOM_STORAGE_PATH).setPersistenceEnabled(true),
+            new DataRegionConfiguration().setName(DR_WITH_DFLT_STORAGE).setPersistenceEnabled(true)
         );
 
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(dsCfg)
-            .setCacheConfiguration(
-                ccfg("cache0", null, null),
-                ccfg("cache1", "grp1", null),
-                ccfg("cache2", "grp1", null),
-                ccfg("cache3", null, "default-storage"),
-                ccfg("cache4", "grp2", "default-storage"),
-                ccfg("cache5", null, "custom-storage"),
-                ccfg("cache6", "grp3", "custom-storage"),
-                ccfg("cache7", "grp3", "custom-storage")
-            );
+            .setCacheConfiguration(ccfgs);
     }
 
     /** */
     @Test
     public void testCaches() throws Exception {
-        IgniteEx srv = startGrids(3);
+        int nodeCnt = 3;
+
+        IgniteEx srv = startGrids(nodeCnt);
+
+        srv.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < 8; i++) {
             IgniteCache<Integer, Integer> c = srv.cache("cache" + i);
@@ -67,6 +97,69 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
                 c.put(j, i);
         }
 
+        Consumer<IgniteEx> check = srv0 -> {
+            for (int i = 0; i < 8; i++) {
+                IgniteCache<Integer, Integer> c = srv0.cache("cache" + i);
+
+                for (int j=0; j<100; j++)
+                    assertEquals((Integer)i, c.get(j));
+            }
+        };
+
+        check.accept(srv);
+
+        stopAllGrids();
+
+        srv = startGrids(3);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        check.accept(srv);
+
+        List<NodeFileTree> fts = IntStream.range(0, 3)
+            .mapToObj(this::grid)
+            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+            .collect(Collectors.toList());
+
+        stopAllGrids();
+
+        for (NodeFileTree ft : fts) {
+            boolean[] flags = new boolean[2];
+
+            for (CacheConfiguration<?, ?> ccfg : ccfgs) {
+                File db;
+
+                if (Objects.equals(ccfg.getDataRegionName(), DR_WITH_DFLT_STORAGE)) {
+                    db = ensureExists(new File(ft.root(), DB_DEFAULT_FOLDER));
+
+                    flags[0] = true;
+                }
+                else {
+                    File customRoot = ensureExists(new File(
+                        ft.root(),
+                        ccfg.getDataRegionName() == null ? DEFAULT_DR_STORAGE_PATH : CUSTOM_STORAGE_PATH)
+                    );
+
+                    db = ensureExists(new File(customRoot, DB_DEFAULT_FOLDER));
+
+                    flags[1] = true;
+                }
+
+                File nodeStorage = ensureExists(new File(db, ft.folderName()));
+
+                ensureExists(new File(nodeStorage, cacheDirName(ccfg.getGroupName() != null, CU.cacheOrGroupName(ccfg))));
+            }
+
+            for (boolean flag : flags)
+                assertTrue(flag);
+        }
+    }
+
+    /** */
+    private static File ensureExists(File file) {
+        assertTrue(file.getAbsolutePath() + " must exists", file.exists());
+
+        return file;
     }
 
     /** */

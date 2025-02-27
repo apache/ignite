@@ -26,7 +26,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -363,6 +366,11 @@ public class NodeFileTree extends SharedFileTree {
         return nodeStorage;
     }
 
+    /** @return Storages for data regions. */
+    public Map<String, File> dataRegionStorages() {
+        return drStorages;
+    }
+
     /** @return Folder name. */
     public String folderName() {
         return folderName;
@@ -483,9 +491,10 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        String cacheDr = ccfg.getDataRegionName() == null ? dfltDrName : ccfg.getDataRegionName();
-
-        return new File(drStorages.getOrDefault(cacheDr, nodeStorage), cacheDirName(ccfg));
+        return new File(
+            drStorages.getOrDefault(ccfg.getDataRegionName() == null ? dfltDrName : ccfg.getDataRegionName(), nodeStorage),
+            cacheDirName(ccfg.getGroupName() != null, CU.cacheOrGroupName(ccfg))
+        );
     }
 
     /**
@@ -569,7 +578,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Temp cache storages. */
     public List<File> existingTmpCacheStorages() {
-        return F.asList(nodeStorage().listFiles((FileFilter)NodeFileTree::tmpCacheStorage));
+        return filesInStorages(NodeFileTree::tmpCacheStorage).collect(Collectors.toList());
     }
 
     /** @return Cache directories. Metatorage directory excluded. */
@@ -719,7 +728,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
      */
-    private static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+    static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
         if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
             return METASTORAGE_DIR_NAME;
 
@@ -754,19 +763,21 @@ public class NodeFileTree extends SharedFileTree {
     private Map<String, File> dataRegionStorages(DataStorageConfiguration dsCfg) {
         Map<String, File> customDsStorages = new HashMap<>();
 
+        Function<String, File> resolveWithDb = cfg -> resolveDirectory(Path.of(cfg, DB_DEFAULT_FOLDER).toString());
+
         if (dsCfg.getDataRegionConfigurations() != null) {
             for (DataRegionConfiguration drCfg : dsCfg.getDataRegionConfigurations()) {
                 if (drCfg.getStoragePath() == null)
                     continue;
 
-                customDsStorages.put(drCfg.getName(), resolveDirectory(drCfg.getStoragePath()));
+                customDsStorages.put(drCfg.getName(), resolveWithDb.apply(drCfg.getStoragePath()));
             }
         }
 
         DataRegionConfiguration dfltDr = dsCfg.getDefaultDataRegionConfiguration();
 
         if (dfltDr.getStoragePath() != null)
-            customDsStorages.put(dfltDr.getName(), resolveDirectory(dfltDr.getStoragePath()));
+            customDsStorages.put(dfltDr.getName(), resolveWithDb.apply(dfltDr.getStoragePath()));
 
         return customDsStorages;
     }
@@ -779,24 +790,21 @@ public class NodeFileTree extends SharedFileTree {
     protected List<File> existingCacheDirs(boolean includeMeta, Predicate<File> filter) {
         Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
-        File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
-
-        if (cacheDirs == null)
-            return Collections.emptyList();
-
-        Arrays.sort(cacheDirs);
-
-        return Arrays.asList(cacheDirs);
+        return filesInStorages(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f)).collect(Collectors.toList());
     }
 
     /**
-     * @param ccfg Cache configuration.
-     * @return The full cache directory name.
+     * @param filter Dir file filter.
+     * @return All files from all {@link #drStorages} matching the filter.
      */
-    private String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
+    private Stream<File> filesInStorages(FileFilter filter) {
+        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream()).flatMap(drStorage -> {
+            File[] drStorageFiles = drStorage.listFiles(filter);
 
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
+            return drStorageFiles == null
+                ? Stream.empty()
+                : Arrays.stream(drStorageFiles);
+        });
     }
 
     /**

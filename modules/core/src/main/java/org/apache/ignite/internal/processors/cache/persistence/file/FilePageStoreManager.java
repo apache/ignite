@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
@@ -174,18 +175,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         ft = ctx.pdsFolderResolver().fileTree();
 
-        U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
-
-        String tmpDir = System.getProperty("java.io.tmpdir");
-
-        if (tmpDir != null && ft.nodeStorage().getAbsolutePath().startsWith(tmpDir)) {
-            log.warning("Persistence store directory is in the temp directory and may be cleaned." +
-                "To avoid this set \"IGNITE_HOME\" environment variable properly or " +
-                "change location of persistence directories in data storage configuration " +
-                "(see DataStorageConfiguration#walPath, DataStorageConfiguration#walArchivePath, " +
-                "DataStorageConfiguration#storagePath properties). " +
-                "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
-        }
+        FileTreeUtils.createCacheStorages(ft, log);
 
         List<File> files = ft.existingCacheDirs();
 

@@ -56,6 +56,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -119,7 +120,7 @@ public class GridLocalConfigManager {
         ft = ctx.pdsFolderResolver().fileTree();
 
         if (!ctx.clientNode())
-            U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
+            FileTreeUtils.createCacheStorages(ft, log);
     }
 
     /**
