@@ -653,24 +653,19 @@ final class ReliableChannel implements AutoCloseable {
 
         // Close obsolete holders or map old but valid addresses to holders
         if (holders != null) {
+            outerLoop:
             for (ClientChannelHolder h : holders) {
-                boolean found = false;
-
                 for (InetSocketAddress addr : h.getAddresses()) {
                     for (List<InetSocketAddress> addrList : validAddrsSet) {
+                        // If new endpoints contain at least one of channel addresses, don't close this channel.
                         if (addrList.contains(addr)) {
-                            found = true;
-                            break;
+                            curAddrs.putIfAbsent(addr, h);
+
+                            continue outerLoop;
                         }
                     }
-                    if (found) {
-                        curAddrs.putIfAbsent(addr, h);
-                        break;
-                    }
                 }
-
-                if (!found)
-                    h.close();
+                h.close();
             }
         }
 
@@ -695,9 +690,9 @@ final class ReliableChannel implements AutoCloseable {
                 hld = curAddrs.get(addr);
 
                 if (hld != null) {
-                    if (!hld.getAddresses().equals(addrs)) { // Enrich holder addresses.
+                    if (!hld.getAddresses().equals(addrs)) // Enrich holder addresses.
                         hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
-                    }
+
                     break;
                 }
             }
