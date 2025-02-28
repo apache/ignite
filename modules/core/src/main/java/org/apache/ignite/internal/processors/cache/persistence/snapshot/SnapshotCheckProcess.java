@@ -322,8 +322,7 @@ public class SnapshotCheckProcess {
     private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
         SnapshotChecker snpChecker = kctx.cache().context().snapshotMgr().checker();
 
-        assert ctx.metas.size() == 1 : "Incremental snapshots do not support checking on other topology.";
-
+        // Incremental snapshots do not support working on other topology. Only single meta and snapshot part can be processed.
         SnapshotMetadata meta = ctx.metas.get(0);
 
         CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
@@ -522,11 +521,6 @@ public class SnapshotCheckProcess {
             ctx.metas = assingMetas(metas);
 
             if (!F.isEmpty(ctx.metas)) {
-                if (ctx.metas.size() > 1 && ctx.req.incrementalIndex() > 0) {
-                    throw new IllegalStateException("Found several snapshot metadatas to process on current node. " +
-                        "Incremental snapshots do not support checking/restoring on other topology.");
-                }
-
                 ctx.locFileTree = new HashMap<>(ctx.metas.size(), 1.0f);
 
                 for (SnapshotMetadata metaToProc : ctx.metas) {

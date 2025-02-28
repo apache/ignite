@@ -267,7 +267,7 @@ public class SnapshotChecker {
             long startSeg = fullMeta.snapshotRecordPointer().index();
 
             for (int inc = 1; inc <= incIdx; inc++) {
-                SnapshotFileTree.IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(incIdx);
+                SnapshotFileTree.IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(inc);
 
                 if (!ift.root().exists()) {
                     throw new IllegalArgumentException("No incremental snapshot found " +
