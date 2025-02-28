@@ -322,29 +322,22 @@ public class SnapshotCheckProcess {
     private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
         SnapshotChecker snpChecker = kctx.cache().context().snapshotMgr().checker();
 
-        // Per metas result: consistent id -> check result.
-        Map<String, IncrementalSnapshotCheckResult> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
-        // Per consistent id.
-        Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
-        AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
-        CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
+        // Incremental snapshots do not support working on other topology. Only single meta and snapshot part can be processed.
+        SnapshotMetadata meta = ctx.metas.get(0);
 
-        for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<IncrementalSnapshotCheckResult> workingFut = snpChecker
-                .checkIncrementalSnapshot(ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
+        CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
-            workingFut.whenComplete((res, err) -> {
-                if (err != null)
-                    exceptions.put(meta.consistentId(), err);
-                else
-                    perMetaResults.put(meta.consistentId(), res);
+        CompletableFuture<IncrementalSnapshotCheckResult> workingFut = snpChecker.checkIncrementalSnapshot(
+            ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
 
-                if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete( new SnapshotCheckResponse(perMetaResults, exceptions));
-            });
-        }
+        workingFut.whenComplete((res, err) -> {
+            if (err != null)
+                resFut.completeExceptionally(err);
+            else
+                resFut.complete(new SnapshotCheckResponse(res, null));
+        });
 
-        return composedFut;
+        return resFut;
     }
 
     /** @return A composed future of partitions checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
