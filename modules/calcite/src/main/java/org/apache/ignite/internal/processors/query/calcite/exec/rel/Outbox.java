@@ -233,21 +233,31 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
             assert !F.isEmpty(nodes);
 
-            List<Buffer> buffers = new ArrayList<>(nodes.size());
+            // flush() method is invoked for every row, and in most cases the destination is a single node.
+            // Therefore, we use this optimization for the case to avoid excess memory allocations.
+            List<Buffer> buffers = nodes.size() == 1 ? null : new ArrayList<>(nodes.size());
+            Buffer buffer = null;
 
-            for (UUID id: nodes) {
-                Buffer buf = getOrCreateBuffer(id);
+            for (UUID nodeId : nodes) {
+                Buffer buf = getOrCreateBuffer(nodeId);
 
                 if (!buf.ready())
                     return;
 
-                buffers.add(buf);
+                if (nodes.size() == 1)
+                    buffer = buf;
+                else
+                    buffers.add(buf);
             }
 
             Row row = inBuf.remove();
 
-            for (Buffer dest : buffers)
-                dest.add(row);
+            if (buffers != null) {
+                for (Buffer dest : buffers)
+                    dest.add(row);
+            }
+            else
+                buffer.add(row);
         }
 
         assert inBuf.isEmpty();
