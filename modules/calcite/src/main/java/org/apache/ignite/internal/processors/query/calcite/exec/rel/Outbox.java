@@ -235,29 +235,31 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
 
             // flush() method is invoked for every row, and in most cases the destination is a single node.
             // Therefore, we use this optimization for the case to avoid excess memory allocations.
-            List<Buffer> buffers = nodes.size() == 1 ? null : new ArrayList<>(nodes.size());
-            Buffer buffer = null;
-
-            for (UUID nodeId : nodes) {
-                Buffer buf = getOrCreateBuffer(nodeId);
+            if (nodes.size() == 1) {
+                Buffer buf = getOrCreateBuffer(nodes.get(0));
 
                 if (!buf.ready())
                     return;
 
-                if (nodes.size() == 1)
-                    buffer = buf;
-                else
-                    buffers.add(buf);
+                buf.add(inBuf.remove());
             }
+            else {
+                List<Buffer> buffers = new ArrayList<>(nodes.size());
 
-            Row row = inBuf.remove();
+                for (UUID nodeId : nodes) {
+                    Buffer buf = getOrCreateBuffer(nodeId);
 
-            if (buffers != null) {
+                    if (!buf.ready())
+                        return;
+
+                    buffers.add(buf);
+                }
+
+                Row row = inBuf.remove();
+
                 for (Buffer dest : buffers)
                     dest.add(row);
             }
-            else
-                buffer.add(row);
         }
 
         assert inBuf.isEmpty();
