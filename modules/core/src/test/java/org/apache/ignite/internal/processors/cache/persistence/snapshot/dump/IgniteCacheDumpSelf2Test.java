@@ -638,7 +638,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             );
 
             for (File tmpRoot : ft.snapshotsTempRoots())
-                assertFalse("Temporary snapshot directory must created lazily for in-memory node", tmpRoot);
+                assertFalse("Temporary snapshot directory must created lazily for in-memory node", tmpRoot.exists());
 
             assertTrue(snpDir.exists());
 
