@@ -555,15 +555,15 @@ public class SnapshotChecker {
 
     /** */
     public IdleVerifyResult reduceIncrementalResults(
-        Map<ClusterNode, List<IncrementalSnapshotCheckResult>> results,
-        Map<ClusterNode, Exception> errors
+        Map<ClusterNode, IncrementalSnapshotCheckResult> results,
+        Map<ClusterNode, Exception> operationErrors
     ) {
+        if (!operationErrors.isEmpty())
+            return IdleVerifyResult.builder().exceptions(operationErrors).build();
+
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        if (!errors.isEmpty())
-            return bldr.exceptions(errors).build();
-
-        results.forEach((node, resLst) -> resLst.forEach(res -> {
+        results.forEach((node, res) -> {
             if (F.isEmpty(res.exceptions())) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
                     bldr.addPartiallyCommited(node, res.partiallyCommittedTxs());
@@ -577,7 +577,7 @@ public class SnapshotChecker {
             }
             else
                 bldr.addException(node, F.first(res.exceptions()));
-        }));
+        });
 
         return bldr.build();
     }

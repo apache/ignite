@@ -169,7 +169,7 @@ public class SnapshotCheckProcess {
         Map<UUID, Throwable> errors,
         GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
     ) {
-        Map<ClusterNode, List<IncrementalSnapshotCheckResult>> reduced = new HashMap<>();
+        Map<ClusterNode, IncrementalSnapshotCheckResult> perNodeResults = new HashMap<>();
 
         for (Map.Entry<UUID, SnapshotCheckResponse> resEntry : results.entrySet()) {
             UUID nodeId = resEntry.getKey();
@@ -179,9 +179,7 @@ public class SnapshotCheckProcess {
             if (incResp == null || !requiredNodes.contains(nodeId))
                 continue;
 
-            Map<String, IncrementalSnapshotCheckResult> incRes = incResp.result();
-
-            incRes.forEach((consId, res) -> reduced.computeIfAbsent(kctx.cluster().get().node(nodeId), nid -> new ArrayList<>()).add(res));
+            perNodeResults.put(kctx.cluster().get().node(nodeId), incResp.result());
 
             if (F.isEmpty(incResp.exceptions()))
                 continue;
@@ -189,7 +187,8 @@ public class SnapshotCheckProcess {
             errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
         }
 
-        IdleVerifyResult chkRes = kctx.cache().context().snapshotMgr().checker().reduceIncrementalResults(reduced, mapErrors(errors));
+        IdleVerifyResult chkRes = kctx.cache().context().snapshotMgr().checker()
+            .reduceIncrementalResults(perNodeResults, mapErrors(errors));
 
         fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
     }
