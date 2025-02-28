@@ -31,7 +31,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -458,7 +457,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (isPersistenceEnabled(cctx.gridConfig())) {
             ft.mkdirSnapshotsRoot();
-            ft.mkdirSnapshotTempRoot();
+
+            for (File tmpRoot : ft.snapshotsTempRoots())
+                NodeFileTree.mkdir(tmpRoot, "temp directory for snapshot creation: " + tmpRoot.getAbsolutePath());
         }
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -2218,8 +2219,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         recovered = true;
 
-        for (File tmp : ft.snapshotTempRoot().listFiles())
-            U.delete(tmp);
+        for (File tmpRoot : ft.snapshotsTempRoots())
+            F.asList(tmpRoot.listFiles()).forEach(U::delete);
 
         if (SnapshotFileTree.incrementSnapshotDir(snpDir))
             U.delete(snpDir);
@@ -3283,9 +3284,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Partition handler given by request initiator. */
         private final BiConsumer<File, Throwable> partHnd;
 
-        /** Temporary working directory for consuming partitions. */
-        private final Path dir;
-
         /** Counter which show how many partitions left to be received. */
         private final AtomicInteger partsLeft = new AtomicInteger(-1);
 
@@ -3309,7 +3307,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(snpMgr.ft.snapshotTempRoot().getAbsolutePath(), this.reqId);
             initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;
@@ -3389,13 +3386,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             partsLeft.decrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected synchronized boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
-            U.delete(dir);
-
-            return super.onDone(res, err, cancel);
         }
 
         /** {@inheritDoc} */

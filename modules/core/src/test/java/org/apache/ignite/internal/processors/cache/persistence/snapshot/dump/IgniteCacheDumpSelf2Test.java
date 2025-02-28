@@ -345,7 +345,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
 
             assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
-            assertFalse(ft.snapshotTempRoot() + " must created lazily for in-memory node", ft.snapshotTempRoot().exists());
+
+            for (File tmpRoot : ft.snapshotsTempRoots())
+                assertFalse(tmpRoot + " must created lazily for in-memory node", tmpRoot.exists());
         }
     }
 
@@ -635,10 +637,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 ft.snapshotsRoot().exists()
             );
 
-            assertFalse(
-                "Temporary snapshot directory must created lazily for in-memory node",
-                ft.snapshotTempRoot().exists()
-            );
+            for (File tmpRoot : ft.snapshotsTempRoots())
+                assertFalse("Temporary snapshot directory must created lazily for in-memory node", tmpRoot);
 
             assertTrue(snpDir.exists());
 

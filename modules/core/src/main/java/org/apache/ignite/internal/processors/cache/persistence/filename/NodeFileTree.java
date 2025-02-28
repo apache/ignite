@@ -277,12 +277,6 @@ public class NodeFileTree extends SharedFileTree {
     private final File walCdc;
 
     /**
-     * Working directory for loaded snapshots from the remote nodes and storing
-     * temporary partition delta-files of locally started snapshot process.
-     */
-    private final @Nullable File snpTmpRoot;
-
-    /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
      *
      * @param root Root directory.
@@ -309,7 +303,6 @@ public class NodeFileTree extends SharedFileTree {
         nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
         drStorages = Collections.emptyMap();
         dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-        snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
         checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
     }
 
@@ -344,7 +337,6 @@ public class NodeFileTree extends SharedFileTree {
 
             drStorages = Collections.unmodifiableMap(dataRegionStorages(dsCfg));
             dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
-            snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
@@ -354,7 +346,6 @@ public class NodeFileTree extends SharedFileTree {
             nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
             drStorages = Collections.emptyMap();
             dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-            snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = rootRelative(DFLT_WAL_PATH);
             walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
@@ -446,8 +437,20 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Path to the directory form temp snapshot files. */
-    public @Nullable File snapshotTempRoot() {
-        return snpTmpRoot;
+    public File snapshotTempRoot() {
+        return snapshotTempRoot(nodeStorage);
+    }
+
+    /** @return Path to the directory form temp snapshot files. */
+    public List<File> snapshotsTempRoots() {
+        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream())
+            .map(this::snapshotTempRoot)
+            .collect(Collectors.toList());
+    }
+
+    /** */
+    private File snapshotTempRoot(File root) {
+        return new File(root, SNAPSHOT_TMP_DIR);
     }
 
     /** @return Path to the checkpoint directory. */
@@ -462,15 +465,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File mkdirBinaryMeta() {
         return mkdir(binaryMeta, "binary metadata");
-    }
-
-    /**
-     * Creates {@link #snapshotTempRoot()} directory.
-     * @return Created directory.
-     * @see #snapshotTempRoot()
-     */
-    public File mkdirSnapshotTempRoot() {
-        return mkdir(snpTmpRoot, "temp directory for snapshot creation");
     }
 
     /**
@@ -512,14 +506,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpCacheStorage(File cacheStorage) {
         return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
-    }
-
-    /**
-     * @param drName Data region name.
-     * @return Data region storage.
-     */
-    private File dataRegionStorage(String drName) {
-        return drStorages.getOrDefault(drName == null ? dfltDrName : drName, nodeStorage);
     }
 
     /**
@@ -708,6 +694,14 @@ public class NodeFileTree extends SharedFileTree {
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
+    }
+
+    /**
+     * @param drName Data region name.
+     * @return Data region storage.
+     */
+    private File dataRegionStorage(String drName) {
+        return drStorages.getOrDefault(drName == null ? dfltDrName : drName, nodeStorage);
     }
 
     /**
