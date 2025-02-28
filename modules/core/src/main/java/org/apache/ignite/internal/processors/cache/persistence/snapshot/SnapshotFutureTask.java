@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -205,16 +206,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         snpSndr.close(err);
 
-        U.delete(sft.tempFileTree().nodeStorage());
-
-        // Delete snapshot directory if no other files exists.
-        try {
-            if (U.fileCount(sft.tempFileTree().root().toPath()) == 0 || err != null)
-                U.delete(sft.tempFileTree().root().toPath());
-        }
-        catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + sft.tempFileTree().root() + ']');
-        }
+        FileTreeUtils.removeTmpSnapshotFiles(sft, err != null, log);
 
         if (err != null)
             startedFut.onDone(err);
@@ -242,7 +234,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             if (!started.compareAndSet(false, true))
                 return false;
 
-            U.mkdirs(sft.tempFileTree().nodeStorage());
+            FileTreeUtils.createCacheStorages(sft.tempFileTree(), log);
 
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);

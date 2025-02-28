@@ -30,7 +30,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -81,6 +82,13 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
             .setCacheConfiguration(ccfgs);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        F.asList(new File(U.defaultWorkDirectory()).listFiles()).forEach(U::delete);
+    }
+
     /** */
     @Test
     public void testCaches() throws Exception {
@@ -120,6 +128,8 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
             .mapToObj(this::grid)
             .map(ign -> ign.context().pdsFolderResolver().fileTree())
             .collect(Collectors.toList());
+
+        srv.snapshot().createSnapshot("mysnp").get();
 
         stopAllGrids();
 

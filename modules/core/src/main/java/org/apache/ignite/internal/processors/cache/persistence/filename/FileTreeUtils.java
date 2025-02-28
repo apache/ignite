@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -37,6 +38,40 @@ public class FileTreeUtils {
 
         for (Map.Entry<String, File> e : ft.dataRegionStorages().entrySet())
             createAndCheck(e.getValue(), "page store work directory[dataRegion=" + e.getKey() + ']', log);
+    }
+
+    /**
+     * Removes temp snapshot files.
+     *
+     * @param sft Snapshot file tree.
+     * @param err If {@code true} then operation ends with error.
+     * @param log Logger.
+     */
+    public static void removeTmpSnapshotFiles(SnapshotFileTree sft, boolean err, IgniteLogger log) {
+        NodeFileTree tmpFt = sft.tempFileTree();
+
+        removeTmpDir(tmpFt.nodeStorage(), err, log);
+
+        for (File tmpDrStorage : tmpFt.dataRegionStorages().values())
+            removeTmpDir(tmpDrStorage, err, log);
+    }
+
+    /**
+     * @param dir Directory to remove
+     * @param err If {@code true} then operation ends with error.
+     * @param log Logger.
+     */
+    private static void removeTmpDir(File dir, boolean err, IgniteLogger log) {
+        U.delete(dir);
+
+        // Delete snapshot directory if no other files exists.
+        try {
+            if (U.fileCount(dir.getParentFile().toPath()) == 0 || err)
+                U.delete(dir.getParentFile().toPath());
+        }
+        catch (IOException e) {
+            log.error("Snapshot directory doesn't exist [snpName=" + dir.getName() + ", dir=" + dir.getParentFile() + ']');
+        }
     }
 
     /**

@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -170,7 +170,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  */
 public class NodeFileTree extends SharedFileTree {
     /** Default snapshot directory for loading remote snapshots. */
-    private static final String SNAPSHOT_TMP_DIR = "snp";
+    protected static final String SNAPSHOT_TMP_DIR = "snp";
 
     /** Metastorage cache directory to store data. */
     private static final String METASTORAGE_DIR_NAME = "metastorage";
@@ -254,7 +254,7 @@ public class NodeFileTree extends SharedFileTree {
      * Key is the name of data region({@link DataRegionConfiguration#getName()}), value is node storage for this data region.
      * @see DataRegionConfiguration#setStoragePath(String)
      */
-    private final Map<String, File> drStorages;
+    protected final Map<String, File> drStorages;
 
     /**
      * Name of the default data region.
@@ -320,7 +320,25 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        super(cfg);
+        this(cfg, root(cfg), folderName);
+    }
+
+    /**
+     * Creates instance based on config and folder name.
+     *
+     * @param root Root directory.
+     * @param cfg Ignite configuration to get parameter from.
+     * @param folderName Name of the folder for current node.
+     *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     *
+     * @see IgniteConfiguration#getWorkDirectory()
+     * @see IgniteConfiguration#setWorkDirectory(String)
+     * @see U#workDirectory(String, String)
+     * @see U#resolveWorkDirectory(String, String, boolean, boolean)
+     * @see U#IGNITE_WORK_DIR
+     */
+    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName) {
+        super(root, cfg.getSnapshotPath());
 
         A.notNull(folderName, "Node directory");
 
@@ -335,7 +353,6 @@ public class NodeFileTree extends SharedFileTree {
                 ? rootRelative(DB_DEFAULT_FOLDER)
                 : resolveDirectory(dsCfg.getStoragePath());
 
-            drStorages = Collections.unmodifiableMap(dataRegionStorages(dsCfg));
             dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
@@ -344,13 +361,17 @@ public class NodeFileTree extends SharedFileTree {
         }
         else {
             nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
-            drStorages = Collections.emptyMap();
             dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = rootRelative(DFLT_WAL_PATH);
             walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         }
+
+        drStorages = dataRegionStorages(
+            dsCfg,
+            (drName, drStoragePath) -> resolveDirectory(Path.of(drStoragePath, DB_DEFAULT_FOLDER).toString())
+        );
     }
 
     /** @return Node storage directory. */
@@ -437,7 +458,7 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Path to the directory form temp snapshot files. */
-    public File snapshotTempRoot() {
+    protected File snapshotTempRoot() {
         return snapshotTempRoot(nodeStorage);
     }
 
@@ -712,24 +733,25 @@ public class NodeFileTree extends SharedFileTree {
      * @return Data regions storages.
      * @see DataRegionConfiguration#setStoragePath(String) 
      */
-    private Map<String, File> dataRegionStorages(DataStorageConfiguration dsCfg) {
-        Map<String, File> customDsStorages = new HashMap<>();
+    protected Map<String, File> dataRegionStorages(@Nullable DataStorageConfiguration dsCfg, BiFunction<String, String, File> resolver) {
+        if (dsCfg == null)
+            return Collections.emptyMap();
 
-        Function<String, File> resolveWithDb = cfg -> resolveDirectory(Path.of(cfg, DB_DEFAULT_FOLDER).toString());
+        Map<String, File> customDsStorages = new HashMap<>();
 
         if (dsCfg.getDataRegionConfigurations() != null) {
             for (DataRegionConfiguration drCfg : dsCfg.getDataRegionConfigurations()) {
                 if (drCfg.getStoragePath() == null)
                     continue;
 
-                customDsStorages.put(drCfg.getName(), resolveWithDb.apply(drCfg.getStoragePath()));
+                customDsStorages.put(drCfg.getName(), resolver.apply(drCfg.getName(), drCfg.getStoragePath()));
             }
         }
 
         DataRegionConfiguration dfltDr = dsCfg.getDefaultDataRegionConfiguration();
 
         if (dfltDr.getStoragePath() != null)
-            customDsStorages.put(dfltDr.getName(), resolveWithDb.apply(dfltDr.getStoragePath()));
+            customDsStorages.put(dfltDr.getName(), resolver.apply(dfltDr.getName(), dfltDr.getStoragePath()));
 
         return customDsStorages;
     }
@@ -765,7 +787,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    private File resolveDirectory(String cfg) {
+    protected File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()

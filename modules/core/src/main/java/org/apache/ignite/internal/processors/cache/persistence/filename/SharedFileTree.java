@@ -65,7 +65,7 @@ public class SharedFileTree {
      * @param root Root directory.
      * @param snpsRoot Snapshot path.
      */
-    private SharedFileTree(File root, String snpsRoot) {
+    protected SharedFileTree(File root, String snpsRoot) {
         A.notNull(root, "Root directory");
 
         this.root = root;
@@ -209,7 +209,7 @@ public class SharedFileTree {
      * @param cfg Ignite config.
      * @return Root directory.
      */
-    private static File root(IgniteConfiguration cfg) {
+    protected static File root(IgniteConfiguration cfg) {
         try {
             return new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
         }
