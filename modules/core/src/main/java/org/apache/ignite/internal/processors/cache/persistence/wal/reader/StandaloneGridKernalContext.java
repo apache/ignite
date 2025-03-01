@@ -39,7 +39,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -104,7 +103,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -258,9 +256,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
         cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
 
-        final Marshaller marshaller = new BinaryMarshaller();
-        cfg.setMarshaller(marshaller);
-
         final DataStorageConfiguration pstCfg = new DataStorageConfiguration();
         final DataRegionConfiguration regCfg = new DataRegionConfiguration();
         regCfg.setPersistenceEnabled(true);
@@ -268,7 +263,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setDataStorageConfiguration(pstCfg);
 
-        marshaller.setContext(marshallerCtx);
+        cfg.getMarshaller().setContext(marshallerCtx);
 
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
