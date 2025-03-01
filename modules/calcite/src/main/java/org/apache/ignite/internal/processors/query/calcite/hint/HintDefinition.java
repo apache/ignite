@@ -173,6 +173,32 @@ public enum HintDefinition {
         @Override public HintOptionsChecker optionsChecker() {
             return CNL_JOIN.optionsChecker();
         }
+    },
+
+    /** Forces hash join. */
+    HASH_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return joinHintPredicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_NO_KV;
+        }
+    },
+
+    /** Disables hash join. */
+    NO_HASH_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return HASH_JOIN.predicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HASH_JOIN.optionsChecker();
+        }
     };
 
     /**
