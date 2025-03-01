@@ -453,8 +453,6 @@ Use the following configuration example to start Kafka-To-Ignite CDC client on t
 
 NOTE: Use the configuation with `kafka-to-ignite.sh ` to start CDC client on the source Ignite instance.
 
-NOTE: You need to preactivate source cluster before starting the CDC client. You can use `command.sh` for that
-
 ```
 ./control.sh --set-state ACTIVE --host localhost:server_connector_port --yes
 ```
