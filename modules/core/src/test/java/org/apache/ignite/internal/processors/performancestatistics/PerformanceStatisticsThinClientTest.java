@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -33,26 +35,38 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.client.thin.TestTask;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL_CONFLICT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL_CONFLICT;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests thin client performance statistics.
  */
+@RunWith(Parameterized.class)
 public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStatisticsTest {
     /** Test task name. */
     public static final String TEST_TASK_NAME = "TestTask";
@@ -66,11 +80,19 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     /** Thin client. */
     private static IgniteClient thinClient;
 
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode atomicityMode;
+
+    /** */
+    @Parameterized.Parameters(name = "atomicityMode={0}")
+    public static Collection<?> parameters() {
+        return EnumSet.of(ATOMIC, TRANSACTIONAL);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
@@ -96,7 +118,20 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        stopAllGrids();
         thinClient.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        thinClient.createCache(new ClientCacheConfiguration()
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(atomicityMode));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        thinClient.destroyCache(DEFAULT_CACHE_NAME);
     }
 
     /** @throws Exception If failed. */
@@ -169,10 +204,24 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
 
         checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemove(5));
+
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+
+        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .putAllConflict(F.asMap(6, new T3<>(1, confl, CU.EXPIRE_TIME_ETERNAL))));
+
+        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .removeAllConflict(F.asMap(6, confl)));
+
+        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .putAllConflictAsync(F.asMap(7, new T3<>(2, confl, CU.EXPIRE_TIME_ETERNAL))).get());
+
+        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, cache -> ((TcpClientCache<Object, Object>)cache)
+            .removeAllConflictAsync(F.asMap(7, confl)).get());
     }
 
     /** Checks cache operation. */
-    private void checkCacheOperation(OperationType op, Consumer<ClientCache<Object, Object>> clo) throws Exception {
+    private void checkCacheOperation(OperationType op, ConsumerX<ClientCache<Object, Object>> clo) throws Exception {
         long startTime = U.currentTimeMillis();
 
         cleanPerformanceStatisticsDir();
@@ -202,6 +251,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     /** @throws Exception If failed. */
     @Test
     public void testTransaction() throws Exception {
+        assumeTrue(atomicityMode == TRANSACTIONAL);
+
         checkTx(true);
 
         checkTx(false);
