@@ -106,6 +106,7 @@
     <None Update="Config\Dynamic\dynamic-data-no-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Dynamic\dynamic-client.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Dynamic\dynamic-data.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Cache\load-cache-config.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Store\cache-store-session.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Store\cache-store-session-shared-factory.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function.xml" CopyToOutputDirectory="PreserveNewest" />
