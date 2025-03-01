@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.indexing;
 
-import java.util.Set;
+import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -30,7 +30,7 @@ public class IndexingQueryCacheFilter {
     private final GridCacheAffinityManager aff;
 
     /** Partitions. */
-    private final Set<Integer> parts;
+    private final BitSet parts;
 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
@@ -46,7 +46,7 @@ public class IndexingQueryCacheFilter {
      * @param topVer Topology version.
      * @param locNode Local node.
      */
-    public IndexingQueryCacheFilter(GridCacheAffinityManager aff, Set<Integer> parts,
+    public IndexingQueryCacheFilter(GridCacheAffinityManager aff, BitSet parts,
         AffinityTopologyVersion topVer, ClusterNode locNode) {
         this.aff = aff;
         this.parts = parts;
@@ -76,6 +76,6 @@ public class IndexingQueryCacheFilter {
         if (parts == null)
             return aff.primaryByPartition(locNode, part, topVer);
         else
-            return parts.contains(part);
+            return parts.get(part);
     }
 }

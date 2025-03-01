@@ -67,9 +67,11 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
     @Override protected IndexQueryContext indexQueryContext() {
         IndexQueryContext res = super.indexQueryContext();
 
+        boolean checkExpired = !cctx.config().isEagerTtl();
+
         return new IndexQueryContext(
             res.cacheFilter(),
-            createNotNullRowFilter(idx, true)
+            createNotNullRowFilter(idx, checkExpired)
         );
     }
 

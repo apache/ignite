@@ -110,6 +110,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final RelDataType nullType;
 
     /** */
+    private final RelDataType booleanType;
+
+    /** */
     private final ExecutionContext<Row> ctx;
 
     /** */
@@ -126,6 +129,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         emptyType = new RelDataTypeFactory.Builder(this.typeFactory).build();
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
+        booleanType = typeFactory.createJavaType(Boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -624,7 +628,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private AbstractScalarPredicate(T scalar) {
             this.scalar = scalar;
             hnd = ctx.rowHandler();
-            out = hnd.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+            out = hnd.factory(typeFactory, booleanType).create();
         }
     }
 
