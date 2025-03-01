@@ -48,7 +48,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  *
@@ -170,6 +169,10 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
 
         node.cluster().state(ClusterState.ACTIVE);
 
+        File idx = node.context().pdsFolderResolver().fileTree().partitionFile(node.cachex(CACHE_NAME).configuration(), INDEX_PARTITION);
+
+        assertTrue(idx.exists());
+
         IgniteCache<UserKey, UserValue> cache = node.getOrCreateCache(CACHE_NAME);
 
         cache.put(new UserKey(1), new UserValue(333));
@@ -177,10 +180,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        U.delete(new File(
-            nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(0))).cacheStorage(false, CACHE_NAME),
-            partitionFileName(INDEX_PARTITION)
-        ));
+        U.delete(idx);
 
         node = startGrid(0);
 

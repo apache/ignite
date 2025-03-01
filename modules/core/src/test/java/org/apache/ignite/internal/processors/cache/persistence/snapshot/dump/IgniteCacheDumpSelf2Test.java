@@ -421,7 +421,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             SnapshotFileTree sft = sfts.get(0);
 
-            File cacheDumpDir = sft.cacheStorage(false, DEFAULT_CACHE_NAME);
+            File cacheDumpDir = sft.cacheStorage(cache.getConfiguration(CacheConfiguration.class));
 
             assertTrue(cacheDumpDir.exists());
 
@@ -704,10 +704,11 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         int parts = 20;
 
-        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
             .setName(CACHE_0)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(parts))
-        );
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(parts));
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(ccfg);
 
         IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
@@ -730,13 +731,13 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         SnapshotFileTree zipFt = snapshotFileTree(ign, zipDump);
 
         Map<Integer, Long> rawSizes = Arrays
-            .stream(rawFt.cacheStorage(false, CACHE_0).listFiles())
+            .stream(rawFt.cacheStorage(ccfg).listFiles())
             .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, false)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         Map<Integer, Long> zipSizes = Arrays
-            .stream(zipFt.cacheStorage(false, CACHE_0).listFiles())
+            .stream(zipFt.cacheStorage(ccfg).listFiles())
             .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, true)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
@@ -755,8 +756,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, parts).forEach(i -> {
             try {
-                File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, false));
-                File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), dumpPartFileName(i, true));
+                File rawFile = rawFt.dumpPartition(ccfg, i, false);
+                File zipFile = zipFt.dumpPartition(ccfg, i, true);
 
                 byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
 

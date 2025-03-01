@@ -96,8 +96,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 part -> partsToSend.computeIfAbsent(new GroupPartitionId(grpId, part), findMeta)));
 
             if (partsToSend.containsValue(null)) {
-                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey,
-                    e -> e.getValue() == null);
+                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey, e -> e.getValue() == null);
 
                 throw new IgniteException("Snapshot partitions missed on local node " +
                     "[snpName=" + snpName + ", missed=" + missed + ']');
@@ -111,7 +110,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 if (err.get() != null)
                     return;
 
-                File cacheDir = sft0.cacheDirectory(gp.getGroupId());
+                File cacheDir = sft0.existingCacheDirectory(gp.getGroupId());
 
                 if (cacheDir == null) {
                     throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + metaAndTree.get1() +
@@ -125,7 +124,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
+                snpSndr.sendPart(snpPart, sft.partitionFile(cacheDir.getName(), gp.getPartitionId()), gp, snpPart.length());
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)

@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * ├── db                                                                       ← db (shared between all local nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
- * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
+ * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
  *
  * @see NodeFileTree

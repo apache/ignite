@@ -195,8 +195,8 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param grpId Cache group id.
      * @return Files that match cache or cache group pattern.
      */
-    public File cacheDirectory(int grpId) {
-        return F.first(cacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
+    public File existingCacheDirectory(int grpId) {
+        return F.first(existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
@@ -205,7 +205,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param compress If {@code true} then list compressed files.
      * @return List of cache partitions in given directory.
      */
-    public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
+    public List<File> existingCachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
         File[] files = cacheDir.listFiles(f -> f.isFile() && f.getName().endsWith(partExtension(dump, compress)));
 
         return files == null

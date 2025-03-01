@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 
 /**
  *
@@ -58,7 +59,7 @@ class CheckpointFailingIoFactory implements FileIOFactory {
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
 
-        if (file.getName().contains("part-"))
+        if (NodeFileTree.partitionFile(file))
             return new FileIODecorator(delegate) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (fail)

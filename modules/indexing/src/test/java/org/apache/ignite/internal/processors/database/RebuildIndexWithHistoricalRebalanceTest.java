@@ -61,7 +61,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Rebuild index after index.bin remove, when partition is moving.
@@ -204,14 +203,18 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
     @Test
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0") // Use only historical rebalance
     public void shouldRebuldIndexForMovingPartitionWithHistoricalRebalance() throws Exception {
-        IgniteEx node1 = startGrid(0);
-        startGrid(1);
+        IgniteEx node0 = startGrid(0);
+        IgniteEx node1 = startGrid(1);
 
-        node1.cluster().state(ClusterState.ACTIVE);
+        node0.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<UserKey, UserValue> cache = node1.getOrCreateCache(CACHE_NAME);
+        IgniteCache<UserKey, UserValue> cache = node0.getOrCreateCache(CACHE_NAME);
 
         cache.put(new UserKey(1), new UserValue(333));
+
+        File idx = node1.context().pdsFolderResolver().fileTree().partitionFile(node1.cachex(CACHE_NAME).configuration(), INDEX_PARTITION);
+
+        assertTrue(idx.exists());
 
         stopGrid(1);
 
@@ -219,10 +222,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         SUPPLY_MESSAGE_LATCH.set(new CountDownLatch(1));
 
-        U.delete(new File(
-                nodeFileTree(U.maskForFileName(getTestIgniteInstanceName(1))).cacheStorage(false, CACHE_NAME),
-                partitionFileName(INDEX_PARTITION)
-        ));
+        U.delete(idx);
 
         LogListener rebuildLsnr = finishIndexRebuildLsnr(CACHE_NAME);
 

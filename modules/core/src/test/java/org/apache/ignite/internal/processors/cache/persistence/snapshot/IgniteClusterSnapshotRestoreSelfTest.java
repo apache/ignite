@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -58,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -663,7 +663,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         dfltCacheCfg.setCacheMode(CacheMode.REPLICATED)
             .setAffinity(new RendezvousAffinityFunction());
 
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+        IgniteEx srv = startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(2));
         CountDownLatch stopLatch = new CountDownLatch(1);
@@ -671,8 +671,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD.ordinal());
 
-        String failingFilePath = Paths.get(NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME),
-            NodeFileTree.partitionFileName(dfltCacheCfg.getAffinity().partitions() / 2)).toString();
+        SnapshotFileTree sft = snapshotFileTree(srv, SNAPSHOT_NAME);
+
+        String failingFilePath = sft.partitionFile(dfltCacheCfg, dfltCacheCfg.getAffinity().partitions() / 2).getAbsolutePath()
+            .replace(sft.nodeStorage().getAbsolutePath(), "");
 
         grid(2).context().cache().context().snapshotMgr().ioFactory(
             new CustomFileIOFactory(new RandomAccessFileIOFactory(),

@@ -155,7 +155,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     public void testMaintenanceIsSkippedIfWasFixedManuallyOnDowntime() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
-        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
+        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(srv.cachex(CACHE_NAME).configuration());
 
         NodeFileTree ft0 = srv.context().pdsFolderResolver().fileTree();
 
@@ -219,7 +219,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     public void testCacheCleanup() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
-        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME_2);
+        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(srv.cachex(CACHE_NAME_2).configuration());
 
         srv.cluster().state(ACTIVE);
 
@@ -334,7 +334,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         // Start other nodes.
         IgniteEx ig2 = startGrid(config(SRV_2, false, false));
 
-        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
+        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(ig2.cachex(CACHE_NAME).configuration());
 
         if (crdFiltered)
             srv.cluster().disableWal(CACHE_NAME);
@@ -431,7 +431,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         victimName = SRV_2;
 
                     try {
-                        File cacheDir = grid(victimName).context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
+                        IgniteEx srv = grid(victimName);
+
+                        File cacheDir = srv.context().pdsFolderResolver().fileTree().cacheStorage(srv.cachex(CACHE_NAME).configuration());
 
                         stopGrid(victimName);
 

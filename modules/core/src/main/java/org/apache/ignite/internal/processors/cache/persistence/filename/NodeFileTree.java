@@ -471,35 +471,26 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return The full cache directory name.
-     */
-    public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
-    }
-
-    /**
      * @return All cache directories.
      */
-    public List<File> allCacheDirs() {
-        return cacheDirs(true, f -> true);
+    public List<File> existingCacheDirs() {
+        return existingCacheDirs(true, f -> true);
     }
 
     /**
      * @return Cache directories. Metatorage directory excluded.
      */
-    public List<File> cacheDirsWithoutMeta() {
-        return cacheDirs(false, f -> true);
+    public List<File> existingCacheDirsWithoutMeta() {
+        return existingCacheDirs(false, f -> true);
     }
 
     /**
      * @return Cache directories. Metatorage directory excluded.
      */
-    public List<File> userCacheDirs() {
+    public List<File> existingUserCacheDirs() {
         final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
 
-        return cacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
+        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
 
     /**
@@ -507,7 +498,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
      */
-    protected List<File> cacheDirs(boolean includeMeta, Predicate<File> filter) {
+    protected List<File> existingCacheDirs(boolean includeMeta, Predicate<File> filter) {
         Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
         File[] cacheDirs = nodeStorage().listFiles(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f));
@@ -524,7 +515,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @return The full cache directory name.
      */
-    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+    private String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
         return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
@@ -556,7 +547,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return partitionFile(cacheDirName(ccfg), part);
+        return new File(cacheStorage(cacheDirName(ccfg)), partitionFileName(part));
     }
 
     /**
@@ -572,7 +563,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
-    public File cacheStorage(String cacheDirName) {
+    protected File cacheStorage(String cacheDirName) {
         return new File(nodeStorage, cacheDirName);
     }
 
@@ -582,6 +573,21 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpCacheStorage(String cacheDirName) {
         return new File(nodeStorage, TMP_CACHE_DIR_PREFIX + cacheDirName);
+    }
+
+    /**
+     * @param part Partition.
+     * @return File for metastorage partition.
+     */
+    public File metaStoragePartition(int part) {
+        return new File(metaStorage(), partitionFileName(part));
+    }
+
+    /**
+     * @return Path to the metastorage directory.
+     */
+    public File metaStorage() {
+        return new File(nodeStorage, METASTORAGE_DIR_NAME);
     }
 
     /**
@@ -629,7 +635,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param f File.
      * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
      */
-    public static boolean cacheOrCacheGroupConfigFile(File f) {
+    private static boolean cacheOrCacheGroupConfigFile(File f) {
         return f.getName().endsWith(CACHE_DATA_FILENAME);
     }
 
@@ -688,7 +694,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheOrGroupName Cache name.
      * @return The full cache directory name.
      */
-    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+    private static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
         if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
             return METASTORAGE_DIR_NAME;
 
@@ -709,7 +715,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param root Root directory.
      * @return Array of cache data files.
      */
-    public static List<File> cacheConfigFiles(File root) {
+    public static List<File> existingCacheConfigFiles(File root) {
         if (cacheDir(root)) {
             File cfg = new File(root, CACHE_DATA_FILENAME);
 

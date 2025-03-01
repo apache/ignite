@@ -176,7 +176,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         mgr1.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr1.snapshotExecutorService(), mgr1.remoteSnapshotSenderFactory(s, uuid)) {
-                    @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
                         if (partId(part) > 0) {
                             try {
                                 sndLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -186,7 +186,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                             }
                         }
 
-                        super.sendPart0(part, cacheDirName, pair, length);
+                        super.sendPart0(part, to, pair, length);
                     }
                 };
             }
@@ -339,13 +339,13 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         mgr0.remoteSnapshotSenderFactory((rqId, nodeId) -> new DelegateSnapshotSender(log,
             snp(sndr).snapshotExecutorService(), mgr0.remoteSnapshotSenderFactory(rqId, nodeId)) {
-            @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+            @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
                 nodes.add(nodeId);
 
                 // Single thread must send partitions sequentially node by node.
                 checkDuplicates(nodes);
 
-                super.sendPart0(part, cacheDirName, pair, length);
+                super.sendPart0(part, to, pair, length);
             }
         });
 
