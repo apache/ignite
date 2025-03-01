@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 /**
  * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
-public class DataRegionStoragePathTest extends GridCommonAbstractTest {
+public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** Custom storage path for default data region. */
     private static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
 
@@ -131,6 +132,10 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
 
         srv.snapshot().createSnapshot("mysnp").get();
 
+        File fullPathSnpDir = new File(U.defaultWorkDirectory(), "custom_snapshots");
+
+        srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnpDir.getAbsolutePath(), false, false).get();
+
         stopAllGrids();
 
         for (NodeFileTree ft : fts) {
@@ -174,6 +179,9 @@ public class DataRegionStoragePathTest extends GridCommonAbstractTest {
 
     /** */
     private static CacheConfiguration<?, ?> ccfg(String name, String grp, String dr) {
-        return new CacheConfiguration<>(name).setGroupName(grp).setDataRegionName(dr);
+        return new CacheConfiguration<>(name)
+            .setGroupName(grp)
+            .setDataRegionName(dr)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(15));
     }
 }
