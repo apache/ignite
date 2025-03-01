@@ -25,10 +25,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -62,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -145,6 +148,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
@@ -357,7 +361,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 null,
                 false,
                 false,
-                false
+                false,
+                null
             );
 
             Throwable failReason = null;
@@ -410,7 +415,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             filter,
             null,
             null,
-            true
+            true,
+            applicationAttrubutes(qryDesc.schemaName())
         );
 
         return new GridQueryFieldsResultAdapter(select.meta(), null) {
@@ -442,7 +448,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     H2Utils.bindParameters(stmt, F.asList(params));
 
                     qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
-                        ctx.localNodeId(), qryId);
+                        ctx.localNodeId(), qryId, qryDesc.label());
 
                     heavyQryTracker.startTracking(qryInfo);
 
@@ -571,7 +577,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qryInitiatorId,
             false,
             false,
-            false
+            false,
+            null
         );
 
         Exception failReason = null;
@@ -960,6 +967,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 QueryDescriptor newQryDesc = parseRes.queryDescriptor();
                 QueryParameters newQryParams = parseRes.queryParameters();
 
+                newQryDesc.label(applicationAttrubutes(schemaName).getOrDefault(QUERY_LABEL, null));
+
                 // Check if there is enough parameters. Batched statements are not checked at this point
                 // since they pass parameters differently.
                 if (!newQryDesc.batched()) {
@@ -1055,6 +1064,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         long qryId = registerRunningQuery(qryDesc, qryParams, cancel, dml.statement());
 
+        registerQueryContextWithAttributes(qryId, qryDesc.schemaName(), qryDesc.local());
+
         Exception failReason = null;
 
         H2DmlInfo dmlInfo = null;
@@ -1071,7 +1082,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryId,
                 ctx.localNodeId(),
                 qryDesc.schemaName(),
-                qryDesc.sql()
+                qryDesc.sql(),
+                qryDesc.label()
             );
 
             heavyQueriesTracker().startTracking(dmlInfo);
@@ -1154,6 +1166,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Register query.
         long qryId = registerRunningQuery(qryDesc, qryParams, cancel, select.statement());
+
+        registerQueryContextWithAttributes(qryId, qryDesc.schemaName(), qryDesc.local());
 
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_CURSOR_OPEN, MTC.span()))) {
             Iterable<List<?>> iter = executeSelect0(
@@ -1327,7 +1341,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qryDesc.queryInitiatorId(),
             qryDesc.enforceJoinOrder(),
             qryParams.lazy(),
-            qryDesc.distributedJoins()
+            qryDesc.distributedJoins(),
+            qryDesc.label()
         );
 
         if (ctx.event().isRecordable(EVT_SQL_QUERY_EXECUTION)) {
@@ -2348,6 +2363,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             qryInfo.suspendTracking();
+        }
+    }
+
+    /**
+     * @param schema Schema name.
+     *
+     * @return Application attributes or empty map.
+     */
+    public Map<String, String> applicationAttrubutes(String schema) {
+        return Optional.ofNullable(ctx.cache().cache(schema))
+            .map(IgniteInternalCache::context)
+            .map(GridCacheContext::operationContextPerCall)
+            .map(CacheOperationContext::applicationAttributes)
+            .orElse(Collections.emptyMap());
+    }
+
+    /**
+     * @param qryId Query id.
+     * @param schemaName Schema name.
+     * @param loc Local query flag.
+     */
+    public void registerQueryContextWithAttributes(long qryId, String schemaName, boolean loc) {
+        if (!applicationAttrubutes(schemaName).isEmpty()) {
+            queryContextRegistry().setShared(ctx.grid().localNode().id(), qryId, new QueryContext(
+                0,
+                null,
+                null,
+                null,
+                loc,
+                applicationAttrubutes(schemaName)));
         }
     }
 }

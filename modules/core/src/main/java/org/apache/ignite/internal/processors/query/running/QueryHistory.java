@@ -47,9 +47,11 @@ public class QueryHistory {
      * @param startTime Start time of query execution.
      * @param duration Duration of query execution.
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
+     * @param lbl Query label.
      */
-    public QueryHistory(String qry, String schema, boolean loc, long startTime, long duration, boolean failed) {
-        key = new QueryHistoryKey(qry, schema, loc);
+    public QueryHistory(String qry, String schema, boolean loc, long startTime, long duration, boolean failed,
+        @Nullable String lbl) {
+        key = new QueryHistoryKey(qry, schema, loc, lbl);
 
         long failures = failed ? 1 : 0;
 
@@ -101,6 +103,13 @@ public class QueryHistory {
      */
     public boolean local() {
         return key.local();
+    }
+
+    /**
+     * @return Query label.
+     */
+    public String label() {
+        return key.label();
     }
 
     /**

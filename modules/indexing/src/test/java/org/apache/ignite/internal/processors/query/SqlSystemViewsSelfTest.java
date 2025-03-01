@@ -67,6 +67,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -94,6 +95,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
@@ -678,6 +680,70 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
             view.forEach(v -> assertTrue(v.duration() >= 0));
         }
+    }
+
+    /**
+     * Verifies that SELECT query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewSelectWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("select sleep(3000)");
+    }
+
+    /**
+     * Verifies that INSERT query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewInsertWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("insert into \"INTEGER\" (_key, _val) values (2, sleep(3000))");
+    }
+
+    /**
+     * Verifies that UPDATE query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewUpdateWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("update \"INTEGER\" set _val = sleep(3000) where _key = 1");
+    }
+
+    /**
+     * Verifies that DELETE query labels are correctly displayed in the running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewDeleteWithLabels() throws Exception {
+        executeRunningQueriesViewWithLabels("delete from \"INTEGER\" where _key = 1 and _key < sleep(3000)");
+    }
+
+    /**
+     * Executes tests for labelled queries.
+     *
+     * @param sql SQL query.
+     */
+    public void executeRunningQueriesViewWithLabels(String sql) throws Exception {
+        final String lblVal = "Label 1";
+
+        startGrid(0);
+
+        IgniteEx cli = startClientGrid();
+
+        Ignite cliWithAttrs = cli.withApplicationAttributes(F.asMap(QUERY_LABEL, lblVal));
+
+        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class));
+
+        cli.cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() ->
+            cliWithAttrs.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql)).getAll(), 1);
+
+        assertTrue(waitForCondition(() -> cli.context().systemView().view(SQL_QRY_VIEW).size() == 1, 1000));
+
+        SystemView<SqlQueryView> view = cli.context().systemView().view(SQL_QRY_VIEW);
+
+        assertEquals(lblVal, F.first(view).label());
+
+        fut.get();
     }
 
     /**

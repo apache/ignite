@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -49,16 +50,23 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Check query history metrics from server node.
  */
 public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
+    /** Query label. */
+    protected static final String LABEL = "Label 1";
+
     /** */
     private static final int QUERY_HISTORY_SIZE = 3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** Flag indicating whether query labels will be checked. */
+    protected boolean isLblChecked;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -84,7 +92,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        queryNode().context().query().runningQueryManager().resetQueryHistoryMetrics();
+        checkNode().context().query().runningQueryManager().resetQueryHistoryMetrics();
     }
 
     /**
@@ -126,6 +134,8 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJdbcSelectQueryHistory() throws Exception {
+        assumeFalse(isLblChecked);
+
         String qry = "select * from A.String";
         checkQueryMetrics(qry);
     }
@@ -137,9 +147,11 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJdbcSelectNotFullyFetchedQueryHistory() throws Exception {
+        assumeFalse(isLblChecked);
+
         String qry = "select * from A.String";
 
-        try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
+        try (Connection conn = GridTestUtils.connect((IgniteEx)queryNode(), null); Statement stmt = conn.createStatement()) {
             stmt.setFetchSize(1);
 
             ResultSet rs = stmt.executeQuery(qry);
@@ -155,7 +167,9 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJdbcQueryHistoryFailed() {
-        try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
+        assumeFalse(isLblChecked);
+
+        try (Connection conn = GridTestUtils.connect((IgniteEx)queryNode(), null); Statement stmt = conn.createStatement()) {
             stmt.executeQuery("select * from A.String where A.fail()=1");
 
             fail("Query should be failed.");
@@ -174,13 +188,15 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJdbcQueryHistoryForDmlAndDdl() throws Exception {
+        assumeFalse(isLblChecked);
+
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
             "insert into TST(id) values(1)",
             "select * from TST where id=1"
         );
 
-        try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
+        try (Connection conn = GridTestUtils.connect((IgniteEx)queryNode(), null); Statement stmt = conn.createStatement()) {
             for (String cmd : cmds)
                 stmt.execute(cmd);
         }
@@ -200,7 +216,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         // Check that collected metrics contains correct items: metrics for last N queries.
 
-        Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
+        Collection<QueryHistory> metrics = checkNode().context().query().runningQueryManager()
             .queryHistoryMetrics().values();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
@@ -251,7 +267,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryHistoryForDmlAndDdl() throws Exception {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
@@ -273,7 +289,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryHistoryEviction() throws Exception {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         cache.query(new SqlFieldsQuery("select * from String")).getAll();
 
@@ -291,7 +307,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
 
         // Check that collected metrics contains correct items: metrics for last N queries.
-        Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
+        Collection<QueryHistory> metrics = checkNode().context().query().runningQueryManager()
             .queryHistoryMetrics().values();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
@@ -310,7 +326,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryHistoryMultithreaded() throws Exception {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         Collection<Worker> workers = new ArrayList<>();
 
@@ -423,7 +439,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     private void checkMetrics(int sz, int idx, int execs, int failures,
         boolean first) {
 
-        Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
+        Collection<QueryHistory> metrics = checkNode().context().query().runningQueryManager()
             .queryHistoryMetrics().values();
 
         assertNotNull(metrics);
@@ -444,6 +460,8 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         if (first)
             assertEquals("On first execution minTime == maxTime", m.minimumTime(), m.maximumTime());
+
+        assertEquals(m.label(), isLblChecked ? LABEL : null);
     }
 
     /**
@@ -467,7 +485,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @throws SQLException In case of failure.
      */
     private void runJdbcQuery(String qry) throws SQLException {
-        try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
+        try (Connection conn = GridTestUtils.connect((IgniteEx)queryNode(), null); Statement stmt = conn.createStatement()) {
             stmt.execute(qry);
         }
     }
@@ -476,7 +494,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      */
     private void checkQueryMetrics(Query qry) {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         // Execute query.
         cache.query(qry).getAll();
@@ -493,7 +511,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      */
     private void checkNoQueryMetrics(Query qry) {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         // Execute query.
         cache.query(qry).getAll();
@@ -512,7 +530,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     private void checkQueryNotFullyFetchedMetrics(Query qry, boolean waitingForCompletion)
         throws IgniteInterruptedCheckedException {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         // Execute query.
         cache.query(qry).iterator().next();
@@ -535,7 +553,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      */
     private void checkQueryFailedMetrics(Query qry) {
-        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         try {
             // Execute invalid query.
@@ -564,7 +582,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     private void waitingFor(final String cond, final int exp) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(() -> {
-            Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
+            Collection<QueryHistory> metrics = checkNode().context().query().runningQueryManager()
                 .queryHistoryMetrics().values();
 
             switch (cond) {
@@ -588,12 +606,19 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     /**
      * @return Ignite instance for quering.
      */
-    protected IgniteEx queryNode() {
-        IgniteEx node = grid(0);
+    protected Ignite queryNode() {
+        Ignite node = grid(0);
 
-        assertFalse(node.context().clientNode());
+        assertFalse(node.cluster().node().isClient());
 
         return node;
+    }
+
+    /**
+     * @return Ignite instance for checking query history.
+     */
+    protected IgniteEx checkNode() {
+        return (IgniteEx)queryNode();
     }
 
     /**

@@ -134,7 +134,9 @@ import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
 import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlNotNullKeyValueFieldTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
+import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientWithLablesTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
+import org.apache.ignite.internal.processors.query.SqlQueryHistoryWithLabelsTest;
 import org.apache.ignite.internal.processors.query.SqlQueryIndexWithDifferentTypeTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
@@ -334,6 +336,8 @@ import org.junit.runners.Suite;
     //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
+    SqlQueryHistoryWithLabelsTest.class,
+    SqlQueryHistoryFromClientWithLablesTest.class,
     RemoveConstantsFromQueryTest.class,
 
     SqlIncompatibleDataTypeExceptionTest.class,

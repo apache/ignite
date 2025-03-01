@@ -466,4 +466,16 @@ public class IgniteApplicationAttributesAware implements Ignite {
 
         return delegate.withApplicationAttributes(attrs);
     }
+
+    /**
+     * This class holds reserved application attributes that can be accessed using
+     * {@link IgniteApplicationAttributesAware}.
+     */
+    @SuppressWarnings("PublicInnerClass") public static class ReservedApplicationAttributes {
+        /**
+         * Query label application attribute. All SQL queries executed from an {@link IgniteApplicationAttributesAware}
+         * instance will have a label set via this attribute.
+         */
+        public static final String QUERY_LABEL = "query_label";
+    }
 }

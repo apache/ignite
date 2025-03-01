@@ -86,6 +86,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.calculateSegment;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
@@ -358,6 +359,8 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
+        final Map<String, String> appAttrs = qryCtxRegistry.getSharedAttributes(node.id(), qryId, 0);
+
         MapQueryResults qryResults = null;
 
         PartitionReservation reserved = null;
@@ -407,7 +410,8 @@ public class GridMapQueryExecutor {
                 h2.backupFilter(topVer, parts, treatReplicatedAsPartitioned),
                 distributedJoinCtx,
                 reserved,
-                true);
+                true,
+                appAttrs);
 
             qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, lazy, qctx);
 
@@ -464,7 +468,8 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId,
+                            appAttrs.getOrDefault(QUERY_LABEL, null));
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 
