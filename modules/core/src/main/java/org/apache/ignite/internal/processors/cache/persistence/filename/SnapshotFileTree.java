@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,6 +31,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
@@ -91,7 +95,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path, String folderName, String consId) {
-        super(root(ctx.pdsFolderResolver().fileTree(), name, path), folderName);
+        super(ctx.config(), root(ctx.pdsFolderResolver().fileTree(), name, path), folderName);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -99,7 +103,47 @@ public class SnapshotFileTree extends NodeFileTree {
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = new NodeFileTree(new File(ctx.pdsFolderResolver().fileTree().snapshotTempRoot(), name), folderName());
+
+        tmpFt = new NodeFileTree(ctx.config(), new File(ctx.pdsFolderResolver().fileTree().snapshotTempRoot(), name), folderName());
+
+        String snpDfltPath = ctx.config().getSnapshotPath();
+
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+        // If path provided then create snapshot inside it, only.
+        // Same rule applies if absolute path to the snapshot root dir configured.
+        if (path == null && !new File(snpDfltPath).isAbsolute()) {
+            Map<String, File> snpDrStorages = dataRegionStorages(
+                ctx.config().getDataStorageConfiguration(),
+                (drName, drStoragePath) -> {
+                    // drStorages contains path with the DB and folderName.
+                    File drStorage = ft.dataRegionStorages().get(drName);
+
+                    // In case we want to make snapshot in several folders the pathes will be the following:
+                    // {dr_storage_path}/db/{folder_name} - node cache storage.
+                    // {dr_storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
+                    return new File(
+                        drStorage.getParentFile().getParentFile(),
+                        Path.of(snpDfltPath, name, DB_DEFAULT_FOLDER, folderName).toString()
+                    );
+                }
+            );
+
+            drStorages.putAll(snpDrStorages);
+
+            Map<String, File> snpTmpDrStorages = dataRegionStorages(
+                ctx.config().getDataStorageConfiguration(),
+                (drName, drStoragePath) -> new File(ft.dataRegionStorages().get(drName), Path.of(SNAPSHOT_TMP_DIR, name).toString())
+            );
+
+            tmpFt.drStorages.putAll(snpTmpDrStorages);
+        }
+        // Clear all custom storage so all cache storages will be inside nodeStorage.
+        else {
+            drStorages.clear();
+            tmpFt.drStorages.clear();
+        }
+
     }
 
     /** @return Snapshot name. */
@@ -133,12 +177,20 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param cacheDirName Cache dir name.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
+     * @param ccfg Cache configuration.
+     * @param part Partition.
+     * @return Cache partition delta file.
      */
-    public File partDeltaFile(String cacheDirName, int partId) {
-        return new File(tmpFt.cacheStorage(cacheDirName), partitionFileName(partId, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+    public File partDeltaFile(CacheConfiguration<?, ?> ccfg, int part) {
+        return new File(tmpFt.cacheStorage(ccfg), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+    }
+
+    /**
+     * @param part Partition.
+     * @return Metastorage partition delta file.
+     */
+    public File metastorageDeltaFile(int part) {
+        return new File(tmpFt.metaStorage(), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -195,8 +247,8 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param grpId Cache group id.
      * @return Files that match cache or cache group pattern.
      */
-    public File cacheDirectory(int grpId) {
-        return F.first(cacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
+    public File existingCacheDirectory(int grpId) {
+        return F.first(existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
@@ -205,7 +257,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param compress If {@code true} then list compressed files.
      * @return List of cache partitions in given directory.
      */
-    public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
+    public List<File> existingCachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
         File[] files = cacheDir.listFiles(f -> f.isFile() && f.getName().endsWith(partExtension(dump, compress)));
 
         return files == null
@@ -237,7 +289,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return {@code True} if file conforms partition dump file name pattern.
      */
     public static boolean dumpPartitionFile(File f, boolean compressed) {
-        return partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
+        return FileTreeUtils.partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
     }
 
     /**

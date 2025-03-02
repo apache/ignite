@@ -18,7 +18,6 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -32,12 +31,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version
@@ -140,12 +140,8 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             assertNotNull(cpMarkers);
             assertTrue(cpMarkers.length > 0);
 
-            File cacheDir = ft.cacheStorage(false, TEST_CACHE_NAME);
-            File[] partFiles = cacheDir.listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.startsWith("part");
-                }
-            });
+            File cacheDir = ft.cacheStorage(ignite.cachex(TEST_CACHE_NAME).configuration());
+            File[] partFiles = cacheDir.listFiles(FileTreeUtils::partitionFile);
 
             assertNotNull(partFiles);
             assertTrue(partFiles.length > 0);

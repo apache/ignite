@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -79,11 +80,11 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     // No-op.
                 }
 
-                @Override protected void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override protected void sendPart0(File from, File to, String drName, GroupPartitionId pair, Long length) {
                     // No-op.
                 }
 
-                @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                @Override protected void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                     // No-op.
                 }
             },
@@ -129,13 +130,13 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     copyFiles(
                         ft.marshaller(),
                         ift.marshaller(),
-                        NodeFileTree::notTmpFile
+                        FileTreeUtils::notTmpFile
                     );
 
                     copyFiles(
                         ft.binaryMeta(),
                         ift.binaryMeta(),
-                        NodeFileTree::binFile
+                        FileTreeUtils::binFile
                     );
 
                     onDone();

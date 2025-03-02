@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
 
 /**
  * Task to delete lost segment CDC links.

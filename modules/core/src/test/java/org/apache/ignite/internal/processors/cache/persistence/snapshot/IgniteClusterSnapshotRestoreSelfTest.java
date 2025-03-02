@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -663,7 +663,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         dfltCacheCfg.setCacheMode(CacheMode.REPLICATED)
             .setAffinity(new RendezvousAffinityFunction());
 
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+        IgniteEx srv = startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(2));
         CountDownLatch stopLatch = new CountDownLatch(1);
@@ -671,8 +671,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD.ordinal());
 
-        String failingFilePath = Paths.get(NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME),
-            NodeFileTree.partitionFileName(dfltCacheCfg.getAffinity().partitions() / 2)).toString();
+        SnapshotFileTree sft = snapshotFileTree(srv, SNAPSHOT_NAME);
+
+        String failingFilePath = sft.partitionFile(dfltCacheCfg, dfltCacheCfg.getAffinity().partitions() / 2).getAbsolutePath()
+            .replace(sft.nodeStorage().getAbsolutePath(), "");
 
         grid(2).context().cache().context().snapshotMgr().ioFactory(
             new CustomFileIOFactory(new RandomAccessFileIOFactory(),
@@ -684,7 +686,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheStorage(dfltCacheCfg).getParentFile();
+        NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);
@@ -701,8 +703,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
-        File[] files = node2dbDir.listFiles((FileFilter)NodeFileTree::tmpCacheStorage);
-        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.length);
+        List<File> files = ft.existingTmpCacheStorages();
+
+        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.size());
 
         ensureCacheAbsent(dfltCacheCfg);
 
@@ -710,8 +713,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         startGrid(2);
 
-        files = node2dbDir.listFiles((FileFilter)NodeFileTree::tmpCacheStorage);
-        assertEquals("A temp directory should be removed at node startup", 0, files.length);
+        files = ft.existingTmpCacheStorages();
+
+        assertEquals("A temp directory should be removed at node startup", 0, files.size());
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }

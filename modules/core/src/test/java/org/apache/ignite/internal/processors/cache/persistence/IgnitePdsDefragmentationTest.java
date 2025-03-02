@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -461,9 +462,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
-        stopGrid(0);
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration());
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
+        stopGrid(0);
 
         //Defragmentation should fail when node starts.
         startAndAwaitNodeFail(workDir);
@@ -564,6 +565,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
+        String grpDirName = ft.cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration()).getName();
+
         stopGrid(0);
 
         startGrid(0);
@@ -579,12 +582,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             }
 
             @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains(NodeFileTree.cacheDirName(true, GRP_NAME))) {
+                if (path.toString().contains(grpDirName)) {
                     File file = path.toFile();
 
                     if (file.getName().contains("part-dfrg-"))
                         cachePartFile.set(file);
-                    else if (file.getName().contains("part-"))
+                    else if (FileTreeUtils.partitionFile(file))
                         defragCachePartFile.set(file);
                 }
 

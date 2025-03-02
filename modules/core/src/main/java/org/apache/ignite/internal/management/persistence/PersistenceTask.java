@@ -129,7 +129,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> ft.cacheDirName(desc.cacheConfiguration()))
+                .map(desc -> ft.cacheStorage(desc.cacheConfiguration()).getName())
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -230,7 +230,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                     try {
                         pageStore.cleanupPersistentSpace(cacheDescr.cacheConfiguration());
 
-                        cleanedCaches.add(ft.cacheDirName(cacheDescr.cacheConfiguration()));
+                        cleanedCaches.add(ft.cacheStorage(cacheDescr.cacheConfiguration()).getName());
                     }
                     catch (IgniteCheckedException e) {
                         failedToCleanCaches.add(name);
@@ -270,7 +270,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> ft.cacheDirName(desc.cacheConfiguration()))
+                .map(desc -> ft.cacheStorage(desc.cacheConfiguration()).getName())
                 .collect(Collectors.toList());
 
             try {
@@ -394,7 +394,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 .filter(s ->
                     CU.isPersistentCache(cacheProc.cacheDescriptor(s).cacheConfiguration(), dsCfg))
                 .map(s -> cacheProc.cacheDescriptor(s).cacheConfiguration())
-                .map(ft::cacheDirName)
+                .map(cfg -> ft.cacheStorage(cfg).getName())
                 .distinct()
                 .collect(Collectors.toList());
         }

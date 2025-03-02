@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -198,7 +198,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         File cacheDirIg0 = snd.context().pdsFolderResolver().fileTree().cacheStorage(snd.cachex(DEFAULT_CACHE_NAME).configuration());
 
-        File[] cacheParts = cacheDirIg0.listFiles(NodeFileTree::binFile);
+        File[] cacheParts = cacheDirIg0.listFiles(FileTreeUtils::binFile);
 
         for (File file : cacheParts) {
             fileSizes.put(file.getName(), file.length());
@@ -220,7 +220,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         stopAllGrids();
 
-        assertEquals(fileSizes.size(), tempStore.listFiles(NodeFileTree::binFile).length);
+        assertEquals(fileSizes.size(), tempStore.listFiles(FileTreeUtils::binFile).length);
 
         for (File file : cacheParts) {
             // Check received file lengths.
@@ -233,7 +233,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         // Check received file CRCs.
-        for (File file : tempStore.listFiles(NodeFileTree::binFile)) {
+        for (File file : tempStore.listFiles(FileTreeUtils::binFile)) {
             assertEquals("Received file CRC-32 checksum is incorrect: " + file.getName(),
                 fileCrcs.get(file.getName()), new Integer(FastCrc.calcCrc(file)));
         }

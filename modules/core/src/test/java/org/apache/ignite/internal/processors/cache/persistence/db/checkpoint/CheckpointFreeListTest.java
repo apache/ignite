@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -261,7 +261,8 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Path cacheFolder = ignite0.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME).toPath();
+        Path cacheFolder = ignite0.context().pdsFolderResolver().fileTree()
+            .cacheStorage(ignite0.cachex(CACHE_NAME).configuration()).toPath();
 
         Optional<Long> totalPartSizeBeforeStop = totalPartitionsSize(cacheFolder);
 
@@ -444,7 +445,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
      * @return Total partitinos size.
      */
     private Optional<Long> totalPartitionsSize(Path cacheFolder) {
-        return Stream.of(requireNonNull(cacheFolder.toFile().listFiles(NodeFileTree::partitionFile)))
+        return Stream.of(requireNonNull(cacheFolder.toFile().listFiles(FileTreeUtils::partitionFile)))
             .map(File::length)
             .reduce(Long::sum);
     }

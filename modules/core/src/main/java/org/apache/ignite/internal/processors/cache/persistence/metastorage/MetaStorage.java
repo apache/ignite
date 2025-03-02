@@ -85,9 +85,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId(METASTORAGE_CACHE_NAME);
 
-    /** Metastorage cache directory to store data. */
-    public static final String METASTORAGE_DIR_NAME = "metastorage";
-
     /** Old special partition reserved for metastore space. */
     public static final int OLD_METASTORE_PARTITION = 0x0;
 

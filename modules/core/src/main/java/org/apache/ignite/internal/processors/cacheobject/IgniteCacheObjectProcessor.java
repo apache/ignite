@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatedListener;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -305,27 +305,27 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param types Collection of binary types to write to.
-     * @param dir Destination directory.
+     * @param ft File tree to save metadata on.
      */
-    public void saveMetadata(Collection<BinaryType> types, File dir);
+    public void saveMetadata(Collection<BinaryType> types, NodeFileTree ft);
 
     /**
      * Merge the binary metadata files stored in the specified directory.
      *
-     * @param metadataDir Directory containing binary metadata files.
+     * @param ft File tree to update meta from.
      * @param stopChecker Process interrupt checker.
      * @throws IgniteCheckedException If failed.
      */
-    public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException;
+    public void updateMetadata(NodeFileTree ft, BooleanSupplier stopChecker) throws IgniteCheckedException;
 
     /**
      * Merge the binary metadata file stored in the specified directory.
      *
-     * @param metadataDir Directory containing binary metadata files.
+     * @param ft File tree to get meta from.
      * @param typeId Type id to update.
      * @throws IgniteCheckedException If failed.
      */
-    public void cacheMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException;
+    public void cacheMetadataLocally(NodeFileTree ft, int typeId) throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.

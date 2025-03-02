@@ -221,7 +221,7 @@ public class Dump implements AutoCloseable {
     public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
-        return NodeFileTree.cacheConfigFiles(sft(node).cacheDirectory(grp)).stream().map(f -> {
+        return NodeFileTree.existingCacheConfigFiles(sft(node).existingCacheDirectory(grp)).stream().map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
@@ -237,7 +237,7 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int grp) {
-        List<File> parts = sft(node).cachePartitionFiles(sft(node).cacheDirectory(grp), true, comprParts);
+        List<File> parts = sft(node).existingCachePartitionFiles(sft(node).existingCacheDirectory(grp), true, comprParts);
 
         if (parts == null)
             return Collections.emptyList();
@@ -260,7 +260,7 @@ public class Dump implements AutoCloseable {
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(sft(node).cacheDirectory(grp), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(sft(node).existingCacheDirectory(grp), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);

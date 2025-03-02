@@ -53,6 +53,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -85,7 +86,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -445,7 +446,7 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
-        ft = new NodeFileTree(igniteCfg, settings.folderName());
+        ft = fileTree(settings.folderName());
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -677,7 +678,7 @@ public class CdcMain implements Runnable {
                 return;
 
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
-                .filter(NodeFileTree::binFile)
+                .filter(FileTreeUtils::binFile)
                 .map(f -> {
                     int typeId = BinaryUtils.typeId(f.getName());
                     long lastModified = f.lastModified();
@@ -689,7 +690,7 @@ public class CdcMain implements Runnable {
                     typesState.put(typeId, lastModified);
 
                     try {
-                        kctx.cacheObjects().cacheMetadataLocally(ft.binaryMeta(), typeId);
+                        kctx.cacheObjects().cacheMetadataLocally(ft, typeId);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -718,7 +719,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
+            File[] files = ft.marshaller().listFiles(FileTreeUtils::notTmpFile);
 
             if (files == null)
                 return;
@@ -876,9 +877,7 @@ public class CdcMain implements Runnable {
             return null;
         }
 
-        String folderName = dbStoreDirWithSubdirectory.getName();
-
-        ft = new NodeFileTree(igniteCfg, folderName);
+        ft = fileTree(dbStoreDirWithSubdirectory.getName());
 
         if (!ft.walCdc().exists()) {
             log.warning("CDC directory not exists. Should be created by Ignite Node. " +
@@ -997,5 +996,13 @@ public class CdcMain implements Runnable {
             .filter(filter)
             .filter(Objects::nonNull)
             .iterator();
+    }
+
+    /**
+     * @param folderName Folder name
+     * @return Node file tree.
+     */
+    private NodeFileTree fileTree(String folderName) {
+        return new NodeFileTree(igniteCfg, folderName);
     }
 }

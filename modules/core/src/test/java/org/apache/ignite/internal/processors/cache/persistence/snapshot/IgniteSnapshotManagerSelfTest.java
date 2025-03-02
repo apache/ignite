@@ -66,6 +66,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Objects.nonNull;
@@ -157,11 +158,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             false,
             false,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(slowCopy);
 
-                        delegate.sendPart0(part, cacheDirName, pair, length);
+                        delegate.sendPart0(from, to, drName, pair, length);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);
@@ -262,7 +263,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = ioFactory.create(file, modes);
 
-                if (file.getName().equals(sft.partDeltaFile(dfltCacheCfg.getName(), 0).getName()))
+                if (file.getName().equals(sft.partDeltaFile(dfltCacheCfg, 0).getName()))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
@@ -308,11 +309,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             encryption,
             new DelegateSnapshotSender(log, mgr0.snapshotExecutorService(),
                 mgr0.localSnapshotSenderFactory().apply(sft)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException(err_msg + pair);
 
-                    delegate.sendPart0(part, cacheDirName, pair, length);
+                    delegate.sendPart0(from, to, drName, pair, length);
                 }
             });
 
@@ -345,11 +346,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(cpLatch);
 
-                        delegate.sendPart0(part, cacheDirName, pair, length);
+                        delegate.sendPart0(from, to, drName, pair, length);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);

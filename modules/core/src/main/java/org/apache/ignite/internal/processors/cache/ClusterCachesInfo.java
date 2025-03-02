@@ -1201,7 +1201,7 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String expDir = ctx.pdsFolderResolver().fileTree().cacheDirName(ccfg);
+        String expDir = ctx.pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
 
         try {
             return !expDir.equals(Paths.get(expDir).toFile().getName());

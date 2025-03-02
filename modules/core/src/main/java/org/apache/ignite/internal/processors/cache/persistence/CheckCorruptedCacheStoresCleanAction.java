@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +47,7 @@ public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<B
 
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File f : cacheStoreDir.listFiles()) {
-                    if (!NodeFileTree.cacheConfigFile(f))
+                    if (!FileTreeUtils.cacheConfigFile(f))
                         return Boolean.FALSE;
                 }
             }

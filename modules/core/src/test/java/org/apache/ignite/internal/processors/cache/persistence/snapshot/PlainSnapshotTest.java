@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +117,8 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
             calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(sft.marshaller()));
 
-        assertEquals("Snapshot working directory must be cleaned after usage", 0, ft.snapshotTempRoot().listFiles().length);
+        for (File tmpRoot : ft.snapshotsTempRoots())
+            assertEquals("Snapshot working directory must be cleaned after usage", 0, tmpRoot.listFiles().length);
     }
 
     /** @throws Exception If fails. */

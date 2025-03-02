@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,10 +52,9 @@ import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.CP_FILE_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_TEMP_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_TEMP_NAME_PATTERN;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /***
@@ -209,7 +209,8 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         if (nodeStopPoint.needCleanUp) {
             PdsFoldersResolver foldersResolver = ((IgniteEx)ig1).context().pdsFolderResolver();
 
-            File root = foldersResolver.resolveFolders().persistentStoreRootPath();
+            File root = foldersResolver.fileTree().root();
+            String metastorage = foldersResolver.fileTree().metaStorage().getName();
 
             walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -219,10 +220,10 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
                     String parentDirName = path.toFile().getParentFile().getName();
 
-                    if (parentDirName.equals(METASTORAGE_DIR_NAME))
+                    if (parentDirName.equals(metastorage))
                         return CONTINUE;
 
-                    if (WAL_NAME_PATTERN.matcher(name).matches() || WAL_TEMP_NAME_PATTERN.matcher(name).matches())
+                    if (WAL_SEGMENT_FILE_FILTER.accept(path.toFile()) || WAL_SEGMENT_TEMP_FILE_FILTER.accept(path.toFile()))
                         return CONTINUE;
 
                     boolean failed = false;
@@ -233,7 +234,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
                     if (CP_FILE_NAME_PATTERN.matcher(name).matches())
                         failed = true;
 
-                    if (NodeFileTree.partitionFile(path.toFile()) && path.toFile().length() > pageSize)
+                    if (FileTreeUtils.partitionFile(path.toFile()) && path.toFile().length() > pageSize)
                         failed = true;
 
                     if (name.equals(partitionFileName(INDEX_PARTITION)) && path.toFile().length() > pageSize)

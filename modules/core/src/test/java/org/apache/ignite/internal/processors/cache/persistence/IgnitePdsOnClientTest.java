@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -67,10 +66,8 @@ public class IgnitePdsOnClientTest extends GridCommonAbstractTest {
             cache.put(1, 1);
             assertEquals((Integer)1, cache.get(1));
 
-            PdsFolderSettings<?> settings = client.context().pdsFolderResolver().resolveFolders();
-
             // Checking there are no files created on client node start.
-            assertFalse(settings.persistentStoreNodePath().exists());
+            assertFalse(client.context().pdsFolderResolver().fileTree().nodeStorage().exists());
         }
     }
 }
