@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvi
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
@@ -1357,13 +1356,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (path == null)
             return null;
 
-        final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-
-        final String folderName = folderSettings.isCompatible() ?
-            String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_") :
-            folderSettings.folderName();
-
-        return buildPath(path, folderName);
+        return buildPath(path, cctx.kernalContext().pdsFolderResolver().resolveFolders().nodeStorageFolderName());
     }
 
     /**

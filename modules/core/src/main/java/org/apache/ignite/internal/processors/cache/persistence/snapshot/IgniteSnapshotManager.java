@@ -627,7 +627,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ctx,
                     dumpDir.getName(),
                     dumpDir.getParent(),
-                    pdsSettings.folderName(),
+                    ft.folderName(),
                     pdsSettings.consistentId().toString()).dumpLock())
                 .filter(File::exists)
                 .map(File::getParentFile)
@@ -702,7 +702,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx.kernalContext(),
                 snpDir.getName(),
                 snpDir.getParent(),
-                pdsSettings.folderName(),
+                ft.folderName(),
                 pdsSettings.consistentId().toString());
 
             U.delete(sft.binaryMeta());
@@ -904,7 +904,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.snapshotName(),
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
-                pdsSettings.folderName(),
+                ft.folderName(),
                 clusterSnpReq.startTime(),
                 markWalFut.result()
             );
@@ -1033,7 +1033,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
-                    pdsSettings.folderName(),
+                    ft.folderName(),
                     req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,

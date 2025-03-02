@@ -111,7 +111,7 @@ class BinaryMetadataFileStore {
 
         this.metadataDir = metadataDir;
 
-        fixLegacyFolder(ctx.pdsFolderResolver().resolveFolders().folderName());
+        fixLegacyFolder(ctx.pdsFolderResolver().fileTree().folderName());
     }
 
     /**

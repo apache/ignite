@@ -527,6 +527,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         return ft.partitionFile(gctx.config(), grpAndPart.getPartitionId());
     }
 
+    /** @return Data region name. */
     private String dataRegionname(GroupPartitionId grpAndPart) throws IgniteCheckedException {
         if (grpAndPart.getGroupId() == MetaStorage.METASTORAGE_CACHE_ID)
             return null;

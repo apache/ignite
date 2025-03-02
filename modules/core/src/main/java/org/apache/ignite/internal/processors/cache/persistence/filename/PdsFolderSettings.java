@@ -29,14 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Class holds information required for folder generation for ignite persistent store
  */
 public class PdsFolderSettings<L extends FileLockHolder> {
-    /**
-     * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
-     * configuration. <br>
-     * Note WAL storage may be configured outside this path.<br>
-     * This value may be null if persistence is not enabled.
-     */
-    @Nullable private final File persistentStoreRootPath;
-
     /** Sub folder name containing consistent ID and optionally node index. */
     private final String folderName;
 
@@ -75,7 +67,6 @@ public class PdsFolderSettings<L extends FileLockHolder> {
         this.folderName = folderName;
         this.fileLockHolder = fileLockHolder;
         this.compatible = compatible;
-        this.persistentStoreRootPath = persistentStoreRootPath;
     }
 
     /**
@@ -91,7 +82,6 @@ public class PdsFolderSettings<L extends FileLockHolder> {
         this.consistentId = consistentId;
         this.compatible = true;
         this.folderName = U.maskForFileName(consistentId.toString());
-        this.persistentStoreRootPath = persistentStoreRootPath;
         this.fileLockHolder = null;
     }
 
@@ -120,6 +110,16 @@ public class PdsFolderSettings<L extends FileLockHolder> {
     }
 
     /**
+     * TODO: Single usage. Remove me.
+     * @return Node storage folder name.
+     */
+    public String nodeStorageFolderName() {
+        return compatible
+            ? String.valueOf(consistentId).replaceAll("[:,\\.]", "_")
+            : folderName;
+    }
+
+    /**
      * Returns already locked file lock holder to lock file in {@link #persistentStoreRootPath}. Unlock and close this
      * lock is not required.
      *
@@ -127,15 +127,6 @@ public class PdsFolderSettings<L extends FileLockHolder> {
      */
     @Nullable public L getLockedFileLockHolder() {
         return fileLockHolder;
-    }
-
-    /**
-     * @return Storage directory for node.
-     */
-    public File persistentStoreNodePath() {
-        assert persistentStoreRootPath != null;
-
-        return new File(persistentStoreRootPath, folderName);
     }
 
     /** {@inheritDoc} */
