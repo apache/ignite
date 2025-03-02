@@ -151,15 +151,12 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_TEMP_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
@@ -2434,7 +2431,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
                 zos.setLevel(dsCfg.getWalCompactionLevel());
-                zos.putNextEntry(new ZipEntry(idx + WAL_SEGMENT_FILE_EXT));
+                zos.putNextEntry(new ZipEntry(NodeFileTree.zipWalEntryName(idx)));
 
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
                 buf.order(ByteOrder.nativeOrder());
@@ -3218,17 +3215,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             res = CURR_HND_UPD.compareAndSet(this, c, n);
 
         return res;
-    }
-
-    /**
-     * Check that file name matches segment name.
-     *
-     * @param name File name.
-     * @return {@code True} if file name matches segment name.
-     */
-    public static boolean isSegmentFileName(@Nullable String name) {
-        return name != null && (WAL_NAME_PATTERN.matcher(name).matches() ||
-            WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(name).matches());
     }
 
     /**

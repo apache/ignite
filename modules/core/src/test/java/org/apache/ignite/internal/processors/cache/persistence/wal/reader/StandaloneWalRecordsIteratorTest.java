@@ -454,15 +454,15 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         private static final AtomicInteger WAL_CLOSE_COUNTER = new AtomicInteger();
 
         /** File name. */
-        private final String fileName;
+        private final File file;
 
         /** */
         public CountedFileIO(File file, OpenOption... modes) throws IOException {
             super(file, modes);
 
-            fileName = file.getName();
+            this.file = file;
 
-            if (FileTreeUtils.WAL_NAME_PATTERN.matcher(fileName).matches())
+            if (FileTreeUtils.WAL_SEGMENT_FILE_FILTER.accept(file))
                 WAL_OPEN_COUNTER.incrementAndGet();
         }
 
@@ -470,7 +470,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         @Override public void close() throws IOException {
             super.close();
 
-            if (FileTreeUtils.WAL_NAME_PATTERN.matcher(fileName).matches())
+            if (FileTreeUtils.WAL_SEGMENT_FILE_FILTER.accept(file))
                 WAL_CLOSE_COUNTER.incrementAndGet();
         }
 

@@ -52,8 +52,8 @@ import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.CP_FILE_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_TEMP_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_TEMP_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -223,7 +223,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
                     if (parentDirName.equals(metastorage))
                         return CONTINUE;
 
-                    if (WAL_NAME_PATTERN.matcher(name).matches() || WAL_TEMP_NAME_PATTERN.matcher(name).matches())
+                    if (WAL_SEGMENT_FILE_FILTER.accept(path.toFile()) || WAL_SEGMENT_TEMP_FILE_FILTER.accept(path.toFile()))
                         return CONTINUE;
 
                     boolean failed = false;

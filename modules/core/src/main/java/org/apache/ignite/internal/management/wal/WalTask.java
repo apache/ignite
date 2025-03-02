@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.wal;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,8 +46,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /**
  * Performs WAL cleanup clusterwide.
@@ -57,14 +55,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.F
 public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResult, Collection<String>> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** WAL archive file filter. */
-    private static final FileFilter WAL_ARCHIVE_FILE_FILTER = new FileFilter() {
-        @Override public boolean accept(File file) {
-            return !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
-                    WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
-        }
-    };
 
     /** {@inheritDoc} */
     @Override protected WalJob job(WalDeleteCommandArg arg) {
@@ -186,7 +176,7 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
 
             int maxIdx = resolveMaxReservedIndex(wal, lowBoundForTruncate);
 
-            File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
+            File[] walFiles = getWalArchiveDir().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
             Collection<String> res = new ArrayList<>(walFiles != null && walFiles.length > 0 ? walFiles.length - 1 : 0);
 
@@ -227,7 +217,7 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
 
             int maxIdx = resolveMaxReservedIndex(wal, lowBoundForTruncate);
 
-            File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
+            File[] walFiles = getWalArchiveDir().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
             dbMgr.onWalTruncated(lowBoundForTruncate);
 

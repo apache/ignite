@@ -64,7 +64,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -410,7 +410,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         failingFileIOFactory.createClosure((file, options) -> {
             FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
 
-            if (WAL_NAME_PATTERN.matcher(file.getName()).matches()) {
+            if (WAL_SEGMENT_FILE_FILTER.accept(file)) {
                 return new FileIODecorator(delegate) {
                     @Override public int write(ByteBuffer srcBuf) throws IOException {
                         throw new IOException("No space left on device");
