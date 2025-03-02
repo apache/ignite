@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -79,6 +80,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
         );
 
         return super.getConfiguration(igniteInstanceName)
+            .setConsistentId(U.maskForFileName(igniteInstanceName))
             .setDataStorageConfiguration(dsCfg)
             .setCacheConfiguration(ccfgs);
     }
@@ -93,37 +95,17 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCaches() throws Exception {
-        int nodeCnt = 3;
+        startAndActivate();
 
-        IgniteEx srv = startGrids(nodeCnt);
+        putData();
 
-        srv.cluster().state(ClusterState.ACTIVE);
-
-        for (int i = 0; i < 8; i++) {
-            IgniteCache<Integer, Integer> c = srv.cache("cache" + i);
-
-            for (int j=0; j<100; j++)
-                c.put(j, i);
-        }
-
-        Consumer<IgniteEx> check = srv0 -> {
-            for (int i = 0; i < 8; i++) {
-                IgniteCache<Integer, Integer> c = srv0.cache("cache" + i);
-
-                for (int j=0; j<100; j++)
-                    assertEquals((Integer)i, c.get(j));
-            }
-        };
-
-        check.accept(srv);
+        checkDataExists();
 
         stopAllGrids();
 
-        srv = startGrids(3);
+        IgniteEx srv = startAndActivate();
 
-        srv.cluster().state(ClusterState.ACTIVE);
-
-        check.accept(srv);
+        checkDataExists();
 
         List<NodeFileTree> fts = IntStream.range(0, 3)
             .mapToObj(this::grid)
@@ -132,12 +114,54 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
 
         srv.snapshot().createSnapshot("mysnp").get();
 
-        File fullPathSnpDir = new File(U.defaultWorkDirectory(), "custom_snapshots");
+        File fullPathSnp = new File(U.defaultWorkDirectory(), "custom_snapshots");
 
-        srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnpDir.getAbsolutePath(), false, false).get();
+        srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 
+        restoreAndCheck("mysnp", null, fts);
+
+        restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath(), fts);
+    }
+
+    /**
+     * @param name Snapshot name
+     * @param path Snapshot path.
+     * @param fts Nodes file trees.
+     */
+    private void restoreAndCheck(String name, String path, List<NodeFileTree> fts) throws Exception {
         stopAllGrids();
 
+        checkFileTrees(fts);
+
+        fts.forEach(ft -> ft.dataRegionStorages().values().forEach(U::delete));
+
+        U.delete(F.first(fts).db());
+
+        IgniteEx srv = startAndActivate();
+
+        checkDataNotExists();
+
+        for (CacheConfiguration<?, ?> ccfg : ccfgs)
+            grid(0).destroyCache(ccfg.getName());
+
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (NodeFileTree ft : fts) {
+                for (CacheConfiguration<?, ?> ccfg : ccfgs) {
+                    if (!F.isEmpty(ft.cacheStorage(ccfg).listFiles()))
+                        return false;
+                }
+            }
+
+            return true;
+        }, getTestTimeout()));
+
+        srv.context().cache().context().snapshotMgr().restoreSnapshot(name, path, null).get();
+
+        checkDataExists();
+    }
+
+    /** @param fts Nodes file trees. */
+    private void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             boolean[] flags = new boolean[2];
 
@@ -168,6 +192,39 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
             for (boolean flag : flags)
                 assertTrue(flag);
         }
+    }
+
+    /** */
+    private void putData() {
+        forAllEntries((c, j) -> c.put(j, j));
+    }
+
+    /** */
+    private void checkDataExists() {
+        forAllEntries((c, j) -> assertEquals((Integer)j, c.get(j)));
+    }
+
+    /** */
+    private void checkDataNotExists() {
+        forAllEntries((c, j) -> assertNull(c.get(j)));
+    }
+
+    /** */
+    private void forAllEntries(ObjIntConsumer<IgniteCache<Integer, Integer>> cnsmr) {
+        for (CacheConfiguration<?, ?> ccfg : ccfgs) {
+            IgniteCache<Integer, Integer> c = grid(0).cache(ccfg.getName());
+
+            IntStream.range(0, 100).forEach(j -> cnsmr.accept(c, j));
+        }
+    }
+
+    /** */
+    private IgniteEx startAndActivate() throws Exception {
+        IgniteEx srv = startGrids(3);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        return srv;
     }
 
     /** */

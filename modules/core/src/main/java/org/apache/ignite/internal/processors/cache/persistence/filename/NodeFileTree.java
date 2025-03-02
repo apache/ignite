@@ -518,7 +518,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store directory for given cache.
      */
     public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(ccfg), TMP_CACHE_DIR_PREFIX + cacheDirName(ccfg));
+        return new File(dataRegionStorage(ccfg.getDataRegionName()), TMP_CACHE_DIR_PREFIX + cacheDirName(ccfg));
     }
 
     /**
