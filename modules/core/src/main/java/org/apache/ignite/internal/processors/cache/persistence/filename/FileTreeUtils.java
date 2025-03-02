@@ -69,6 +69,11 @@ public class FileTreeUtils {
     public static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
         WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
 
+    /** */
+    private FileTreeUtils() {
+        // No-op.
+    }
+
     /**
      * Creates all cache storages for given tree.
      * @param ft Node file tree.
