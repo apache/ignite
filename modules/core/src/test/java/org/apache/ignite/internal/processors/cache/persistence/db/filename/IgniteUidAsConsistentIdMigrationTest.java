@@ -108,7 +108,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         if (pstStoreCustomPath != null)
             ok &= U.delete(pstStoreCustomPath);
-        else
+        else if (sharedFileTree().db().exists())
             ok &= U.delete(sharedFileTree().db());
 
         if (pstWalArchCustomPath != null)
