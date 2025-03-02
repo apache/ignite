@@ -51,7 +51,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
 
 /**
  * Tests error recovery while node flushing

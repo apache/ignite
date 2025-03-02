@@ -56,8 +56,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.arraycopy;
 import static java.nio.file.Files.walkFileTree;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;

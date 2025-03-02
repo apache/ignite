@@ -105,7 +105,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
 
 /**
  * Historical WAL rebalance base test.

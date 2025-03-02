@@ -18,16 +18,56 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_WAL_SEG_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_ZIP_WAL_SEG_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_WAL_SEG_FILE_EXT;
 
 /**
  * Utility methods for {@link NodeFileTree}
  */
 public class FileTreeUtils {
+    /** Pattern for segment file names. */
+    public static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
+
+    /** Pattern for WAL temp files - these files will be cleared at startup. */
+    public static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    public static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_NAME_PATTERN.matcher(file.getName()).matches();
+
+    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
+    public static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
+
+    /** */
+    public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
+        (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
+            WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+
+    /** */
+    public static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(TMP_ZIP_WAL_SEG_FILE_EXT);
+
+    /** */
+    public static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
+        WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+
+    /** */
+    public static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
+        WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+
     /**
      * Creates all cache storages for given tree.
      * @param ft Node file tree.

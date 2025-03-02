@@ -47,8 +47,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 
 /**
  * Performs WAL cleanup clusterwide.

@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.cdc.CdcMain.CDC_MODE;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 

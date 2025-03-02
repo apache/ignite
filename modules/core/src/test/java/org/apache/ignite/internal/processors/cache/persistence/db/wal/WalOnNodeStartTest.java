@@ -41,8 +41,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_TEMP_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_TEMP_NAME_PATTERN;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
