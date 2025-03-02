@@ -48,7 +48,6 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -175,7 +174,7 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     private String walPath(String nodeName) throws IgniteCheckedException {
         String workDir = U.defaultWorkDirectory();
 
-        return workDir + "/" + DFLT_STORE_DIR + "/" + nodeName + "/wal";
+        return workDir + "/" + nodeName + "/wal";
     }
 
     /**
@@ -187,7 +186,7 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     private String walArchivePath(String nodeName) throws IgniteCheckedException {
         String workDir = U.defaultWorkDirectory();
 
-        return workDir + "/" + DFLT_STORE_DIR + "/" + nodeName + "/walArchive";
+        return workDir + "/" + nodeName + "/walArchive";
     }
 
     /**

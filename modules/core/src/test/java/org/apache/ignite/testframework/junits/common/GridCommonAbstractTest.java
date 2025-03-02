@@ -1972,11 +1972,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-
         SharedFileTree sft = sharedFileTree();
 
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
+        U.delete(sft.db());
         U.delete(sft.marshaller());
         U.delete(sft.binaryMetaRoot());
 

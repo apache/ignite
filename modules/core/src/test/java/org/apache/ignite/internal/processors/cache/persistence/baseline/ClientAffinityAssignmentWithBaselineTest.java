@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -62,8 +62,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Checks that client affinity assignment cache is calculated correctly regardless of current baseline topology.
@@ -125,7 +123,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         }
 
         if (igniteInstanceName.contains(FLAKY_NODE_NAME)) {
-            File store = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+            File store = createDefaultDb();
 
             cfg.getDataStorageConfiguration().setWalPath(new File(store, FLAKY_WAL_PATH).getAbsolutePath());
             cfg.getDataStorageConfiguration().setWalArchivePath(new File(store, FLAKY_WAL_ARCHIVE_PATH).getAbsolutePath());
@@ -387,7 +385,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         awaitProgressInAllLoaders(10_000, loadError, threadProgressTracker);
 
-        File store = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+        File store = createDefaultDb();
 
         U.delete(new File(store, FLAKY_WAL_PATH));
         U.delete(new File(store, FLAKY_WAL_ARCHIVE_PATH));

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.testframework.junits;
 
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
+import javax.management.DynamicMBean;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import java.io.File;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
@@ -52,13 +59,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
-import javax.management.DynamicMBean;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -3187,9 +3187,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
     }
 
-    /**
-     * Recreates default db directory.
-     */
+    /** Recreates default db directory. */
     protected void recreateDefaultDb() {
         File db = sharedFileTree().db();
 
@@ -3198,9 +3196,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         assertTrue(db.mkdirs());
     }
 
-    /**
-     * @return Ignite directories without specific {@code folerName} parameter.
-     */
+    /** Creates default db directory. */
+    protected File createDefaultDb() {
+        File db = sharedFileTree().db();
+
+        db.mkdirs();
+
+        return db;
+    }
+
+    /** @return Ignite directories without specific {@code folerName} parameter. */
     protected SharedFileTree sharedFileTree() {
         try {
             return new SharedFileTree(U.defaultWorkDirectory());
@@ -3218,9 +3223,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         return new SharedFileTree(cfg);
     }
 
-    /**
-     * @return Ignite directories for specific {@code folderName}.
-     */
+    /** @return Ignite directories for specific {@code folderName}. */
     protected NodeFileTree nodeFileTree(String folderName) {
         try {
             return new NodeFileTree(new File(U.defaultWorkDirectory()), folderName);
@@ -3230,16 +3233,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     }
 
-    /**
-     * @return Snapshot directories for specific snapshot.
-     */
+    /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name) {
         return snapshotFileTree(srv, name, null);
     }
 
-    /**
-     * @return Snapshot directories for specific snapshot.
-     */
+    /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
         return new SnapshotFileTree(srv.context(), name, path);
     }
