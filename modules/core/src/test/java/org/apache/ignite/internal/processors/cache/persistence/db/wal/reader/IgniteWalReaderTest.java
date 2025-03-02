@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
-import javax.cache.Cache;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;

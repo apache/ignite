@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
-import javax.cache.Cache;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
