@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.File;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -3184,6 +3185,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             throw new IgniteException("MBean not registered: " + mbeanName);
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
+    }
+
+    /**
+     * Recreates default db directory.
+     */
+    protected void recreateDefaultDb() {
+        File db = sharedFileTree().db();
+
+        U.delete(db);
+
+        assertTrue(db.mkdirs());
     }
 
     /**

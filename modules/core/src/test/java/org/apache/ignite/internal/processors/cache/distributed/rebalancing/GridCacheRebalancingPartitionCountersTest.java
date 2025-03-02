@@ -77,13 +77,13 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
     }
 
     /**
