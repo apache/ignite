@@ -218,10 +218,10 @@ public class NodeFileTree extends SharedFileTree {
     /** Temporary cache directory prefix. */
     private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
-    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
+    /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache. */
     private static final String CACHE_DIR_PREFIX = "cache-";
 
-    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
+    /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
@@ -466,7 +466,9 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return cacheStorage(cacheDirName(ccfg));
+        return new File(nodeStorage, ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName());
     }
 
     /**
@@ -495,7 +497,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(cacheStorage(cacheDirName(ccfg)), partitionFileName(part));
+        return new File(cacheStorage(ccfg), partitionFileName(part));
     }
 
     /**
@@ -558,7 +560,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache directories. Metatorage directory excluded.
      */
     public List<File> existingUserCacheDirs() {
-        final String utilityCacheStorage = cacheDirName(false, UTILITY_CACHE_NAME);
+        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
 
         return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
@@ -699,20 +701,6 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return The full cache directory name.
-     */
-    private static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
-        if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
-            return METASTORAGE_DIR_NAME;
-
-        return isSharedGroup
-            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
-            : CACHE_DIR_PREFIX + cacheOrGroupName;
-    }
-
-    /**
      * @param name File name.
      * @return Cache name.
      */
@@ -743,24 +731,6 @@ public class NodeFileTree extends SharedFileTree {
         Arrays.sort(cacheDirs);
 
         return Arrays.asList(cacheDirs);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return The full cache directory name.
-     */
-    private String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
-
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    protected File cacheStorage(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
     }
 
     /**
