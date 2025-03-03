@@ -93,9 +93,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
  */
 public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager,
     PageStoreCollection {
-    /** */
-    public static final String DFLT_STORE_DIR = "db";
-
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
