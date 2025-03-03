@@ -475,6 +475,15 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        File cacheStorage = cacheStorage(ccfg);
+        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    }
+
+    /**
+     * @param ccfg Cache configuration.
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
@@ -530,16 +539,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File tmpPartition(String cacheDirName, int partId) {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
-    }
-
-    /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
-
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
     /** @return All cache directories. */
@@ -656,22 +655,6 @@ public class NodeFileTree extends SharedFileTree {
         return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
     }
 
-    /**
-     * @param part Partition file name.
-     * @return Partition id.
-     */
-    public static int partId(File part) {
-        String name = part.getName();
-
-        if (name.equals(INDEX_FILE_NAME))
-            return INDEX_PARTITION;
-
-        if (name.startsWith(PART_FILE_PREFIX))
-            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
-
-        throw new IllegalStateException("Illegal partition file name: " + name);
-    }
-
     /** */
     protected static String partitionFileName(int part, String idxName, String format) {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
@@ -711,6 +694,16 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
@@ -726,6 +719,22 @@ public class NodeFileTree extends SharedFileTree {
         Arrays.sort(cacheDirs);
 
         return Arrays.asList(cacheDirs);
+    }
+
+    /**
+     * @param part Partition file name.
+     * @return Partition id.
+     */
+    public static int partId(File part) {
+        String name = part.getName();
+
+        if (name.equals(INDEX_FILE_NAME))
+            return INDEX_PARTITION;
+
+        if (name.startsWith(PART_FILE_PREFIX))
+            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
+
+        throw new IllegalStateException("Illegal partition file name: " + name);
     }
 
     /**

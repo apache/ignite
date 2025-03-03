@@ -567,7 +567,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheDir Cache dir name.
+     * @param cacheWorkDir Cache work dir.
      * @param grpId Group ID.
      * @param cacheName Cache name.
      * @param partitions Number of partitions.
@@ -577,7 +577,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(
-        File cacheDir,
+        File cacheWorkDir,
         IntFunction<Path> partitionFile,
         int grpId,
         String cacheName,
@@ -586,13 +586,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         boolean encrypted,
         Collection<String> grpCaches) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cacheDir, log);
+            boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
-                    DefragmentationFileUtils.beforeInitPageStores(cacheDir, log);
+                    DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
             }
 
             File idxFile = partitionFile.apply(INDEX_PARTITION).toFile();
