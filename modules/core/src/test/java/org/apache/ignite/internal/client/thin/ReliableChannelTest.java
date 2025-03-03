@@ -64,21 +64,6 @@ public class ReliableChannelTest {
     private final String[] dfltAddrs = new String[]{"127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"};
 
     /**
-     * Checks that it is possible configure addresses with duplication (for load balancing).
-     */
-    @Test
-    public void testDuplicatedAddressesAreValid() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(
-            "127.0.0.1:10800", "127.0.0.1:10800", "127.0.0.1:10801");
-
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-
-        rc.channelsInit();
-
-        assertEquals(3, rc.getChannelHolders().size());
-    }
-
-    /**
      * Checks that in case if address specified without port, the default port will be processed first
      */
     @Test
@@ -132,15 +117,11 @@ public class ReliableChannelTest {
      * Checks that reinitialization of duplicated address is correct.
      */
     @Test
-    public void testReinitDuplicatedAddress() {
+    public void testReinitAddress() {
         TestAddressFinder finder = new TestAddressFinder()
             .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802")
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10805")
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10806")
-            .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10806")
-            .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10803")
-            .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10804")
-            .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10804")
             .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802");
 
         ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
@@ -162,14 +143,6 @@ public class ReliableChannelTest {
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10805"));
 
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10806"));
-
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10806"));
-
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10803"));
-
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10804"));
-
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10804"));
 
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));
     }
@@ -386,29 +359,6 @@ public class ReliableChannelTest {
         rc.initChannelHolders();
 
         assertEquals(initCnt, rc.getChannelHolders().size());
-    }
-
-    /**
-     * Checks that if the configuration contains duplicated addresses, exactly the same number of channels are created.
-     */
-    @Test
-    public void testChannelDuplicationWithForcedAddressDuplication() {
-        TestAddressFinder finder = new TestAddressFinder()
-            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801",
-                "127.0.0.1:10801")
-            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801",
-                "127.0.0.1:10801", "127.0.0.1:10802", "127.0.0.1:10802");
-
-        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-
-        rc.channelsInit();
-
-        assertEquals(3, rc.getChannelHolders().size());
-
-        rc.initChannelHolders();
-
-        assertEquals(5, rc.getChannelHolders().size());
     }
 
     /**
