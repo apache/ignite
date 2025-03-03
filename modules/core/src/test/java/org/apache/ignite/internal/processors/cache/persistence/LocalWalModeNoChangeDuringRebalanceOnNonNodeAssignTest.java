@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -37,7 +37,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,7 +47,6 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -167,27 +165,19 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     }
 
     /**
-     *
      * @param nodeName Node name.
      * @return Path to WAL work directory.
-     * @throws IgniteCheckedException If failed.
      */
-    private String walPath(String nodeName) throws IgniteCheckedException {
-        String workDir = U.defaultWorkDirectory();
-
-        return workDir + "/" + DFLT_STORE_DIR + "/" + nodeName + "/wal";
+    private String walPath(String nodeName) {
+        return new File(sharedFileTree().db(), nodeName + "/wal").getAbsolutePath();
     }
 
     /**
-     *
      * @param nodeName Node name.
      * @return Path to WAL archive directory.
-     * @throws IgniteCheckedException If failed.
      */
-    private String walArchivePath(String nodeName) throws IgniteCheckedException {
-        String workDir = U.defaultWorkDirectory();
-
-        return workDir + "/" + DFLT_STORE_DIR + "/" + nodeName + "/walArchive";
+    private String walArchivePath(String nodeName) {
+        return new File(sharedFileTree().db(), nodeName + "/walArchive").getAbsolutePath();
     }
 
     /**
