@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -42,11 +43,11 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 
 /**
  * Benchmark simple SQL queries.
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.tpch.Tpch
 @State(Scope.Benchmark)
 @Fork(1)
 @Threads(1)
+@Timeout(time = 10)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 2)
@@ -75,6 +77,7 @@ public class TpchBenchmark {
     /** Servers. */
     private final Ignite[] servers = new Ignite[SRV_NODES_CNT];
 
+    /** */
     String pathToDataset() {
         throw new RuntimeException("Provide path to directory containing <table_name>.tbl files");
     }
@@ -258,9 +261,9 @@ public class TpchBenchmark {
 
     /** */
     private List<List<?>> executeSql(String sql) {
-        SqlFieldsQuery query = new SqlFieldsQuery(sql).setTimeout(10, TimeUnit.SECONDS);
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setTimeout(10, TimeUnit.SECONDS);
 
-        return ((IgniteEx)client).context().query().querySqlFields(query, false).getAll();
+        return ((IgniteEx)client).context().query().querySqlFields(qry, false).getAll();
     }
 
     /**

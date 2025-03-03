@@ -109,7 +109,8 @@ public final class TpchHelper {
      * @param file Path to the .tbl data file.
      * @param genEntry Function converting one line from the .tbl file to key/value entry.
      */
-    private static void fillTable(Ignite ignite, String table, Path file, BiFunction<Ignite, String, GridMapEntry<?, ?>> genEntry) throws IOException {
+    private static void fillTable(Ignite ignite, String table, Path file, BiFunction<Ignite, String, GridMapEntry<?, ?>> genEntry)
+        throws IOException {
         try (IgniteDataStreamer<Object, Object> ds = ignite.dataStreamer(table)) {
             FileInputStream inputStream = new FileInputStream(file.toFile());
 
@@ -262,7 +263,7 @@ public final class TpchHelper {
         builder.setField("l_linestatus", split[9]);
         builder.setField("l_shipdate", java.sql.Date.valueOf(split[10]));
         builder.setField("l_commitdate", java.sql.Date.valueOf(split[11]));
-        builder.setField("l_receiptdate",java.sql.Date.valueOf( split[12]));
+        builder.setField("l_receiptdate", java.sql.Date.valueOf( split[12]));
         builder.setField("l_shipinstruct", split[13]);
         builder.setField("l_shipmode", split[14]);
         builder.setField("l_comment", split[15]);
@@ -285,9 +286,9 @@ public final class TpchHelper {
     private static void exec(Ignite ignite, String sql) {
         for (String q : sql.split(";")) {
             if (!q.trim().isEmpty()) {
-                SqlFieldsQuery query = new SqlFieldsQuery(q);
+                SqlFieldsQuery qry = new SqlFieldsQuery(q);
 
-                try (QueryCursor<List<?>> cursor = ((IgniteEx)ignite).context().query().querySqlFields(query, false)) {
+                try (QueryCursor<List<?>> cursor = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
                     cursor.getAll();
                 }
                 catch (IgniteException e) {
