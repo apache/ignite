@@ -474,12 +474,26 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param ccfg Cache configuration.
-     * @return Store directory for given cache.
+     * @return All cache directories.
      */
-    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
-        File cacheStorage = cacheStorage(ccfg);
-        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    public List<File> existingCacheDirs() {
+        return existingCacheDirs(true, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> existingCacheDirsWithoutMeta() {
+        return existingCacheDirs(false, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> existingUserCacheDirs() {
+        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
+
+        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
     }
 
     /**
@@ -512,6 +526,15 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        File cacheStorage = cacheStorage(ccfg);
+        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    }
+
+    /**
      * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
@@ -541,21 +564,11 @@ public class NodeFileTree extends SharedFileTree {
         return new File(tmpCacheStorage(cacheDirName), partitionFileName(partId));
     }
 
-    /** @return All cache directories. */
-    public List<File> existingCacheDirs() {
-        return existingCacheDirs(true, f -> true);
-    }
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
+        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
-    /** @return Cache directories. Metatorage directory excluded. */
-    public List<File> existingCacheDirsWithoutMeta() {
-        return existingCacheDirs(false, f -> true);
-    }
-
-    /** @return Cache directories. Metatorage directory excluded. */
-    public List<File> existingUserCacheDirs() {
-        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
-
-        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
+        return part == INDEX_PARTITION ? idxName : format(format, part);
     }
 
     /**
@@ -568,11 +581,27 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param dir Directory.
+     * @return {@code True} if directory conforms cache group storage name pattern.
+     */
+    private static boolean cacheGroupDir(File dir) {
+        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
+    }
+
+    /**
      * @param f File.
      * @return {@code True} if file conforms partition file name pattern.
      */
     public static boolean partitionFile(File f) {
         return f.getName().startsWith(PART_FILE_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
+     */
+    private static boolean cacheOrCacheGroupConfigFile(File f) {
+        return f.getName().endsWith(CACHE_DATA_FILENAME);
     }
 
     /**
@@ -655,29 +684,6 @@ public class NodeFileTree extends SharedFileTree {
         return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
     }
 
-    /** */
-    protected static String partitionFileName(int part, String idxName, String format) {
-        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
-
-        return part == INDEX_PARTITION ? idxName : format(format, part);
-    }
-
-    /**
-     * @param dir Directory.
-     * @return {@code True} if directory conforms cache group storage name pattern.
-     */
-    private static boolean cacheGroupDir(File dir) {
-        return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
-    }
-
-    /**
-     * @param f File.
-     * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
-     */
-    private static boolean cacheOrCacheGroupConfigFile(File f) {
-        return f.getName().endsWith(CACHE_DATA_FILENAME);
-    }
-
     /**
      * @param name File name.
      * @return Cache name.
@@ -727,7 +733,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int partId(File part) {
         String name = part.getName();
-
         if (name.equals(INDEX_FILE_NAME))
             return INDEX_PARTITION;
 
