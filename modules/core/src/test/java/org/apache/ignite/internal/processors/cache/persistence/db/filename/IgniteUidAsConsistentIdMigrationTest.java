@@ -108,8 +108,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         if (pstStoreCustomPath != null)
             ok &= U.delete(pstStoreCustomPath);
-        else
-            ok &= U.delete(createDefaultDb());
+        else if (sharedFileTree().db().exists())
+            ok &= U.delete(sharedFileTree().db());
 
         if (pstWalArchCustomPath != null)
             ok &= U.delete(pstWalArchCustomPath);
@@ -658,7 +658,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @return set of all indexes of nodes found in work folder
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() {
-        final File curFolder = createDefaultDb();
+        final File curFolder = sharedFileTree().db();
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 

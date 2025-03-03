@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheDirName;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
  * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
@@ -169,7 +169,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
                 File db;
 
                 if (Objects.equals(ccfg.getDataRegionName(), DR_WITH_DFLT_STORAGE)) {
-                    db = ensureExists(new File(ft.root(), DB_DEFAULT_FOLDER));
+                    db = ensureExists(new File(ft.root(), DB_DIR));
 
                     flags[0] = true;
                 }
@@ -179,7 +179,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
                         ccfg.getDataRegionName() == null ? DEFAULT_DR_STORAGE_PATH : CUSTOM_STORAGE_PATH)
                     );
 
-                    db = ensureExists(new File(customRoot, DB_DEFAULT_FOLDER));
+                    db = ensureExists(new File(customRoot, DB_DIR));
 
                     flags[1] = true;
                 }

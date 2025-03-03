@@ -3187,7 +3187,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
     }
 
-    /** Recreates default db directory. */
+    /**
+     * Recreates default db directory.
+     */
     protected void recreateDefaultDb() {
         File db = sharedFileTree().db();
 
@@ -3196,16 +3198,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         assertTrue(db.mkdirs());
     }
 
-    /** Creates default db directory. */
-    protected File createDefaultDb() {
-        File db = sharedFileTree().db();
-
-        db.mkdirs();
-
-        return db;
-    }
-
-    /** @return Ignite directories without specific {@code folerName} parameter. */
+    /**
+     * @return Ignite directories without specific {@code folerName} parameter.
+     */
     protected SharedFileTree sharedFileTree() {
         try {
             return new SharedFileTree(U.defaultWorkDirectory());

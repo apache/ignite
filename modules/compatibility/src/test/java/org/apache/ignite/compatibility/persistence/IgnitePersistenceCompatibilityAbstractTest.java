@@ -18,6 +18,9 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,10 +34,20 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        createAndCheck(sharedFileTree().db());
-        createAndCheck(sharedFileTree().binaryMetaRoot());
-        createAndCheck(sharedFileTree().marshaller());
-        createAndCheck(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, true));
+        Consumer<File> recreate = dir -> {
+            U.delete(dir);
+
+            assertTrue(dir.mkdirs());
+        };
+
+        for (File dir : persistenceDirs()) {
+            recreate.accept(dir);
+
+            if (!CompatibilityTestsUtils.isDirectoryEmpty(dir)) {
+                throw new IllegalStateException("Directory is not empty and can't be cleaned: " +
+                    "[" + dir.getAbsolutePath() + "]. It may be locked by another system process.");
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -44,21 +57,15 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
         //protection if test failed to finish, e.g. by error
         stopAllGrids();
 
-        U.delete(sharedFileTree().db());
-        U.delete(sharedFileTree().binaryMetaRoot());
-        U.delete(sharedFileTree().marshaller());
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
+        persistenceDirs().forEach(U::delete);
     }
 
-    /** @param dir Directory to create and check. */
-    private void createAndCheck(File dir) {
-        U.delete(dir);
-
-        assertTrue(dir.mkdirs());
-
-        if (!CompatibilityTestsUtils.isDirectoryEmpty(dir)) {
-            throw new IllegalStateException("Directory is not empty and can't be cleaned: " +
-                "[" + dir.getAbsolutePath() + "]. It may be locked by another system process.");
-        }
+    /** */
+    private List<File> persistenceDirs() {
+        return Arrays.asList(
+            sharedFileTree().db(),
+            sharedFileTree().binaryMetaRoot(),
+            sharedFileTree().marshaller(),
+            new File(sharedFileTree().root(), SharedFsCheckpointSpi.DFLT_ROOT));
     }
 }

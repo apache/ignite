@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -72,7 +73,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        U.delete(sharedFileTree().db());
+        U.delete(new SharedFileTree(U.getIgniteHome()).db());
     }
 
     /** {@inheritDoc} */
@@ -81,7 +82,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        U.delete(sharedFileTree().db());
+        U.delete(new SharedFileTree(U.getIgniteHome()).db());
     }
 
     /**

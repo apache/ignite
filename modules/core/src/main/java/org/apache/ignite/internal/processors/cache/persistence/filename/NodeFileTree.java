@@ -51,7 +51,6 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
@@ -300,7 +299,7 @@ public class NodeFileTree extends SharedFileTree {
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+        nodeStorage = rootRelative(DB_DIR);
         drStorages = Collections.emptyMap();
         dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
@@ -350,7 +349,7 @@ public class NodeFileTree extends SharedFileTree {
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             nodeStorage = dsCfg.getStoragePath() == null
-                ? rootRelative(DB_DEFAULT_FOLDER)
+                ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
 
             dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
@@ -360,7 +359,7 @@ public class NodeFileTree extends SharedFileTree {
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
-            nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
+            nodeStorage = rootRelative(DB_DIR);
             dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = rootRelative(DFLT_WAL_PATH);
@@ -370,7 +369,7 @@ public class NodeFileTree extends SharedFileTree {
 
         drStorages = dataRegionStorages(
             dsCfg,
-            (drName, drStoragePath) -> resolveDirectory(Path.of(drStoragePath, DB_DEFAULT_FOLDER).toString())
+            (drName, drStoragePath) -> resolveDirectory(Path.of(drStoragePath, DB_DIR).toString())
         );
     }
 
@@ -736,10 +735,10 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * Key is data region name.
      * Value is data region storage.
-     * 
+     *
      * @param dsCfg Data storage configuration.
      * @return Data regions storages.
-     * @see DataRegionConfiguration#setStoragePath(String) 
+     * @see DataRegionConfiguration#setStoragePath(String)
      */
     protected Map<String, File> dataRegionStorages(@Nullable DataStorageConfiguration dsCfg, BiFunction<String, String, File> resolver) {
         if (dsCfg == null)

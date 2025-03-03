@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
-
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
  * During creation, full snapshot, creates the same file tree as regular node.
@@ -124,7 +122,7 @@ public class SnapshotFileTree extends NodeFileTree {
                     // {dr_storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
                     return new File(
                         drStorage.getParentFile().getParentFile(),
-                        Path.of(snpDfltPath, name, DB_DEFAULT_FOLDER, folderName).toString()
+                        Path.of(snpDfltPath, name, DB_DIR, folderName).toString()
                     );
                 }
             );

@@ -128,8 +128,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             .setWriteThrottlingEnabled(true)
             .setCheckpointFrequency(checkpointFrequency);
 
-        final File db = createDefaultDb();
-        final File wal = new File(db, "wal");
+        final File wal = new File(sharedFileTree().db(), "wal");
         if (setWalArchAndWorkToSameVal) {
             final String walAbsPath = wal.getAbsolutePath();
 

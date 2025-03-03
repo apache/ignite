@@ -67,7 +67,7 @@ public class SecurityTest {
 
         U.delete(sft.db());
 
-        sft.db().mkdirs();
+        assertTrue(sft.db().mkdirs());
     }
 
     /** Test SSL/TLS encryption. */

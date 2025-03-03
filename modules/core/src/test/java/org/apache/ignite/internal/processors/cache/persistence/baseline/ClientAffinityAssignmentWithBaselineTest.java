@@ -123,7 +123,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         }
 
         if (igniteInstanceName.contains(FLAKY_NODE_NAME)) {
-            File store = createDefaultDb();
+            File store = sharedFileTree().db();
 
             cfg.getDataStorageConfiguration().setWalPath(new File(store, FLAKY_WAL_PATH).getAbsolutePath());
             cfg.getDataStorageConfiguration().setWalArchivePath(new File(store, FLAKY_WAL_ARCHIVE_PATH).getAbsolutePath());
@@ -385,7 +385,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         awaitProgressInAllLoaders(10_000, loadError, threadProgressTracker);
 
-        File store = createDefaultDb();
+        File store = sharedFileTree().db();
 
         U.delete(new File(store, FLAKY_WAL_PATH));
         U.delete(new File(store, FLAKY_WAL_ARCHIVE_PATH));
