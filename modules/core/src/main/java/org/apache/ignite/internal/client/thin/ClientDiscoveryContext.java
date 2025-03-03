@@ -219,9 +219,9 @@ public class ClientDiscoveryContext {
     }
 
     /**
-     * @return List of host:port_range address lines parsed as {@link InetSocketAddress}.
+     * @return Set of host:port_range address lines parsed as {@link InetSocketAddress}.
      */
-    private static Collection<List<InetSocketAddress>> parsedAddresses(String[] addrs) throws ClientException {
+    private static Set<List<InetSocketAddress>> parsedAddresses(String[] addrs) throws ClientException {
         if (F.isEmpty(addrs))
             throw new ClientException("Empty addresses");
 
@@ -245,7 +245,7 @@ public class ClientDiscoveryContext {
             .flatMap(r -> IntStream
                 .rangeClosed(r.portFrom(), r.portTo()).boxed()
                 .map(p -> Collections.singletonList(InetSocketAddress.createUnresolved(r.host(), p)))
-            ).collect(Collectors.toList());
+            ).collect(Collectors.toSet());
     }
 
     /** */
@@ -267,8 +267,8 @@ public class ClientDiscoveryContext {
         }
 
         /** Remove duplicates from nodes endpoints. */
-        private static Collection<List<InetSocketAddress>> normalizeEndpoints(Collection<NodeInfo> nodes) {
-            Collection<List<InetSocketAddress>> endpoints = new ArrayList<>(nodes.size());
+        private static Set<List<InetSocketAddress>> normalizeEndpoints(Collection<NodeInfo> nodes) {
+            Set<List<InetSocketAddress>> endpoints = new HashSet<>();
             Set<InetSocketAddress> used = new HashSet<>();
 
             for (NodeInfo nodeInfo : nodes) {
@@ -286,7 +286,7 @@ public class ClientDiscoveryContext {
                     endpoints.add(addrs);
             }
 
-            return Collections.unmodifiableCollection(endpoints);
+            return endpoints;
         }
     }
 

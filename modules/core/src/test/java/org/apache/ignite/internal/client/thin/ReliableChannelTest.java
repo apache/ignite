@@ -64,21 +64,6 @@ public class ReliableChannelTest {
     private final String[] dfltAddrs = new String[]{"127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"};
 
     /**
-     * Checks that it is possible configure addresses with duplication (for load balancing).
-     */
-    @Test
-    public void testDuplicatedAddressesAreValid() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(
-            "127.0.0.1:10800", "127.0.0.1:10800", "127.0.0.1:10801");
-
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-
-        rc.channelsInit();
-
-        assertEquals(3, rc.getChannelHolders().size());
-    }
-
-    /**
      * Checks that in case if address specified without port, the default port will be processed first
      */
     @Test
@@ -132,7 +117,7 @@ public class ReliableChannelTest {
      * Checks that reinitialization of duplicated address is correct.
      */
     @Test
-    public void testReinitDuplicatedAddress() {
+    public void testReinitDuplicatedAddressMerging() {
         TestAddressFinder finder = new TestAddressFinder()
             .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802")
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10805")
@@ -140,8 +125,11 @@ public class ReliableChannelTest {
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10806")
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10803")
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10804")
-            .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10804")
-            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802");
+            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802")
+            .nextAddresesResponse("127.0.0.1:10807")
+            .nextAddresesResponse("127.0.0.1:10808", "127.0.0.1:10809", "127.0.0.1:10808")
+            .nextAddresesResponse("127.0.0.1:10810", "127.0.0.1:10808", "127.0.0.1:10809")
+            .nextAddresesResponse("127.0.0.1:10811", "127.0.0.1:10811", "127.0.0.1:10812", "127.0.0.1:10813");
 
         ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
@@ -163,15 +151,21 @@ public class ReliableChannelTest {
 
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10806"));
 
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10806"));
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10806"));
 
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10803"));
+        assertAddrReInitAndEqualsTo.accept(List.of("127.0.0.1:10803"));
 
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10804"));
-
-        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10804"));
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804"));
 
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));
+
+        assertAddrReInitAndEqualsTo.accept(List.of("127.0.0.1:10807"));
+
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10808", "127.0.0.1:10809"));
+
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10808", "127.0.0.1:10809", "127.0.0.1:10810"));
+
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10811", "127.0.0.1:10812", "127.0.0.1:10813"));
     }
 
     /**
@@ -342,32 +336,6 @@ public class ReliableChannelTest {
     }
 
     /**
-     * Checks that if the configuration contains one address, exactly one channel is created.
-     */
-    @Test
-    public void testChannelDuplicationWithSingleAddressInConfiguration() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
-
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-        rc.channelsInit();
-
-        assertEquals(1, rc.getChannelHolders().size());
-    }
-
-    /**
-     * Checks that if the configuration contains multiple addresses, exactly the same number of channels are created.
-     */
-    @Test
-    public void testChannelDuplicationWithMultipleAddressInConfiguration() {
-        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802");
-
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-        rc.channelsInit();
-
-        assertEquals(3, rc.getChannelHolders().size());
-    }
-
-    /**
      * Checks that channels' count remains the same in static configuration after reinitialization.
      */
     @Test
@@ -386,29 +354,6 @@ public class ReliableChannelTest {
         rc.initChannelHolders();
 
         assertEquals(initCnt, rc.getChannelHolders().size());
-    }
-
-    /**
-     * Checks that if the configuration contains duplicated addresses, exactly the same number of channels are created.
-     */
-    @Test
-    public void testChannelDuplicationWithForcedAddressDuplication() {
-        TestAddressFinder finder = new TestAddressFinder()
-            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801",
-                "127.0.0.1:10801")
-            .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801",
-                "127.0.0.1:10801", "127.0.0.1:10802", "127.0.0.1:10802");
-
-        ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-
-        rc.channelsInit();
-
-        assertEquals(3, rc.getChannelHolders().size());
-
-        rc.initChannelHolders();
-
-        assertEquals(5, rc.getChannelHolders().size());
     }
 
     /**
