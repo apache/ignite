@@ -105,6 +105,7 @@ public enum PlannerPhase {
                     CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
                     CoreRules.JOIN_CONDITION_PUSH,
+                    CoreRules.FILTER_CORRELATE,
                     CoreRules.FILTER_INTO_JOIN,
                     CoreRules.FILTER_PROJECT_TRANSPOSE
                 )
