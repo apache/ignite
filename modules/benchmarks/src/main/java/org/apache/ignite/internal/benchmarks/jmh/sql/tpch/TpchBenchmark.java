@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.benchmarks.jmh.sql.tpch;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,9 +47,12 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
  * Benchmark simple SQL queries.
@@ -58,8 +63,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Timeout(time = 10)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 2)
-@Measurement(iterations = 3)
+@Warmup(iterations = 0)
+@Measurement(iterations = 3, time = 10)
 public class TpchBenchmark {
     /** Count of server nodes. */
     private static final int SRV_NODES_CNT = 3;
@@ -79,7 +84,9 @@ public class TpchBenchmark {
 
     /** */
     String pathToDataset() {
-        throw new RuntimeException("Provide path to directory containing <table_name>.tbl files");
+//        throw new RuntimeException("Provide path to directory containing <table_name>.tbl files");
+//        return "/home/skor/work/ISE-5583-Calcite-vs-H2/dataset/0.0001";
+        return "/home/skor/work/ISE-5583-Calcite-vs-H2/dataset/0.1";
     }
 
     /**
@@ -129,141 +136,152 @@ public class TpchBenchmark {
 
     /** Q1. */
     @Benchmark
-    public void q1() {
-        executeSql(TpchHelper.getQuery(1));
+    public void q1(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(1));
     }
 
     /** Q2. */
     @Benchmark
-    public void q2() {
-        executeSql(TpchHelper.getQuery(2));
+    public void q2(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(2));
     }
 
     /** Q3. */
     @Benchmark
-    public void q3() {
-        executeSql(TpchHelper.getQuery(3));
+    public void q3(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(3));
     }
 
     /** Q4. */
     @Benchmark
-    public void q4() {
-        executeSql(TpchHelper.getQuery(4));
+    public void q4(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(4));
     }
 
     /** Q5. */
     @Benchmark
-    public void q5() {
-        executeSql(TpchHelper.getQuery(5));
+    public void q5(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(5));
     }
 
     /** Q6. */
     @Benchmark
-    public void q6() {
-        executeSql(TpchHelper.getQuery(6));
+    public void q6(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(6));
     }
 
     /** Q7. */
     @Benchmark
-    public void q7() {
-        executeSql(TpchHelper.getQuery(7));
+    public void q7(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(7));
     }
 
     /** Q8. */
     @Benchmark
-    public void q8() {
-        executeSql(TpchHelper.getQuery(8));
+    public void q8(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(8));
     }
 
     /** Q9. */
     @Benchmark
-    public void q9() {
-        executeSql(TpchHelper.getQuery(9));
+    public void q9(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(9));
     }
 
     /** Q10. */
     @Benchmark
-    public void q10() {
-        executeSql(TpchHelper.getQuery(10));
+    public void q10(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(10));
     }
 
     /** Q11. */
     @Benchmark
-    public void q11() {
-        executeSql(TpchHelper.getQuery(11));
+    public void q11(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(11));
     }
 
     /** Q12. */
     @Benchmark
-    public void q12() {
-        executeSql(TpchHelper.getQuery(12));
+    public void q12(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(12));
     }
 
     /** Q13. */
     @Benchmark
-    public void q13() {
-        executeSql(TpchHelper.getQuery(13));
+    public void q13(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(13));
     }
 
     /** Q14. */
     @Benchmark
-    public void q14() {
-        executeSql(TpchHelper.getQuery(14));
+    public void q14(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(14));
     }
 
     /** Q15. */
     @Benchmark
-    public void q15() {
-        executeSql(TpchHelper.getQuery(15));
+    public void q15(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(15));
     }
 
     /** Q16. */
     @Benchmark
-    public void q16() {
-        executeSql(TpchHelper.getQuery(16));
+    public void q16(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(16));
     }
 
     /** Q17. */
     @Benchmark
-    public void q17() {
-        executeSql(TpchHelper.getQuery(17));
+    public void q17(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(17));
     }
 
     /** Q18. */
     @Benchmark
-    public void q18() {
-        executeSql(TpchHelper.getQuery(18));
+    public void q18(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(18));
     }
 
     /** Q19. */
     @Benchmark
-    public void q19() {
-        executeSql(TpchHelper.getQuery(19));
+    public void q19(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(19));
     }
 
     /** Q20. */
     @Benchmark
-    public void q20() {
-        executeSql(TpchHelper.getQuery(20));
+    public void q20(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(20));
     }
 
     /** Q21. */
     @Benchmark
-    public void q21() {
-        executeSql(TpchHelper.getQuery(21));
+    public void q21(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(21));
     }
 
     /** Q22. */
     @Benchmark
-    public void q22() {
-        executeSql(TpchHelper.getQuery(22));
+    public void q22(Blackhole bh) {
+        executeSql(bh, TpchHelper.getQuery(22));
     }
 
     /** */
-    private List<List<?>> executeSql(String sql) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setTimeout(10, TimeUnit.SECONDS);
+    private void executeSql(Blackhole bh, String sql) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setTimeout(60, TimeUnit.SECONDS);
 
-        return ((IgniteEx)client).context().query().querySqlFields(qry, false).getAll();
+        CompletableFuture<Void> future = runAsync(() -> {
+            FieldsQueryCursor<List<?>> cursor = ((IgniteEx) client).context().query().querySqlFields(qry, false);
+
+            cursor.forEach(bh::consume);
+        });
+
+        try {
+            future.get(60, TimeUnit.SECONDS);
+        }
+        catch (Exception e) {
+            bh.consume(e);
+        }
     }
 
     /**
