@@ -31,7 +31,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -623,7 +622,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ctx,
                     dumpDir.getName(),
                     dumpDir.getParent(),
-                    pdsSettings.folderName(),
+                    ft.folderName(),
                     pdsSettings.consistentId().toString()).dumpLock())
                 .filter(File::exists)
                 .map(File::getParentFile)
@@ -698,7 +697,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx.kernalContext(),
                 snpDir.getName(),
                 snpDir.getParent(),
-                pdsSettings.folderName(),
+                ft.folderName(),
                 pdsSettings.consistentId().toString());
 
             U.delete(sft.binaryMeta());
@@ -900,7 +899,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.snapshotName(),
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
-                pdsSettings.folderName(),
+                ft.folderName(),
                 clusterSnpReq.startTime(),
                 markWalFut.result()
             );
@@ -1029,7 +1028,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
-                    pdsSettings.folderName(),
+                    ft.folderName(),
                     req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
@@ -2330,19 +2329,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpDir The full path to the snapshot files.
+     * @param sft The full path to the snapshot files.
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @return Standalone kernal context related to the snapshot.
      * @throws IgniteCheckedException If fails.
      */
     public StandaloneGridKernalContext createStandaloneKernalContext(
-        CompressionProcessor cmpProc,
-        File snpDir,
+        SnapshotFileTree sft,
         String folderName
     ) throws IgniteCheckedException {
-        NodeFileTree ft = new NodeFileTree(snpDir, folderName);
+        NodeFileTree folderFt = new NodeFileTree(sft.root(), folderName);
 
-        return new StandaloneGridKernalContext(log, cmpProc, ft.binaryMeta(), ft.marshaller());
+        return new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), folderFt.binaryMeta(), folderFt.marshaller());
     }
 
     /**
@@ -3281,9 +3279,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Partition handler given by request initiator. */
         private final BiConsumer<File, Throwable> partHnd;
 
-        /** Temporary working directory for consuming partitions. */
-        private final Path dir;
-
         /** Counter which show how many partitions left to be received. */
         private final AtomicInteger partsLeft = new AtomicInteger(-1);
 
@@ -3307,7 +3302,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(snpMgr.ft.snapshotTempRoot().getAbsolutePath(), this.reqId);
             initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;
@@ -3387,13 +3381,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             partsLeft.decrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected synchronized boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
-            U.delete(dir);
-
-            return super.onDone(res, err, cancel);
         }
 
         /** {@inheritDoc} */
@@ -3896,7 +3883,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (types == null)
                 return;
 
-            cctx.kernalContext().cacheObjects().saveMetadata(types, sft.root());
+            cctx.kernalContext().cacheObjects().saveMetadata(types, sft);
         }
 
         /** {@inheritDoc} */

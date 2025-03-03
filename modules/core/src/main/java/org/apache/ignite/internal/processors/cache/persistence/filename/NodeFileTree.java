@@ -45,7 +45,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  * Provides access to Ignite node file tree.
@@ -165,6 +164,9 @@ public class NodeFileTree extends SharedFileTree {
     /** Default snapshot directory for loading remote snapshots. */
     private static final String SNAPSHOT_TMP_DIR = "snp";
 
+    /** Metastorage cache directory to store data. */
+    private static final String METASTORAGE_DIR_NAME = "metastorage";
+
     /** Checkpoint directory name. */
     private static final String CHECKPOINT_DIR = "cp";
 
@@ -195,7 +197,7 @@ public class NodeFileTree extends SharedFileTree {
     /** Filter out all cache directories including {@link MetaStorage}. */
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
-            dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
+            dir.getName().equals(METASTORAGE_DIR_NAME);
 
     /** Partition file prefix. */
     public static final String PART_FILE_PREFIX = "part-";
@@ -516,9 +518,7 @@ public class NodeFileTree extends SharedFileTree {
         return new File(metaStorage(), partitionFileName(part));
     }
 
-    /**
-     * @return Path to the metastorage directory.
-     */
+    /** @return Path to the metastorage directory. */
     public File metaStorage() {
         return new File(nodeStorage, METASTORAGE_DIR_NAME);
     }
@@ -542,23 +542,17 @@ public class NodeFileTree extends SharedFileTree {
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
-    /**
-     * @return All cache directories.
-     */
+    /** @return All cache directories. */
     public List<File> existingCacheDirs() {
         return existingCacheDirs(true, f -> true);
     }
 
-    /**
-     * @return Cache directories. Metatorage directory excluded.
-     */
+    /** @return Cache directories. Metatorage directory excluded. */
     public List<File> existingCacheDirsWithoutMeta() {
         return existingCacheDirs(false, f -> true);
     }
 
-    /**
-     * @return Cache directories. Metatorage directory excluded.
-     */
+    /** @return Cache directories. Metatorage directory excluded. */
     public List<File> existingUserCacheDirs() {
         final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
 
@@ -668,6 +662,7 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int partId(File part) {
         String name = part.getName();
+
         if (name.equals(INDEX_FILE_NAME))
             return INDEX_PARTITION;
 
@@ -709,7 +704,7 @@ public class NodeFileTree extends SharedFileTree {
             return name.substring(CACHE_GRP_DIR_PREFIX.length());
         else if (name.startsWith(CACHE_DIR_PREFIX))
             return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
+        else if (name.equals(METASTORAGE_DIR_NAME))
             return METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);

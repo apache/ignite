@@ -182,8 +182,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
-            opCtx.snapshotFileTree().root(), meta.folderName());
+        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(opCtx.snapshotFileTree(), meta.folderName());
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
@@ -382,7 +381,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         try {
-            String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+            String node = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
 
             try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
                 long size = 0;

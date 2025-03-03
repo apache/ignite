@@ -953,7 +953,7 @@ public class SnapshotRestoreProcess {
                                 ? sft.incrementalSnapshotFileTree(opCtx0.incIdx)
                                 : sft;
 
-                            ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(metaFt, opCtx0.stopChecker);
 
                             restoreMappings(metaFt.marshaller(), opCtx0.stopChecker);
                         }
