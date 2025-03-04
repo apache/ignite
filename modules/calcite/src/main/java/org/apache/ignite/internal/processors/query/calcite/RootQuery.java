@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +36,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -57,6 +59,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.session.SessionContext;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 
 /**
  * The RootQuery is created on the query initiator (originator) node as the first step of a query run;
@@ -99,6 +103,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
     /** Planning time (millys). */
     private long planningTime;
+
+    /** Query label. */
+    private String lbl;
 
     /** */
     public RootQuery(
@@ -149,6 +156,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             .partitions(parts)
             .logger(log)
             .build();
+
+        lbl = Optional.ofNullable(qryCtx).map(ctx -> ctx.unwrap(SessionContextImpl.class))
+            .map(sesCtx -> sesCtx.attributes() != null ? sesCtx.getAttribute(QUERY_LABEL) : null).orElse(null);
     }
 
     /**
@@ -444,7 +454,10 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             .append(", type=CALCITE")
             .append(", state=").append(state)
             .append(", schema=").append(ctx.schemaName())
-            .append(", sql='").append(sql);
+            .append(", sql='").append(sql).append("'");
+
+        if (lbl != null)
+            msgSb.append(", label='").append(lbl).append("'");
 
         msgSb.append(']');
 
@@ -466,6 +479,13 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         long curTimeout = totalTimeout - (U.currentTimeMillis() - startTs);
 
         return curTimeout <= 0 ? 0 : curTimeout;
+    }
+
+    /**
+     * @return Query label.
+     */
+    public String label() {
+        return lbl;
     }
 
     /** */

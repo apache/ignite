@@ -60,8 +60,9 @@ class QueryHistoryTracker {
         boolean loc = runningQryInfo.local();
         long startTime = runningQryInfo.startTime();
         long duration = U.currentTimeMillis() - startTime;
+        String lbl = runningQryInfo.label();
 
-        QueryHistory hist = new QueryHistory(qry, schema, loc, startTime, duration, failed);
+        QueryHistory hist = new QueryHistory(qry, schema, loc, startTime, duration, failed, lbl);
 
         QueryHistory mergedHist = qryHist.merge(hist.key(), hist, QueryHistory::aggregateWithNew);
 

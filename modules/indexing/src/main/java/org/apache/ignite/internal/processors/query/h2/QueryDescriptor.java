@@ -48,6 +48,9 @@ public class QueryDescriptor {
     /** Query initiator identifier. */
     private final String qryInitiatorId;
 
+    /** Query label. */
+    private String lbl;
+
     /**
      * @param schemaName Schema name.
      * @param sql Sql.
@@ -140,6 +143,20 @@ public class QueryDescriptor {
      */
     public String queryInitiatorId() {
         return qryInitiatorId;
+    }
+
+    /**
+     * @return Query label.
+     */
+    public String label() {
+        return lbl;
+    }
+
+    /**
+     * @param lbl Label.
+     */
+    public void label(String lbl) {
+        this.lbl = lbl;
     }
 
     /** {@inheritDoc} */

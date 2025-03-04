@@ -499,6 +499,7 @@ This view exposes information about currently running SQL queries.
 |START_TIME | date | Query start time
 |DURATION | long | Query execution duration
 |INITIATOR_ID | string | User defined query initiator ID
+|LABEL | string | Query label
 |LOCAL | boolean | True if local only
 |SCHEMA_NAME | string | Schema name
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
@@ -512,6 +513,7 @@ This view exposes information about currently running SQL queries.
 |SCHEMA_NAME | string |  Schema name
 |SQL | string |  Query text
 |LOCAL | boolean | True if local only
+|LABEL | string | Query label
 |EXECUTIONS | long |    Count of executions
 |FAILURES | long |    Count of failures
 |DURATION_MIN | long |    Minimal duration of execution

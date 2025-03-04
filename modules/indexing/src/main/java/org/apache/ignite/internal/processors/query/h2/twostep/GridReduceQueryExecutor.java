@@ -100,6 +100,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
+import static org.apache.ignite.internal.IgniteApplicationAttributesAware.ReservedApplicationAttributes.QUERY_LABEL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
@@ -375,6 +376,8 @@ public class GridReduceQueryExecutor {
 
         final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
+        final Map<String, String> appAttrs = h2.queryContextRegistry().getSharedAttributes(ctx.localNodeId(), qryId, 0);
+
         final long retryTimeout = retryTimeout(timeoutMillis);
         final long qryStartTime = U.currentTimeMillis();
 
@@ -499,7 +502,8 @@ public class GridReduceQueryExecutor {
                             null,
                             null,
                             null,
-                            true);
+                            true,
+                            appAttrs);
 
                         H2Utils.setupConnection(conn, qctx, false, enforceJoinOrder);
 
@@ -513,7 +517,7 @@ public class GridReduceQueryExecutor {
                         H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
                         qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
-                            ctx.localNodeId(), qryId, qryReqId);
+                            ctx.localNodeId(), qryId, qryReqId, appAttrs.getOrDefault(QUERY_LABEL, null));
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 

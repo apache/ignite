@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query descriptor.
@@ -79,6 +80,9 @@ public class GridRunningQueryInfo {
     /** Subject ID. */
     private final UUID subjId;
 
+    /** Query label. */
+    private final String lbl;
+
     /**
      * Constructor.
      *
@@ -96,6 +100,7 @@ public class GridRunningQueryInfo {
      * @param lazy Lazy flag.
      * @param distributedJoins Distributed joins flag.
      * @param subjId Subject ID.
+     * @param lbl Query label.
      */
     public GridRunningQueryInfo(
         long id,
@@ -111,7 +116,8 @@ public class GridRunningQueryInfo {
         boolean enforceJoinOrder,
         boolean lazy,
         boolean distributedJoins,
-        UUID subjId
+        UUID subjId,
+        @Nullable String lbl
     ) {
         this.id = id;
         this.nodeId = nodeId;
@@ -128,6 +134,7 @@ public class GridRunningQueryInfo {
         this.lazy = lazy;
         this.distributedJoins = distributedJoins;
         this.subjId = subjId;
+        this.lbl = lbl;
     }
 
     /**
@@ -259,5 +266,12 @@ public class GridRunningQueryInfo {
     /**{@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridRunningQueryInfo.class, this);
+    }
+
+    /**
+     * @return Query label.
+     */
+    public String label() {
+        return lbl;
     }
 }
