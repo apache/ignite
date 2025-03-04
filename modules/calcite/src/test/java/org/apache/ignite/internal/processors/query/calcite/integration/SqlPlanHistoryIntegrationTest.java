@@ -107,12 +107,12 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Flag indicating whether SQL is configured by using {@link IgniteConfiguration#setSqlConfiguration(SqlConfiguration)}. */
     private boolean isSqlConfigured = true;
 
-    /** Flag indicating whether the SQL engine is configured. */
+    /** Flag indicating whether the SQL engine is configured within {@link SqlConfiguration}. */
     private boolean isSqlEngineConfigured = true;
 
     /**
-     * Flag indicating whether a custom SQL plan history size is explicitly set. If {@code false}, the default SQL plan
-     * history size will be used.
+     * Flag indicating whether a custom SQL plan history size is explicitly set within {@link SqlConfiguration}.
+     * If {@code false}, the default SQL plan history size will be used.
      */
     private boolean isPlanHistorySizeSet = true;
 
@@ -771,7 +771,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param check SQL plan history size check task.
-     * @param isBothEnginesChecked Flag indicating whether to the test for both SQL engines.
+     * @param isBothEnginesChecked Flag indicating whether the test should be run for both SQL engines or just for
+     * any one of them.
      */
     public void checkDefaultSettings(Consumer<Integer> check, boolean isBothEnginesChecked) throws Exception {
         if (!isBothEnginesChecked)
