@@ -51,7 +51,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  * Tests error recovery while node flushing
@@ -275,7 +275,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     System.out.println(">>>!!!! W " + file.getName());
 
-                    if (fail != null && WAL_SEGMENT_FILE_FILTER.accept(file) && fail.get())
+                    if (fail != null && WAL_NAME_PATTERN.matcher(file.getName()).matches() && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
@@ -285,7 +285,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
                     System.out.println(">>>!!!! M " + file.getName());
 
-                    if (fail != null && WAL_SEGMENT_FILE_FILTER.accept(file) && fail.get())
+                    if (fail != null && WAL_NAME_PATTERN.matcher(file.getName()).matches() && fail.get())
                         throw new IOException("No space left on deive");
 
                     return delegate.map(sizeBytes);

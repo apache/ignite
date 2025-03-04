@@ -105,7 +105,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  * Historical WAL rebalance base test.
@@ -1510,7 +1510,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegateIO = delegate.create(file, modes);
 
-            if (WAL_SEGMENT_FILE_FILTER.accept(file) && failRead)
+            if (WAL_NAME_PATTERN.matcher(file.getName()).matches() && failRead)
                 return new FileIODecorator(delegateIO) {
                     @Override public int read(ByteBuffer destBuf) throws IOException {
                         throw new IOException("Test exception."); // IO exception is required for correct cleanup.

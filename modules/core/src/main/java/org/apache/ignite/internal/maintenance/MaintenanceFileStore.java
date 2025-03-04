@@ -99,7 +99,7 @@ public class MaintenanceFileStore {
         if (disabled)
             return;
 
-        File storeDir = pdsFoldersResolver.fileTree().nodeStorage();
+        File storeDir = pdsFoldersResolver.resolveFolders().persistentStoreNodePath();
         U.ensureDirectory(storeDir, "store directory for node persistent data", log);
 
         mntcTasksFile = new File(storeDir, MAINTENANCE_FILE_NAME);

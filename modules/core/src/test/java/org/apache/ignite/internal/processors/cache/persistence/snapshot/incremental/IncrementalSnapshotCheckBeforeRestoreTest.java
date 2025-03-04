@@ -30,12 +30,12 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_CHECK_ON_RESTORE;
 import static org.junit.Assume.assumeFalse;
 
@@ -242,7 +242,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
         File[] segments = sft.incrementalSnapshotFileTree(1).wal()
-            .listFiles(f -> WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
+            .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
 
         Arrays.sort(segments);
 
@@ -346,7 +346,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
         File[] segments = sft.incrementalSnapshotFileTree(1).wal()
-            .listFiles(f -> WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
+            .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
 
         Arrays.sort(segments);
 
