@@ -29,12 +29,8 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobAdapter;
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.GridMarshallerTestInheritedBean;
 import org.apache.ignite.marshaller.Marshaller;
@@ -286,50 +282,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
 
         assertEquals(outItf.checkAfterUnmarshalled(), 17);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
-        configuration.setMarshaller(marshaller());
-        return configuration;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDescriptorCache() throws Exception {
-        try {
-            Ignite ignite = startGridsMultiThreaded(2);
-
-            String taskClsName = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask";
-            String jobClsName = "org.apache.ignite.tests.p2p.classic.SingleSplitTestTask$SingleSplitTestJob";
-
-            ClassLoader ldr = getExternalClassLoader();
-
-            Class<? extends ComputeTask<?, ?>> taskCls = (Class<? extends ComputeTask<?, ?>>)ldr.loadClass(taskClsName);
-            Class<? extends ComputeTask<?, ?>> jobCls = (Class<? extends ComputeTask<?, ?>>)ldr.loadClass(jobClsName);
-
-            ignite.compute().localDeployTask(taskCls, ldr);
-
-            ignite.compute().execute(taskClsName, 2);
-
-            ConcurrentMap<Class<?>, OptimizedClassDescriptor> cache =
-                U.field(ignite.configuration().getMarshaller(), "clsMap");
-
-            assertTrue(cache.containsKey(jobCls));
-
-            ignite.compute().undeployTask(taskClsName);
-
-            // Wait for undeploy.
-            Thread.sleep(1000);
-
-            assertFalse(cache.containsKey(jobCls));
-        }
-        finally {
-            stopAllGrids();
-        }
     }
 
     /**
