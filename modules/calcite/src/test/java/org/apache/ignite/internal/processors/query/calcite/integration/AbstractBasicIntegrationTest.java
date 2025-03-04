@@ -83,6 +83,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.

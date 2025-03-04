@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.plan.RelOptLattice;
-import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.hep.HepMatchOrder;
-import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.logical.LogicalAggregate;
@@ -72,7 +70,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterSc
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
@@ -147,65 +144,20 @@ public enum PlannerPhase {
     },
 
     /** */
-    HEP_JOIN_TO_MULTI_JOIN("Heuristic phase to prepare join optimization") {
+    HEP_OPTIMIZE_JOIN_ORDER("Heuristic phase to optimize join order") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
-            return ctx.rules(RuleSets.ofList(CoreRules.JOIN_TO_MULTI_JOIN));
+            return ctx.rules(RuleSets.ofList(IgniteMultiJoinOptimizationRule.INSTANCE));
         }
 
         /** {@inheritDoc} */
         @Override public Program getProgram(PlanningContext ctx) {
-            return hep(getRules(ctx));
-        }
-    },
+            HepProgram sub = new HepProgramBuilder()
+                .addMatchOrder(HepMatchOrder.BOTTOM_UP)
+                .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
+                .build();
 
-    /** */
-    HEP_OPTIMIZE_JOIN_ORDER("Heuristic phase to optimize join order") {
-//        /** {@inheritDoc} */
-//        @Override public RuleSet getRules(PlanningContext ctx) {
-//            return ctx.rules(RuleSets.ofList(IgniteMultiJoinOptimizationRule.INSTANCE));
-//        }
-
-//        /** {@inheritDoc} */
-//        @Override public Program getProgram(PlanningContext ctx) {
-//            return hep(getRules(ctx));
-//        }
-        /** {@inheritDoc} */
-        @Override public RuleSet getRules(PlanningContext ctx) {
-            return ctx.rules(RuleSets.ofList(CoreRules.JOIN_TO_MULTI_JOIN, IgniteMultiJoinOptimizationRule.INSTANCE));
-        }
-
-        // TODO: refactor
-        @Override  public Program getProgram(PlanningContext ctx) {
-            return (planner, rel, traits, materializations, lattices) -> {
-                HepProgramBuilder builder = new HepProgramBuilder();
-
-                builder
-                    .addSubprogram(
-                        new HepProgramBuilder()
-                            .addMatchOrder(HepMatchOrder.BOTTOM_UP)
-                            .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
-                            .build()
-                    )
-                    .addRuleInstance(IgniteMultiJoinOptimizationRule.INSTANCE);
-
-                HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
-                    null, Commons.context(rel).config().getCostFactory());
-
-                hepPlanner.setExecutor(planner.getExecutor());
-
-                for (RelOptMaterialization materialization : materializations) {
-                    hepPlanner.addMaterialization(materialization);
-                }
-
-                for (RelOptLattice lattice : lattices) {
-                    hepPlanner.addLattice(lattice);
-                }
-
-                hepPlanner.setRoot(rel);
-
-                return hepPlanner.findBestExp();
-            };
+            return hep(getRules(ctx), sub);
         }
     },
 

@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
@@ -40,10 +41,13 @@ public class IgnitePrograms {
      * @param rules Rules.
      * @return New program.
      */
-    public static Program hep(RuleSet rules) {
+    public static Program hep(RuleSet rules, HepProgram... subProgram) {
         return (planner, rel, traits, materializations, lattices) -> {
             final HepProgramBuilder builder = new HepProgramBuilder();
             final List<RelOptRule> ruleList = new ArrayList<>();
+
+            for (HepProgram sub : subProgram)
+                builder.addSubprogram(sub);
 
             for (RelOptRule rule : rules)
                 ruleList.add(rule);

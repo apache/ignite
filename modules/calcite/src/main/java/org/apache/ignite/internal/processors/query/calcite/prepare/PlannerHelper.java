@@ -32,6 +32,7 @@ import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
@@ -126,9 +127,6 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
-            // TODO: remove
-            System.err.println("TEST | Plan:\n" + RelOptUtil.toString(igniteRel));
-
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -141,19 +139,26 @@ public class PlannerHelper {
 
     /** */
     private static RelNode optimizeJoins(IgnitePlanner planner, RelNode originRel) {
-//        RelNode multiJoinsRel = planner.transform(PlannerPhase.HEP_JOIN_TO_MULTI_JOIN, originRel.getTraitSet(), originRel);
-//
-//        // Failed to convert joins or disabled.
-//        if (!hasMultiJoinNode(multiJoinsRel))
-//            return originRel;
+        Collection<Join> joins = findNodes(originRel, Join.class, false);
+
+        // Nothing to optimize.
+        if (joins.isEmpty())
+            return originRel;
+
+        for (Join join : joins) {
+            for (RelHint hint : join.getHints()) {
+                if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName))
+                    return originRel;
+            }
+        }
 
         RelNode optimizedRel = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, originRel.getTraitSet(), originRel);
 
-        // Still has multi-joins, failed to process them or is disabled.
-        if (hasMultiJoinNode(optimizedRel))
+        // Still has multi-joins, failed to convert or is disabled.
+        if (!findNodes(optimizedRel, MultiJoin.class, true).isEmpty())
             return originRel;
 
-        // No need to do join commutes or other join optimizations.
+        // No need to launch additional join order optimizations.
         planner.setDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
             .collect(Collectors.toList()));
 
@@ -161,25 +166,30 @@ public class PlannerHelper {
     }
 
     /** */
-    private static boolean hasMultiJoinNode(RelNode root) {
+    private static <T extends RelNode> Collection<T> findNodes(RelNode root, Class<T> nodeType, boolean any) {
+        Collection<T> rels = new ArrayList<>();
+
         try {
             RelShuttle visitor = new RelHomogeneousShuttle() {
-                /** {@inheritDoc} */
                 @Override public RelNode visit(RelNode node) {
-                    if (node instanceof MultiJoin)
-                        throw Util.FoundOne.NULL;
-                    else
-                        return super.visit(node);
+                    if (nodeType.isAssignableFrom(node.getClass())) {
+                        rels.add((T)node);
+
+                        if (any)
+                            throw Util.FoundOne.NULL;
+                    }
+
+                    return super.visit(node);
                 }
             };
 
             root.accept(visitor);
-
-            return false;
         }
         catch (Util.FoundOne ignored) {
-            return true;
+            // No-op.
         }
+
+        return rels;
     }
 
     /**

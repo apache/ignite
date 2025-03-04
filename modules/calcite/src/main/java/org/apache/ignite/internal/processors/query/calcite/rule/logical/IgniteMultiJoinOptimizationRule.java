@@ -44,6 +44,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.mapping.Mappings.TargetMapping;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,6 +109,11 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
                 return;
         }
 
+        IgniteLogger log = Commons.context(multiJoinRel).logger();
+
+        if (log.isDebugEnabled())
+            log.debug("Optimizing multi-join " + RelOptUtil.toString(multiJoinRel));
+
         LoptMultiJoin multiJoin = new LoptMultiJoin(multiJoinRel);
 
         RexBuilder rexBuilder = multiJoinRel.getCluster().getRexBuilder();
@@ -115,7 +122,7 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
 
         List<RexNode> unusedConditions = new ArrayList<>();
 
-        // Edges by vertexe (rel.) number in pow2 starting with 1.
+        // Edges by vertex (rel.) number in pow2 starting with 1.
         Map<Integer, List<Edge>> edges = collectEdges(multiJoin, unusedConditions);
         Map<Integer, Vertex> bestPlan = new HashMap<>();
         BitSet connections = new BitSet(1 << relNum);
@@ -140,8 +147,6 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
 
             connections.set(relId);
 
-            System.err.println("Connection " + relId + ", rel:" + input);
-
             relId <<= 1;
 
             fieldOffset += input.getRowType().getFieldCount();
@@ -163,12 +168,6 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
                     ? findEdges(leftSubVrtxNum, rightSubVrtxNum, edges)
                     : List.of();
 
-                // TODO: remove
-                if(connections.get(leftSubVrtxNum) && connections.get(rightSubVrtxNum))
-                    System.err.println("s: " + set + ", lhs: " + leftSubVrtxNum + ", rhs: " + rightSubVrtxNum);
-                else
-                    System.err.println("No connections. s: " + set + ", lhs: " + leftSubVrtxNum + ", rhs: " + rightSubVrtxNum);
-
                 if (!edges0.isEmpty()) {
                     connections.set(set);
 
@@ -186,8 +185,7 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
                     }
 
                     aggregateEdges(edges, leftSubVrtxNum, rightSubVrtxNum);
-                } else
-                    System.err.println("No edges. s: " + set + ", lhs: " + leftSubVrtxNum + ", rhs: " + rightSubVrtxNum);
+                }
 
                 leftSubVrtxNum = set & (leftSubVrtxNum - set);
             }
@@ -207,8 +205,6 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
             .filter(RexUtil.composeConjunction(rexBuilder, unusedConditions).accept(new RexPermuteInputsShuttle(best.mapping, best.rel)))
             .project(relBuilder.fields(best.mapping))
             .build();
-
-        System.err.println("TEST | result:\n" + RelOptUtil.toString(result));
 
         call.transformTo(result);
     }
@@ -315,11 +311,8 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
 
             int inputsMask = 0;
 
-            for (int i : joinRelNums) {
-                System.err.println("TEST | collectEdges, input: " + i + ", condition: " + joinCondition);
-
+            for (int i : joinRelNums)
                 inputsMask |= 1 << i;
-            }
 
             Edge edge = new Edge(inputsMask, joinCondition);
 
@@ -442,8 +435,6 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
 
         /** */
         private Vertex(int idMask, double cost, RelNode rel, TargetMapping mapping) {
-            System.err.println("TEST | vertex " + idMask + ", cost=" + cost);
-
             this.idMask = idMask;
             this.size = (byte)Integer.bitCount(idMask);
             this.cost = cost;

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
@@ -43,7 +44,7 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
 @RunWith(Parameterized.class)
 public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
     /** */
-    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
+    private static ListeningTestLogger TEST_LOG;
 
     /** */
     @Parameterized.Parameter
@@ -57,11 +58,20 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        TEST_LOG = new ListeningTestLogger(log);
+
         super.beforeTestsStarted();
 
         initSchema();
 
         gatherStatistics();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        TEST_LOG.clearListeners();
     }
 
     /** {@inheritDoc} */
@@ -73,31 +83,22 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (!cfg.isClientMode())
-            cfg.setGridLogger(testLog);
+        cfg.setGridLogger(TEST_LOG);
 
         return cfg;
     }
 
-    @Override protected int nodeCount() {
-        return 2;
-    }
-
     /** */
     private void initSchema() {
-//        int ordDetSz = 15;
-//        int ordSz = 11;
-//        int usrSz = 10;
-        int ordDetSz = 15;
-        int ordSz = 11;
-        int usrSz = 10;
-
         int warehsSz = 50;
         int catgSz = 100;
         int reviewSz = 50000;
         int prodSz = 100;
         int discSz = 2000;
         int shipSz = 15000;
+        int usrSz = 10000;
+        int ordSz = 20000;
+        int ordDetSz = 100000;
 
         sql("CREATE TABLE Warehouses (WrhId INT PRIMARY KEY, WrhNm VARCHAR(100), LocNm VARCHAR(100))");
         sql("INSERT INTO Warehouses SELECT x, 'Wrh_' || x::VARCHAR, 'Location_' || x::VARCHAR FROM system_range(1, ?)", warehsSz);
@@ -109,7 +110,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         sql("INSERT INTO Reviews SELECT x, 1 + RAND_INTEGER(?), 1 + RAND_INTEGER(?), 'Prod. review ' || x::VARCHAR, 1 + RAND_INTEGER(4) " +
             "FROM system_range(1, ?)", prodSz - 1, usrSz - 1, reviewSz);
 
-        sql("CREATE TABLE Products (ProdId INT PRIMARY KEY, ProdNm VARCHAR(100), Price DECIMAL(10, 2))");
+        sql("CREATE TABLE Products (ProdId INT PRIMARY KEY, ProdNm VARCHAR(100), Price DECIMAL(10, 2)) WITH \"VALUE_TYPE='PROD'\"");
         sql("INSERT INTO Products SELECT x, 'Product_' || x::VARCHAR, 100.0 + x % 100.0 FROM system_range(1, ?)",
             prodSz);
 
@@ -125,15 +126,15 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         sql("INSERT INTO Shipping SELECT x, 1 + RAND_INTEGER(?), date '2020-01-01' + RAND_INTEGER(365)::INTERVAL DAYS, "
             + " 'Addrs_' || x::VARCHAR FROM system_range(1, ?)", ordSz - 1, shipSz);
 
-        sql("CREATE TABLE Users (UsrId INT PRIMARY KEY, UsrNm VARCHAR(100), Email VARCHAR(100))");
+        sql("CREATE TABLE Users (UsrId INT PRIMARY KEY, UsrNm VARCHAR(100), Email VARCHAR(100))  WITH \"VALUE_TYPE='USR'\"");
         sql("INSERT INTO Users SELECT x, 'User_' || x::VARCHAR, 'email_' || x::VARCHAR || '@nowhere.xy' FROM system_range(1, ?)",
             usrSz);
 
-        sql("CREATE TABLE Orders (OrdId INT PRIMARY KEY, UsrId INT, OrdDate DATE, TotalAmount DECIMAL(10, 2))");
+        sql("CREATE TABLE Orders (OrdId INT PRIMARY KEY, UsrId INT, OrdDate DATE, TotalAmount DECIMAL(10, 2))  WITH \"VALUE_TYPE='ORD'\"");
         sql("INSERT INTO Orders SELECT x, 1 + RAND_INTEGER(?), date '2025-02-10' + (x % 365)::INTERVAL DAYS, " +
             "1 + x % 10 FROM system_range(1, ?)", usrSz - 1, ordSz);
 
-        sql("CREATE TABLE OrderDetails (OrdDetId INT PRIMARY KEY, OrdId INT, ProdId INT, Qnty INT)");
+        sql("CREATE TABLE OrderDetails (OrdDetId INT PRIMARY KEY, OrdId INT, ProdId INT, Qnty INT)  WITH \"VALUE_TYPE='ORD_DET'\"");
         sql("INSERT INTO OrderDetails SELECT x, 1 + RAND_INTEGER(?), 1 + RAND_INTEGER(?), 1 + x % 10 FROM system_range(1, ?)",
             ordSz - 1, prodSz - 1, ordDetSz);
     }
@@ -147,33 +148,33 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
 
         assert qryFixedJoins.contains("SELECT /*+ " + ENFORCE_JOIN_ORDER + " */");
 
+        setLoggerLevel(CalciteQueryProcessor.class.getName(), Level.DEBUG);
+
         // Call with fixed join order without any optimizations.
         List<List<?>> expectedResult = sql(qryFixedJoins);
+
+        LogListener logLsnr = LogListener.matches("Optimizing multi-join").build();
+
+        TEST_LOG.registerListener(logLsnr);
+
+        // Ensure that the optimization rule wasn't fired.
+        assertFalse(logLsnr.check());
 
         assertFalse(expectedResult.isEmpty());
 
         QueryChecker checker = assertQuery(qry);
 
-        // Make sure that the optimized query has the same results..
+        // Make sure that the optimized query has the same results.
         expectedResult.forEach(row -> checker.returns(row.toArray()));
 
         checker.check();
+
+        // Ensure that the optimization rule has worked.
+        assertTrue(logLsnr.check());
     }
 
-    /** TODO: remove The test queries set. */
+    /** */
     private static Collection<String> testQueries() {
-        return F.asList(
-            // User orders with products in mult. categories.
-            "SELECT \n"
-                + "    U.UsrNm, O.OrdId, OD.Qnty \n"
-                + " FROM Users U, Orders O, OrderDetails OD \n"
-                + " WHERE U.UsrId = O.UsrId\n"
-                + "  AND O.OrdId = OD.OrdId\n"
-        );
-    }
-
-    /** TODO: revert to original The test queries set. */
-    private static Collection<String> testQueriesOrigin() {
         return F.asList(
             // Users who wrote reviews for specific product.
             "SELECT \n"
@@ -300,7 +301,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
 
             logLsnrs.add(logLsnr);
 
-            testLog.registerListener(logLsnr);
+            TEST_LOG.registerListener(logLsnr);
 
             statMgr.collectStatistics(new StatisticsObjectConfiguration(new StatisticsKey("PUBLIC", tblName)));
         }
@@ -309,5 +310,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
             assertTrue(ll.check(getTestTimeout()));
 
         setLoggerLevel(StatisticsProcessor.class.getName(), prevLogLvl);
+
+        TEST_LOG.clearListeners();
     }
 }

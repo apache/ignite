@@ -477,6 +477,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * Sets the log level for logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
      * default in {@link #afterTest()}.
+     * @return Previous log level.
      */
     protected final Level setLoggerLevel(String logName, Level newLvl) {
         LoggerConfig logCfg = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(logName);
