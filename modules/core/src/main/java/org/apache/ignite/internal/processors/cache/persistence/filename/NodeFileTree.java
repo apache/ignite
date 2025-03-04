@@ -228,17 +228,11 @@ public class NodeFileTree extends SharedFileTree {
     /** Temporary cache directory prefix. */
     static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
-    /**
-     * Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache.
-     * {@link CacheConfiguration#getGroupName()} is null.
-     */
+    /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache. */
     static final String CACHE_DIR_PREFIX = "cache-";
 
-    /**
-     * Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group.
-     * {@link CacheConfiguration#getGroupName()} is not null.
-     */
-    static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+    /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
+    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -575,6 +569,15 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     */
+    public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
+        return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
+    }
+
+    /**
      * @param part Partition.
      * @return File for metastorage partition.
      */
@@ -585,15 +588,6 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Path to the metastorage directory. */
     public File metaStorage() {
         return new File(nodeStorage, METASTORAGE_DIR_NAME);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @param partId partition id.
-     * @return Path to the temp partition file.
-     */
-    public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
-        return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
     }
 
     /**
