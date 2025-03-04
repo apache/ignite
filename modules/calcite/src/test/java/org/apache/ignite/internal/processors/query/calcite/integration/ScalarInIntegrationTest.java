@@ -98,4 +98,11 @@ public class ScalarInIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT s, s NOT IN (" + in + ") FROM t")
             .returns("1", true).returns("3", false).returns(null, null).check();
     }
+
+    /** */
+    @Test
+    public void testVariableDereference() {
+        assertQuery("SELECT t1.s FROM t AS t1 LEFT JOIN t AS t2 ON t1.i=t2.i WHERE t2.s in ('1', '2')")
+            .returns("1").check();
+    }
 }

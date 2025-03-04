@@ -77,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.calcite.rex.RexUtil.removeCast;
 import static org.apache.calcite.rex.RexUtil.sargRef;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
@@ -879,6 +880,11 @@ public class RexUtils {
 
         if (!op0.getType().isNullable())
             return RexUtil.expandSearch(rexBuilder, program, call);
+
+        while (op1 instanceof RexLocalRef) // Dereference local variable.
+            op1 = requireNonNull(program, "program").getExprList().get(((RexSlot)op1).getIndex());
+
+        assert op1 instanceof RexLiteral : "Unexpected operand class: " + op1;
 
         Sarg<?> arg = ((RexLiteral)op1).getValueAs(Sarg.class);
 
