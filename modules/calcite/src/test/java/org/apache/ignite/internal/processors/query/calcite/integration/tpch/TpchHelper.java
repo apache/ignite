@@ -18,15 +18,28 @@
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
+import io.trino.tpch.CustomerGenerator;
+import io.trino.tpch.LineItemGenerator;
+import io.trino.tpch.NationGenerator;
+import io.trino.tpch.OrderGenerator;
+import io.trino.tpch.PartGenerator;
+import io.trino.tpch.PartSupplierGenerator;
+import io.trino.tpch.RegionGenerator;
+import io.trino.tpch.SupplierGenerator;
+import io.trino.tpch.TpchEntity;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -39,7 +52,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 /**
  * Provides utility methods to work with data and queries defined by the TPC-H benchmark.
  */
-public final class TpchHelper {
+public class TpchHelper {
     /** */
     private TpchHelper() {
         // No-op.
@@ -62,22 +75,100 @@ public final class TpchHelper {
         }
     }
 
+    public static void fillTables(Ignite ignite, double scale) throws IOException {
+        fillTable(ignite, "nation", new NationGenerator(), TpchHelper::nation);
+        fillTable(ignite, "region", new RegionGenerator(), TpchHelper::region);
+        fillTable(ignite, "part", new PartGenerator(scale,1 ,1), TpchHelper::part);
+        fillTable(ignite, "supplier", new SupplierGenerator(scale,1 ,1), TpchHelper::supplier);
+        fillTable(ignite, "partsupp", new PartSupplierGenerator(scale,1 ,1), TpchHelper::partsupp);
+        fillTable(ignite, "customer", new CustomerGenerator(scale,1 ,1), TpchHelper::customer);
+        fillTable(ignite, "orders", new OrderGenerator(scale,1 ,1), TpchHelper::orders);
+        fillTable(ignite, "lineitem", new LineItemGenerator(scale,1 ,1), TpchHelper::lineitem);
+    }
+
+    /** */
+    public static void generateData(double scale, Path datasetDir) throws IOException {
+        fillFile(datasetDir.resolve("nation.tbl"), new NationGenerator());
+        fillFile(datasetDir.resolve("region.tbl"), new RegionGenerator());
+        fillFile(datasetDir.resolve("part.tbl"), new PartGenerator(scale,1 ,1));
+        fillFile(datasetDir.resolve("supplier.tbl"), new SupplierGenerator(scale,1 ,1));
+        fillFile(datasetDir.resolve("partsupp.tbl"), new PartSupplierGenerator(scale,1 ,1));
+        fillFile(datasetDir.resolve("customer.tbl"), new CustomerGenerator(scale,1 ,1));
+        fillFile(datasetDir.resolve("orders.tbl"), new OrderGenerator(scale,1 ,1));
+        fillFile(datasetDir.resolve("lineitem.tbl"), new LineItemGenerator(scale,1 ,1));
+    }
+
+    private static class FileIterable implements Iterable<TpchLine> {
+        private final BufferedReader reader;
+
+        public FileIterable(Path file) throws IOException {
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8));
+        }
+
+        @Override
+        public Iterator<TpchLine> iterator() {
+            return reader.lines().map(TpchLine::new).iterator();
+
+//            return new Iterator<>() {
+//                @Override
+//                public boolean hasNext() {
+//                    return true;
+//                }
+//
+//                @Override
+//                public TpchEntity next() {
+//                    try {
+//                        String line = reader.readLine();
+//
+//                        if (line == null)
+//                            throw new NoSuchElementException();
+//
+//                        return new TpchLine(line);
+//                    }
+//                    catch (IOException e) {
+//                        throw new NoSuchElementException(e.getMessage());
+//                    }
+//                }
+//            };
+        }
+    }
+
+    private static class TpchLine implements TpchEntity {
+        /** */
+        private final String line;
+
+        /** */
+        public TpchLine(String line) {
+            this.line = line;
+        }
+
+        @Override
+        public long getRowNumber() {
+            return 0;
+        }
+
+        @Override
+        public String toLine() {
+            return line;
+        }
+    }
+
     /**
-     * Fill TPC-H tables with test data.
+     * Fill TPC-H tables reading dataset from the directory provided.
      *
      * @param ignite Ignite instance.
      * @param datasetDir Directory containing .tbl files with data.
      */
-    public static void fillTables(Ignite ignite, String datasetDir) {
+    public static void fillTables(Ignite ignite, Path datasetDir) {
         try {
-            fillTable(ignite, "nation", Path.of(datasetDir, "nation.tbl"), TpchHelper::nation);
-            fillTable(ignite, "region", Path.of(datasetDir, "region.tbl"), TpchHelper::region);
-            fillTable(ignite, "part", Path.of(datasetDir, "part.tbl"), TpchHelper::part);
-            fillTable(ignite, "supplier", Path.of(datasetDir, "supplier.tbl"), TpchHelper::supplier);
-            fillTable(ignite, "partsupp", Path.of(datasetDir, "partsupp.tbl"), TpchHelper::partsupp);
-            fillTable(ignite, "customer", Path.of(datasetDir, "customer.tbl"), TpchHelper::customer);
-            fillTable(ignite, "orders", Path.of(datasetDir, "orders.tbl"), TpchHelper::orders);
-            fillTable(ignite, "lineitem", Path.of(datasetDir, "lineitem.tbl"), TpchHelper::lineitem);
+            fillTable(ignite, "nation", new FileIterable(datasetDir.resolve("nation.tbl")), TpchHelper::nation);
+            fillTable(ignite, "region", new FileIterable(datasetDir.resolve("region.tbl")), TpchHelper::region);
+            fillTable(ignite, "part", new FileIterable(datasetDir.resolve("part.tbl")),   TpchHelper::part);
+            fillTable(ignite, "supplier", new FileIterable(datasetDir.resolve("supplier.tbl")), TpchHelper::supplier);
+            fillTable(ignite, "partsupp", new FileIterable(datasetDir.resolve("partsupp.tbl")), TpchHelper::partsupp);
+            fillTable(ignite, "customer", new FileIterable(datasetDir.resolve("customer.tbl")), TpchHelper::customer);
+            fillTable(ignite, "orders", new FileIterable(datasetDir.resolve("orders.tbl")),   TpchHelper::orders);
+            fillTable(ignite, "lineitem", new FileIterable(datasetDir.resolve("lineitem.tbl")), TpchHelper::lineitem);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -102,30 +193,35 @@ public final class TpchHelper {
     }
 
     /**
-     * Read data from the .tbl file and fill single TPC-H table.
+     * Read data from the generator provided and fill single TPC-H table.
      *
      * @param ignite Ignite instance.
      * @param table Table name.
-     * @param file Path to the .tbl data file.
-     * @param genEntry Function converting one line from the .tbl file to key/value entry.
+     * @param dataGen Iterable generating one data line.
+     * @param entryGen Function converting one data line to key/value entry.
      */
-    private static void fillTable(Ignite ignite, String table, Path file, BiFunction<Ignite, String, GridMapEntry<?, ?>> genEntry)
-        throws IOException {
+    private static void fillTable(Ignite ignite, String table, Iterable<? extends TpchEntity> dataGen,
+                                  BiFunction<Ignite, String, GridMapEntry<?, ?>> entryGen) throws IOException {
         try (IgniteDataStreamer<Object, Object> ds = ignite.dataStreamer(table)) {
-            FileInputStream inputStream = new FileInputStream(file.toFile());
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                GridMapEntry<?, ?> entry = genEntry.apply(ignite, line);
+            for (TpchEntity line: dataGen) {
+                GridMapEntry<?, ?> entry = entryGen.apply(ignite, line.toLine());
 
                 ds.addData(entry.getKey(), entry.getValue());
             }
-
-            reader.close();
         }
+    }
+
+    /** */
+    private static void fillFile(Path file, Iterable<? extends TpchEntity> dataGen) throws IOException {
+        BufferedWriter writer = Files.newBufferedWriter(file);
+
+        for (TpchEntity entity : dataGen) {
+            writer.write(entity.toLine());
+
+            writer.newLine();
+        }
+
+        writer.close();
     }
 
     /** */

@@ -19,7 +19,8 @@ select
 from
     lineitem
 where
-    l_shipdate <= date '1998-12-01' - interval '90' day (3)
+--    l_shipdate <= date '1998-12-01' - interval '90' day (3)
+    l_shipdate <= TIMESTAMPADD(DAY, -90, date '1998-12-01')
 group by
     l_returnflag,
     l_linestatus
