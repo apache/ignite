@@ -23,14 +23,18 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.junit.Test;
+
+import javax.annotation.Nullable;
 
 /**
  *
@@ -43,38 +47,9 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
     @Test
     public void testValidIndexExpressions() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        publicSchema.addTable(
-            "T0",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-                }
-            }
-        );
-
-        publicSchema.addTable(
-            "T1",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-                }
-            }
-                .addIndex("t1_jid_idx", 1, 0)
-        );
+        publicSchema.addTable("T0", testTable(null));
+        publicSchema.addTable("T1", testTable("t1_jid_idx"));
 
         String sql = "select * " +
             "from t0 " +
@@ -112,39 +87,9 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
     @Test
     public void testInvalidIndexExpressions() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        publicSchema.addTable(
-            "T0",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-                }
-            }
-                .addIndex("t0_jid_idx", 1, 0)
-        );
-
-        publicSchema.addTable(
-            "T1",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-                }
-            }
-                .addIndex("t1_jid_idx", 1, 0)
-        );
+        publicSchema.addTable("T0", testTable("t0_jid_idx"));
+        publicSchema.addTable("T1", testTable("t1_jid_idx"));
 
         String sql = "select * " +
             "from t0 " +
@@ -159,5 +104,56 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
         assertNotNull(phys);
 
         checkSplitAndSerialization(phys, publicSchema);
+    }
+
+    /** */
+    @Test
+    public void testFilterPushDown() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("T0", testTable(null));
+        publicSchema.addTable("T1", testTable(null));
+
+        String sql = "select * " +
+                "from t0 " +
+                "where t0.val > 'value' and exists (select * from t1 where t0.jid = t1.jid);";
+
+        IgniteRel phys = physicalPlan(sql, publicSchema);
+
+        System.out.println("+++ " + RelOptUtil.toString(phys));
+
+        assertNotNull(phys);
+
+        IgniteFilter filter = findFirstNode(phys, byClass(IgniteFilter.class));
+
+        assertNull("IgniteFilter must not be used.", filter);
+
+        IgniteTableScan tblScan = findFirstNode(
+                phys,
+                byClass(IgniteTableScan.class, (tbl) -> tbl.getTable().getQualifiedName().contains("T1")));
+
+        assertNotNull("Where condition must be push downed to IgniteTableScan.", tblScan.condition());
+    }
+
+    /** */
+    private TestTable testTable(@Nullable String idxName) {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable tbl = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("JID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        if (idxName != null)
+            tbl.addIndex(idxName, 1, 0);
+
+        return tbl;
     }
 }
