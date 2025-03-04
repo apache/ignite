@@ -112,10 +112,10 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
                 "from t0 " +
                 "where t0.val > 'value' and exists (select * from t1 where t0.jid = t1.jid);";
 
-        Predicate<RelNode> check = hasChildThat(
-            isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                .and(input(0, isTableScan("T0").and(n -> n.condition() != null)))
-                .and(hasChildThat(isInstanceOf(IgniteFilter.class)).negate()));
+        Predicate<RelNode> check =
+            hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(input(0, isTableScan("T0").and(n -> n.condition() != null))))
+            .and(hasChildThat(isInstanceOf(IgniteFilter.class)).negate());
 
         assertPlan(sql, publicSchema, check);
     }
