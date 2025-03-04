@@ -37,7 +37,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
@@ -186,7 +185,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
 
                 File nodeStorage = ensureExists(new File(db, ft.folderName()));
 
-                ensureExists(new File(nodeStorage, cacheDirName(ccfg)));
+                ensureExists(new File(nodeStorage, ft.cacheStorage(ccfg).getName()));
             }
 
             for (boolean flag : flags)

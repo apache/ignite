@@ -508,35 +508,39 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(
-            dataRegionStorage(ccfg.getDataRegionName()),
-            cacheDirName(ccfg)
-        );
+        return new File(dataRegionStorage(ccfg.getDataRegionName()), ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName());
     }
 
     /**
-     * @param ccfg Cache configuration.
-     * @return Store directory for given cache.
+     * @return All cache directories.
      */
-    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(dataRegionStorage(ccfg.getDataRegionName()), TMP_CACHE_DIR_PREFIX + cacheDirName(ccfg));
+    public List<File> existingCacheDirs() {
+        return existingCacheDirs(true, f -> true);
     }
 
     /**
-     * @param cacheStorage cache storage.
-     * @return Store directory for given cache.
+     * @return Cache directories. Metatorage directory excluded.
      */
-    public File tmpCacheStorage(File cacheStorage) {
-        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    public List<File> existingCacheDirsWithoutMeta() {
+        return existingCacheDirs(false, f -> true);
     }
 
     /**
-     * @param drName Data region name.
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
+     * @return Cache directories. Metatorage directory excluded.
      */
-    public File tmpCacheStorage(String drName, String cacheDirName) {
-        return new File(dataRegionStorage(drName), TMP_CACHE_DIR_PREFIX + cacheDirName);
+    public List<File> existingUserCacheDirs() {
+        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
+
+        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
+    }
+
+    /**
+     * @return Temp cache storages.
+     */
+    public List<File> existingTmpCacheStorages() {
+        return filesInStorages(FileTreeUtils::tmpCacheStorage).collect(Collectors.toList());
     }
 
     /**
@@ -570,11 +574,28 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
-     * @param partId partition id.
-     * @return Path to the temp partition file.
+     * @return Store directory for given cache.
      */
-    public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
-        return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
+    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        File cacheStorage = cacheStorage(ccfg);
+        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    }
+
+    /**
+     * @param drName Data region name.
+     * @param cacheDirName Cache directory name.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(String drName, String cacheDirName) {
+        return new File(dataRegionStorage(drName), TMP_CACHE_DIR_PREFIX + cacheDirName);
+    }
+
+    /**
+     * @param cacheStorage cache storage.
+     * @return Store directory for given cache.
+     */
+    public File tmpCacheStorage(File cacheStorage) {
+        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
     }
 
     /**
@@ -591,6 +612,15 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     */
+    public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
+        return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
+    }
+
+    /**
      * @param drName Data region name.
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
@@ -600,36 +630,11 @@ public class NodeFileTree extends SharedFileTree {
         return new File(tmpCacheStorage(drName, cacheDirName), partitionFileName(partId));
     }
 
-    /**
-     * @param segment WAL segment file.
-     * @return Segment index.
-     */
-    public long walSegmentIndex(Path segment) {
-        String fn = segment.getFileName().toString();
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
+        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
-        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
-    }
-
-    /** @return All cache directories. */
-    public List<File> existingCacheDirs() {
-        return existingCacheDirs(true, f -> true);
-    }
-
-    /** @return Cache directories. Metatorage directory excluded. */
-    public List<File> existingCacheDirsWithoutMeta() {
-        return existingCacheDirs(false, f -> true);
-    }
-
-    /** @return Temp cache storages. */
-    public List<File> existingTmpCacheStorages() {
-        return filesInStorages(FileTreeUtils::tmpCacheStorage).collect(Collectors.toList());
-    }
-
-    /** @return Cache directories. Metatorage directory excluded. */
-    public List<File> existingUserCacheDirs() {
-        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
-
-        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
+        return part == INDEX_PARTITION ? idxName : format(format, part);
     }
 
     /**
@@ -670,37 +675,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static String partitionFileName(int part) {
         return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
-    }
-
-    /**
-     * @param part Partition file name.
-     * @return Partition id.
-     */
-    public static int partId(File part) {
-        String name = part.getName();
-
-        if (name.equals(INDEX_FILE_NAME))
-            return INDEX_PARTITION;
-
-        if (name.startsWith(PART_FILE_PREFIX))
-            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
-
-        throw new IllegalStateException("Illegal partition file name: " + name);
-    }
-
-    /** */
-    protected static String partitionFileName(int part, String idxName, String format) {
-        assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
-
-        return part == INDEX_PARTITION ? idxName : format(format, part);
-    }
-
-    /**
-     * @param ccfg Cache configurtion.
-     * @return The full cache directory name.
-     */
-    static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        return (ccfg.getGroupName() == null ? CACHE_DIR_PREFIX : CACHE_GRP_DIR_PREFIX) + CU.cacheOrGroupName(ccfg);
     }
 
     /**
@@ -758,6 +732,16 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long walSegmentIndex(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
      * @return Cache directories that matches filters criteria.
@@ -766,6 +750,21 @@ public class NodeFileTree extends SharedFileTree {
         Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
         return filesInStorages(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f)).collect(Collectors.toList());
+    }
+
+    /**
+     * @param part Partition file name.
+     * @return Partition id.
+     */
+    public static int partId(File part) {
+        String name = part.getName();
+        if (name.equals(INDEX_FILE_NAME))
+            return INDEX_PARTITION;
+
+        if (name.startsWith(PART_FILE_PREFIX))
+            return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
+
+        throw new IllegalStateException("Illegal partition file name: " + name);
     }
 
     /**
