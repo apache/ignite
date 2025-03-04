@@ -220,16 +220,16 @@ public class NodeFileTree extends SharedFileTree {
     protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
-    static final String CACHE_DATA_FILENAME = "cache_data.dat";
+    private static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+    private static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
 
     /** Temporary cache directory prefix. */
-    static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+    private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache. */
-    static final String CACHE_DIR_PREFIX = "cache-";
+    private static final String CACHE_DIR_PREFIX = "cache-";
 
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
@@ -451,19 +451,17 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Path to the directory form temp snapshot files. */
-    protected File snapshotTempRoot() {
-        return snapshotTempRoot(nodeStorage);
-    }
-
-    /** @return Path to the directory form temp snapshot files. */
     public List<File> snapshotsTempRoots() {
         return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream())
             .map(this::snapshotTempRoot)
             .collect(Collectors.toList());
     }
 
-    /** */
-    private File snapshotTempRoot(File root) {
+    /**
+     * @param root Root directory.
+     * @return Root directory for snapshot temp files.
+     */
+    protected File snapshotTempRoot(File root) {
         return new File(root, SNAPSHOT_TMP_DIR);
     }
 
@@ -574,17 +572,23 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * Temporary cache storage and partitions are created while snapshot restoring.
+     * Moving to regular cache storage when finished.
+     *
      * @param drName Data region name.
      * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
+     * @return Temp store directory for given cache.
      */
     public File tmpCacheStorage(String drName, String cacheDirName) {
         return new File(dataRegionStorage(drName), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
+     * Temporary cache storage and partitions are created while snapshot restoring.
+     * Moving to regular cache storage when finished.
+     *
      * @param cacheStorage cache storage.
-     * @return Store directory for given cache.
+     * @return Temp store directory for given cache storage.
      */
     public File tmpCacheStorage(File cacheStorage) {
         return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
@@ -604,6 +608,8 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * Temporary cache partitions are created while snapshot restoring.
+     *
      * @param ccfg Cache configuration.
      * @param partId partition id.
      * @return Path to the temp partition file.
@@ -613,6 +619,8 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * Temporary cache partitions are created while snapshot restoring.
+     *
      * @param drName Data region name.
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
@@ -731,7 +739,7 @@ public class NodeFileTree extends SharedFileTree {
             return cfg.exists() ? Collections.singletonList(cfg) : Collections.emptyList();
         }
 
-        return F.asList(root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME)));
+        return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
     }
 
     /**

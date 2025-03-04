@@ -102,11 +102,18 @@ public class SnapshotFileTree extends NodeFileTree {
         this.path = path;
         this.consId = consId;
 
-        tmpFt = new NodeFileTree(ctx.config(), new File(ctx.pdsFolderResolver().fileTree().snapshotTempRoot(), name), folderName());
+        tmpFt = tempFileTree(ctx);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @return Temporary snapshot file tree.
+     */
+    private NodeFileTree tempFileTree(GridKernalContext ctx) {
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
 
         String snpDfltPath = ctx.config().getSnapshotPath();
-
-        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
         // If path provided then create snapshot inside it, only.
         // Same rule applies if absolute path to the snapshot root dir configured.
@@ -122,7 +129,7 @@ public class SnapshotFileTree extends NodeFileTree {
                     // {dr_storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
                     return new File(
                         drStorage.getParentFile().getParentFile(),
-                        Path.of(snpDfltPath, name, DB_DIR, folderName).toString()
+                        Path.of(snpDfltPath, name, DB_DIR, folderName()).toString()
                     );
                 }
             );
@@ -134,14 +141,15 @@ public class SnapshotFileTree extends NodeFileTree {
                 (drName, drStoragePath) -> new File(ft.dataRegionStorages().get(drName), Path.of(SNAPSHOT_TMP_DIR, name).toString())
             );
 
-            tmpFt.drStorages.putAll(snpTmpDrStorages);
+            res.drStorages.putAll(snpTmpDrStorages);
         }
         // Clear all custom storage so all cache storages will be inside nodeStorage.
         else {
             drStorages.clear();
-            tmpFt.drStorages.clear();
+            res.drStorages.clear();
         }
 
+        return res;
     }
 
     /** @return Snapshot name. */

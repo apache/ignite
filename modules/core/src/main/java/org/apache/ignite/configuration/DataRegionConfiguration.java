@@ -159,7 +159,7 @@ public final class DataRegionConfiguration implements Serializable {
     private boolean cdcEnabled;
 
     /** Directory where index and partition files are stored. */
-    private String storagePath;
+    @Nullable private String storagePath;
 
     /**
      * Gets data region name.
@@ -586,7 +586,7 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * @return A path to the root directory where the Persistent Store for data region will persist data and indexes.
      */
-    public String getStoragePath() {
+    @Nullable public String getStoragePath() {
         return storagePath;
     }
 

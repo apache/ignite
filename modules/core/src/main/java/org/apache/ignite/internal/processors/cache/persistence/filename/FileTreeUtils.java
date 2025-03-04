@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Utility methods for {@link NodeFileTree}
+ * Utility methods for {@link NodeFileTree}.
  */
 public class FileTreeUtils {
     /** */
@@ -42,7 +42,7 @@ public class FileTreeUtils {
         createAndCheck(ft.nodeStorage(), "page store work directory", log);
 
         for (Map.Entry<String, File> e : ft.dataRegionStorages().entrySet())
-            createAndCheck(e.getValue(), "page store work directory[dataRegion=" + e.getKey() + ']', log);
+            createAndCheck(e.getValue(), "page store work directory [dataRegion=" + e.getKey() + ']', log);
     }
 
     /**
