@@ -1,7 +1,6 @@
 # name: test/sql/function/generic/test_large_in.test_slow
 # description: Test large IN statement with varchar
 # group: [generic]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14964
 
 statement ok
 CREATE TABLE strings(s VARCHAR)
