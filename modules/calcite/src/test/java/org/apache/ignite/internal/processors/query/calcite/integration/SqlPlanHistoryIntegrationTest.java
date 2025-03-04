@@ -104,11 +104,14 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         ), false
     );
 
+    /** Flag indicating whether SQL is configured by using {@link IgniteConfiguration#setSqlConfiguration(SqlConfiguration)}. */
+    private boolean isSqlConfigured = true;
+
     /** Flag indicating whether the SQL engine is configured. */
     private boolean isSqlEngineConfigured = true;
 
     /**
-     * Flag indicating whether a custom SQL plan history size is explicitly set. If {@code false}, the default plan
+     * Flag indicating whether a custom SQL plan history size is explicitly set. If {@code false}, the default SQL plan
      * history size will be used.
      */
     private boolean isPlanHistorySizeSet = true;
@@ -150,21 +153,27 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        SqlConfiguration sqlCfg = new SqlConfiguration();
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isSqlEngineConfigured)
-            sqlCfg.setQueryEnginesConfiguration(configureSqlEngine());
+        if (isSqlConfigured) {
+            SqlConfiguration sqlCfg = new SqlConfiguration();
 
-        if (isPlanHistorySizeSet)
-            sqlCfg.setSqlPlanHistorySize(planHistorySize);
+            if (isSqlEngineConfigured) {
+                sqlCfg.setQueryEnginesConfiguration(configureSqlEngine());
 
-        return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(sqlCfg)
-            .setCacheConfiguration(
-                configureCache("A", Integer.class, String.class),
-                configureCache("B", Integer.class, String.class),
-                configureCache("pers", Integer.class, Person.class),
-                configureCache("org", Integer.class, Organization.class));
+                if (isPlanHistorySizeSet)
+                    sqlCfg.setSqlPlanHistorySize(planHistorySize);
+            }
+
+            cfg.setSqlConfiguration(sqlCfg);
+        }
+
+        return cfg.setCacheConfiguration(
+            configureCache("A", Integer.class, String.class),
+            configureCache("B", Integer.class, String.class),
+            configureCache("pers", Integer.class, Person.class),
+            configureCache("org", Integer.class, Organization.class)
+        );
     }
 
     /**
@@ -440,24 +449,40 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that the H2 default SQL plan history size is applied when SQL is not explicitly configured. In such cases,
+     * H2 is used as the default engine.
+     */
+    @Test
+    public void testNoSqlConfiguration() throws Exception {
+        isSqlConfigured = false;
+
+        checkDefaultSettings((histSize) ->
+            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), false);
+    }
+
+    /**
      * Checks that the H2 default SQL plan history size is applied when the SQL engine is not configured. In such cases,
      * H2 is used as the default engine.
      */
     @Test
     public void testNoSqlEngineConfiguration() throws Exception {
+        isSqlEngineConfigured = false;
+
         checkDefaultSettings((histSize) ->
-            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), true);
+            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), false);
     }
 
     /** Checks that the default SQL plan history size is applied when the history size is not explicitly set. */
     @Test
     public void testDefaultHistorySize() throws Exception {
+        isPlanHistorySizeSet = false;
+
         checkDefaultSettings((histSize) -> {
             if (sqlEngine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME))
                 assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE).get(), histSize);
             else if (sqlEngine.equals(IndexingQueryEngineConfiguration.ENGINE_NAME))
                 assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize);
-        }, false);
+        }, true);
     }
 
     /**
@@ -746,15 +771,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param check SQL plan history size check task.
-     * @param isEngineConfDisabled Flag indicating whether the SQL engine is meant to be configured.
+     * @param isBothEnginesChecked Flag indicating whether to the test for both SQL engines.
      */
-    public void checkDefaultSettings(Consumer<Integer> check, boolean isEngineConfDisabled) throws Exception {
+    public void checkDefaultSettings(Consumer<Integer> check, boolean isBothEnginesChecked) throws Exception {
+        if (!isBothEnginesChecked)
+            assumeFalse(sqlEngine == CalciteQueryEngineConfiguration.ENGINE_NAME);
+
         assumeFalse(isClient || loc || isFullyFetched);
-
-        if (isEngineConfDisabled)
-            isSqlEngineConfigured = false;
-
-        isPlanHistorySizeSet = false;
 
         startTestGrid();
 

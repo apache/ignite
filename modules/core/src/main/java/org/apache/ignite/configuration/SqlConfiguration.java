@@ -17,10 +17,12 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * The configuration of the SQL query subsystem.
@@ -40,6 +42,15 @@ public class SqlConfiguration {
 
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+
+    /** Class name for configuring the Calcite engine. */
+    public static final String CALCITE_CONF_CLASS = "org.apache.ignite.calcite.CalciteQueryEngineConfiguration";
+
+    /** Class name for configuring the H2 engine. */
+    public static final String H2_CONF_CLASS = "org.apache.ignite.indexing.IndexingQueryEngineConfiguration";
+
+    /** Field name that is used to represent the engine's name in SQL engine configuration classes. */
+    public static final String ENGINE_NAME_FIELD = "ENGINE_NAME";
 
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
@@ -61,6 +72,9 @@ public class SqlConfiguration {
 
     /** SQL query engines configuration. */
     private QueryEngineConfiguration[] enginesConfiguration;
+
+    /** Logger. */
+    private IgniteLogger log;
 
     /**
      * Defines the default query timeout.
@@ -246,6 +260,17 @@ public class SqlConfiguration {
         return enginesConfiguration == null ? null : enginesConfiguration.clone();
     }
 
+    /**
+     * @param log Logger.
+     *
+     * @return {@code this} for chaining.
+     */
+    public SqlConfiguration setLogger(IgniteLogger log) {
+        this.log = log;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlConfiguration.class, this);
@@ -261,10 +286,23 @@ public class SqlConfiguration {
         if (enginesConfiguration == null || enginesConfiguration.length == 0)
             return DFLT_SQL_PLAN_HISTORY_SIZE_H2;
 
-        String engine = ((QueryEngineConfigurationEx)enginesConfiguration[0]).engineName();
+        String calciteEngineName, h2EngineName;
 
-        assert "calcite".equals(engine) || "h2".equals(engine);
+        try {
+            calciteEngineName = U.staticField(Class.forName(CALCITE_CONF_CLASS), ENGINE_NAME_FIELD);
 
-        return "calcite".equalsIgnoreCase(engine) ? DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE : DFLT_SQL_PLAN_HISTORY_SIZE_H2;
+            h2EngineName = U.staticField(Class.forName(H2_CONF_CLASS), ENGINE_NAME_FIELD);
+        }
+        catch (Exception e) {
+            log.warning("Failed to get engine names, SQL plan history size is set to zero.", e);
+
+            return 0;
+        }
+
+        String engineName = ((QueryEngineConfigurationEx)enginesConfiguration[0]).engineName();
+
+        assert engineName.equals(calciteEngineName) || engineName.equals(h2EngineName);
+
+        return engineName.equals(calciteEngineName) ? DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE : DFLT_SQL_PLAN_HISTORY_SIZE_H2;
     }
 }

@@ -732,7 +732,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        sqlCfg = cfg.getSqlConfiguration();
+        sqlCfg = cfg.getSqlConfiguration().setLogger(log);
         shutdown = cfg.getShutdownPolicy();
         asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
         distrProps = cfg.getDistributedPropertiesDefaultValues();
