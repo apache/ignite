@@ -199,8 +199,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
     /** Filter out all cache directories. */
-    private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir)
-        || dir.getName().startsWith(NodeFileTree.CACHE_GRP_DIR_PREFIX);
+    private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
@@ -345,20 +344,19 @@ public class NodeFileTree extends SharedFileTree {
             nodeStorage = dsCfg.getStoragePath() == null
                 ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
-
-            dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
+            dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
         }
         else {
             nodeStorage = rootRelative(DB_DIR);
-            dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = rootRelative(DFLT_WAL_PATH);
             walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
+            dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         }
 
         drStorages = dataRegionStorages(
@@ -450,7 +448,7 @@ public class NodeFileTree extends SharedFileTree {
         return walCdc;
     }
 
-    /** @return Path to the directory form temp snapshot files. */
+    /** @return Path to the directories for temp snapshot files. */
     public List<File> snapshotsTempRoots() {
         return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream())
             .map(this::snapshotTempRoot)
@@ -690,7 +688,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param f File.
      * @return {@code True} if file conforms temp cache storage name pattern.
      */
-    public static boolean isTmpCacheStorage(File f) {
+    private static boolean isTmpCacheStorage(File f) {
         return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
     }
 
@@ -860,7 +858,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    protected File resolveDirectory(String cfg) {
+    private File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()

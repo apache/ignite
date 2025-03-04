@@ -192,6 +192,7 @@ public abstract class SnapshotSender {
     /**
      * @param from Partition file to send.
      * @param to Patition file to copy to.
+     * @param drName Data region name.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
      */
