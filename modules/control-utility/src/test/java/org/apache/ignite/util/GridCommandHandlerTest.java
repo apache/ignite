@@ -103,7 +103,6 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -513,7 +512,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(FileTreeUtils::cacheDir)
+            .filter(NodeFileTree::cacheDir)
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
 
@@ -556,7 +555,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(FileTreeUtils::cacheDir)
+            .filter(NodeFileTree::cacheDir)
             .map(File::getName)
             .collect(Collectors.toCollection(TreeSet::new));
 

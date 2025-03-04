@@ -77,7 +77,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -346,7 +345,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         try {
             try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> FileTreeUtils.partitionFile(p.toFile()) && FileTreeUtils.binFile(p.toFile()))
+                p -> NodeFileTree.partitionFile(p.toFile()) && NodeFileTree.binFile(p.toFile()))
             ) {
                 for (Path path : partFiles)
                     result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
@@ -637,7 +636,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
 
-                File[] parts = cacheDir.listFiles(f -> FileTreeUtils.partitionFile(f) && FileTreeUtils.binFile(f));
+                File[] parts = cacheDir.listFiles(f -> NodeFileTree.partitionFile(f) && NodeFileTree.binFile(f));
 
                 for (File partFile : parts) {
                     int part = NodeFileTree.partId(partFile);

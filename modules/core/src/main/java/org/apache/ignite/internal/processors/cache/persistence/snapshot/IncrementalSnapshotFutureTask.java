@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -130,13 +129,13 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     copyFiles(
                         ft.marshaller(),
                         ift.marshaller(),
-                        FileTreeUtils::notTmpFile
+                        NodeFileTree::notTmpFile
                     );
 
                     copyFiles(
                         ft.binaryMeta(),
                         ift.binaryMeta(),
-                        FileTreeUtils::binFile
+                        NodeFileTree::binFile
                     );
 
                     onDone();

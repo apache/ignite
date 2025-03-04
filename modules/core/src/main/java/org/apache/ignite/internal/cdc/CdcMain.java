@@ -53,7 +53,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -678,7 +677,7 @@ public class CdcMain implements Runnable {
                 return;
 
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
-                .filter(FileTreeUtils::binFile)
+                .filter(NodeFileTree::binFile)
                 .map(f -> {
                     int typeId = BinaryUtils.typeId(f.getName());
                     long lastModified = f.lastModified();
@@ -719,7 +718,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = ft.marshaller().listFiles(FileTreeUtils::notTmpFile);
+            File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
 
             if (files == null)
                 return;

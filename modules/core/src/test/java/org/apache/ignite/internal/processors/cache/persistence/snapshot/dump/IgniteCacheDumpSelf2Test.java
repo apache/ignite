@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -441,7 +440,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             String partDumpName = dumpPartFileName(0, false);
 
-            assertTrue(dumpFiles.stream().anyMatch(FileTreeUtils::cacheConfigFile));
+            assertTrue(dumpFiles.stream().anyMatch(NodeFileTree::cacheConfigFile));
             assertTrue(dumpFiles.stream().anyMatch(f -> f.getName().equals(partDumpName)));
 
             try (FileChannel fc = FileChannel.open(Paths.get(cacheDumpDir.getAbsolutePath(), partDumpName), READ, WRITE)) {
@@ -733,13 +732,13 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         Map<Integer, Long> rawSizes = Arrays
             .stream(rawFt.cacheStorage(ccfg).listFiles())
-            .filter(f -> !FileTreeUtils.cacheConfigFile(f))
+            .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, false)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         Map<Integer, Long> zipSizes = Arrays
             .stream(zipFt.cacheStorage(ccfg).listFiles())
-            .filter(f -> !FileTreeUtils.cacheConfigFile(f))
+            .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, true)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 

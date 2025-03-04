@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
@@ -1201,7 +1200,7 @@ public class SnapshotRestoreProcess {
 
     /** Restore registered mappings for user classes. */
     private void restoreMappings(File marshallerDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        File[] mappings = marshallerDir.listFiles(FileTreeUtils::notTmpFile);
+        File[] mappings = marshallerDir.listFiles(NodeFileTree::notTmpFile);
 
         if (mappings == null)
             throw new IgniteException("Failed to list marshaller directory [dir=" + marshallerDir + ']');

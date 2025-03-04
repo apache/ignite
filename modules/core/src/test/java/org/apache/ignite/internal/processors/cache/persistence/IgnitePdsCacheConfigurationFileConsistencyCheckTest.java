@@ -36,7 +36,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -142,7 +141,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-            File[] tmpFile = ft.cacheStorage(desc.cacheConfiguration()).listFiles(FileTreeUtils::tmpCacheConfig);
+            File[] tmpFile = ft.cacheStorage(desc.cacheConfiguration()).listFiles(NodeFileTree::tmpCacheConfig);
 
             assertNotNull(tmpFile);
 
