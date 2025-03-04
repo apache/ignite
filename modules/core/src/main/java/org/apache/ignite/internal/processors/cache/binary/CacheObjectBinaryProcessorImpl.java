@@ -978,14 +978,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void saveMetadata(Collection<BinaryType> types, File dir) {
+    @Override public void saveMetadata(Collection<BinaryType> types, NodeFileTree ft) {
         try {
-            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
-                ctx,
-                log,
-                new NodeFileTree(dir, ctx.pdsFolderResolver().resolveFolders().folderName()).mkdirBinaryMeta(),
-                true
-            );
+            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(), ctx, log, ft.mkdirBinaryMeta(), true);
 
             for (BinaryType type : types)
                 writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
@@ -996,14 +991,14 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        if (!metadataDir.exists())
+    @Override public void updateMetadata(NodeFileTree ft, BooleanSupplier stopChecker) throws IgniteCheckedException {
+        if (!ft.binaryMeta().exists())
             return;
 
         try {
             ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false)
+            new BinaryMetadataFileStore(metaCache, ctx, log, ft.binaryMeta(), false)
                 .restoreMetadata();
 
             Collection<BinaryMetadata> metadata = F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
@@ -1033,13 +1028,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void cacheMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException {
-        if (!metadataDir.exists())
+    @Override public void cacheMetadataLocally(NodeFileTree ft, int typeId) throws IgniteCheckedException {
+        if (!ft.binaryMeta().exists())
             return;
 
         ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false).restoreMetadata(typeId);
+        new BinaryMetadataFileStore(metaCache, ctx, log, ft.binaryMeta(), false).restoreMetadata(typeId);
 
         addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()), false);
     }

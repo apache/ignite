@@ -67,6 +67,5 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
             sharedFileTree().binaryMetaRoot(),
             sharedFileTree().marshaller(),
             new File(sharedFileTree().root(), SharedFsCheckpointSpi.DFLT_ROOT));
-
     }
 }
