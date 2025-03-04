@@ -341,7 +341,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
         try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
-            NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
+            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
 
             assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
             assertFalse(ft.snapshotTempRoot() + " must created lazily for in-memory node", ft.snapshotTempRoot().exists());
@@ -627,7 +627,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false
             ).get();
 
-            NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
+            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
 
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
