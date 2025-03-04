@@ -66,6 +66,9 @@ public class SnapshotCheckProcess {
     /** */
     private final GridKernalContext kctx;
 
+    /** Snapshot checker. */
+    private final SnapshotChecker snpChecker;
+
     /** Operation contexts by name. */
     private final Map<String, SnapshotCheckContext> contexts = new ConcurrentHashMap<>();
 
@@ -84,6 +87,8 @@ public class SnapshotCheckProcess {
     /** */
     public SnapshotCheckProcess(GridKernalContext kctx) {
         this.kctx = kctx;
+
+        snpChecker = new SnapshotChecker(kctx);
 
         log = kctx.log(getClass());
 
@@ -187,8 +192,7 @@ public class SnapshotCheckProcess {
             errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
         }
 
-        IdleVerifyResult chkRes = kctx.cache().context().snapshotMgr().checker()
-            .reduceIncrementalResults(perNodeResults, mapErrors(errors));
+        IdleVerifyResult chkRes = snpChecker.reduceIncrementalResults(perNodeResults, mapErrors(errors));
 
         fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
     }
@@ -203,8 +207,6 @@ public class SnapshotCheckProcess {
         try {
             if (!errors.isEmpty())
                 throw F.firstValue(errors);
-
-            SnapshotChecker snpChecker = kctx.cache().context().snapshotMgr().checker();
 
             // Check responses: checking node -> snapshot part's consistent id -> handler name -> handler result.
             Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>();
@@ -320,8 +322,6 @@ public class SnapshotCheckProcess {
 
     /** @return A composed future of increment checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
     private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
-        SnapshotChecker snpChecker = kctx.cache().context().snapshotMgr().checker();
-
         // Incremental snapshots do not support working on other topology. Only single meta and snapshot part can be processed.
         SnapshotMetadata meta = ctx.metas.get(0);
 
@@ -348,10 +348,9 @@ public class SnapshotCheckProcess {
         Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
-        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpMgr.checker().checkPartitions(
+            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
                 meta,
                 ctx.locFileTree.get(meta.consistentId()),
                 ctx.req.groups(),
@@ -379,7 +378,6 @@ public class SnapshotCheckProcess {
      * @see IgniteSnapshotManager#handlers()
      */
     private CompletableFuture<SnapshotCheckResponse> allHandlersFuture(SnapshotCheckContext ctx) {
-        SnapshotChecker snpChecker = kctx.cache().context().snapshotMgr().checker();
         // Per metas result: snapshot part's consistent id -> check result per handler name.
         Map<String, Map<String, SnapshotHandlerResult<Object>>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         // Per consistent id.
@@ -451,19 +449,16 @@ public class SnapshotCheckProcess {
         if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
-
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 
         GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
 
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
-            snpMgr.checker().checkLocalMetas(
+            snpChecker.checkLocalMetas(
                 new SnapshotFileTree(kctx, req.snapshotName(), req.snapshotPath()),
                 req.incrementalIndex(),
-                grpIds,
-                kctx.cluster().get().localNode().consistentId()
+                grpIds
             ).whenComplete((locMetas, err) -> {
                 if (err != null)
                     phaseFut.onDone(err);
@@ -511,8 +506,8 @@ public class SnapshotCheckProcess {
                 }
             });
 
-            Map<ClusterNode, Exception> metasCheck = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(),
-                metas, null, kctx.cluster().get().localNode().consistentId());
+            Map<ClusterNode, Exception> metasCheck = snpChecker.reduceMetasResults(
+                new SnapshotFileTree(kctx, ctx.req.snapshotName(), ctx.req.snapshotPath()), metas);
 
             if (!metasCheck.isEmpty())
                 throw new IgniteSnapshotVerifyException(metasCheck);

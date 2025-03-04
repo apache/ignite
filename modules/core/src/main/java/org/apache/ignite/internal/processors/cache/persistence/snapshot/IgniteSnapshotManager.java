@@ -419,9 +419,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
-    /** Snapshot checker. */
-    private final SnapshotChecker snpChecker;
-
     /**
      * @param ctx Kernal context.
      */
@@ -444,8 +441,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
-
-        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService());
     }
 
     /** {@inheritDoc} */
@@ -651,10 +646,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Override protected void stop0(boolean cancel) {
         busyLock.block();
 
-        IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
-
         try {
             snpRmtMgr.stop();
+
+            IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
 
             restoreCacheGrpProc.interrupt(stopErr);
             checkSnpProc.interrupt(stopErr);
@@ -2639,11 +2634,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public FileIOFactory ioFactory() {
         return ioFactory;
-    }
-
-    /** */
-    public SnapshotChecker checker() {
-        return snpChecker;
     }
 
     /**

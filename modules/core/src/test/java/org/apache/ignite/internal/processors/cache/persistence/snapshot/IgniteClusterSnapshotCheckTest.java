@@ -1150,9 +1150,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         try {
             AtomicBoolean firstDelayed = new AtomicBoolean();
 
-            // Block any matching if the operation is the same. Otherwise, block only firts.
-            discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == firstDelay.ordinal()
-                && (waitForBothFirstDelays || firstDelayed.compareAndSet(false, true)));
+            // Block any matching if the operation is the same. Otherwise, block only first.
+            discoSpi(grid(0)).block(
+                msg -> msg instanceof FullMessage
+                    && ((FullMessage<?>)msg).type() == firstDelay.ordinal()
+                    && (waitForBothFirstDelays || firstDelayed.compareAndSet(false, true)));
 
             IgniteFuture<?> fut = originatorOp.get();
 
