@@ -182,6 +182,7 @@ public class TpchHelper {
         }
     }
 
+    /** List of entity builders for each table. */
     private static final Map<String, BiFunction<Ignite, String, GridMapEntry<?, ?>>> BUILDER_BY_NAME = Map.of(
         "nation", TpchHelper::nation,
         "region", TpchHelper::region,
