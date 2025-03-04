@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -140,7 +141,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             assertTrue(cpMarkers.length > 0);
 
             File cacheDir = ft.cacheStorage(ignite.cachex(TEST_CACHE_NAME).configuration());
-            File[] partFiles = cacheDir.listFiles(NodeFileTree::partitionFile);
+            File[] partFiles = cacheDir.listFiles(FileTreeUtils::partitionFile);
 
             assertNotNull(partFiles);
             assertTrue(partFiles.length > 0);

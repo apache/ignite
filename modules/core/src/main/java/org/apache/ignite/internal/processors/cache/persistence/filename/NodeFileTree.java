@@ -190,7 +190,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** File extension of temp WAL segment. */
-    static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
+    public static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
 
     /** File extension of zipped WAL segment. */
     public static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
