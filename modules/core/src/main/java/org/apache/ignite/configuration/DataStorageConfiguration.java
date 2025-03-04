@@ -557,7 +557,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets a path to the root directory where the Persistent Store will persist data and indexes.
-     * By default, the Persistent Store's files are located under Ignite work directory.
+     * By default the Persistent Store's files are located under Ignite work directory.
      *
      * @param persistenceStorePath Persistence store path.
      * @return {@code this} for chaining.
