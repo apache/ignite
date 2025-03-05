@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -72,9 +72,6 @@ public class SqlConfiguration {
 
     /** SQL query engines configuration. */
     private QueryEngineConfiguration[] enginesConfiguration;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /**
      * Defines the default query timeout.
@@ -260,17 +257,6 @@ public class SqlConfiguration {
         return enginesConfiguration == null ? null : enginesConfiguration.clone();
     }
 
-    /**
-     * @param log Logger.
-     *
-     * @return {@code this} for chaining.
-     */
-    public SqlConfiguration setLogger(IgniteLogger log) {
-        this.log = log;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlConfiguration.class, this);
@@ -294,9 +280,7 @@ public class SqlConfiguration {
             h2EngineName = U.staticField(Class.forName(H2_CONF_CLASS), ENGINE_NAME_FIELD);
         }
         catch (Exception e) {
-            log.warning("Failed to get engine names, SQL plan history size is set to zero.", e);
-
-            return 0;
+            throw new IgniteException("Failed to get engine names from engine configuration classes.", e);
         }
 
         String engineName = ((QueryEngineConfigurationEx)enginesConfiguration[0]).engineName();
