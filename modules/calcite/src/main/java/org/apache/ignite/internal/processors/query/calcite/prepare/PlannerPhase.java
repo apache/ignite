@@ -129,6 +129,7 @@ public enum PlannerPhase {
                     CoreRules.JOIN_PUSH_EXPRESSIONS,
                     CoreRules.PROJECT_MERGE,
                     CoreRules.PROJECT_REMOVE,
+                    CoreRules.PROJECT_CORRELATE_TRANSPOSE,
                     CoreRules.PROJECT_FILTER_TRANSPOSE
                 )
             );
