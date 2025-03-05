@@ -66,17 +66,17 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @State(Scope.Benchmark)
 @Fork(value = 1, jvmArgs = {"-Xms4g", "-Xmx4g"})
 @Threads(1)
-@OutputTimeUnit(TimeUnit.SECONDS)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @SuppressWarnings({"unused"})
 public class TpchBenchmark {
     /*
         By default, this benchmark creates a separate work directory for each scale factor value
         and engine type, like `work-CALCITE-1.0`, `work-H2-0.1`, etc.
 
-        Also separate TPC-H dataset directory is created for each scale factor, like `tpch-dataset-0.01`.
+        Also, the separate TPC-H dataset directory is created for each scale factor, like `tpch-dataset-0.01`.
 
         If persistence is used (it's so by default) dataset is loaded into the ignite cluster only
-        once to speed up testing. However, cluster is restarted and warmed-up before each benchmark run.
+        once to speed up testing. Cluster is warmed-up after restart before each benchmark run to ensure stable results.
 
         These directories are not removed automatically and may be reused for subsequent invocations.
         Clean them yourselves if needed.
@@ -243,10 +243,10 @@ public class TpchBenchmark {
     /**
      * Generate TPC-H dataset, create and fill tables.
      * <p>
-     * The dataset .tbl files are created only once in subdirectory in the Ignite work dir.
+     * The dataset .tbl files are created only once in the created directory.
      * Subsequent runs will use previously generated dataset.
      * <p>
-     * If persistent storage is used, then the dataset will be loaded only once.
+     * If persistent storage is used, then the dataset will be loaded to Ignite cluster only once.
      */
     private void loadDataset() throws IOException {
         datasetPath = getOrCreateDataset(scale);
