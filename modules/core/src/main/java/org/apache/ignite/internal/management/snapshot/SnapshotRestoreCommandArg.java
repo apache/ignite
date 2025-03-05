@@ -103,7 +103,7 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         snapshotName = U.readString(in);
         increment = in.readInt();
         groups = U.readArray(in, String.class);
