@@ -457,7 +457,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         isSqlConfigured = false;
 
         checkDefaultSettings((histSize) ->
-            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), false);
+            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), true);
     }
 
     /**
@@ -469,7 +469,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         isSqlEngineConfigured = false;
 
         checkDefaultSettings((histSize) ->
-            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), false);
+            assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize), true);
     }
 
     /** Checks that the default SQL plan history size is applied when the history size is not explicitly set. */
@@ -482,7 +482,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
                 assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE).get(), histSize);
             else if (sqlEngine.equals(IndexingQueryEngineConfiguration.ENGINE_NAME))
                 assertEquals(Optional.of(DFLT_SQL_PLAN_HISTORY_SIZE_H2).get(), histSize);
-        }, true);
+        }, false);
     }
 
     /**
@@ -771,11 +771,11 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param check SQL plan history size check task.
-     * @param isBothEnginesChecked Flag indicating whether the test should be run for both SQL engines or just for
-     * any one of them.
+     * @param isSingleEngineCheck Flag indicating whether the test should be run for one SQL engine
+     * or for both of them.
      */
-    public void checkDefaultSettings(Consumer<Integer> check, boolean isBothEnginesChecked) throws Exception {
-        if (!isBothEnginesChecked)
+    public void checkDefaultSettings(Consumer<Integer> check, boolean isSingleEngineCheck) throws Exception {
+        if (isSingleEngineCheck)
             assumeFalse(sqlEngine == CalciteQueryEngineConfiguration.ENGINE_NAME);
 
         assumeFalse(isClient || loc || isFullyFetched);
