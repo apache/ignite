@@ -61,13 +61,24 @@ public class TpchHelper {
      */
     public static void createTables(Ignite ignite) {
         try (InputStream inputStream = TpchHelper.class.getResourceAsStream("ddl.sql")) {
-            if (inputStream != null)
-                exec(ignite, new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
-            else
-                throw new RuntimeException("Failed to read create_tables.sql: not found in resources");
+            if (inputStream == null)
+                throw new RuntimeException("Failed to create TPC-H tables: ddl.sql not found in resources");
+
+            for (String q : new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).split(";")) {
+                if (!q.trim().isEmpty()) {
+                    SqlFieldsQuery qry = new SqlFieldsQuery(q.trim());
+
+                    try (QueryCursor<List<?>> cursor = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
+                        cursor.getAll();
+                    }
+                    catch (IgniteException e) {
+                        throw new RuntimeException("Failed to create TPC-H tables", e);
+                    }
+                }
+            }
         }
         catch (IOException e) {
-            throw new RuntimeException("Failed to read create_tables.sql from resources", e);
+            throw new RuntimeException("Failed to create TPC-H tables: can not read ddl.sql from resources", e);
         }
     }
 
@@ -79,7 +90,7 @@ public class TpchHelper {
      */
     public static void fillTables(Ignite ignite, double scale) {
         for (TpchTable<?> table : getTables()) {
-            fillTable(ignite, table.getTableName(), generatorToStream(table.createGenerator(scale, 1, 1)),
+            fillTable(ignite, table.getTableName(), streamFromGenerator(table.createGenerator(scale, 1, 1)),
                 BUILDER_BY_NAME.get(table.getTableName()));
         }
     }
@@ -92,21 +103,21 @@ public class TpchHelper {
      */
     public static void fillTables(Ignite ignite, Path datasetDir) throws IOException {
         for (TpchTable<?> table : getTables()) {
-            fillTable(ignite, table.getTableName(), fileToStream(datasetDir.resolve(String.format("%s.tbl", table.getTableName()))),
+            fillTable(ignite, table.getTableName(), streamFromFile(datasetDir.resolve(String.format("%s.tbl", table.getTableName()))),
                 BUILDER_BY_NAME.get(table.getTableName()));
         }
     }
 
     /**
-     * Generate TPC-H data with the scale factor provided. Save as .tbl files in the directory provided.
+     * Generate TPC-H dataset for the scale factor provided. Save .tbl files in the directory provided.
      *
      * @param scale Scale factor.
-     * @param datasetDir Directory to save data to.
+     * @param datasetDir Directory to save dataset to.
      */
-    public static void generateData(double scale, Path datasetDir) throws IOException {
+    public static void generateDataset(double scale, Path datasetDir) throws IOException {
         for (TpchTable<?> table : getTables()) {
             fillFile(datasetDir.resolve(String.format("%s.tbl", table.getTableName())),
-                generatorToStream(table.createGenerator(scale, 1, 1)));
+                streamFromGenerator(table.createGenerator(scale, 1, 1)));
         }
     }
 
@@ -117,24 +128,14 @@ public class TpchHelper {
      */
     public static String getQuery(int queryId) {
         try (InputStream inputStream = TpchHelper.class.getResourceAsStream(String.format("q%d.sql", queryId))) {
-            if (inputStream != null)
-                return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            else
+            if (inputStream == null)
                 throw new RuntimeException(String.format("Query Q%d is not found in resources", queryId));
+
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
         catch (IOException e) {
             throw new RuntimeException(String.format("Failed to read query Q%d from resources", queryId), e);
         }
-    }
-
-    /** */
-    private static Stream<String> generatorToStream(Iterable<? extends TpchEntity> gen) {
-        return StreamSupport.stream(gen.spliterator(), false).map(TpchEntity::toLine);
-    }
-
-    /** */
-    private static Stream<String> fileToStream(Path file) throws IOException {
-        return new BufferedReader(new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8)).lines();
     }
 
     /**
@@ -176,7 +177,7 @@ public class TpchHelper {
                     writer.newLine();
                 }
                 catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(String.format("Failed to save data to %s", file), e);
                 }
             });
         }
@@ -344,23 +345,16 @@ public class TpchHelper {
     }
 
     /**
-     * Execute SQL queries.
-     *
-     * @param ignite Ignite instance.
-     * @param sql list of SQL queries, separated by semicolons.
+     * Convert TPC-H data generator to stream of data lines.
      */
-    private static void exec(Ignite ignite, String sql) {
-        for (String q : sql.split(";")) {
-            if (!q.trim().isEmpty()) {
-                SqlFieldsQuery qry = new SqlFieldsQuery(q);
+    private static Stream<String> streamFromGenerator(Iterable<? extends TpchEntity> gen) {
+        return StreamSupport.stream(gen.spliterator(), false).map(TpchEntity::toLine);
+    }
 
-                try (QueryCursor<List<?>> cursor = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
-                    cursor.getAll();
-                }
-                catch (IgniteException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+    /**
+     * Create stream to read file line by line.
+     */
+    private static Stream<String> streamFromFile(Path file) throws IOException {
+        return new BufferedReader(new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8)).lines();
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.sql.tpch;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +33,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -62,17 +64,22 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * Benchmark TPC-H SQL queries.
  */
 @State(Scope.Benchmark)
-@Fork(value = 1, jvmArgs = {"-Xms2g", "-Xmx2g"})
+@Fork(value = 1, jvmArgs = {"-Xms4g", "-Xmx4g"})
 @Threads(1)
 @OutputTimeUnit(TimeUnit.SECONDS)
+@SuppressWarnings({"unused"})
 public class TpchBenchmark {
     /*
-        By default, this benchmark creates a separate work directory for each scale factor value.
-        TPC-H dataset of the corresponding scale is generated in the `tpch_dataset` subdirectory.
-        Don't forget to remove the directory after benchmark is finished.
+        By default, this benchmark creates a separate work directory for each scale factor value
+        and engine type, like `work-CALCITE-1.0`, `work-H2-0.1`, etc.
+
+        Also separate TPC-H dataset directory is created for each scale factor, like `tpch-dataset-0.01`.
 
         If persistence is used (it's so by default) dataset is loaded into the ignite cluster only
-        once to speed up testing. However, cluster is restarted before each benchmark run.
+        once to speed up testing. However, cluster is restarted and warmed-up before each benchmark run.
+
+        These directories are not removed automatically and may be reused for subsequent invocations.
+        Clean them yourselves if needed.
     */
 
     /** Count of server nodes. */
@@ -85,23 +92,24 @@ public class TpchBenchmark {
     private Path datasetPath;
 
     /** If true the dataset will be loaded only once to speed up the testing. */
-    private static final Boolean PERSISTENT = true;
+    private static final Boolean USE_PERSISTENCE = true;
 
     /** */
     private static final String DATASET_READY_MARK_FILE_NAME = "ready.txt";
+
+    /** Scale factor. scale == 1.0 means about 1Gb of data. */
+    @Param({"0.01", "0.1", "1.0"})
+    private String scale;
 
     /** Query engine. */
     @Param({"CALCITE", "H2"})
     private String engine;
 
-    /** Scale factor. "1" means about 1Gb of data. */
-    @Param({"0.01", "0.1", "1"})
-    private String scale;
-
     /**
      * Query id.
-     * The commented queries do not currently work for Calcite.
-     * The 11, 13, 15, 19 queries also do not work for H2.
+     * <p>
+     * The commented queries do not currently work with Calcite even for scale=0.01.
+     * The 11, 13, 15 can not be parsed with H2.
      */
     @Param({
         "1", /*"2",*/ "3", "4", /*"5",*/
@@ -111,11 +119,68 @@ public class TpchBenchmark {
         /*"21",*/ "22"})
     private String queryId;
 
+    /** Query SQL string. */
+    private String queryString;
+
     /** Ignite client. */
     private Ignite client;
 
     /** Servers. */
     private final Ignite[] servers = new Ignite[SRV_NODES_CNT];
+
+    /**
+     * Test already planned and cached query (without the initial planning).
+     */
+    @Benchmark
+    @BenchmarkMode(Mode.AverageTime)
+    @Warmup(iterations = 1, time = 10)
+    @Measurement(iterations = 3, time = 10)
+    public void cached(Blackhole bh) {
+        sql(bh, queryString);
+    }
+
+    /**
+     * Test a single cold non-cached query (include initial planning).
+     */
+    @Benchmark
+    @BenchmarkMode(Mode.SingleShotTime)
+    @Warmup(iterations = 0)
+    @Measurement(iterations = 1, time = 1)
+    public void cold(Blackhole bh) {
+        sql(bh, queryString);
+    }
+
+    /**
+     * Initiate Ignite and caches.
+     */
+    @Setup(Level.Trial)
+    public void setup() throws IOException, IgniteCheckedException {
+        for (int i = 0; i < SRV_NODES_CNT; i++)
+            servers[i] = Ignition.start(configuration("server" + i));
+
+        if (USE_PERSISTENCE)
+            servers[0].cluster().state(ClusterState.ACTIVE);
+
+        client = Ignition.start(configuration("client").setClientMode(true));
+
+        queryString = TpchHelper.getQuery(Integer.parseInt(queryId));
+
+        loadDataset();
+    }
+
+    /**
+     * Stop Ignite instance.
+     */
+    @TearDown
+    public void tearDown() {
+        client.close();
+
+        if (USE_PERSISTENCE)
+            servers[0].cluster().state(ClusterState.INACTIVE);
+
+        for (Ignite ignite : servers)
+            ignite.close();
+    }
 
     /**
      * Create Ignite configuration.
@@ -133,75 +198,38 @@ public class TpchBenchmark {
             "CALCITE".equals(engine) ? new CalciteQueryEngineConfiguration() : new IndexingQueryEngineConfiguration()
         ));
 
-        if (PERSISTENT) {
+        if (USE_PERSISTENCE) {
             cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true)));
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setWarmUpConfiguration(new LoadAllWarmUpConfiguration())));
         }
 
-        cfg.setWorkDirectory(Path.of(U.getIgniteHome(), String.format("work-%s", scale)).toString());
+        cfg.setWorkDirectory(getWorkDirectory().toString());
 
         return cfg;
     }
 
     /**
-     * Initiate Ignite and caches.
+     * Generate name of work directory
      */
-    @Setup(Level.Trial)
-    public void setup() throws IOException, IgniteCheckedException {
-        for (int i = 0; i < SRV_NODES_CNT; i++)
-            servers[i] = Ignition.start(configuration("server" + i));
-
-        servers[0].cluster().state(ClusterState.ACTIVE);
-
-        client = Ignition.start(configuration("client").setClientMode(true));
-
-        fillData();
+    private Path getWorkDirectory() {
+        return Path.of(U.getIgniteHome(), String.format("work-%s-%s", engine, scale));
     }
 
     /**
-     * Stop Ignite instance.
+     * Execute several SQL queries separated by semicolons.
      */
-    @TearDown
-    public void tearDown() {
-        client.close();
-
-        for (Ignite ignite : servers)
-            ignite.close();
-    }
-
-    /**
-     * Test already planned and cached query (without the initial planning).
-     */
-    @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
-    @Warmup(iterations = 1, time = 10)
-    @Measurement(iterations = 3, time = 10)
-    public void cached(Blackhole bh) {
-        executeSql(bh, TpchHelper.getQuery(Integer.parseInt(queryId)));
-    }
-
-    /**
-     * Test a single cold non-cached query (include initial planning).
-     */
-    @Benchmark
-    @BenchmarkMode(Mode.SingleShotTime)
-    @Warmup(iterations = 0)
-    @Measurement(iterations = 1, time = 1)
-    public void cold(Blackhole bh) {
-        executeSql(bh, TpchHelper.getQuery(Integer.parseInt(queryId)));
-    }
-
-    /** */
-    private void executeSql(Blackhole bh, String sql) {
+    private void sql(Blackhole bh, String sql) {
         try {
             for (String q : sql.split(";")) {
                 if (!q.trim().isEmpty()) {
                     SqlFieldsQuery qry = new SqlFieldsQuery(q.trim()).setTimeout(60, TimeUnit.SECONDS);
 
-                    FieldsQueryCursor<List<?>> cursor = ((IgniteEx)client).context().query().querySqlFields(qry, false);
-
-                    cursor.forEach(bh::consume);
+                    try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)client).context().query().querySqlFields(qry, false)) {
+                        cursor.forEach(bh::consume);
+                    }
                 }
             }
         }
@@ -210,7 +238,6 @@ public class TpchBenchmark {
 
             throw e;
         }
-
     }
 
     /**
@@ -221,24 +248,42 @@ public class TpchBenchmark {
      * <p>
      * If persistent storage is used, then the dataset will be loaded only once.
      */
-    private void fillData() throws IOException, IgniteCheckedException {
-        if (datasetPath == null)
-            datasetPath = U.resolveWorkDirectory(client.configuration().getWorkDirectory(),"tpch_dataset", false).toPath();
+    private void loadDataset() throws IOException {
+        datasetPath = getOrCreateDataset(scale);
 
-        if (!Files.exists(datasetPath.resolve(DATASET_READY_MARK_FILE_NAME))) {
-            TpchHelper.generateData(Double.parseDouble(scale), datasetPath);
-
-            Files.createFile(datasetPath.resolve(DATASET_READY_MARK_FILE_NAME));
+        if (!USE_PERSISTENCE ||
+            !Files.exists(getWorkDirectory().resolve(DATASET_READY_MARK_FILE_NAME))) {
 
             TpchHelper.createTables(client);
 
             TpchHelper.fillTables(client, datasetPath);
-        }
-        else if (!PERSISTENT) {
-            TpchHelper.createTables(client);
 
-            TpchHelper.fillTables(client, datasetPath);
+            if (USE_PERSISTENCE)
+                Files.createFile(getWorkDirectory().resolve(DATASET_READY_MARK_FILE_NAME));
         }
+    }
+
+    /**
+     * Create TPC-H dataset if it does not yet exist.
+     *
+     * @param scale Scale factor.
+     * @return Path to the dataset directory.
+     */
+    private Path getOrCreateDataset(String scale) throws IOException {
+        File dir = Path.of(U.getIgniteHome(), String.format("tpch-dataset-%s", scale)).toFile();
+
+        if (!dir.exists()) {
+            if (!dir.mkdirs())
+                throw new RuntimeException("Failed to create dataset directory at: " + dir);
+        }
+
+        if (!Files.exists(dir.toPath().resolve(DATASET_READY_MARK_FILE_NAME))) {
+            TpchHelper.generateDataset(Double.parseDouble(scale), dir.toPath());
+
+            Files.createFile(dir.toPath().resolve(DATASET_READY_MARK_FILE_NAME));
+        }
+
+        return dir.toPath();
     }
 
     /**
