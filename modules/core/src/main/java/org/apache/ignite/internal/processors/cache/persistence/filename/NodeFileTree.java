@@ -289,13 +289,13 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+        nodeStorage = rootRelative(DB_DIR);
+        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        nodeStorage = rootRelative(DB_DIR);
-        drStorages = Collections.emptyMap();
         dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+        drStorages = Collections.emptyMap();
     }
 
     /**
