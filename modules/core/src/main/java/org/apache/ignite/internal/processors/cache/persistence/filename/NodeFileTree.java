@@ -577,7 +577,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
      */
-    public File tmpCacheStorage(String drName, String cacheDirName) {
+    public File tmpCacheStorage(@Nullable String drName, String cacheDirName) {
         return new File(dataRegionStorage(drName), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
@@ -624,7 +624,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param partId partition id.
      * @return Path to the temp partition file.
      */
-    public File tmpPartition(String drName, String cacheDirName, int partId) {
+    public File tmpPartition(@Nullable String drName, String cacheDirName, int partId) {
         return new File(tmpCacheStorage(drName, cacheDirName), partitionFileName(partId));
     }
 
@@ -767,7 +767,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param drName Data region name.
      * @return Data region storage.
      */
-    private File dataRegionStorage(String drName) {
+    private File dataRegionStorage(@Nullable String drName) {
         return drStorages.getOrDefault(drName == null ? dfltDrName : drName, nodeStorage);
     }
 

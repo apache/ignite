@@ -101,8 +101,7 @@ public class SnapshotFileTree extends NodeFileTree {
         this.name = name;
         this.path = path;
         this.consId = consId;
-
-        tmpFt = tempFileTree(ctx);
+        this.tmpFt = tempFileTree(ctx);
     }
 
     /**

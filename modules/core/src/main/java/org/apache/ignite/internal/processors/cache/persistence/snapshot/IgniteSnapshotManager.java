@@ -3770,14 +3770,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /**
+         * @param rqId Request id.
          * @param cacheDirName Cache directory name.
          * @param drName Data region name.
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
          */
-        private Map<String, Serializable> transmissionParams(String rqId, String cacheDirName,
-            String drName,
-            GroupPartitionId pair) {
+        private Map<String, Serializable> transmissionParams(
+            String rqId,
+            String cacheDirName,
+            @Nullable String drName,
+            GroupPartitionId pair
+        ) {
             Map<String, Serializable> params = new HashMap<>();
 
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
@@ -3896,7 +3900,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, String drName, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long len) {
             try {
                 if (len == 0)
                     return;
