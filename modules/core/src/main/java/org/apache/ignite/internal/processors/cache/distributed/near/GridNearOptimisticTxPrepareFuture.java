@@ -194,7 +194,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /**
-     * @return Keys for which {@code MiniFuture} isn't completed.
+     * @return Remote node keys for which {@code MiniFuture} isn't completed.
      */
     public Set<IgniteTxKey> requestedKeys() {
         compoundsReadLock();
@@ -207,6 +207,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 if (isMini(fut) && !fut.isDone()) {
                     MiniFuture miniFut = (MiniFuture)fut;
+
+                    if(miniFut.mapping().primary().id().equals(cctx.localNodeId()))
+                        return null;
 
                     Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
 
