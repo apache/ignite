@@ -12,7 +12,6 @@ create OR REPLACE view revenue0 as
         lineitem
     where
         l_shipdate >= date '1996-01-01'
---        and l_shipdate < date '1996-01-01' + interval '3' month
         and l_shipdate < TIMESTAMPADD(MONTH, 3, date '1996-01-01')
     group by
         l_suppkey;

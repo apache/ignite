@@ -12,7 +12,6 @@ from
     orders
 where
     o_orderdate >= date '1993-07-01'
---    and o_orderdate < date '1993-07-01' + interval '3' month
     and o_orderdate < TIMESTAMPADD(MONTH, 3, date '1993-07-01')
     and exists (
         select

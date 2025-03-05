@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -35,6 +36,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -64,8 +66,14 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Threads(1)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class TpchBenchmark {
-    /** */
-    private static final String DATASET_READY_MARK_FILE_NAME = "ready.txt";
+    /*
+        By default, this benchmark creates a separate work directory for each scale factor value.
+        TPC-H dataset of the corresponding scale is generated in the `tpch_dataset` subdirectory.
+        Don't forget to remove the directory after benchmark is finished.
+
+        If persistence is used (it's so by default) dataset is loaded into the ignite cluster only
+        once to speed up testing. However, cluster is restarted before each benchmark run.
+    */
 
     /** Count of server nodes. */
     private static final int SRV_NODES_CNT = 3;
@@ -73,39 +81,34 @@ public class TpchBenchmark {
     /** IP finder shared across nodes. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
+    /** Path to the dataset. */
     private Path datasetPath;
 
+    /** If true the dataset will be loaded only once to speed up the testing. */
+    private static final Boolean PERSISTENT = true;
+
+    /** */
+    private static final String DATASET_READY_MARK_FILE_NAME = "ready.txt";
+
     /** Query engine. */
-//    @Param({"CALCITE", "H2"})
-    @Param({"H2"})
+    @Param({"CALCITE", "H2"})
     private String engine;
 
-    /** Scale factor. */
-    @Param({"0.001"})
+    /** Scale factor. "1" means about 1Gb of data. */
+    @Param({"0.01", "0.1", "1"})
     private String scale;
 
     /**
      * Query id.
-     * <p>
-     * Note.
      * The commented queries do not currently work for Calcite.
-     * The 11, 13, 15, 19 queries do not work for H2.
+     * The 11, 13, 15, 19 queries also do not work for H2.
      */
-//    @Param({
-//        "1", /*"2",*/ "3", "4", /*"5",*/
-//        "6", "7", /*"8",*/ /*"9",*/ "10",
-//        "11", "12", "13", "14", /*"15",*/
-//        /*"16",*/ /*"17",*/ "18", /*"19",*/ /*"20",*/
-//        /*"21",*/ "22"})
-    // H2
-//    @Param({
-//        "1", "2", "3", "4", "5",
-//        "6", "7", "8", "9", "10",
-//        /*"11",*/ "12", /*"13",*/ "14", /*"15",*/
-//        "16", "17", "18", /*"19",*/ "20",
-//        "21", "22"})
-    @Param({"1", "2"})
+    @Param({
+        "1", /*"2",*/ "3", "4", /*"5",*/
+        "6", "7", /*"8",*/ /*"9",*/ "10",
+        "11", "12", "13", "14", /*"15",*/
+        /*"16",*/ /*"17",*/ "18", /*"19",*/ /*"20",*/
+        /*"21",*/ "22"})
     private String queryId;
 
     /** Ignite client. */
@@ -113,21 +116,6 @@ public class TpchBenchmark {
 
     /** Servers. */
     private final Ignite[] servers = new Ignite[SRV_NODES_CNT];
-
-    /**
-     * Before running benchmark the path to directory containing TPC-H dataset should be provided.
-     * Dataset is a set of CSV files with name `{$tableName}.tbl` per each table and character `|` as separator.
-     * <p>
-     * The pre-generated datasets are located at https://github.com/cmu-db/benchbase/tree/main/data/tpch-sf0.01
-     * for scale factor 0.01 and https://github.com/cmu-db/benchbase/tree/main/data/tpch-sf0.1 for scale factor 0.1.
-     * <p>
-     * For other scale factors datasets may be generated using the TPC-H Tools available from the
-     * https://www.tpc.org/tpc_documents_current_versions/current_specifications5.asp.
-     */
-    String pathToDataset() {
-//        throw new RuntimeException("Provide path to directory containing <table_name>.tbl files");
-        return "/home/skor/work/ISE-5583-Calcite-vs-H2/dataset/0.1";
-    }
 
     /**
      * Create Ignite configuration.
@@ -144,10 +132,14 @@ public class TpchBenchmark {
         cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
             "CALCITE".equals(engine) ? new CalciteQueryEngineConfiguration() : new IndexingQueryEngineConfiguration()
         ));
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true)));
-        cfg.setWorkDirectory(datasetPath.toString());
+
+        if (PERSISTENT) {
+            cfg.setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true)));
+        }
+
+        cfg.setWorkDirectory(Path.of(U.getIgniteHome(), String.format("work-%s", scale)).toString());
 
         return cfg;
     }
@@ -156,10 +148,7 @@ public class TpchBenchmark {
      * Initiate Ignite and caches.
      */
     @Setup(Level.Trial)
-    public void setup() throws IOException {
-        if (datasetPath == null)
-            datasetPath = Files.createTempDirectory("tpch_dataset");
-
+    public void setup() throws IOException, IgniteCheckedException {
         for (int i = 0; i < SRV_NODES_CNT; i++)
             servers[i] = Ignition.start(configuration("server" + i));
 
@@ -175,24 +164,26 @@ public class TpchBenchmark {
      */
     @TearDown
     public void tearDown() {
-        System.out.println("Stopping Ignite instances...");
         client.close();
 
         for (Ignite ignite : servers)
             ignite.close();
-        System.out.println("Stopped Ignite instances...");
     }
 
-    /** Test already cached query (without the initial planning). */
+    /**
+     * Test already planned and cached query (without the initial planning).
+     */
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    @Warmup(iterations = 1, time = 5)
+    @Warmup(iterations = 1, time = 10)
     @Measurement(iterations = 3, time = 10)
     public void cached(Blackhole bh) {
         executeSql(bh, TpchHelper.getQuery(Integer.parseInt(queryId)));
     }
 
-    /** Test cold non-cached query (including initial planing). */
+    /**
+     * Test a single cold non-cached query (include initial planning).
+     */
     @Benchmark
     @BenchmarkMode(Mode.SingleShotTime)
     @Warmup(iterations = 0)
@@ -222,13 +213,28 @@ public class TpchBenchmark {
 
     }
 
-    /** */
-    private void fillData() throws IOException {
+    /**
+     * Generate TPC-H dataset, create and fill tables.
+     * <p>
+     * The dataset .tbl files are created only once in subdirectory in the Ignite work dir.
+     * Subsequent runs will use previously generated dataset.
+     * <p>
+     * If persistent storage is used, then the dataset will be loaded only once.
+     */
+    private void fillData() throws IOException, IgniteCheckedException {
+        if (datasetPath == null)
+            datasetPath = U.resolveWorkDirectory(client.configuration().getWorkDirectory(),"tpch_dataset", false).toPath();
+
         if (!Files.exists(datasetPath.resolve(DATASET_READY_MARK_FILE_NAME))) {
             TpchHelper.generateData(Double.parseDouble(scale), datasetPath);
 
             Files.createFile(datasetPath.resolve(DATASET_READY_MARK_FILE_NAME));
 
+            TpchHelper.createTables(client);
+
+            TpchHelper.fillTables(client, datasetPath);
+        }
+        else if (!PERSISTENT) {
             TpchHelper.createTables(client);
 
             TpchHelper.fillTables(client, datasetPath);

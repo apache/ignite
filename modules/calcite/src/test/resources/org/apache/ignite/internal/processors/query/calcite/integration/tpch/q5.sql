@@ -24,7 +24,6 @@ where
     and n_regionkey = r_regionkey
     and r_name = 'ASIA'
     and o_orderdate >= date '1994-01-01'
---    and o_orderdate < date '1994-01-01' + interval '1' year
     and o_orderdate < TIMESTAMPADD(YEAR, 1, date '1994-01-01')
 group by
     n_name

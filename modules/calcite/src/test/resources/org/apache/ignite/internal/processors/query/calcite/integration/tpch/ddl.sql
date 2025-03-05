@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS nation(
     N_COMMENT VARCHAR(152),
     PRIMARY KEY(N_NATIONKEY))
     WITH "atomicity=transactional,cache_name=nation,value_type=nation";
+CREATE INDEX n_rk ON nation (N_REGIONKEY ASC);
 
 CREATE TABLE IF NOT EXISTS region(
     R_REGIONKEY INTEGER,
@@ -22,7 +23,7 @@ CREATE TABLE IF NOT EXISTS part(
     P_SIZE INTEGER NOT NULL,
     P_CONTAINER CHAR(10) NOT NULL,
     P_RETAILPRICE DECIMAL(15,2) NOT NULL,
-    P_COMMENT     VARCHAR(23) NOT NULL,
+    P_COMMENT VARCHAR(23) NOT NULL,
     PRIMARY KEY(P_PARTKEY))
     WITH "atomicity=transactional,cache_name=part,value_type=part";
 
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS supplier  (
     S_COMMENT     VARCHAR(101) NOT NULL,
     PRIMARY KEY(S_SUPPKEY))
     WITH "atomicity=transactional,cache_name=supplier,value_type=supplier";
+CREATE INDEX s_nk ON supplier (S_NATIONKEY ASC);
 
 CREATE TABLE IF NOT EXISTS partsupp  (
     PS_PARTKEY INTEGER NOT NULL,
@@ -45,6 +47,8 @@ CREATE TABLE IF NOT EXISTS partsupp  (
     PS_COMMENT     VARCHAR(199) NOT NULL,
     PRIMARY KEY (PS_PARTKEY, PS_SUPPKEY) )
     WITH "atomicity=transactional,cache_name=partsupp,value_type=partsupp,key_type=partsupp_key";
+CREATE INDEX ps_pk ON partsupp (PS_PARTKEY ASC);
+CREATE INDEX ps_sk_pk ON partsupp (PS_SUPPKEY ASC, PS_PARTKEY ASC);
 
 CREATE TABLE IF NOT EXISTS customer  (
     C_CUSTKEY INTEGER,
@@ -55,7 +59,9 @@ CREATE TABLE IF NOT EXISTS customer  (
     C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
     C_MKTSEGMENT  CHAR(10) NOT NULL,
     C_COMMENT     VARCHAR(117) NOT NULL,
-    PRIMARY KEY(C_CUSTKEY)) WITH "atomicity=transactional,cache_name=customer,value_type=customer";
+    PRIMARY KEY(C_CUSTKEY))
+    WITH "atomicity=transactional,cache_name=customer,value_type=customer";
+CREATE INDEX c_nk ON customer (C_NATIONKEY ASC);
 
 CREATE TABLE IF NOT EXISTS orders  (
     O_ORDERKEY INTEGER,
@@ -69,6 +75,8 @@ CREATE TABLE IF NOT EXISTS orders  (
     O_COMMENT        VARCHAR(79) NOT NULL,
     PRIMARY KEY(O_ORDERKEY))
     WITH "atomicity=transactional,cache_name=orders,value_type=orders";
+CREATE INDEX o_ck ON orders (O_CUSTKEY ASC);
+CREATE INDEX o_od ON orders (O_ORDERDATE ASC);
 
 CREATE TABLE IF NOT EXISTS lineitem(
     L_ORDERKEY     INTEGER NOT NULL,
@@ -89,22 +97,9 @@ CREATE TABLE IF NOT EXISTS lineitem(
     L_COMMENT      VARCHAR(44) NOT NULL,
     PRIMARY KEY(L_ORDERKEY,L_LINENUMBER))
     WITH "atomicity=transactional,cache_name=lineitem,value_type=lineitem,key_type=lineitem_key";
-
-CREATE INDEX c_nk ON customer (C_NATIONKEY ASC);
-
 CREATE INDEX l_sd ON lineitem (L_SHIPDATE ASC);
 CREATE INDEX l_cd ON lineitem (L_COMMITDATE ASC);
 CREATE INDEX l_rd ON lineitem (L_RECEIPTDATE ASC);
 CREATE INDEX l_ok ON lineitem (L_ORDERKEY ASC);
 CREATE INDEX l_pk_sk ON lineitem (L_PARTKEY ASC, L_SUPPKEY ASC);
 CREATE INDEX l_sk_pk ON lineitem (L_SUPPKEY ASC, L_PARTKEY ASC);
-
-CREATE INDEX n_rk ON nation (N_REGIONKEY ASC);
-
-CREATE INDEX o_ck ON orders (O_CUSTKEY ASC);
-CREATE INDEX o_od ON orders (O_ORDERDATE ASC);
-
-CREATE INDEX ps_pk ON partsupp (PS_PARTKEY ASC);
-CREATE INDEX ps_sk_pk ON partsupp (PS_SUPPKEY ASC, PS_PARTKEY ASC);
-
-CREATE INDEX s_nk ON supplier (S_NATIONKEY ASC);

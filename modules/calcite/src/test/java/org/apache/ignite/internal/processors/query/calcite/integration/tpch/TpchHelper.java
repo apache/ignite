@@ -191,7 +191,8 @@ public class TpchHelper {
         "partsupp", TpchHelper::partsupp,
         "customer", TpchHelper::customer,
         "orders", TpchHelper::orders,
-        "lineitem", TpchHelper::lineitem);
+        "lineitem", TpchHelper::lineitem
+    );
 
     /** Nation entity builder. */
     private static GridMapEntry<?, ?> nation(Ignite ignite, String line) {
