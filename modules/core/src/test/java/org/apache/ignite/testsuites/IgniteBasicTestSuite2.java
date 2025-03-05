@@ -44,7 +44,6 @@ import org.apache.ignite.internal.metric.PeriodicHistogramMetricImplTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
-import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest;
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
@@ -201,8 +200,6 @@ import org.junit.runners.Suite;
     NotStringSystemPropertyTest.class,
     ConfigVariationsExecutionTest.class,
     ConfigVariationsTestSuiteBuilderTest.class,
-
-    DeadLockOnNodeLeftExchangeTest.class,
 
     ClassPathContentLoggingTest.class,
 
