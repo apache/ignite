@@ -225,7 +225,7 @@ public class TpchBenchmark {
         try {
             for (String q : sql.split(";")) {
                 if (!q.trim().isEmpty()) {
-                    SqlFieldsQuery qry = new SqlFieldsQuery(q.trim()).setTimeout(60, TimeUnit.SECONDS);
+                    SqlFieldsQuery qry = new SqlFieldsQuery(q.trim());
 
                     try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)client).context().query().querySqlFields(qry, false)) {
                         cursor.forEach(bh::consume);
