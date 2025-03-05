@@ -141,7 +141,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1973,13 +1972,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         SharedFileTree sft = sharedFileTree();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
-        U.delete(sft.db());
-        U.delete(sft.marshaller());
-        U.delete(sft.binaryMetaRoot());
-
-        if (!saveSnp)
-            U.delete(sharedFileTree().snapshotsRoot());
+        F.asList(sft.root().listFiles(f -> !f.getName().equals("log") || (saveSnp && f.equals(sft.snapshotsRoot()))))
+            .forEach(U::delete);
     }
 
     /**

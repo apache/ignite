@@ -107,6 +107,10 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         // after node stop.
         stopGrid(ig.name());
 
+        assertFalse(ft.binaryMeta().equals(sft.binaryMeta()));
+        assertFalse(ft.marshaller().equals(sft.marshaller()));
+        assertFalse(ft.cacheStorage(dfltCacheCfg).equals(sft.cacheStorage(dfltCacheCfg)));
+
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorage(dfltCacheCfg));
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorage(dfltCacheCfg));
 
@@ -117,8 +121,13 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
             calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(sft.marshaller()));
 
-        for (File tmpRoot : ft.snapshotsTempRoots())
-            assertEquals("Snapshot working directory must be cleaned after usage", 0, tmpRoot.listFiles().length);
+        for (File tmpRoot : ft.snapshotsTempRoots()) {
+            assertEquals(
+                "Snapshot working directory must be cleaned after usage: " + tmpRoot.getAbsolutePath(),
+                0,
+                tmpRoot.listFiles().length
+            );
+        }
     }
 
     /** @throws Exception If fails. */

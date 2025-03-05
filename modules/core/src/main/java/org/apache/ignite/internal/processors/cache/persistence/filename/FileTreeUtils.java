@@ -55,10 +55,10 @@ public class FileTreeUtils {
     public static void removeTmpSnapshotFiles(SnapshotFileTree sft, boolean err, IgniteLogger log) {
         NodeFileTree tmpFt = sft.tempFileTree();
 
-        removeTmpDir(tmpFt.nodeStorage(), err, log);
+        removeTmpDir(tmpFt.root(), err, log);
 
         for (File tmpDrStorage : tmpFt.dataRegionStorages().values())
-            removeTmpDir(tmpDrStorage, err, log);
+            removeTmpDir(tmpDrStorage.getParentFile(), err, log);
     }
 
     /**
@@ -71,8 +71,8 @@ public class FileTreeUtils {
 
         // Delete snapshot directory if no other files exists.
         try {
-            if (U.fileCount(dir.getParentFile().toPath()) == 0 || err)
-                U.delete(dir.getParentFile().toPath());
+            if (U.fileCount(dir.toPath()) == 0 || err)
+                U.delete(dir.toPath());
         }
         catch (IOException e) {
             log.error("Snapshot directory doesn't exist [snpName=" + dir.getName() + ", dir=" + dir.getParentFile() + ']');
