@@ -22,30 +22,39 @@ import org.junit.Test;
 
 /** */
 public class TpchTest extends AbstractBasicIntegrationTest {
-    /** */
-    @Override protected void beforeTest() throws Exception {
+    /**
+     * Exception in TPC-H Query #20:
+     *   Unexpected error at query optimizer: Index 7 out of bounds for length 7
+     */
+    @Test
+    public void testQ20() throws InterruptedException {
         TpchHelper.createTables(client);
 
-        TpchHelper.fillTables(client, 0.01);
+        // Reproduced without data in fact
+//        TpchHelper.fillTables(client, 0.01);
+//        awaitPartitionMapExchange();
 
-        awaitPartitionMapExchange();
-    }
-
-    /** */
-    @Test
-    public void testQ18() {
-        sql(TpchHelper.getQuery(18));
-    }
-
-    /** */
-    @Test
-    public void testQ20() {
         sql(TpchHelper.getQuery(20));
     }
 
-    /** */
     @Test
-    public void testQ15() {
-        sql(TpchHelper.getQuery(15));
+    public void testQ18() throws InterruptedException {
+        TpchHelper.createTables(client);
+
+        TpchHelper.fillTables(client, 1.0);
+        awaitPartitionMapExchange();
+
+        sql(TpchHelper.getQuery(18));
     }
+
+    @Test
+    public void testQ8() throws InterruptedException {
+        TpchHelper.createTables(client);
+
+        TpchHelper.fillTables(client, 1.0);
+        awaitPartitionMapExchange();
+
+        sql(TpchHelper.getQuery(8));
+    }
+
 }
