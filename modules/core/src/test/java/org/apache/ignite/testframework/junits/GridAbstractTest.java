@@ -3221,7 +3221,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** @return Ignite directories for specific {@code folderName}. */
     protected NodeFileTree nodeFileTree(String folderName) {
         try {
-            return new NodeFileTree(U.defaultWorkDirectory(), folderName);
+            return new NodeFileTree(new File(U.defaultWorkDirectory()), folderName);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
