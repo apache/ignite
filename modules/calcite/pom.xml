@@ -46,6 +46,7 @@
         <reflections.version>0.10.2</reflections.version>
         <commons.math.version>3.6.1</commons.math.version>
         <commons.text.version>1.11.0</commons.text.version>
+        <io.trino.tpch.version>1.2</io.trino.tpch.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -248,7 +249,7 @@
         <dependency>
             <groupId>io.trino.tpch</groupId>
             <artifactId>tpch</artifactId>
-            <version>1.2</version>
+            <version>${io.trino.tpch.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
