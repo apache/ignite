@@ -633,9 +633,8 @@ final class ReliableChannel implements AutoCloseable {
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
-        List<ClientChannelHolder> toClose = new ArrayList<>();
+        List<ClientChannelHolder> toCloseHolders = new ArrayList<>();
 
-        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
                 if (h.ch != null && h.ch.closed()) {
@@ -643,11 +642,13 @@ final class ReliableChannel implements AutoCloseable {
                     continue;
                 }
 
-                toClose.add(h);
+                // Add all holders to the list of potentially expired
+                toCloseHolders.add(h);
 
                 for (InetSocketAddress addr : h.getAddresses())
                     curAddrs.putIfAbsent(addr, h);
 
+                // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
                 if (clientCfg.getAddressesFinder() == null)
                     reinitHolders.add(h);
             }
@@ -695,10 +696,9 @@ final class ReliableChannel implements AutoCloseable {
                 dfltChannelIdx = reinitHolders.size() - 1;
         }
 
-        toClose.removeAll(reinitHolders);
-
-        for (ClientChannelHolder hld : toClose)
-            hld.close();
+        for (ClientChannelHolder hld : toCloseHolders)
+            if (!reinitHolders.contains(hld))
+                hld.close();
 
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.
