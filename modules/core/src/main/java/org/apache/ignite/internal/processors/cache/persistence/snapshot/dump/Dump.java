@@ -165,7 +165,7 @@ public class Dump implements AutoCloseable {
         A.ensure(ft.marshaller().exists(), "marshaller directory not exists");
 
         try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, ft.binaryMeta(), ft.marshaller());
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, ft);
 
             startAllComponents(kctx);
 

@@ -128,6 +128,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Logger. */
     private IgniteLogger log;
 
+    /** Node file tree. */
+    private NodeFileTree ft;
+
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
 
@@ -161,38 +164,27 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /**
      * @param log Logger.
-     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
-     * {@code null} means no specific folder is configured. <br>
-     *
-     * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
-     * {@code null} means no specific folder is configured.
-     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
+     * @param ft Node file tree.
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
-        @Nullable File binaryMetadataFileStoreDir,
-        @Nullable File marshallerMappingFileStoreDir
+        @Nullable NodeFileTree ft
     ) throws IgniteCheckedException {
-        this(log, null, binaryMetadataFileStoreDir, marshallerMappingFileStoreDir);
+        this(log, null, ft);
     }
 
     /**
      * @param log Logger.
      * @param compressProc Compression processor.
-     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
-     * {@code null} means no specific folder is configured. <br>
-     *
-     * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
-     * {@code null} means no specific folder is configured.
-     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
+     * @param ft Node file tree {@code null} means no specific tree is configured. <br>
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
         @Nullable CompressionProcessor compressProc,
-        @Nullable File binaryMetadataFileStoreDir,
-        @Nullable File marshallerMappingFileStoreDir
+        @Nullable NodeFileTree ft
     ) throws IgniteCheckedException {
         this.log = log;
+        this.ft = ft;
 
         marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
         cfg = prepareIgniteConfiguration();
@@ -211,18 +203,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         transProc = createComponent(CacheObjectTransformerProcessor.class);
 
         // Fake folder provided to perform processor startup on empty folder.
-        if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new SharedFileTree(new File(".")).binaryMetaRoot().getAbsoluteFile();
-
-        cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
+        cacheObjProcessor = binaryProcessor(this, ft != null
+            ? ft.binaryMeta()
+            : new SharedFileTree(new File(".")).binaryMetaRoot().getAbsoluteFile());
 
         comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
         comps.add(metricMgr);
         comps.add(timeoutProc);
 
-        if (marshallerMappingFileStoreDir != null) {
-            marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+        if (ft != null) {
+            marshallerCtx.setMarshallerMappingFileStoreDir(ft.marshaller());
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
 
@@ -697,12 +688,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings<>(new File("."), U.maskForFileName(""));
+                return ft != null
+                    ? new PdsFolderSettings<>(ft.root(), ft.folderName())
+                    : new PdsFolderSettings<>(new File("."), U.maskForFileName(""));
             }
 
             /** {@inheritDoc} */
             @Override public NodeFileTree fileTree() {
-                return new NodeFileTree(cfg, resolveFolders().folderName());
+                return ft != null ? ft : new NodeFileTree(cfg, resolveFolders().folderName());
             }
         };
     }

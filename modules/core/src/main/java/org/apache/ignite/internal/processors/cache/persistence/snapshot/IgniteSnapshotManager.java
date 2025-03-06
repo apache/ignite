@@ -2338,9 +2338,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotFileTree sft,
         String folderName
     ) throws IgniteCheckedException {
-        NodeFileTree folderFt = new NodeFileTree(sft.root(), folderName);
-
-        return new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), folderFt.binaryMeta(), folderFt.marshaller());
+        return new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), new NodeFileTree(sft.root(), folderName));
     }
 
     /**

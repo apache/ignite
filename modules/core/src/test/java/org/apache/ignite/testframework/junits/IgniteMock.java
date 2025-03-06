@@ -143,7 +143,7 @@ public class IgniteMock implements IgniteEx {
         this.staticCfg = staticCfg;
 
         try {
-            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null, null) {
+            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
                 @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
                     return new GridInternalSubscriptionProcessor(this);
                 }
