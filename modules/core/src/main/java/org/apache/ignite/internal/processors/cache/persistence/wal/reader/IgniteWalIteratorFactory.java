@@ -444,13 +444,15 @@ public class IgniteWalIteratorFactory {
         /** Factory to provide I/O interfaces for read/write operations with files. */
         private FileIOFactory ioFactory = new DataStorageConfiguration().getFileIOFactory();
 
-        /** Node file tree. */
+        /**
+         * Node file tree.
+         */
         private NodeFileTree ft;
 
         /**
          * Cache shared context. In case context is specified binary objects converting and unmarshalling will be
          * performed using processors of this shared context.
-         * <br> This field can't be specified together with {@link #ft}.
+         * <br> This field can't be specified together with {@link #ft} field.
          * */
         @Nullable private GridCacheSharedContext sharedCtx;
 
@@ -665,7 +667,7 @@ public class IgniteWalIteratorFactory {
 
             A.ensure(bufferSize >= pageSize * 2, "Buffer to small.");
 
-            A.ensure(sharedCtx == null || (ft == null), "GridCacheSharedContext and fileTree can't be specified in the same time");
+            A.ensure(sharedCtx == null || ft == null, "GridCacheSharedContext and NodeFileTree can't be specified in the same time");
         }
 
         /**

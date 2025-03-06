@@ -925,8 +925,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         IteratorParametersBuilder iterParametersBuilder =
             createIteratorParametersBuilder(workDir, genDbSubfolderName(ignite, 0))
                 .filesOrDirs(workDir)
-                .binaryMetadataFileStoreDir(null)
-                .marshallerMappingFileStoreDir(null)
+                .fileTree(null)
                 .sharedContext(ignite.context().cache().context());
 
         AtomicInteger cnt = new AtomicInteger();
@@ -1545,17 +1544,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @param workDir Work directory.
      * @param subfolderName Subfolder name.
      * @return WAL iterator factory.
-     * @throws IgniteCheckedException If failed.
      */
     @NotNull private IteratorParametersBuilder createIteratorParametersBuilder(
         String workDir,
         String subfolderName
     ) {
-        NodeFileTree ft = new NodeFileTree(new File(workDir), subfolderName);
-
-        return new IteratorParametersBuilder()
-            .binaryMetadataFileStoreDir(ft.binaryMeta())
-            .marshallerMappingFileStoreDir(ft.marshaller());
+        return new IteratorParametersBuilder().fileTree(new NodeFileTree(workDir, subfolderName));
     }
 
     /**

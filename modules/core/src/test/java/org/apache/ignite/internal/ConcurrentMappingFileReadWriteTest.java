@@ -27,7 +27,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -46,24 +45,24 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     private static final int TYPE_ID = new BinaryBasicIdMapper().typeId(String.class.getName());
 
     /** */
-    private NodeFileTree ft;
+    private File mappingDir;
 
     /** */
     private MarshallerMappingFileStore mappingFileStore;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ft = nodeFileTree("test");
+        mappingDir = sharedFileTree().mkdirMarshaller();
 
         mappingFileStore = new MarshallerMappingFileStore(
-            new StandaloneGridKernalContext(log, ft),
-            ft.marshaller()
+            new StandaloneGridKernalContext(log, null),
+            mappingDir
         );
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        U.delete(ft.marshaller());
+        U.delete(mappingDir);
     }
 
     /** */
@@ -98,7 +97,7 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     public void testRewriteOpenedFile() throws Exception {
         mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
 
-        File mappingFile = new File(ft.marshaller(), BinaryUtils.mappingFileName(PLATFORM_ID, TYPE_ID));
+        File mappingFile = new File(mappingDir, BinaryUtils.mappingFileName(PLATFORM_ID, TYPE_ID));
 
         try (FileInputStream in = new FileInputStream(mappingFile)) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {

@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.I
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.Marshaller;
@@ -120,14 +122,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 
-    /** Node file tree. */
-    private final NodeFileTree ft;
-
     /** List of registered components. */
     private final List<GridComponent> comps = new LinkedList<>();
 
     /** Logger. */
     private IgniteLogger log;
+
+    /** Node file tree. */
+    private NodeFileTree ft;
 
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
@@ -146,19 +148,19 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** */
     @GridToStringExclude
-    private final CacheObjectTransformerProcessor transProc;
+    private CacheObjectTransformerProcessor transProc;
 
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
      * convert is configured. All entries in this case will be lazy data entries.
      */
-    private final IgniteCacheObjectProcessor cacheObjProcessor;
+    @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
 
     /** Marshaller context implementation. */
-    private final MarshallerContextImpl marshallerCtx;
+    private MarshallerContextImpl marshallerCtx;
 
     /** */
-    private final CompressionProcessor compressProc;
+    @Nullable private CompressionProcessor compressProc;
 
     /**
      * @param log Logger.
@@ -166,7 +168,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
-        NodeFileTree ft
+        @Nullable NodeFileTree ft
     ) throws IgniteCheckedException {
         this(log, null, ft);
     }
@@ -174,20 +176,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @param log Logger.
      * @param compressProc Compression processor.
-     * @param ft Node file tree.
-     * {@code null} means no specific folder is configured.
-     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
+     * @param ft Node file tree {@code null} means no specific tree is configured. <br>
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
         @Nullable CompressionProcessor compressProc,
-        NodeFileTree ft
+        @Nullable NodeFileTree ft
     ) throws IgniteCheckedException {
         this.log = log;
         this.ft = ft;
 
         marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
-
         cfg = prepareIgniteConfiguration();
 
         try {
@@ -203,15 +202,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         timeoutProc = new GridTimeoutProcessor(this);
         transProc = createComponent(CacheObjectTransformerProcessor.class);
 
-        cacheObjProcessor = binaryProcessor(this, ft.binaryMeta());
+        // Fake folder provided to perform processor startup on empty folder.
+        cacheObjProcessor = binaryProcessor(this, ft != null
+            ? ft.binaryMeta()
+            : new SharedFileTree(new File(".")).binaryMetaRoot().getAbsoluteFile());
 
         comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
         comps.add(metricMgr);
         comps.add(timeoutProc);
 
-        marshallerCtx.setMarshallerMappingFileStoreDir(ft.marshaller());
-        marshallerCtx.onMarshallerProcessorStarted(this, null);
+        if (ft != null) {
+            marshallerCtx.setMarshallerMappingFileStoreDir(ft.marshaller());
+            marshallerCtx.onMarshallerProcessorStarted(this, null);
+        }
 
         this.compressProc = compressProc;
     }
@@ -684,12 +688,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings<>(ft.root(), ft.folderName());
+                return ft != null
+                    ? new PdsFolderSettings<>(ft.root(), ft.folderName())
+                    : new PdsFolderSettings<>(new File("."), U.maskForFileName(""));
             }
 
             /** {@inheritDoc} */
             @Override public NodeFileTree fileTree() {
-                return ft;
+                return ft != null ? ft : new NodeFileTree(cfg, resolveFolders().folderName());
             }
         };
     }

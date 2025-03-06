@@ -30,8 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
@@ -72,20 +70,25 @@ public class MaintenanceRegistrySimpleTest {
     }
 
     /** */
-    private void cleanMaintenanceRegistryFile() throws Exception {
-        String dftlWorkDir = U.defaultWorkDirectory();
-
-        for (File f : new File(dftlWorkDir).listFiles()) {
+    private void cleanMaintenanceRegistryFile() throws IgniteCheckedException {
+        for (File f : fileTree().nodeStorage().listFiles()) {
             if (f.getName().endsWith(".mntc"))
                 f.delete();
         }
     }
 
     /** */
-    private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
-        String dfltWorkDir = U.defaultWorkDirectory();
+    private NodeFileTree fileTree() throws IgniteCheckedException {
+        NodeFileTree ft = new NodeFileTree(new File(U.defaultWorkDirectory()), "test");
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(log, null, null) {
+        ft.nodeStorage().mkdirs();
+
+        return ft;
+    }
+
+    /** */
+    private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, fileTree()) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -94,18 +97,6 @@ public class MaintenanceRegistrySimpleTest {
                 ));
 
                 return cfg;
-            }
-
-            @Override public PdsFoldersResolver pdsFolderResolver() {
-                return new PdsFoldersResolver() {
-                    @Override public PdsFolderSettings resolveFolders() {
-                        return new PdsFolderSettings(new File(dfltWorkDir), U.maskForFileName(""));
-                    }
-
-                    @Override public NodeFileTree fileTree() {
-                        return new NodeFileTree(new File(dfltWorkDir), U.maskForFileName(""));
-                    }
-                };
             }
         };
 
