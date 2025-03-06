@@ -1635,7 +1635,7 @@ public class GridFunc {
     }
 
     /**
-     * Gets first key from given map or returns {@code null} if the map is empty.
+     * Gets first entry from given map or returns {@code null} if the map is empty.
      *
      * @param m A map.
      * @param <K> Key type.
