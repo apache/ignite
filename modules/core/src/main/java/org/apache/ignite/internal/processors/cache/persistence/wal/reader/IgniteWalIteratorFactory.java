@@ -41,6 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -393,9 +394,7 @@ public class IgniteWalIteratorFactory {
     @NotNull private GridCacheSharedContext prepareSharedCtx(
         IteratorParametersBuilder iteratorParametersBuilder
     ) throws IgniteCheckedException {
-        GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
-            iteratorParametersBuilder.binaryMetadataFileStoreDir,
-            iteratorParametersBuilder.marshallerMappingFileStoreDir) {
+        GridKernalContext kernalCtx = new StandaloneGridKernalContext(log, iteratorParametersBuilder.ft) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -445,24 +444,13 @@ public class IgniteWalIteratorFactory {
         /** Factory to provide I/O interfaces for read/write operations with files. */
         private FileIOFactory ioFactory = new DataStorageConfiguration().getFileIOFactory();
 
-        /**
-         * Folder specifying location of metadata File Store. {@code null} means no specific folder is configured. <br>
-         * This folder should be specified for converting data entries into BinaryObjects
-         */
-        @Nullable private File binaryMetadataFileStoreDir;
-
-        /**
-         * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured.
-         * <br> This folder should be specified for converting data entries into BinaryObjects. Providing {@code null} will
-         * disable unmarshall for non primitive objects, BinaryObjects will be provided
-         */
-        @Nullable private File marshallerMappingFileStoreDir;
+        /** Node file tree. */
+        private NodeFileTree ft;
 
         /**
          * Cache shared context. In case context is specified binary objects converting and unmarshalling will be
          * performed using processors of this shared context.
-         * <br> This field can't be specified together with {@link #binaryMetadataFileStoreDir} or
-         * {@link #marshallerMappingFileStoreDir} fields.
+         * <br> This field can't be specified together with {@link #ft}.
          * */
         @Nullable private GridCacheSharedContext sharedCtx;
 
@@ -569,21 +557,11 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         * @param binaryMetadataFileStoreDir Path to the binary metadata.
+         * @param ft Node file tree.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder binaryMetadataFileStoreDir(File binaryMetadataFileStoreDir) {
-            this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
-
-            return this;
-        }
-
-        /**
-         * @param marshallerMappingFileStoreDir Path to the marshaller mapping.
-         * @return IteratorParametersBuilder Self reference.
-         */
-        public IteratorParametersBuilder marshallerMappingFileStoreDir(File marshallerMappingFileStoreDir) {
-            this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
+        public IteratorParametersBuilder fileTree(NodeFileTree ft) {
+            this.ft = ft;
 
             return this;
         }
@@ -670,8 +648,7 @@ public class IgniteWalIteratorFactory {
                 .bufferSize(bufferSize)
                 .keepBinary(keepBinary)
                 .ioFactory(ioFactory)
-                .binaryMetadataFileStoreDir(binaryMetadataFileStoreDir)
-                .marshallerMappingFileStoreDir(marshallerMappingFileStoreDir)
+                .fileTree(ft)
                 .sharedContext(sharedCtx)
                 .from(lowBound)
                 .to(highBound)
@@ -688,9 +665,7 @@ public class IgniteWalIteratorFactory {
 
             A.ensure(bufferSize >= pageSize * 2, "Buffer to small.");
 
-            A.ensure(sharedCtx == null || (binaryMetadataFileStoreDir == null &&
-                marshallerMappingFileStoreDir == null), "GridCacheSharedContext and binaryMetadataFileStoreDir/" +
-                "marshallerMappingFileStoreDir can't be specified in the same time");
+            A.ensure(sharedCtx == null || (ft == null), "GridCacheSharedContext and fileTree can't be specified in the same time");
         }
 
         /**

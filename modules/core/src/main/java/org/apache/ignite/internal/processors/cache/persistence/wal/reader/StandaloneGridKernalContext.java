@@ -163,8 +163,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @param log Logger.
      * @param ft Node file tree.
-     * {@code null} means no specific folder is configured.
-     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
