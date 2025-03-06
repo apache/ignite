@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -182,7 +183,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(opCtx.snapshotFileTree(), meta.folderName());
+        GridKernalContext snpCtx = new StandaloneGridKernalContext(
+            log,
+            cctx.kernalContext().compress(),
+            new NodeFileTree(opCtx.snapshotFileTree().root(), meta.folderName())
+        );
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
