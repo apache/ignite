@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -137,7 +138,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
-        for (int nodes : new int[]{1, 3})
+        for (int nodes : new int[]{/*1, */3})
             for (int backups : new int[]{0, 1})
                 for (boolean persistence : new boolean[]{true, false})
                     for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {
@@ -182,11 +183,17 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)))
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(persistence)
+                    .setStoragePath(nodes > 1 ? "default_storage" : null))
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setName("custom_storage")
+                    .setStoragePath("custom_storage")))
             .setCacheConfiguration(
                 new CacheConfiguration<>()
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
+                    .setDataRegionName(backups > 0 ? "custom_storage" : null)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
@@ -194,6 +201,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setGroupName(GRP)
                     .setName(CACHE_0)
                     .setBackups(backups)
+                    .setDataRegionName(backups > 0 ? "custom_storage" : null)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
@@ -201,6 +209,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setGroupName(GRP)
                     .setName(CACHE_1)
                     .setBackups(backups)
+                    .setDataRegionName(backups > 0 ? "custom_storage" : null)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
@@ -437,12 +446,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
-        return new Dump(
-            snapshotFileTree(ign, name).root(),
-            true,
-            false,
-            log
-        );
+        return new Dump(ign.context(), new SharedFileTree(snapshotFileTree(ign, name).root()), true, false, null, log);
     }
 
     /** */

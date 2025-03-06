@@ -372,7 +372,7 @@ public class CdcMain implements Runnable {
      * @throws IgniteCheckedException If failed.
      */
     private void startStandaloneKernal() throws IgniteCheckedException {
-        kctx = new StandaloneGridKernalContext(log, ft.binaryMeta(), ft.marshaller()) {
+        kctx = new StandaloneGridKernalContext(log, ft) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 

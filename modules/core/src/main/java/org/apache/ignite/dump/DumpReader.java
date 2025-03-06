@@ -29,16 +29,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpConsumerKernalContextAware;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -50,6 +55,8 @@ import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
  * Dump Reader application.
@@ -77,7 +84,11 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), cfg.keepRaw(), encryptionSpi(), log)) {
+        SharedFileTree sft = new SharedFileTree(cfg.dumpRoot());
+
+        GridKernalContext cctx = standaloneKernalContext(sft, log);
+
+        try (Dump dump = new Dump(cctx, sft, cfg.keepBinary(), cfg.keepRaw(), encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             if (cnsmr instanceof DumpConsumerKernalContextAware)
@@ -185,6 +196,14 @@ public class DumpReader implements Runnable {
         catch (Exception e) {
             throw new IgniteException(e);
         }
+        finally {
+            try {
+                closeAllComponents(cctx);
+            }
+            catch (IgniteCheckedException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /** */
@@ -250,5 +269,31 @@ public class DumpReader implements Runnable {
         encSpi.spiStart("dump-reader");
 
         return encSpi;
+    }
+
+    /**
+     * @param log Logger.
+     * @return Standalone kernal context.
+     */
+    private static GridKernalContext standaloneKernalContext(SharedFileTree sft, IgniteLogger log) {
+        File[] folderNames = sft.binaryMetaRoot().listFiles(File::isDirectory);
+
+        A.ensure(folderNames != null && folderNames.length > 0, sft.binaryMetaRoot() + " must contains node directories");
+
+        NodeFileTree ft = new NodeFileTree(sft.root(), folderNames[0].getName());
+
+        A.ensure(ft.binaryMeta().exists(), "binary metadata directory not exists");
+        A.ensure(ft.marshaller().exists(), "marshaller directory not exists");
+
+        try {
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, ft);
+
+            startAllComponents(kctx);
+
+            return kctx;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }
