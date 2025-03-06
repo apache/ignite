@@ -1549,7 +1549,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         String workDir,
         String subfolderName
     ) {
-        return new IteratorParametersBuilder().fileTree(new NodeFileTree(workDir, subfolderName));
+        return new IteratorParametersBuilder().fileTree(new NodeFileTree(new File(workDir), subfolderName));
     }
 
     /**
