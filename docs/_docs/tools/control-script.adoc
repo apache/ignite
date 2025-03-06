@@ -58,6 +58,12 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
 | --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
 | --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
+| --password +
+  +
+  --keystore-password +
+  +
+  --truststore-password | Forces the command to prompt for a password before connecting to a cluster. +
+  This option ensures secure authentication by requiring a password input. Specifying the password through this argument prevents exposing sensitive information on the command line or in configuration files. |
 |===
 
 == Migration to the thin client protocol
