@@ -469,7 +469,6 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             String root = "root=" + ft.root().getAbsolutePath();
             String folderName = "folderName=" + ft.folderName();
 
-
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintStream ps = new PrintStream(baos);
 
@@ -529,6 +528,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
         });
     }
 
+    /** */
     private void withFileTree(ConsumerX<NodeFileTree> check) throws Exception {
         NodeFileTree ft = nodeFileTree("test");
 
