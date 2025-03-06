@@ -212,7 +212,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         comps.add(metricMgr);
         comps.add(timeoutProc);
 
-        if (ft != null) {
+        if (ft != null && ft.marshaller().exists()) {
             marshallerCtx.setMarshallerMappingFileStoreDir(ft.marshaller());
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
