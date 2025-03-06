@@ -17,7 +17,12 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.io.Externalizable;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
@@ -121,8 +126,8 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
         assertEquals(VAL, ignite.cache(CACHE_NAME).get(KEY));
 
-        final PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted actual =
-            (PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
+        final TestStringContainerToBePrinted actual =
+            (TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
         assertEquals(VAL, actual.data);
 
         assertNodeIndexesInFolder(); // should not create any new style directories
@@ -141,15 +146,15 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
             cache.put("1", "2");
             cache.put(1, 2);
             cache.put(1L, 2L);
-            cache.put(PersistenceBasicCompatibilityTest.TestEnum.A, "Enum_As_Key");
-            cache.put("Enum_As_Value", PersistenceBasicCompatibilityTest.TestEnum.B);
-            cache.put(PersistenceBasicCompatibilityTest.TestEnum.C, PersistenceBasicCompatibilityTest.TestEnum.C);
+            cache.put(TestEnum.A, "Enum_As_Key");
+            cache.put("Enum_As_Value", TestEnum.B);
+            cache.put(TestEnum.C, TestEnum.C);
 
-            cache.put("Serializable", new PersistenceBasicCompatibilityTest.TestSerializable(42));
-            cache.put(new PersistenceBasicCompatibilityTest.TestSerializable(42), "Serializable_As_Key");
-            cache.put("Externalizable", new PersistenceBasicCompatibilityTest.TestExternalizable(42));
-            cache.put(new PersistenceBasicCompatibilityTest.TestExternalizable(42), "Externalizable_As_Key");
-            cache.put(KEY_OBJ, new PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted(VAL));
+            cache.put("Serializable", new TestSerializable(42));
+            cache.put(new TestSerializable(42), "Serializable_As_Key");
+            cache.put("Externalizable", new TestExternalizable(42));
+            cache.put(new TestExternalizable(42), "Externalizable_As_Key");
+            cache.put(KEY_OBJ, new TestStringContainerToBePrinted(VAL));
 
         }
     }
@@ -226,5 +231,155 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         check.accept(ft.wal());
         check.accept(ft.walArchive());
         check.accept(ft.nodeStorage());
+    }
+
+    /** Enum for cover binaryObject enum save/load. */
+    public enum TestEnum {
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C
+    }
+
+    /** Special class to test WAL reader resistance to Serializable interface. */
+    static class TestSerializable implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** I value. */
+        private int iVal;
+
+        /**
+         * Creates test object
+         *
+         * @param iVal I value.
+         */
+        TestSerializable(int iVal) {
+            this.iVal = iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestSerializable{" +
+                "iVal=" + iVal +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestSerializable that = (TestSerializable)o;
+
+            return iVal == that.iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return iVal;
+        }
+    }
+
+    /** Special class to test WAL reader resistance to Serializable interface. */
+    static class TestExternalizable implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** I value. */
+        private int iVal;
+
+        /** Noop ctor for unmarshalling */
+        public TestExternalizable() {
+
+        }
+
+        /**
+         * Creates test object with provided value.
+         *
+         * @param iVal I value.
+         */
+        public TestExternalizable(int iVal) {
+            this.iVal = iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestExternalizable{" +
+                "iVal=" + iVal +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(iVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            iVal = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestExternalizable that = (TestExternalizable)o;
+
+            return iVal == that.iVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return iVal;
+        }
+    }
+
+    /** Container class to test toString of data records. */
+    static class TestStringContainerToBePrinted {
+        /** */
+        String data;
+
+        /**
+         * Creates container.
+         *
+         * @param data value to be searched in to String.
+         */
+        public TestStringContainerToBePrinted(String data) {
+            this.data = data;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestStringContainerToBePrinted printed = (TestStringContainerToBePrinted)o;
+
+            return data != null ? data.equals(printed.data) : printed.data == null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return data != null ? data.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestStringContainerToBePrinted{" +
+                "data='" + data + '\'' +
+                '}';
+        }
     }
 }

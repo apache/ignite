@@ -62,7 +62,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
      */
     private void doTestStartupWithOldVersion(String ver) throws Exception {
         try {
-            startGrid(1, ver, new PersistenceBasicCompatibilityTest.ConfigurationClosure(true),
+            startGrid(1, ver, new ConfigurationClosure(true),
                 new PostStartupClosure());
 
             stopAllGrids();

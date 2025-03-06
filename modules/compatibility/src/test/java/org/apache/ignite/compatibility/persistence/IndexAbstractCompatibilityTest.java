@@ -29,9 +29,13 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -104,5 +108,34 @@ public abstract class IndexAbstractCompatibilityTest extends IgnitePersistenceCo
      */
     protected static List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
+    }
+
+    /** */
+    public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** Compact footer. */
+        private boolean compactFooter;
+
+        /**
+         * @param compactFooter Compact footer.
+         */
+        public ConfigurationClosure(boolean compactFooter) {
+            this.compactFooter = compactFooter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteConfiguration cfg) {
+            cfg.setLocalHost("127.0.0.1");
+
+            TcpDiscoverySpi disco = new TcpDiscoverySpi();
+            disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
+
+            cfg.setDiscoverySpi(disco);
+
+            cfg.setPeerClassLoadingEnabled(false);
+
+            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+
+            cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
+        }
     }
 }

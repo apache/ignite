@@ -51,23 +51,9 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
     }
 
     /** */
-    @Test
-    public void testSecondaryIndexesMigration_2_13_0() throws Exception {
-        // 2.13.0 - version with _KEY unwrapping, but before index processing moved to the core module.
-        doTestStartupWithOldVersion("2.13.0", () -> {
-            checkIndex("_key_PK", "id=1", "ID", "NAME", "CITY");
-            checkIndex("AFFINITY_KEY", "name='name1'", "NAME", "ID", "CITY");
-            checkIndex("IDX_CITY_AGE", "city='city1'", "CITY", "AGE", "ID", "NAME");
-            checkIndex("IDX_AGE_NAME", "age=1", "AGE", "NAME", "ID", "CITY");
-            checkIndex("IDX_SALARY", "salary=0.1", "SALARY", "ID", "NAME", "CITY");
-            checkIndex("IDX_COMPANY", "company='company1'", "COMPANY", "ID", "NAME", "CITY");
-        });
-    }
-
-    /** */
     private void doTestStartupWithOldVersion(String ver, Runnable idxChecker) throws Exception {
         try {
-            startGrid(1, ver, new PersistenceBasicCompatibilityTest.ConfigurationClosure(true),
+            startGrid(1, ver, new ConfigurationClosure(true),
                 new PostStartupClosure());
 
             stopAllGrids();
