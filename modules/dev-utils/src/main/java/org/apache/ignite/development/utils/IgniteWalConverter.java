@@ -82,8 +82,8 @@ public class IgniteWalConverter {
 
         IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .pageSize(params.getPageSize())
                 .fileTree(params.getFileTree())
+                .pageSize(params.getPageSize())
                 .keepBinary(params.isKeepBinary());
 
         if (params.getFileTree().wal().exists())
