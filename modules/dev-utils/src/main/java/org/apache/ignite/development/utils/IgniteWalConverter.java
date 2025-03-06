@@ -83,15 +83,14 @@ public class IgniteWalConverter {
         IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .pageSize(params.getPageSize())
-                .binaryMetadataFileStoreDir(params.getBinaryMetadataFileStoreDir())
-                .marshallerMappingFileStoreDir(params.getMarshallerMappingFileStoreDir())
+                .fileTree(params.getFileTree())
                 .keepBinary(params.isKeepBinary());
 
-        if (params.getWalDir() != null)
-            iterParametersBuilder.filesOrDirs(params.getWalDir());
+        if (params.getFileTree().wal().exists())
+            iterParametersBuilder.filesOrDirs(params.getFileTree().wal());
 
-        if (params.getWalArchiveDir() != null)
-            iterParametersBuilder.filesOrDirs(params.getWalArchiveDir());
+        if (params.getFileTree().walArchive().exists())
+            iterParametersBuilder.filesOrDirs(params.getFileTree().walArchive());
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
 
