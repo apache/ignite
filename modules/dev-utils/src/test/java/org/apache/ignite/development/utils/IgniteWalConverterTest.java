@@ -221,7 +221,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = createWal(list, null);
 
-        //U.delete(ft.binaryMeta());
+        U.delete(ft.binaryMeta());
+        U.delete(ft.marshaller());
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 

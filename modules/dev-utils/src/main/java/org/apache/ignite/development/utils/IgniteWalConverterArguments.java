@@ -276,11 +276,7 @@ public class IgniteWalConverterArguments {
             out.println("    pages                            (Optional) Comma-separated pages or path to file with " +
                 "pages on each line in grpId:pageId format.");
             out.println("For example:");
-            out.println("    walDir=/work/db/wal");
-            out.println("    walArchiveDir=/work/db/wal_archive");
             out.println("    pageSize=4096");
-            out.println("    binaryMetadataFileStoreDir=/work/db/nodeId-consistentId");
-            out.println("    marshallerMappingFileStoreDir=/work/db/marshaller");
             out.println("    keepBinary=true");
             out.println("    recordTypes=DataRecord,TxRecord");
             out.println("    walTimeFromMillis=1575158400000");
@@ -408,14 +404,9 @@ public class IgniteWalConverterArguments {
 
         out.println("Program arguments:");
 
-        if (root != null)
-            out.printf("\t%s = %s\n", ROOT_DIR, root.getAbsolutePath());
-
-        if (folderName != null)
-            out.printf("\t%s = %s\n", FOLDER_NAME, folderName);
-
+        out.printf("\t%s = %s\n", ROOT_DIR, root.getAbsolutePath());
+        out.printf("\t%s = %s\n", FOLDER_NAME, folderName);
         out.printf("\t%s = %d\n", PAGE_SIZE, pageSize);
-
         out.printf("\t%s = %s\n", KEEP_BINARY, keepBinary);
 
         if (!F.isEmpty(recordTypes))
