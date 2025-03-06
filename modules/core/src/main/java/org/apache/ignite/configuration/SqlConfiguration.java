@@ -17,12 +17,8 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * The configuration of the SQL query subsystem.
@@ -31,26 +27,14 @@ public class SqlConfiguration {
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
-    /** Default SQL plan history size for the Calcite engine. */
-    public static final int DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE = 1000;
-
-    /** Default SQL plan history size for the H2 engine. */
-    public static final int DFLT_SQL_PLAN_HISTORY_SIZE_H2 = 0;
+    /** Default SQL plan history size. */
+    public static final int DFLT_SQL_PLAN_HISTORY_SIZE = 1000;
 
     /** Default query timeout. */
     public static final long DFLT_QRY_TIMEOUT = 0;
 
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
-
-    /** Class name for configuring the Calcite engine. */
-    public static final String CALCITE_CONF_CLASS = "org.apache.ignite.calcite.CalciteQueryEngineConfiguration";
-
-    /** Class name for configuring the H2 engine. */
-    public static final String H2_CONF_CLASS = "org.apache.ignite.indexing.IndexingQueryEngineConfiguration";
-
-    /** Field name that is used to represent the engine's name in SQL engine configuration classes. */
-    public static final String ENGINE_NAME_FIELD = "ENGINE_NAME";
 
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
@@ -65,7 +49,7 @@ public class SqlConfiguration {
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
     /** SQL plan history size. */
-    private volatile Integer sqlPlanHistSize;
+    private int sqlPlanHistSize = -1;
 
     /** Enable validation of key & values against sql schema. */
     private boolean validationEnabled;
@@ -130,22 +114,19 @@ public class SqlConfiguration {
     }
 
     /**
-     * Number of SQL plan history elements to keep in memory. If not provided, then default values {@link
-     * #DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE} or {@link #DFLT_SQL_PLAN_HISTORY_SIZE_H2} are used. If provided value is
-     * less or equals 0, then gathering SQL plan history will be switched off.
+     * Number of SQL plan history elements to keep in memory. If not provided, then default value {@code -1} applies when
+     * the indexing module is in use and {@link #DFLT_SQL_PLAN_HISTORY_SIZE} is used for other engines. If provided value
+     * is less or equals 0, then gathering SQL plan history will be switched off.
      *
      * @return SQL plan history size.
      */
-    public synchronized int getSqlPlanHistorySize() {
-        if (sqlPlanHistSize == null)
-            sqlPlanHistSize = defaultSqlPlanHistorySize();
-
+    public int getSqlPlanHistorySize() {
         return sqlPlanHistSize;
     }
 
     /**
-     * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default values are {@link
-     * #DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE} and {@link #DFLT_SQL_PLAN_HISTORY_SIZE_H2}.
+     * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default value {@code -1}
+     * applies when the indexing module is in use and {@link #DFLT_SQL_PLAN_HISTORY_SIZE} is used for other engines.
      *
      * @param size Number of SQL plan history elements kept in memory.
      * @return {@code this} for chaining.
@@ -260,33 +241,5 @@ public class SqlConfiguration {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlConfiguration.class, this);
-    }
-
-    /**
-     * Returns the default SQL plan history size based on the SQL engine. If no engine is configured, H2 is used by
-     * default as per {@link GridQueryProcessor}.
-     *
-     * @return The default SQL query plan history size.
-     */
-    private int defaultSqlPlanHistorySize() {
-        if (enginesConfiguration == null || enginesConfiguration.length == 0)
-            return DFLT_SQL_PLAN_HISTORY_SIZE_H2;
-
-        String calciteEngineName, h2EngineName;
-
-        try {
-            calciteEngineName = U.staticField(Class.forName(CALCITE_CONF_CLASS), ENGINE_NAME_FIELD);
-
-            h2EngineName = U.staticField(Class.forName(H2_CONF_CLASS), ENGINE_NAME_FIELD);
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to get engine names from engine configuration classes.", e);
-        }
-
-        String engineName = ((QueryEngineConfigurationEx)enginesConfiguration[0]).engineName();
-
-        assert engineName.equals(calciteEngineName) || engineName.equals(h2EngineName);
-
-        return engineName.equals(calciteEngineName) ? DFLT_SQL_PLAN_HISTORY_SIZE_CALCITE : DFLT_SQL_PLAN_HISTORY_SIZE_H2;
     }
 }
