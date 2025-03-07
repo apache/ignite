@@ -193,7 +193,7 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * Sets rules filter. If a filter already exists, enqueues the new one after the current.
+     * Sets a rule filter. If already exists, enqueues the new one after the current filter.
      *
      * @param rulesFilter Rules filter.
      */

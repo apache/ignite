@@ -25,7 +25,7 @@ import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteJoinsOrderOptimizationRule;
 
 /**
  * Holds supported SQL hints and their settings.
@@ -68,12 +68,12 @@ public enum HintDefinition {
         /** {@inheritDoc} */
         @Override public Collection<RelOptRule> disabledRules() {
             // CoreRules#JOIN_COMMUTE also disables CoreRules.JOIN_COMMUTE_OUTER.
-            // Disabling JoinToMultiJoinRule also disables IgniteMultiJoinOptimizationRule because it won't
-            // receive a MultiJoin. Disabling IgniteMultiJoinOptimizationRule in this way doesn't actually work because
+            // Disabling JoinToMultiJoinRule also disables IgniteJoinsOrderOptimizationRule because it won't
+            // receive a MultiJoin. Disabling IgniteJoinsOrderOptimizationRule in this way doesn't actually work because
             // MultiJoin, unfortunately, is not a Hintable and HintStrategyTable ignores it. We keep it here as slight
             // optimization, to remove more unnecessary rules from the planning.
             return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT,
-                CoreRules.JOIN_TO_MULTI_JOIN, IgniteMultiJoinOptimizationRule.INSTANCE);
+                CoreRules.JOIN_TO_MULTI_JOIN, IgniteJoinsOrderOptimizationRule.INSTANCE);
         }
     },
 
@@ -186,7 +186,7 @@ public enum HintDefinition {
      */
     private static HintPredicate joinHintPredicate() {
         // HintPredicates.VALUES might be mentioned too. But RelShuttleImpl#visit(LogicalValues) does nothing and ignores
-        // setting any hints. MultiJoin probably might be included too if it becomes Hintable.
+        // setting any hints. MultiJoin might be probably included if it becomes Hintable.
         return HintPredicates.or(HintPredicates.JOIN, HintPredicates.TABLE_SCAN);
     }
 
