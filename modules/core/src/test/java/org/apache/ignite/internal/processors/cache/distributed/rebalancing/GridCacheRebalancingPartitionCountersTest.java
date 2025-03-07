@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,10 +35,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  *
@@ -74,13 +76,13 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
     }
 
     /**
@@ -118,22 +120,25 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         final int problemNode = 2;
 
         IgniteEx node = (IgniteEx)ignite(problemNode);
+
+        NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
+        CacheConfiguration ccfg = node.cachex(CACHE_NAME).configuration();
+
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
         boolean primaryRemoved = false;
-        for (int i = 0; i < PARTITIONS_CNT; i++) {
-            String nodeName = getTestIgniteInstanceName(problemNode);
 
-            Path dirPath = Paths.get(U.defaultWorkDirectory(), "db", nodeName.replace(".", "_"), CACHE_NAME + "-" + CACHE_NAME);
+        for (int i = 0; i < PARTITIONS_CNT; i++) {
+            Path dirPath = ft.cacheStorage(ccfg).toPath();
 
             info("Path: " + dirPath.toString());
 
             assertTrue(Files.exists(dirPath));
 
             for (File f : dirPath.toFile().listFiles()) {
-                if (f.getName().equals("part-" + i + ".bin")) {
+                if (f.equals(ft.partitionFile(ccfg, i))) {
                     if (contains(primaryPartitions, i)) {
                         info("Removing: " + f.getName());
 
@@ -142,7 +147,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                         f.delete();
                     }
                 }
-                else if ("index.bin".equals(f.getName())) {
+                else if (f.equals(ft.partitionFile(ccfg, INDEX_PARTITION))) {
                     info("Removing: " + f.getName());
 
                     f.delete();

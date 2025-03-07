@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
-
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
 
 /**
  * Class for manage of segment file location.
@@ -66,12 +63,12 @@ public class SegmentRouter {
         FileDescriptor fd;
 
         if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !ft.walArchiveEnabled())
-            fd = new FileDescriptor(new File(ft.walArchive(), fileName(segmentId)));
+            fd = new FileDescriptor(ft.walArchiveSegment(segmentId));
         else
-            fd = new FileDescriptor(new File(ft.wal(), fileName(segmentId % dsCfg.getWalSegments())), segmentId);
+            fd = new FileDescriptor(ft.walSegment(segmentId % dsCfg.getWalSegments()), segmentId);
 
         if (!fd.file().exists()) {
-            FileDescriptor zipFile = new FileDescriptor(new File(ft.walArchive(), fileName(fd.idx()) + ZIP_SUFFIX));
+            FileDescriptor zipFile = new FileDescriptor(ft.zipWalArchiveSegment(fd.idx()));
 
             if (!zipFile.file().exists()) {
                 throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +

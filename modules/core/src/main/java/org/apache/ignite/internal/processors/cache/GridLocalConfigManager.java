@@ -24,12 +24,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -67,12 +65,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.file.Files.newDirectoryStream;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
@@ -147,9 +139,9 @@ public class GridLocalConfigManager {
                 if (!cacheDir.exists())
                     continue;
 
-                File[] ccfgFiles = cacheDir.listFiles((dir, name) -> name.endsWith(CACHE_DATA_FILENAME));
+                List<File> ccfgFiles = NodeFileTree.existingCacheConfigFiles(cacheDir);
 
-                if (ccfgFiles == null)
+                if (F.isEmpty(ccfgFiles))
                     continue;
 
                 for (File ccfgFile : ccfgFiles)
@@ -169,19 +161,17 @@ public class GridLocalConfigManager {
         if (ctx.clientNode())
             return Collections.emptyMap();
 
-        File[] files = ft.nodeStorage().listFiles();
+        List<File> dirs = ft.existingCacheDirs();
 
-        if (files == null)
+        if (dirs == null)
             return Collections.emptyMap();
 
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
-        Arrays.sort(files);
+        Collections.sort(dirs);
 
-        for (File file : files) {
-            if (file.isDirectory())
-                readCacheConfigurations(file, ccfgs);
-        }
+        for (File file : dirs)
+            readCacheGroupCaches(file, ccfgs);
 
         return ccfgs;
     }
@@ -223,27 +213,18 @@ public class GridLocalConfigManager {
     }
 
     /**
-     * @param dbDir Root directory for all cache datas.
+     * @param ft Node file tree to read from.
      * @param marshaller Marshaller.
      * @param cfg Ignite configuration.
      * @return Collection of cache data files and actual cache data.
      */
     public static Map<File, StoredCacheData> readCachesData(
-        File dbDir,
+        NodeFileTree ft,
         @Nullable Marshaller marshaller,
         @Nullable IgniteConfiguration cfg
     ) {
-        File[] caches = dbDir.listFiles();
-
-        if (caches == null)
-            return Collections.emptyMap();
-
-        return Arrays.stream(caches)
-            .filter(f -> f.isDirectory() &&
-                (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
-                !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
-            .filter(File::exists)
-            .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
+        return ft.existingUserCacheDirs().stream()
+            .flatMap(cacheDir -> NodeFileTree.existingCacheConfigFiles(cacheDir).stream())
             .collect(Collectors.toMap(f -> f, f -> {
                 try {
                     return readCacheData(f, marshaller, cfg);
@@ -293,14 +274,14 @@ public class GridLocalConfigManager {
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        File file = cacheConfigurationFile(ccfg);
+        File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
 
         chgLock.readLock().lock();
 
         try {
             if (overwrite || !Files.exists(filePath) || Files.size(filePath) == 0) {
-                File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
+                File tmp = ft.tmpCacheConfigurationFile(ccfg);
 
                 if (tmp.exists() && !tmp.delete()) {
                     log.warning("Failed to delete temporary cache config file" +
@@ -337,7 +318,7 @@ public class GridLocalConfigManager {
 
         try {
             CacheConfiguration<?, ?> ccfg = cacheData.config();
-            File file = cacheConfigurationFile(ccfg);
+            File file = ft.cacheConfigurationFile(ccfg);
 
             if (file.exists()) {
                 for (BiConsumer<String, File> lsnr : lsnrs)
@@ -423,18 +404,9 @@ public class GridLocalConfigManager {
         File cacheGrpDir = ft.cacheStorage(ctx.config());
 
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
-            DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
-                @Override public boolean accept(Path path) {
-                    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(CACHE_DATA_FILENAME);
-                }
-            };
-
-            try (DirectoryStream<Path> dirStream = newDirectoryStream(cacheGrpDir.toPath(), cacheCfgFileFilter)) {
-                for (Path path: dirStream)
-                    Files.deleteIfExists(path);
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx.toString(), e);
+            for (File file : NodeFileTree.existingCacheConfigFiles(cacheGrpDir)) {
+                if (!U.delete(file))
+                    throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx);
             }
         }
     }
@@ -444,14 +416,9 @@ public class GridLocalConfigManager {
      * @param ccfgs Cache configurations.
      * @throws IgniteCheckedException If failed.
      */
-    private void readCacheGroupCaches(File grpDir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        File[] files = grpDir.listFiles();
-
-        if (files == null)
-            return;
-
-        for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0)
+    public void readCacheGroupCaches(File grpDir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
+        for (File file : NodeFileTree.existingCacheConfigFiles(grpDir)) {
+            if (file.length() > 0)
                 readAndAdd(
                     ccfgs,
                     file,
@@ -459,27 +426,6 @@ public class GridLocalConfigManager {
                         "skipping config file " + file.getName() + " in group directory " + grpDir.getName()
                 );
         }
-    }
-
-    /**
-     * @param dir Cache (group) directory.
-     * @param ccfgs Cache configurations.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        if (dir.getName().startsWith(CACHE_DIR_PREFIX)) {
-            File conf = new File(dir, CACHE_DATA_FILENAME);
-
-            if (conf.exists() && conf.length() > 0) {
-                readAndAdd(
-                    ccfgs,
-                    conf,
-                    cache -> "Cache with name=" + cache + " is already registered, skipping config file " + dir.getName()
-                );
-            }
-        }
-        else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
-            readCacheGroupCaches(dir, ccfgs);
     }
 
     /**
@@ -524,19 +470,6 @@ public class GridLocalConfigManager {
             CU.findDataRegion(ctx.config().getDataStorageConfiguration(), cfg.getDataRegionName());
 
         return drCfg != null && !drCfg.isPersistenceEnabled() && drCfg.isCdcEnabled();
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
-     */
-    public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(ft.cacheStorage(ccfg), cacheDataFilename(ccfg));
-    }
-
-    /** @return Name of cache data filename. */
-    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
     }
 
     /**

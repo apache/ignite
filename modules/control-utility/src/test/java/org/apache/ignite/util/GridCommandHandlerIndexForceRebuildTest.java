@@ -41,6 +41,7 @@ import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildComma
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -819,9 +820,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @throws Exception if failed.
      */
     private void triggerIndexRebuild(int igniteIdx, Collection<String> excludedCacheNames) throws Exception {
+        NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
+
         stopGrid(igniteIdx);
 
-        GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
+        GridTestUtils.deleteIndexBin(ft);
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         final IgniteEx ignite = startGrid(igniteIdx);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -34,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -91,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -134,9 +133,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
 
 /**
  *
@@ -586,13 +582,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         // Delete cache_data.bin file for this cache. Binary recovery should complete successfully after it.
-        final File[] files = destroyCacheWorkDir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(final File dir, final String name) {
-                return name.endsWith(CACHE_DATA_FILENAME);
-            }
-        });
+        final List<File> files = NodeFileTree.existingCacheConfigFiles(destroyCacheWorkDir);
 
-        assertTrue(files.length > 0);
+        assertTrue(!files.isEmpty());
 
         for (final File file : files)
             assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());
@@ -748,13 +740,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, new IndexedObject(i));
 
-        final Object consistentId = ignite.cluster().localNode().consistentId();
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+
+        final File cacheDir = ft.cacheStorage(ignite.cachex(CACHE_NAME).configuration());
 
         stopGrid(1);
 
-        final File cacheDir = cacheDir(CACHE_NAME, consistentId.toString());
+        assertTrue(cacheDir.exists());
 
-        renamed = cacheDir.renameTo(new File(cacheDir.getParent(), "cache-" + RENAMED_CACHE_NAME));
+        renamed = cacheDir.renameTo(ft.cacheStorage(new CacheConfiguration<>(RENAMED_CACHE_NAME)));
 
         assert renamed;
 
@@ -766,30 +760,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 100; i++)
             assertEquals(new IndexedObject(i), cache.get(i));
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param consId Consistent ID.
-     * @return Cache dir.
-     * @throws IgniteCheckedException If fail.
-     */
-    private File cacheDir(final String cacheName, final String consId) throws IgniteCheckedException {
-        final String subfolderName = genNewStyleSubfolderName(0, UUID.fromString(consId));
-
-        final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        assert dbDir.exists();
-
-        final File consIdDir = new File(dbDir.getAbsolutePath(), subfolderName);
-
-        assert consIdDir.exists();
-
-        final File cacheDir = new File(consIdDir.getAbsolutePath(), "cache-" + cacheName);
-
-        assert cacheDir.exists();
-
-        return cacheDir;
     }
 
     /**

@@ -26,27 +26,28 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectory;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-
 /** */
 public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask<Void> {
-    /** Snapshot directory path. */
-    private final String snpPath;
+    /** Snapshot file tree. */
+    private final SnapshotFileTree sft;
 
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param snpName Unique identifier of snapshot process.
-     * @param snpPath Snapshot directory path.
+     * @param sft Snapshot file tree.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Partition to be processed.
      */
@@ -54,14 +55,13 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
-        String snpName,
-        String snpPath,
+        SnapshotFileTree sft,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, sft.name(), snpSndr, parts);
 
-        this.snpPath = snpPath;
+        this.sft = sft;
     }
 
     /** {@inheritDoc} */
@@ -70,11 +70,12 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             return false;
 
         try {
-            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName, snpPath);
+            List<SnapshotInfo> metasAndTrees = cctx.snapshotMgr().readSnapshotMetadatas(sft)
+                .stream().map(SnapshotInfo::new).collect(Collectors.toList());
 
-            Function<GroupPartitionId, SnapshotMetadata> findMeta = pair -> {
-                for (SnapshotMetadata meta : metas) {
-                    Map<Integer, Set<Integer>> parts0 = meta.partitions();
+            Function<GroupPartitionId, SnapshotInfo> findMeta = pair -> {
+                for (SnapshotInfo sinfo : metasAndTrees) {
+                    Map<Integer, Set<Integer>> parts0 = sinfo.meta.partitions();
 
                     if (F.isEmpty(parts0))
                         continue;
@@ -82,20 +83,19 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                     Set<Integer> locParts = parts0.get(pair.getGroupId());
 
                     if (locParts != null && locParts.contains(pair.getPartitionId()))
-                        return meta;
+                        return sinfo;
                 }
 
                 return null;
             };
 
-            Map<GroupPartitionId, SnapshotMetadata> partsToSend = new HashMap<>();
+            Map<GroupPartitionId, SnapshotInfo> partsToSend = new HashMap<>();
 
             parts.forEach((grpId, parts) -> parts.forEach(
                 part -> partsToSend.computeIfAbsent(new GroupPartitionId(grpId, part), findMeta)));
 
             if (partsToSend.containsValue(null)) {
-                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey,
-                    e -> e.getValue() == null);
+                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey, e -> e.getValue() == null);
 
                 throw new IgniteException("Snapshot partitions missed on local node " +
                     "[snpName=" + snpName + ", missed=" + missed + ']');
@@ -103,28 +103,20 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             snpSndr.init(partsToSend.size());
 
-            File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
-
-            CompletableFuture.runAsync(() -> partsToSend.forEach((gp, meta) -> {
+            CompletableFuture.runAsync(() -> partsToSend.forEach((gp, sinfo) -> {
                 if (err.get() != null)
                     return;
 
-                File cacheDir = cacheDirectory(new File(snpDir, databaseRelativePath(meta.folderName())),
-                    gp.getGroupId());
+                CacheConfiguration<?, ?> ccfg = F.first(sinfo.groupConfigs(gp.getGroupId())).configuration();
 
-                if (cacheDir == null) {
-                    throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
-                        ", pair=" + gp + ']');
-                }
-
-                File snpPart = getPartitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
+                File snpPart = sinfo.sft.partitionFile(ccfg, gp.getPartitionId());
 
                 if (!snpPart.exists()) {
-                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
+                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + sinfo.sft.cacheStorage(ccfg) +
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
+                snpSndr.sendPart(snpPart, sft.partitionFile(ccfg, gp.getPartitionId()), gp, snpPart.length());
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)
@@ -167,6 +159,66 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         else {
             snpSndr.close(th);
             onDone(th);
+        }
+    }
+
+    /** Snapshot info. */
+    private class SnapshotInfo {
+        /** Snapshot meta. */
+        final SnapshotMetadata meta;
+
+        /** Snapshot file tree. */
+        final SnapshotFileTree sft;
+
+        /** Group cache data. */
+        final Map<Integer, List<StoredCacheData>> cacheData = new HashMap<>();
+
+        /**
+         * @param meta Snapshot meta.
+         */
+        public SnapshotInfo(SnapshotMetadata meta) {
+            this.meta = meta;
+            // Separate file tree for the case when snapshot moved from other node.
+            this.sft = new SnapshotFileTree(
+                cctx.kernalContext(),
+                SnapshotResponseRemoteFutureTask.this.sft.name(),
+                SnapshotResponseRemoteFutureTask.this.sft.path(),
+                meta.folderName(),
+                meta.consistentId()
+            );
+        }
+
+        /**
+         * @param grpId Group.
+         */
+        public List<StoredCacheData> groupConfigs(int grpId) {
+            if (cacheData.containsKey(grpId))
+                return cacheData.get(grpId);
+
+            File cacheDir = sft.existingCacheDirectory(grpId);
+
+            if (cacheDir == null) {
+                throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
+                    ", grp=" + grpId + ']');
+            }
+
+            List<StoredCacheData> res = NodeFileTree.existingCacheConfigFiles(cacheDir).stream().map(f -> {
+                try {
+                    return cctx.cache().configManager().readCacheData(f);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }).collect(Collectors.toList());
+
+            if (res.isEmpty()) {
+                throw new IgniteException("Cache configs not found [snpName=" + snpName + ", meta=" + meta +
+                    ", grp=" + grpId + ']');
+            }
+
+            cacheData.put(grpId, res);
+
+            return res;
         }
     }
 }

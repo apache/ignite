@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,19 +54,19 @@ public class IdleVerifyResult extends VisorDataTransferObject {
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = new HashMap<>();
+    private Map<PartitionKey, List<PartitionHashRecord>> lostPartitions;
 
     /** Transaction hashes conflicts. */
     @GridToStringInclude
@@ -86,69 +87,23 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     }
 
     /**
-     * @param exceptions Occurred exceptions.
+     * @see #builder()
      */
-    public IdleVerifyResult(Map<ClusterNode, Exception> exceptions) {
-        this.exceptions = exceptions;
-    }
-
-    /**
-     * @param txHashConflicts Transaction hashes conflicts.
-     */
-    public IdleVerifyResult(
-        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes,
+    private IdleVerifyResult(
+        Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts,
+        Map<PartitionKey, List<PartitionHashRecord>> hashConflicts,
+        Map<PartitionKey, List<PartitionHashRecord>> movingPartitions,
+        Map<PartitionKey, List<PartitionHashRecord>> lostPartitions,
         @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
-        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
-    ) {
-        this(clusterHashes, Collections.emptyMap());
-
-        this.txHashConflicts = txHashConflicts;
-        this.partiallyCommittedTxs = partiallyCommittedTxs;
-    }
-
-    /**
-     * @param clusterHashes Map of cluster partition hashes.
-     * @param exceptions Exceptions on each cluster node.
-     */
-    public IdleVerifyResult(
-        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes,
+        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs,
         Map<ClusterNode, Exception> exceptions
     ) {
-        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
-            Integer partHash = null;
-            Integer partVerHash = null;
-            Object updateCntr = null;
-
-            for (PartitionHashRecord record : e.getValue()) {
-                if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
-                    movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
-                        .add(record);
-
-                    continue;
-                }
-
-                if (record.partitionState() == PartitionHashRecord.PartitionState.LOST) {
-                    lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
-                        .add(record);
-
-                    continue;
-                }
-
-                if (partHash == null) {
-                    partHash = record.partitionHash();
-                    partVerHash = record.partitionVersionsHash();
-
-                    updateCntr = record.updateCounter();
-                }
-                else {
-                    if (!Objects.equals(record.updateCounter(), updateCntr))
-                        cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
-
-                    if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash)
-                        hashConflicts.putIfAbsent(e.getKey(), e.getValue());
-                }
-            }
-        }
+        this.cntrConflicts = cntrConflicts;
+        this.hashConflicts = hashConflicts;
+        this.movingPartitions = movingPartitions;
+        this.lostPartitions = lostPartitions;
+        this.txHashConflicts = txHashConflicts;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
 
         this.exceptions = exceptions;
     }
@@ -413,5 +368,171 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IdleVerifyResult.class, this);
+    }
+
+    /** @return A fresh result builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Builder of {@link IdleVerifyResult}. Is not thread-safe. */
+    public static final class Builder {
+        /** */
+        private @Nullable Map<PartitionKey, List<PartitionHashRecord>> partHashes;
+
+        /** */
+        private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+
+        /** */
+        private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+
+        /** Incremental snapshot transactions records per consistent id. */
+        private @Nullable Map<Object, Map<Object, TransactionsHashRecord>> incrTxHashRecords;
+
+        /** */
+        private @Nullable Map<ClusterNode, Exception> exceptions;
+
+        /** */
+        private Builder() {
+            // No-op.
+        }
+
+        /** Build a {@link IdleVerifyResult}. */
+        public IdleVerifyResult build() {
+            // Add all missed incremental pairs to the conflicts.
+            if (!F.isEmpty(incrTxHashRecords))
+                incrTxHashRecords.values().stream().flatMap(e -> e.values().stream()).forEach(e -> addTxConflicts(F.asList(e, null)));
+
+            Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts = new HashMap<>();
+            Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
+            Map<PartitionKey, List<PartitionHashRecord>> movingPartitions = new HashMap<>();
+            Map<PartitionKey, List<PartitionHashRecord>> lostPartitions = new HashMap<>();
+
+            if (exceptions == null)
+                exceptions = Collections.emptyMap();
+
+            if (F.isEmpty(partHashes)) {
+                return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
+                    partiallyCommittedTxs, exceptions);
+            }
+
+            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : partHashes.entrySet()) {
+                Integer partHash = null;
+                Integer partVerHash = null;
+                Object updateCntr = null;
+
+                for (PartitionHashRecord record : e.getValue()) {
+                    if (record.partitionState() == PartitionHashRecord.PartitionState.MOVING) {
+                        movingPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(record);
+
+                        continue;
+                    }
+
+                    if (record.partitionState() == PartitionHashRecord.PartitionState.LOST) {
+                        lostPartitions.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(record);
+
+                        continue;
+                    }
+
+                    if (partHash == null) {
+                        partHash = record.partitionHash();
+                        partVerHash = record.partitionVersionsHash();
+
+                        updateCntr = record.updateCounter();
+                    }
+                    else {
+                        if (!Objects.equals(record.updateCounter(), updateCntr))
+                            cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
+
+                        if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash)
+                            hashConflicts.putIfAbsent(e.getKey(), e.getValue());
+                    }
+                }
+            }
+
+            return new IdleVerifyResult(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, txHashConflicts,
+                partiallyCommittedTxs, exceptions);
+        }
+
+        /** Stores an exception if none is set for certain node. */
+        public Builder addException(ClusterNode node, Exception e) {
+            assert e != null;
+
+            if (exceptions == null)
+                exceptions = new HashMap<>();
+
+            exceptions.putIfAbsent(node, e);
+
+            return this;
+        }
+
+        /** Sets all the result exceptions. */
+        public Builder exceptions(Map<ClusterNode, Exception> exceptions) {
+            assert this.exceptions == null;
+            assert exceptions != null;
+
+            this.exceptions = exceptions;
+
+            return this;
+        }
+
+        /** Stores map of partition hashes per partition key. */
+        public void addPartitionHashes(Map<PartitionKey, PartitionHashRecord> newHashes) {
+            if (partHashes == null)
+                partHashes = new HashMap<>();
+
+            for (Map.Entry<PartitionKey, PartitionHashRecord> e: newHashes.entrySet())
+                partHashes.computeIfAbsent(e.getKey(), v -> new ArrayList<>()).add(e.getValue());
+        }
+
+        /** Stores incremental snapshot transaction hash records of a certain node. */
+        public void addIncrementalHashRecords(ClusterNode node, Map<Object, TransactionsHashRecord> res) {
+            if (incrTxHashRecords == null)
+                incrTxHashRecords = new HashMap<>();
+
+            assert incrTxHashRecords.get(node.consistentId()) == null;
+
+            incrTxHashRecords.put(node.consistentId(), res);
+
+            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.entrySet().iterator();
+
+            while (resIt.hasNext()) {
+                Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
+
+                Map<Object, TransactionsHashRecord> prevNodeTxHash = incrTxHashRecords.get(nodeTxHash.getKey());
+
+                if (prevNodeTxHash != null) {
+                    TransactionsHashRecord hash = nodeTxHash.getValue();
+                    TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
+
+                    if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
+                        addTxConflicts(F.asList(hash, prevHash));
+
+                    resIt.remove();
+                }
+            }
+        }
+
+        /** Stores transaction conflicts. */
+        private Builder addTxConflicts(List<TransactionsHashRecord> newTxConflicts) {
+            if (txHashConflicts == null)
+                txHashConflicts = new ArrayList<>();
+
+            txHashConflicts.add(newTxConflicts);
+
+            return this;
+        }
+
+        /** Stores partially commited transactions of a certain node. */
+        public Builder addPartiallyCommited(ClusterNode node, Collection<GridCacheVersion> newVerisons) {
+            if (partiallyCommittedTxs == null)
+                partiallyCommittedTxs = new HashMap<>();
+
+            assert partiallyCommittedTxs.get(node) == null;
+
+            partiallyCommittedTxs.put(node, newVerisons);
+
+            return this;
+        }
     }
 }

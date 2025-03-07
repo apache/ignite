@@ -512,7 +512,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("cache-"))
+            .filter(NodeFileTree::cacheDir)
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
 
@@ -555,7 +555,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("cache-"))
+            .filter(NodeFileTree::cacheDir)
             .map(File::getName)
             .collect(Collectors.toCollection(TreeSet::new));
 
@@ -1052,7 +1052,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
             igniteEx,
-            igniteEx.context().cache().utilityCache().context().dynamicDeploymentId().toString()
+            igniteEx.cluster().id().toString()
         );
     }
 
@@ -1108,7 +1108,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testState() throws Exception {
         final String newTag = "new_tag";
 
-        Ignite ignite = startGrids(1);
+        Ignite ignite = startGrids(2);
+        
+        startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
 
@@ -1162,6 +1164,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         out = testOut.toString();
 
         assertTrue(out.contains("Cluster tag: " + newTag));
+
+        ignite.cluster().state(INACTIVE);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertClusterState(INACTIVE, testOut.toString());
     }
 
     /**

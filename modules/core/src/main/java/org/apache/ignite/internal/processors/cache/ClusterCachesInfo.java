@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1201,10 +1200,10 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String expDir = ctx.pdsFolderResolver().fileTree().cacheDirName(ccfg);
+        String cacheDir = ctx.pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
 
         try {
-            return !expDir.equals(Paths.get(expDir).toFile().getName());
+            return !cacheDir.endsWith(CU.cacheOrGroupName(ccfg));
         }
         catch (InvalidPathException ignored) {
             return true;
@@ -1839,7 +1838,7 @@ public class ClusterCachesInfo {
                     nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                        locCfg.cacheData().config(),
+                        mergeConfigurations(locCfg.cacheData().config(), cfg),
                         desc.cacheType(),
                         desc.groupDescriptor(),
                         desc.template(),
@@ -1878,6 +1877,28 @@ public class ClusterCachesInfo {
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }
+    }
+
+    /**
+     * Merges local and received cache configurations.
+     *
+     * @param loc Local cache configuration.
+     * @param received Cache configuration received from the cluster.
+     * @see #registerReceivedCaches
+     * @see DynamicCacheDescriptor#makeSchemaPatch(Collection)
+     * @see #updateRegisteredCachesIfNeeded(Map, Collection, boolean)
+     */
+    private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
+        // Schema is supposed to get merged earlier.
+        loc.setQueryEntities(received.getQueryEntities());
+        loc.setSqlSchema(received.getSqlSchema());
+        loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
+        loc.setSqlEscapeAll(received.isSqlEscapeAll());
+
+        assert loc.isSqlOnheapCacheEnabled() == received.isSqlOnheapCacheEnabled();
+        assert loc.getSqlOnheapCacheMaxSize() == received.getSqlOnheapCacheMaxSize();
+
+        return loc;
     }
 
     /**

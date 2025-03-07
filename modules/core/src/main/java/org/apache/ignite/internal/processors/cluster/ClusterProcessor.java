@@ -852,16 +852,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Cluster name.
      * */
     public String clusterName() {
-        try {
-            ctx.cache().awaitStarted();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         return IgniteSystemProperties.getString(
             IGNITE_CLUSTER_NAME,
-            ctx.cache().utilityCache().context().dynamicDeploymentId().toString()
+            String.valueOf(ctx.grid().cluster().id())
         );
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -340,15 +340,15 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertEquals(expectedComprParts, meta.compressPartitions());
         }
 
-        List<String> nodesDirs = dump.nodesDirectories();
+        List<SnapshotFileTree> sfts = dump.fileTrees();
 
-        assertEquals(nodes, nodesDirs.size());
+        assertEquals(nodes, sfts.size());
 
         TestDumpConsumer cnsmr = dumpConsumer(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
 
         new DumpReader(
             new DumpReaderConfiguration(
-                dumpDirectory(ign, name),
+                snapshotFileTree(ign, name).root(),
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
@@ -438,16 +438,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         return new Dump(
-            dumpDirectory(ign, name),
+            snapshotFileTree(ign, name).root(),
             true,
             false,
             log
         );
-    }
-
-    /** */
-    public static File dumpDirectory(IgniteEx ign, String name) {
-        return new File(ign.context().pdsFolderResolver().fileTree().snapshotsRoot(), name);
     }
 
     /** */

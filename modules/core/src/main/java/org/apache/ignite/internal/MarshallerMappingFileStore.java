@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -39,7 +40,7 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
 import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * File-based persistence provider for {@link MarshallerContextImpl}.
@@ -167,7 +168,7 @@ final class MarshallerMappingFileStore {
      * @param marshCtx Marshaller context to register mappings.
      */
     void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
-        File[] files = mappingDir.listFiles(BinaryUtils::notTmpFile);
+        File[] files = mappingDir.listFiles(NodeFileTree::notTmpFile);
 
         if (files == null)
             return;

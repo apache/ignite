@@ -40,6 +40,8 @@ import org.apache.ignite.testframework.MessageOrderLogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+
 /**
  *
  */
@@ -154,11 +156,8 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        File cacheAWorkDir = ft.cacheStorage(cacheAEx.configuration());
-        File cacheBWorkDir = ft.cacheStorage(cacheBEx.configuration());
-
-        File idxPathA = cacheAWorkDir.toPath().resolve("index.bin").toFile();
-        File idxPathB = cacheBWorkDir.toPath().resolve("index.bin").toFile();
+        File idxPathA = ft.partitionFile(cacheAEx.configuration(), INDEX_PARTITION);
+        File idxPathB = ft.partitionFile(cacheBEx.configuration(), INDEX_PARTITION);
 
         stopAllGrids();
 

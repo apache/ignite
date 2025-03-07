@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -273,13 +273,13 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      */
     @Test
     public void testCorruptedIndexPartitionShouldFailValidationWithCrc() throws Exception {
-        Ignite ignite = prepareGridForTest();
+        IgniteEx ignite = prepareGridForTest();
 
         forceCheckpoint();
 
         enableCheckpoints(ignite, false);
 
-        corruptIndexPartition(indexPartition(ignite, GROUP_NAME), 1024, 4096);
+        corruptIndexPartition(indexPartition(ignite, CACHE_NAME), 1024, 4096);
 
         injectTestSystemOut();
 
@@ -295,13 +295,13 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      */
     @Test
     public void testCorruptedIndexPartitionShouldFailValidationWithoutCrc() throws Exception {
-        Ignite ignite = prepareGridForTest();
+        IgniteEx ignite = prepareGridForTest();
 
         forceCheckpoint();
 
-        stopAllGrids();
+        File idxPath = indexPartition(ignite, CACHE_NAME);
 
-        File idxPath = indexPartition(ignite, GROUP_NAME);
+        stopAllGrids();
 
         corruptIndexPartition(idxPath, 6, 47746);
 
@@ -326,8 +326,8 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      *
      * @throws Exception
      */
-    private Ignite prepareGridForTest() throws Exception {
-        Ignite ignite = startGrids(GRID_CNT);
+    private IgniteEx prepareGridForTest() throws Exception {
+        IgniteEx ignite = startGrids(GRID_CNT);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -341,8 +341,8 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     /**
      * Get index partition file for specific node and cache.
      */
-    private File indexPartition(Ignite ig, String groupName) {
-        return new File(((IgniteEx)ig).context().pdsFolderResolver().fileTree().cacheStorage(true, groupName), INDEX_FILE_NAME);
+    private File indexPartition(IgniteEx ig, String cacheName) {
+        return ig.context().pdsFolderResolver().fileTree().partitionFile(ig.cachex(cacheName).configuration(), INDEX_PARTITION);
     }
 
     /**

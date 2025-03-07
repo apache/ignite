@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -58,8 +59,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
@@ -184,8 +183,10 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        String failingFilePath = Paths.get(ignite.context().pdsFolderResolver().fileTree().cacheDirName(dfltCacheCfg),
-            PART_FILE_PREFIX + primaries[0] + FILE_SUFFIX).toString();
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        String failingFilePath = sft.partitionFile(dfltCacheCfg, primaries[0]).getAbsolutePath()
+            .replace(sft.nodeStorage().getAbsolutePath(), "");
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";

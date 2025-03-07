@@ -63,7 +63,7 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -81,7 +81,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     /** */
     private static final int GRIDS = 6;
 
-    /** Node filter filter test restoring on some nodes only. */
+    /** Node filter test restoring on some nodes only. */
     private static final IgnitePredicate<ClusterNode> ZERO_SUFFIX_NODE_FILTER = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode node) {
             return node.consistentId().toString().endsWith("0");
@@ -305,11 +305,11 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
-                    @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                        if (partId(part.getName()) > 0)
+                    @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
+                        if (partId(part) > 0)
                             throw new IgniteException("Test exception. Uploading partition file failed: " + pair);
 
-                        super.sendPart0(part, cacheDirName, pair, length);
+                        super.sendPart0(part, to, pair, length);
                     }
                 };
             }
@@ -349,8 +349,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
-                    @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                        delegate.sendPart0(part, cacheDirName, pair, length);
+                    @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
+                        delegate.sendPart0(part, to, pair, length);
 
                         restoreStarted.countDown();
 

@@ -57,7 +57,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CP_RECOVERY_DATA_COMRESSION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFileStorage.FILE_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 
 /**
  * Class containing tests for applying checkpoint recovery data.

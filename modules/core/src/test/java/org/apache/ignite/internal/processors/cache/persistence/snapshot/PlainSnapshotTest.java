@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
@@ -88,37 +88,35 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
         IgniteSnapshotManager mgr = snp(ig);
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
 
         // Collection of pairs group and appropriate cache partition to be snapshot.
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
-            SNAPSHOT_NAME,
+            sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            false, mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));
+            false, mgr.localSnapshotSenderFactory().apply(sft));
 
         snpFut.get();
+
+        // Calculate CRCs.
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         // Checkpoint forces on cluster deactivation (currently only single node in cluster),
         // so we must have the same data in snapshot partitions and those which left
         // after node stop.
         stopGrid(ig.name());
 
-        // Calculate CRCs.
-        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
-        NodeFileTree snpFt = new NodeFileTree(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), ft.folderName());
-
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorage(dfltCacheCfg));
-        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(snpFt.cacheStorage(dfltCacheCfg));
+        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorage(dfltCacheCfg));
 
         assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
             origPartCRCs, snpPartCRCs);
         assertEquals("Binary object mappings must be the same for local node and created snapshot",
-            calculateCRC32Partitions(ft.binaryMeta()), calculateCRC32Partitions(snpFt.binaryMeta()));
+            calculateCRC32Partitions(ft.binaryMeta()), calculateCRC32Partitions(sft.binaryMeta()));
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
-            calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(snpFt.marshaller()));
+            calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(sft.marshaller()));
 
-        File snpWorkDir = ig.context().pdsFolderResolver().fileTree().snapshotTempRoot();
-
-        assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
+        assertEquals("Snapshot working directory must be cleaned after usage", 0, ft.snapshotTempRoot().listFiles().length);
     }
 
     /** @throws Exception If fails. */

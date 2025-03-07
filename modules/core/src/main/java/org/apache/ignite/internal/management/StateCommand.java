@@ -31,7 +31,7 @@ import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
+import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.util.typedef.internal.U.DELIM;
 
 /** */
@@ -59,7 +59,7 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
 
         if (client != null) {
             VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, null,
-                VisorIdAndTagViewTask.class, null, nodes(client, ignite));
+                VisorIdAndTagViewTask.class, null, singleton(client.cluster().forServers().node()));
 
             state = client.cluster().state();
             id = idAndTag.id();

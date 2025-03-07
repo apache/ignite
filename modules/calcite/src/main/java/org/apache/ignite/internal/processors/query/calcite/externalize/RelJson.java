@@ -67,7 +67,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexSlot;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
@@ -113,6 +112,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -808,8 +808,8 @@ class RelJson {
 
     /** */
     private Object toJson(RexNode node) {
-        // removes calls to SEARCH and the included Sarg and converts them to comparisons
-        node = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, node);
+        // Removes calls to SEARCH and the included Sarg and converts them to comparisons.
+        node = RexUtils.expandSearchNullableRecursive(Commons.emptyCluster().getRexBuilder(), null, node);
 
         Map<String, Object> map;
         switch (node.getKind()) {

@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,7 +53,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -79,63 +79,20 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * File page store manager.
  */
 public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager,
     PageStoreCollection {
-    /** File suffix. */
-    public static final String FILE_SUFFIX = ".bin";
-
-    /** Suffix for zip files */
-    public static final String ZIP_SUFFIX = ".zip";
-
-    /** Suffix for tmp files */
-    public static final String TMP_SUFFIX = ".tmp";
-
-    /** Partition file prefix. */
-    public static final String PART_FILE_PREFIX = "part-";
-
-    /** */
-    public static final String INDEX_FILE_PREFIX = "index";
-
-    /** */
-    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
-
-    /** */
-    public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
-
-    /** */
-    public static final String CACHE_DIR_PREFIX = "cache-";
-
-    /** */
-    public static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
-
-    /** */
-    public static final Predicate<File> DATA_DIR_FILTER = dir ->
-        dir.getName().startsWith(CACHE_DIR_PREFIX) ||
-        dir.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
-        dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
-
-    /** */
-    public static final String CACHE_DATA_FILENAME = "cache_data.dat";
-
-    /** */
-    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
-
-    /** */
-    public static final String DFLT_STORE_DIR = "db";
-
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
@@ -227,18 +184,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
         }
 
-        File[] files = ft.nodeStorage().listFiles();
+        List<File> files = ft.existingCacheDirs();
 
         for (File file : files) {
-            if (file.isDirectory()) {
-                File[] tmpFiles = file.listFiles((k, v) -> v.endsWith(CACHE_DATA_TMP_FILENAME));
+            File[] tmpFiles = file.listFiles(NodeFileTree::tmpCacheConfig);
 
-                if (tmpFiles != null) {
-                    for (File tmpFile : tmpFiles) {
-                        if (!tmpFile.delete())
-                            log.warning("Failed to delete temporary cache config file" +
-                                    "(make sure Ignite process has enough rights):" + file.getName());
-                    }
+            if (tmpFiles != null) {
+                for (File tmpFile : tmpFiles) {
+                    if (!tmpFile.delete())
+                        log.warning("Failed to delete temporary cache config file" +
+                                "(make sure Ignite process has enough rights):" + file.getName());
                 }
             }
         }
@@ -255,7 +210,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
                 new DirectoryStream.Filter<Path>() {
                     @Override public boolean accept(Path entry) throws IOException {
-                        return entry.toFile().getName().endsWith(FILE_SUFFIX);
+                        return NodeFileTree.binFile(entry.toFile());
                     }
                 })) {
                 for (Path path : files)
@@ -268,23 +223,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
-        try {
-            try (DirectoryStream<Path> files = newDirectoryStream(
-                ft.nodeStorage().toPath(), entry -> {
-                    String name = entry.toFile().getName();
-
-                    return !name.equals(MetaStorage.METASTORAGE_DIR_NAME) &&
-                        (name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX));
-                }
-            )) {
-                for (Path path : files)
-                    U.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
-        }
+    @Override public void cleanupPersistentSpace() {
+        ft.existingCacheDirsWithoutMeta().forEach(U::delete);
     }
 
     /** {@inheritDoc} */
@@ -405,10 +345,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 if (!locEnabled || !globalEnabled) {
                     File dir = ft.cacheStorage(desc.config());
 
-                    if (Arrays.stream(
-                        dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
+                    if (Arrays.stream(dir.listFiles()).anyMatch(f -> !NodeFileTree.cacheConfigFile(f)))
                         corruptedCacheGrps.add(desc.config());
-                    }
                 }
             }
         }
@@ -459,7 +397,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
             CacheStoreHolder holder = initDir(
-                new File(ft.nodeStorage(), MetaStorage.METASTORAGE_DIR_NAME),
+                ft.metaStorage(),
+                p -> ft.metaStoragePartition(p).toPath(),
                 grpId,
                 MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
@@ -549,14 +488,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        File cacheWorkDir = ft.cacheStorage(ccfg);
-
         String dataRegionName = grpDesc.config().getDataRegionName();
         DataRegion dataRegion = cctx.database().dataRegion(dataRegionName);
         PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpDesc.groupId());
 
         return initDir(
-            cacheWorkDir,
+            ft.cacheStorage(ccfg),
+            p -> ft.partitionFile(ccfg, p).toPath(),
             grpDesc.groupId(),
             ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
@@ -629,7 +567,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheWorkDir Work directory.
+     * @param cacheWorkDir Cache work dir.
      * @param grpId Group ID.
      * @param cacheName Cache name.
      * @param partitions Number of partitions.
@@ -638,7 +576,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
-    private CacheStoreHolder initDir(File cacheWorkDir,
+    private CacheStoreHolder initDir(
+        File cacheWorkDir,
+        IntFunction<Path> partitionFile,
         int grpId,
         String cacheName,
         int partitions,
@@ -655,7 +595,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
             }
 
-            File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
+            File idxFile = partitionFile.apply(INDEX_PARTITION).toFile();
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
@@ -695,7 +635,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageStore.TYPE_DATA,
-                        () -> getPartitionFilePath(cacheWorkDir, p),
+                        () -> partitionFile.apply(p),
                         pageMetrics.totalPages()::add);
 
                 partStores[partId] = partStore;
@@ -709,34 +649,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             throw e;
         }
-    }
-
-    /**
-     * @param cacheWorkDir Cache work directory.
-     * @param partId Partition id.
-     */
-    @NotNull private Path getPartitionFilePath(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, getPartitionFileName(partId)).toPath();
-    }
-
-    /**
-     * @param workDir Cache work directory.
-     * @param cacheDirName Cache directory name.
-     * @param partId Partition id.
-     * @return Partition file.
-     */
-    @NotNull public static File getPartitionFile(File workDir, String cacheDirName, int partId) {
-        return new File(NodeFileTree.cacheStorage(workDir, cacheDirName), getPartitionFileName(partId));
-    }
-
-    /**
-     * @param partId Partition id.
-     * @return File name.
-     */
-    public static String getPartitionFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
-
-        return partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
     }
 
     /**
@@ -823,108 +735,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return store.pages();
     }
 
-    /**
-     * @param dir Directory to check.
-     * @param names Cache group names to filter.
-     * @return Files that match cache or cache group pattern.
-     */
-    public static List<File> cacheDirectories(File dir, Predicate<String> names) {
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .sorted()
-            .filter(File::isDirectory)
-            .filter(DATA_DIR_FILTER)
-            .filter(f -> names.test(cacheGroupName(f)))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * @param dir Directory to check.
-     * @param grpId Cache group id
-     * @return Files that match cache or cache group pattern.
-     */
-    public static File cacheDirectory(File dir, int grpId) {
-        File[] files = dir.listFiles();
-
-        if (files == null)
-            return null;
-
-        return Arrays.stream(files)
-            .filter(File::isDirectory)
-            .filter(DATA_DIR_FILTER)
-            .filter(f -> CU.cacheId(cacheGroupName(f)) == grpId)
-            .findAny()
-            .orElse(null);
-    }
-
-    /**
-     * @param partFileName Partition file name.
-     * @return Partition id.
-     */
-    public static int partId(String partFileName) {
-        if (partFileName.equals(INDEX_FILE_NAME))
-            return PageIdAllocator.INDEX_PARTITION;
-
-        if (partFileName.startsWith(PART_FILE_PREFIX))
-            return Integer.parseInt(partFileName.substring(PART_FILE_PREFIX.length(), partFileName.indexOf('.')));
-
-        throw new IllegalStateException("Illegal partition file name: " + partFileName);
-    }
-
-    /**
-     * @param cacheDir Cache directory to check.
-     * @return List of cache partitions in given directory.
-     */
-    public static List<File> cachePartitionFiles(File cacheDir) {
-        return cachePartitionFiles(cacheDir, FILE_SUFFIX);
-    }
-
-    /**
-     * @param cacheDir Cache directory to check.
-     * @param ext File extension.
-     * @return List of cache partitions in given directory.
-     */
-    public static List<File> cachePartitionFiles(File cacheDir, String ext) {
-        File[] files = cacheDir.listFiles();
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files)
-            .filter(File::isFile)
-            .filter(f -> f.getName().endsWith(ext))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * @param dir Cache directory on disk.
-     * @return Cache or cache group name.
-     */
-    public static String cacheGroupName(File dir) {
-        String name = dir.getName();
-
-        if (name.startsWith(CACHE_GRP_DIR_PREFIX))
-            return name.substring(CACHE_GRP_DIR_PREFIX.length());
-        else if (name.startsWith(CACHE_DIR_PREFIX))
-            return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
-            return MetaStorage.METASTORAGE_CACHE_NAME;
-        else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
-    }
-
-    /**
-     * @param root Root directory.
-     * @return Array of cache data files.
-     */
-    public static File[] cacheDataFiles(File root) {
-        return root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME));
-    }
-
     /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return !grpsWithoutIdx.contains(grpId);
@@ -943,23 +753,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             pageCnt += holder.partStores[i].pages();
 
         return pageCnt;
-    }
-
-    /**
-     * @param grpId Group id.
-     * @return Name of cache group directory.
-     * @throws IgniteCheckedException If cache group doesn't exist.
-     */
-    public String cacheDirName(int grpId) throws IgniteCheckedException {
-        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
-            return MetaStorage.METASTORAGE_DIR_NAME;
-
-        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-        if (gctx == null)
-            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
-
-        return ft.cacheDirName(gctx.config());
     }
 
     /**

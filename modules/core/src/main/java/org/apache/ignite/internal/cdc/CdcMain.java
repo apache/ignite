@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -82,13 +81,11 @@ import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
-import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -448,7 +445,7 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
-        ft = new NodeFileTree(igniteCfg, settings.folderName());
+        ft = fileTree(settings.folderName());
 
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -489,9 +486,9 @@ public class CdcMain implements Runnable {
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
-                        .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)) // Sort by segment index.
+                        .sorted(Comparator.comparingLong(ft::walSegmentIndex)) // Sort by segment index.
                         .peek(p -> {
-                            long nextSgmnt = segmentIndex(p);
+                            long nextSgmnt = ft.walSegmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
                                 throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
@@ -561,7 +558,7 @@ public class CdcMain implements Runnable {
         if (walState != null)
             builder.from(walState.get1());
 
-        long segmentIdx = segmentIndex(segment);
+        long segmentIdx = ft.walSegmentIndex(segment);
 
         lastSegmentConsumptionTs.value(System.currentTimeMillis());
 
@@ -680,7 +677,7 @@ public class CdcMain implements Runnable {
                 return;
 
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
-                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
+                .filter(NodeFileTree::binFile)
                 .map(f -> {
                     int typeId = BinaryUtils.typeId(f.getName());
                     long lastModified = f.lastModified();
@@ -692,7 +689,7 @@ public class CdcMain implements Runnable {
                     typesState.put(typeId, lastModified);
 
                     try {
-                        kctx.cacheObjects().cacheMetadataLocally(ft.binaryMeta(), typeId);
+                        kctx.cacheObjects().cacheMetadataLocally(ft, typeId);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -721,7 +718,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = ft.marshaller().listFiles(BinaryUtils::notTmpFile);
+            File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
 
             if (files == null)
                 return;
@@ -756,7 +753,7 @@ public class CdcMain implements Runnable {
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
-                    ft.nodeStorage(),
+                    ft,
                     kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()
@@ -807,7 +804,7 @@ public class CdcMain implements Runnable {
      * @return {@code True} if segment file was deleted, {@code false} otherwise.
      */
     private boolean removeProcessedOnFailover(Path segment) {
-        long segmentIdx = segmentIndex(segment);
+        long segmentIdx = ft.walSegmentIndex(segment);
 
         if (segmentIdx > walState.get1().index()) {
             throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
@@ -854,7 +851,7 @@ public class CdcMain implements Runnable {
             Path processedSegment = rmvIter.next();
 
             // Can't delete current segment, because state points to it.
-            if (segmentIndex(processedSegment) >= curState.get1().index())
+            if (ft.walSegmentIndex(processedSegment) >= curState.get1().index())
                 continue;
 
             // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
@@ -879,9 +876,7 @@ public class CdcMain implements Runnable {
             return null;
         }
 
-        String folderName = dbStoreDirWithSubdirectory.getName();
-
-        ft = new NodeFileTree(igniteCfg, folderName);
+        ft = fileTree(dbStoreDirWithSubdirectory.getName());
 
         if (!ft.walCdc().exists()) {
             log.warning("CDC directory not exists. Should be created by Ignite Node. " +
@@ -1000,5 +995,13 @@ public class CdcMain implements Runnable {
             .filter(filter)
             .filter(Objects::nonNull)
             .iterator();
+    }
+
+    /**
+     * @param folderName Folder name
+     * @return Node file tree.
+     */
+    private NodeFileTree fileTree(String folderName) {
+        return new NodeFileTree(igniteCfg, folderName);
     }
 }

@@ -35,8 +35,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -159,8 +160,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         // Start node not in baseline.
         IgniteEx notBltIgnite = startGrid(grids);
-        File locSnpDir = snp(notBltIgnite).snapshotLocalDir(SNAPSHOT_NAME);
-        String notBltDirName = folderName(notBltIgnite);
+        SnapshotFileTree sft = snapshotFileTree(notBltIgnite, SNAPSHOT_NAME);
 
         IgniteCache<Integer, Integer> atCache = ignite.createCache(atomicCcfg);
 
@@ -239,8 +239,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         // Cluster can be deactivated but we must test snapshot restore when binary recovery also occurred.
         stopAllGrids();
 
-        assertTrue("Snapshot directory must be empty for node not in baseline topology: " + notBltDirName,
-            !searchDirectoryRecursively(locSnpDir.toPath(), notBltDirName).isPresent());
+        assertTrue("Snapshot directory must be empty for node not in baseline topology: " + sft.folderName(),
+            !searchDirectoryRecursively(sft.root().toPath(), sft.folderName()).isPresent());
 
         IgniteEx snpIg0 = startGridsFromSnapshot(grids, snpName);
 
@@ -535,7 +535,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         fut.get();
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + grid4Dir,
-            !searchDirectoryRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(), grid4Dir).isPresent());
+            !searchDirectoryRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(), grid4Dir).isPresent());
     }
 
     /** @throws Exception If fails. */
@@ -578,13 +578,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        File snpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
 
-        assertTrue(snpDir.mkdirs());
-
-        File snpMeta = new File(snpDir, IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString()));
-
-        assertTrue(snpMeta.createNewFile());
+        assertTrue(sft.root().mkdirs());
+        assertTrue(sft.meta().createNewFile());
 
         assertThrowsAnyCause(log, fut::get, IgniteException.class, "Snapshot metafile must not exist");
 
@@ -623,9 +620,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
-        String dirNameIgnite0 = folderName(ignite);
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
 
+        String dirNameIgnite0 = sft.folderName();
         String dirNameIgnite1 = folderName(grid(1));
 
         snp(grid(1)).localSnapshotSenderFactory(
@@ -650,7 +647,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
-            !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite0).isPresent());
+            !searchDirectoryRecursively(sft.root().toPath(), dirNameIgnite0).isPresent());
 
         startGrid(1);
 
@@ -658,7 +655,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         // Snapshot directory must be cleaned.
         assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
-            !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite1).isPresent());
+            !searchDirectoryRecursively(sft.root().toPath(), dirNameIgnite1).isPresent());
 
         List<String> allSnapshots = snp(ignite).localSnapshotNames(null);
 
@@ -671,9 +668,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testRecoveryClusterSnapshotJvmHalted() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        String grid0Dir = folderName(ignite);
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        String grid0Dir = sft.folderName();
         String grid1Dir = folderName(grid(1));
-        File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
 
         jvm = true;
 
@@ -702,18 +700,18 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             "Snapshot operation interrupted, because baseline node left the cluster");
 
         assertTrue("Snapshot directory must be empty: " + grid0Dir,
-            !searchDirectoryRecursively(locSnpDir.toPath(), grid0Dir).isPresent());
+            !searchDirectoryRecursively(sft.root().toPath(), grid0Dir).isPresent());
 
         assertTrue("Snapshot directory must be empty: " + grid1Dir,
-            !searchDirectoryRecursively(locSnpDir.toPath(), grid1Dir).isPresent());
+            !searchDirectoryRecursively(sft.root().toPath(), grid1Dir).isPresent());
 
         assertTrue("Snapshot directory must exist due to grid2 has been halted and cleanup not fully performed: " + grid2Dir,
-            searchDirectoryRecursively(locSnpDir.toPath(), grid2Dir).isPresent());
+            searchDirectoryRecursively(sft.root().toPath(), grid2Dir).isPresent());
 
         IgniteEx grid2 = startGrid(2);
 
         assertTrue("Snapshot directory must be empty after recovery: " + grid2Dir,
-            !searchDirectoryRecursively(locSnpDir.toPath(), grid2Dir).isPresent());
+            !searchDirectoryRecursively(sft.root().toPath(), grid2Dir).isPresent());
 
         awaitPartitionMapExchange();
 
@@ -1217,12 +1215,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx clnt = startClientGrid(2);
 
         IgniteSnapshotManager mgr = snp(grid);
-        BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+        Function<SnapshotFileTree, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
         BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
 
-        mgr.localSnapshotSenderFactory((snpName, snpPath) ->
-            new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
+        mgr.localSnapshotSenderFactory(sft ->
+            new DelegateSnapshotSender(log, block, old.apply(sft)));
 
         IgniteFuture<Void> fut = snp(grid).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
@@ -1315,14 +1313,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      * @param blocked Latch to await delta partition processing.
      * @return Factory which produces local snapshot senders.
      */
-    private BiFunction<String, String, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
+    private Function<SnapshotFileTree, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
         CountDownLatch started,
         CountDownLatch blocked
     ) {
-        BiFunction<String, String, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
+        Function<SnapshotFileTree, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
 
-        return (snpName, snpPath) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(snpName, null)) {
-            @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+        return sft -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(sft)) {
+            @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                 if (log.isInfoEnabled())
                     log.info("Processing delta file has been blocked: " + delta.getName());
 
@@ -1334,7 +1332,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                     if (log.isInfoEnabled())
                         log.info("Latch released. Processing delta file continued: " + delta.getName());
 
-                    super.sendDelta0(delta, cacheDirName, pair);
+                    super.sendDelta0(delta, snpPart, pair);
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteException("Interrupted by node stop", e);

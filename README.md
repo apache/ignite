@@ -3,6 +3,12 @@
 <a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/assets/images/apache_ignite_logo.svg" hspace="20"/></a>
 
 
+## Ignite 2.x and 3.x
+
+* This repository is Ignite 2
+* See [apache/ignite-3](https://github.com/apache/ignite-3) for Ignite 3
+* Both versions are actively developed
+
 ## What is Apache Ignite?
 
 Apache Ignite is a distributed database for high-performance computing with in-memory speed.
