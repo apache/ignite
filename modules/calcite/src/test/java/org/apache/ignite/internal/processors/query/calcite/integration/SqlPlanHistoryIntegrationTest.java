@@ -447,43 +447,42 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that the SQL plan history size equals {@code -1} when SQL is not explicitly configured. In such cases,
-     * H2 is used as the default engine.
+     * Checks that the actual SQL plan history remains empty and its size in {@link SqlConfiguration} equals {@code -1}
+     * when SQL is not explicitly configured. In such cases, H2 is used as the default engine.
      */
     @Test
     public void testNoSqlConfiguration() throws Exception {
         isSqlConfigured = false;
 
-        checkDefaultSettings((histSize) ->
-            assertEquals(-1, (int)histSize), true);
+        checkDefaultHistorySize(true, -1, 0, 1);
     }
 
     /**
-     * Checks that the SQL plan history size equals {@code -1} when the SQL engine is not configured. In such cases,
-     * H2 is used as the default engine.
+     * Checks that the actual SQL plan history remains empty and its size in {@link SqlConfiguration} equals {@code -1}
+     * when the SQL engine is not configured. In such cases, H2 is used as the default engine.
      */
     @Test
     public void testNoSqlEngineConfiguration() throws Exception {
         isSqlEngineConfigured = false;
 
-        checkDefaultSettings((histSize) ->
-            assertEquals(-1, (int)histSize), true);
+        checkDefaultHistorySize(true, -1, 0, 1);
     }
 
     /**
-     * Checks that the SQL plan history size equals {@code -1} for H2 and {@link SqlConfiguration#DFLT_SQL_PLAN_HISTORY_SIZE}
-     * for Calcite if the history size is not explicitly set.
+     * Checks that the actual SQL plan history size and its value in {@link SqlConfiguration} are correct for both
+     * Calcite and H2 engines when the history size is not explicitly set.
      */
     @Test
     public void testDefaultHistorySize() throws Exception {
         isPlanHistorySizeSet = false;
 
-        checkDefaultSettings((histSize) -> {
-            if (sqlEngine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME))
-                assertEquals(DFLT_SQL_PLAN_HISTORY_SIZE, (int)histSize);
-            else if (sqlEngine.equals(IndexingQueryEngineConfiguration.ENGINE_NAME))
-                assertEquals(-1, (int)histSize);
-        }, false);
+        boolean isCalcite = sqlEngine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME);
+
+        int expConfHistSize = isCalcite ? DFLT_SQL_PLAN_HISTORY_SIZE : -1;
+        int expHistSize = isCalcite ? DFLT_SQL_PLAN_HISTORY_SIZE : 0;
+        int qrys = isCalcite ? DFLT_SQL_PLAN_HISTORY_SIZE : 1;
+
+        checkDefaultHistorySize(false, expConfHistSize, expHistSize, qrys);
     }
 
     /**
@@ -771,11 +770,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param check SQL plan history size check task.
-     * @param isSingleEngineCheck Flag indicating whether the test should be run for one SQL engine
-     * or for both of them.
+     * @param isSingleEngineCheck Flag indicating whether the test should be run for one SQL engine or for both of them.
+     * @param expConfHistSize Expected SQL plan history size in {@link SqlConfiguration}.
+     * @param expHistSize Expected actual SQL plan history size.
+     * @param qrys Nubmer of queries to be run in the test.
      */
-    public void checkDefaultSettings(Consumer<Integer> check, boolean isSingleEngineCheck) throws Exception {
+    public void checkDefaultHistorySize(
+        boolean isSingleEngineCheck,
+        int expConfHistSize,
+        int expHistSize,
+        int qrys
+    ) throws Exception {
         if (isSingleEngineCheck)
             assumeFalse(sqlEngine == CalciteQueryEngineConfiguration.ENGINE_NAME);
 
@@ -783,9 +788,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         startTestGrid();
 
-        int histSize = queryNode().configuration().getSqlConfiguration().getSqlPlanHistorySize();
+        int confHistSize = queryNode().configuration().getSqlConfiguration().getSqlPlanHistorySize();
 
-        check.accept(histSize);
+        assertEquals(expConfHistSize, confHistSize);
+
+        for (int i = 0; i < qrys; i++) {
+            String sql = "select * from A.String where _key <= " + i;
+
+            cacheQuery(new SqlFieldsQuery(sql), "A");
+        }
+
+        assertEquals(expHistSize, getSqlPlanHistory().size());
     }
 
     /** */
