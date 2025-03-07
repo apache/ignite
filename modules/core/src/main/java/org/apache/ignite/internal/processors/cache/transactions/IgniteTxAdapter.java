@@ -274,6 +274,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Transaction from which this transaction was copied by(if it was). */
     private GridNearTxLocal parentTx;
 
+    /** Application attributes. */
+    private @Nullable Map<String, String> appAttrs;
+
     /**
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
@@ -406,6 +409,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public void incrementalSnapshotId(UUID id) {
         incSnpId = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applicationAttributes(Map<String, String> appAttrs) {
+        this.appAttrs = appAttrs;
     }
 
     /**

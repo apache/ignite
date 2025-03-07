@@ -18,21 +18,20 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -189,18 +188,16 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
     /**
      * @param indexes expected new style node indexes in folders
-     * @throws IgniteCheckedException if failed
      */
-    private void assertNodeIndexesInFolder(Integer... indexes) throws IgniteCheckedException {
+    private void assertNodeIndexesInFolder(Integer... indexes) {
         assertEquals(new TreeSet<>(Arrays.asList(indexes)), getAllNodeIndexesInFolder());
     }
 
     /**
      * @return set of all indexes of nodes found in work folder
-     * @throws IgniteCheckedException if failed.
      */
-    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory(), PdsFolderResolver.DB_DEFAULT_FOLDER);
+    @NotNull private Set<Integer> getAllNodeIndexesInFolder() {
+        final File curFolder = sharedFileTree().db();
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
@@ -219,38 +216,15 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * Checks existence of all storage-related directories
      *
      * @param subDirName sub directories name expected
-     * @throws IgniteCheckedException if IO error occur
      */
-    private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subDirName);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, subDirName);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsFolderResolver.DB_DEFAULT_FOLDER, subDirName);
+    private void assertPdsDirsDefaultExist(String subDirName) {
+        NodeFileTree ft = nodeFileTree(subDirName);
+
+        Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
+
+        check.accept(ft.binaryMeta());
+        check.accept(ft.wal());
+        check.accept(ft.walArchive());
+        check.accept(ft.nodeStorage());
     }
-
-    /**
-     * Checks one folder existence
-     *
-     * @param subFolderNames subfolders array to touch
-     * @throws IgniteCheckedException if IO error occur
-     */
-    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
-        File curFolder = new File(U.defaultWorkDirectory());
-
-        for (String name : subFolderNames) {
-            curFolder = new File(curFolder, name);
-        }
-
-        final String path;
-        try {
-            path = curFolder.getCanonicalPath();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to convert path: [" + curFolder.getAbsolutePath() + "]", e);
-        }
-
-        assertTrue("Directory " + Arrays.asList(subFolderNames).toString()
-            + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
-    }
-
 }

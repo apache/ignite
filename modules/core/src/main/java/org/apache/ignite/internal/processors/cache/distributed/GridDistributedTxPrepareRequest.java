@@ -149,6 +149,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringExclude
     private byte flags;
 
+    /** Application attributes. */
+    @GridDirectTransient
+    @GridToStringExclude
+    private @Nullable Map<String, String> appAttrs;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -360,6 +365,20 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean last() {
         return isFlag(LAST_REQ_FLAG_MASK);
+    }
+
+    /**
+     * @return Application attributes, or {@code null} if not set.
+     */
+    public Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
+    /**
+     * @param appAttrs Application attributes.
+     */
+    public void applicationAttributes(Map<String, String> appAttrs) {
+        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */

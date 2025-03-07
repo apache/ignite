@@ -67,6 +67,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -88,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -149,6 +152,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
@@ -202,7 +206,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public static Class<? extends GridQueryIndexing> idxCls;
 
     /** JDK marshaller to serialize errors. */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -305,6 +309,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Global schema SQL views manager. */
     private final SchemaSqlViewManager schemaSqlViewMgr;
 
+    /** Partition reservation manager. */
+    private final PartitionReservationManager partReservationMgr;
+
     /** @see TransactionConfiguration#isTxAwareQueriesEnabled()  */
     private final boolean txAwareQueriesEnabled;
 
@@ -328,6 +335,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         schemaSqlViewMgr = new SchemaSqlViewManager(ctx);
 
+        partReservationMgr = new PartitionReservationManager(ctx);
+
         idxProc = ctx.indexProcessor();
 
         idxQryPrc = new IndexQueryProcessor(idxProc);
@@ -349,8 +358,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         initQueryEngines();
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
-
-        txAwareQueriesEnabled = ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
+        txAwareQueriesEnabled = U.isTxAwareQueriesEnabled(ctx);
+        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /** {@inheritDoc} */
@@ -1057,6 +1066,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return runningQryMgr;
     }
 
+    /** Partition reservation manager. */
+    public PartitionReservationManager partitionReservationManager() {
+        return partReservationMgr;
+    }
+
     /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
@@ -1324,6 +1338,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             if (schemaMgr.clearCacheContext(cacheInfo.cacheContext())) {
+                partReservationMgr.onCacheStop(cacheInfo.name());
+
                 if (idx != null)
                     idx.unregisterCache(cacheInfo);
             }
@@ -2445,6 +2461,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 schemaMgr.onCacheStopped(cacheName, destroy, clearIdx);
 
+                partReservationMgr.onCacheStop(cacheName);
+
                 // Notify indexing.
                 if (idx != null)
                     idx.unregisterCache(cacheInfo);
@@ -3069,12 +3087,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 failOnMultipleStmts
                             );
 
+                            SessionContext sesCtx = null;
+
+                            if (cctx != null) {
+                                CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+                                if (opCtx != null && opCtx.applicationAttributes() != null)
+                                    sesCtx = new SessionContextImpl(opCtx.applicationAttributes());
+                            }
+                            else if (cliCtx != null && cliCtx.applicationAttributes() != null)
+                                sesCtx = new SessionContextImpl(cliCtx.applicationAttributes());
+
                             QueryContext qryCtx = QueryContext.of(
                                 qry,
                                 cliCtx,
                                 cancel,
                                 qryProps,
-                                userTx == null ? null : userTx.xidVersion()
+                                userTx == null ? null : userTx.xidVersion(),
+                                sesCtx
                             );
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {

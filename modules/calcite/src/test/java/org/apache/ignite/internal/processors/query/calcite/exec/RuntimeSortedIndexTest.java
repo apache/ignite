@@ -84,7 +84,7 @@ public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
                     Object[] lower = generateFindRow(rowIdLow, testIdx.getKey(), notUnique, testIdx.getValue());
                     Object[] upper = generateFindRow(rowIdUp, testIdx.getKey(), notUnique, testIdx.getValue());
 
-                    GridCursor<Object[]> cur = idx0.find(lower, upper, true, true, null);
+                    GridCursor<Object[]> cur = idx0.find(lower, upper, true, true);
 
                     int rows = 0;
                     while (cur.next()) {
@@ -109,6 +109,7 @@ public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
                 BaseQueryContext.builder()
                     .logger(log())
                     .build(),
+                null,
                 null,
                 null,
                 null,

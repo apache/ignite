@@ -135,6 +135,9 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MICROS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MILLIS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_SECONDS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_BASE64;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_CHAR;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_DATE;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_TIMESTAMP;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MICROS;
@@ -242,6 +245,9 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
 import static org.apache.calcite.util.ReflectUtil.isStatic;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITAND;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITOR;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITXOR;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
@@ -406,6 +412,9 @@ public class RexImpTable {
         defineMethod(DATE, "date", NullPolicy.STRICT);
         defineMethod(DATETIME, "datetime", NullPolicy.STRICT);
         defineMethod(TIME, "time", NullPolicy.STRICT);
+        defineReflective(TO_CHAR, BuiltInMethod.TO_CHAR.method);
+        defineReflective(TO_DATE, BuiltInMethod.TO_DATE.method);
+        defineReflective(TO_TIMESTAMP, BuiltInMethod.TO_TIMESTAMP.method);
 
         map.put(IS_NULL, new IsNullImplementor());
         map.put(IS_NOT_NULL, new IsNotNullImplementor());
@@ -564,6 +573,15 @@ public class RexImpTable {
         // Operator IS_NOT_DISTINCT_FROM is removed by RexSimplify, but still possible in join conditions, so
         // implementation required.
         defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
+
+        defineMethod(BITAND, BuiltInMethod.BIT_AND.method, NullPolicy.ANY);
+        defineMethod(BITOR, BuiltInMethod.BIT_OR.method, NullPolicy.ANY);
+        defineMethod(BITXOR, BuiltInMethod.BIT_XOR.method, NullPolicy.ANY);
+    }
+
+    /** */
+    public void define(SqlOperator operator, RexCallImplementor implementor) {
+        map.put(operator, implementor);
     }
 
     /** */
@@ -572,12 +590,12 @@ public class RexImpTable {
     }
 
     /** */
-    private void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
+    public void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
         map.put(operator, new MethodImplementor(method, nullPolicy, false));
     }
 
     /** */
-    private ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
+    public ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
         final ReflectiveImplementor implementor = new ReflectiveImplementor(ImmutableList.copyOf(methods));
         map.put(operator, implementor);
         return implementor;
@@ -1703,7 +1721,7 @@ public class RexImpTable {
             else if (op == TYPEOF) {
                 assert call.getOperands().size() == 1 : call.getOperands();
 
-                return Expressions.constant(call.getOperands().get(0).getType().toString());
+                return typeOfImplementor().implement(translator, call, NullAs.NOT_POSSIBLE);
             }
             else if (op == QUERY_ENGINE)
                 return Expressions.constant(CalciteQueryEngineConfiguration.ENGINE_NAME);
@@ -1712,6 +1730,24 @@ public class RexImpTable {
 
             throw new AssertionError("unknown function " + op);
         }
+    }
+
+    /** */
+    private static CallImplementor typeOfImplementor() {
+        return createImplementor((translator, call, translatedOperands) -> {
+            Method method = IgniteMethod.SKIP_FIRST_ARGUMENT.method();
+
+            RexNode operand = call.getOperands().get(0);
+            String operandType = operand.getType().toString();
+
+            List<Expression> finalOperands = new ArrayList<>(2);
+            // The first argument is an arbitrary expression (must be evaluated).
+            // The second argument is a type of the first expression (a constant).
+            finalOperands.add(translatedOperands.get(0));
+            finalOperands.add(Expressions.constant(operandType));
+
+            return Expressions.call(method, finalOperands);
+        }, NullPolicy.NONE, false);
     }
 
     /** Implementor for the {@code NOT} operator. */
@@ -2482,7 +2518,7 @@ public class RexImpTable {
     }
 
     /** */
-    private static RexCallImplementor createRexCallImplementor(
+    public static RexCallImplementor createRexCallImplementor(
         final NotNullImplementor implementor,
         final NullPolicy nullPolicy,
         final boolean harmonize) {

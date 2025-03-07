@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -26,17 +25,17 @@ import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.reduce0;
 
 /**
- * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
+ * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTask} does.
  * Since a snapshot partitions already stored apart on disk the is no requirement for a cluster upcoming updates
  * to be hold on.
  */
@@ -46,8 +45,13 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
+    @Override protected VerifySnapshotPartitionsJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
+    ) {
+        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), folderName, consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -62,23 +66,25 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
         /**
          * @param snpName Snapshot name to validate.
+         * @param snpPath Snapshot directory path.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
-         * @param snpPath Snapshot directory path.
          * @param check If {@code true} check snapshot before restore.
          */
         public VerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
+            String folderName,
             String consId,
             Collection<String> rqGrps,
             boolean check
         ) {
-            super(snpName, snpPath, consId, rqGrps, check);
+            super(snpName, snpPath, folderName, consId, rqGrps, check);
         }
 
         /** {@inheritDoc} */
-        @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
+        @Override public Map<PartitionKey, PartitionHashRecord> execute0() throws IgniteException {
             GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
 
             if (log.isInfoEnabled()) {
@@ -87,11 +93,10 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             }
 
             try {
-                File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(sft.meta());
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

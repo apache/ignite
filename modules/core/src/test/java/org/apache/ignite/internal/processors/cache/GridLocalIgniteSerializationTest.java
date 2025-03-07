@@ -32,8 +32,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -46,16 +44,6 @@ import org.junit.Test;
 public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache_name";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName != null && igniteInstanceName.startsWith("binary"))
-            cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
-    }
 
     /**
      * Test that calling {@link Ignition#localIgnite()}

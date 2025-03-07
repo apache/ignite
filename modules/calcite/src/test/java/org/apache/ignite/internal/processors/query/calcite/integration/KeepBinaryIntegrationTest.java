@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.SupplierX;
 import org.junit.Test;
 
 /**
@@ -43,6 +44,11 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
         cfg.setCacheConfiguration(cacheConfiguration().setName(CACHE_NAME).setIndexedTypes(Integer.class, Person.class));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean destroyCachesAfterTest() {
+        return false;
     }
 
     /** */
@@ -87,6 +93,59 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
             assertEquals(p0.name, res.get(0).get(2));
             assertEquals(p1.name, res.get(1).get(2));
             assertEquals(p2.name, res.get(2).get(2));
+
+            return null;
+        };
+
+        if (sqlTxMode == SqlTransactionMode.NONE)
+            checker.get();
+        else
+            txAction(client, checker);
+    }
+
+    /** */
+    @Test
+    public void testDynamicParameters() {
+        IgniteCache<Integer, Person> cache = client.cache(CACHE_NAME);
+
+        Person p0 = new Person(0, "name0", null);
+        Person p1 = new Person(1, "name1", p0);
+
+        put(client, cache, 0, p0);
+        put(client, cache, 1, p1);
+
+        SupplierX<?> checker = () -> {
+            for (boolean keepBinary : new boolean[] {true, false}) {
+                for (String sql : new String[] {
+                    "SELECT ?",
+                    "SELECT _val FROM Person WHERE _val = ?",
+                    "SELECT obj FROM Person WHERE obj = ?"
+                }) {
+                    SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(p0);
+
+                    List<List<?>> res = keepBinary ? cache.withKeepBinary().query(qry).getAll() : cache.query(qry).getAll();
+
+                    assertEquals(1, res.size());
+
+                    if (keepBinary)
+                        assertTrue(res.get(0).get(0) instanceof BinaryObject);
+                    else
+                        assertEquals(p0, res.get(0).get(0));
+                }
+
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT ?").setArgs(F.asList(p0));
+
+                List<List<?>> res = keepBinary ? cache.withKeepBinary().query(qry).getAll() : cache.query(qry).getAll();
+
+                assertEquals(1, res.size());
+
+                if (keepBinary) {
+                    assertTrue(res.get(0).get(0) instanceof List);
+                    assertTrue(((List<?>)res.get(0).get(0)).get(0) instanceof BinaryObject);
+                }
+                else
+                    assertEquals(F.asList(p0), res.get(0).get(0));
+            }
 
             return null;
         };

@@ -45,12 +45,12 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
+import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
@@ -388,7 +388,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
 
-        long expectedNullCnt = 22;
+        long expectedNullCnt = 23;
 
         String msg = nullOps.size()
                 + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
@@ -619,10 +619,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Kill the cluster node, clean up the working directory (with cached types)
             // and drop the client connection.
             ignite.close();
-            U.delete(U.resolveWorkDirectory(
-                    U.defaultWorkDirectory(),
-                    DataStorageConfiguration.DFLT_MARSHALLER_PATH,
-                    false));
+            U.delete(sharedFileTree().marshaller());
             dropAllThinClientConnections();
 
             // Invoke the service.
@@ -674,6 +671,32 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (Ignite ignored = startGrid(serverCfg); IgniteClient client = Ignition.startClient(clientCfg)) {
             Thread.sleep(6000);
             assertEquals(0, client.cacheNames().size());
+        }
+    }
+
+    /**
+     * Tests service proxy failover.
+     */
+    @Test
+    public void testServiceProxyFailover() throws Exception {
+        Assume.assumeTrue(partitionAware);
+
+        final int CLUSTER_SIZE = 3;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE]))
+             )) {
+
+            Ignition.allGrids().get(0).services().deployClusterSingleton(SERVICE_NAME, new ServicesTest.TestNodeIdService());
+
+            Ignition.allGrids().get(0).close();
+            Ignition.allGrids().get(1).close();
+
+            ServicesTest.TestNodeIdServiceInterface svc = client.services().serviceProxy(SERVICE_NAME,
+                ServicesTest.TestNodeIdServiceInterface.class);
+
+            svc.nodeId();
         }
     }
 

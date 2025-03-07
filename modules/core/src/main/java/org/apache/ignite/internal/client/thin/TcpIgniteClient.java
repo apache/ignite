@@ -164,6 +164,7 @@ public class TcpIgniteClient implements IgniteClient {
                 metadataHnd.onReconnect();
                 marshCtx.clearUserTypesCache();
                 marsh.context().unregisterUserTypeDescriptors();
+                marsh.context().unregisterBinarySchemas();
             });
 
             // Send postponed metadata after channel init.
@@ -450,6 +451,11 @@ public class TcpIgniteClient implements IgniteClient {
 
             return new ClientIgniteSetImpl<>(ch, serDes, name, colocated, cacheId);
         });
+    }
+
+    /** Stops cache warmup. */
+    public void stopWarmUp() {
+        ch.service(ClientOperation.OP_STOP_WARMUP, null, null);
     }
 
     /**

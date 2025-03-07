@@ -124,7 +124,7 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
             CommandInvoker<A> invoker = new CommandInvoker<>(cmd, new ParamsToArgument(params).argument(), ignite);
 
             if (invoker.prepare(printer))
-                res = invoker.invoke(printer, false);
+                res = invoker.invoke(printer);
 
             return resStr.toString();
         }

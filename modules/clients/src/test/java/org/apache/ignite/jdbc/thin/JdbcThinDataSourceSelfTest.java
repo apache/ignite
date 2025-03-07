@@ -39,11 +39,11 @@ import org.apache.ignite.IgniteJdbcThinDataSource;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 
 /**
@@ -57,8 +57,6 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

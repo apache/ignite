@@ -36,7 +36,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -265,12 +264,10 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         Ignite ignite = (Ignite)cache.unwrap(Ignite.class);
 
-        boolean binary = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
-
         long total = 0;
 
         for (Map.Entry<Object, Integer> e : cnts.entrySet()) {
-            Object arg = binary ? ignite.binary().toBinary(e.getKey()) : e.getKey();
+            Object arg = ignite.binary().toBinary(e.getKey());
 
             qry1.setArgs(arg);
 

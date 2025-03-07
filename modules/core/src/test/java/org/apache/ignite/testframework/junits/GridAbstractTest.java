@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.File;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -88,6 +89,9 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -674,8 +678,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, true);
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, true);
+        SharedFileTree sft = sharedFileTree();
+
+        U.delete(sft.marshaller());
+        U.delete(sft.binaryMetaRoot());
+
+        SharedFileTree.mkdir(sft.binaryMetaRoot(), "root binary metadata");
+        sft.mkdirMarshaller();
     }
 
     /** */
@@ -3176,5 +3185,56 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             throw new IgniteException("MBean not registered: " + mbeanName);
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
+    }
+
+    /**
+     * Recreates default db directory.
+     */
+    protected void recreateDefaultDb() {
+        File db = sharedFileTree().db();
+
+        U.delete(db);
+
+        assertTrue(db.mkdirs());
+    }
+
+    /**
+     * @return Ignite directories without specific {@code folerName} parameter.
+     */
+    protected SharedFileTree sharedFileTree() {
+        try {
+            return new SharedFileTree(U.defaultWorkDirectory());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param cfg Node config.
+     * @return Ignite directories without specific {@code folerName} parameter.
+     */
+    protected SharedFileTree sharedFileTree(IgniteConfiguration cfg) {
+        return new SharedFileTree(cfg);
+    }
+
+    /** @return Ignite directories for specific {@code folderName}. */
+    protected NodeFileTree nodeFileTree(String folderName) {
+        try {
+            return new NodeFileTree(U.defaultWorkDirectory(), folderName);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** @return Snapshot directories for specific snapshot. */
+    protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name) {
+        return snapshotFileTree(srv, name, null);
+    }
+
+    /** @return Snapshot directories for specific snapshot. */
+    protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
+        return new SnapshotFileTree(srv.context(), name, path);
     }
 }

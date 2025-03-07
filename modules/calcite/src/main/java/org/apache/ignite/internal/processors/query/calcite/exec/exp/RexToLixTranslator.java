@@ -58,12 +58,12 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
@@ -71,6 +71,7 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
@@ -543,6 +544,25 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 Expressions.field(null, SqlParserPos.class, "ZERO")
                             )
                         );
+                        break;
+                    case NUMERIC:
+                        BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
+
+                        if (SqlTypeName.FRACTIONAL_TYPES.contains(sourceType.getSqlTypeName())) {
+                            convert = sourceType.getSqlTypeName() == SqlTypeName.DECIMAL
+                                ? operand
+                                : ConverterUtils.convertToDecimal(operand, typeFactory.createSqlType(SqlTypeName.DECIMAL));
+
+                            convert = Expressions.call(
+                                convert,
+                                IgniteMethod.BIG_DECIMAL_MULTIPLY.method(),
+                                Expressions.constant(multiplier));
+                        }
+                        else
+                            convert = IgniteExpressions.multiplyExact(operand, Expressions.constant(multiplier.longValue()));
+
+                        convert = ConverterUtils.convert(convert, targetType);
+                        break;
                 }
                 break;
             case BINARY:
@@ -612,25 +632,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 (long)Math.pow(10, 3 - targetScale)));
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                switch (sourceType.getSqlTypeName().getFamily()) {
-                    case NUMERIC:
-                        final BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
-                        final BigDecimal divider = BigDecimal.ONE;
-                        convert = RexImpTable.multiplyDivide(convert, multiplier, divider);
-                }
         }
         return scaleIntervalToNumber(sourceType, targetType, convert);
     }
@@ -1033,7 +1034,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             return implementCaseWhen(call);
 
         if (operator == SEARCH)
-            return RexUtil.expandSearch(builder, program, call).accept(this);
+            return RexUtils.expandSearchNullable(builder, program, call).accept(this);
 
         final RexImpTable.RexCallImplementor implementor =
             RexImpTable.INSTANCE.get(operator);

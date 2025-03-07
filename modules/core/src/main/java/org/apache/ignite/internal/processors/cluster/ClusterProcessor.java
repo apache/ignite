@@ -157,7 +157,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private DiscoveryMetricsProvider metricsProvider;
@@ -186,8 +186,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER));
 
         cluster = new IgniteClusterImpl(ctx);
-
         sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
+        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /**
@@ -852,16 +852,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Cluster name.
      * */
     public String clusterName() {
-        try {
-            ctx.cache().awaitStarted();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         return IgniteSystemProperties.getString(
             IGNITE_CLUSTER_NAME,
-            ctx.cache().utilityCache().context().dynamicDeploymentId().toString()
+            String.valueOf(ctx.grid().cluster().id())
         );
     }
 

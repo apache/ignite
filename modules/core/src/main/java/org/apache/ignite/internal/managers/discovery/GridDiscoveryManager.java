@@ -120,7 +120,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -139,7 +138,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
@@ -479,13 +477,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if ((getSpi() instanceof TcpDiscoverySpi) && Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
-            ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
-                "(set TcpDiscoverySpi.forceServerMode to false)");
-    }
-
-    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
@@ -548,7 +539,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
-            private final Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+            private final Marshaller marshaller = ctx.marshallerContext().jdkMarshaller();
 
             /** {@inheritDoc} */
             @Override public void onLocalNodeInitialized(ClusterNode locNode) {
@@ -1572,13 +1563,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             for (DataRegionConfiguration dataReg : dataRegions) {
                 res += dataReg.getMaxSize();
 
-                res += U.checkpointBufferSize(dataReg);
+                res += U.checkpointBufferSize(memCfg, dataReg);
             }
         }
 
-        res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
+        DataRegionConfiguration dfltDataRegion = memCfg.getDefaultDataRegionConfiguration();
 
-        res += U.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
+        res += dfltDataRegion.getMaxSize();
+
+        res += U.checkpointBufferSize(memCfg, dfltDataRegion);
 
         return res;
     }

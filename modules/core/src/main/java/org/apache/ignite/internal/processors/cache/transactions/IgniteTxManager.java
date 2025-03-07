@@ -49,7 +49,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedTransactionConfiguration;
@@ -79,9 +78,11 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -130,6 +131,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DU
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.configuration.TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -142,7 +144,6 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteInt
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -278,12 +279,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** TxDeadlock detection. */
     private TxDeadlockDetection txDeadlockDetection;
 
-    /**
-     * Indicates whether {@code suspend()} and {@code resume()} operations are supported for pessimistic transactions
-     * cluster wide.
-     */
-    private volatile boolean suspendResumeForPessimisticSupported;
-
     /** The futures for changing transaction timeout on partition map exchange. */
     private final ConcurrentMap<UUID, TxTimeoutOnPartitionMapExchangeChangeFuture> txTimeoutOnPartitionMapExchangeFuts =
         new ConcurrentHashMap<>();
@@ -370,9 +365,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             removeTxReturn(entry.getKey());
                     }
                 }
-
-                suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
-                    cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
@@ -407,12 +399,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             new TransactionViewWalker(),
             new ReadOnlyCollectionView2X<>(idMap.values(), nearIdMap.values()),
             TransactionView::new);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0(boolean active) {
-        suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
-            cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
     }
 
     /**
@@ -690,6 +676,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param timeout transaction timeout.
      * @param txSize Expected transaction size.
      * @param lb Label.
+     * @param appAttrs Application attributes.
      * @return New transaction.
      */
     public GridNearTxLocal newTx(
@@ -701,7 +688,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         long timeout,
         boolean storeEnabled,
         int txSize,
-        @Nullable String lb
+        @Nullable String lb,
+        @Nullable Map<String, String> appAttrs
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
@@ -731,6 +719,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (topVer != null)
                 tx.topologyVersion(topVer);
         }
+
+        tx.applicationAttributes(appAttrs);
 
         return onCreated(sysCacheCtx, tx);
     }
@@ -2639,11 +2629,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null && !tx.system() : tx;
 
-        if (tx.concurrency == PESSIMISTIC && !suspendResumeForPessimisticSupported) {
-            throw new IgniteCheckedException("Suspend operation cannot be called " +
-                "because some nodes in the cluster don't support this feature.");
-        }
-
         if (!tx.state(SUSPENDED)) {
             throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
                 + "[expected=" + ACTIVE + ", actual=" + tx.state() + ']');
@@ -2974,6 +2959,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param plc IO policy.
      */
     public void sendTransactionMessage(UUID nodeId, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
+        if (msg instanceof GridDistributedTxPrepareRequest && tx != null && tx.applicationAttributes() != null)
+            msg = new TransactionAttributesAwareRequest((GridDistributedTxPrepareRequest)msg, tx.applicationAttributes());
+
         BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform = txMsgTransform;
 
         if (transform != null)
@@ -3593,5 +3581,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Clears tx states collections. */
     public void clearUncommitedStates() {
         uncommitedTx = Collections.emptySet();
+    }
+
+    /**
+     * Checks if transaction mode supported for transaction aware queries.
+     * @param isolation Transaction isolation to check.
+     */
+    public static void ensureTransactionModeSupported(TransactionIsolation isolation) {
+        if (TX_AWARE_QUERIES_SUPPORTED_MODES.contains(isolation))
+            return;
+
+        throw new IllegalStateException("Transaction isolation mode not supported for SQL queries: " + isolation);
     }
 }

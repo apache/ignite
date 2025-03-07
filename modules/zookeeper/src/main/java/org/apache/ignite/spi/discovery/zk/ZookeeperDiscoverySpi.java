@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -341,14 +341,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        if (impl == null)
-            return false;
-
-        return impl.allNodesSupport(feature);
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterNode getLocalNode() {
         return impl != null ? impl.localNode() : null;
     }
@@ -478,7 +470,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             lsnr,
             exchange,
             internalLsnr,
-            stats);
+            stats,
+            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller());
 
         registerMBean(igniteInstanceName, new ZookeeperDiscoverySpiMBeanImpl(this), ZookeeperDiscoverySpiMBean.class);
 

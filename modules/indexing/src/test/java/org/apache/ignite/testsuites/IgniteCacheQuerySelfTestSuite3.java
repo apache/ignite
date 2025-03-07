@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchForceServerModeAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBufferLimitTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryConcurrentPartitionUpdateTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterPartitionedAtomicTest;
@@ -68,7 +67,6 @@ import org.junit.runners.Suite;
     GridCacheContinuousQueryReplicatedSelfTest.class,
 
     CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class,
-    CacheContinuousBatchForceServerModeAckTest.class,
     ContinuousQueryReassignmentTest.class,
     CacheContinuousQueryConcurrentPartitionUpdateTest.class,
 

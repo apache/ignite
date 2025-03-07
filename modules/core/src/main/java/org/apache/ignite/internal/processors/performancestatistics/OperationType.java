@@ -91,12 +91,21 @@ public enum OperationType {
     QUERY_ROWS(20),
 
     /** Custom query property. */
-    QUERY_PROPERTY(21);
+    QUERY_PROPERTY(21),
+
+    /** Cache put all conflict. */
+    CACHE_PUT_ALL_CONFLICT(22),
+
+    /** Cache remove all conflict. */
+    CACHE_REMOVE_ALL_CONFLICT(23),
+
+    /** Version. */
+    VERSION(255);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
         CACHE_GET_AND_PUT, CACHE_GET_AND_REMOVE, CACHE_INVOKE, CACHE_LOCK, CACHE_GET_ALL, CACHE_PUT_ALL,
-        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL);
+        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL, CACHE_PUT_ALL_CONFLICT, CACHE_REMOVE_ALL_CONFLICT);
 
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
@@ -217,7 +226,12 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return 8 * 12 + 4 * 3;
+        return 8 * 13 + 4 * 3;
+    }
+
+    /** @return Version record size. */
+    public static int versionRecordSize() {
+        return Short.BYTES;
     }
 
     /** @return Pages write throttle record size. */

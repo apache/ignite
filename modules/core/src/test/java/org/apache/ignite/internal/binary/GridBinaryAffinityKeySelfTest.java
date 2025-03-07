@@ -70,8 +70,6 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheKeyConfiguration(keyCfg, keyCfg2);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         if (!igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT))) {
             CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
