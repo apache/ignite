@@ -1,6 +1,7 @@
-package database.ddl.transfer.hive;
+package database.ddl.transfer.utils;
 
-import database.ddl.transfer.bean.HiveConnectionProperty;
+import database.ddl.transfer.bean.DBSettings;
+import database.ddl.transfer.utils.DBUrlUtil;
 
 import java.sql.*;
 /**
@@ -11,7 +12,7 @@ import java.sql.*;
  *@Version
  **/
 
-public class HiveConnUtils {
+public class DBConnUtils {
     /**
        * @author luoyuntian
        * @date 2020-01-08 15:56
@@ -19,11 +20,12 @@ public class HiveConnUtils {
         * @param
        * @return
        */
-    public static Connection getHiveConnection(HiveConnectionProperty property){
+    public static Connection getNewConnection(DBSettings property){
         Connection con = null;
         try {
-           Class.forName(property.getDriver());
-           con = DriverManager.getConnection(property.getUrl(),property.getUserName(),property.getPassword());
+           Class.forName(property.getDriverClass());
+           String url = DBUrlUtil.generateDataBaseUrl(property);
+           con = DriverManager.getConnection(url,property.getUserName(),property.getUserPassword());
        }catch (Exception e){
            e.printStackTrace();
        }

@@ -14,12 +14,17 @@ server:
 #    key-store: certificates/server.jks
 #    key-store-password: change_me
 
+  error:
+    whitelabel:
+      enabled: true
+
 ####Jetty properties########
   jetty:
     acceptors: 1 # acceptor线程数
     selectors: 2 # selector线程数
     max-http-post-size: 1073741824 # put或post方法最大字节数    
-    max-threads: 256
+    max-threads: 128
+    work-directory: .
 
 spring:
   mvc:

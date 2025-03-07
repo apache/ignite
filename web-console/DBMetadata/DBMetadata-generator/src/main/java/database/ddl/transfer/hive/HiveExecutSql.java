@@ -1,12 +1,12 @@
 package database.ddl.transfer.hive;
+import database.ddl.transfer.bean.DBSettings;
 import database.ddl.transfer.consts.HiveKeyWord;
 import database.ddl.transfer.consts.HiveStoreType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import database.ddl.transfer.bean.HiveConnectionProperty;
-import database.ddl.transfer.hive.HiveConnUtils;
 import database.ddl.transfer.hive.HiveExecutSql;
+import database.ddl.transfer.utils.DBConnUtils;
 
 import java.sql.*;
 import java.util.*;
@@ -26,8 +26,8 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static String getHiveCreateDDL(String databaseName, String tableName, HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static String getHiveCreateDDL(String databaseName, String tableName, DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         StringBuilder result = new StringBuilder();
         String sql = "show create table "+databaseName+"."+tableName;
         PreparedStatement ps = null;
@@ -39,7 +39,7 @@ public class HiveExecutSql {
         }
         rs.close();
 
-        HiveConnUtils.closeConnection(con);
+        DBConnUtils.closeConnection(con);
 
         return result.toString();
     }
@@ -50,8 +50,8 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static List<String> getDatabases(HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static List<String> getDatabases(DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         List<String> databases = new ArrayList<>();
         String sql = "show databases";
         PreparedStatement ps = null;
@@ -62,7 +62,7 @@ public class HiveExecutSql {
             databases.add((String) rs.getObject(1));
         }
         rs.close();
-        HiveConnUtils.closeConnection(con);
+        DBConnUtils.closeConnection(con);
 
         return  databases;
     }
@@ -74,13 +74,13 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static void createDatabase(String databaseName,HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static void createDatabase(String databaseName,DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         String createDatabase = "create database if not exists "+databaseName;
         PreparedStatement ps = null;
             ps = con.prepareStatement(createDatabase);
             ps.execute();
-            HiveConnUtils.closeConnection(con);
+            DBConnUtils.closeConnection(con);
 
     }
 
@@ -92,8 +92,8 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static List<String> getTables(String databasesName,HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static List<String> getTables(String databasesName,DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         List<String> tables = new ArrayList<>();
         String selectDatabaseSql = "use "+databasesName;
         String getTables = "show tables";
@@ -111,7 +111,7 @@ public class HiveExecutSql {
         rs2.close();
 
 
-        HiveConnUtils.closeConnection(con);
+        DBConnUtils.closeConnection(con);
 
         return tables;
     }
@@ -159,15 +159,15 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static void  createTable(String database,String createDDL,HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static void  createTable(String database,String createDDL,DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         String changeDatabase = "use "+database;
         PreparedStatement selectDatabase =  con.prepareStatement(changeDatabase);
         selectDatabase.execute();
         String createDDLaddExists = addIfNotExists(createDDL);
         PreparedStatement ps = con.prepareStatement(createDDLaddExists);
         ps.execute();
-        HiveConnUtils.closeConnection(con);
+        DBConnUtils.closeConnection(con);
 
     }
     /**
@@ -191,8 +191,8 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static List<String> getPartions(String database,String table,HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static List<String> getPartions(String database,String table,DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         List<String> partitions =  new ArrayList<>();
         String showPartitions = "show partitions "+database+"."+table;
         PreparedStatement ps = con.prepareStatement(showPartitions);
@@ -204,7 +204,7 @@ public class HiveExecutSql {
         }
         rs.close();
 
-        HiveConnUtils.closeConnection(con);
+        DBConnUtils.closeConnection(con);
         return partitions;
 
     }
@@ -235,13 +235,13 @@ public class HiveExecutSql {
      * @param
      * @return
      */
-    public static void addPartition(String databaseName,String tableName,String partition,HiveConnectionProperty property) throws SQLException {
-        Connection con = HiveConnUtils.getHiveConnection(property);
+    public static void addPartition(String databaseName,String tableName,String partition,DBSettings property) throws SQLException {
+        Connection con = DBConnUtils.getNewConnection(property);
         String addPartitonSQL = "alter table "+databaseName+"."+tableName+" add partition("+partition+")";
         PreparedStatement ps = null;
             ps = con.prepareStatement(addPartitonSQL);
             ps.execute();
-            HiveConnUtils.closeConnection(con);
+            DBConnUtils.closeConnection(con);
 
 
     }

@@ -60,9 +60,14 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
 
         registry.addResourceHandler("/webjars/**")
             .addResourceLocations("classpath:/META-INF/resources/webjars/");
+        
+        registry.addResourceHandler("/phpMongoAdmin/**").
+        	addResourceLocations("file:phpMongoAdmin/");
 
         registry.addResourceHandler("/**").
             addResourceLocations("file:frontend/");
+        
+        
     }
     
     /**

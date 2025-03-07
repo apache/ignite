@@ -29,6 +29,9 @@ public class DBUrlUtil {
 			case ORACLE:
 				sb.append("jdbc:oracle:thin:@").append(settings.getIpAddress()).append(":").append(settings.getPort()).append(":").append(settings.getDataBaseName());
 				break;
+			case HIVE:
+				sb.append("jdbc:hive2://").append(settings.getIpAddress()).append(":").append(settings.getPort()).append("/").append(settings.getDataBaseName());
+				break;
 			default:
 				break;
 		}
@@ -55,6 +58,9 @@ public class DBUrlUtil {
 				break;
 			case "ORACLE":
 				sb.append("jdbc:oracle:thin:@").append(ip).append(":").append(port).append(":").append(databaseName);
+				break;
+			case "HIVE":
+				sb.append("jdbc:hive2://").append(ip).append(":").append(port).append("/").append(databaseName);
 				break;
 			default:
 				break;

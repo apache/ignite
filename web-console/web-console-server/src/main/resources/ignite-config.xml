@@ -6,11 +6,14 @@
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
     	<property name="igniteInstanceName" value="admin" />	
         <property name="consistentId" value="web-console-data"/>
-        <property name="peerClassLoadingEnabled" value="true"/>
+        <property name="peerClassLoadingEnabled" value="false"/>
         <property name="metricsLogFrequency" value="0"/>
         <property name="queryThreadPoolSize" value="8"/>
         <property name="failureDetectionTimeout" value="10000"/>
         <property name="networkTimeout" value="10000"/>
+		
+		 <!-- Set to local host address just for examples. -->
+        <property name="localHost" value="127.0.0.1"/>
         
         <property name="binaryConfiguration">
 	        <bean class="org.apache.ignite.configuration.BinaryConfiguration">
@@ -58,10 +61,19 @@
         <property name="failureHandler">
             <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
         </property>        
-
+		<!--
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
                 <property name="zkConnectionString" value="localhost:2181" />                
+            </bean>
+        </property>
+		-->
+		<property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryWebConsoleServerIpFinder">			
+                    </bean>
+                </property>
             </bean>
         </property>
     </bean>

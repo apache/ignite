@@ -7,6 +7,6 @@ package database.ddl.transfer.consts;
  */
 public enum DataBaseType {
 
-    MYSQL,POSTGRESQL,ORACLE
+    MYSQL,POSTGRESQL,ORACLE,HIVE
 
 }

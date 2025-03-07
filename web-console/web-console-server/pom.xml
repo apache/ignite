@@ -140,12 +140,24 @@
             <artifactId>commons-compress</artifactId>
             <version>${commons.compress.version}</version>
         </dependency>
+        
+        <dependency>
+	        <groupId>org.apache.commons</groupId>
+	        <artifactId>commons-csv</artifactId>
+	        <version>1.10.0</version>
+	    </dependency>
  
         <dependency>
 	      <groupId>org.springdoc</groupId>
 	      <artifactId>springdoc-openapi-ui</artifactId>
 	      <version>1.7.0</version>
 	    </dependency>
+	    
+	    <dependency>
+	      <groupId>com.caucho.quercus</groupId>
+	      <artifactId>quercus</artifactId>
+	      <version>4.0.42-MOD4-SNAPSHOT</version>
+	    </dependency>	
 	   
         <dependency>
             <groupId>org.mongodb</groupId>
@@ -157,14 +169,8 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${web-console.ignite.version}</version>
-        </dependency>
+        </dependency>        
         
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-zookeeper</artifactId>
-            <version>${web-console.ignite.version}</version>
-        </dependency>
-       
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>

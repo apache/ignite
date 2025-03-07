@@ -16,18 +16,25 @@
 
 package org.apache.ignite.console.config;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.Servlet;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.web.security.PassportLocalPasswordEncoder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.Ordered;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
@@ -41,6 +48,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 
 /**
  * Application configuration.
@@ -48,6 +56,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @EnableScheduling
 public class ApplicationConfiguration  {
+	
+	@Value("${quercus.webapp.dir:}")
+    private String quercusWebappDir = "";
+
+    @PostConstruct
+    public void init() {
+        System.setProperty("quercus.webapp_dir", quercusWebappDir);
+    }
     /**
      * @return Service for encoding user passwords.
      */
@@ -93,5 +109,29 @@ public class ApplicationConfiguration  {
       scheduler.initialize();
       
       return scheduler;
+    }
+    
+    @Bean
+    public ServletRegistrationBean<Servlet> customServletRegistration() {
+    	String servletName = "com.caucho.quercus.servlet.QuercusServlet";
+    	
+		try {
+			Class<Servlet> servlet = (Class<Servlet>) Class.forName(servletName);
+			Servlet servletInstance = servlet.getConstructor().newInstance();
+			ServletRegistrationBean<Servlet> registration =  new ServletRegistrationBean<>(servletInstance, "*.php");
+	        //registration.addInitParameter("ini-file", "file:config/php.ini");
+	        registration.addInitParameter("script-encoding", "utf-8");
+	        registration.setOrder(Ordered.HIGHEST_PRECEDENCE); // 设置高优先级
+	        registration.setName("Quercus Servlet");
+	        return registration;
+		
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		DefaultServlet servletInstance = new DefaultServlet();		
+		return new ServletRegistrationBean<>(servletInstance, "/static");
+    	
     }
 }
