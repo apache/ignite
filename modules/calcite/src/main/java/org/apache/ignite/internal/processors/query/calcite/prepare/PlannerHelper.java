@@ -28,10 +28,8 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
@@ -44,7 +42,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
@@ -56,10 +53,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizationRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.PlanUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -127,6 +126,8 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
+            System.err.println("TEST | plan:\n" + RelOptUtil.toString(igniteRel));
+
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -138,58 +139,53 @@ public class PlannerHelper {
     }
 
     /** */
-    private static RelNode optimizeJoins(IgnitePlanner planner, RelNode originRel) {
-        Collection<Join> joins = findNodes(originRel, Join.class, false);
+    private static RelNode optimizeJoins(IgnitePlanner planner, RelNode root) {
+        List<Join> joins = PlanUtils.findNodes(root, Join.class, false);
 
         // Nothing to optimize.
         if (joins.isEmpty())
-            return originRel;
+            return root;
 
+        int disabledCnt = 0;
+
+        // Optimization: if all the joins are with the forced order, no need to do join order heuristics at all.
         for (Join join : joins) {
             for (RelHint hint : join.getHints()) {
-                if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName))
-                    return originRel;
+                if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName)) {
+                    ++disabledCnt;
+
+                    break;
+                }
             }
         }
 
-        RelNode optimizedRel = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, originRel.getTraitSet(), originRel);
+        if (disabledCnt == joins.size())
+            return root;
+
+        RelNode optimizedRel;
+
+        try {
+            IgniteMultiJoinOptimizationRule.ORIGINAL_JOINS.set(joins);
+
+            if ((root instanceof Hintable) && !((Hintable)root).getHints().isEmpty())
+                IgniteMultiJoinOptimizationRule.TOP_HINTS.set(((Hintable)root).getHints());
+
+            optimizedRel = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
+        }
+        finally {
+            IgniteMultiJoinOptimizationRule.TOP_HINTS.set(null);
+            IgniteMultiJoinOptimizationRule.ORIGINAL_JOINS.set(null);
+        }
 
         // Still has multi-joins, failed to convert or is disabled.
-        if (!findNodes(optimizedRel, MultiJoin.class, true).isEmpty())
-            return originRel;
+        if (!PlanUtils.findNodes(optimizedRel, MultiJoin.class, true).isEmpty())
+            return root;
 
         // No need to launch additional join order optimizations.
         planner.setDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
             .collect(Collectors.toList()));
 
         return optimizedRel;
-    }
-
-    /** */
-    private static <T extends RelNode> Collection<T> findNodes(RelNode root, Class<T> nodeType, boolean any) {
-        Collection<T> rels = new ArrayList<>();
-
-        try {
-            RelShuttle visitor = new RelHomogeneousShuttle() {
-                @Override public RelNode visit(RelNode node) {
-                    if (nodeType.isAssignableFrom(node.getClass())) {
-                        rels.add((T)node);
-
-                        if (any)
-                            throw Util.FoundOne.NULL;
-                    }
-
-                    return super.visit(node);
-                }
-            };
-
-            root.accept(visitor);
-        }
-        catch (Util.FoundOne ignored) {
-            // No-op.
-        }
-
-        return rels;
     }
 
     /**

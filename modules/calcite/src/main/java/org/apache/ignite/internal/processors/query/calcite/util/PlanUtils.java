@@ -17,7 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.rel.RelHomogeneousShuttle;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -68,5 +74,49 @@ public class PlanUtils {
         if (ctx.catalogReader().getRootSchema().getSubSchema(schemaName, true) == null)
             throw new IgniteSQLException("Schema with name " + schemaName + " not found",
                 IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
+    }
+
+    /** */
+    public static <T extends RelNode> List<T> findNodes(
+        RelNode root,
+        Class<T> nodeType,
+        boolean stopOnFirst,
+        Class<? extends RelNode>... interruptRecursion
+    ) {
+        List<T> rels = new ArrayList<>();
+
+        try {
+            RelShuttle visitor = new RelHomogeneousShuttle() {
+                @Override public RelNode visit(RelNode node) {
+                    if (nodeType.isAssignableFrom(node.getClass())) {
+                        rels.add((T)node);
+
+                        if (stopOnFirst)
+                            throw Util.FoundOne.NULL;
+                    }
+
+                    return super.visit(node);
+                }
+
+                @Override protected RelNode visitChild(RelNode parent, int i, RelNode child) {
+                    if (parent == root || interruptRecursion.length == 0)
+                        return super.visitChild(parent, i, child);
+
+                    for (Class<? extends RelNode> stopOnRelType : interruptRecursion) {
+                        if (stopOnRelType.isAssignableFrom(child.getClass()))
+                            return parent;
+                    }
+
+                    return super.visitChild(parent, i, child);
+                }
+            };
+
+            root.accept(visitor);
+        }
+        catch (Util.FoundOne ignored) {
+            // No-op.
+        }
+
+        return rels;
     }
 }

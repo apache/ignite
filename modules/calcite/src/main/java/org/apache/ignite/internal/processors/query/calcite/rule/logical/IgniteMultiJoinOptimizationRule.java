@@ -26,13 +26,20 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.rules.LoptMultiJoin;
 import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rel.rules.TransformationRule;
@@ -45,7 +52,9 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.mapping.Mappings.TargetMapping;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,6 +85,18 @@ import static org.apache.ignite.internal.util.IgniteUtils.isPow2;
  */
 @Value.Enclosing
 public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOptimizationRule.Config> implements TransformationRule {
+    /**
+     * Original, non-commuted Joins keeping hints to reassign. {@link MultiJoin} is not {@link Hintable} and {@link JoinToMultiJoinRule}
+     * erases hints like join type. We have to restore them.
+     *
+     * @see #restoreHints(Join, HashMap)
+     */
+    public static final ThreadLocal<List<Join>> ORIGINAL_JOINS = new ThreadLocal<>();
+
+    /** TODO. Hints of the root original rel. Hints can be assigned to certain rels, inside a query. We reassign hints if equal
+     * optimized join appear in final optimized plan. But hints can be also set by SELECT meaning */
+    public static final ThreadLocal<List<RelHint>> TOP_HINTS = new ThreadLocal<>();
+
     /** */
     public static final IgniteMultiJoinOptimizationRule INSTANCE = new IgniteMultiJoinOptimizationRule(Config.DEFAULT);
 
@@ -127,6 +148,9 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
         Map<Integer, Vertex> bestPlan = new HashMap<>();
         BitSet connections = new BitSet(1 << relNum);
 
+        // Joint conditions before the permutation.
+        HashMap<Join, RexNode> unmappedConditions = new HashMap<>(1 << relNum, 1.0f);
+
         // Rel number in pow2.
         int relId = 0b1;
 
@@ -134,9 +158,6 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
         int fieldOffset = 0;
 
         for (RelNode input : multiJoinRel.getInputs()) {
-            // Only flat multy-joins expected.
-            assert !MultiJoin.class.isAssignableFrom(input.getClass());
-
             TargetMapping mapping = Mappings.offsetSource(
                 Mappings.createIdentity(input.getRowType().getFieldCount()),
                 fieldOffset,
@@ -174,7 +195,7 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
                     Vertex leftPlan = bestPlan.get(leftSubVrtxNum);
                     Vertex rightPlan = bestPlan.get(rightSubVrtxNum);
 
-                    Vertex newPlan = createJoin(leftPlan, rightPlan, edges0, mq, relBuilder, rexBuilder);
+                    Vertex newPlan = createJoin(leftPlan, rightPlan, edges0, mq, relBuilder, rexBuilder, unmappedConditions);
 
                     Vertex curBestPlan = bestPlan.get(set);
 
@@ -196,7 +217,7 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
         Vertex best;
 
         if (bestSoFar == null || bestSoFar.idMask != allRelationsMask)
-            best = composeCartesianJoin(allRelationsMask, bestPlan, edges, bestSoFar, mq, relBuilder, rexBuilder);
+            best = composeCartesianJoin(allRelationsMask, bestPlan, edges, bestSoFar, mq, relBuilder, rexBuilder, unmappedConditions);
         else
             best = bestSoFar;
 
@@ -205,6 +226,10 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
             .filter(RexUtil.composeConjunction(rexBuilder, unusedConditions).accept(new RexPermuteInputsShuttle(best.mapping, best.rel)))
             .project(relBuilder.fields(best.mapping))
             .build();
+
+        // Try to restore and propagate top-level hints.
+        if (result instanceof Hintable && !F.isEmpty(TOP_HINTS.get()))
+            result = RelOptUtil.propagateRelHints(((Hintable)result).attachHints(TOP_HINTS.get()), false);
 
         call.transformTo(result);
     }
@@ -238,7 +263,8 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
         @Nullable Vertex bestSoFar,
         RelMetadataQuery mq,
         RelBuilder relBuilder,
-        RexBuilder rexBuilder
+        RexBuilder rexBuilder,
+        HashMap<Join, RexNode> unmappedConditions
     ) {
         List<Vertex> options;
 
@@ -270,7 +296,7 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
 
             aggregateEdges(edges, bestSoFar.idMask, input.idMask);
 
-            bestSoFar = createJoin(bestSoFar, input, edges0, mq, relBuilder, rexBuilder);
+            bestSoFar = createJoin(bestSoFar, input, edges0, mq, relBuilder, rexBuilder, unmappedConditions);
         }
 
         assert bestSoFar.idMask == allRelationsMask;
@@ -330,11 +356,12 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
         List<Edge> edges,
         RelMetadataQuery metadataQry,
         RelBuilder relBuilder,
-        RexBuilder rexBuilder
+        RexBuilder rexBuilder,
+        HashMap<Join, RexNode> unmappedConditions
     ) {
-        List<RexNode> joinConditions = new ArrayList<>();
+        List<RexNode> conditions = new ArrayList<>();
 
-        edges.forEach(e -> joinConditions.add(e.joinCondition));
+        edges.forEach(e -> conditions.add(e.joinCondition));
 
         double leftSize = metadataQry.getRowCount(leftSubTree.rel);
         double rightSize = metadataQry.getRowCount(rightSubTree.rel);
@@ -357,14 +384,97 @@ public class IgniteMultiJoinOptimizationRule extends RelRule<IgniteMultiJoinOpti
             Mappings.offsetTarget(minorFactor.mapping, majorFactor.rel.getRowType().getFieldCount())
         );
 
-        RexNode condition = RexUtil.composeConjunction(rexBuilder, joinConditions)
-            .accept(new RexPermuteInputsShuttle(mapping, majorFactor.rel, minorFactor.rel));
+        RexNode cond = RexUtil.composeConjunction(rexBuilder, conditions);
+        RexNode fixedCond = cond.accept(new RexPermuteInputsShuttle(mapping, majorFactor.rel, minorFactor.rel));
 
-        RelNode join = relBuilder.push(majorFactor.rel).push(minorFactor.rel).join(JoinRelType.INNER, condition).build();
+        RelNode join = relBuilder.push(majorFactor.rel).push(minorFactor.rel).join(JoinRelType.INNER, fixedCond).build();
 
-        double curCost = metadataQry.getRowCount(join);
+        assert join instanceof Join;
 
-        return new Vertex(leftSubTree.idMask | rightSubTree.idMask, curCost + leftSubTree.cost + rightSubTree.cost, join, mapping);
+        if (!fixedCond.equals(cond))
+            unmappedConditions.put((Join)join, cond);
+
+        join = restoreHints((Join)join, unmappedConditions);
+
+        assert ((Hintable)join).getHints().stream().noneMatch(h -> h.hintName.equals(HintDefinition.ENFORCE_JOIN_ORDER.name()))
+            : "Joins with enforced order most not be optimized.";
+
+        double cost = metadataQry.getRowCount(join) + leftSubTree.cost + rightSubTree.cost;
+
+        return new Vertex(leftSubTree.idMask | rightSubTree.idMask, cost, join, mapping);
+    }
+
+    /** */
+    private static RelNode restoreHints(Join join, HashMap<Join, RexNode> unmappedConditions) {
+        if (F.isEmpty(ORIGINAL_JOINS.get()))
+            return join;
+
+        Join sameOrig = null;
+
+        for (Join orig : ORIGINAL_JOINS.get()) {
+            if (equalJoins(join, orig, unmappedConditions)) {
+                sameOrig = orig;
+
+                break;
+            }
+        }
+
+        return sameOrig == null || sameOrig.getHints().isEmpty() ? join : join.attachHints(sameOrig.getHints());
+    }
+
+    /** */
+    private static boolean equalJoins(Join j1, Join j2, HashMap<Join, RexNode> unmappedConditions) {
+        if (j1.getJoinType() != j2.getJoinType())
+            return false;
+
+        // Joint conditions. Search the map first. New conditions might be permuted but the join is still the same.
+        RexNode c1 = (c1 = unmappedConditions.get(j1)) == null ? j1.getCondition() : c1;
+        RexNode c2 = (c2 = unmappedConditions.get(j2)) == null ? j2.getCondition() : c2;
+
+        if(!c1.equals(c2))
+            return false;
+
+        // Search both joins for their input joins or table scans.
+        RelNode l1 = joinOrTableScan(j1.getLeft());
+        if (l1 == null)
+            return false;
+
+        RelNode r1 = joinOrTableScan(j1.getRight());
+        if (r1 == null)
+            return false;
+
+        RelNode l2 = joinOrTableScan(j2.getLeft());
+        if (l2 == null)
+            return false;
+
+        RelNode r2 = joinOrTableScan(j2.getRight());
+        if (r2 == null)
+            return false;
+
+        return (equalJoinInputs(l1, l2, unmappedConditions) && equalJoinInputs(r1, r2, unmappedConditions))
+            || (equalJoinInputs(l1, r2, unmappedConditions) && equalJoinInputs(r1, l2, unmappedConditions));
+    }
+
+    /** */
+    private static @Nullable RelNode joinOrTableScan(RelNode rel) {
+        if (rel instanceof TableScan || rel instanceof Join)
+            return rel;
+
+        if (rel instanceof HepRelVertex)
+            return joinOrTableScan(((HepRelVertex)rel).getCurrentRel());
+
+        return rel.getInputs().size() == 1 ? joinOrTableScan(rel.getInput(0)) : null;
+    }
+
+    /** */
+    private static boolean equalJoinInputs(RelNode in1, RelNode in2, HashMap<Join, RexNode> unmappedConditions) {
+        if (in1 instanceof TableScan && in2 instanceof TableScan)
+            return Objects.equals(((TableScan)in1).getTable().getQualifiedName(), ((TableScan)in2).getTable().getQualifiedName());
+
+        if (in1 instanceof Join && in2 instanceof Join)
+            return equalJoins((Join)in1, (Join)in2, unmappedConditions);
+
+        return false;
     }
 
     /**
