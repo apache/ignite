@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,8 +98,8 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param cctx Kernal context.
-     * @param sft File tree to start from. If {@code instanceof SnapshotFileTree} then dump will read only specific node data,
-     *            will read all nodes data otherwise.
+     * @param sfts File trees to read.
+     * @param metadata Dump metadata.
      * @param keepBinary If {@code true} then keep read entries in binary form.
      * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
      * @param encSpi Encryption SPI instance.
@@ -108,35 +107,28 @@ public class Dump implements AutoCloseable {
      */
     public Dump(
         GridKernalContext cctx,
-        SharedFileTree sft,
+        List<SnapshotFileTree> sfts,
+        List<SnapshotMetadata> metadata,
         boolean keepBinary,
         boolean raw,
         @Nullable EncryptionSpi encSpi,
         IgniteLogger log
     ) {
-        A.ensure(sft != null, "dump directory is null");
-        A.ensure(sft.root().exists(), "dump directory not exists");
+        A.ensure(!F.isEmpty(sfts), "dump files not found");
+        A.ensure(!F.isEmpty(metadata), "dump meta file not found");
+        A.ensure(F.first(sfts).root().exists(), "dump directory not exists");
+        A.ensure(sfts.size() == metadata.size(), "metafiles and trees size differs: " + sfts.size() + " != " + metadata.size());
 
         this.keepBinary = keepBinary;
         this.cctx = cctx;
         this.raw = raw;
         this.encSpi = encSpi;
+        this.sfts = sfts;
+        this.metadata = metadata;
 
-        this.metadata = readMetadata(sft instanceof SnapshotFileTree
-            ? Collections.singletonList(((SnapshotFileTree)sft).meta())
-            : F.asList(sft.root().listFiles(SnapshotFileTree::snapshotMetaFile)));
+        this.comprParts = this.metadata.get(0).compressPartitions();
 
-        this.sfts = metadata.stream().map(m -> new SnapshotFileTree(
-            cctx,
-            m.snapshotName(),
-            (sft instanceof SnapshotFileTree) ? ((SnapshotFileTree)sft).path() : sft.root().getAbsolutePath(),
-            m.folderName(),
-            m.consistentId()
-        )).collect(Collectors.toList());
-
-        this.comprParts = metadata.get(0).compressPartitions();
-
-        for (SnapshotMetadata meta : metadata) {
+        for (SnapshotMetadata meta : this.metadata) {
             if (meta.encryptionKey() != null && encSpi == null)
                 throw new IllegalArgumentException("Encryption SPI required to read encrypted dump");
         }
@@ -152,26 +144,18 @@ public class Dump implements AutoCloseable {
         return Collections.unmodifiableList(metadata);
     }
 
-    /** @return List of snapshot metadata saved in {@link #fileTrees()}. */
-    private static List<SnapshotMetadata> readMetadata(List<File> files) {
+    /** @return Snapshot metadata. */
+    private static SnapshotMetadata readMetadata(SnapshotFileTree sft) {
         JdkMarshaller marsh = new JdkMarshaller();
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
-        if (files == null)
-            return Collections.emptyList();
-
-        return files.stream()
-            .map(meta -> {
-                try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
-                    return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            })
-            .filter(SnapshotMetadata::dump)
-            .collect(Collectors.toList());
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(sft.meta().toPath()))) {
+            return marsh.unmarshal(in, clsLdr);
+        }
+        catch (IOException | IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

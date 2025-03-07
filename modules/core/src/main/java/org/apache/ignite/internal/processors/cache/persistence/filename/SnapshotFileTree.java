@@ -21,10 +21,14 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -71,11 +75,14 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Snapshot path. */
     @Nullable private final String path;
 
-    /** Consistent id for snapshot. */
-    private final String consId;
+    /**
+     * Consistent id for snapshot.
+     * Nullable, only for {@link DumpReader} when we don't know specific consistenId.
+     */
+    @Nullable private final String consId;
 
     /** Node file tree relative to {@link #tempFileTree()}. */
-    private final NodeFileTree tmpFt;
+    private NodeFileTree tmpFt;
 
     /**
      * @param ctx Kernal context.
@@ -93,7 +100,30 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path, String folderName, String consId) {
-        super(ctx.config(), root(ctx.pdsFolderResolver().fileTree(), name, path), folderName);
+        this(ctx.config(), ctx.pdsFolderResolver().fileTree(), name, path, folderName, consId);
+
+        A.notNull(consId, "consistent id");
+
+        this.tmpFt = tempFileTree(ctx);
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param ft Node file tree.
+     * @param name Snapshot name.
+     * @param path Snapshot path.
+     * @param folderName Folder name.
+     * @param consId Consistent id.
+     */
+    public SnapshotFileTree(
+        IgniteConfiguration cfg,
+        NodeFileTree ft,
+        String name,
+        @Nullable String path,
+        String folderName,
+        @Nullable String consId
+    ) {
+        super(cfg, root(ft, name, path), folderName);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -101,54 +131,15 @@ public class SnapshotFileTree extends NodeFileTree {
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = tempFileTree(ctx);
-    }
 
-    /**
-     * @param ctx Kernal context.
-     * @return Temporary snapshot file tree.
-     */
-    private NodeFileTree tempFileTree(GridKernalContext ctx) {
-        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
-        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
+        Map<String, File> snpDrStorages = snapshotDataRegionStorages(ft, cfg.getSnapshotPath());
 
-        String snpDfltPath = ctx.config().getSnapshotPath();
-
-        // If path provided then create snapshot inside it, only.
-        // Same rule applies if absolute path to the snapshot root dir configured.
-        if (path == null && !new File(snpDfltPath).isAbsolute()) {
-            Map<String, File> snpDrStorages = dataRegionStorages(
-                ctx.config().getDataStorageConfiguration(),
-                (drName, drStoragePath) -> {
-                    // drStorages contains path with the DB and folderName.
-                    File drStorage = ft.dataRegionStorages().get(drName);
-
-                    // In case we want to make snapshot in several folders the pathes will be the following:
-                    // {dr_storage_path}/db/{folder_name} - node cache storage.
-                    // {dr_storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
-                    return new File(
-                        drStorage.getParentFile().getParentFile(),
-                        Path.of(snpDfltPath, name, DB_DIR, folderName()).toString()
-                    );
-                }
-            );
-
+        if (snpDrStorages.isEmpty())
+            drStorages.clear();
+        else
             drStorages.putAll(snpDrStorages);
 
-            Map<String, File> snpTmpDrStorages = dataRegionStorages(
-                ctx.config().getDataStorageConfiguration(),
-                (drName, drStoragePath) -> new File(ft.dataRegionStorages().get(drName), Path.of(SNAPSHOT_TMP_DIR, name).toString())
-            );
-
-            res.drStorages.putAll(snpTmpDrStorages);
-        }
-        // Clear all custom storage so all cache storages will be inside nodeStorage.
-        else {
-            drStorages.clear();
-            res.drStorages.clear();
-        }
-
-        return res;
+        this.tmpFt = null;
     }
 
     /** @return Snapshot name. */
@@ -337,7 +328,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      * @return Path to the snapshot root directory.
      */
-    private static File root(NodeFileTree ft, String name, @Nullable String path) {
+    public static File root(SharedFileTree ft, String name, @Nullable String path) {
         assert name != null : "Snapshot name cannot be empty or null.";
 
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);
@@ -378,5 +369,66 @@ public class SnapshotFileTree extends NodeFileTree {
         @Override public File walSegment(long idx) {
             return new File(wal(), U.fixedLengthNumberName(idx, ZIP_WAL_SEG_FILE_EXT));
         }
+    }
+
+    /**
+     * Modifies {@link #drStorages} for this tree to reflect snapshot options.
+     * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
+     * then all snapshot files must be stored inside one folder.
+     * Otherwise, we use configured by {@link DataRegionConfiguration#getStoragePath()} structure to save snapshot.
+     * This will distribute workload to all physical device on host.
+     *
+     * @param ft Node file tree.
+     * @param snpDfltPath Snapshot default path.
+     */
+    private Map<String, File> snapshotDataRegionStorages(NodeFileTree ft, String snpDfltPath) {
+        // If path provided then create snapshot inside it, only.
+        // Same rule applies if absolute path to the snapshot root dir configured.
+        if (path != null || new File(snpDfltPath).isAbsolute())
+            return Collections.emptyMap();
+
+        Map<String, File> snpDrStorages = new HashMap<>();
+
+        ft.dataRegionStorages().forEach((drName, drStoragePath) -> {
+            // drStorages contains path with the DB and folderName.
+            File drStorage = ft.dataRegionStorages().get(drName);
+
+            // In case we want to make snapshot in several folders the pathes will be the following:
+            // {dr_storage_path}/db/{folder_name} - node cache storage.
+            // {dr_storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
+            snpDrStorages.put(
+                drName,
+                new File(drStorage.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
+            );
+        });
+
+        return snpDrStorages;
+    }
+
+    /**
+     * Creates file tree for temporary files.
+     * Required, only for snapshot operation inside running node.
+     *
+     * @param ctx Kernal context.
+     * @return File tree for temporary files.
+     * @see NodeFileTree#SNAPSHOT_TMP_DIR
+     */
+    private NodeFileTree tempFileTree(GridKernalContext ctx) {
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+        NodeFileTree tmpFt = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
+
+        Map<String, File> snpTmpDrStorages = new HashMap<>();
+
+        // Iterating via snapshot data region storage,
+        // because they may differ from the node one in case snapshot created using absolute path.
+        drStorages.forEach((drName, drStoragePath) -> snpTmpDrStorages.put(
+            drName,
+            new File(ft.dataRegionStorages().get(drName), Path.of(SNAPSHOT_TMP_DIR, name).toString())
+        ));
+
+        tmpFt.drStorages.putAll(snpTmpDrStorages);
+
+        return tmpFt;
     }
 }

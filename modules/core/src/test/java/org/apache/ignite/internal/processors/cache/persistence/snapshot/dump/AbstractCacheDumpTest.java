@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -54,9 +55,10 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.platform.model.ACL;
@@ -355,9 +357,13 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         TestDumpConsumer cnsmr = dumpConsumer(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
 
+        SnapshotFileTree sft = snapshotFileTree(ign, name);
+
         new DumpReader(
             new DumpReaderConfiguration(
-                snapshotFileTree(ign, name).root(),
+                sft.name(),
+                sft.path(),
+                ign.configuration(),
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
@@ -446,7 +452,14 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
-        return new Dump(ign.context(), new SharedFileTree(snapshotFileTree(ign, name).root()), true, false, null, log);
+        List<SnapshotFileTree> sfts = G.allGrids().stream()
+            .filter(n -> !n.configuration().isClientMode())
+            .map(n -> snapshotFileTree(((IgniteEx)n), name))
+            .collect(Collectors.toList());
+
+        List<SnapshotMetadata> metadata = DumpReader.metadata(F.first(sfts).root());
+
+        return new Dump(ign.context(), sfts, metadata, true, false, null, log);
     }
 
     /** */

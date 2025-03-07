@@ -779,7 +779,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Data regions storages.
      * @see DataRegionConfiguration#setStoragePath(String)
      */
-    protected Map<String, File> dataRegionStorages(@Nullable DataStorageConfiguration dsCfg, BiFunction<String, String, File> resolver) {
+    private Map<String, File> dataRegionStorages(@Nullable DataStorageConfiguration dsCfg, BiFunction<String, String, File> resolver) {
         if (dsCfg == null)
             return Collections.emptyMap();
 

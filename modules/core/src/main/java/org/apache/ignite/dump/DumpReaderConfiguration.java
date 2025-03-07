@@ -17,13 +17,14 @@
 
 package org.apache.ignite.dump;
 
-import java.io.File;
 import java.time.Duration;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration class of {@link DumpReader}.
@@ -39,8 +40,14 @@ public class DumpReaderConfiguration {
     /** Default thread count. */
     public static final int DFLT_THREAD_CNT = 1;
 
+    /** Dump name. */
+    @Nullable private final String name;
+
     /** Root dump directory. */
-    private final File dir;
+    @Nullable private final String path;
+
+    /** Optional Ignite configuration. */
+    @Nullable private final IgniteConfiguration cfg;
 
     /** Dump consumer. */
     private final DumpConsumer cnsmr;
@@ -76,15 +83,15 @@ public class DumpReaderConfiguration {
     private final EncryptionSpi encSpi;
 
     /**
-     * @param dir Root dump directory.
+     * @param path Dump path.
      * @param cnsmr Dump consumer.
      */
-    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
-        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, false, null);
+    public DumpReaderConfiguration(String name, @Nullable String path, @Nullable IgniteConfiguration cfg, DumpConsumer cnsmr) {
+        this(name, path, cfg, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, false, null);
     }
 
     /**
-     * @param dir Root dump directory.
+     * @param name Root dump directory.
      * @param cnsmr Dump consumer.
      * @param thCnt Count of threads to consume dumped partitions.
      * @param timeout Timeout of dump reader invocation.
@@ -99,7 +106,9 @@ public class DumpReaderConfiguration {
      * @param encSpi Encryption SPI.
      */
     public DumpReaderConfiguration(
-        File dir,
+        @Nullable String name,
+        @Nullable String path,
+        @Nullable IgniteConfiguration cfg,
         DumpConsumer cnsmr,
         int thCnt,
         Duration timeout,
@@ -110,7 +119,9 @@ public class DumpReaderConfiguration {
         boolean skipCopies,
         EncryptionSpi encSpi
     ) {
-        this.dir = dir;
+        this.name = name;
+        this.path = path;
+        this.cfg = cfg;
         this.cnsmr = cnsmr;
         this.thCnt = thCnt;
         this.timeout = timeout;
@@ -122,9 +133,19 @@ public class DumpReaderConfiguration {
         this.encSpi = encSpi;
     }
 
+    /** @return Root dump name. */
+    public @Nullable String dumpName() {
+        return name;
+    }
+
     /** @return Root dump directiory. */
-    public File dumpRoot() {
-        return dir;
+    public @Nullable String dumpRoot() {
+        return path;
+    }
+
+    /** @return Ignite configuration. */
+    public @Nullable IgniteConfiguration config() {
+        return cfg;
     }
 
     /** @return Dump consumer instance. */

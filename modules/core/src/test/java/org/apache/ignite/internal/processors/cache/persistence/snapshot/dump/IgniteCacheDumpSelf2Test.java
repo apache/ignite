@@ -240,7 +240,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
                 new DumpReader(
                     new DumpReaderConfiguration(
-                        snapshotFileTree(ign, DMP_NAME).root(),
+                        DMP_NAME,
+                        null,
+                        ign.configuration(),
                         cnsmr,
                         DFLT_THREAD_CNT,
                         DFLT_TIMEOUT,
@@ -300,7 +302,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign1.destroyCache(DEFAULT_CACHE_NAME);
 
-        new DumpReader(new DumpReaderConfiguration(snapshotFileTree(ign1, DMP_NAME).root(), new DumpConsumer() {
+        new DumpReader(new DumpReaderConfiguration(DMP_NAME, null, ign1.configuration(), new DumpConsumer() {
             @Override public void start() {
                 // No-op.
             }
@@ -421,7 +423,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             assertNotNull(sfts);
             assertEquals(1, sfts.size());
 
-            SnapshotFileTree sft = sfts.get(0);
+            NodeFileTree sft = sfts.get(0);
 
             File cacheDumpDir = sft.cacheStorage(cache.getConfiguration(CacheConfiguration.class));
 
@@ -848,7 +850,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                snapshotFileTree(ign, DMP_NAME).root(),
+                DMP_NAME,
+                null,
+                ign.configuration(),
                 cnsmr,
                 DFLT_THREAD_CNT,
                 DFLT_TIMEOUT,
@@ -907,7 +911,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         assertThrows(null, () -> new DumpReader(
             new DumpReaderConfiguration(
-                dumpDir,
+                null,
+                dumpDir.getAbsolutePath(),
+                null,
                 new TestDumpConsumer() {
                     @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
                         data.forEachRemaining(e -> {
@@ -936,7 +942,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
                 new DumpReader(
                     new DumpReaderConfiguration(
-                        dumpDir,
+                        null,
+                        dumpDir.getAbsolutePath(),
+                        null,
                         new TestDumpConsumer() {
                             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
                                 data.forEachRemaining(e -> {
@@ -976,7 +984,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                dumpDir,
+                null,
+                dumpDir.getAbsolutePath(),
+                null,
                 cnsmr,
                 DFLT_THREAD_CNT,
                 DFLT_TIMEOUT,

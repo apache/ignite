@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -356,9 +357,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     ) {
         EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-        SnapshotFileTree sft = opCtx.snapshotFileTree();
+        List<SnapshotFileTree> sft = Collections.singletonList(opCtx.snapshotFileTree());
+        List<SnapshotMetadata> metadata = Collections.singletonList(opCtx.metadata());
 
-        try (Dump dump = new Dump(cctx.kernalContext(), sft, true, true, encSpi, log)) {
+        try (Dump dump = new Dump(cctx.kernalContext(), sft, metadata, true, true, encSpi, log)) {
             Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
@@ -370,7 +372,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw new IgniteException("Node: " + sft.consistentId(), t);
+            throw new IgniteException("Node: " + sft.get(0).consistentId(), t);
         }
     }
 
