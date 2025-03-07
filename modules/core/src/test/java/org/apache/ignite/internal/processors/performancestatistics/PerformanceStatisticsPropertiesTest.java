@@ -21,11 +21,14 @@ import java.io.File;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -67,6 +70,18 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
         super.beforeTestsStarted();
 
         srv = startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+        GridTestUtils.setFieldValue(srv.context().performanceStatistics(), "sysViewPredicate",
+            new Predicate<SystemView<?>>() {
+                @Override public boolean test(SystemView<?> view) {
+                    return false;
+                }
+            }
+        );
     }
 
     /** @throws Exception If failed. */
