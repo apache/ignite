@@ -639,20 +639,17 @@ final class ReliableChannel implements AutoCloseable {
 
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
-                if (h.ch != null && h.ch.closed()) {
-                    h.close();
-                    continue;
-                }
-
-                // Add all holders to the list of potentially expired
+                // Add all holders to the list of potentially expired.
                 toCloseHolders.add(h);
 
-                for (InetSocketAddress addr : h.getAddresses())
-                    curAddrs.putIfAbsent(addr, h);
+                if (h.ch != null && !h.ch.closed()) {
+                    for (InetSocketAddress addr : h.getAddresses())
+                        curAddrs.putIfAbsent(addr, h);
 
-                // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
-                if (clientCfg.getAddressesFinder() == null)
-                    reinitHoldersSet.add(h);
+                    // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+                    if (clientCfg.getAddressesFinder() == null)
+                        reinitHoldersSet.add(h);
+                }
             }
         }
 
