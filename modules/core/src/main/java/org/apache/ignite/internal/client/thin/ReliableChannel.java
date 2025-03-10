@@ -25,8 +25,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -633,7 +631,7 @@ final class ReliableChannel implements AutoCloseable {
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
-        Set<ClientChannelHolder> reinitHoldersSet = new TreeSet<>(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
+        List<ClientChannelHolder> reinitHoldersSet = new ArrayList<>();
 
         List<ClientChannelHolder> toCloseHolders = new ArrayList<>();
 
@@ -699,10 +697,12 @@ final class ReliableChannel implements AutoCloseable {
             if (!reinitHoldersSet.contains(hld))
                 hld.close();
 
-        ArrayList<ClientChannelHolder> reinitHolders = new ArrayList<ClientChannelHolder>(reinitHoldersSet);
+        ArrayList<ClientChannelHolder> reinitHolders = new ArrayList<>(reinitHoldersSet);
 
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.
+            reinitHolders.sort(Comparator.comparingInt(h -> F.first(h.getAddresses()).getPort()));
+
             int limit = 0;
             int port = F.first(reinitHolders.get(0).getAddresses()).getPort();
 

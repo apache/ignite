@@ -245,7 +245,7 @@ public class ClientDiscoveryContext {
             .flatMap(r -> IntStream
                 .rangeClosed(r.portFrom(), r.portTo()).boxed()
                 .map(p -> Collections.singletonList(InetSocketAddress.createUnresolved(r.host(), p)))
-            ).collect(Collectors.toList());
+            ).collect(Collectors.toSet());
     }
 
     /** */
