@@ -64,6 +64,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * Benchmark TPC-H SQL queries.
  */
 @State(Scope.Benchmark)
+// Use @Fork(value = 0) to debug or attach profiler.
 @Fork(value = 1, jvmArgs = {"-Xms4g", "-Xmx4g"})
 @Threads(1)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -226,6 +227,8 @@ public class TpchBenchmark {
             for (String q : sql.split(";")) {
                 if (!q.trim().isEmpty()) {
                     SqlFieldsQuery qry = new SqlFieldsQuery(q.trim());
+
+//                    qry.setDistributedJoins(true);
 
                     try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)client).context().query().querySqlFields(qry, false)) {
                         cursor.forEach(bh::consume);
