@@ -325,7 +325,10 @@ public class DumpReader implements Runnable {
         return F.t(sfts, metadata);
     }
 
-    /** @return List of snapshot metadata saved in {@code #dumpDir}. */
+    /**
+     * @param dumpDir Dump root directory.
+     * @return List of snapshot metadata saved in {@code #dumpDir}.
+     */
     public static List<SnapshotMetadata> metadata(File dumpDir) {
         JdkMarshaller marsh = new JdkMarshaller();
 

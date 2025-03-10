@@ -83,7 +83,9 @@ public class DumpReaderConfiguration {
     private final EncryptionSpi encSpi;
 
     /**
-     * @param path Dump path.
+     * @param name Optional dump name.
+     * @param path Optional path to the dump directory.
+     * @param cfg Ignite configuration to resolve standart pathes.
      * @param cnsmr Dump consumer.
      */
     public DumpReaderConfiguration(String name, @Nullable String path, @Nullable IgniteConfiguration cfg, DumpConsumer cnsmr) {
@@ -91,7 +93,9 @@ public class DumpReaderConfiguration {
     }
 
     /**
-     * @param name Root dump directory.
+     * @param name Optional dump name.
+     * @param path Optional path to the dump directory.
+     * @param cfg Ignite configuration to resolve standart pathes.
      * @param cnsmr Dump consumer.
      * @param thCnt Count of threads to consume dumped partitions.
      * @param timeout Timeout of dump reader invocation.
