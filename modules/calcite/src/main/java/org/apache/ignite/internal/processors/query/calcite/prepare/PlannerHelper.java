@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
@@ -100,31 +99,27 @@ public class PlannerHelper {
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
 
+            // RelOptUtil#propagateRelHints(RelNode, equiv) may skip hints because current RelNode has no hints.
+            // Or if hints reside in a child nodes which are not inputs of the current node. Like LogicalFlter#condition.
+            // Such hints may appear or be required below in the tree, after rules applying.
+            // In Calcite, RelDecorrelator#decorrelateQuery(...) can re-propagate hints.
+            rel = RelOptUtil.propagateRelHints(rel, false);
+
             rel = planner.replaceCorrelatesCollisions(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
 
-            List<RelHint> topHints = HintUtils.allRelHints(rel);
+            // The following pushed down project can erase top-level hints. We store them to reassign join type hints later.
+            // Clear the inherit pathes to consider hints as not propogated.
+            List<RelHint> topHints = HintUtils.allRelHints(rel).stream().map(h -> h.inheritPath.isEmpty()
+                ? h
+                : h.copy(Collections.emptyList())).collect(Collectors.toList());
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
-            assert HintUtils.allRelHints(rel).isEmpty() || Objects.equals(topHints, HintUtils.allRelHints(rel));
-
-            if (HintUtils.allRelHints(rel).isEmpty() && !topHints.isEmpty()) {
-                assert rel instanceof Hintable;
-
-                rel = ((Hintable)rel).withHints(topHints);
-            }
-
-            // RelOptUtil#propagateRelHints(RelNode, equiv) may skip hints because current RelNode has no hints.
-            // Or if hints reside in a child nodes which are not inputs of the current node. Like LogicalFlter#condition.
-            // Such hints may appear or be required below in the tree, after rules applying.
-            // Also, pushed down LogicalProject may apper wiout the original hints required after the following join optimization.
-            rel = RelOptUtil.propagateRelHints(rel, false);
-
-            rel = optimizeJoinsOrder(planner, rel);
+            rel = optimizeJoinsOrder(planner, rel, topHints);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
@@ -157,15 +152,54 @@ public class PlannerHelper {
         }
     }
 
+    /** */
+    private static RelNode actualRootJoinTypeHints(RelNode rel, List<RelHint> topHints) {
+        assert rel instanceof Hintable;
+
+        List<RelHint> curHints = ((Hintable)rel).getHints();
+
+        List<RelHint> actualTopHints = new ArrayList<>(topHints.size());
+
+        for (RelHint topHint : topHints) {
+            assert topHint.inheritPath.isEmpty();
+
+            if (!HIINT_OF_JOIN_TYPE.contains(topHint.hintName))
+                continue;
+
+            if (curHints.isEmpty()) {
+                actualTopHints.add(topHint);
+
+                continue;
+            }
+
+            for (RelHint curHint : curHints) {
+                if (!HIINT_OF_JOIN_TYPE.contains(curHint.hintName)
+                    || topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList())))
+                    continue;
+
+                actualTopHints.add(topHint);
+            }
+        }
+
+        if (!actualTopHints.isEmpty()) {
+            rel = ((Hintable)rel).withHints(actualTopHints);
+
+            if (!curHints.isEmpty())
+                rel = ((Hintable)rel).attachHints(curHints);
+        }
+
+        return rel;
+    }
+
     /**
-     * Tries to optimize Joins order.
+     * Tries to optimize joins order.
      *
      * @see JoinToMultiJoinRule
      * @see IgniteJoinsOrderOptimizationRule
      *
-     * @return An optimized node or original {@code root} if didn't optimize.
+     * @return An node with optimized joins or original {@code root} if didn't optimize.
      */
-    private static RelNode optimizeJoinsOrder(IgnitePlanner planner, RelNode root) {
+    private static RelNode optimizeJoinsOrder(IgnitePlanner planner, RelNode root, List<RelHint> oldRootHints) {
         List<Join> joins = findNodes(root, Join.class, false);
 
         // No original Joins found, nothing to optimize.
@@ -174,7 +208,7 @@ public class PlannerHelper {
 
         int disabledCnt = 0;
 
-        // If all the joins are with the forced order, no need to do join order heuristics at all.
+        // If all the joins are with the forced order, no need to optimize joins order at all.
         for (Join join : joins) {
             for (RelHint hint : join.getHints()) {
                 if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName)) {
@@ -190,13 +224,16 @@ public class PlannerHelper {
 
         RelNode optimizedRel = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
 
-        // Unable to optimize.
+        // Still has MultiJoins - didn't manage to optimize.
         if (!findNodes(optimizedRel, MultiJoin.class, true).isEmpty())
             return root;
 
-        // If Joins order commuted, no need to launch additional join order optimizations.
+        // If joins order was proposed, no need to launch additional join order optimizations.
         planner.setDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
             .collect(Collectors.toList()));
+
+        if (!oldRootHints.isEmpty())
+            optimizedRel = actualRootJoinTypeHints(optimizedRel, oldRootHints);
 
         restoreJoinTypeHints(optimizedRel);
 
@@ -204,7 +241,7 @@ public class PlannerHelper {
     }
 
     /**
-     * A join type hint might be assigned to SELECT or to a table. Originally, SELECT-level hints are propagated and assigned
+     * A join type hint might be assigned to a query root or to a table. Originally, SELECT-level hints are propagated and assigned
      * to following Joins and TableScans. We lose assigned to Join nodes ones in {@link JoinToMultiJoinRule}. Thereby we
      * have to reassign original top-level hints.
      */

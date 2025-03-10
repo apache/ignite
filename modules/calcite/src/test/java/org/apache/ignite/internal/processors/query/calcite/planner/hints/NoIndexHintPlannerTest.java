@@ -298,7 +298,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoCertainIndex("SELECT * FROM TBL1 t1 WHERE t1.val2 = " +
             "(SELECT /*+ NO_INDEX(IDX2_3) */ val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX2_3");
 
-        assertCertainIndex("SELECT t2.val3 FROM TBL2 t2 WHERE t2.val2 = " +
+        assertCertainIndex("SELECT /*+ NO_NL_JOIN */ t2.val3 FROM TBL2 t2 WHERE t2.val2 = " +
             "(SELECT /*+ NO_INDEX(IDX2_2) */ t1.val2 from TBL1 t1 WHERE t1.val3=" + valueOfT2Val3 + ')', "TBL2", "IDX2_2");
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX1_3), NO_INDEX(IDX2_3) */ * FROM TBL1 t1 WHERE t1.val3 = " +

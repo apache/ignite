@@ -89,7 +89,9 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[inner]"))
             .check();
 
-        sql = "SELECT /*+ NL_JOIN, DISABLE_RULE('JoinCommuteRule') */ COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+        String hints = "/*+ NL_JOIN, DISABLE_RULE('JoinCommuteRule', 'JoinToMultiJoinRule', 'IgniteJoinsOrderOptimizationRule') */";
+
+        sql = "SELECT " + hints + "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
             .matches(containsTableScan("PUBLIC", "HUGE"))

@@ -132,10 +132,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testInnerCommute() throws Exception {
-        String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+        String sql = "SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN */ COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
-        IgniteRel phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
         assertNotNull(phys);
 
@@ -173,8 +172,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        String[] disabledRules = new String[] {"JoinCommuteRule", "JoinToMultiJoinRule", "IgniteJoinsOrderOptimizationRule"};
+
+        phys = physicalPlan(sql, publicSchema, disabledRules);
 
         join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
         proj = findFirstNode(phys, byClass(IgniteProject.class));
@@ -200,8 +200,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        ctx = plannerCtx(sql, publicSchema, disabledRules);
 
         pl = ctx.cluster().getPlanner();
 
