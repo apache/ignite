@@ -140,7 +140,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
-        for (int nodes : new int[]{/*1, */3})
+        for (int nodes : new int[]{1, 3})
             for (int backups : new int[]{0, 1})
                 for (boolean persistence : new boolean[]{true, false})
                     for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {

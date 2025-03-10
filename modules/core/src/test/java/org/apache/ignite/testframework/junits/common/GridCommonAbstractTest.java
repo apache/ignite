@@ -1967,7 +1967,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param saveSnp Do not clean snapshot directory if {@code true}.
      */
-    protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
+    protected void cleanPersistenceDir(boolean saveSnp) {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         SharedFileTree sft = sharedFileTree();

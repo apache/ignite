@@ -88,7 +88,7 @@ public class MaintenanceRegistrySimpleTest {
 
     /** */
     private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
-        GridKernalContext kctx = new StandaloneGridKernalContext(log, fileTree()) {
+        return new StandaloneGridKernalContext(log, fileTree()) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -99,8 +99,6 @@ public class MaintenanceRegistrySimpleTest {
                 return cfg;
             }
         };
-
-        return kctx;
     }
 
     /**

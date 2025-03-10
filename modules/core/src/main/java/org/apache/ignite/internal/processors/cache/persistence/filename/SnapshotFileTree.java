@@ -417,7 +417,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private NodeFileTree tempFileTree(GridKernalContext ctx) {
         NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
-        NodeFileTree tmpFt = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
 
         Map<String, File> snpTmpDrStorages = new HashMap<>();
 
@@ -428,9 +428,9 @@ public class SnapshotFileTree extends NodeFileTree {
             new File(ft.dataRegionStorages().get(drName), Path.of(SNAPSHOT_TMP_DIR, name).toString())
         ));
 
-        tmpFt.drStorages.putAll(snpTmpDrStorages);
+        res.drStorages.putAll(snpTmpDrStorages);
 
-        return tmpFt;
+        return res;
     }
 
 

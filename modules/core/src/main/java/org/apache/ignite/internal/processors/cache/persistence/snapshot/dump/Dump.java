@@ -144,20 +144,6 @@ public class Dump implements AutoCloseable {
         return Collections.unmodifiableList(metadata);
     }
 
-    /** @return Snapshot metadata. */
-    private static SnapshotMetadata readMetadata(SnapshotFileTree sft) {
-        JdkMarshaller marsh = new JdkMarshaller();
-
-        ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
-
-        try (InputStream in = new BufferedInputStream(Files.newInputStream(sft.meta().toPath()))) {
-            return marsh.unmarshal(in, clsLdr);
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
     /**
      * @param node Node directory name.
      * @param grp Group id.
