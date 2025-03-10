@@ -423,7 +423,7 @@ public class SnapshotFileTree extends NodeFileTree {
 
         // Iterating via snapshot data region storage,
         // because they may differ from the node one in case snapshot created using absolute path.
-        drStorages.forEach((drName, drStoragePath) -> snpTmpDrStorages.put(
+        ft.drStorages.forEach((drName, drStoragePath) -> snpTmpDrStorages.put(
             drName,
             new File(ft.dataRegionStorages().get(drName), Path.of(SNAPSHOT_TMP_DIR, name).toString())
         ));
