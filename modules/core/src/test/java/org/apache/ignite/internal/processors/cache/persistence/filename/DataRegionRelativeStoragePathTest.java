@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,12 +38,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
  * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
+@RunWith(Parameterized.class)
 public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** Custom storage path for default data region. */
     private static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
@@ -67,15 +72,34 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
         ccfg("cache7", "grp3", DR_WITH_STORAGE)
     };
 
+    /** */
+    @Parameterized.Parameter()
+    public boolean useAbsStoragePath;
+
+    /** */
+    @Parameterized.Parameters(name = "useAbsStoragePath={0}")
+    public static List<Object[]> params() {
+        List<Object[]> params = new ArrayList<>();
+
+        for (boolean useAbsStoragePath : new boolean[]{true, false})
+            params.add(new Object[]{useAbsStoragePath});
+
+        return params;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.getDefaultDataRegionConfiguration().setStoragePath(DEFAULT_DR_STORAGE_PATH).setPersistenceEnabled(true);
+        dsCfg.getDefaultDataRegionConfiguration().setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH)).setPersistenceEnabled(true);
 
         dsCfg.setDataRegionConfigurations(
-            new DataRegionConfiguration().setName(DR_WITH_STORAGE).setStoragePath(CUSTOM_STORAGE_PATH).setPersistenceEnabled(true),
-            new DataRegionConfiguration().setName(DR_WITH_DFLT_STORAGE).setPersistenceEnabled(true)
+            new DataRegionConfiguration().setName(DR_WITH_STORAGE)
+                .setStoragePath(storagePath(CUSTOM_STORAGE_PATH))
+                .setPersistenceEnabled(true),
+            new DataRegionConfiguration()
+                .setName(DR_WITH_DFLT_STORAGE)
+                .setPersistenceEnabled(true)
         );
 
         return super.getConfiguration(igniteInstanceName)
@@ -88,7 +112,19 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        F.asList(new File(U.defaultWorkDirectory()).listFiles()).forEach(U::delete);
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
@@ -160,7 +196,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     }
 
     /** @param fts Nodes file trees. */
-    private void checkFileTrees(List<NodeFileTree> fts) {
+    private void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException {
         for (NodeFileTree ft : fts) {
             boolean[] flags = new boolean[2];
 
@@ -173,9 +209,11 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
                     flags[0] = true;
                 }
                 else {
-                    File customRoot = ensureExists(new File(
-                        ft.root(),
-                        ccfg.getDataRegionName() == null ? DEFAULT_DR_STORAGE_PATH : CUSTOM_STORAGE_PATH)
+                    String storagePath = ccfg.getDataRegionName() == null ? DEFAULT_DR_STORAGE_PATH : CUSTOM_STORAGE_PATH;
+
+                    File customRoot = ensureExists(useAbsStoragePath
+                        ? new File(storagePath(storagePath))
+                        : new File(ft.root(), storagePath)
                     );
 
                     db = ensureExists(new File(customRoot, DB_DIR));
@@ -239,5 +277,10 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
             .setGroupName(grp)
             .setDataRegionName(dr)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(15));
+    }
+
+    /** */
+    private String storagePath(String storagePath) throws IgniteCheckedException {
+        return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
     }
 }
