@@ -158,7 +158,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         if (persistence)
             cfg.getDataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
-
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(new DataRegionConfiguration()
             .setPersistenceEnabled(persistence)
             .setName(CUSTOM_LOCATION)
@@ -209,6 +208,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         doTestDumpRawData(true, true);
     }
 
+    /** */
     private void doTestDumpRawData(boolean dataCustomLocation, boolean dumpAbsPath) throws Exception {
         IgniteEx ign = startGrids(3);
 
@@ -678,6 +678,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         doTestCustomLocation(true);
     }
 
+    /** */
     private void doTestCustomLocation(boolean dataCustomLocation) throws Exception {
         try (IgniteEx ign = startGrid()) {
             IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
