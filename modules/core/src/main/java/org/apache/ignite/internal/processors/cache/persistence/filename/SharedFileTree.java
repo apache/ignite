@@ -97,7 +97,7 @@ public class SharedFileTree {
      * @param cfg Config to get {@code root} directory from.
      */
     public SharedFileTree(IgniteConfiguration cfg) {
-        this(root(cfg), cfg.getSnapshotPath());
+        this(resolveRoot(cfg), cfg.getSnapshotPath());
     }
 
     /**
@@ -211,7 +211,7 @@ public class SharedFileTree {
      * @param cfg Ignite config.
      * @return Root directory.
      */
-    protected static File root(IgniteConfiguration cfg) {
+    protected static File resolveRoot(IgniteConfiguration cfg) {
         try {
             return new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
         }

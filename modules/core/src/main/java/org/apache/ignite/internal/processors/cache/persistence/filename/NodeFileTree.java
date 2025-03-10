@@ -312,7 +312,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        this(cfg, root(cfg), folderName);
+        this(cfg, resolveRoot(cfg), folderName);
     }
 
     /**
