@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.indexing;
 
-import java.util.HashSet;
+import java.util.BitSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -37,7 +37,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     private final AffinityTopologyVersion topVer;
 
     /** Partitions. */
-    private final HashSet<Integer> parts;
+    private final BitSet parts;
 
     /**
      * Treat replicated as partitioned.
@@ -71,10 +71,10 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         if (F.isEmpty(partsArr))
             parts = null;
         else {
-            parts = new HashSet<>();
+            parts = new BitSet();
 
             for (int part : partsArr)
-                parts.add(part);
+                parts.set(part);
         }
 
         this.treatReplicatedAsPartitioned = treatReplicatedAsPartitioned;
