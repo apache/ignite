@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -79,14 +79,14 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private DistributedProcess<Serializable, Serializable> rotateProc;
 
     /** System view predicate to filter recorded views. */
-    private Predicate<SystemView<?>> sysViewPredicate;
+    private final Predicate<SystemView<?>> sysViewPredicate;
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
         // System views that won't be recorded. They may be large or copy another PerfStat values.
-        List<String> ignoredViews = List.of("baseline.node.attributes",
+        Set<String> ignoredViews = Set.of("baseline.node.attributes",
             "metrics",
             "caches",
             "sql.queries",
@@ -199,12 +199,13 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public void systemView(SystemView<?> view) {
         AttributeToMapVisitor visitor = new AttributeToMapVisitor();
 
+        Map<String, String> data = new TreeMap<>();
         for (Object row : view) {
-            Map<String, String> data = new TreeMap<>();
             visitor.data(data);
             ((SystemView<Object>)view).walker().visitAll(row, visitor);
 
             write(writer -> writer.systemView(view.name(), data));
+            data.clear();
         }
     }
 
