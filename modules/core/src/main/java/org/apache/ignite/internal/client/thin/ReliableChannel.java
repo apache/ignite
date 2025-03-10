@@ -631,14 +631,13 @@ final class ReliableChannel implements AutoCloseable {
 
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
-        List<ClientChannelHolder> reinitHoldersSet = new ArrayList<>();
-
-        List<ClientChannelHolder> toCloseHolders = new ArrayList<>();
+        List<ClientChannelHolder> reinitHolders = new ArrayList<>();
+        List<ClientChannelHolder> CloseHolders = new ArrayList<>();
 
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
                 // Add all holders to the list of potentially expired.
-                toCloseHolders.add(h);
+                CloseHolders.add(h);
 
                 if (h.ch != null && !h.ch.closed()) {
                     for (InetSocketAddress addr : h.getAddresses())
@@ -646,7 +645,7 @@ final class ReliableChannel implements AutoCloseable {
 
                     // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
                     if (clientCfg.getAddressesFinder() == null)
-                        reinitHoldersSet.add(h);
+                        reinitHolders.add(h);
                 }
             }
         }
@@ -674,7 +673,7 @@ final class ReliableChannel implements AutoCloseable {
                         hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
 
                     if (clientCfg.getAddressesFinder() != null)
-                        reinitHoldersSet.add(hld);
+                        reinitHolders.add(hld);
 
                     break;
                 }
@@ -683,21 +682,19 @@ final class ReliableChannel implements AutoCloseable {
             if (hld == null) { // If not found, create the new one.
                 hld = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs));
 
-                reinitHoldersSet.add(hld);
+                reinitHolders.add(hld);
 
                 for (InetSocketAddress addr : addrs)
                     curAddrs.putIfAbsent(addr, hld);
             }
 
             if (hld == currDfltHolder)
-                dfltChannelIdx = reinitHoldersSet.size() - 1;
+                dfltChannelIdx = reinitHolders.size() - 1;
         }
 
-        for (ClientChannelHolder hld : toCloseHolders)
-            if (!reinitHoldersSet.contains(hld))
+        for (ClientChannelHolder hld : CloseHolders)
+            if (!reinitHolders.contains(hld))
                 hld.close();
-
-        ArrayList<ClientChannelHolder> reinitHolders = new ArrayList<>(reinitHoldersSet);
 
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.
