@@ -110,6 +110,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
+    private static final String CUSTOM_STORAGE = "custom_storage";
+
+    /** */
+    private static final String DFLT_STORAGE = "default_storage";
+
+    /** */
     @Parameterized.Parameter
     public int nodes;
 
@@ -174,8 +180,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        U.delete(new File(U.defaultWorkDirectory(), "custom_storage"));
-        U.delete(new File(U.defaultWorkDirectory(), "default_storage"));
+        U.delete(new File(U.defaultWorkDirectory(), CUSTOM_STORAGE));
+        U.delete(new File(U.defaultWorkDirectory(), DFLT_STORAGE));
     }
 
     /** {@inheritDoc} */
@@ -192,15 +198,15 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(persistence)
-                    .setStoragePath(nodes > 1 ? "default_storage" : null))
+                    .setStoragePath(nodes > 1 ? DFLT_STORAGE : null))
                 .setDataRegionConfigurations(new DataRegionConfiguration()
-                    .setName("custom_storage")
-                    .setStoragePath("custom_storage")))
+                    .setName(CUSTOM_STORAGE)
+                    .setStoragePath(CUSTOM_STORAGE)))
             .setCacheConfiguration(
                 new CacheConfiguration<>()
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? "custom_storage" : null)
+                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
@@ -208,7 +214,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setGroupName(GRP)
                     .setName(CACHE_0)
                     .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? "custom_storage" : null)
+                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
@@ -216,7 +222,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setGroupName(GRP)
                     .setName(CACHE_1)
                     .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? "custom_storage" : null)
+                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
