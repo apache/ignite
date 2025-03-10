@@ -42,7 +42,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  *
@@ -77,13 +76,13 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(sharedFileTree().db());
     }
 
     /**
@@ -123,21 +122,23 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         IgniteEx node = (IgniteEx)ignite(problemNode);
 
         NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
+        CacheConfiguration ccfg = node.cachex(CACHE_NAME).configuration();
 
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
         boolean primaryRemoved = false;
+
         for (int i = 0; i < PARTITIONS_CNT; i++) {
-            Path dirPath = ft.cacheStorage(false, CACHE_NAME).toPath();
+            Path dirPath = ft.cacheStorage(ccfg).toPath();
 
             info("Path: " + dirPath.toString());
 
             assertTrue(Files.exists(dirPath));
 
             for (File f : dirPath.toFile().listFiles()) {
-                if (f.getName().equals(partitionFileName(i))) {
+                if (f.equals(ft.partitionFile(ccfg, i))) {
                     if (contains(primaryPartitions, i)) {
                         info("Removing: " + f.getName());
 
@@ -146,7 +147,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                         f.delete();
                     }
                 }
-                else if (partitionFileName(INDEX_PARTITION).equals(f.getName())) {
+                else if (f.equals(ft.partitionFile(ccfg, INDEX_PARTITION))) {
                     info("Removing: " + f.getName());
 
                     f.delete();

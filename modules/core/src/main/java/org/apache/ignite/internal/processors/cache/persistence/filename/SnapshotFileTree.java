@@ -133,12 +133,20 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param cacheDirName Cache dir name.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
+     * @param ccfg Cache configuration.
+     * @param part Partition.
+     * @return Cache partition delta file.
      */
-    public File partDeltaFile(String cacheDirName, int partId) {
-        return new File(tmpFt.cacheStorage(cacheDirName), partitionFileName(partId, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+    public File partDeltaFile(CacheConfiguration<?, ?> ccfg, int part) {
+        return new File(tmpFt.cacheStorage(ccfg), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+    }
+
+    /**
+     * @param part Partition.
+     * @return Metastorage partition delta file.
+     */
+    public File metastorageDeltaFile(int part) {
+        return new File(tmpFt.metaStorage(), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -195,8 +203,8 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param grpId Cache group id.
      * @return Files that match cache or cache group pattern.
      */
-    public File cacheDirectory(int grpId) {
-        return F.first(cacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
+    public File existingCacheDirectory(int grpId) {
+        return F.first(existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
     }
 
     /**
@@ -205,7 +213,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param compress If {@code true} then list compressed files.
      * @return List of cache partitions in given directory.
      */
-    public List<File> cachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
+    public List<File> existingCachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
         File[] files = cacheDir.listFiles(f -> f.isFile() && f.getName().endsWith(partExtension(dump, compress)));
 
         return files == null

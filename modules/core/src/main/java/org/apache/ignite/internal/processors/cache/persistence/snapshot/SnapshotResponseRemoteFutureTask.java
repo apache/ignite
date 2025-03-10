@@ -27,12 +27,15 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -67,16 +70,12 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             return false;
 
         try {
-            List<IgniteBiTuple<SnapshotMetadata, SnapshotFileTree>> metasAndTrees = cctx.snapshotMgr().readSnapshotMetadatas(sft)
-                .stream().map(meta -> F.t(
-                    meta,
-                    // Separate file tree for the case when snapshot moved from other node.
-                    new SnapshotFileTree(cctx.kernalContext(), sft.name(), sft.path(), meta.folderName(), meta.consistentId()))
-                ).collect(Collectors.toList());
+            List<SnapshotInfo> metasAndTrees = cctx.snapshotMgr().readSnapshotMetadatas(sft)
+                .stream().map(SnapshotInfo::new).collect(Collectors.toList());
 
-            Function<GroupPartitionId, IgniteBiTuple<SnapshotMetadata, SnapshotFileTree>> findMeta = pair -> {
-                for (IgniteBiTuple<SnapshotMetadata, SnapshotFileTree> metaAndTree : metasAndTrees) {
-                    Map<Integer, Set<Integer>> parts0 = metaAndTree.get1().partitions();
+            Function<GroupPartitionId, SnapshotInfo> findMeta = pair -> {
+                for (SnapshotInfo sinfo : metasAndTrees) {
+                    Map<Integer, Set<Integer>> parts0 = sinfo.meta.partitions();
 
                     if (F.isEmpty(parts0))
                         continue;
@@ -84,20 +83,19 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                     Set<Integer> locParts = parts0.get(pair.getGroupId());
 
                     if (locParts != null && locParts.contains(pair.getPartitionId()))
-                        return metaAndTree;
+                        return sinfo;
                 }
 
                 return null;
             };
 
-            Map<GroupPartitionId, IgniteBiTuple<SnapshotMetadata, SnapshotFileTree>> partsToSend = new HashMap<>();
+            Map<GroupPartitionId, SnapshotInfo> partsToSend = new HashMap<>();
 
             parts.forEach((grpId, parts) -> parts.forEach(
                 part -> partsToSend.computeIfAbsent(new GroupPartitionId(grpId, part), findMeta)));
 
             if (partsToSend.containsValue(null)) {
-                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey,
-                    e -> e.getValue() == null);
+                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey, e -> e.getValue() == null);
 
                 throw new IgniteException("Snapshot partitions missed on local node " +
                     "[snpName=" + snpName + ", missed=" + missed + ']');
@@ -105,27 +103,20 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             snpSndr.init(partsToSend.size());
 
-            CompletableFuture.runAsync(() -> partsToSend.forEach((gp, metaAndTree) -> {
-                SnapshotFileTree sft0 = metaAndTree.get2();
-
+            CompletableFuture.runAsync(() -> partsToSend.forEach((gp, sinfo) -> {
                 if (err.get() != null)
                     return;
 
-                File cacheDir = sft0.cacheDirectory(gp.getGroupId());
+                CacheConfiguration<?, ?> ccfg = F.first(sinfo.groupConfigs(gp.getGroupId())).configuration();
 
-                if (cacheDir == null) {
-                    throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + metaAndTree.get1() +
-                        ", pair=" + gp + ']');
-                }
-
-                File snpPart = sft0.partitionFile(cacheDir.getName(), gp.getPartitionId());
+                File snpPart = sinfo.sft.partitionFile(ccfg, gp.getPartitionId());
 
                 if (!snpPart.exists()) {
-                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
+                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + sinfo.sft.cacheStorage(ccfg) +
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
+                snpSndr.sendPart(snpPart, sft.partitionFile(ccfg, gp.getPartitionId()), gp, snpPart.length());
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)
@@ -168,6 +159,66 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         else {
             snpSndr.close(th);
             onDone(th);
+        }
+    }
+
+    /** Snapshot info. */
+    private class SnapshotInfo {
+        /** Snapshot meta. */
+        final SnapshotMetadata meta;
+
+        /** Snapshot file tree. */
+        final SnapshotFileTree sft;
+
+        /** Group cache data. */
+        final Map<Integer, List<StoredCacheData>> cacheData = new HashMap<>();
+
+        /**
+         * @param meta Snapshot meta.
+         */
+        public SnapshotInfo(SnapshotMetadata meta) {
+            this.meta = meta;
+            // Separate file tree for the case when snapshot moved from other node.
+            this.sft = new SnapshotFileTree(
+                cctx.kernalContext(),
+                SnapshotResponseRemoteFutureTask.this.sft.name(),
+                SnapshotResponseRemoteFutureTask.this.sft.path(),
+                meta.folderName(),
+                meta.consistentId()
+            );
+        }
+
+        /**
+         * @param grpId Group.
+         */
+        public List<StoredCacheData> groupConfigs(int grpId) {
+            if (cacheData.containsKey(grpId))
+                return cacheData.get(grpId);
+
+            File cacheDir = sft.existingCacheDirectory(grpId);
+
+            if (cacheDir == null) {
+                throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
+                    ", grp=" + grpId + ']');
+            }
+
+            List<StoredCacheData> res = NodeFileTree.existingCacheConfigFiles(cacheDir).stream().map(f -> {
+                try {
+                    return cctx.cache().configManager().readCacheData(f);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }).collect(Collectors.toList());
+
+            if (res.isEmpty()) {
+                throw new IgniteException("Cache configs not found [snpName=" + snpName + ", meta=" + meta +
+                    ", grp=" + grpId + ']');
+            }
+
+            cacheData.put(grpId, res);
+
+            return res;
         }
     }
 }
