@@ -32,22 +32,7 @@ link:sql-reference/ddl#create-table[CREATE TABLE] on both source and destination
 
 == Installation
 
-. Build `cdc-ext` module with maven:
-+
-```console
-  $~/src/ignite-extensions/> mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -DskipTests
-  $~/src/ignite-extensions/> ls modules/cdc-ext/target | grep zip
-ignite-cdc-ext-bin.zip
-```
-
-. The resulting binary will be located under 'target' directory. Unpack `ignite-cdc-ext-bin.zip` archive to `$IGNITE_HOME` folder to enable CDC.
-
-. For Linux/Macos you can use in the ignite root with cdc binary:
-+
-```console
-$ unzip ignite-cdc-ext-bin.zip
-$ cp -r ignite-cdc-ext/* .
-```
+To install `cdc-ext`, download the binary from the link:https://ignite.apache.org/download.cgi[Apache Ignite downloads page]. Unpack `ignite-cdc-ext.zip` archive to `$IGNITE_HOME` folder to enable CDC.
 
 Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
 
