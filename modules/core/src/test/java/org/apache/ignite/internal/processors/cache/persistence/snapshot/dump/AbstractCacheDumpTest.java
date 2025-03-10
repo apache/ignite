@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Role;
@@ -171,6 +173,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        U.delete(new File(U.defaultWorkDirectory(), "custom_storage"));
+        U.delete(new File(U.defaultWorkDirectory(), "default_storage"));
     }
 
     /** {@inheritDoc} */
