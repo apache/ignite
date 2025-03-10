@@ -61,6 +61,9 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     private static final String DR_WITH_DFLT_STORAGE = "default-storage";
 
     /** */
+    private static final String SNP_PATH = "ex_snapshots";
+
+    /** */
     public final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
         ccfg("cache0", null, null),
         ccfg("cache1", "grp1", null),
@@ -109,22 +112,21 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        if (useAbsStoragePath)
+            U.delete(new File(storagePath(DEFAULT_DR_STORAGE_PATH)).getParentFile());
+        else {
+            U.delete(new File(U.defaultWorkDirectory(), DEFAULT_DR_STORAGE_PATH));
+            U.delete(new File(U.defaultWorkDirectory(), CUSTOM_STORAGE_PATH));
+        }
+
+        U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
     }
 
     /** */
@@ -149,7 +151,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
 
         srv.snapshot().createSnapshot("mysnp").get();
 
-        File fullPathSnp = new File(U.defaultWorkDirectory(), "custom_snapshots");
+        File fullPathSnp = new File(U.defaultWorkDirectory(), SNP_PATH);
 
         srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 

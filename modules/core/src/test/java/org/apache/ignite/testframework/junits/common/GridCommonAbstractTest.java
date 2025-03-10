@@ -141,6 +141,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1967,13 +1968,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param saveSnp Do not clean snapshot directory if {@code true}.
      */
-    protected void cleanPersistenceDir(boolean saveSnp) {
+    protected void cleanPersistenceDir(boolean saveSnp) throws IgniteCheckedException {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         SharedFileTree sft = sharedFileTree();
 
-        F.asList(sft.root().listFiles(f -> !f.getName().equals("log") && !(saveSnp && f.equals(sft.snapshotsRoot()))))
-            .forEach(U::delete);
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), SharedFsCheckpointSpi.DFLT_ROOT, false));
+        U.delete(sft.db());
+        U.delete(sft.marshaller());
+        U.delete(sft.binaryMetaRoot());
+
+        if (!saveSnp)
+            U.delete(sharedFileTree().snapshotsRoot());
     }
 
     /**
