@@ -228,7 +228,7 @@ public class TpchBenchmark {
                 if (!q.trim().isEmpty()) {
                     SqlFieldsQuery qry = new SqlFieldsQuery(q.trim());
 
-//                    qry.setDistributedJoins(true);
+                    qry.setDistributedJoins(true);
 
                     try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)client).context().query().querySqlFields(qry, false)) {
                         cursor.forEach(bh::consume);
