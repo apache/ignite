@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -134,6 +133,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
+    private static final String CUSTOM_LOCATION = "custom_location";
+
+    /** */
     private LogListener lsnr;
 
     /** */
@@ -151,10 +153,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             cfg.setGridLogger(testLog);
         }
 
-        if (persistence) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
-        }
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+
+        if (persistence)
+            cfg.getDataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+
+        cfg.getDataStorageConfiguration().setDataRegionConfigurations(new DataRegionConfiguration()
+            .setPersistenceEnabled(persistence)
+            .setName(CUSTOM_LOCATION)
+            .setStoragePath(CUSTOM_LOCATION));
 
         cfg.setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
 
@@ -180,16 +188,55 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDumpRawData() throws Exception {
+        doTestDumpRawData(false, false);
+    }
+
+    /** */
+    @Test
+    public void testDumpRawDataAndDumpPath() throws Exception {
+        doTestDumpRawData(false, true);
+    }
+
+    /** */
+    @Test
+    public void testDumpRawCustomStoragePath() throws Exception {
+        doTestDumpRawData(true, false);
+    }
+
+    /** */
+    @Test
+    public void testDumpRawCustomStoragePathAndDumpPath() throws Exception {
+        doTestDumpRawData(true, true);
+    }
+
+    private void doTestDumpRawData(boolean dataCustomLocation, boolean dumpAbsPath) throws Exception {
         IgniteEx ign = startGrids(3);
 
-        Ignite cli = startClientGrid(G.allGrids().size());
+        IgniteEx cli = startClientGrid(G.allGrids().size());
 
-        cli.createCache(defaultCacheConfiguration());
+        cli.createCache(defaultCacheConfiguration().setDataRegionName(dataCustomLocation ? CUSTOM_LOCATION : null));
 
         for (int i = 0; i < KEYS_CNT; ++i)
             cli.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
 
-        cli.snapshot().createDump(DMP_NAME, null).get();
+        String dumpPath = null;
+
+        if (dumpAbsPath) {
+            dumpPath = new File(U.defaultWorkDirectory(), "dump_custom_location").getAbsolutePath();
+
+            ign.context().cache().context().snapshotMgr().createSnapshot(
+                DMP_NAME,
+                dumpPath,
+                null,
+                false,
+                false,
+                true,
+                false,
+                false
+            ).get();
+        }
+        else
+            cli.snapshot().createDump(DMP_NAME, null).get();
 
         AtomicBoolean keepRaw = new AtomicBoolean();
         AtomicBoolean keepBinary = new AtomicBoolean();
@@ -241,7 +288,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 new DumpReader(
                     new DumpReaderConfiguration(
                         DMP_NAME,
-                        null,
+                        dumpPath,
                         ign.configuration(),
                         cnsmr,
                         DFLT_THREAD_CNT,
@@ -262,17 +309,29 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** Checks a dump when it is created with the data streamer just after a restart. */
     @Test
     public void testDumpAfterRestartWithStreamer() throws Exception {
-        doTestDumpAfterRestart(true);
+        doTestDumpAfterRestart(true, false);
+    }
+
+    /** Checks a dump when it is created with the data streamer just after a restart. */
+    @Test
+    public void testDumpAfterRestartWithStreamerCustomLocation() throws Exception {
+        doTestDumpAfterRestart(true, true);
     }
 
     /** Checks a dump when it is created just after a restart. */
     @Test
     public void testDumpAfterRestart() throws Exception {
-        doTestDumpAfterRestart(false);
+        doTestDumpAfterRestart(false, false);
+    }
+
+    /** Checks a dump when it is created just after a restart. */
+    @Test
+    public void testDumpAfterRestartCustomLocation() throws Exception {
+        doTestDumpAfterRestart(false, true);
     }
 
     /** Doest dump test when it is created just after restart. */
-    private void doTestDumpAfterRestart(boolean useDataStreamer) throws Exception {
+    private void doTestDumpAfterRestart(boolean useDataStreamer, boolean dataCustomLocation) throws Exception {
         persistence = true;
 
         int nodes = 2;
@@ -281,7 +340,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign0.cluster().state(ClusterState.ACTIVE);
 
-        ign0.createCache(defaultCacheConfiguration());
+        ign0.createCache(defaultCacheConfiguration().setDataRegionName(dataCustomLocation ? CUSTOM_LOCATION : null));
 
         try (IgniteDataStreamer<Integer, String> ds = ign0.dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteCache<Integer, String> cache = ign0.cache(DEFAULT_CACHE_NAME);
@@ -295,7 +354,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         }
 
         stopAllGrids(false);
+
         IgniteEx ign1 = startGrids(nodes);
+
         ign1.cluster().state(ClusterState.ACTIVE);
 
         ign1.snapshot().createDump(DMP_NAME, Collections.singletonList(DEFAULT_CACHE_NAME)).get(getTestTimeout());
@@ -608,11 +669,22 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCustomLocation() throws Exception {
+        doTestCustomLocation(false);
+    }
+
+    /** */
+    @Test
+    public void testCustomLocationWithDataCustomLocation() throws Exception {
+        doTestCustomLocation(true);
+    }
+
+    private void doTestCustomLocation(boolean dataCustomLocation) throws Exception {
         try (IgniteEx ign = startGrid()) {
             IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("test-cache-0")
                 .setBackups(1)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setDataRegionName(dataCustomLocation ? CUSTOM_LOCATION : null));
 
             IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
