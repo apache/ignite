@@ -69,6 +69,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGrids(nodeCount());
 
         client = startClientGrid("client");
@@ -187,12 +189,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
+    protected void createAndPopulateTable() {
+        createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
+    protected void createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
         IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
@@ -212,8 +214,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         put(ignite, person, idx++, new Employer("Ilya", 15d));
         put(ignite, person, idx++, new Employer("Roma", 10d));
         put(ignite, person, idx, new Employer("Roma", 10d));
-
-        return person;
     }
 
     /** */
@@ -335,6 +335,19 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         public Employer(String name, Double salary) {
             this.name = name;
             this.salary = salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Employer employer = (Employer)o;
+
+            return name.equals(employer.name) && salary.equals(employer.salary);
         }
     }
 }

@@ -463,13 +463,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         qryInfo
                     );
 
-                    runningQueryManager().planHistoryTracker().addPlan(
-                        qryInfo.plan(),
-                        qry,
-                        qryDesc.schemaName(),
-                        true,
-                        IndexingQueryEngineConfiguration.ENGINE_NAME
-                    );
+                    if (runningQueryManager().planHistoryTracker().enabled()) {
+                        H2QueryInfo qryInfo0 = qryInfo;
+
+                        ctx.pools().getSystemExecutorService().submit(() ->
+                            runningQueryManager().planHistoryTracker().addPlan(
+                                qryInfo0.plan(),
+                                qryInfo0.sql(),
+                                qryInfo0.schema(),
+                                true,
+                                IndexingQueryEngineConfiguration.ENGINE_NAME));
+                    }
 
                     return new H2FieldsIterator(
                         rs,
@@ -2294,13 +2298,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
         finally {
-            runningQueryManager().planHistoryTracker().addPlan(
-                dmlPlanInfo.toString(),
-                qryDesc.sql(),
-                qryDesc.schemaName(),
-                loc,
-                IndexingQueryEngineConfiguration.ENGINE_NAME
-            );
+            if (runningQueryManager().planHistoryTracker().enabled()) {
+                runningQueryManager().planHistoryTracker().addPlan(
+                    dmlPlanInfo.toString(),
+                    qryDesc.sql(),
+                    qryDesc.schemaName(),
+                    loc,
+                    IndexingQueryEngineConfiguration.ENGINE_NAME
+                );
+            }
         }
     }
 

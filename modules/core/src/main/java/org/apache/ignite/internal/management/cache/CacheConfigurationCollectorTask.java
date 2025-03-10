@@ -24,15 +24,15 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task that collect cache metrics from all nodes.
  */
 @GridInternal
-public class CacheConfigurationCollectorTask
-    extends VisorOneNodeTask<CacheConfigurationCollectorTaskArg, Map<String, CacheConfiguration>> {
+public class CacheConfigurationCollectorTask extends VisorMultiNodeTask<CacheConfigurationCollectorTaskArg,
+    Map<String, CacheConfiguration>, Map<String, CacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 

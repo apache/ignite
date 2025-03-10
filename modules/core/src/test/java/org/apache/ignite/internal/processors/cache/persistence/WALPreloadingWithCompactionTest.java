@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -29,8 +28,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -117,17 +115,12 @@ public class WALPreloadingWithCompactionTest extends GridCommonAbstractTest {
      * Check that there's only compacted version of given segment.
      * @param ignite Ignite instance.
      * @param segment Segment index.
-     * @throws IgniteCheckedException If failed.
      */
-    private void checkThatOnlyZipSegmentExists(IgniteEx ignite, int segment) throws IgniteCheckedException {
-        String nodeFolderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
+    private void checkThatOnlyZipSegmentExists(IgniteEx ignite, int segment) {
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walZipSegment = new File(nodeArchiveDir, FileDescriptor.fileName(segment) + ".zip");
-        File walRawSegment = new File(nodeArchiveDir, FileDescriptor.fileName(segment));
+        File walZipSegment = ft.zipWalArchiveSegment(segment);
+        File walRawSegment = ft.walArchiveSegment(segment);
 
         assertTrue(walZipSegment.exists());
         assertFalse(walRawSegment.exists());

@@ -44,14 +44,14 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -63,11 +63,9 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
 public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
@@ -290,10 +288,12 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                     continue;
                 }
 
-                U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
-                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
+                NodeFileTree ft = nodeFileTree(dir.toString());
+
+                U.delete(ft.checkpoint());
+                U.delete(ft.db());
+                U.delete(ft.marshaller());
+                U.delete(ft.binaryMetaRoot());
             }
         }
         catch (IOException e) {
@@ -336,7 +336,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             snp(ignite).createSnapshot(snpName, null, false, onlyPrimary).get(TIMEOUT);
 
-            IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
+            IdleVerifyResult res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
                 .get().idleVerifyResult();
 
             StringBuilder b = new StringBuilder();
@@ -402,7 +402,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long persistenseSize(Collection<Ignite> grids) {
         return grids.stream()
-            .map(ig -> workingDirectory(ig).resolve(DFLT_STORE_DIR))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().nodeStorage().toPath())
             .reduce(0L, (acc, p) -> acc + directorySize(p), Long::sum);
     }
 
@@ -414,7 +414,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long snapshotSize(Collection<Ignite> grids, String snpName, String pattern) {
         return grids.stream()
-            .map(ig -> workingDirectory(ig).resolve(DFLT_SNAPSHOT_DIRECTORY).resolve(snpName))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath().resolve(snpName))
             .reduce(0L, (acc, p) -> acc + directorySize(p, pattern), Long::sum);
     }
 

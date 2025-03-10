@@ -3129,9 +3129,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if (!cachesInfo.isMergeConfigSupports(node))
-            return null;
-
         String validationRes = cachesInfo.validateJoiningNodeData(discoData, node.isClient());
 
         if (validationRes != null)
@@ -3541,11 +3538,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             };
 
         try {
-            if (ccfg != null && ccfg.isEncryptionEnabled()) {
-                ctx.encryption().checkEncryptedCacheSupported();
-
+            if (ccfg != null && ccfg.isEncryptionEnabled())
                 return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
-            }
 
             return startCacheClsr.apply(Collections.EMPTY_SET, null);
         }
@@ -4262,8 +4256,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return changeRequested;
         }
 
-        if (msg instanceof DynamicCacheChangeFailureMessage)
-            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);
+        if (msg instanceof ExchangeFailureMessage)
+            cachesInfo.onCacheChangeRequested((ExchangeFailureMessage)msg, topVer);
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);

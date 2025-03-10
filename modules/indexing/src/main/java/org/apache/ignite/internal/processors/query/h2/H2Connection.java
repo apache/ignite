@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,6 +29,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
+import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcStatement;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +62,21 @@ public class H2Connection implements AutoCloseable {
         this.log = log;
 
         initStatementCache();
+
+        // Work around the H2 bug (NPE in Session#removeLocalTempTable)
+        // https://github.com/h2database/h2database/issues/1354
+        //
+        // Make sure session always contains not-null list of temp tables.
+        try {
+            Session sess = (Session)(conn.unwrap(JdbcConnection.class)).getSession();
+
+            Field field = Session.class.getDeclaredField("localTempTables");
+            field.setAccessible(true);
+            field.set(sess, sess.getDatabase().newStringMap());
+        }
+        catch (SQLException | IllegalAccessException | NoSuchFieldException e) {
+            throw new IgniteSQLException("Failed to initialize DB connection", e);
+        }
     }
 
     /**

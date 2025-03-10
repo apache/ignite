@@ -37,10 +37,9 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
@@ -192,8 +191,10 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir)
         throws IgniteCheckedException {
-        MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
-            resolveMappingFileStoreWorkDir(dir.getAbsolutePath()));
+        MarshallerMappingFileStore writer = new MarshallerMappingFileStore(
+            ctx,
+            new SharedFileTree(dir).mkdirMarshaller()
+        );
 
         addPlatformMappings(ctx.log(MarshallerContextImpl.class),
             mappings,
@@ -583,17 +584,14 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param transport Transport.
      */
     public void onMarshallerProcessorStarted(
-            GridKernalContext ctx,
-            MarshallerMappingTransport transport
+        GridKernalContext ctx,
+        MarshallerMappingTransport transport
     ) throws IgniteCheckedException {
         assert ctx != null;
 
-        IgniteConfiguration cfg = ctx.config();
-        String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
-
-        fileStore = marshallerMappingFileStoreDir == null ?
-            new MarshallerMappingFileStore(ctx, resolveMappingFileStoreWorkDir(workDir)) :
-            new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
+        fileStore = marshallerMappingFileStoreDir == null
+            ? new MarshallerMappingFileStore(ctx, ctx.pdsFolderResolver().fileTree().mkdirMarshaller())
+            : new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
@@ -602,30 +600,6 @@ public class MarshallerContextImpl implements MarshallerContext {
             fileStore.restoreMappings(this);
 
         MarshallerUtils.setNodeName(jdkMarsh, ctx.igniteInstanceName());
-    }
-
-    /**
-     * @param igniteWorkDir Base ignite working directory.
-     * @return Resolved directory.
-     */
-    public static File resolveMappingFileStoreWorkDir(String igniteWorkDir) {
-        File dir = mappingFileStoreWorkDir(igniteWorkDir);
-
-        if (!U.mkdirs(dir))
-            throw new IgniteException("Could not create directory for marshaller mappings: " + dir);
-
-        return dir;
-    }
-
-    /**
-     * @param igniteWorkDir Base ignite working directory.
-     * @return Work directory for marshaller mappings.
-     */
-    public static File mappingFileStoreWorkDir(String igniteWorkDir) {
-        if (F.isEmpty(igniteWorkDir))
-            throw new IgniteException("Work directory has not been set: " + igniteWorkDir);
-
-        return new File(igniteWorkDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
     }
 
     /**

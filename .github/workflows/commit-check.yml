@@ -95,8 +95,8 @@ jobs:
       fail-fast: false
       matrix:
         cfg:
-          - { python: "3.7", toxenv: "py37" }
           - { python: "3.8", toxenv: "py38" }
+          - { python: "3.9", toxenv: "py39" }
           - { python: "3.8", toxenv: "codestyle" }
     steps:
       - uses: actions/checkout@v4

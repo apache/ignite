@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,8 +38,13 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected SnapshotHandlerRestoreJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
+    @Override protected SnapshotHandlerRestoreJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
+    ) {
+        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), folderName, consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -90,6 +94,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
+         * @param folderName Folder name for snapshot.
          * @param consId Consistent id of the related node.
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
@@ -97,22 +102,22 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         public SnapshotHandlerRestoreJob(
             String snpName,
             @Nullable String snpPath,
+            String folderName,
             String consId,
             Collection<String> grps,
             boolean check
         ) {
-            super(snpName, snpPath, consId, grps, check);
+            super(snpName, snpPath, folderName, consId, grps, check);
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
+        @Override public Map<String, SnapshotHandlerResult<Object>> execute0() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-                File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

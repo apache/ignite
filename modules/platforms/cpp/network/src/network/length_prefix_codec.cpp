@@ -45,7 +45,7 @@ namespace ignite
 
         DataBuffer LengthPrefixCodec::Decode(DataBuffer& data)
         {
-            if (packet.IsValid() && packet.Get()->Length() == (PACKET_HEADER_SIZE + packetSize))
+            if (packet.IsValid() && packetSize != -1 && packet.Get()->Length() == (PACKET_HEADER_SIZE + packetSize))
             {
                 packetSize = -1;
                 packet.Get()->Length(0);

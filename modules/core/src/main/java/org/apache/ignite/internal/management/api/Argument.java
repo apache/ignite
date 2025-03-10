@@ -52,4 +52,10 @@ public @interface Argument {
      * @return {@code True} if parameter name expected without "--" prefix.
      */
     public boolean withoutPrefix() default false;
+
+    /**
+     * @return {@code True} if the argument value is sensitive and needs value to be requested from console,
+     * in case this value is not specified, {@code false} if not needed.
+     */
+    public boolean sensitive() default false;
 }

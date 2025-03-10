@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,8 +77,8 @@ public class CacheIndexesForceRebuildCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
-        Collection<GridClientNode> res;
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
+        Collection<ClusterNode> res;
 
         if (arg.allNodes())
             res = nodes.stream().filter(n -> !n.isClient()).collect(Collectors.toList());
@@ -88,7 +88,7 @@ public class CacheIndexesForceRebuildCommand
                 : CommandUtils.node(arg.nodeId(), nodes);
 
             if (!F.isEmpty(res)) {
-                for (GridClientNode n : res) {
+                for (ClusterNode n : res) {
                     if (n != null && n.isClient())
                         throw new IllegalArgumentException("Please, specify only server node ids");
                 }

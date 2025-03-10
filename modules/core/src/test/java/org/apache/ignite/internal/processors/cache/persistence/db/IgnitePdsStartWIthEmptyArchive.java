@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
@@ -133,7 +134,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
                 st.addData(i, new byte[1024 * 1024]);
         }
 
-        File archiveDir = U.field(walMgr, "walArchiveDir");
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         stopGrid(0, false);
 
@@ -145,7 +146,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         long idxBefore = fhBefore.getSegmentId();
 
-        File[] files = archiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        File[] files = ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         Arrays.sort(files);
 
@@ -155,7 +156,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
                 log.info("File " + f.getAbsolutePath() + " deleted");
         }
 
-        Assert.assertEquals(0, archiveDir.listFiles().length);
+        Assert.assertEquals(0, ft.walArchive().listFiles().length);
 
         evts.clear();
 
