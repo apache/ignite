@@ -454,7 +454,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         List<SnapshotFileTree> sfts = G.allGrids().stream()
             .filter(n -> !n.configuration().isClientMode())
-            .map(n -> snapshotFileTree(((IgniteEx)n), DMP_NAME))
+            .map(n -> snapshotFileTree(((IgniteEx)n), name))
             .collect(Collectors.toList());
 
         List<SnapshotMetadata> metadata = DumpReader.metadata(F.first(sfts).root());
