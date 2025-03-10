@@ -424,7 +424,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
                 boolean deleted = delta.delete();
 
-                assert deleted;
+                assert deleted : delta.getAbsolutePath();
 
                 File deltaIdx = partDeltaIndexFile(delta);
 
