@@ -136,6 +136,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     private static final String CUSTOM_LOCATION = "custom_location";
 
     /** */
+    private static final String DUMP_CUSTOM_LOCATION = "dump_custom_location";
+
+    /** */
     private LogListener lsnr;
 
     /** */
@@ -182,6 +185,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        U.delete(new File(U.defaultWorkDirectory(), DUMP_CUSTOM_LOCATION));
+        U.delete(new File(U.defaultWorkDirectory(), CUSTOM_LOCATION));
     }
 
     /** */
@@ -222,7 +228,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         String dumpPath = null;
 
         if (dumpAbsPath) {
-            dumpPath = new File(U.defaultWorkDirectory(), "dump_custom_location").getAbsolutePath();
+            dumpPath = new File(U.defaultWorkDirectory(), DUMP_CUSTOM_LOCATION).getAbsolutePath();
 
             ign.context().cache().context().snapshotMgr().createSnapshot(
                 DMP_NAME,
