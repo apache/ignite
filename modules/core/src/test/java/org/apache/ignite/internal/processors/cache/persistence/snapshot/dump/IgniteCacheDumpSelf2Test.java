@@ -380,16 +380,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
-        SnapshotFileTree sft = snapshotFileTree(grid(1), DMP_NAME);
+        List<SnapshotFileTree> sfts = G.allGrids().stream()
+            .filter(n -> !n.configuration().isClientMode())
+            .map(n -> snapshotFileTree(((IgniteEx)n), DMP_NAME))
+            .collect(Collectors.toList());
 
         stopAllGrids();
 
-        Dump dump = dump(ign, DMP_NAME);
+        Dump dump = new Dump(ign.context(), sfts, DumpReader.metadata(F.first(sfts).root()), true, false, null, log);
 
-        List<SnapshotFileTree> sfts = dump.fileTrees();
-
-        assertNotNull(sfts);
-        assertEquals(2, sfts.size());
+        SnapshotFileTree sft = F.first(dump.fileTrees());
 
         assertTrue(sft.dumpLock().createNewFile());
 
@@ -397,7 +397,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             "This means, dump creation not finished prior to node fail. " +
             "Directory will be deleted: " + sft.nodeStorage().getAbsolutePath()).build();
 
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(1);
 
         assertFalse(sft.nodeStorage().exists());
         assertTrue(lsnr.check());

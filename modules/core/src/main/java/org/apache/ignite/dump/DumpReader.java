@@ -306,7 +306,7 @@ public class DumpReader implements Runnable {
             A.ensure(root.isAbsolute(), "Dump path must be absolute or Ignite configuration provided");
 
             name = root.getName();
-            path = root.getAbsolutePath();
+            path = root.getParentFile().getAbsolutePath();
         }
 
         List<SnapshotMetadata> metadata = metadata(root);

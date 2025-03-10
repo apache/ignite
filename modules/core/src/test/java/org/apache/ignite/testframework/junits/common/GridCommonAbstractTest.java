@@ -1972,7 +1972,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         SharedFileTree sft = sharedFileTree();
 
-        F.asList(sft.root().listFiles(f -> !f.getName().equals("log") || (saveSnp && f.equals(sft.snapshotsRoot()))))
+        F.asList(sft.root().listFiles(f -> !f.getName().equals("log") && !(saveSnp && f.equals(sft.snapshotsRoot()))))
             .forEach(U::delete);
     }
 

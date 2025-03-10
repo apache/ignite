@@ -33,6 +33,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -430,5 +431,11 @@ public class SnapshotFileTree extends NodeFileTree {
         tmpFt.drStorages.putAll(snpTmpDrStorages);
 
         return tmpFt;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotFileTree.class, this);
     }
 }
