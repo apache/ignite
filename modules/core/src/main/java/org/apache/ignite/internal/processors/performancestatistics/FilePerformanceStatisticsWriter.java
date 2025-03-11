@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,11 +42,11 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
@@ -281,36 +280,30 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
-     * @param view Name of system view.
-     * @param row  Data from the view.
+     * @param viewName Name of system view.
+     * @param view System view.
      */
-    public void systemView(String view, Map<String, String> row) {
-        boolean cachedName = cacheIfPossible(view);
+    public void systemView(String viewName, SystemView<?> view) {
+        boolean cachedName = cacheIfPossible(viewName);
+        ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
 
-        int recSize = 1 + (cachedName ? 4 : 4 + view.getBytes().length) + 4;
+        SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
 
-        List<IgnitePair<IgniteBiTuple<String, Boolean>>> cachedRow = new ArrayList<>();
-        for (Map.Entry<String, String> entry : row.entrySet()) {
-            String key = entry.getKey();
-            String val = entry.getValue();
+        SystemViewRowAttributeWalker.AttributeVisitor attrVisitor = new AttributeCollectorVisitor(byteArrOutputStream, this::cacheIfPossible);
+        walker.visitAll(attrVisitor);
 
-            IgniteBiTuple<String, Boolean> cachedKey = new IgniteBiTuple<>(key, cacheIfPossible(key));
-            IgniteBiTuple<String, Boolean> cachedVal = new IgniteBiTuple<>(val, cacheIfPossible(val));
+        SystemViewRowAttributeWalker.AttributeWithValueVisitor valVisitor = new AttributeWithValueToBufferVisitor(byteArrOutputStream);
+        view.forEach(row -> walker.visitAll(row, valVisitor));
 
-            recSize += 1 + (cachedKey.getValue() ? 4 : 4 + key.getBytes().length);
-            recSize += 1 + (cachedVal.getValue() ? 4 : 4 + val.getBytes().length);
+        byte[] data = byteArrOutputStream.toByteArray();
 
-            cachedRow.add(new IgnitePair<>(cachedKey, cachedVal));
-        }
+        int recSize = 1 + (cachedName ? 4 : 4 + viewName.getBytes().length) + 4 + 4 + data.length;
 
         doWrite(SYSTEM_VIEW, recSize, buf -> {
-            writeString(buf, view, cachedName);
-            buf.putInt(row.size());
-
-            for (IgnitePair<IgniteBiTuple<String, Boolean>> pair : cachedRow) {
-                writeString(buf, pair.getKey().getKey(), pair.getKey().getValue());
-                writeString(buf, pair.getValue().getKey(), pair.getValue().getValue());
-            }
+            writeString(buf, viewName, cachedName);
+            buf.putInt(view.size());
+            buf.putInt(view.walker().count());
+            buf.put(data);
         });
     }
 
