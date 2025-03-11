@@ -38,7 +38,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import sun.jvmstat.monitor.HostIdentifier;
 import sun.jvmstat.monitor.MonitoredHost;
 import sun.jvmstat.monitor.MonitoredVm;
@@ -97,7 +99,7 @@ public class IgniteNodeRunner {
     public static String storeToFile(IgniteConfiguration cfg, boolean resetDiscovery) throws IOException, IgniteCheckedException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
-        storeToFile(cfg, fileName, resetDiscovery);
+        storeToFile(cfg, fileName, true, resetDiscovery);
 
         return fileName;
     }
@@ -107,14 +109,19 @@ public class IgniteNodeRunner {
      *
      * @param cfg Ignite Configuration.
      * @param fileName A name of file where the configuration was stored.
+     * @param resetMarshaller Reset marshaller configuration to default.
      * @param resetDiscovery Reset discovery configuration to default.
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
     public static void storeToFile(IgniteConfiguration cfg, String fileName,
+        boolean resetMarshaller,
         boolean resetDiscovery) throws IOException, IgniteCheckedException {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
+
+            if (resetMarshaller)
+                cfg0.setMarshaller(null);
 
             if (resetDiscovery)
                 cfg0.setDiscoverySpi(null);
@@ -134,11 +141,20 @@ public class IgniteNodeRunner {
      * @return Readed configuration.
      * @throws IOException If failed.
      * @see #storeToFile(IgniteConfiguration, boolean)
+     * @throws IgniteCheckedException On error.
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
-        throws IOException {
+        throws IOException, IgniteCheckedException {
         try (BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
+
+            if (cfg.getMarshaller() == null) {
+                Marshaller marsh = IgniteTestResources.getMarshaller();
+
+                cfg.setMarshaller(marsh);
+            }
+
+            X.println("Configured marshaller class: " + cfg.getMarshaller().getClass().getName());
 
             if (cfg.getDiscoverySpi() == null) {
                 TcpDiscoverySpi disco = new TcpDiscoverySpi();

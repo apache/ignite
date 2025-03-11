@@ -79,6 +79,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -101,7 +102,7 @@ public class IgniteMock implements IgniteEx {
     private final UUID nodeId;
 
     /** */
-    private BinaryMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private final MBeanServer jmx;
@@ -132,14 +133,7 @@ public class IgniteMock implements IgniteEx {
      * @param home Ignite home.
      */
     public IgniteMock(
-        String name,
-        String locHost,
-        UUID nodeId,
-        BinaryMarshaller marshaller,
-        MBeanServer jmx,
-        String home,
-        IgniteConfiguration staticCfg
-    ) {
+        String name, String locHost, UUID nodeId, Marshaller marshaller, MBeanServer jmx, String home, IgniteConfiguration staticCfg) {
         this.locHost = locHost;
         this.nodeId = nodeId;
         this.marshaller = marshaller;
@@ -177,6 +171,7 @@ public class IgniteMock implements IgniteEx {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
         cfg.setIgniteHome(home);
@@ -454,7 +449,8 @@ public class IgniteMock implements IgniteEx {
                 }
             };
 
-            ctx.configure(marshaller, configuration().getBinaryConfiguration());
+            if (marshaller instanceof BinaryMarshaller)
+                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {

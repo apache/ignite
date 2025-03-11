@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,7 +50,7 @@ public class IgniteReproducingSuite {
 
             //uncomment to add some test
             for (int i = 0; i < 500; i++)
-                suite.add(IgnitePlatformsTestSuite.class);
+                suite.add(OptimizedMarshallerSelfTest.class);
 
             return suite;
         }
