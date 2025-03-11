@@ -634,7 +634,6 @@ final class ReliableChannel implements AutoCloseable {
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
-        List<ClientChannelHolder> closeHolders = new ArrayList<>();
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
@@ -642,8 +641,6 @@ final class ReliableChannel implements AutoCloseable {
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
                 boolean found = false;
-
-                closeHolders.add(h);
 
                 for (InetSocketAddress addr : h.getAddresses()) {
                     // If new endpoints contain at least one of channel addresses, don't close this channel.
@@ -705,10 +702,6 @@ final class ReliableChannel implements AutoCloseable {
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
         }
-
-        for (ClientChannelHolder hld : closeHolders)
-            if (!reinitHolders.contains(hld))
-                hld.close();
 
         if (dfltChannelIdx == -1) {
             // If holder is not specified get the random holder from the range of holders with the same port.

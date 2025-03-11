@@ -64,6 +64,21 @@ public class ReliableChannelTest {
     private final String[] dfltAddrs = new String[]{"127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"};
 
     /**
+     * Checks that it is possible configure addresses with duplication (for load balancing).
+     */
+    @Test
+    public void testDuplicatedAddressesAreValid() {
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(
+            "127.0.0.1:10800", "127.0.0.1:10800", "127.0.0.1:10801");
+
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
+        rc.channelsInit();
+
+        assertEquals(2, rc.getChannelHolders().size());
+    }
+
+    /**
      * Checks that in case if address specified without port, the default port will be processed first
      */
     @Test
