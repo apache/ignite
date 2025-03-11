@@ -18,6 +18,8 @@
 package org.apache.ignite.compatibility.persistence;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -33,9 +35,22 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
      */
     @Test
     public void testSnapshotRestore() throws Exception {
-        IgniteEx oldIgn = startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(), new PostStartupClosure());
+        try {
+            IgniteEx oldIgn = startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(), new PostStartupClosure());
 
-        IgniteEx curIgn = startGrid(0);
+            oldIgn.cluster().state(ClusterState.ACTIVE);
+
+            IgniteEx curIdn = startGrid(0);
+
+            curIdn.cluster().state(ClusterState.ACTIVE);
+
+            oldIgn.snapshot().createSnapshot("testSnapshotRestore_03112025").get();
+
+            System.out.println("Snapshot has taken");
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -50,13 +65,21 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             igniteConfiguration.setDataStorageConfiguration(storageCfg);
 
-            igniteConfiguration.setConsistentId("");
+            igniteConfiguration.setConsistentId(null);
+
+            System.out.println("ConfigurationClosure.apply");
         }
     }
 
-    private class PostStartupClosure implements IgniteInClosure<Ignite> {
+    /**
+     *
+     */
+    private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
+            IgniteCache<String, Integer> organizations = ignite.cache("organizations");
+            for (int i = 0; i < 100_000; i++)
+                organizations.put("organization-" + i, i);
         }
     }
 }
