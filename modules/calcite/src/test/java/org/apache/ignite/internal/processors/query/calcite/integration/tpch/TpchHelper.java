@@ -36,12 +36,16 @@ import io.trino.tpch.TpchEntity;
 import io.trino.tpch.TpchTable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static io.trino.tpch.TpchTable.getTables;
 
@@ -65,21 +69,20 @@ public class TpchHelper {
                 throw new RuntimeException("Failed to create TPC-H tables: ddl.sql not found in resources");
 
             for (String q : new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).split(";")) {
-                if (!q.trim().isEmpty()) {
-                    SqlFieldsQuery qry = new SqlFieldsQuery(q.trim());
-
-                    try (QueryCursor<List<?>> cursor = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
-                        cursor.getAll();
-                    }
-                    catch (IgniteException e) {
-                        throw new RuntimeException("Failed to create TPC-H tables", e);
-                    }
-                }
+                if (!q.trim().isEmpty())
+                    sql(ignite, q.trim());
             }
         }
         catch (IOException e) {
             throw new RuntimeException("Failed to create TPC-H tables: can not read ddl.sql from resources", e);
         }
+    }
+
+    /**
+     * Get list of TPC-H tables.
+     */
+    public static List<TpchTable<?>> tables() {
+        return getTables();
     }
 
     /**
@@ -105,6 +108,30 @@ public class TpchHelper {
         for (TpchTable<?> table : getTables()) {
             fillTable(ignite, table.getTableName(), streamFromFile(datasetDir.resolve(String.format("%s.tbl", table.getTableName()))),
                 BUILDER_BY_NAME.get(table.getTableName()));
+        }
+    }
+
+    /**
+     * Collect statistics for TPC-H tables with default 10 mins timeout.
+     *
+     * @param ignite Ignite instance.
+     */
+    public static void collectSqlStatistics(Ignite ignite) throws IgniteInterruptedCheckedException {
+        collectSqlStatistics(ignite, 10 * 60 * 1000);
+    }
+
+    /**
+     * Collect statistics for TPC-H tables.
+     *
+     * @param ignite Ignite instance.
+     * @param timeoutMs Timeout in milliseconds.
+     */
+    public static void collectSqlStatistics(Ignite ignite, int timeoutMs) throws IgniteInterruptedCheckedException {
+        for (TpchTable<?> table : getTables()) {
+            if (allServersHaveStatistics(ignite, table.getTableName()))
+                ignite.log().info("Table " + table.getTableName() + " already has statistics");
+            else
+                collectSqlStatistics(ignite, table.getTableName(), timeoutMs);
         }
     }
 
@@ -148,6 +175,8 @@ public class TpchHelper {
      */
     private static void fillTable(Ignite ignite, String table, Stream<String> data,
                                   BiFunction<Ignite, String, GridMapEntry<?, ?>> entryGen) {
+        ignite.log().info("Filling table: " + table + " ...");
+
         try (IgniteDataStreamer<Object, Object> ds = ignite.dataStreamer(table)) {
             data.forEach(line -> {
                 try {
@@ -160,6 +189,8 @@ public class TpchHelper {
                 }
             });
         }
+
+        ignite.log().info("Table: " + table + " is filled");
     }
 
     /**
@@ -356,5 +387,56 @@ public class TpchHelper {
      */
     private static Stream<String> streamFromFile(Path file) throws IOException {
         return new BufferedReader(new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8)).lines();
+    }
+
+    /**
+     * Build statistics for table.
+     *
+     * @param ignite Ignite.
+     * @param tableName SQL table name.
+     */
+    private static void collectSqlStatistics(Ignite ignite, String tableName, int timeoutMs) throws IgniteInterruptedCheckedException {
+        ignite.log().info("Collecting statistics for table: " + tableName + " ...");
+
+        sql(ignite, "ANALYZE " + tableName);
+
+        GridTestUtils.waitForCondition(
+            () -> allServersHaveStatistics(ignite, tableName),
+            timeoutMs
+        );
+
+        ignite.log().info("Statistics collected for table: " + tableName);
+    }
+
+    /**
+     * Check if all server nodes have SQL statistics for the table.
+     *
+     * @param ignite Ignite.
+     * @param tableName Table name.
+     */
+    private static boolean allServersHaveStatistics(Ignite ignite, String tableName) {
+        return ignite.compute(ignite.cluster().forServers()).broadcast(new IgniteCallable<Boolean>() {
+            @IgniteInstanceResource
+            Ignite node;
+
+            @Override public Boolean call() {
+                return !F.isEmpty(sql(node, "select * from sys.statistics_local_data where name = ?", tableName.toUpperCase()));
+            }
+        }).stream().allMatch(a -> a);
+    }
+
+    /**
+     * Execute SQL query.
+     *
+     * @param ignite Ignite.
+     * @param sql SQL query.
+     * @param params Query parameters.
+     */
+    private static List<List<?>> sql(Ignite ignite, String sql, Object... params) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(params);
+
+        try (FieldsQueryCursor<List<?>> cur = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
+            return cur.getAll();
+        }
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -251,7 +252,7 @@ public class TpchBenchmark {
      * <p>
      * If persistent storage is used, then the dataset will be loaded to Ignite cluster only once.
      */
-    private void loadDataset() throws IOException {
+    private void loadDataset() throws IOException, IgniteInterruptedCheckedException {
         datasetPath = getOrCreateDataset(scale);
 
         if (!USE_PERSISTENCE ||
@@ -264,6 +265,8 @@ public class TpchBenchmark {
             if (USE_PERSISTENCE)
                 Files.createFile(getWorkDirectory().resolve(DATASET_READY_MARK_FILE_NAME));
         }
+
+        TpchHelper.collectSqlStatistics(client);
     }
 
     /**

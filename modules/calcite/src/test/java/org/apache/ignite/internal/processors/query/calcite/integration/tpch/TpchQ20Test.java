@@ -33,6 +33,8 @@ public class TpchQ20Test extends AbstractBasicIntegrationTest {
 
         TpchHelper.fillTables(client, 0.01);
 
+        TpchHelper.collectSqlStatistics(client);
+
         sql(TpchHelper.getQuery(20));
     }
 }
