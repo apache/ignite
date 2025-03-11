@@ -46,6 +46,7 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     @Parameterized.Parameter(0)
     public int gridCnt;
 
+    /**  */
     @Parameterized.Parameters(name = "gridCount = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
@@ -110,11 +111,11 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
      * @param holders List of channel holders.
      */
     private void assertNoDuplicates(List<ReliableChannel.ClientChannelHolder> holders) {
-        Set<InetSocketAddress> addresses = new HashSet<>();
+        Set<InetSocketAddress> addrs = new HashSet<>();
 
         for (ReliableChannel.ClientChannelHolder holder : holders) {
             holder.getAddresses().forEach(addr -> {
-                if (!addresses.add(addr))
+                if (!addrs.add(addr))
                     throw new AssertionError("Duplicate remote address found: " + addr);
             });
         }
