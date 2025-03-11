@@ -17,18 +17,30 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.Test;
 
+/**
+ *
+ */
 public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
+    /** */
     private static final String OLD_IGNITE_VERSION = "2.16.0";
+
+    /** */
+    private static final String SNAPSHOT_NAME = "test_snapshot";
 
     /**
      *
@@ -36,17 +48,23 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
-            IgniteEx oldIgn = startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(), new PostStartupClosure());
-
-            oldIgn.snapshot().createSnapshot("testSnapshotRestore_03112025").get();
-
-            System.out.println("Snapshot has taken");
+            startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(), new PostStartupClosure());
 
             stopAllGrids();
 
+            cleanPersistenceDir(true);
+
             IgniteEx curIdn = startGrid(0);
 
-            curIdn.cluster().state(ClusterState.ACTIVE);
+            curIdn.snapshot().restoreSnapshot(SNAPSHOT_NAME, List.of("organizations")).get();
+
+            IgniteCache<String, Integer> cache = curIdn.cache("organizations");
+
+            for (int i = 0; i < 100_000; i++) {
+                assertTrue(cache.containsKey("organization-" + i));
+            }
+
+            System.out.println("Cache read end");
         }
         finally {
             stopAllGrids();
@@ -84,6 +102,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             IgniteCache<String, Integer> organizations = ignite.createCache("organizations");
             for (int i = 0; i < 100_000; i++)
                 organizations.put("organization-" + i, i);
+
+            ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            System.out.println("Snapshot has taken");
         }
     }
 }
