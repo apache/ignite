@@ -29,7 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -96,7 +96,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         for (IgniteEx n: F.asList(grid(0), grid(GRID_CNT))) {
             for (int i = 0; i <= incSnpCnt; i++) {
-                SnapshotPartitionsVerifyResult res = snp(n).checkSnapshot(SNP, null, null, false, i, DFLT_CHECK_ON_RESTORE)
+                SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, i, DFLT_CHECK_ON_RESTORE)
                     .get(getTestTimeout());
 
                 assertTrue(res.exceptions().isEmpty());
@@ -122,7 +122,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createIncrementalSnapshots(1);
 
         for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
                 .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
@@ -157,7 +157,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         U.delete(snapshotFileTree(srv, SNP).incrementalSnapshotFileTree(1).root());
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
                 .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
@@ -185,7 +185,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         deleteWalSegment(0);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
                     .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());

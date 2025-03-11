@@ -73,7 +73,7 @@ public class SnapshotCheckProcess {
     private final Map<String, SnapshotCheckContext> contexts = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
-    private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyResult>> clusterOpFuts = new ConcurrentHashMap<>();
+    private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
     private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase1CheckMetas;
@@ -151,7 +151,7 @@ public class SnapshotCheckProcess {
         if (log.isInfoEnabled())
             log.info("Finished snapshot validation [req=" + ctx.req + ']');
 
-        GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
@@ -176,9 +176,9 @@ public class SnapshotCheckProcess {
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         Map<UUID, SnapshotCheckResponse> results,
         Map<UUID, Throwable> errors,
-        GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> fut
     ) {
-        Map<ClusterNode, IncrementalSnapshotCheckResult> perNodeResults = new HashMap<>();
+        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> perNodeResults = new HashMap<>();
 
         for (Map.Entry<UUID, SnapshotCheckResponse> resEntry : results.entrySet()) {
             UUID nodeId = resEntry.getKey();
@@ -198,7 +198,7 @@ public class SnapshotCheckProcess {
 
         IdleVerifyResult chkRes = snpChecker.reduceIncrementalResults(sft, incIdx, perNodeResults, mapErrors(errors));
 
-        fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
+        fut.onDone(new SnapshotPartitionsVerifyTaskResult(clusterMetas, chkRes));
     }
 
     /** */
@@ -206,7 +206,7 @@ public class SnapshotCheckProcess {
         SnapshotCheckContext ctx,
         Map<UUID, SnapshotCheckResponse> results,
         Map<UUID, Throwable> errors,
-        GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> fut
     ) {
         try {
             if (!errors.isEmpty())
@@ -240,7 +240,7 @@ public class SnapshotCheckProcess {
 
             snpChecker.checkCustomHandlersResults(ctx.req.snapshotName(), reduced);
 
-            fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
+            fut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, null));
         }
         catch (Throwable err) {
             fut.onDone(err);
@@ -252,7 +252,7 @@ public class SnapshotCheckProcess {
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         Map<UUID, SnapshotCheckResponse> results,
         Map<UUID, Throwable> errors,
-        GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> fut
     ) {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
@@ -279,7 +279,7 @@ public class SnapshotCheckProcess {
                 partsHashesRes.forEach((consId, partsPerConsId) -> bldr.addPartitionHashes(partsPerConsId));
             }
 
-            fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, bldr.build()));
+            fut.onDone(new SnapshotPartitionsVerifyTaskResult(clusterMetas, bldr.build()));
         }
         else
             fut.onDone(new IgniteSnapshotVerifyException(errors0));
@@ -331,7 +331,7 @@ public class SnapshotCheckProcess {
 
         CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
-        CompletableFuture<IncrementalSnapshotCheckResult> workingFut = snpChecker.checkIncrementalSnapshot(
+        CompletableFuture<IncrementalSnapshotVerificationTaskResult> workingFut = snpChecker.checkIncrementalSnapshot(
             ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
 
         workingFut.whenComplete((res, err) -> {
@@ -483,7 +483,7 @@ public class SnapshotCheckProcess {
         SnapshotCheckContext ctx = context(null, reqId);
 
         // The context is not stored in the case of concurrent check of the same snapshot but the operation future is registered.
-        GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         try {
             if (!errors.isEmpty())
@@ -608,7 +608,7 @@ public class SnapshotCheckProcess {
      *                    {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and partition
      *                    hashes are validated.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> start(
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> start(
         String snpName,
         @Nullable String snpPath,
         @Nullable Collection<String> grpNames,
@@ -636,7 +636,7 @@ public class SnapshotCheckProcess {
             allRestoreHandlers
         );
 
-        GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
 
         clusterOpFut.listen(fut -> {
             clusterOpFuts.remove(reqId);

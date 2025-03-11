@@ -69,11 +69,11 @@ public class IncrementalSnapshotVerificationTask {
     }
 
     /** */
-    public IdleVerifyResult reduce(Map<ClusterNode, IncrementalSnapshotCheckResult> results) throws IgniteException {
+    public IdleVerifyResult reduce(Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results) throws IgniteException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (Map.Entry<ClusterNode, IncrementalSnapshotCheckResult> nodeRes: results.entrySet()) {
-            IncrementalSnapshotCheckResult res = nodeRes.getValue();
+        for (Map.Entry<ClusterNode, IncrementalSnapshotVerificationTaskResult> nodeRes: results.entrySet()) {
+            IncrementalSnapshotVerificationTaskResult res = nodeRes.getValue();
 
             if (!F.isEmpty(res.partiallyCommittedTxs()))
                 bldr.addPartiallyCommited(nodeRes.getKey(), res.partiallyCommittedTxs());
@@ -90,7 +90,7 @@ public class IncrementalSnapshotVerificationTask {
     }
 
     /** */
-    public IncrementalSnapshotCheckResult execute() {
+    public IncrementalSnapshotVerificationTaskResult execute() {
         return job.execute0();
     }
 
@@ -130,7 +130,7 @@ public class IncrementalSnapshotVerificationTask {
         /**
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
-        public IncrementalSnapshotCheckResult execute0() throws IgniteException {
+        public IncrementalSnapshotVerificationTaskResult execute0() throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
@@ -138,7 +138,7 @@ public class IncrementalSnapshotVerificationTask {
                 }
 
                 if (incIdx <= 0)
-                    return new IncrementalSnapshotCheckResult();
+                    return new IncrementalSnapshotVerificationTaskResult();
 
                 BaselineTopology blt = ignite.context().state().clusterState().baselineTopology();
 
@@ -301,7 +301,7 @@ public class IncrementalSnapshotVerificationTask {
                             null,
                             0,
                             null,
-                            new VerifyPartitionContext(e.getValue().hash, e.getValue().verHash)
+                            new VerifyPartitionContext(e.getValue())
                         )
                     ));
 
@@ -312,7 +312,7 @@ public class IncrementalSnapshotVerificationTask {
                         ", walSegments=" + procSegCnt.get() + ']');
                 }
 
-                return new IncrementalSnapshotCheckResult(
+                return new IncrementalSnapshotVerificationTaskResult(
                     txHashRes,
                     partHashRes,
                     partiallyCommittedTxs,
@@ -348,7 +348,7 @@ public class IncrementalSnapshotVerificationTask {
     }
 
     /** Holder for calculated hashes. */
-    private static class HashHolder {
+    public static class HashHolder {
         /** */
         public int hash;
 

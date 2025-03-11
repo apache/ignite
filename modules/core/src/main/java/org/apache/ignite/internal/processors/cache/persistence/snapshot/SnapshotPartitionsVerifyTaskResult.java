@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * The result of execution snapshot partitions verify task which besides calculating partition hashes of
  * {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
  */
-public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
+public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +49,7 @@ public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
     @Nullable private IdleVerifyResult idleRes;
 
     /** Default constructor. */
-    public SnapshotPartitionsVerifyResult() {
+    public SnapshotPartitionsVerifyTaskResult() {
         // No-op.
     }
 
@@ -57,7 +57,7 @@ public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
      * @param metas Map of snapshot metadata information found on each cluster node.
      * @param idleRes Result of cluster nodes partitions comparison.
      */
-    SnapshotPartitionsVerifyResult(
+    SnapshotPartitionsVerifyTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> metas,
         @Nullable IdleVerifyResult idleRes
     ) {

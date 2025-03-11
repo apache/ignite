@@ -66,7 +66,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    public CompletableFuture<IncrementalSnapshotCheckResult> checkIncrementalSnapshot(
+    public CompletableFuture<IncrementalSnapshotVerificationTaskResult> checkIncrementalSnapshot(
         SnapshotFileTree sft,
         int incIdx
     ) {
@@ -81,7 +81,7 @@ public class SnapshotChecker {
     public IdleVerifyResult reduceIncrementalResults(
         SnapshotFileTree sft,
         int incIdx,
-        Map<ClusterNode, IncrementalSnapshotCheckResult> results,
+        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())

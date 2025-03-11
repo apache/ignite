@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerificationTask.HashHolder;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -396,12 +397,11 @@ public class IdleVerifyUtility {
         }
 
         /**
-         * @param partHash Partition hash.
-         * @param partVerHash Version hash.
+         * @param hash Incremental snapshot hash holder.
          */
-        public VerifyPartitionContext(int partHash, int partVerHash) {
-            this.partHash = partHash;
-            this.partVerHash = partVerHash;
+        public VerifyPartitionContext(HashHolder hash) {
+            this.partHash = hash.hash;
+            this.partVerHash = hash.verHash;
         }
 
         /** */

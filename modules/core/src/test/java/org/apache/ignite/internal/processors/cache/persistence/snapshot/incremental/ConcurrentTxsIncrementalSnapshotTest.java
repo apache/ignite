@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -267,7 +267,7 @@ public class ConcurrentTxsIncrementalSnapshotTest extends AbstractIncrementalSna
         checkWalsConsistency(txCnt.get(), SNP_CNT);
 
         for (int i = 0; i < SNP_CNT; i++) {
-            SnapshotPartitionsVerifyResult res = snp(grid(0)).checkSnapshot(SNP, null, i).get(getTestTimeout());
+            SnapshotPartitionsVerifyTaskResult res = snp(grid(0)).checkSnapshot(SNP, null, i).get(getTestTimeout());
 
             assertTrue(F.isEmpty(res.exceptions()));
             assertFalse(res.idleVerifyResult().hasConflicts());
