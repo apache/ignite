@@ -184,10 +184,10 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDescFields() throws Exception {
         IgniteSchema publicSchema = createSchema(
-            createTable("T0", 10, IgniteDistributions.affinity(0, "T0", "hash"),
+            createTable("T0", 100, IgniteDistributions.affinity(0, "T0", "hash"),
                 "ID", Integer.class, "JID", Integer.class, "VAL", String.class)
                 .addIndex("t0_jid_idx", 1),
-            createTable("T1", 100, IgniteDistributions.affinity(0, "T1", "hash"),
+            createTable("T1", 10, IgniteDistributions.affinity(0, "T1", "hash"),
                 "ID", Integer.class, "JID", Integer.class, "VAL", String.class)
                 .addIndex(RelCollations.of(TraitUtils.createFieldCollation(1, false)), "t1_jid_idx")
         );
