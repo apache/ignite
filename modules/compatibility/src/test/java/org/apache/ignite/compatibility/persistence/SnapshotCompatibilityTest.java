@@ -38,18 +38,20 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         try {
             IgniteEx oldIgn = startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(), new PostStartupClosure());
 
-            oldIgn.cluster().state(ClusterState.ACTIVE);
+            oldIgn.snapshot().createSnapshot("testSnapshotRestore_03112025").get();
+
+            System.out.println("Snapshot has taken");
+
+            stopAllGrids();
 
             IgniteEx curIdn = startGrid(0);
 
             curIdn.cluster().state(ClusterState.ACTIVE);
-
-            oldIgn.snapshot().createSnapshot("testSnapshotRestore_03112025").get();
-
-            System.out.println("Snapshot has taken");
         }
         finally {
             stopAllGrids();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -77,7 +79,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            IgniteCache<String, Integer> organizations = ignite.cache("organizations");
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<String, Integer> organizations = ignite.createCache("organizations");
             for (int i = 0; i < 100_000; i++)
                 organizations.put("organization-" + i, i);
         }
