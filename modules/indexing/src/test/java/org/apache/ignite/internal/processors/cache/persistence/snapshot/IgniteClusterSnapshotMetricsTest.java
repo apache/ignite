@@ -46,7 +46,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -183,8 +183,10 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        String failingFilePath = Paths.get(ignite.context().pdsFolderResolver().fileTree().cacheDirName(dfltCacheCfg),
-            NodeFileTree.partitionFileName(primaries[0])).toString();
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        String failingFilePath = sft.partitionFile(dfltCacheCfg, primaries[0]).getAbsolutePath()
+            .replace(sft.nodeStorage().getAbsolutePath(), "");
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";

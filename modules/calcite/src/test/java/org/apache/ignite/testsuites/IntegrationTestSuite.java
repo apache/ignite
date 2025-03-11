@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngi
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIn
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchQ20Test;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
@@ -153,6 +155,8 @@ import org.junit.runners.Suite;
     SessionContextSqlFunctionTest.class,
     SqlPlanHistoryIntegrationTest.class,
     QueryBlockingTaskExecutorIntegrationTest.class,
+    ScalarInIntegrationTest.class,
+    TpchQ20Test.class,
 })
 public class IntegrationTestSuite {
 }

@@ -53,6 +53,15 @@ class JmxMBean:
         """
         return self.client.mbean_attribute(self.name, attr)
 
+    def run(self, operation, params):
+        """"
+        Runs through JMX client MBean operation.
+        :param operation: Operation name.
+        :param params: List of parameters.
+        :return: Result of operation as string.
+        """
+        return self.client.mbean_run(self.name, operation, params)
+
 
 class JmxClient:
     """JMX client, invokes jmxterm on node locally.
@@ -100,6 +109,19 @@ class JmxClient:
         """
         cmd = "echo $'open %s\\n get -b %s %s \\n close' | %s | sed 's/%s = \\(.*\\);/\\1/'" \
               % (self.pid, mbean.replace(' ', '\\ '), attr, self.jmx_util_cmd, attr)
+
+        return iter(s.strip() for s in self.__run_cmd(cmd))
+
+    def mbean_run(self, mbean, operation, params):
+        """
+        Run MBean operation.
+        :param mbean: MBean name
+        :param operation: Operation name
+        :param params: List of parameters
+        :return: Result of operation as string
+        """
+        cmd = "echo $'open %s\\n run -b %s %s %s\\n close' | %s" \
+              % (self.pid, mbean.replace(' ', '\\ '), operation, ' '.join(str(p) for p in params), self.jmx_util_cmd)
 
         return iter(s.strip() for s in self.__run_cmd(cmd))
 

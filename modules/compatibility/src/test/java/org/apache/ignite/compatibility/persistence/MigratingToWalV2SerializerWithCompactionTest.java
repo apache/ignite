@@ -18,7 +18,6 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -140,12 +139,8 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             assertNotNull(cpMarkers);
             assertTrue(cpMarkers.length > 0);
 
-            File cacheDir = ft.cacheStorage(false, TEST_CACHE_NAME);
-            File[] partFiles = cacheDir.listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.startsWith("part");
-                }
-            });
+            File cacheDir = ft.cacheStorage(ignite.cachex(TEST_CACHE_NAME).configuration());
+            File[] partFiles = cacheDir.listFiles(NodeFileTree::partitionFile);
 
             assertNotNull(partFiles);
             assertTrue(partFiles.length > 0);

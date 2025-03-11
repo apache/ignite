@@ -39,7 +39,6 @@ import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
@@ -452,12 +451,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return Trimmed relational expression
      */
     public RelRoot trimUnusedFields(RelRoot root) {
-        // For now, don't trim if there are more than 3 joins. The projects
-        // near the leaves created by trim migrate past joins and seem to
-        // prevent join-reordering.
         final SqlToRelConverter.Config cfg = sqlToRelConverterCfg
             .withExpand(false)
-            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2);
+            .withTrimUnusedFields(true);
         SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, cfg);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();
         boolean dml = SqlKind.DML.contains(root.kind);

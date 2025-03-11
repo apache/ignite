@@ -155,13 +155,13 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     public void testMaintenanceIsSkippedIfWasFixedManuallyOnDowntime() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
-        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
-
-        NodeFileTree ft0 = srv.context().pdsFolderResolver().fileTree();
+        NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
 
         srv.cluster().state(ACTIVE);
 
         IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+
+        File cacheToClean = ft.cacheStorage(srv.cachex(CACHE_NAME).configuration());
 
         srv.cluster().disableWal(CACHE_NAME);
 
@@ -170,7 +170,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         stopAllGrids(true);
 
-        File[] cpMarkers = ft0.checkpoint().listFiles();
+        File[] cpMarkers = ft.checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))
@@ -219,12 +219,12 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     public void testCacheCleanup() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
-        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME_2);
-
         srv.cluster().state(ACTIVE);
 
         IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
         IgniteCache cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
+
+        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorage(srv.cachex(CACHE_NAME_2).configuration());
 
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, true);
@@ -334,7 +334,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         // Start other nodes.
         IgniteEx ig2 = startGrid(config(SRV_2, false, false));
 
-        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
+        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(ig2.cachex(CACHE_NAME).configuration());
 
         if (crdFiltered)
             srv.cluster().disableWal(CACHE_NAME);
@@ -431,7 +431,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         victimName = SRV_2;
 
                     try {
-                        File cacheDir = grid(victimName).context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME);
+                        IgniteEx srv = grid(victimName);
+
+                        File cacheDir = srv.context().pdsFolderResolver().fileTree().cacheStorage(srv.cachex(CACHE_NAME).configuration());
 
                         stopGrid(victimName);
 

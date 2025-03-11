@@ -750,7 +750,7 @@ public class SnapshotRestoreProcess {
                 req.snapshotPath(),
                 meta.folderName(),
                 meta.consistentId()
-            ).cacheDirsWithoutMeta();
+            ).existingCacheDirsWithoutMeta();
 
             for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);
@@ -758,7 +758,16 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = ft.cacheStorage(snpCacheDir.getName());
+                Map<String, StoredCacheData> ccfgs = new HashMap<>();
+
+                locCfgMgr.readCacheGroupCaches(snpCacheDir, ccfgs);
+
+                if (F.isEmpty(ccfgs))
+                    continue;
+
+                cfgsByName.putAll(ccfgs);
+
+                File cacheDir = ft.cacheStorage(F.first(ccfgs.values()).config());
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -784,8 +793,6 @@ public class SnapshotRestoreProcess {
                     throw new IgniteCheckedException("Unable to restore cache group, temp directory already exists " +
                         "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
                 }
-
-                locCfgMgr.readCacheGroupCaches(snpCacheDir, cfgsByName);
             }
         }
 
@@ -946,7 +953,7 @@ public class SnapshotRestoreProcess {
                                 ? sft.incrementalSnapshotFileTree(opCtx0.incIdx)
                                 : sft;
 
-                            ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(metaFt, opCtx0.stopChecker);
 
                             restoreMappings(metaFt.marshaller(), opCtx0.stopChecker);
                         }
@@ -974,6 +981,10 @@ public class SnapshotRestoreProcess {
             for (File dir : opCtx0.dirs) {
                 String cacheOrGrpName = cacheName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
+                CacheConfiguration<?, ?> ccfg = opCtx0.cfgs.values().stream()
+                    .map(StoredCacheData::configuration)
+                    .filter(ccfg0 -> CU.cacheGroupId(ccfg0) == grpId)
+                    .findFirst().orElseThrow();
 
                 if (log.isInfoEnabled())
                     cacheGrpNames.put(grpId, cacheOrGrpName);
@@ -1018,21 +1029,21 @@ public class SnapshotRestoreProcess {
                         = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
 
                     leftParts.removeIf(partFut -> {
-                        boolean doCopy = ofNullable(meta.partitions().get(grpId))
-                            .orElse(Collections.emptySet())
-                            .contains(partFut.partId);
+                        Set<Integer> snpGrpParts = meta.partitions().getOrDefault(grpId, Collections.emptySet());
 
-                        if (doCopy) {
+                        if (snpGrpParts.contains(partFut.partId)) {
                             copyLocalAsync(
                                 opCtx0,
-                                sft.partitionFile(dir.getName(), partFut.partId),
+                                sft.partitionFile(ccfg, partFut.partId),
                                 ft.tmpPartition(dir.getName(), partFut.partId),
                                 grpId,
                                 partFut
                             );
+
+                            return true;
                         }
 
-                        return doCopy;
+                        return false;
                     });
 
                     if (meta == full) {
@@ -1044,7 +1055,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File snpFile = sft.partitionFile(dir.getName(), INDEX_PARTITION);
+                        File snpFile = sft.partitionFile(ccfg, INDEX_PARTITION);
 
                         if (snpFile.exists()) {
                             PartitionRestoreFuture idxFut;

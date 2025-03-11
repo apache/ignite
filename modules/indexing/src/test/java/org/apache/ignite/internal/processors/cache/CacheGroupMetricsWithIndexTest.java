@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -35,13 +32,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -150,15 +146,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
-
-        Collection<File> idxBinFiles = ft.allCacheDirs().stream()
-            .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
-            .filter(File::exists)
-            .collect(Collectors.toList());
-
-        for (File idxBin : idxBinFiles)
-            U.delete(idxBin);
+        deleteIndexBin(ignite.context().pdsFolderResolver().fileTree());
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -263,14 +251,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         stopGrid(0);
 
-        Collection<File> idxBinFiles = ft.allCacheDirs().stream()
-            .map(dir -> ft.partitionFile(dir.getName(), INDEX_PARTITION))
-            .filter(File::exists)
-            .collect(Collectors.toList());
-
-        assertFalse(idxBinFiles.isEmpty());
-
-        idxBinFiles.forEach(U::delete);
+        assertTrue(deleteIndexBin(ft) > 0);
 
         startGrid(0);
 

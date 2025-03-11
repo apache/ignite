@@ -630,7 +630,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             if (!sft.nodeStorage().exists())
                 continue;
 
-            for (File cacheDir : sft.cacheDirsWithoutMeta()) {
+            for (File cacheDir : sft.existingCacheDirsWithoutMeta()) {
                 String name = NodeFileTree.cacheName(cacheDir);
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
@@ -1013,8 +1013,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig0(File ccfg, String cacheDirName) {
-            delegate.sendCacheConfig(ccfg, cacheDirName);
+        @Override public void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
+            delegate.sendCacheConfig(ccfgFile, ccfg);
         }
 
         /** {@inheritDoc} */
@@ -1028,13 +1028,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-            delegate.sendPart(part, cacheDirName, pair, length);
+        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long length) {
+            delegate.sendPart(from, to, pair, length);
         }
 
         /** {@inheritDoc} */
-        @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-            delegate.sendDelta(delta, cacheDirName, pair);
+        @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
+            delegate.sendDelta(delta, snpPart, pair);
         }
 
         /** {@inheritDoc} */
