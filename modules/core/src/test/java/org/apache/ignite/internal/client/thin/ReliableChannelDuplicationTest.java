@@ -55,68 +55,6 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     }
 
     /**
-     * Asserts that there are no duplicate channels in the list of holders based on their remote addresses.
-     *
-     * @param holders List of channel holders.
-     */
-    private void assertNoDuplicates(List<ReliableChannel.ClientChannelHolder> holders) {
-        Set<InetSocketAddress> addresses = new HashSet<>();
-
-        for (ReliableChannel.ClientChannelHolder holder : holders) {
-            holder.getAddresses().forEach(addr -> {
-                if (!addresses.add(addr))
-                    throw new AssertionError("Duplicate remote address found: " + addr);
-            });
-        }
-    }
-
-    /**
-     * Stop a Node and provide an operation to notify the client about new topology.
-     */
-    private void stopNodeAndMakeTopologyChangeDetection(int idx) {
-        stopGrid(idx);
-
-        detectTopologyChange();
-
-        client.cacheNames();
-    }
-
-    private void testChannelDuplication(int gridCnt, int gridsStop, int gridsRestart) throws Exception {
-        startGrids(gridCnt);
-
-        initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-
-        if (gridsStop == gridCnt) {
-            stopAllGrids();
-
-            startGrids(gridCnt);
-
-            client.cacheNames();
-
-            assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-        }
-        else {
-            for (int i = 0; i < gridsStop; i++) {
-                stopNodeAndMakeTopologyChangeDetection(i);
-
-                assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-            }
-        }
-
-        for (int i = 0; i < gridsRestart; i++) {
-            startGrid(i);
-
-            detectTopologyChange();
-
-            awaitChannelsInit(i);
-
-            assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-        }
-    }
-
-    /**
      * Test after cluster restart the number of channels remains equal to the number of nodes.
      */
     @Test
@@ -164,5 +102,63 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
         Assume.assumeFalse(gridCnt < 3);
 
         testChannelDuplication(gridCnt, 2, 2);
+    }
+
+    /**
+     * Asserts that there are no duplicate channels in the list of holders based on their remote addresses.
+     *
+     * @param holders List of channel holders.
+     */
+    private void assertNoDuplicates(List<ReliableChannel.ClientChannelHolder> holders) {
+        Set<InetSocketAddress> addresses = new HashSet<>();
+
+        for (ReliableChannel.ClientChannelHolder holder : holders) {
+            holder.getAddresses().forEach(addr -> {
+                if (!addresses.add(addr))
+                    throw new AssertionError("Duplicate remote address found: " + addr);
+            });
+        }
+    }
+
+    /**
+     * Stop a Node and provide an operation to notify the client about new topology.
+     */
+    private void stopNodeAndMakeTopologyChangeDetection(int idx) {
+        stopGrid(idx);
+
+        detectTopologyChange();
+
+        client.cacheNames();
+    }
+
+    /**
+     * Tests that no duplicate channel holders are created during node restarts and topology changes.
+     *
+     * @param gridCnt int Grids to start.
+     * @param gridsStop int Grids to stop.
+     * @param gridsRestart int Grids to restart after stop.
+     */
+    private void testChannelDuplication(int gridCnt, int gridsStop, int gridsRestart) throws Exception {
+        startGrids(gridCnt);
+
+        initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());
+
+        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+
+        for (int i = 0; i < gridsStop; i++) {
+            stopNodeAndMakeTopologyChangeDetection(i);
+
+            assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        }
+
+        for (int i = 0; i < gridsRestart; i++) {
+            startGrid(i);
+
+            detectTopologyChange();
+
+            awaitChannelsInit(i);
+
+            assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        }
     }
 }
