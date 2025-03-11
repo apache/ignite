@@ -132,7 +132,14 @@ public class IgniteMock implements IgniteEx {
      * @param home Ignite home.
      */
     public IgniteMock(
-        String name, String locHost, UUID nodeId, BinaryMarshaller marshaller, MBeanServer jmx, String home, IgniteConfiguration staticCfg) {
+        String name,
+        String locHost,
+        UUID nodeId,
+        BinaryMarshaller marshaller,
+        MBeanServer jmx,
+        String home,
+        IgniteConfiguration staticCfg
+    ) {
         this.locHost = locHost;
         this.nodeId = nodeId;
         this.marshaller = marshaller;
