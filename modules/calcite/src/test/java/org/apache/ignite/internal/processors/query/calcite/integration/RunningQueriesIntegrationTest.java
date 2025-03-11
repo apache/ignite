@@ -112,15 +112,16 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             sql("CREATE TABLE test_tbl" + i + " (id int, val varchar)");
 
         String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "test_tbl" + i + " p" + i).collect(joining(", "));
-        String sql = "SELECT * FROM " + bigJoin;
+        String sql = "SELECT /*+ DISABLE_RULE('JoinToMultiJoinRule', 'IgniteJoinsOrderOptimizationRule') */ * FROM " + bigJoin;
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
 
         assertTrue(GridTestUtils.waitForCondition(
-            () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
+            () -> !engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         Collection<? extends Query<?>> running = engine.runningQueries();
 
+        assertFalse(fut.isDone());
         assertEquals("Running: " + running, 1, running.size());
 
         Query<?> qry = F.first(running);
