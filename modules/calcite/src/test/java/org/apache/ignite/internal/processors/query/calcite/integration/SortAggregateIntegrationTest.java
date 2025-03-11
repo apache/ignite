@@ -65,6 +65,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
             .addQueryField("COL0", Integer.class.getName(), null)
             .setIndexes(Collections.singletonList(new QueryIndex(fields1, QueryIndexType.SORTED)));
 
+        QueryEntity tbl12 = new QueryEntity(tbl1).setTableName("TBL12");
+
         QueryEntity part = new QueryEntity()
             .setTableName("TEST")
             .setKeyType(Integer.class.getName())
@@ -85,6 +87,12 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(Arrays.asList(tbl1, part))
+                    .setSqlSchema("PUBLIC"),
+                cacheConfiguration()
+                    .setName(tbl12.getTableName())
+                    .setAffinity(new RendezvousAffinityFunction(false, 8))
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setQueryEntities(Collections.singletonList(tbl12))
                     .setSqlSchema("PUBLIC")
             );
     }
@@ -113,11 +121,12 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
 
     /** */
     @Test
-    public void testSubquery() throws Exception {
-        fillCacheTest(client.cache("TEST"), 400);
+    public void testSubqueryOtherTable() throws Exception {
+        fillCacheTbl1(client.cache("TBL12"), ROWS);
+        fillCacheTest(client.cache("TEST"), ROWS);
 
-        assertQuery("SELECT ID, VAL0 FROM TEST WHERE (VAL0 IN (SELECT VAL1 FROM TEST WHERE VAL0 >= 1000)) ORDER BY 1 DESC")
-            .resultSize(0)
+        assertQuery("SELECT COL0 FROM TBL12 WHERE PK IN (SELECT VAL1 FROM TEST WHERE VAL0 < 2)")
+            .returns(2)
             .check();
     }
 
