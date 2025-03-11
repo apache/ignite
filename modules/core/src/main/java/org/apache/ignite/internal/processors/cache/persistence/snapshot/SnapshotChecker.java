@@ -132,15 +132,16 @@ public class SnapshotChecker {
     ) {
         // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
-                SnapshotHandlerContext hctx = new SnapshotHandlerContext(meta, groups, kctx.cluster().get().localNode(), sft, false, checkParts);
-                try {
-                    return new SnapshotPartitionsVerifyHandler(kctx.cache().context()).invoke(hctx);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            },
-            executor);
+            SnapshotHandlerContext hctx = new SnapshotHandlerContext(
+                meta, groups, kctx.cluster().get().localNode(), sft, false, checkParts);
+
+            try {
+                return new SnapshotPartitionsVerifyHandler(kctx.cache().context()).invoke(hctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }, executor);
     }
 
     /**
