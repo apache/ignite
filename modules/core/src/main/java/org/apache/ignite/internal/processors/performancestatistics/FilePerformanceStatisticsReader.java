@@ -25,9 +25,11 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -321,23 +323,43 @@ public class FilePerformanceStatisticsReader {
             if (buf.remaining() < 4)
                 return false;
 
+            int rowNumber = buf.getInt();
+
+            if (buf.remaining() < 4)
+                return false;
+
             int attrsNumber = buf.getInt();
 
-            Map<String, String> data = new HashMap<>();
+            List<String> attrs = new ArrayList<>();
+            RowReader reader = new RowReader(this::readCacheableString);
+
             for (int i = 0; i < attrsNumber; i++) {
-                String key = readCacheableString(buf);
-                if (key == null)
+                String columnName = readCacheableString(buf);
+                if (columnName == null)
                     return false;
+                attrs.add(columnName);
 
-                String val = readCacheableString(buf);
-                if (val == null)
+                String type = readCacheableString(buf);
+                if (type == null)
                     return false;
-
-                data.put(key, val);
+                reader.addType(type);
             }
 
-            for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.systemView(nodeId, viewName, data);
+            List<List<Object>> rows = new ArrayList<>(rowNumber);
+            for (int i = 0; i < attrsNumber; i++)
+                rows.add(reader.readRow(buf));
+
+            for (List<Object> row : rows) {
+                Map<String, String> keyValRow = new HashMap<>();
+                Iterator<String> i1 = attrs.iterator();
+                Iterator<Object> i2 = row.iterator();
+                while (i1.hasNext() && i2.hasNext())
+                    keyValRow.put(i1.next(), String.valueOf(i2.next()));
+
+                for (PerformanceStatisticsHandler hnd : curHnd)
+                    hnd.systemView(nodeId, viewName, keyValRow);
+            }
+
 
             return true;
         }
