@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +38,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAuthenticationException;
@@ -632,21 +634,36 @@ final class ReliableChannel implements AutoCloseable {
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
-        List<ClientChannelHolder> CloseHolders = new ArrayList<>();
+        List<ClientChannelHolder> closeHolders = new ArrayList<>();
 
+        Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
+
+        // Close obsolete holders or map old but valid addresses to holders
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
-                // Add all holders to the list of potentially expired.
-                CloseHolders.add(h);
+                boolean found = false;
 
-                if (h.ch != null && !h.ch.closed()) {
-                    for (InetSocketAddress addr : h.getAddresses())
+                closeHolders.add(h);
+
+                for (InetSocketAddress addr : h.getAddresses()) {
+                    // If new endpoints contain at least one of channel addresses, don't close this channel.
+                    if (newAddrsSet.contains(addr)) {
                         curAddrs.putIfAbsent(addr, h);
 
-                    // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
-                    if (clientCfg.getAddressesFinder() == null)
-                        reinitHolders.add(h);
+                        found = true;
+
+                        break;
+                    }
                 }
+
+                // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+                if (clientCfg.getAddressesFinder() == null && h.ch != null && !h.ch.closed())
+                    found = true;
+
+                if (!found)
+                    h.close();
+                else
+                    reinitHolders.add(h);
             }
         }
 
@@ -672,9 +689,6 @@ final class ReliableChannel implements AutoCloseable {
                     if (!hld.getAddresses().equals(addrs)) // Enrich holder addresses.
                         hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
 
-                    if (clientCfg.getAddressesFinder() != null)
-                        reinitHolders.add(hld);
-
                     break;
                 }
             }
@@ -692,7 +706,7 @@ final class ReliableChannel implements AutoCloseable {
                 dfltChannelIdx = reinitHolders.size() - 1;
         }
 
-        for (ClientChannelHolder hld : CloseHolders)
+        for (ClientChannelHolder hld : closeHolders)
             if (!reinitHolders.contains(hld))
                 hld.close();
 
