@@ -277,17 +277,9 @@ public class IgniteProcessProxy implements IgniteEx {
 
         filteredJvmArgs.add("-ea");
 
-        Marshaller marsh = cfg.getMarshaller();
-
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-        else
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
-
         for (String arg : U.jvmArgs()) {
             if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
                 arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) ||
                 arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
                 arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
                 arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions"))
