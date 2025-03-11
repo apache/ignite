@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -197,16 +195,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param view System view to extract data from.
      */
     public void systemView(SystemView<?> view) {
-        AttributeToMapVisitor visitor = new AttributeToMapVisitor();
-
-        Map<String, String> data = new TreeMap<>();
-        for (Object row : view) {
-            visitor.data(data);
-            ((SystemView<Object>)view).walker().visitAll(row, visitor);
-
-            write(writer -> writer.systemView(view.name(), data));
-            data.clear();
-        }
+        write(writer -> writer.systemView(view.name(), view));
     }
 
     /**
