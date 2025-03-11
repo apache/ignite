@@ -192,11 +192,11 @@ public class ClientDiscoveryContext {
     /**
      * Gets list of endpoins for each node.
      *
-     * @return Collection of nodes with list of endpoints for each node, or {@code null} if endpoints are not changed
+     * @return Set of nodes with list of endpoints for each node, or {@code null} if endpoints are not changed
      * since last request.
      */
-    @Nullable Collection<List<InetSocketAddress>> getEndpoints() {
-        Collection<List<InetSocketAddress>> endpoints = null;
+    @Nullable Set<List<InetSocketAddress>> getEndpoints() {
+        Set<List<InetSocketAddress>> endpoints = null;
         TopologyInfo topInfo = this.topInfo;
 
         if (addrFinder != null || topInfo.topVer == UNKNOWN_TOP_VER) {
@@ -257,7 +257,7 @@ public class ClientDiscoveryContext {
         private final Map<UUID, NodeInfo> nodes;
 
         /** Normalized nodes endpoints. */
-        private final Collection<List<InetSocketAddress>> endpoints;
+        private final Set<List<InetSocketAddress>> endpoints;
 
         /** */
         private TopologyInfo(long ver, Map<UUID, NodeInfo> nodes) {
