@@ -235,7 +235,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            // Reuse the address after retry without fail.
+            if (!partitionAware) {
+                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+
+                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
+            }
+
+            // Reuse the address after recovery without fail.
             cachePut(cache, 0, 0);
         }
     }
@@ -259,7 +265,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            // Reuse second address without fail.
+            if (!partitionAware) {
+                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cache.get(0), ClientConnectionException.class);
+
+                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
+            }
+
+            // Reuse the address after recovery without fail.
             cache.get(0);
         }
     }
