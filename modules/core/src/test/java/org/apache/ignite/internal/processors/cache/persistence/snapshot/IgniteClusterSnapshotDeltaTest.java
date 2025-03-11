@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -105,9 +104,9 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, partCnt));
 
-        String cacheDir = NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME);
-
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
+
+        String cacheDir = srv.context().pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
 
         if (sequentialWrite)
             injectSequentialWriteCheck(srv);
@@ -121,8 +120,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         mgr.localSnapshotSenderFactory(sft -> new DelegateSnapshotSender(log,
             mgr.snapshotExecutorService(), old.apply(sft)) {
-            @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                if (cacheDir.equals(cacheDirName))
+            @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
+                if (cacheDir.equals(to.getParentFile().getName()))
                     partStart.countDown();
 
                 try {
@@ -132,11 +131,11 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     throw new RuntimeException(e);
                 }
 
-                super.sendPart0(part, cacheDirName, pair, length);
+                super.sendPart0(part, to, pair, length);
             }
 
-            @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-                if (cacheDir.equals(cacheDirName) && pair.getPartitionId() != INDEX_PARTITION)
+            @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
+                if (cacheDir.equals(snpPart.getParent()) && pair.getPartitionId() != INDEX_PARTITION)
                     assertTrue("Delta length : " + delta.length() + " > 0", delta.length() > 0);
 
                 if (!sequentialWrite)
@@ -144,9 +143,9 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
                 long start = System.nanoTime();
 
-                super.sendDelta0(delta, cacheDirName, pair);
+                super.sendDelta0(delta, snpPart, pair);
 
-                if (cacheDir.equals(cacheDirName)) {
+                if (cacheDir.equals(snpPart.getParent())) {
                     log.info("Send delta [size=" + U.humanReadableByteCount(delta.length()) +
                         ", time=" + (U.nanosToMillis(System.nanoTime() - start)) + "ms, part=" + pair + "]");
                 }
