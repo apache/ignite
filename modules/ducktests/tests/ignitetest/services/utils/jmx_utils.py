@@ -62,6 +62,7 @@ class JmxMBean:
         """
         return self.client.mbean_run(self.name, operation, params)
 
+
 class JmxClient:
     """JMX client, invokes jmxterm on node locally.
     """
