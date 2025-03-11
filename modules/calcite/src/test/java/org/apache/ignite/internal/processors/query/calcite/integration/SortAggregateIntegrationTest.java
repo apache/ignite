@@ -28,6 +28,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
@@ -74,7 +75,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
             .addQueryField("GRP1", Integer.class.getName(), null)
             .addQueryField("VAL0", Integer.class.getName(), null)
             .addQueryField("VAL1", Integer.class.getName(), null)
-            .setIndexes(Collections.singletonList(new QueryIndex(Arrays.asList("GRP0", "GRP1"), QueryIndexType.SORTED)));
+            .setIndexes(F.asList(new QueryIndex(Arrays.asList("GRP0", "GRP1"), QueryIndexType.SORTED),
+                new QueryIndex(Collections.singletonList("VAL1"), QueryIndexType.SORTED)));
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -107,6 +109,16 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
 
             assertEquals(s0 * 2, s1);
         });
+    }
+
+    /** */
+    @Test
+    public void testSubquery() throws Exception {
+        fillCacheTest(client.cache("TEST"), 400);
+
+        assertQuery("SELECT ID, VAL0 FROM TEST WHERE (VAL0 IN (SELECT VAL1 FROM TEST WHERE VAL0 >= 1000)) ORDER BY 1 DESC")
+            .resultSize(0)
+            .check();
     }
 
     /** */
