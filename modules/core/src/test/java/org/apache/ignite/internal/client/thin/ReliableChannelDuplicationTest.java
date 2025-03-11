@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,13 +60,13 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
      * @param holders List of channel holders.
      */
     private void assertNoDuplicates(List<ReliableChannel.ClientChannelHolder> holders) {
-        Set<String> addresses = new TreeSet<>();
+        Set<InetSocketAddress> addresses = new HashSet<>();
 
         for (ReliableChannel.ClientChannelHolder holder : holders) {
-            String addr = holder.getAddresses().toString();
-
-            if (!addresses.add(addr))
-                throw new AssertionError("Duplicate remote address found: " + addr);
+            holder.getAddresses().forEach(addr -> {
+                if (!addresses.add(addr))
+                    throw new AssertionError("Duplicate remote address found: " + addr);
+            });
         }
     }
 
@@ -77,10 +78,42 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
 
         detectTopologyChange();
 
-        // Address of stopped node removed.
-        channels[idx] = null;
-
         client.cacheNames();
+    }
+
+    private void testChannelDuplication(int gridCnt, int gridsStop, int gridsRestart) throws Exception {
+        startGrids(gridCnt);
+
+        initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());
+
+        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+
+        if (gridsStop == gridCnt) {
+            stopAllGrids();
+
+            startGrids(gridCnt);
+
+            client.cacheNames();
+
+            assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        }
+        else {
+            for (int i = 0; i < gridsStop; i++) {
+                stopNodeAndMakeTopologyChangeDetection(i);
+
+                assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+            }
+        }
+
+        for (int i = 0; i < gridsRestart; i++) {
+            startGrid(i);
+
+            detectTopologyChange();
+
+            awaitChannelsInit(i);
+
+            assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        }
     }
 
     /**
@@ -110,14 +143,7 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     public void testStopSingleNodeDuringOperation() throws Exception {
         Assume.assumeFalse(gridCnt == 1);
 
-        startGrids(gridCnt);
-
-        initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());
-
-        // Stop one node.
-        stopNodeAndMakeTopologyChangeDetection(0);
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        testChannelDuplication(gridCnt, 1, 0);
     }
 
     /**
@@ -127,25 +153,7 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     public void testStopAndRestartNode() throws Exception {
         Assume.assumeFalse(gridCnt == 1);
 
-        startGrids(gridCnt);
-
-        initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-
-        // Stop one node.
-        stopNodeAndMakeTopologyChangeDetection(0);
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-
-        // Restart the stopped node.
-        startGrid(0);
-
-        detectTopologyChange();
-
-        awaitChannelsInit(0);
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        testChannelDuplication(gridCnt, 1, 1);
     }
 
     /**
@@ -155,24 +163,6 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     public void testStopMultipleNodesDuringOperation() throws Exception {
         Assume.assumeFalse(gridCnt < 3);
 
-        startGrids(gridCnt);
-
-        initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());
-
-        // Stop two nodes.
-        stopNodeAndMakeTopologyChangeDetection(0);
-        stopNodeAndMakeTopologyChangeDetection(1);
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
-
-        // Restart the stopped nodes.
-        startGrid(0);
-        startGrid(1);
-
-        detectTopologyChange();
-
-        awaitChannelsInit(0);
-
-        assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
+        testChannelDuplication(gridCnt, 2, 2);
     }
 }
