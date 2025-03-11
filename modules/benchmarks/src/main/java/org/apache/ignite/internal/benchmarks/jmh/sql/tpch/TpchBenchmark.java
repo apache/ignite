@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -66,7 +67,11 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  */
 @State(Scope.Benchmark)
 // Use @Fork(value = 0) to debug or attach profiler.
-@Fork(value = 1, jvmArgs = {"-Xms4g", "-Xmx4g"})
+@Fork(value = 1, jvmArgs = {
+    "-Xms4g", "-Xmx4g",
+    "-Dcalcite.volcano.dump.graphviz=false",
+    "-Dcalcite.volcano.dump.sets=false"
+})
 @Threads(1)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @SuppressWarnings({"unused"})
@@ -114,11 +119,29 @@ public class TpchBenchmark {
      * The 11, 13, 15 can not be parsed with H2.
      */
     @Param({
-        "1", /*"2",*/ "3", "4", /*"5",*/
-        "6", "7", /*"8",*/ /*"9",*/ "10",
-        "11", "12", "13", "14", /*"15",*/
-        /*"16",*/ /*"17",*/ "18", /*"19",*/ /*"20",*/
-        /*"21",*/ "22"})
+        "1",
+//        "2", // TODO: https://issues.apache.org/jira/browse/IGNITE-24731
+        "3",
+        "4",
+//        "5", // TODO: https://issues.apache.org/jira/browse/IGNITE-24741
+        "6",
+        "7",
+//        "8", // TODO: https://issues.apache.org/jira/browse/IGNITE-24746
+//        "9", // TODO: https://issues.apache.org/jira/browse/IGNITE-24752
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+//        "16", // TODO: https://issues.apache.org/jira/browse/IGNITE-24753
+//        "17", // TODO: https://issues.apache.org/jira/browse/IGNITE-24754
+        "18",
+//        "19", // TODO: https://issues.apache.org/jira/browse/IGNITE-24756
+//        "20", // TODO: https://issues.apache.org/jira/browse/IGNITE-24730
+//        "21", // TODO: https://issues.apache.org/jira/browse/IGNITE-24757
+        "22"
+    })
     private String queryId;
 
     /** Query SQL string. */
@@ -196,9 +219,14 @@ public class TpchBenchmark {
         cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setLocalHost("127.0.0.1");
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-        cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
-            "CALCITE".equals(engine) ? new CalciteQueryEngineConfiguration() : new IndexingQueryEngineConfiguration()
-        ));
+
+        if ("CALCITE".equals(engine)) {
+            cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+
+            cfg.setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true));
+        }
+        else
+            cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(new IndexingQueryEngineConfiguration()));
 
         if (USE_PERSISTENCE) {
             cfg.setDataStorageConfiguration(
