@@ -250,8 +250,8 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
 
         Predicate<RelNode> colocatedPredicate = hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
             .and(input(0, isInstanceOf(IgniteTableScan.class)))
-            .and(input(1, isInstanceOf(IgniteColocatedAggregateBase.class)
-                .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
+            .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteColocatedAggregateBase.class)
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate()))
             )));
 
         // Affinity distribution.
