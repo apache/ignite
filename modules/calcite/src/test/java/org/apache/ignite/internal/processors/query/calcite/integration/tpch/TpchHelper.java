@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import io.trino.tpch.TpchEntity;
@@ -43,9 +44,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static io.trino.tpch.TpchTable.getTables;
 
@@ -76,13 +77,6 @@ public class TpchHelper {
         catch (IOException e) {
             throw new RuntimeException("Failed to create TPC-H tables: can not read ddl.sql from resources", e);
         }
-    }
-
-    /**
-     * Get list of TPC-H tables.
-     */
-    public static List<TpchTable<?>> tables() {
-        return getTables();
     }
 
     /**
@@ -400,12 +394,36 @@ public class TpchHelper {
 
         sql(ignite, "ANALYZE " + tableName);
 
-        GridTestUtils.waitForCondition(
+        long endTime = U.currentTimeMillis() + timeoutMs;
+        long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
+
+        waitForCondition(
             () -> allServersHaveStatistics(ignite, tableName),
-            timeoutMs
-        );
+            () -> U.currentTimeMillis() < endTime0,
+            200);
 
         ignite.log().info("Statistics collected for table: " + tableName);
+    }
+
+    /**
+     * @param cond Condition to wait for.
+     * @param wait Wait predicate.
+     * @param checkInterval Time interval between two consecutive condition checks.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     */
+    private static boolean waitForCondition(
+        BooleanSupplier cond,
+        BooleanSupplier wait,
+        long checkInterval
+    ) throws IgniteInterruptedCheckedException {
+        while (wait.getAsBoolean()) {
+            if (cond.getAsBoolean())
+                return true;
+
+            U.sleep(checkInterval);
+        }
+
+        return false;
     }
 
     /**
