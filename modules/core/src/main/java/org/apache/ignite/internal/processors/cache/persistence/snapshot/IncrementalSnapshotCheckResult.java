@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /** */
-class IncrementalSnapshotCheckResult implements Serializable {
+public class IncrementalSnapshotCheckResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

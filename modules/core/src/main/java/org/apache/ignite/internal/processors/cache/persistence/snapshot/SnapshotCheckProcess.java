@@ -156,8 +156,10 @@ public class SnapshotCheckProcess {
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
 
+        SnapshotFileTree sft = ctx.locFileTree == null ? null : ctx.locFileTree.get(kctx.config().getConsistentId());
+
         if (ctx.req.incrementalIndex() > 0)
-            reduceIncrementalResults(ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
+            reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
         else if (ctx.req.allRestoreHandlers())
             reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
         else
@@ -168,6 +170,8 @@ public class SnapshotCheckProcess {
 
     /** */
     private void reduceIncrementalResults(
+        SnapshotFileTree sft,
+        int incIdx,
         Set<UUID> requiredNodes,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         Map<UUID, SnapshotCheckResponse> results,
@@ -192,7 +196,7 @@ public class SnapshotCheckProcess {
             errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
         }
 
-        IdleVerifyResult chkRes = snpChecker.reduceIncrementalResults(perNodeResults, mapErrors(errors));
+        IdleVerifyResult chkRes = snpChecker.reduceIncrementalResults(sft, incIdx, perNodeResults, mapErrors(errors));
 
         fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
     }
