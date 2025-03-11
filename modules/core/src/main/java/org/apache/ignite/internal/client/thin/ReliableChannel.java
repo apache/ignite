@@ -657,15 +657,13 @@ final class ReliableChannel implements AutoCloseable {
                 }
 
                 // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
-                if (clientCfg.getAddressesFinder() == null) {
-                    if (found || (h.ch != null && !h.ch.closed())) {
-                        reinitHolders.add(h);
-                        found = true;
-                    }
-                }
+                if (clientCfg.getAddressesFinder() == null && h.ch != null && !h.ch.closed())
+                    found = true;
 
                 if (!found)
                     h.close();
+                else
+                    reinitHolders.add(h);
             }
         }
 
@@ -690,9 +688,6 @@ final class ReliableChannel implements AutoCloseable {
                 if (hld != null) {
                     if (!hld.getAddresses().equals(addrs)) // Enrich holder addresses.
                         hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
-
-                    if (clientCfg.getAddressesFinder() != null)
-                        reinitHolders.add(hld);
 
                     break;
                 }
