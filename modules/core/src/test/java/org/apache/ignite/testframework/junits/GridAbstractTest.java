@@ -2107,7 +2107,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setGridLogger(rsrcs.getLogger());
-        cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
         cfg.setIgniteHome(rsrcs.getIgniteHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());

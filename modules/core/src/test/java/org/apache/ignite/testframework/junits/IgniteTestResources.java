@@ -46,9 +46,6 @@ import org.jetbrains.annotations.Nullable;
  * Test resources for injection.
  */
 public class IgniteTestResources {
-    /** Marshaller class name. */
-    public static final String MARSH_CLASS_NAME = "test.marshaller.class";
-
     /** */
     private static final IgniteLogger rootLog = new GridTestLog4jLogger(false);
 
@@ -251,23 +248,7 @@ public class IgniteTestResources {
      * @throws IgniteCheckedException If failed.
      */
     public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName = System.getProperty(MARSH_CLASS_NAME);
-
-        Marshaller marsh;
-
-        if (marshallerName == null)
-            marsh = new BinaryMarshaller();
-        else {
-            try {
-                Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
-
-                marsh = cls.newInstance();
-            }
-            catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                throw new IgniteCheckedException("Failed to create test marshaller [marshaller=" +
-                    marshallerName + ']', e);
-            }
-        }
+        Marshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl());
 
