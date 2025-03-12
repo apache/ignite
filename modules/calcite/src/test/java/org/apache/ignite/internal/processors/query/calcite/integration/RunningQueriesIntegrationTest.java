@@ -112,7 +112,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             sql("CREATE TABLE test_tbl" + i + " (id int, val varchar)");
 
         String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "test_tbl" + i + " p" + i).collect(joining(", "));
-        String sql = "SELECT /*+ DISABLE_RULE('JoinToMultiJoinRule', 'IgniteJoinsOrderOptimizationRule') */ * FROM " + bigJoin;
+
+        // Disable the optimized joins reordering to keep the query quite long.
+        String sql = "SELECT /*+ DISABLE_RULE('JoinToMultiJoinRule', 'IgniteMultiJoinOptimizeRule') */ * FROM " + bigJoin;
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
 

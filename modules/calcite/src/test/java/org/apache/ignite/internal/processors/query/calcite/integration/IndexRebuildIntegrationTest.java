@@ -96,7 +96,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
         executeSql("CREATE TABLE tbl2 (id INT PRIMARY KEY, val VARCHAR)");
 
-        // IgniteJoinsOrderOptimizationRule prefers bigger rel on the left.
+        // IgniteMultiJoinOptimizeRule prefers bigger rel on the left.
         for (int i = 0; i < 1000; i++)
             executeSql("INSERT INTO tbl2 VALUES (?, ?)", i, "val" + i);
     }

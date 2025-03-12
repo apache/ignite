@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteJoinsOrderOptimizationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.processors.query.stat.StatisticsProcessor;
@@ -44,18 +44,18 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  * Test of joins order heuristic optimization.
  *
  * @see JoinToMultiJoinRule
- * @see IgniteJoinsOrderOptimizationRule
+ * @see IgniteMultiJoinOptimizeRule
  */
 @RunWith(Parameterized.class)
 public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
-    /** */
+    /** Logger to watch. */
     private static ListeningTestLogger LISTENING_TEST_LOG;
 
-    /** */
+    /** Test query. */
     @Parameterized.Parameter
     public String qry;
 
-    /** */
+    /** Test queries. */
     @Parameterized.Parameters
     public static Collection<String> runConfig() {
         return testQueries();
@@ -132,7 +132,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
             + " 'Addrs_' || x::VARCHAR FROM system_range(1, ?)", ordSz - 1, shipSz);
 
         sql("CREATE TABLE Users (UsrId INT PRIMARY KEY, UsrNm VARCHAR(100), Email VARCHAR(100))  WITH \"VALUE_TYPE='USR'\"");
-        sql("INSERT INTO Users SELECT x, 'User_' || x::VARCHAR, 'email_' || x::VARCHAR || '@nowhere.xy' FROM system_range(1, ?)",
+        sql("INSERT INTO Users SELECT x, 'User_' || x::VARCHAR, 'email_' || x::VARCHAR || '@nowhere.xyz' FROM system_range(1, ?)",
             usrSz);
 
         sql("CREATE TABLE Orders (OrdId INT PRIMARY KEY, UsrId INT, OrdDate DATE, TotalAmount DECIMAL(10, 2))  WITH \"VALUE_TYPE='ORD'\"");
@@ -144,18 +144,17 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
             ordSz - 1, prodSz - 1, ordDetSz);
     }
 
-    /** Tests that query result doesn't change with the joins optimization. */
+    /** Tests that query result doesn't change with the joins order optimization. */
     @Test
     public void testTheSameResults() {
         assert !qry.contains(ENFORCE_JOIN_ORDER.name());
+        assert qry.startsWith("SELECT");
 
         String qryFixedJoins = qry.replaceAll("SELECT", "SELECT /*+ " + ENFORCE_JOIN_ORDER + " */ ");
 
-        assert qryFixedJoins.contains("SELECT /*+ " + ENFORCE_JOIN_ORDER + " */");
-
         setLoggerLevel(CalciteQueryProcessor.class.getName(), Level.DEBUG);
 
-        // Call with fixed join order without any optimizations.
+        // First, call with fixed join order.
         List<List<?>> expectedResult = sql(qryFixedJoins);
 
         LogListener logLsnr = LogListener.matches("Optimizing multi-join").build();
@@ -189,7 +188,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND R.ProdId = P.ProdId\n"
                 + "  AND P.ProdNm = 'Product_1'",
 
-            // User orders with products in mult. categories.
+            // User orders with products in multiple categories.
             "SELECT \n"
                 + "    U.UsrNm, O.OrdId, COUNT(DISTINCT C.CatgName) AS Categories\n"
                 + " FROM Users U, Orders O, OrderDetails OD, Products P, ProductCategories PC, Categories C\n"
@@ -209,7 +208,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND OD.ProdId = P.ProdId\n"
                 + "GROUP BY O.OrdId, O.OrdDate, S.ShippAddrs",
 
-            // Top rated prods. with reviewers.
+            // Top rated products with reviewers.
             "SELECT \n"
                 + "    P.ProdNm, R.Rating, U.UsrNm, R.RevTxt\n"
                 + " FROM Products P, Reviews R, Users U\n"
@@ -217,7 +216,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND R.UsrId = U.UsrId\n"
                 + "  AND R.Rating IN (4, 5)",
 
-            // Prods. in warehouses by category.
+            // Products in warehouses by category.
             "SELECT \n"
                 + "    W.WrhNm, C.CatgName, P.ProdNm\n"
                 + " FROM Warehouses W, Products P, ProductCategories PC, Categories C\n"
@@ -232,7 +231,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + " FROM Products P, Discounts D\n"
                 + "WHERE P.ProdId = D.ProdId",
 
-            // Average prod. rating by category.
+            // Average product rating by category.
             "SELECT \n"
                 + "    C.CatgName, P.ProdNm, AVG(R.Rating) AS AvgRating\n"
                 + " FROM Categories C, ProductCategories PC, Products P, Reviews R\n"
@@ -241,7 +240,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND P.ProdId = R.ProdId\n"
                 + "GROUP BY C.CatgName, P.ProdNm",
 
-            // Prods. ordered by each user.
+            // Products ordered by user.
             "SELECT \n"
                 + "    U.UsrNm, P.ProdNm, SUM(OD.Qnty) AS TotalQnty\n"
                 + " FROM Users U, Orders O, OrderDetails OD, Products P\n"
@@ -250,7 +249,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND OD.ProdId = P.ProdId\n"
                 + "GROUP BY U.UsrNm, P.ProdNm",
 
-            // Total revenue generated by each user.
+            // Total revenue generated by user.
             "SELECT \n"
                 + "    U.UsrId, U.UsrNm, SUM(O.TotalAmount) AS TotalRevenue\n"
                 + " FROM Users U, Orders O\n"
@@ -274,7 +273,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND P.ProdId = D.ProdId\n"
                 + "  AND W.WrhId = (P.ProdId % 5 + 1)",
 
-            // Orders. shipped with total quantity and shipp. addrs.
+            // Orders shipped with total quantity and shipping address.
             "SELECT \n"
                 + "    O.OrdId, O.OrdDate, S.ShippAddrs, SUM(OD.Qnty) AS TotalQnty\n"
                 + " FROM Orders O, Shipping S, OrderDetails OD\n"
@@ -290,13 +289,13 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
 
         IgniteStatisticsManager statMgr = grid(0).context().query().statsManager();
 
-        List<List<?>> tbls = sql("SELECT TABLE_NAME FROM SYS.TABLES");
+        List<List<?>> tables = sql("SELECT TABLE_NAME FROM SYS.TABLES");
 
-        assert !tbls.isEmpty();
+        assert !tables.isEmpty();
 
-        Collection<LogListener> logLsnrs = new ArrayList<>(tbls.size());
+        Collection<LogListener> logLsnrs = new ArrayList<>(tables.size());
 
-        for (List<?> tbl : tbls) {
+        for (List<?> tbl : tables) {
             assert tbl.size() == 1 && tbl.get(0) instanceof String;
 
             String tblName = (String)tbl.get(0);

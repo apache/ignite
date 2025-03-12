@@ -183,7 +183,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testDescFields() throws Exception {
-        // IgniteJoinsOrderOptimizationRule prefers bigger rel on the left.
+        // IgniteMultiJoinOptimizeRule prefers bigger rel on the left.
         IgniteSchema publicSchema = createSchema(
             createTable("T0", 100, IgniteDistributions.affinity(0, "T0", "hash"),
                 "ID", Integer.class, "JID", Integer.class, "VAL", String.class)

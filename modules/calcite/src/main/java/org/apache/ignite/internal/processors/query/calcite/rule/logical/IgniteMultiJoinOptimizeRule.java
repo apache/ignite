@@ -54,17 +54,17 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.isPow2;
 
 /**
- * A rule for optimization of multi-join queries using a bushy join trees.
+ * A rule for optimization of flat multi-join using a bushy trees.
  *
  * <p>This is an implementation of subset-driven enumeration algorithm (By T. Neumann. and G. Moerkotte. Analysis of
  * Two Existing and One New Dynamic Programming Algorithm for the Generation of Optimal Bushy Join Trees without Cross Products).
  *
- * <p>The main loop enumerates all relation subsets and guarantees that for every emitted set {@code S} any split of this set
+ * <p>The main loop enumerates all relations and guarantees that for every emitted set {@code S} any split of this set
  * will produce subset which have been already processed.
  *
  * <p>The inner loop enumerates all possible splits of given subset {@code S} on disjoint subset
- * {@code leftSubTree} and {@code rightSubTree} such that {@code leftSubTree ∪ rightSubTree = S} (B. Vance and D. Maier.
- * Rapid bushy join-order optimization with cartesian products).
+ * {@code lhs} and {@code rhs} such that {@code lhs ∪ rhs = S} (B. Vance and D. Maier. Rapid bushy join-order optimization
+ * with cartesian products).
  *
  * <p>Finally, if the initial set is not connected, the algorithm crates cartesian join from the best plan until
  * all the relations are connected.
@@ -77,19 +77,19 @@ import static org.apache.ignite.internal.util.IgniteUtils.isPow2;
  * </ol>
  */
 @Value.Enclosing
-public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOptimizationRule.Config> implements TransformationRule {
+public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimizeRule.Config> implements TransformationRule {
     /** */
-    public static final IgniteJoinsOrderOptimizationRule INSTANCE = new IgniteJoinsOrderOptimizationRule(Config.DEFAULT);
+    public static final IgniteMultiJoinOptimizeRule INSTANCE = new IgniteMultiJoinOptimizeRule(Config.DEFAULT);
 
     /** */
     private static final int MAX_JOIN_SIZE = 20;
 
-    /** Vertexes comparator. Better vertex is the one that incorporate more relations, or costs less. */
+    /** Vertexes comparator. Better vertex incorporate more relations or costs less. */
     private static final Comparator<Vertex> VERTEX_COMPARATOR = Comparator.<Vertex>comparingInt(v -> v.size).reversed()
         .thenComparingDouble(v -> v.cost);
 
-    /** Creates a MultiJoinOptimizeBushyRule. */
-    private IgniteJoinsOrderOptimizationRule(Config cfg) {
+    /** Creates the rule. */
+    private IgniteMultiJoinOptimizeRule(Config cfg) {
         super(cfg);
     }
 
@@ -97,13 +97,13 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
     @Override public void onMatch(RelOptRuleCall call) {
         MultiJoin multiJoinRel = call.rel(0);
 
-        int relNum = multiJoinRel.getInputs().size();
-
-        if (relNum > MAX_JOIN_SIZE)
-            return;
-
         // Currently, only INNER JOIN is supported.
         if (multiJoinRel.isFullOuterJoin())
+            return;
+
+        int relCnt = multiJoinRel.getInputs().size();
+
+        if (relCnt > MAX_JOIN_SIZE)
             return;
 
         for (JoinRelType joinType : multiJoinRel.getJoinTypes()) {
@@ -120,82 +120,79 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
 
         RexBuilder rexBuilder = multiJoinRel.getCluster().getRexBuilder();
         RelBuilder relBuilder = call.builder();
-        RelMetadataQuery mq = call.getMetadataQuery();
+        RelMetadataQuery callMeta = call.getMetadataQuery();
 
         List<RexNode> unusedConditions = new ArrayList<>();
 
-        // Edges by vertex (rel.) number in pow2 starting with 1.
+        // Edges by vertex (rel.) number in pow2 starting.
         Map<Integer, List<Edge>> edges = collectEdges(multiJoin, unusedConditions);
+        BitSet connections = new BitSet(1 << relCnt);
         Map<Integer, Vertex> bestPlan = new HashMap<>();
-        BitSet connections = new BitSet(1 << relNum);
 
-        // Rel number in pow2.
-        int relId = 0b1;
-
-        // Offset in the mapping.
-        int fieldOffset = 0;
+        int fldMappingOffset = 0;
+        int relNumPow2 = 1;
 
         for (RelNode input : multiJoinRel.getInputs()) {
-            TargetMapping fieldsMapping = Mappings.offsetSource(
+            TargetMapping fldMapping = Mappings.offsetSource(
                 Mappings.createIdentity(input.getRowType().getFieldCount()),
-                fieldOffset,
+                fldMappingOffset,
                 multiJoin.getNumTotalFields()
             );
 
-            bestPlan.put(relId, new Vertex(relId, mq.getRowCount(input), input, fieldsMapping));
+            bestPlan.put(relNumPow2, new Vertex(relNumPow2, callMeta.getRowCount(input), input, fldMapping));
 
-            connections.set(relId);
+            connections.set(relNumPow2);
 
-            relId <<= 1;
+            relNumPow2 <<= 1;
 
-            fieldOffset += input.getRowType().getFieldCount();
+            fldMappingOffset += input.getRowType().getFieldCount();
         }
 
         Vertex bestPlanSoFar = null;
 
-        for (int s = 0b11, entyreSet = 1 << relNum; s < entyreSet; ++s) {
-            // Pow2-value is the initial relations. They are already processed at the first phase.
+        for (int s = 0b11, cnt = 1 << relCnt; s < cnt; ++s) {
+            // Pow2-value refers to an initial relation. They are already processed at the first phase.
             if (isPow2(s))
                 continue;
 
-            int leftSubVrtxNum = Integer.lowestOneBit(s);
+            int lhs = Integer.lowestOneBit(s);
 
-            while (leftSubVrtxNum < (s / 2) + 1) {
-                int rightSubVrtxNum = s - leftSubVrtxNum;
+            while (lhs < (s / 2) + 1) {
+                int rhs = s - lhs;
 
-                List<Edge> edges0 = connections.get(leftSubVrtxNum) && connections.get(rightSubVrtxNum)
-                    ? findEdges(leftSubVrtxNum, rightSubVrtxNum, edges)
-                    : List.of();
+                List<Edge> edges0 = connections.get(lhs) && connections.get(rhs)
+                    ? findEdges(lhs, rhs, edges)
+                    : Collections.emptyList();
 
                 if (!edges0.isEmpty()) {
                     connections.set(s);
 
-                    Vertex leftPlan = bestPlan.get(leftSubVrtxNum);
-                    Vertex rightPlan = bestPlan.get(rightSubVrtxNum);
+                    Vertex leftPlan = bestPlan.get(lhs);
+                    Vertex rightPlan = bestPlan.get(rhs);
 
-                    Vertex newPlan = createJoin(leftPlan, rightPlan, edges0, mq, relBuilder, rexBuilder);
+                    Vertex newPlan = createJoin(leftPlan, rightPlan, edges0, callMeta, relBuilder, rexBuilder);
 
                     Vertex curBestPlan = bestPlan.get(s);
 
                     if (curBestPlan == null || curBestPlan.cost > newPlan.cost) {
                         bestPlan.put(s, newPlan);
 
-                        bestPlanSoFar = chooseBest(bestPlanSoFar, newPlan);
+                        bestPlanSoFar = best(bestPlanSoFar, newPlan);
                     }
 
-                    aggregateEdges(edges, leftSubVrtxNum, rightSubVrtxNum);
+                    aggregateEdges(edges, lhs, rhs);
                 }
 
-                leftSubVrtxNum = s & (leftSubVrtxNum - s);
+                lhs = s & (lhs - s);
             }
         }
 
-        int allRelationsMask = (1 << relNum) - 1;
+        int allRelationsMask = (1 << relCnt) - 1;
 
         Vertex res;
 
-        if (bestPlanSoFar == null || bestPlanSoFar.idMask != allRelationsMask)
-            res = composeCartesianJoin(allRelationsMask, bestPlan, edges, bestPlanSoFar, mq, relBuilder, rexBuilder);
+        if (bestPlanSoFar == null || bestPlanSoFar.id != allRelationsMask)
+            res = composeCartesianJoin(allRelationsMask, bestPlan, edges, bestPlanSoFar, callMeta, relBuilder, rexBuilder);
         else
             res = bestPlanSoFar;
 
@@ -209,23 +206,23 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
     }
 
     /** */
-    private static void aggregateEdges(Map<Integer, List<Edge>> edges, int leftSubTree, int rightSubTree) {
-        int idMask = leftSubTree | rightSubTree;
+    private static void aggregateEdges(Map<Integer, List<Edge>> edges, int lhs, int rhs) {
+        int id = lhs | rhs;
 
-        if (!edges.containsKey(idMask)) {
+        if (!edges.containsKey(id)) {
             Set<Edge> used = Collections.newSetFromMap(new IdentityHashMap<>());
 
-            List<Edge> union = new ArrayList<>(edges.getOrDefault(leftSubTree, List.of()));
+            List<Edge> union = new ArrayList<>(edges.getOrDefault(lhs, Collections.emptyList()));
 
             used.addAll(union);
 
-            edges.getOrDefault(rightSubTree, List.of()).forEach(edge -> {
+            edges.getOrDefault(rhs, Collections.emptyList()).forEach(edge -> {
                 if (used.add(edge))
                     union.add(edge);
             });
 
             if (!union.isEmpty())
-                edges.put(idMask, union);
+                edges.put(id, union);
         }
     }
 
@@ -245,7 +242,7 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
             options = new ArrayList<>();
 
             for (Vertex option : bestPlan.values()) {
-                if ((option.idMask & bestSoFar.idMask) == 0)
+                if ((option.id & bestSoFar.id) == 0)
                     options.add(option);
             }
         }
@@ -259,26 +256,26 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
         if (bestSoFar == null)
             bestSoFar = it.next();
 
-        while (it.hasNext() && bestSoFar.idMask != allRelationsMask) {
+        while (it.hasNext() && bestSoFar.id != allRelationsMask) {
             Vertex input = it.next();
 
-            if ((bestSoFar.idMask & input.idMask) != 0)
+            if ((bestSoFar.id & input.id) != 0)
                 continue;
 
-            List<Edge> edges0 = findEdges(bestSoFar.idMask, input.idMask, edges);
+            List<Edge> edges0 = findEdges(bestSoFar.id, input.id, edges);
 
-            aggregateEdges(edges, bestSoFar.idMask, input.idMask);
+            aggregateEdges(edges, bestSoFar.id, input.id);
 
             bestSoFar = createJoin(bestSoFar, input, edges0, mq, relBuilder, rexBuilder);
         }
 
-        assert bestSoFar.idMask == allRelationsMask;
+        assert bestSoFar.id == allRelationsMask;
 
         return bestSoFar;
     }
 
     /** */
-    private static Vertex chooseBest(@Nullable Vertex curBest, Vertex candidate) {
+    private static Vertex best(@Nullable Vertex curBest, Vertex candidate) {
         return curBest == null || VERTEX_COMPARATOR.compare(curBest, candidate) > 0
             ? candidate
             : curBest;
@@ -308,12 +305,12 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
                 continue;
             }
 
-            int inputsMask = 0;
+            int connectedInputs = 0;
 
             for (int i : joinRelNums)
-                inputsMask |= 1 << i;
+                connectedInputs |= 1 << i;
 
-            Edge edge = new Edge(inputsMask, joinCondition);
+            Edge edge = new Edge(connectedInputs, joinCondition);
 
             for (int i : joinRelNums)
                 edges.computeIfAbsent(1 << i, k -> new ArrayList<>()).add(edge);
@@ -324,8 +321,8 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
 
     /** */
     private static Vertex createJoin(
-        Vertex leftSubTree,
-        Vertex rightSubTree,
+        Vertex lhs,
+        Vertex rhs,
         List<Edge> edges,
         RelMetadataQuery metadataQry,
         RelBuilder relBuilder,
@@ -333,40 +330,40 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
     ) {
         List<RexNode> conditions = new ArrayList<>();
 
-        edges.forEach(e -> conditions.add(e.joinCondition));
+        edges.forEach(e -> conditions.add(e.condition));
 
-        double leftSize = metadataQry.getRowCount(leftSubTree.rel);
-        double rightSize = metadataQry.getRowCount(rightSubTree.rel);
+        double leftSize = metadataQry.getRowCount(lhs.rel);
+        double rightSize = metadataQry.getRowCount(rhs.rel);
 
         Vertex majorFactor;
         Vertex minorFactor;
 
         // Right side will probably be materialized. Let's put bigger input on left side.
         if (leftSize >= rightSize) {
-            majorFactor = leftSubTree;
-            minorFactor = rightSubTree;
+            majorFactor = lhs;
+            minorFactor = rhs;
         }
         else {
-            majorFactor = rightSubTree;
-            minorFactor = leftSubTree;
+            majorFactor = rhs;
+            minorFactor = lhs;
         }
 
-        TargetMapping mapping = Mappings.merge(
+        TargetMapping fldMapping = Mappings.merge(
             majorFactor.mapping,
             Mappings.offsetTarget(minorFactor.mapping, majorFactor.rel.getRowType().getFieldCount())
         );
 
         RexNode newCondition = RexUtil.composeConjunction(rexBuilder, conditions)
-            .accept(new RexPermuteInputsShuttle(mapping, majorFactor.rel, minorFactor.rel));
+            .accept(new RexPermuteInputsShuttle(fldMapping, majorFactor.rel, minorFactor.rel));
 
         RelNode join = relBuilder.push(majorFactor.rel).push(minorFactor.rel).join(JoinRelType.INNER, newCondition).build();
 
         assert ((Hintable)join).getHints().stream().noneMatch(h -> h.hintName.equals(HintDefinition.ENFORCE_JOIN_ORDER.name()))
             : "Joins with enforced order must not be optimized.";
 
-        double cost = metadataQry.getRowCount(join) + leftSubTree.cost + rightSubTree.cost;
+        double cost = metadataQry.getRowCount(join) + lhs.cost + rhs.cost;
 
-        return new Vertex(leftSubTree.idMask | rightSubTree.idMask, cost, join, mapping);
+        return new Vertex(lhs.id | rhs.id, cost, join, fldMapping);
     }
 
     /**
@@ -377,25 +374,25 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
      *     <li>No any other relations outside of {@code lhs ∪ rhs} will be covered by edge.</li>
      * </ol>
      *
-     * @param leftSubTreeMask Left subtree mask.
-     * @param rightSubTreeMask Right subtree mask.
+     * @param lhs Left subtree.
+     * @param rhs Right subtree.
      * @param edges All the edges.
      * @return Edges connecting given subtrees.
      */
-    private static List<Edge> findEdges(int leftSubTreeMask, int rightSubTreeMask, Map<Integer, List<Edge>> edges) {
+    private static List<Edge> findEdges(int lhs, int rhs, Map<Integer, List<Edge>> edges) {
         List<Edge> result = new ArrayList<>();
 
-        List<Edge> fromLeft = edges.getOrDefault(leftSubTreeMask, List.of());
+        List<Edge> fromLeft = edges.getOrDefault(lhs, Collections.emptyList());
 
         for (Edge edge : fromLeft) {
-            int requiredInputsMask = edge.connectedInputsMask & ~leftSubTreeMask;
+            int requiredInputs = edge.connectedInputs & ~lhs;
 
-            if (requiredInputsMask == 0 || edge.connectedInputsMask == requiredInputsMask)
+            if (requiredInputs == 0 || edge.connectedInputs == requiredInputs)
                 continue;
 
-            requiredInputsMask &= ~rightSubTreeMask;
+            requiredInputs &= ~rhs;
 
-            if (requiredInputsMask == 0)
+            if (requiredInputs == 0)
                 result.add(edge);
         }
 
@@ -405,23 +402,23 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
     /** */
     private static final class Edge {
         /** Bitmap of all inputs connected by condition. */
-        private final int connectedInputsMask;
+        private final int connectedInputs;
 
         /** Join condition. */
-        private final RexNode joinCondition;
+        private final RexNode condition;
 
         /** */
-        private Edge(int connectedInputsMask, RexNode joinCondition) {
-            this.connectedInputsMask = connectedInputsMask;
+        private Edge(int connectedInputs, RexNode condition) {
+            this.connectedInputs = connectedInputs;
 
-            this.joinCondition = joinCondition;
+            this.condition = condition;
         }
     }
 
     /** Root vertex (rel) of a tree. */
     private static class Vertex {
         /** Bitmap of inputs joined together with current vertex. */
-        private final int idMask;
+        private final int id;
 
         /** Number of inputs joined together with current vertex. */
         private final byte size;
@@ -436,9 +433,9 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
         private final RelNode rel;
 
         /** */
-        private Vertex(int idMask, double cost, RelNode rel, TargetMapping mapping) {
-            this.idMask = idMask;
-            this.size = (byte)Integer.bitCount(idMask);
+        private Vertex(int id, double cost, RelNode rel, TargetMapping mapping) {
+            this.id = id;
+            this.size = (byte)Integer.bitCount(id);
             this.cost = cost;
             this.rel = rel;
             this.mapping = mapping;
@@ -449,11 +446,11 @@ public class IgniteJoinsOrderOptimizationRule extends RelRule<IgniteJoinsOrderOp
     @Value.Immutable
     public interface Config extends RelRule.Config {
         /** */
-        Config DEFAULT = ImmutableIgniteJoinsOrderOptimizationRule.Config.of()
+        Config DEFAULT = ImmutableIgniteMultiJoinOptimizeRule.Config.of()
             .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs());
 
         /** {@inheritDoc} */
-        @Override default IgniteJoinsOrderOptimizationRule toRule() {
+        @Override default IgniteMultiJoinOptimizeRule toRule() {
             return INSTANCE;
         }
     }

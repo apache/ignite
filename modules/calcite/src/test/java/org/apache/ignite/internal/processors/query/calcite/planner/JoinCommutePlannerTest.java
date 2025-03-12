@@ -172,7 +172,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        String[] disabledRules = new String[] {"JoinCommuteRule", "JoinToMultiJoinRule", "IgniteJoinsOrderOptimizationRule"};
+        String[] disabledRules = new String[] {"JoinCommuteRule", "JoinToMultiJoinRule", "IgniteMultiJoinOptimizeRule"};
 
         phys = physicalPlan(sql, publicSchema, disabledRules);
 
