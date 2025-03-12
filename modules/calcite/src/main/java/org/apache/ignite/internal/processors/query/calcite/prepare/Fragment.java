@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodeMappingE
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -152,6 +155,22 @@ public class Fragment {
                     mapping = mapping.local(ctx.localNodeId());
                 else
                     mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+            }
+            else {
+                // For remote fragments we should ensure that mapping is explicitely sent to remote nodes if
+                // it's required by trim exchange.
+                Set<Long> trimSrcIds = new HashSet<>();
+
+                root.accept(new IgniteRelShuttle() {
+                    @Override public IgniteRel visit(IgniteTrimExchange rel) {
+                        trimSrcIds.add(rel.sourceId());
+
+                        return super.visit(rel);
+                    }
+                });
+
+                if (!trimSrcIds.isEmpty())
+                    mapping = mapping.explicitMapping(trimSrcIds);
             }
 
             if (single() && mapping.nodeIds().size() > 1) {
