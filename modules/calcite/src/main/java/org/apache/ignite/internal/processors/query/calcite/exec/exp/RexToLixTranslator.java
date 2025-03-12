@@ -58,7 +58,6 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
@@ -72,6 +71,7 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
@@ -1034,7 +1034,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             return implementCaseWhen(call);
 
         if (operator == SEARCH)
-            return RexUtil.expandSearch(builder, program, call).accept(this);
+            return RexUtils.expandSearchNullable(builder, program, call).accept(this);
 
         final RexImpTable.RexCallImplementor implementor =
             RexImpTable.INSTANCE.get(operator);

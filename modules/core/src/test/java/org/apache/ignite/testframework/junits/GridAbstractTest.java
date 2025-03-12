@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.File;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -3187,6 +3188,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Recreates default db directory.
+     */
+    protected void recreateDefaultDb() {
+        File db = sharedFileTree().db();
+
+        U.delete(db);
+
+        assertTrue(db.mkdirs());
+    }
+
+    /**
      * @return Ignite directories without specific {@code folerName} parameter.
      */
     protected SharedFileTree sharedFileTree() {
@@ -3206,9 +3218,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         return new SharedFileTree(cfg);
     }
 
-    /**
-     * @return Ignite directories for specific {@code folderName}.
-     */
+    /** @return Ignite directories for specific {@code folderName}. */
     protected NodeFileTree nodeFileTree(String folderName) {
         try {
             return new NodeFileTree(U.defaultWorkDirectory(), folderName);
@@ -3218,16 +3228,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     }
 
-    /**
-     * @return Snapshot directories for specific snapshot.
-     */
+    /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name) {
         return snapshotFileTree(srv, name, null);
     }
 
-    /**
-     * @return Snapshot directories for specific snapshot.
-     */
+    /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
         return new SnapshotFileTree(srv.context(), name, path);
     }
