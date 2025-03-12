@@ -17,13 +17,12 @@
 
 package org.apache.ignite.compatibility.persistence;
 
-import java.util.List;
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -38,10 +37,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String OLD_IGNITE_VERSION = "2.16.0";
 
     /** */
-    private static final String FULL_SNAPSHOT_NAME = "test_snapshot";
-
-    /** */
-    private static final String INC_SNAPSHOT_NAME = "test_inc_snapshot";
+    private static final String SNAPSHOT_NAME = "test_snapshot";
 
     /** */
     public static final String CACHE_NAME = "organizations";
@@ -68,11 +64,13 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             curIgn.cluster().state(ClusterState.ACTIVE);
 
-            curIgn.snapshot().restoreSnapshot(FULL_SNAPSHOT_NAME, List.of(CACHE_NAME)).get();
+            curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME)).get();
 
             checkCache(curIgn.cache(CACHE_NAME), BASE_CACHE_SIZE);
 
-            curIgn.snapshot().restoreSnapshot(INC_SNAPSHOT_NAME, List.of(CACHE_NAME)).get();
+            curIgn.cache(CACHE_NAME).destroy();
+
+            curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
 
             checkCache(curIgn.cache(CACHE_NAME), BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
         }
@@ -130,15 +128,15 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         @Override public void apply(Ignite ignite) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+            IgniteCache<Integer, String> cache = ignite.createCache(CACHE_NAME);
 
             addItemsToCache(cache, 0, BASE_CACHE_SIZE);
 
-            ignite.snapshot().createSnapshot(FULL_SNAPSHOT_NAME).get();
+            ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
             addItemsToCache(cache, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
 
-            ignite.snapshot().createIncrementalSnapshot(INC_SNAPSHOT_NAME).get();
+            ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
         }
     }
 
@@ -150,7 +148,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private static void checkCache(IgniteCache<Integer, String> cache, int expectedSize) {
-        assertTrue(cache.size() == expectedSize);
+        assertEquals(expectedSize, cache.size());
 
         for (int i = 0; i < expectedSize; ++i)
             assertEquals(calcValue(i), cache.get(i));
