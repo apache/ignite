@@ -72,7 +72,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.IntSumReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsNotAllPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsNotNullPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.MapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.MultipleIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
@@ -139,9 +138,6 @@ public class GridFunc {
 
     /** */
     private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new AtomicIntegerFactoryCallable();
-
-    /** */
-    private static final IgniteCallable<?> MAP_FACTORY = new MapFactoryCallable();
 
     /** */
     private static final IgniteCallable<?> CONCURRENT_MAP_FACTORY = new ConcurrentMapFactoryCallable();
