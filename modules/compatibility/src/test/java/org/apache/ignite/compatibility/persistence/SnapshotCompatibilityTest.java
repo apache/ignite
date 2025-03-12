@@ -42,6 +42,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     public static final String CACHE_NAME = "organizations";
 
+    /** */
+    public static final int CACHE_SIZE = 10_000;
+
     /**
      *
      */
@@ -60,9 +63,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, List.of(CACHE_NAME)).get();
 
-            IgniteCache<String, Integer> cache = curIgn.cache(CACHE_NAME);
-            for (int i = 0; i < 10_000; i++)
-                assertTrue(cache.containsKey("organization-" + i));
+            checkCache(curIgn.cache(CACHE_NAME));
         }
         finally {
             stopAllGrids();
@@ -112,11 +113,27 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         @Override public void apply(Ignite ignite) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            IgniteCache<String, Integer> organizations = ignite.createCache(CACHE_NAME);
-            for (int i = 0; i < 10_000; i++)
-                organizations.put("organization-" + i, i);
+            createAndFillCache(ignite);
 
             ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
         }
+    }
+
+    /** */
+    private static void createAndFillCache(Ignite ignite) {
+        IgniteCache<Integer, String> organizations = ignite.createCache(CACHE_NAME);
+        for (int i = 0; i < CACHE_SIZE; ++i)
+            organizations.put(i, getValue(i));
+    }
+
+    /** */
+    private static void checkCache(IgniteCache<Integer, String> cache) {
+        for (int i = 0; i < CACHE_SIZE; ++i)
+            assertEquals(getValue(i), cache.get(i));
+    }
+
+    /** */
+    private static String getValue(int idx) {
+        return "organization-" + idx;
     }
 }
