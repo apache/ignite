@@ -114,8 +114,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
-            storageCfg.setWalPageCompression(DiskPageCompression.LZ4);
-            storageCfg.setWalPageCompressionLevel(8);
+            storageCfg.setWalCompactionEnabled(true);
 
             igniteConfiguration.setDataStorageConfiguration(storageCfg);
 
