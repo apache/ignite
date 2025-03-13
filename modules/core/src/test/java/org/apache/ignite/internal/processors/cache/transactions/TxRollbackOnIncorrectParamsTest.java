@@ -60,7 +60,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             Transaction tx = evt.tx();
 
-            if (tx.timeout() < 200)
+            if (tx.timeout(0) < 200)
                 tx.setRollbackOnly();
 
             return true;
@@ -219,7 +219,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
                 Transaction tx = evt.tx();
 
-                if (tx.timeout() == 0)
+                if (tx.timeout(0) == 0)
                     tx.setRollbackOnly();
 
                 return true;
