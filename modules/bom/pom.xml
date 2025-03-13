@@ -168,6 +168,11 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-binary-api</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-clients</artifactId>
                 <version>${revision}</version>
                 <type>test-jar</type>
