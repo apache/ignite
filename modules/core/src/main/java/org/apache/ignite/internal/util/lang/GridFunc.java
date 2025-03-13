@@ -156,11 +156,7 @@ public class GridFunc {
 
     /** */
     private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
-        new IgniteClosure<BaselineNode, Object>() {
-            @Override public Object apply(BaselineNode node) {
-                return node.consistentId();
-            }
-        };
+        BaselineNode::consistentId;
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -477,7 +473,7 @@ public class GridFunc {
      */
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
-            return Collections.<T>emptySet().iterator();
+            return Collections.emptyIterator();
 
         return new MultipleIterator<>(iters);
     }
