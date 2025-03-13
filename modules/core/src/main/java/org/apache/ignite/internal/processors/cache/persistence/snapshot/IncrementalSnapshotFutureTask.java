@@ -22,7 +22,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -30,28 +29,19 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
-import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
-    /** Index of incremental snapshot. */
-    private final int incIdx;
-
-    /** Snapshot path. */
-    private final @Nullable String snpPath;
+    /** Incremental file tree. */
+    private final IncrementalSnapshotFileTree ift;
 
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
@@ -72,8 +62,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
-        @Nullable String snpPath,
-        int incIdx,
+        IncrementalSnapshotFileTree ift,
         WALPointer lowPtr,
         IgniteInternalFuture<WALPointer> highPtrFut
     ) {
@@ -90,19 +79,18 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     // No-op.
                 }
 
-                @Override protected void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override protected void sendPart0(File part, File snpCacheDir, GroupPartitionId pair, Long length) {
                     // No-op.
                 }
 
-                @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                @Override protected void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                     // No-op.
                 }
             },
             null
         );
 
-        this.incIdx = incIdx;
-        this.snpPath = snpPath;
+        this.ift = ift;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
         this.lowPtr = lowPtr;
         this.highPtrFut = highPtrFut;
@@ -118,7 +106,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+            File incSnpDir = ift.root();
 
             if (!incSnpDir.mkdirs() && !incSnpDir.exists()) {
                 onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpDir.getAbsolutePath() + ']'));
@@ -134,20 +122,20 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                 }
 
                 try {
-                    String folderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+                    NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
-                    copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
+                    copyWal(ft, highPtrFut.result());
 
                     copyFiles(
-                        MarshallerContextImpl.mappingFileStoreWorkDir(cctx.gridConfig().getWorkDirectory()),
-                        mappingFileStoreWorkDir(incSnpDir.getAbsolutePath()),
-                        BinaryUtils::notTmpFile
+                        ft.marshaller(),
+                        ift.marshaller(),
+                        NodeFileTree::notTmpFile
                     );
 
                     copyFiles(
-                        binaryWorkDir(cctx.gridConfig().getWorkDirectory(), folderName),
-                        binaryWorkDir(incSnpDir.getAbsolutePath(), folderName),
-                        file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
+                        ft.binaryMeta(),
+                        ift.binaryMeta(),
+                        NodeFileTree::binFile
                     );
 
                     onDone();
@@ -169,15 +157,15 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
     /**
      * Copies WAL segments to the incremental snapshot directory.
      *
-     * @param incSnpWalDir Incremental snapshot directory.
+     * @param ft Node file tree.
      * @param highPtr High WAL pointer to copy.
      * @throws IgniteInterruptedCheckedException If failed.
      * @throws IOException If failed.
      */
-    private void copyWal(File incSnpWalDir, WALPointer highPtr) throws IgniteInterruptedCheckedException, IOException {
+    private void copyWal(NodeFileTree ft, WALPointer highPtr) throws IgniteInterruptedCheckedException, IOException {
         // First increment must include low segment, because full snapshot knows nothing about WAL.
         // All other begins from the next segment because lowPtr already saved inside previous increment.
-        long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
+        long lowIdx = lowPtr.index() + (ift.index() == 1 ? 0 : 1);
         long highIdx = highPtr.index();
 
         assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled() : "WAL Compaction must be enabled";
@@ -191,21 +179,21 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         if (log.isInfoEnabled())
             log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " + "highIdx=" + highIdx + ']');
 
-        if (!incSnpWalDir.mkdirs() && !incSnpWalDir.exists())
-            throw new IgniteException("Failed to create snapshot WAL directory [idx=" + incSnpWalDir + ']');
+        if (!ift.wal().mkdirs() && !ift.wal().exists())
+            throw new IgniteException("Failed to create snapshot WAL directory [idx=" + ift.wal() + ']');
 
         for (; lowIdx <= highIdx; lowIdx++) {
-            File seg = cctx.wal().compactedSegment(lowIdx);
+            File seg = ft.zipWalArchiveSegment(lowIdx);
 
             if (!seg.exists())
                 throw new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']');
 
-            Path segLink = incSnpWalDir.toPath().resolve(seg.getName());
+            File segLink = ift.walSegment(lowIdx);
 
             if (log.isDebugEnabled())
-                log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
+                log.debug("Creaing segment link [path=" + segLink.getAbsolutePath() + ']');
 
-            Files.createLink(segLink, seg.toPath());
+            Files.createLink(segLink.toPath(), seg.toPath());
         }
     }
 

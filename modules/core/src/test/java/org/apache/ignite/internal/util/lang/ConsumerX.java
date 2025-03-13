@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.util.lang;
 
 import java.util.function.Consumer;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents an operation that accepts a single input argument and returns
  * no result. Unlike most other functional interfaces,
  * {@code ConsumerX} is expected to operate via side-effects.
- *
+ * <p>
  * Also it is able to throw {@link Exception} unlike {@link Consumer}.
  *
  * @param <T> The type of the input to the operation.
@@ -36,5 +35,5 @@ public interface ConsumerX<T> {
      *
      * @param t the input argument.
      */
-    public void accept(@Nullable T t) throws Exception;
+    public void accept(T t) throws Exception;
 }

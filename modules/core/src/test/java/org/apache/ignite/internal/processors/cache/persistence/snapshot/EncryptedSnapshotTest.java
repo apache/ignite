@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -40,7 +41,6 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -222,7 +222,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             encryption = false;
             dfltCacheCfg = null;
 
-            File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false);
+            File snpDir = sharedFileTree().snapshotsRoot();
             assertTrue(snpDir.isDirectory() && snpDir.listFiles().length > 0);
 
             tmpSnpDir = new File(snpDir.getAbsolutePath() + "_tmp");
@@ -237,7 +237,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             IgniteEx ig = startGrids(3);
 
-            snpDir.renameTo(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+            snpDir.renameTo(sharedFileTree().snapshotsRoot());
 
             ig.cluster().state(ACTIVE);
 
@@ -283,9 +283,11 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         // Start grid node with data before each test.
         IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         assertThrowsAnyCause(log,
-            () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME,
-                null,
+            () -> snp(ig).registerSnapshotTask(
+                sft,
                 ig.localNode().id(),
                 null,
                 F.asMap(CU.cacheId(dfltCacheCfg.getName()), null),
@@ -293,7 +295,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
                 false,
                 false,
                 false,
-                snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)
+                snp(ig).localSnapshotSenderFactory().apply(sft)
             ).get(TIMEOUT),
             IgniteCheckedException.class,
             "Metastore is required because it holds encryption keys");

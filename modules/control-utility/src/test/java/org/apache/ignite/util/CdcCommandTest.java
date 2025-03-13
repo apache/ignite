@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -177,7 +178,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID),
-            "Unexpected value: --yes");
+            "Please specify a value for argument: --node-id");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
@@ -250,12 +251,12 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private void checkLinks(IgniteEx srv, List<Long> expLinks) {
-        FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)srv.context().cache().context().wal(true);
+        NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
 
-        File[] links = wal0.walCdcDirectory().listFiles(WAL_SEGMENT_FILE_FILTER);
+        File[] links = ft.walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
-        Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
+        Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)
             .allMatch(expLinks::contains);
     }
 
@@ -300,7 +301,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, RESEND, CACHES),
-            "Unexpected value: --yes");
+            "Please specify a value for argument: --caches");
     }
 
     /** */

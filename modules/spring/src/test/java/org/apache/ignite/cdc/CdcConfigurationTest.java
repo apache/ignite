@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cdc.CdcLoader.loadCdc;
+import static org.apache.ignite.internal.cdc.CdcLoader.loadCdc;
 import static org.apache.ignite.internal.cdc.CdcMain.ERR_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;

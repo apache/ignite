@@ -1172,12 +1172,8 @@ public final class IgniteSystemProperties {
         " Default is false, which means that service security permissions will be respected")
     public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
 
-    /**
-     * Ignite cluster name.
-     * <p>
-     * Defaults to utility cache deployment ID..
-     */
-    @SystemProperty(value = "Ignite cluster name. Defaults to utility cache deployment ID", type = String.class)
+    /** Ignite cluster name. Defaults to {@link IgniteCluster#id()}. */
+    @SystemProperty(value = "Ignite cluster name. Defaults to cluster ID", type = String.class)
     public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
 
     /**

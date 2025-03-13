@@ -21,8 +21,6 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,7 +30,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -105,22 +102,13 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        cleanUpWorkDir();
+        U.delete(sharedFileTree().marshaller());
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
-    }
-
-    /**
-     *
-     */
-    private void cleanUpWorkDir() throws Exception {
-        String workDir = U.defaultWorkDirectory();
-
-        U.delete(U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
     }
 
     /**
@@ -176,7 +164,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         String fileName = typeId + ".classname0";
 
-        File marshStoreDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
+        File marshStoreDir = sharedFileTree().mkdirMarshaller();
 
         try (FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
             try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
@@ -220,9 +208,9 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * Class name for CustomClass class mapping file gets cleaned up from file system.
      */
     private void corruptMarshallerStorage() throws Exception {
-        Path marshallerDir = Paths.get(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+        File marshallerDir = sharedFileTree().marshaller();
 
-        File[] storedMappingsFiles = marshallerDir.toFile().listFiles();
+        File[] storedMappingsFiles = marshallerDir.listFiles();
 
         assert storedMappingsFiles.length == 1;
 

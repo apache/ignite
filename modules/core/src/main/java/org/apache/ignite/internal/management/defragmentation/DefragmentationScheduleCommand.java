@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
@@ -57,7 +57,7 @@ public class DefragmentationScheduleCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, DefragmentationStatusCommandArg arg0) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, DefragmentationStatusCommandArg arg0) {
         DefragmentationScheduleCommandArg arg = (DefragmentationScheduleCommandArg)arg0;
 
         if (F.isEmpty(arg.nodes()))

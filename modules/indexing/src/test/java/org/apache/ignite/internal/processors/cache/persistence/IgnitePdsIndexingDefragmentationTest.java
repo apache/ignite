@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -41,15 +40,14 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
@@ -118,6 +116,9 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         ig.cluster().state(ClusterState.ACTIVE);
 
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+        CacheConfiguration<?, ?> dfltCacheCfg = ig.cachex(DEFAULT_CACHE_NAME).configuration();
+
         fillCache(keyMapper, ig.cache(DEFAULT_CACHE_NAME));
 
         forceCheckpoint(ig);
@@ -126,25 +127,22 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
-        File dbWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-        File nodeWorkDir = new File(dbWorkDir, U.maskForFileName(ig.name()));
-        File workDir = new File(nodeWorkDir, FilePageStoreManager.CACHE_GRP_DIR_PREFIX + GRP_NAME);
-
-        long oldIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long oldIdxFileLen = ft.partitionFile(dfltCacheCfg, INDEX_PARTITION).length();
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
+        long newIdxFileLen = ft.partitionFile(dfltCacheCfg, INDEX_PARTITION).length();
 
         assertTrue(
             "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,
             newIdxFileLen <= oldIdxFileLen
         );
 
-        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(workDir);
-        assertTrue(Arrays.toString(workDir.listFiles()), completionMarkerFile.exists());
+        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(ft.cacheStorage(dfltCacheCfg));
+
+        assertTrue("Completion marker file must exists", completionMarkerFile.exists());
 
         stopGrid(0);
 

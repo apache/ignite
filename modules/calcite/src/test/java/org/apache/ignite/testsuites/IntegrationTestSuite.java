@@ -54,10 +54,12 @@ import org.apache.ignite.internal.processors.query.calcite.integration.MetadataI
 import org.apache.ignite.internal.processors.query.calcite.integration.OperatorsExtensionIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionPruneTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionsReservationIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryBlockingTaskExecutorIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -151,6 +153,8 @@ import org.junit.runners.Suite;
     OperatorsExtensionIntegrationTest.class,
     SessionContextSqlFunctionTest.class,
     SqlPlanHistoryIntegrationTest.class,
+    QueryBlockingTaskExecutorIntegrationTest.class,
+    ScalarInIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

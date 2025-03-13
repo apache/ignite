@@ -19,10 +19,9 @@ package org.apache.ignite.internal.management.cdc;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.node;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
@@ -30,7 +29,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 /**
  * Command to delete lost segment links.
  */
-@IgniteExperimental
 public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
@@ -48,7 +46,7 @@ public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDelet
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CdcDeleteLostSegmentLinksCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, CdcDeleteLostSegmentLinksCommandArg arg) {
         return arg.nodeId() != null
             ? node(arg.nodeId(), nodes)
             : servers(nodes);

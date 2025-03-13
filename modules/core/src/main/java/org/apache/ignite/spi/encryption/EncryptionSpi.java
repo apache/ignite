@@ -82,6 +82,28 @@ public interface EncryptionSpi extends IgniteSpi {
     byte[] decrypt(byte[] data, Serializable key);
 
     /**
+     * Decrypts data encrypted with {@link #encrypt(ByteBuffer, Serializable, ByteBuffer)}.
+     * Note: Default method implementation was introduced for compatibility. This implementation is not effective
+     *      for direct byte buffers, since it requires additional array creation and copy.
+     *      It's better to have own implementation of this method in SPI.
+     *
+     * @param data Data to decrypt.
+     * @param key Encryption key.
+     * @param res Destination of the decrypted data.
+     */
+    default void decrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
+        byte[] arr;
+
+        if (data.hasArray())
+            arr = data.array();
+        else {
+            arr = new byte[data.remaining()];
+            data.get(arr);
+        }
+        res.put(decrypt(arr, key));
+    }
+
+    /**
      * Decrypts data encrypted with {@link #encryptNoPadding(ByteBuffer, Serializable, ByteBuffer)}
      *
      * @param data Data to decrypt.

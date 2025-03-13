@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -695,9 +696,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
-        final boolean statsEnabled = ctx.statisticsEnabled();
+        boolean statsEnabled = ctx.statisticsEnabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        long start = statsEnabled ? System.nanoTime() : 0L;
+        long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
@@ -715,6 +717,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (statsEnabled)
             fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
+
+        if (perfStatsEnabled)
+            fut.listen(() -> writeStatistics(OperationType.CACHE_PUT_ALL_CONFLICT, start));
 
         return fut;
     }
@@ -760,8 +765,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> conflictMap) {
         final boolean statsEnabled = ctx.statisticsEnabled();
+        boolean perfStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = statsEnabled ? System.nanoTime() : 0L;
+        final long start = (statsEnabled || perfStatsEnabled) ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
@@ -769,6 +775,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (statsEnabled)
             fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
+
+        if (perfStatsEnabled)
+            fut.listen(() -> writeStatistics(OperationType.CACHE_REMOVE_ALL_CONFLICT, start));
 
         return fut;
     }
