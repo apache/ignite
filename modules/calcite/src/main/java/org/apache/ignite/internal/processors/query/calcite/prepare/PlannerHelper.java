@@ -24,21 +24,28 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttle;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
+import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
@@ -50,6 +57,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -58,6 +66,13 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
+    /** */
+    private static final Collection<String> JOIN_TYPE_HINT_NAMES = Stream.of(
+        HintDefinition.NL_JOIN, HintDefinition.NO_NL_JOIN,
+        HintDefinition.CNL_JOIN, HintDefinition.NO_CNL_JOIN,
+        HintDefinition.MERGE_JOIN, HintDefinition.NO_MERGE_JOIN
+    ).map(Enum::name).collect(Collectors.toSet());
+
     /**
      * Default constructor.
      */
@@ -96,7 +111,15 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
 
+            // The following pushed down project can erase top-level hints. We store them to reassign hints of the join types.
+            // Clear the inherit pathes to consider the hints as not propogated ones.
+            List<RelHint> topHints = HintUtils.allRelHints(rel).stream().map(h -> h.inheritPath.isEmpty()
+                ? h
+                : h.copy(Collections.emptyList())).collect(Collectors.toList());
+
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
+
+            rel = optimizeJoinsOrder(planner, rel, topHints);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
@@ -127,6 +150,179 @@ public class PlannerHelper {
 
             throw ex;
         }
+    }
+
+    /** */
+    private static RelNode actualTopLevelJoinTypeHints(RelNode rel, List<RelHint> topLevelHints) {
+        assert rel instanceof Hintable;
+
+        List<RelHint> curHints = ((Hintable)rel).getHints();
+
+        List<RelHint> res = new ArrayList<>(topLevelHints.size());
+
+        for (RelHint topHint : topLevelHints) {
+            assert topHint.inheritPath.isEmpty();
+
+            if (!JOIN_TYPE_HINT_NAMES.contains(topHint.hintName))
+                continue;
+
+            if (curHints.isEmpty()) {
+                res.add(topHint);
+
+                continue;
+            }
+
+            for (RelHint curHint : curHints) {
+                // Consider only hints of the join types and which differ by name or parameters.
+                if (!JOIN_TYPE_HINT_NAMES.contains(curHint.hintName)
+                    || topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList())))
+                    continue;
+
+                res.add(topHint);
+            }
+        }
+
+        if (!res.isEmpty()) {
+            rel = ((Hintable)rel).withHints(res);
+
+            if (!curHints.isEmpty())
+                rel = ((Hintable)rel).attachHints(curHints);
+        }
+
+        return rel;
+    }
+
+    /**
+     * Tries to optimize joins order.
+     *
+     * @see JoinToMultiJoinRule
+     * @see IgniteMultiJoinOptimizeRule
+     *
+     * @return An node with optimized joins or original {@code root} if didn't optimize.
+     */
+    private static RelNode optimizeJoinsOrder(IgnitePlanner planner, RelNode root, List<RelHint> topLevelHints) {
+        List<Join> joins = findNodes(root, Join.class, false);
+
+        // No original joins found, nothing to optimize.
+        if (joins.isEmpty())
+            return root;
+
+        int disabledCnt = 0;
+
+        // If all the joins have the forced order, no need to optimize the joins order at all.
+        for (Join join : joins) {
+            for (RelHint hint : join.getHints()) {
+                if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName)) {
+                    ++disabledCnt;
+
+                    break;
+                }
+            }
+        }
+
+        if (disabledCnt == joins.size())
+            return root;
+
+        RelNode res = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
+
+        // Still has a MultiJoin, didn't manage to collect one flat join to optimize.
+        if (!findNodes(res, MultiJoin.class, true).isEmpty())
+            return root;
+
+        // If a new joins order was proposed, no need to launch another join order optimizations.
+        planner.setDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
+            .collect(Collectors.toList()));
+
+        if (!topLevelHints.isEmpty()) {
+            res = actualTopLevelJoinTypeHints(res, topLevelHints);
+
+            restoreJoinTypeHints(res);
+        }
+
+        return res;
+    }
+
+    /**
+     * A join type hint might be assigned to a query root (top-level hint) or to a table. Originally, SELECT-level hints
+     * are propagated and assigned to following Joins and TableScans. We lose assigned to Join nodes ones
+     * in {@link JoinToMultiJoinRule} and have to reassign them from top-level hints.
+     */
+    private static void restoreJoinTypeHints(RelNode root) {
+        RelShuttle visitor = new RelHomogeneousShuttle() {
+            /** Hints to assign on current tree level. */
+            private final List<List<RelHint>> hintsStack = new ArrayList<>();
+
+            /** Current hint inheritance path. It is important for hint priority. */
+            private final List<Integer> inputsStack = new ArrayList<>();
+
+            /** {@inheritDoc} */
+            @Override public RelNode visit(RelNode rel) {
+                // Leaf TableScans have no inputs. And we are interrested only in Joins.
+                if (rel.getInputs().isEmpty())
+                    return rel;
+
+                List<RelHint> curHints = Collections.emptyList();
+
+                if ((rel instanceof Hintable) && !(rel instanceof Join) && !((Hintable)rel).getHints().isEmpty()) {
+                    for (RelHint hint : ((Hintable)rel).getHints()) {
+                        // Reassing only top-level hints (without the inherit path).
+                        if (!hint.inheritPath.isEmpty() || !JOIN_TYPE_HINT_NAMES.contains(hint.hintName))
+                            continue;
+
+                        if (curHints == Collections.EMPTY_LIST)
+                            curHints = new ArrayList<>();
+
+                        curHints.add(hint);
+                    }
+                }
+
+                // We may find additional top-level hints in a subquery. From this point, we need to combine them.
+                if (!stack.isEmpty()) {
+                    List<RelHint> prevHints = hintsStack.get(hintsStack.size() - 1);
+
+                    if (!curHints.isEmpty() && !prevHints.isEmpty())
+                        curHints.addAll(prevHints);
+                    else if (curHints.isEmpty())
+                        curHints = prevHints;
+
+                    assert curHints.size() >= hintsStack.get(hintsStack.size() - 1).size();
+                }
+
+                hintsStack.add(curHints);
+
+                RelNode res = super.visit(rel);
+
+                hintsStack.remove(hintsStack.size() - 1);
+
+                return res;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected RelNode visitChild(RelNode parent, int i, RelNode child) {
+                inputsStack.add(i);
+
+                if (child instanceof Join && !hintsStack.isEmpty()) {
+                    List<RelHint> curHints = hintsStack.get(hintsStack.size() - 1);
+
+                    if (!curHints.isEmpty()) {
+                        curHints = curHints.stream().map(h -> h.copy(inputsStack)).collect(Collectors.toList());
+
+                        // Join is a Hintable.
+                        child = ((Hintable)child).attachHints(curHints);
+
+                        parent.replaceInput(i, child);
+                    }
+                }
+
+                RelNode res = super.visitChild(parent, i, child);
+
+                inputsStack.remove(inputsStack.size() - 1);
+
+                return res;
+            }
+        };
+
+        root.accept(visitor);
     }
 
     /**
@@ -291,5 +487,35 @@ public class PlannerHelper {
         private boolean modifyNodeInsertsData() {
             return modifyNode.isInsert();
         }
+    }
+
+    /**
+     * @return Found dodes of type {@code nodeType} in the tree. Empty list if no match found. Single value list if a node
+     * found and {@code stopOnFirst} is {@code true}.
+     */
+    public static <T extends RelNode> List<T> findNodes(RelNode root, Class<T> nodeType, boolean stopOnFirst) {
+        List<T> rels = new ArrayList<>();
+
+        try {
+            RelShuttle visitor = new RelHomogeneousShuttle() {
+                @Override public RelNode visit(RelNode node) {
+                    if (nodeType.isAssignableFrom(node.getClass())) {
+                        rels.add((T)node);
+
+                        if (stopOnFirst)
+                            throw Util.FoundOne.NULL;
+                    }
+
+                    return super.visit(node);
+                }
+            };
+
+            root.accept(visitor);
+        }
+        catch (Util.FoundOne ignored) {
+            // No-op.
+        }
+
+        return rels;
     }
 }
