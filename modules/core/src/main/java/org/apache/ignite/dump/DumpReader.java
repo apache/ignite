@@ -17,9 +17,14 @@
 
 package org.apache.ignite.dump;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,19 +34,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpConsumerKernalContextAware;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
@@ -50,6 +64,8 @@ import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
  * Dump Reader application.
@@ -77,7 +93,11 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), cfg.keepRaw(), encryptionSpi(), log)) {
+        IgniteBiTuple<List<SnapshotFileTree>, List<SnapshotMetadata>> data = readStoredData();
+
+        GridKernalContext cctx = standaloneKernalContext(F.first(data.get1()), log);
+
+        try (Dump dump = new Dump(cctx, data.get1(), data.get2(), cfg.keepBinary(), cfg.keepRaw(), encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             if (cnsmr instanceof DumpConsumerKernalContextAware)
@@ -185,6 +205,14 @@ public class DumpReader implements Runnable {
         catch (Exception e) {
             throw new IgniteException(e);
         }
+        finally {
+            try {
+                closeAllComponents(cctx);
+            }
+            catch (IgniteCheckedException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /** */
@@ -232,7 +260,7 @@ public class DumpReader implements Runnable {
                 U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
 
             U.quiet(false,
-                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
+                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-dump-reader.{sh|bat}",
                 "");
         }
     }
@@ -250,5 +278,95 @@ public class DumpReader implements Runnable {
         encSpi.spiStart("dump-reader");
 
         return encSpi;
+    }
+
+    /**
+     * @return Snapshot file tree for the dump
+     */
+    private IgniteBiTuple<List<SnapshotFileTree>, List<SnapshotMetadata>> readStoredData() {
+        final IgniteConfiguration icfg;
+        final File root;
+        final String name;
+        final String path;
+
+        if (cfg.config() != null) {
+            icfg = cfg.config();
+            name = cfg.dumpName();
+            path = cfg.dumpRoot();
+            root = SnapshotFileTree.root(new SharedFileTree(icfg), name, path);
+        }
+        else {
+            icfg = new IgniteConfiguration();
+
+            A.ensure(F.isEmpty(cfg.dumpName()), "Use dump path, only.");
+            A.notNull(cfg.dumpRoot(), "Dump path must be provdied");
+
+            root = new File(cfg.dumpRoot());
+
+            A.ensure(root.isAbsolute(), "Dump path must be absolute or Ignite configuration provided");
+
+            name = root.getName();
+            path = root.getParentFile().getAbsolutePath();
+        }
+
+        List<SnapshotMetadata> metadata = metadata(root);
+
+        A.ensure(!F.isEmpty(metadata), "Dump metafiles not found: " + root.getAbsolutePath());
+
+        List<SnapshotFileTree> sfts = metadata.stream().map(m -> new SnapshotFileTree(
+            icfg,
+            new NodeFileTree(icfg, m.folderName()),
+            name,
+            path,
+            m.folderName(),
+            m.consistentId()
+        )).collect(Collectors.toList());
+
+        return F.t(sfts, metadata);
+    }
+
+    /**
+     * @param dumpDir Dump root directory.
+     * @return List of snapshot metadata saved in {@code #dumpDir}.
+     */
+    public static List<SnapshotMetadata> metadata(File dumpDir) {
+        JdkMarshaller marsh = new JdkMarshaller();
+
+        ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
+
+        // First filter only specific file to exclude overlapping with other nodes making dump on the local host.
+        File[] files = dumpDir.listFiles(SnapshotFileTree::snapshotMetaFile);
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files)
+            .map(meta -> {
+                try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
+                    return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            })
+            .filter(SnapshotMetadata::dump)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param log Logger.
+     * @return Standalone kernal context.
+     */
+    private static GridKernalContext standaloneKernalContext(SnapshotFileTree sft, IgniteLogger log) {
+        try {
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, sft);
+
+            startAllComponents(kctx);
+
+            return kctx;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

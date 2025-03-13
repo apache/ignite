@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
@@ -176,8 +177,8 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         mgr1.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr1.snapshotExecutorService(), mgr1.remoteSnapshotSenderFactory(s, uuid)) {
-                    @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
-                        if (partId(part) > 0) {
+                    @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+                        if (partId(from) > 0) {
                             try {
                                 sndLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
                             }
@@ -186,7 +187,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                             }
                         }
 
-                        super.sendPart0(part, to, pair, length);
+                        super.sendPart0(from, to, drName, pair, length);
                     }
                 };
             }
@@ -339,13 +340,13 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         mgr0.remoteSnapshotSenderFactory((rqId, nodeId) -> new DelegateSnapshotSender(log,
             snp(sndr).snapshotExecutorService(), mgr0.remoteSnapshotSenderFactory(rqId, nodeId)) {
-            @Override public void sendPart0(File part, File to, GroupPartitionId pair, Long length) {
+            @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
                 nodes.add(nodeId);
 
                 // Single thread must send partitions sequentially node by node.
                 checkDuplicates(nodes);
 
-                super.sendPart0(part, to, pair, length);
+                super.sendPart0(from, to, drName, pair, length);
             }
         });
 

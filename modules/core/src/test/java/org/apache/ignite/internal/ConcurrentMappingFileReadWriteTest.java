@@ -55,7 +55,7 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
         mappingDir = sharedFileTree().mkdirMarshaller();
 
         mappingFileStore = new MarshallerMappingFileStore(
-            new StandaloneGridKernalContext(log, null, null),
+            new StandaloneGridKernalContext(log, null),
             mappingDir
         );
     }

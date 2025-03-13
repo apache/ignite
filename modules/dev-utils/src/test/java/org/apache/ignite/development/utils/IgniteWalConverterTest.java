@@ -125,23 +125,19 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
     /** @return DataStorageConfiguration. */
     private DataStorageConfiguration getDataStorageConfiguration() {
-        final DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
+        return new DataStorageConfiguration()
             .setWalSegmentSize(4 * 1024 * 1024)
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(1000)
             .setWalCompactionEnabled(true)
             .setDefaultDataRegionConfiguration(getDataRegionConfiguration());
-
-        return dataStorageConfiguration;
     }
 
     /** @return DataRegionConfiguration. */
     private DataRegionConfiguration getDataRegionConfiguration() {
-        final DataRegionConfiguration dataRegionConfiguration = new DataRegionConfiguration()
+        return new DataRegionConfiguration()
             .setPersistenceEnabled(true)
             .setMaxSize(100L * 1024 * 1024);
-
-        return dataRegionConfiguration;
     }
 
     /**
@@ -169,11 +165,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft.wal(),
-            ft.walArchive(),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            ft.binaryMeta(),
-            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -228,16 +221,16 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = createWal(list, null);
 
+        U.delete(ft.binaryMeta());
+        U.delete(ft.marshaller());
+
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft.wal(),
-            ft.walArchive(),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            null,
-            null,
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -348,11 +341,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft.wal(),
-            ft.walArchive(),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            ft.binaryMeta(),
-            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -451,11 +441,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft.wal(),
-            ft.walArchive(),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            ft.binaryMeta(),
-            ft.marshaller(),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -538,7 +525,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         IgniteWalConverterArguments args = parse(
             ps,
-            "walDir=" + walDir.getAbsolutePath(),
+            "root=" + ft.root(),
+            "folderName=" + ft.folderName(),
             "pages=" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId(),
             "skipCrc=" + true
         );
