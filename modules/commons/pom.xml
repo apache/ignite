@@ -33,4 +33,12 @@
     <artifactId>ignite-commons</artifactId>
 
     <url>http://ignite.apache.org</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>${jetbrains.annotations.version}</version>
+        </dependency>
+    </dependencies>
 </project>
