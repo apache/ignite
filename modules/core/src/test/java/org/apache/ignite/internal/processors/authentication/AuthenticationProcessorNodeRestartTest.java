@@ -88,7 +88,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
 
         startGrids(NODES_COUNT - 1);
         startClientGrid(CLI_NODE);
