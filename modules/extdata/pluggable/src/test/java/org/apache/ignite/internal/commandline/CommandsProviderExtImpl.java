@@ -97,7 +97,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException {
             testPrint = U.readString(in);
         }
 

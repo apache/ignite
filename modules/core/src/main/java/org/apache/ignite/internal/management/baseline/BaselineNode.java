@@ -175,7 +175,7 @@ public class BaselineNode extends VisorDataTransferObject {
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in)
+        @Override protected void readExternalData(ObjectInput in)
             throws IOException, ClassNotFoundException {
             hostname = U.readString(in);
             addr = U.readString(in);

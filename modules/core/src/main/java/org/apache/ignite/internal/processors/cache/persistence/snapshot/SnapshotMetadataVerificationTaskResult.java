@@ -68,7 +68,7 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         meta = U.readMap(in);
         exceptions = U.readMap(in);
     }

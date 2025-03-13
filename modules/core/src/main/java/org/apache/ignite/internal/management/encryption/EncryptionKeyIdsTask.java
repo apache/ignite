@@ -76,7 +76,7 @@ public class EncryptionKeyIdsTask extends CacheGroupEncryptionTask<List<Integer>
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
             value(U.readList(in));
         }
     }
