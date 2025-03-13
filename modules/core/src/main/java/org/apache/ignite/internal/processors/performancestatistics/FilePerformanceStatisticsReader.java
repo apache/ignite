@@ -25,9 +25,11 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
@@ -309,6 +312,54 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.query(nodeId, qryType, text, id, startTime, duration, success);
+
+            return true;
+        }
+        else if (opType == SYSTEM_VIEW) {
+            String viewName = readCacheableString(buf);
+            if (viewName == null)
+                return false;
+
+            if (buf.remaining() < 4)
+                return false;
+
+            int rowNumber = buf.getInt();
+
+            if (buf.remaining() < 4)
+                return false;
+
+            int attrsNumber = buf.getInt();
+
+            List<String> attrs = new ArrayList<>();
+            RowReader reader = new RowReader(this::readCacheableString);
+
+            for (int i = 0; i < attrsNumber; i++) {
+                String columnName = readCacheableString(buf);
+                if (columnName == null)
+                    return false;
+                attrs.add(columnName);
+
+                String type = readCacheableString(buf);
+                if (type == null)
+                    return false;
+                reader.addType(type);
+            }
+
+            List<List<Object>> rows = new ArrayList<>(rowNumber);
+            for (int i = 0; i < attrsNumber; i++)
+                rows.add(reader.readRow(buf));
+
+            for (List<Object> row : rows) {
+                Map<String, String> keyValRow = new HashMap<>();
+                Iterator<String> i1 = attrs.iterator();
+                Iterator<Object> i2 = row.iterator();
+                while (i1.hasNext() && i2.hasNext())
+                    keyValRow.put(i1.next(), String.valueOf(i2.next()));
+
+                for (PerformanceStatisticsHandler hnd : curHnd)
+                    hnd.systemView(nodeId, viewName, keyValRow);
+            }
+
 
             return true;
         }

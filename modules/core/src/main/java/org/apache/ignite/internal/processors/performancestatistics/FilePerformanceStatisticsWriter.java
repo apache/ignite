@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,6 +45,8 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
@@ -58,6 +61,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -272,6 +276,34 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(startTime);
             buf.putLong(duration);
             buf.put(success ? (byte)1 : 0);
+        });
+    }
+
+    /**
+     * @param viewName Name of system view.
+     * @param view System view.
+     */
+    public void systemView(String viewName, SystemView<?> view) {
+        boolean cachedName = cacheIfPossible(viewName);
+        ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
+
+        SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
+
+        SystemViewRowAttributeWalker.AttributeVisitor attrVisitor = new AttributeCollectorVisitor(byteArrOutputStream, this::cacheIfPossible);
+        walker.visitAll(attrVisitor);
+
+        SystemViewRowAttributeWalker.AttributeWithValueVisitor valVisitor = new AttributeWithValueToBufferVisitor(byteArrOutputStream);
+        view.forEach(row -> walker.visitAll(row, valVisitor));
+
+        byte[] data = byteArrOutputStream.toByteArray();
+
+        int recSize = 1 + (cachedName ? 4 : 4 + viewName.getBytes().length) + 4 + 4 + data.length;
+
+        doWrite(SYSTEM_VIEW, recSize, buf -> {
+            writeString(buf, viewName, cachedName);
+            buf.putInt(view.size());
+            buf.putInt(view.walker().count());
+            buf.put(data);
         });
     }
 
