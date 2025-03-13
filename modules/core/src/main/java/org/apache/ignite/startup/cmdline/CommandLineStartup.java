@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -89,7 +88,6 @@ public final class CommandLineStartup {
     /** Classes with Ignite system properties. */
     static final List<Class<?>> PROPS_CLS = new ArrayList<>(Arrays.asList(
         IgniteSystemProperties.class,
-        ExchangeContext.class,
         GridCacheMapEntry.class,
         LocalDeploymentSpi.class,
         GridCacheDatabaseSharedManager.class,
