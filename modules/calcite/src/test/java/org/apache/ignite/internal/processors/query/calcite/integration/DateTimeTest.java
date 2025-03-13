@@ -301,6 +301,18 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
+    @Test
+    public void testDefaultTemporalValues() throws Exception {
+//        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT '2020-07-07', TT TIME DEFAULT '14:30:43', " +
+//            "TS TIMESTAMP DEFAULT '2023-07-05 01:02:03.456')");
+        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-20')");
+
+        sql("INSERT INTO TBL(ID) VALUES(1)");
+
+        assertQuery("SELECT DT FROM TBL").returns(sqlDate("1582-10-20")).check();
+    }
+
+    /** */
     public static class DateTimeEntry {
         /** */
         long id;
