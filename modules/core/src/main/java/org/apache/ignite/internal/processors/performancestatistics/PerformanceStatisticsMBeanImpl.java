@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
@@ -36,6 +38,20 @@ public class PerformanceStatisticsMBeanImpl implements PerformanceStatisticsMBea
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.performanceStatistics().startCollectStatistics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void startWithViews(List<String> views) throws IgniteCheckedException {
+        ctx.performanceStatistics().addSystemViews(views);
+        start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void startWithAllViews() throws IgniteCheckedException {
+        List<String> views = new ArrayList<>();
+        ctx.systemView().forEach(view -> views.add(view.name()));
+        ctx.performanceStatistics().addSystemViews(views);
+        start();
     }
 
     /** {@inheritDoc} */

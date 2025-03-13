@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.lang.management.ThreadInfo;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -77,6 +78,17 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         assertFalse(grids.isEmpty());
 
         statisticsMBean(grids.get(0).name()).start();
+
+        waitForStatisticsEnabled(true);
+    }
+
+    /** Start collecting performance statistics and specified system views. */
+    public static void startCollectStatisticsWithSystemViews(List<String> views) throws Exception {
+        List<Ignite> grids = G.allGrids();
+
+        assertFalse(grids.isEmpty());
+
+        statisticsMBean(grids.get(0).name()).startWithViews(views);
 
         waitForStatisticsEnabled(true);
     }
@@ -235,6 +247,11 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void systemView(UUID id, String name, Map<String, String> data) {
             // No-op.
         }
     }

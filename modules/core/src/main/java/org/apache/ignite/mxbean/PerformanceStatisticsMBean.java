@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -33,6 +34,17 @@ public interface PerformanceStatisticsMBean {
     /** Start collecting performance statistics in the cluster. */
     @MXBeanDescription("Start collecting performance statistics in the cluster.")
     public void start() throws IgniteCheckedException;
+
+    /** Start collecting performance statistics in the cluster. Also collect specified system views.
+     *
+     * @param views Views to collect.
+     */
+    @MXBeanDescription("Start collecting performance statistics in the cluster. Also collect specified system views.")
+    public void startWithViews(List<String> views) throws IgniteCheckedException;
+
+    /** Start collecting performance statistics in the cluster. Also collect all registered system views.*/
+    @MXBeanDescription("Start collecting performance statistics in the cluster. Also collect all registered system views.")
+    public void startWithAllViews() throws IgniteCheckedException;
 
     /** Stop collecting performance statistics in the cluster. */
     @MXBeanDescription("Stop collecting performance statistics in the cluster.")
