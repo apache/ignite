@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestBinaryMarshaller;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -102,7 +103,10 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
     public void resetState() throws Exception {
         inlineObjHash = false;
 
-        IndexProcessor.serializer = new JavaObjectKeySerializer(getConfiguration());
+        IndexProcessor.serializer = new JavaObjectKeySerializer(
+            U.resolveClassLoader(getConfiguration()),
+            createStandaloneBinaryMarshaller()
+        );
 
         JdbcUtils.serializer = new JavaObjectSerializer() {
             @Override public byte[] serialize(Object o) throws Exception {

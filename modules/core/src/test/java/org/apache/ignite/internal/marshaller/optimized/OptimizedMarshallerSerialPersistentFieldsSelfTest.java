@@ -21,8 +21,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamField;
 import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.junit.Test;
 
 /**
@@ -30,8 +34,17 @@ import org.junit.Test;
  */
 public class OptimizedMarshallerSerialPersistentFieldsSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new OptimizedMarshaller(false);
+    @Override protected Marshaller marshaller() throws IgniteCheckedException {
+        OptimizedMarshaller marsh = new OptimizedMarshaller(false);
+
+        MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
+
+        ctx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
+        ctx.onMarshallerProcessorStarted(newContext(), null);
+
+        marsh.setContext(ctx);
+
+        return marsh;
     }
 
     /**
