@@ -171,6 +171,16 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
                 // Remap correlate fields to input fields.
                 int corrFieldsCnt = ((RexNode)corr.getNode()).getType().getFieldCount();
                 int inputFieldsCnt = getRowType().getFieldCount();
+
+                // Calcite during planning can add fields to the left hand of the correlated join, but without proper
+                // RexCorrelVariable type change. Sometimes these fields can participate in hash distribution keys.
+                // These keys can't be refered by RexFieldAccess and original hash distribution can't be restored,
+                // so, just ignore correlated distribution with these keys.
+                for (int i : corrDistr.getKeys()) {
+                    if (i >= corrFieldsCnt)
+                        return null;
+                }
+
                 Mapping mapping = Mappings.create(MappingType.PARTIAL_FUNCTION, corrFieldsCnt, inputFieldsCnt);
 
                 List<RexNode> conds = RelOptUtil.conjunctions(RexUtil.toCnf(getCluster().getRexBuilder(), condition));
