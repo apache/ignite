@@ -28,11 +28,28 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
+    /** */
+    @Parameter(0)
+    public boolean oldVer;
+
+    /**
+     *
+     */
+    @Parameters
+    public static Object[] parameters() {
+        return new Object[]{true, false};
+    }
+
     /** */
     private static final String OLD_IGNITE_VERSION = "2.16.0";
 
@@ -54,25 +71,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
-            startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(null), new PostStartupClosure());
-
-            stopAllGrids();
-
-            cleanPersistenceDir(true);
-
-            IgniteEx curIgn = startGrid(getCurrentIgniteConfiguration(null));
-
-            curIgn.cluster().state(ClusterState.ACTIVE);
-
-            curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME)).get();
-
-            checkCache(curIgn.cache(CACHE_NAME), BASE_CACHE_SIZE);
-
-            curIgn.cache(CACHE_NAME).destroy();
-
-            curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
-
-            checkCache(curIgn.cache(CACHE_NAME), BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
+            if (oldVer)
+                startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(null), new PostStartupClosure());
+            else {
+                IgniteEx curIgn = startGrid(getCurrentIgniteConfiguration(null));
+                new PostStartupClosure().apply(curIgn);
+            }
         }
         finally {
             stopAllGrids();
@@ -137,6 +141,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             addItemsToCache(cache, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
 
             ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+            cache.destroy();
+
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
+
+            checkCache(cache, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
         }
     }
 
