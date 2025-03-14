@@ -270,24 +270,29 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     @Test
-    public void testDefaultTemporalValues() throws Exception {
+    public void testDefaultDDLOldTemporalValues() throws Exception {
         assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
 
-        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-15', " +
-            "TS TIMESTAMP DEFAULT TIMESTAMP '1582-10-15 01:02:03.456')");
+        try {
+            sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-15', " +
+                "TS TIMESTAMP DEFAULT TIMESTAMP '1582-10-15 01:02:03.456')");
 
-        sql("INSERT INTO TBL(ID) VALUES(1)");
+            sql("INSERT INTO TBL(ID) VALUES(1)");
 
-        assertQuery("SELECT DT, TS FROM TBL").returns(sqlDate("1582-10-15"), sqlTimestamp("1582-10-15 01:02:03.456")).check();
+            assertQuery("SELECT DT, TS FROM TBL").returns(sqlDate("1582-10-15"), sqlTimestamp("1582-10-15 01:02:03.456")).check();
 
-        sql("DROP TABLE TBL");
+            sql("DROP TABLE TBL");
 
-        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-04', " +
-            "TS TIMESTAMP DEFAULT TIMESTAMP '1582-10-04 01:02:03.456')");
+            sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-04', " +
+                "TS TIMESTAMP DEFAULT TIMESTAMP '1582-10-04 01:02:03.456')");
 
-        sql("INSERT INTO TBL(ID) VALUES(1)");
+            sql("INSERT INTO TBL(ID) VALUES(1)");
 
-        assertQuery("SELECT DT, TS FROM TBL").returns(sqlDate("1582-10-04"), sqlTimestamp("1582-10-04 01:02:03.456")).check();
+            assertQuery("SELECT DT, TS FROM TBL").returns(sqlDate("1582-10-04"), sqlTimestamp("1582-10-04 01:02:03.456")).check();
+        }
+        finally {
+            sql(client, "DROP TABLE IF EXISTS TBL");
+        }
     }
 
     /** */
