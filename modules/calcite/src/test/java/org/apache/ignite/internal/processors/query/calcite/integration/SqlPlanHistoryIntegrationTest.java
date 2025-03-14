@@ -58,6 +58,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.SqlConfiguration.DFLT_SQL_PLAN_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_PLAN_HIST_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
@@ -116,6 +117,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** SQL plan history size. */
     private int planHistorySize = 10;
+
+    /** Flag indicating whether the collection of performance statistics is enabled. */
+    private boolean isPerfStatsEnabled;
 
     /** SQL engine. */
     @Parameterized.Parameter
@@ -213,6 +217,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         if (isClient)
             startClientGrid(1);
+
+        if (isPerfStatsEnabled)
+            startCollectStatistics();
 
         IgniteCache<Integer, String> cacheA = queryNode().cache("A");
         IgniteCache<Integer, String> cacheB = queryNode().cache("B");
@@ -514,6 +521,23 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         }
 
         checkSqlPlanHistory(3);
+    }
+
+    /** Checks that EXPLAIN queries execute successfully and are not added to the SQL plan history. */
+    @Test
+    public void testExplainQueries() throws Exception {
+        runQueryWithoutPlan(new SqlFieldsQuery("explain plan for " + SQL));
+    }
+
+    /**
+     * Checks that when performance statistics collection is enabled, EXPLAIN queries execute successfully
+     * and are not added to the SQL plan history.
+     */
+    @Test
+    public void testExplainQueriesWithPerfStatsEnabled() throws Exception {
+        isPerfStatsEnabled = true;
+
+        runQueryWithoutPlan(new SqlFieldsQuery("explain plan for " + SQL));
     }
 
     /**
