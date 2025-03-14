@@ -660,10 +660,10 @@ NOTE: Kafka-to-Ignite applier starts alongside the destination cluster and uses 
 
 * You can check CDC replication with `--check-cdc`. Use it in parallel with Active-Passive/Active-Active replication. To start CDC check for proposed entry:
 ```
-./cdc-start-up.sh --check-cdc --key 11006 --value '{"intVal": 1, "version": 1}' --cluster 1
+./cdc-start-up.sh --check-cdc --key keyVal --value '{"val": 1, "ver": 1}' --cluster 1
 ```
 
-The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transferred. Make sure you specify entry as JSON of two fields: intVal and version. The former is a single integer that represents value and version is used as `conflictResolverField` by `CacheVersionConflictResolverPluginProvider`. To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system.
+The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transferred. Make sure you specify entry as JSON of two fields: "val" and "ver". The former is a single integer that represents value and version is used as `conflictResolverField` by `CacheVersionConflictResolverPluginProvider`. To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system.
 
 Try to play with version value to see how the conflict resolver works. We propose the following sequence of operations with Active-Active:
 
