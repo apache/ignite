@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-export default class DatasetsHomeComponent implements OnInit {
+export default class IgfsHomeComponent implements OnInit {
     static $inject = ['$sanitize','$sce'];
 
     url = 'http://localhost:3000/webapps/mongoAdmin/queryDocuments#admin';
@@ -33,7 +33,7 @@ export default class DatasetsHomeComponent implements OnInit {
         }
         catch (ignored) {
             
-        }          
+        }    
     }
 
     ngOnInit() {

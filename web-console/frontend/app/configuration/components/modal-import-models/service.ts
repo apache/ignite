@@ -17,7 +17,7 @@ export default class ModalImportModels {
         private AgentManager: AgentManager
     ) {}
 
-    _goToDynamicState() {
+    _goToDynamicState(name,component_name) {
         if (this.deferred)
             return this.deferred.promise;
 
@@ -27,10 +27,10 @@ export default class ModalImportModels {
             this.$uiRouter.stateRegistry.deregister(this._state);
 
         this._state = this.$uiRouter.stateRegistry.register({
-            name: 'importModels',
+            name: name,
             parent: this.$uiRouter.stateService.current,
             onEnter: () => {
-                this._open();
+                this._open(component_name);
             },
             onExit: () => {
                 this._modal && this._modal.hide();
@@ -44,16 +44,28 @@ export default class ModalImportModels {
             });
     }
 
-    _open() {
+    _open(component_name) {
         const self = this;
-
-        this._modal = this.$modal({
-            template: `
+        let template;
+        if(component_name=='modal-import-models-from-csv'){
+            template = `
+                <modal-import-models-from-csv
+                    on-hide='$ctrl.onHide()'
+                    cluster-id='$ctrl.$state.params.clusterID'
+                ></modal-import-models-from-csv>
+            `
+        }
+        else{
+            template = `
                 <modal-import-models
                     on-hide='$ctrl.onHide()'
                     cluster-id='$ctrl.$state.params.clusterID'
                 ></modal-import-models>
-            `,
+            `
+        }
+
+        this._modal = this.$modal({
+            template: template,
             controller: ['$state', function($state: StateService) {
                 this.$state = $state;
 
@@ -75,6 +87,10 @@ export default class ModalImportModels {
     }
 
     open() {
-        this._goToDynamicState();
+        this._goToDynamicState('importModels','modal-import-models');
+    }
+
+    openCSV() {
+        this._goToDynamicState('importModelsFromCSV','modal-import-models-from-csv');
     }
 }

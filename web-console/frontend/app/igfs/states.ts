@@ -1,50 +1,53 @@
+
+
 import {StateParams} from '@uirouter/angularjs';
+
 import {from, combineLatest} from 'rxjs';
 import {switchMap, take, map} from 'rxjs/operators';
 
 function registerStates($stateProvider) {
     // Setup the states.
     $stateProvider
-    .state('base.datasets', {
+    .state('base.igfs', {
         permission: 'query',
-        url: '/datasets',
+        url: '/igfs',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
         resolve: {           
         },
         resolvePolicy: {
             async: 'NOWAIT'
         },
-        redirectTo: 'base.datasets.overview'
+        redirectTo: 'base.igfs.overview'
     })
-    .state('base.datasets.overview', {
+    .state('base.igfs.overview', {
         url: '/overview',
-        component: 'pageDatasetsOverview',
+        component: 'pageIgfsOverview',
         permission: 'query',
         tfMetaTags: {
-            title: 'Datasets List'
+            title: 'File Storage List'
         }
     })
-    .state('base.datasets.edit', {
-        url: `/{datasetID}`,
-        permission: 'query',
-        component: 'pageDatasets',
+    .state('base.igfs.edit', {
+        url: `/{storageID}`,
+        component: 'pageIgfs',
+        permission: 'query',        
         resolve: {
-            _dataset: ['$transition$', ($transition$) => {
-                return {datasetID: $transition$.params().datasetID};
+            _storage: ['$transition$', ($transition$) => {
+                return {storageID: $transition$.params().storageID};
             }]
         },
         data: {
-            errorState: 'base.datasets.overview'
+            errorState: 'base.igfs.overview'
         },
-        redirectTo: 'base.datasets.edit.basic',
+        redirectTo: 'base.igfs.edit.basic',
         failState: 'signin',
         tfMetaTags: {
-            title: 'Dataset'
+            title: 'Storage'
         }
     })
-    .state('base.datasets.edit.basic', {
+    .state('base.igfs.edit.basic', {
         url: '/basic',
-        component: 'pageChinaMap',
+        component: 'pageIgfsChinaMap',
         permission: 'query',
         resolve: {            
         },
@@ -55,9 +58,9 @@ function registerStates($stateProvider) {
             title: 'Basic Configuration'
         }
     })
-    .state('base.datasets.edit.advanced', {
+    .state('base.igfs.edit.advanced', {
         url: '/advanced',
-        component: 'pageDatasetsAdvanced',
+        component: 'pageIgfsAdvanced',
         permission: 'query',
         resolve: {            
         },

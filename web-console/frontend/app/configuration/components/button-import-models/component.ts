@@ -12,6 +12,10 @@ export class ButtonImportModels {
     startImport() {
         return this.ModalImportModels.open();
     }
+
+    startImportCSV() {
+        return this.ModalImportModels.openCSV();
+    }
 }
 export const component = {
     name: 'buttonImportModels',

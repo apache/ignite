@@ -19,21 +19,12 @@ import pcSplitButton from '../configuration/components/pc-split-button';
 import pageDatasets from './components/page-datasets';
 import pageDatasetsOverview from './components/page-datasets-overview';
 import pageDatasetsAdvanced from './components/page-datasets-advanced';
-import pageChinaMap from './components/china-map';
+import pageChinaMap from './components/page-datasets-china-map';
 
 import {registerStates} from './states';
-
 import {errorState} from '../configuration/transitionHooks/errorState';
-import {default as ActivitiesData} from '../core/activities/Activities.data';
 
 
-registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
-
-function registerActivitiesHook($uiRouter: UIRouter, ActivitiesData: ActivitiesData) {
-    $uiRouter.transitionService.onSuccess({to: 'base.datasets.**'}, (transition) => {
-        ActivitiesData.post({group: 'datasets', action: transition.targetState().name()});
-    });
-}
 
 export default angular
     .module('ignite-console.datasets', [
@@ -53,7 +44,6 @@ export default angular
       
     ])
     .config(registerStates)
-    .run(registerActivitiesHook)
     .run(errorState)
     .run(['ConfigureState', '$uiRouter', (ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);        

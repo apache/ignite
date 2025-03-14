@@ -28,6 +28,7 @@ modal-import-models-step-indicator {
         flex-direction: column;
         align-items: center;
         position: relative;
+        min-width: 120px;
 
         &:before {
             content: '';

@@ -76,6 +76,10 @@ export default class ModelEditFormController {
         return this.ModalImportModels.open();
     }
 
+    importModelsFromCSV() {
+        return this.ModalImportModels.openCSV();
+    }
+
     checkQueryConfiguration(item: DomainModel) {
         if (item.queryMetadata === 'Configuration' && this.LegacyUtils.domainForQueryConfigured(item)) {
             if (_.isEmpty(item.fields))

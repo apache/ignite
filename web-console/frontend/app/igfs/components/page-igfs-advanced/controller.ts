@@ -11,7 +11,7 @@ import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
 
-export default class PageDatasetsAdvancedController {
+export default class PageIgfsAdvancedController {
     form: ng.IFormController;
 
     static $inject = [
@@ -44,13 +44,13 @@ export default class PageDatasetsAdvancedController {
         
         const clusterID$ = this.$uiRouter.globals.params$.pipe(
             take(1),
-            pluck('datasetID'),
+            pluck('storageID'),
             filter((v) => v),
             take(1)
         );
         this.clusterID$ = clusterID$;
 
-        this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('datasetID'), map((id) => id === 'new'));
+        this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('storageID'), map((id) => id === 'new'));
         
         
         this.originalCluster$ = clusterID$.pipe(
@@ -120,16 +120,7 @@ export default class PageDatasetsAdvancedController {
     }
 
     _removeMongoExpress(id: string) {
-        try {
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress) {            
-                delete mongoExpress[id];
-            }
-            localStorage.mongoExpress = JSON.stringify(mongoExpress);
-        }
-        catch (err) {
-            this.$scope.message = err.toString();
-        }
+        localStorage.mongoExpress = '{}'
     }
 
     save(redirect = false) {
@@ -141,7 +132,7 @@ export default class PageDatasetsAdvancedController {
             this.$scope.message = 'Save successful.';
             if(redirect){                
                 setTimeout(() => {
-                    this.$uiRouter.stateService.go('base.datasets.overview');
+                    this.$uiRouter.stateService.go('base.igfs.overview');
                 },100)
             }            
         }        

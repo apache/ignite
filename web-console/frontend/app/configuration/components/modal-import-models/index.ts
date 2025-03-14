@@ -2,6 +2,7 @@
 
 import angular from 'angular';
 import {component} from './component';
+import {component as csvImporter} from './csv_importer';
 import service from './service';
 import {component as stepIndicator} from './step-indicator/component';
 import {component as tablesActionCell} from './tables-action-cell/component';
@@ -13,4 +14,5 @@ export default angular
     .component('tablesActionCell', tablesActionCell)
     .component('modalImportModelsStepIndicator', stepIndicator)
     .component('selectedItemsAmountIndicator', amountIndicator)
-    .component('modalImportModels', component);
+    .component('modalImportModels', component)
+    .component('modalImportModelsFromCsv', csvImporter);

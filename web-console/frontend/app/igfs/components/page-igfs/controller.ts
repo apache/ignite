@@ -6,7 +6,7 @@ import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchM
 import ConfigureState from 'app/configuration/services/ConfigureState';
 import {UIRouter} from '@uirouter/angularjs';
 
-export default class PageDatasetsController {
+export default class PageIgfsController {
     static $inject = ['$uiRouter', 'ConfigureState'];
 
     constructor(
@@ -19,7 +19,7 @@ export default class PageDatasetsController {
     tooltipsVisible = true;
 
     $onInit() {
-        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('datasetID'));
+        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('storageID'));
         
         let cluster$ = this.clusterID$.pipe(
             distinctUntilChanged(),

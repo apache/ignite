@@ -21,6 +21,7 @@ import configurationLazyModule from './app/configuration/index.lazy';
 import consoleLazyModule from './app/console/index.lazy';
 import datasourceLazyModule from './app/datasource/index.lazy';
 import datasetsLazyModule from './app/datasets/index.lazy';
+import igfsLazyModule from './app/igfs/index.lazy';
 import {IgniteWebConsoleModule} from './app-angular';
 import {downgradeModuleFactory} from './app-angular/downgrade';
 
@@ -34,6 +35,8 @@ angular.bootstrap(document, [
 	consoleLazyModule.name, 
 
 	datasetsLazyModule.name,
+
+	igfsLazyModule.name,
 	
 	downgradeModuleFactory(IgniteWebConsoleModule)
 ], {strictDi: true});

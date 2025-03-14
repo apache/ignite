@@ -25,7 +25,7 @@ export default class ActivitiesData {
 
         // TODO IGNITE-5466: since upgrade to UIRouter 1, "url.source" is undefined.
         // Actions like that won't be saved to DB. Think of a better solution later.
-        action = action || this.$state.$current.url.source || '';
+        action = action || this.$state.$current.url.toString() || '';
         group = group || (action.match(/^\/([^/]+)/) || [])[1];
 
         return this.$http.post<IActivityDataResponse>('/api/v1/activities/page', { group, action })

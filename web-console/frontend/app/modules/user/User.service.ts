@@ -4,21 +4,10 @@ import {ReplaySubject, Subject} from 'rxjs';
 import {StateService} from '@uirouter/angularjs';
 import {default as MessagesFactory} from 'app/services/Messages.service';
 import {DemoService} from 'app/modules/demo/Demo.module';
+import {User as IUser} from 'app/types';
 
-export type User = {
-    id: string,    
-    admin: boolean,
-    country: string,
-    email: string,
-    phone?: string,
-    company?: string,
-    firstName: string,
-    lastName: string,
-    lastActivity: string,
-    lastLogin: string,
-    registered: string,
-    token: string
-} | null
+
+export type User = IUser | null
 
 UserFactory.$inject = ['$q', '$injector', 'Demo', '$state', '$http', 'IgniteMessages'];
 
