@@ -1,0 +1,36 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'nodeFilter'
+-var model = '$ctrl.clonedCache'
+-var nodeFilter = model + '.nodeFilter';
+-var nodeFilterKind = nodeFilter + '.kind';
+-var customFilter = nodeFilterKind + ' === "Custom"'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Node filter
+    panel-description Determines on what nodes the cache should be started.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Node filter:',
+                    model: nodeFilterKind,
+                    name: '"nodeFilter"',
+                    placeholder: 'Not set',
+                    options: '::$ctrl.Caches.nodeFilterKinds',
+                    tip: 'Node filter variant'
+                })
+            .pc-form-grid-col-60(ng-show=customFilter)
+                +form-field__java-class({
+                    label: 'Class name:',
+                    model: `${nodeFilter}.Custom.className`,
+                    name: '"customNodeFilter"',
+                    required: customFilter,
+                    tip: 'Class name of custom node filter implementation',
+                    validationActive: customFilter
+                })
+        .pca-form-column-6
+            +preview-model(model, 'cacheNodeFilter')

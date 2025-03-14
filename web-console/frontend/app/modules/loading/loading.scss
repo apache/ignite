@@ -1,0 +1,58 @@
+
+
+[ignite-loading] {
+    position: relative;
+}
+
+.loading {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    background-color: white;
+    transition: opacity 0.5s linear;
+}
+
+.loading-active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.5s linear;
+}
+
+.loading:before {
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+}
+
+.loading .loading-wrapper {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    width: 100%;
+}
+
+.loading.loading-top .loading-wrapper {
+    position: absolute;
+    top: 100px;
+    display: block;
+}
+
+.loading .loading-text {
+    font-size: 18px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.loading-opacity-80 {
+    opacity: 0.8;
+}
+
+.loading-max-foreground {
+    z-index: 99999;
+}

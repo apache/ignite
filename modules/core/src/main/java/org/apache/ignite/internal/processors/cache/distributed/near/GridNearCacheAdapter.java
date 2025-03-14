@@ -369,6 +369,17 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @Override public long offHeapAllocatedSize() {
         return dht().offHeapAllocatedSize();
     }
+    
+
+    /** {@inheritDoc} */
+    @Override public boolean isIgfsDataCache() {
+        return dht().isIgfsDataCache();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long igfsDataSpaceUsed() {
+        return dht().igfsDataSpaceUsed();
+    }
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,

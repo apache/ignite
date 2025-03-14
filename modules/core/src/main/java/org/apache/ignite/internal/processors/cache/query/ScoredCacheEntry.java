@@ -20,13 +20,15 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /** Represents cache key-value pair and score to compare cache entry by custom rule. */
-public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> {
+public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> implements java.lang.Comparable<ScoredCacheEntry<K, V>> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 4L;
 
     /** */
     private float score;
@@ -50,19 +52,25 @@ public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeObject(score);
+        out.writeFloat(score);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        score = (float)in.readObject();
+        score = in.readFloat();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ScoredCacheEntry.class, this);
     }
+
+	
+	@Override
+	public int compareTo(ScoredCacheEntry<K, V> o2) {		
+		return Double.compare(this.score,o2.score);
+	}
 }
 

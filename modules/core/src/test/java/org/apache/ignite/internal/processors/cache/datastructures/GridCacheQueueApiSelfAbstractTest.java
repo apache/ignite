@@ -136,6 +136,71 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         assert val.equals(queue.poll());
     }
+    
+    
+    /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAddFirstQueue() throws Exception {
+        // Random sequence names.
+        String queueName1 = UUID.randomUUID().toString();        
+
+        CollectionConfiguration colCfg = config(false);
+
+        IgniteQueue<String> queue1 = initQueue(0, queueName1, 0, colCfg);
+        
+        
+        queue1.addFirst("-1");
+        
+        for(String item: queue1) {
+        	System.out.println(item);
+        }
+        
+        assertEquals(1,queue1.size());
+        
+        queue1.add("0");
+        
+        for(String item: queue1) {
+        	System.out.println(item);
+        }
+        
+        assertEquals(2,queue1.size());
+        
+        queue1.close();       
+
+        assertNull(initQueue(0, queueName1, 0, null));
+        
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPollLastQueue() throws Exception {
+        // Random queue name.
+        String queueName = UUID.randomUUID().toString();
+
+        String val1 = UUID.randomUUID().toString();
+        String val2 = UUID.randomUUID().toString();
+        String val3 = UUID.randomUUID().toString();
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
+
+        assert queue.addFirst(val1);
+
+        assert val1.equals(queue.pollLast());
+        
+        queue.addFirst(val1);
+        queue.addFirst(val2);
+        assert queue.addFirst(val3);
+
+        assert val1.equals(queue.pollLast());
+    }
+
 
     /**
      * JUnit.

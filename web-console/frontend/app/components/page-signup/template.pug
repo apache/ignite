@@ -1,0 +1,18 @@
+
+
+global-progress-line(is-loading='$ctrl.isLoading')
+
+h3.public-page__title(translate='signUp.pageTitle')
+form(name='$ctrl.form' novalidate ng-submit='$ctrl.signup()')
+    form-signup(
+        outer-form='$ctrl.form'
+        ng-model='$ctrl.data'
+        server-error='$ctrl.serverError'
+    )
+    footer.full-width.form-footer
+        button.btn-ignite.btn-ignite--primary(
+            type='submit'
+            ng-disabled='$ctrl.isLoading'
+            translate='Sign Up'
+        )
+footer.page-signup__has-account-message(translate='signUp.signInMessage' translate-sanitize-strategy='null' translate-compile)

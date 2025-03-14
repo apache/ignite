@@ -82,7 +82,11 @@ public enum H2DatabaseType {
     GEOMETRY("GEOMETRY"),
 
     /** */
-    OTHER("OTHER");
+    OTHER("OTHER"),
+    
+    
+    /** add@byron */
+    ENUM("ENUM");
 
     /** Map of Class to enum. */
     private static final Map<Class<?>, H2DatabaseType> map = new HashMap<>();
@@ -148,6 +152,10 @@ public enum H2DatabaseType {
             return TIME;
         else if (LocalDateTimeUtils.LOCAL_DATE_TIME == cls)
             return TIMESTAMP;
+        //add@byron use int storage enum
+        if(cls.isEnum() || Enum.class==cls) {
+            return ENUM;
+        }
 
         return cls.isArray() && !cls.getComponentType().isPrimitive() ? ARRAY : OTHER;
     }

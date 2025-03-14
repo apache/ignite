@@ -25,7 +25,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-internal</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 

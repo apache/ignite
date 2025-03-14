@@ -1,0 +1,93 @@
+<!--
+ Copyright 2019 GridGain Systems, Inc. and Contributors.
+
+ Licensed under the GridGain Community Edition License (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<global-progress-line [isLoading]='isLoading'></global-progress-line>
+<header class="header-with-selector">
+    <div><h1>{{"profile.pageTitle"|translate}}</h1></div>
+</header>
+<form [formGroup]='form' (ngSubmit)='saveUser()' id='user' scrollToFirstInvalid class="form-grid">
+    <form-field class='span-1'>
+        <label for='firstName'>{{"profile.firstNameInput.label"|translate}}</label>
+        <input type="text" formControlName='firstName' id='firstName' autofocus>
+    </form-field>
+    <form-field class='span-1'>
+        <label for='lastName'>{{"profile.lastNameInput.label"|translate}}</label>
+        <input type="text" formControlName='lastName' id='lastName'>
+    </form-field>
+    <form-field class='span-2'>
+        <label for='email'>{{"profile.emailInput.label"|translate}}</label>
+        <input type="email" formControlName='email' id='email' autocomplete="username email">
+    </form-field>
+    <form-field class='span-1'>
+        <label for='phone'>{{"profile.phoneInput.label"|translate}}</label>
+        <input type="tel" formControlName='phone' id='phone' [placeholder]='"profile.phoneInput.placeholder"|translate'>
+    </form-field>
+    <form-field class='span-1'>
+        <label for='country'>{{"profile.countryInput.label"|translate}}</label>
+        <select formControlName='country' id='country'>
+            <option *ngFor='let country of countries' [value]="country.value">{{country.label}}</option>
+        </select>
+    </form-field>
+    <form-field class='span-2'>
+        <label for='company'>{{"profile.companyInput.label"|translate}}</label>
+        <input type="text" formControlName='company' id='company'>
+    </form-field>
+    <panel-collapsible-angular class='span-2' #securityTokenPanel formControlName='tokenPanelOpened'>
+        <span panelTitle>{{(securityTokenPanel.opened ? "profile.tokenPanel.title.opened" : "profile.tokenPanel.title.closed")|translate}}</span>
+        <div class='form-grid'>
+            <form-field class="span-1">
+                <form-field-hint>{{"profile.tokenPanel.form.hint"|translate}}</form-field-hint>
+                <label for="securityToken">{{"profile.tokenPanel.form.label"|translate}}</label>
+                <copy-to-clipboard-button formFieldOverlay [value]='form.controls.token.value'>{{"profile.tokenPanel.form.copyTooltip"|translate}}</copy-to-clipboard-button>
+                <input
+                    id='securityToken'
+                    type="text"
+                    [placeholder]='"profile.tokenPanel.form.placeholder"|translate'
+                    formControlName='token'
+                >
+            </form-field>
+            <span class="span-1 security-token-generate-button-container">
+                <a (click)='generateToken()'>{{"profile.tokenPanel.generateToken"|translate}}</a>
+            </span>
+        </div>
+    </panel-collapsible-angular>
+    <panel-collapsible-angular class='span-2' formControlName='passwordPanelOpened' [formGroup]='form.controls.password'>
+        <span panelTitle>{{(form.value.passwordPanelOpened ? 'profile.passwordPanel.title.opened' : 'profile.passwordPanel.title.closed')|translate}}</span>
+        <div class="form-grid" *ngIf='form.value.passwordPanelOpened'>
+            <!-- https://www.chromium.org/developers/design-documents/create-amazing-password-forms -->
+            <!-- https://stackoverflow.com/a/48736294/333777 -->
+            <input type="text" name="email" [value]='form.value.email' autocomplete="username email" style="display: none;">
+            <form-field class='span-2'>
+                <label for="newPassword">{{"profile.passwordPanel.newPassword.label"|translate}}</label>
+                <password-visibility-toggle-button-angular formFieldOverlay [passwordEl]='passwordEl'></password-visibility-toggle-button-angular>
+                <input type="password" formControlName='new' id='newPassword' #passwordEl autofocus autocomplete="new-password">
+            </form-field>
+            <form-field class='span-2'>
+                <label for="confirmPassword">{{"profile.passwordPanel.confirmPassword.label"|translate}}</label>
+                <password-visibility-toggle-button-angular formFieldOverlay [passwordEl]='confirmPasswordEl'></password-visibility-toggle-button-angular>
+                <input type="password" formControlName='confirm' id='confirmPassword' #confirmPasswordEl autocomplete="new-password">
+            </form-field>
+        </div>
+    </panel-collapsible-angular>
+</form>
+<hr>
+<footer>
+    <a class="btn-ignite btn-ignite--link-success" uiSref="default-state">{{"profile.buttons.cancel"|translate}}</a>
+    <button type='submit' class="btn-ignite btn-ignite--success" form='user' [disabled]='isLoading'>
+        <ignite-icon name="checkmark" class='icon-left'></ignite-icon>
+        {{"profile.buttons.save"|translate}}
+    </button>
+</footer>
