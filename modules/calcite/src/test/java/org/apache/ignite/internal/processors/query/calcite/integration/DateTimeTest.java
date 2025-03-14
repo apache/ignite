@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
@@ -240,36 +241,53 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testOldDateLiteralsWithTable() throws Exception {
-        sql(client, "INSERT INTO datetimetable (ID, SQLDATE, SQLTIMESTAMP) VALUES(?, ?, ? )", 5, sqlDate("1582-10-04"),
-            sqlTimestamp("1582-10-04 15:31:47.381"));
-        sql(client, "INSERT INTO datetimetable (ID, SQLDATE, SQLTIMESTAMP) VALUES(6, DATE '1582-10-04'," +
-            " TIMESTAMP '1582-10-04 15:31:47.381')");
+        try {
+            sql(client, "INSERT INTO datetimetable (ID, SQLDATE, SQLTIMESTAMP) VALUES(?, ?, ? )", 5, sqlDate("1582-10-04"),
+                sqlTimestamp("1582-10-04 15:31:47.381"));
+            sql(client, "INSERT INTO datetimetable (ID, SQLDATE, SQLTIMESTAMP) VALUES(6, DATE '1582-10-04'," +
+                " TIMESTAMP '1582-10-04 15:31:47.381')");
 
-        assertQuery("SELECT SQLDATE from datetimetable WHERE ID=5").returns(sqlDate("1582-10-04")).check();
-        assertQuery("SELECT SQLDATE from datetimetable WHERE ID=6").returns(sqlDate("1582-10-04")).check();
-        assertQuery("SELECT SQLDATE + INTERVAL 1 DAYS from datetimetable WHERE ID=5").returns(sqlDate("1582-10-15"))
-            .check();
-        assertQuery("SELECT SQLDATE + INTERVAL 1 DAYS from datetimetable WHERE ID=6").returns(sqlDate("1582-10-15"))
-            .check();
+            assertQuery("SELECT SQLDATE from datetimetable WHERE ID=5").returns(sqlDate("1582-10-04")).check();
+            assertQuery("SELECT SQLDATE from datetimetable WHERE ID=6").returns(sqlDate("1582-10-04")).check();
+            assertQuery("SELECT SQLDATE + INTERVAL 1 DAYS from datetimetable WHERE ID=5").returns(sqlDate("1582-10-15"))
+                .check();
+            assertQuery("SELECT SQLDATE + INTERVAL 1 DAYS from datetimetable WHERE ID=6").returns(sqlDate("1582-10-15"))
+                .check();
 
-        assertQuery("SELECT SQLTIMESTAMP from datetimetable WHERE ID=5").returns(sqlTimestamp("1582-10-04 15:31:47.381")).check();
-        assertQuery("SELECT SQLTIMESTAMP from datetimetable WHERE ID=6").returns(sqlTimestamp("1582-10-04 15:31:47.381")).check();
-        assertQuery("SELECT SQLTIMESTAMP + INTERVAL 1 DAYS from datetimetable WHERE ID=5").returns(sqlTimestamp("1582-10-15 15:31:47.381"))
-            .check();
-        assertQuery("SELECT SQLTIMESTAMP + INTERVAL 1 DAYS from datetimetable WHERE ID=6").returns(sqlTimestamp("1582-10-15 15:31:47.381"))
-            .check();
+            assertQuery("SELECT SQLTIMESTAMP from datetimetable WHERE ID=5").returns(sqlTimestamp("1582-10-04 15:31:47.381")).check();
+            assertQuery("SELECT SQLTIMESTAMP from datetimetable WHERE ID=6").returns(sqlTimestamp("1582-10-04 15:31:47.381")).check();
+            assertQuery("SELECT SQLTIMESTAMP + INTERVAL 1 DAYS from datetimetable WHERE ID=5")
+                .returns(sqlTimestamp("1582-10-15 15:31:47.381"))
+                .check();
+            assertQuery("SELECT SQLTIMESTAMP + INTERVAL 1 DAYS from datetimetable WHERE ID=6")
+                .returns(sqlTimestamp("1582-10-15 15:31:47.381"))
+                .check();
+        }
+        finally {
+            sql(client, "DELETE FROM datetimetable WHERE ID IN(5, 6)");
+        }
     }
 
     /** */
     @Test
     public void testDefaultTemporalValues() throws Exception {
-//        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT '2020-07-07', TT TIME DEFAULT '14:30:43', " +
-//            "TS TIMESTAMP DEFAULT '2023-07-05 01:02:03.456')");
-        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-04')");
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+
+        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-15', " +
+            "TS TIMESTAMP DEFAULT TIMESTAMP '1582-10-15 01:02:03.456')");
 
         sql("INSERT INTO TBL(ID) VALUES(1)");
 
-        assertQuery("SELECT DT FROM TBL").returns(sqlDate("1582-10-04")).check();
+        assertQuery("SELECT DT, TS FROM TBL").returns(sqlDate("1582-10-15"), sqlTimestamp("1582-10-15 01:02:03.456")).check();
+
+        sql("DROP TABLE TBL");
+
+        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-04', " +
+            "TS TIMESTAMP DEFAULT TIMESTAMP '1582-10-04 01:02:03.456')");
+
+        sql("INSERT INTO TBL(ID) VALUES(1)");
+
+        assertQuery("SELECT DT, TS FROM TBL").returns(sqlDate("1582-10-04"), sqlTimestamp("1582-10-04 01:02:03.456")).check();
     }
 
     /** */
