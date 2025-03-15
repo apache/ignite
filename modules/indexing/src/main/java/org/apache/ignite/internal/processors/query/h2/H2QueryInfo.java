@@ -124,7 +124,7 @@ public class H2QueryInfo implements TrackableQuery {
         if (plan == null) {
             String plan0 = stmt.getPlanSQL();
 
-            plan = (plan0 != null) ? planWithoutScanCount(plan0) : null;
+            plan = (plan0 != null) ? planWithoutScanCount(plan0) : "";
         }
 
         return plan;

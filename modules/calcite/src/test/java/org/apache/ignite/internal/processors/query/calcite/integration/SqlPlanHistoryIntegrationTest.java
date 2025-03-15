@@ -118,9 +118,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** SQL plan history size. */
     private int planHistorySize = 10;
 
-    /** Flag indicating whether the collection of performance statistics is enabled. */
-    private boolean isPerfStatsEnabled;
-
     /** SQL engine. */
     @Parameterized.Parameter
     public String sqlEngine;
@@ -137,19 +134,24 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public boolean isFullyFetched;
 
+    /** Flag indicating whether the collection of performance statistics is enabled. */
+    @Parameterized.Parameter(4)
+    public boolean isPerfStatsEnabled;
+
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}")
+    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}, isPerfStatsEnabled={4}")
     public static Collection<Object[]> params() {
         return Arrays.stream(new Object[][]{
             {CalciteQueryEngineConfiguration.ENGINE_NAME},
             {IndexingQueryEngineConfiguration.ENGINE_NAME}
         }).flatMap(sqlEngine -> Arrays.stream(sqlEngine[0].equals(IndexingQueryEngineConfiguration.ENGINE_NAME) ?
-                new Boolean[]{false} : new Boolean[]{true, false})
-                .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
-                    .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
-                        .map(isFullyFetched -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched})))
+            new Boolean[]{false} : new Boolean[]{true, false})
+            .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
+            .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
+            .flatMap(isFullyFetched -> Arrays.stream(new Boolean[]{true, false})
+            .map(isPerfStatsEnabled -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched, isPerfStatsEnabled}))))
         ).collect(Collectors.toList());
     }
 
@@ -338,6 +340,12 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         runFailedQuery(new SqlQuery<>("String", "from String where fail()=1"));
     }
 
+    /** Checks that EXPLAIN queries execute successfully and are not added to the SQL plan history. */
+    @Test
+    public void testExplainQuery() throws Exception {
+        runQueryWithoutPlan(new SqlFieldsQuery("explain plan for " + SQL));
+    }
+
     /** Checks ScanQuery. */
     @Test
     public void testScanQuery() throws Exception {
@@ -377,6 +385,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks that older plan entries are evicted when maximum history size is reached. */
     @Test
     public void testPlanHistoryEviction() throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
         IgniteCache<Integer, String> cache = queryNode().cache("A");
@@ -409,6 +419,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEntryReplacement() throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
         long firstTs;
@@ -501,6 +513,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         assumeTrue("ScanCount suffix can only be present in H2 local query plans",
             sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && loc);
 
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
         final int iterations = 5;
@@ -521,23 +535,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         }
 
         checkSqlPlanHistory(3);
-    }
-
-    /** Checks that EXPLAIN queries execute successfully and are not added to the SQL plan history. */
-    @Test
-    public void testExplainQueries() throws Exception {
-        runQueryWithoutPlan(new SqlFieldsQuery("explain plan for " + SQL));
-    }
-
-    /**
-     * Checks that when performance statistics collection is enabled, EXPLAIN queries execute successfully
-     * and are not added to the SQL plan history.
-     */
-    @Test
-    public void testExplainQueriesWithPerfStatsEnabled() throws Exception {
-        isPerfStatsEnabled = true;
-
-        runQueryWithoutPlan(new SqlFieldsQuery("explain plan for " + SQL));
     }
 
     /**
@@ -753,6 +750,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param reset Reset event.
      */
     public void checkReset(Runnable reset) throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
         IgniteCache<Integer, String> cache = queryNode().cache("A");
@@ -780,6 +779,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param startGridFirst Flag indicating whether to start the grid before the setup.
      */
     public void checkEmptyHistory(Runnable setup, boolean startGridFirst) throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         if (startGridFirst)
             startTestGrid();
 
@@ -808,7 +809,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         if (isSingleEngineCheck)
             assumeFalse(sqlEngine == CalciteQueryEngineConfiguration.ENGINE_NAME);
 
-        assumeFalse(isClient || loc || isFullyFetched);
+        assumeFalse(isClient || loc || isFullyFetched || isPerfStatsEnabled);
 
         startTestGrid();
 
