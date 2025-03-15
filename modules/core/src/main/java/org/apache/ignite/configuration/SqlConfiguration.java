@@ -49,7 +49,7 @@ public class SqlConfiguration {
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
     /** SQL plan history size. */
-    private int sqlPlanHistSize = DFLT_SQL_PLAN_HISTORY_SIZE;
+    private int sqlPlanHistSize = -1;
 
     /** Enable validation of key & values against sql schema. */
     private boolean validationEnabled;
@@ -114,9 +114,9 @@ public class SqlConfiguration {
     }
 
     /**
-     * Number of SQL plan history elements to keep in memory. If not provided, then default value {@link
-     * #DFLT_SQL_PLAN_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL plan history
-     * will be switched off.
+     * Number of SQL plan history elements to keep in memory. If not provided, then default value {@code -1} applies when
+     * the indexing module is in use and {@link #DFLT_SQL_PLAN_HISTORY_SIZE} is used for other engines. If provided value
+     * is less or equals 0, then gathering SQL plan history will be switched off.
      *
      * @return SQL plan history size.
      */
@@ -125,8 +125,8 @@ public class SqlConfiguration {
     }
 
     /**
-     * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default value is {@link
-     * #DFLT_SQL_PLAN_HISTORY_SIZE}.
+     * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default value {@code -1}
+     * applies when the indexing module is in use and {@link #DFLT_SQL_PLAN_HISTORY_SIZE} is used for other engines.
      *
      * @param size Number of SQL plan history elements kept in memory.
      * @return {@code this} for chaining.
