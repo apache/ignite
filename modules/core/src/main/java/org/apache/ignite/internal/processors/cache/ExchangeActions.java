@@ -62,6 +62,9 @@ public class ExchangeActions {
     /** */
     private StateChangeRequest stateChangeReq;
 
+    /** Security subject id. */
+    private UUID secSubjId;
+
     /**
      * @param grpId Group ID.
      * @return Always {@code true}, fails with assert error if inconsistent.
@@ -108,6 +111,20 @@ public class ExchangeActions {
      */
     public Collection<CacheActionData> cacheStopRequests() {
         return cachesToStop != null ? cachesToStop.values() : Collections.emptyList();
+    }
+
+    /**
+     * @return Security subject id.
+     */
+    public UUID securitySubjectId() {
+        return secSubjId;
+    }
+
+    /**
+     * Sets Security subject id.
+     */
+    public void securitySubjectId(UUID secSubjId) {
+        this.secSubjId = secSubjId;
     }
 
     /**
