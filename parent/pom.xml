@@ -366,6 +366,10 @@
                                 <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
                             </group>
                             <group>
+                                <title>Memory allocator APIs</title>
+                                <packages>org.apache.ignite.mem</packages>
+                            </group>
+                            <group>
                                 <title>SPI: CheckPoint</title>
                                 <packages>org.apache.ignite.spi.checkpoint*</packages>
                             </group>

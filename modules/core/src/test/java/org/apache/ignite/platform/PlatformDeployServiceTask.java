@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -39,6 +40,8 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
@@ -50,10 +53,23 @@ import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Parameter;
 import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
+import org.apache.ignite.platform.model.V10;
+import org.apache.ignite.platform.model.V11;
+import org.apache.ignite.platform.model.V12;
+import org.apache.ignite.platform.model.V13;
+import org.apache.ignite.platform.model.V14;
+import org.apache.ignite.platform.model.V15;
+import org.apache.ignite.platform.model.V16;
+import org.apache.ignite.platform.model.V5;
+import org.apache.ignite.platform.model.V6;
+import org.apache.ignite.platform.model.V7;
+import org.apache.ignite.platform.model.V8;
+import org.apache.ignite.platform.model.V9;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -468,26 +484,26 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public int testOverload(int count, Parameter[] params) {
-            assertNotNull(params);
-            assertEquals(count, params.length);
+            assert params != null;
+            assert count == params.length;
 
-            assertEquals(1, params[0].getId());
-            assertEquals(2, params[0].getValues().length);
+            assert 1 == params[0].getId();
+            assert 2 == params[0].getValues().length;
 
-            assertEquals(1, params[0].getValues()[0].getId());
-            assertEquals(42, params[0].getValues()[0].getVal());
+            assert 1 == params[0].getValues()[0].getId();
+            assert 42 == params[0].getValues()[0].getVal();
 
-            assertEquals(2, params[0].getValues()[1].getId());
-            assertEquals(43, params[0].getValues()[1].getVal());
+            assert 2 == params[0].getValues()[1].getId();
+            assert 43 == params[0].getValues()[1].getVal();
 
-            assertEquals(2, params[1].getId());
-            assertEquals(2, params[1].getValues().length);
+            assert 2 == params[1].getId();
+            assert 2 == params[1].getValues().length;
 
-            assertEquals(3, params[1].getValues()[0].getId());
-            assertEquals(44, params[1].getValues()[0].getVal());
+            assert 3 == params[1].getValues()[0].getId();
+            assert 44 == params[1].getValues()[0].getVal();
 
-            assertEquals(4, params[1].getValues()[1].getId());
-            assertEquals(45, params[1].getValues()[1].getVal());
+            assert 4 == params[1].getValues()[1].getId();
+            assert 45 == params[1].getValues()[1].getVal();
 
             return 43;
         }
@@ -620,6 +636,112 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             cache.put(7, ts1);
             cache.put(8, ts2);
+        }
+
+        /** */
+        public void putValsForCache() {
+            ignite.<Integer, V9>getOrCreateCache("V9").put(1, new V9("1"));
+
+            IgniteCache<Integer, V10> v10 = ignite.getOrCreateCache("V10");
+
+            v10.put(1, new V10("1"));
+            v10.put(2, new V10("2"));
+
+            ignite.<Integer, V11>getOrCreateCache("V11").put(1, new V11("1"));
+
+            IgniteCache<Integer, V12> v12 = ignite.getOrCreateCache("V12");
+
+            v12.put(1, new V12("1"));
+            v12.put(2, new V12("2"));
+
+            IgniteCache<Integer, V13> v13 = ignite.getOrCreateCache("V13");
+
+            v13.put(1, new V13("1"));
+            v13.put(2, new V13("2"));
+
+            IgniteCache<Integer, V14> v14 = ignite.getOrCreateCache("V14");
+
+            v14.put(1, new V14("1"));
+            v14.put(2, new V14("2"));
+
+            IgniteCache<Integer, V15> v15 = ignite.getOrCreateCache("V15");
+
+            v15.put(1, new V15("1"));
+            v15.put(2, new V15("2"));
+
+            CacheConfiguration<Integer, V16> ccfg = new CacheConfiguration<>("V16");
+
+            ccfg.setIndexedTypes(Integer.class, V16.class);
+
+            IgniteCache<Integer, V16> v16 = ignite.getOrCreateCache(ccfg);
+
+            v16.put(1, new V16("1"));
+            v16.put(2, new V16("2"));
+        }
+
+        /** */
+        private final AtomicInteger cntMsgs = new AtomicInteger(0);
+
+        /** */
+        public void startReceiveMessage() {
+            ignite.message().localListen("test-topic-2", (node, obj) -> {
+                assert obj instanceof BinaryObject;
+
+                V6 v6 = ((BinaryObject)obj).deserialize();
+
+                assert "Sarah Connor".equals(v6.getName()) ||
+                    "John Connor".equals(v6.getName()) ||
+                    "Kyle Reese".equals(v6.getName());
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+
+            ignite.message().localListen("test-topic-3", (node, obj) -> {
+                assert obj instanceof BinaryObject;
+
+                V7 v7 = ((BinaryObject)obj).deserialize();
+
+                assert "V7-1".equals(v7.getName()) ||
+                    "V7-2".equals(v7.getName()) ||
+                    "V7-3".equals(v7.getName());
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+
+            ignite.message().localListen("test-topic-4", (node, obj) -> {
+                assert obj instanceof BinaryObject;
+
+                V8 v8 = ((BinaryObject)obj).deserialize();
+
+                assert "V8".equals(v8.getName()) ||
+                    "V9".equals(v8.getName()) ||
+                    "V10".equals(v8.getName());
+
+                cntMsgs.incrementAndGet();
+
+                return true;
+            });
+        }
+
+        /** */
+        public boolean testMessagesReceived() {
+            try {
+                return GridTestUtils.waitForCondition(() -> cntMsgs.get() == 9, 1_000 * 5);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                return false;
+            }
+        }
+
+        /** */
+        public void testSendMessage() {
+            ignite.message().sendOrdered("test-topic", new V5("1"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("2"), 1_000 * 5);
+            ignite.message().sendOrdered("test-topic", new V5("3"), 1_000 * 5);
         }
 
         /** */
