@@ -17,16 +17,27 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpConsumer;
+import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpReader;
+import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -46,6 +57,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String SNAPSHOT_NAME = "test_snapshot";
 
     /** */
+    private static final String CACHE_DUMP_NAME = "test_cache_dump";
+
+    /** */
     public static final String CACHE_NAME = "organizations";
 
     /** */
@@ -55,18 +69,25 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     public static final int ENTRIES_CNT_FOR_INCREMENT = 10_000;
 
     /** */
-    private static final String CONSISTENT_ID = "node00-db3e5e20-91c1-4b2d-95c9-f7e5f7a0b8d3";
+    private static final String CONSISTENT_ID = "db3e5e20-91c1-4b2d-95c9-f7e5f7a0b8d3";
 
     /**
      * The test is parameterized by whether an incremental snapshot is taken and by consistentId
      * Restore incremental snapshot if consistentId is null is fixed in 2.17.0, see here https://issues.apache.org/jira/browse/IGNITE-23222
      */
-    @Parameters(name = "incrementalSnp={0}, consistentID={1}")
+    @Parameters(name = "incrementalSnp={0}, consistentID={1}, oldNodesCnt={2}, createDump={3}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
-            { false, CONSISTENT_ID },
-            { false, null },
-            { true, CONSISTENT_ID }
+            { false, CONSISTENT_ID, 1, false },
+            { false, CONSISTENT_ID, 1, true },
+            { false, CONSISTENT_ID, 3, false },
+            { false, CONSISTENT_ID, 3, true },
+            { false, null, 1, false },
+            { false, null, 1, true },
+            { false, null, 3, false },
+            { false, null, 3, true },
+            { true, CONSISTENT_ID, 1, false },
+            { true, CONSISTENT_ID, 3, false },
         });
     }
 
@@ -79,14 +100,22 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     public String consistentId;
 
     /** */
+    @Parameterized.Parameter(2)
+    public int oldNodesCnt;
+
+    /** */
+    @Parameterized.Parameter(3)
+    public boolean cacheDump;
+
+    /** */
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
             startGrid(
-                1,
+                oldNodesCnt,
                 OLD_IGNITE_VERSION,
                 new ConfigurationClosure(incrementalSnp, consistentId),
-                new PostStartupClosure(incrementalSnp)
+                new PostStartupClosure(incrementalSnp, cacheDump)
             );
 
             stopAllGrids();
@@ -97,18 +126,87 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             curIgn.cluster().state(ClusterState.ACTIVE);
 
-            if (incrementalSnp)
-                curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
-            else
-                curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME)).get();
+            if (cacheDump)
+                checkCacheDump(curIgn);
 
-            checkCache(curIgn.cache(CACHE_NAME), incrementalSnp ? BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT : BASE_CACHE_SIZE);
+            if (incrementalSnp)
+                checkIncrementalSnapshot(curIgn);
+            else
+                checkSnapshot(curIgn);
+
         }
         finally {
             stopAllGrids();
 
             cleanPersistenceDir();
         }
+    }
+
+    /** */
+    private static void checkSnapshot(IgniteEx curIgn) {
+        curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME)).get();
+
+        checkCache(curIgn.cache(CACHE_NAME), BASE_CACHE_SIZE);
+    }
+
+    /** */
+    private static void checkIncrementalSnapshot(IgniteEx curIgn) {
+        curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
+
+        checkCache(curIgn.cache(CACHE_NAME), BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
+    }
+
+    /** */
+    private void checkCacheDump(IgniteEx curIgn) {
+        Set<Integer> storedKeys = new HashSet<>();
+
+        DumpConsumer consumer = new DumpConsumer() {
+            @Override public void start() {
+
+            }
+
+            @Override public void onMappings(Iterator<TypeMapping> mappings) {
+
+            }
+
+            @Override public void onTypes(Iterator<BinaryType> types) {
+
+            }
+
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+
+            }
+
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                while (data.hasNext()) {
+                    DumpEntry de = data.next();
+
+                    assertNotNull(de);
+
+                    Integer key = (Integer)de.key();
+                    String val = (String)de.value();
+
+                    assertEquals(calcValue(key), val);
+
+                    storedKeys.add(key);
+                }
+            }
+
+            @Override public void stop() {
+            }
+        };
+
+        new DumpReader(
+            new DumpReaderConfiguration(
+                new File(sharedFileTree(curIgn.configuration()).snapshotsRoot(), CACHE_DUMP_NAME),
+                consumer
+            ),
+            log
+        ).run();
+
+        assertEquals(BASE_CACHE_SIZE, storedKeys.size());
+        for (int i = 0; i < BASE_CACHE_SIZE; i++)
+            assertTrue(storedKeys.contains(i));
     }
 
     /** */
@@ -160,8 +258,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         private final boolean incrementalSnp;
 
         /** */
-        public PostStartupClosure(boolean incrementalSnp) {
+        private final boolean cacheDump;
+
+        /** */
+        public PostStartupClosure(boolean incrementalSnp, boolean cacheDump) {
             this.incrementalSnp = incrementalSnp;
+            this.cacheDump = cacheDump;
         }
 
         /** {@inheritDoc} */
@@ -179,6 +281,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
                 ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
             }
+
+            if (cacheDump)
+                ignite.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(CACHE_NAME)).get();
         }
     }
 
