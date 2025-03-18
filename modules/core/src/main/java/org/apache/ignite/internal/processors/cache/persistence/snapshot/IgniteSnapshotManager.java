@@ -144,7 +144,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -333,6 +332,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
+    /** Snapshot full validation distributed process. */
+    private final SnapshotCheckProcess checkSnpProc;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -432,6 +434,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = ctx.marshallerContext().jdkMarshaller();
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
+
+        checkSnpProc = new SnapshotCheckProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -643,7 +647,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             snpRmtMgr.stop();
 
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+            IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
+
+            restoreCacheGrpProc.interrupt(stopErr);
+            checkSnpProc.interrupt(stopErr);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -1698,74 +1705,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        GridKernalContext kctx0 = cctx.kernalContext();
+        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> res = checkSnpProc.start(name, snpPath, grps, check, incIdx,
+            includeCustomHandlers);
 
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
-
-        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
-
-        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx, grpIds);
-
-        kctx0.task().execute(
-            SnapshotMetadataVerificationTask.class,
-            taskArg,
-            options(bltNodes)
-        ).listen(f0 -> {
-            SnapshotMetadataVerificationTaskResult metasRes = f0.result();
-
-            if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
-
-                Class<? extends AbstractSnapshotVerificationTask> cls;
-
-                if (includeCustomHandlers)
-                    cls = SnapshotHandlerRestoreTask.class;
-                else
-                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
-
-                kctx0.task().execute(
-                        cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
-                        options(new ArrayList<>(metas.keySet()))
-                    ).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException) {
-                            IdleVerifyResult idleRes = IdleVerifyResult.builder()
-                                .exceptions(((IgniteSnapshotVerifyException)f1.error()).exceptions()).build();
-
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, idleRes));
-                        }
-                        else
-                            res.onDone(f1.error());
-                    });
-            }
-            else {
-                if (f0.error() == null)
-                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException) {
-                    IdleVerifyResult idleRes = IdleVerifyResult.builder()
-                        .exceptions(((IgniteSnapshotVerifyException)f0.error()).exceptions()).build();
-
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null, idleRes));
-                }
-                else
-                    res.onDone(f0.error());
+        res.listen(lsnr -> {
+            if (log.isInfoEnabled()) {
+                log.info("The check snapshot procedure finished [snpName=" + name + ", snpPath=" + snpPath
+                    + ", incIdx=" + incIdx + ", grps=" + grps + ']');
             }
         });
-
-        if (log.isInfoEnabled()) {
-            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + name +
-                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
-        }
 
         return res;
     }
@@ -2329,24 +2282,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param sft The full path to the snapshot files.
-     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
-     * @return Standalone kernal context related to the snapshot.
-     * @throws IgniteCheckedException If fails.
-     */
-    public StandaloneGridKernalContext createStandaloneKernalContext(
-        SnapshotFileTree sft,
-        String folderName
-    ) throws IgniteCheckedException {
-        NodeFileTree folderFt = new NodeFileTree(sft.root(), folderName);
-
-        return new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), folderFt.binaryMeta(), folderFt.marshaller());
-    }
-
-    /**
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @param pageStore File page store to iterate over.
+     * @param cacheSharedCtx Related cache shared context.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
@@ -2354,14 +2293,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         GridKernalContext ctx,
         String grpName,
         int partId,
-        FilePageStore pageStore
+        FilePageStore pageStore,
+        GridCacheSharedContext<?, ?> cacheSharedCtx
     ) throws IgniteCheckedException {
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
 
-        GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
-
-        return new DataPageIterator(sctx, coctx, pageStore, partId);
+        return new DataPageIterator(cacheSharedCtx, coctx, pageStore, partId);
     }
 
     /**
@@ -2396,7 +2334,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpPart::toPath,
                 val -> {});
 
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore,
+            GridCacheSharedContext.builder().build(cctx.kernalContext(), null));
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** {@inheritDoc} */
