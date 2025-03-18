@@ -17,6 +17,8 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,7 +32,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
@@ -38,18 +39,6 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)
 public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
-    /** */
-    @Parameter(0)
-    public boolean oldVer;
-
-    /**
-     *
-     */
-    @Parameters
-    public static Object[] parameters() {
-        return new Object[]{true, false};
-    }
-
     /** */
     private static final String OLD_IGNITE_VERSION = "2.16.0";
 
@@ -65,18 +54,55 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     public static final int ENTRIES_CNT_FOR_INCREMENT = 10_000;
 
+    /** */
+    private static final String CONSISTENT_ID = "node00-db3e5e20-91c1-4b2d-95c9-f7e5f7a0b8d3";
+
     /**
-     *
+     * The test is parameterized by whether an incremental snapshot is taken and by consistentId
+     * Restore incremental snapshot if consistentId is null is fixed in 2.17.0, see here https://issues.apache.org/jira/browse/IGNITE-23222
      */
+    @Parameters(name = "incrementalSnp={0}, consistentID={1}")
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+            { false, CONSISTENT_ID },
+            { false, null },
+            { true, CONSISTENT_ID }
+        });
+    }
+
+    /** */
+    @Parameterized.Parameter
+    public boolean incrementalSnp;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public String consistentId;
+
+    /** */
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
-            if (oldVer)
-                startGrid(1, OLD_IGNITE_VERSION, new ConfigurationClosure(null), new PostStartupClosure());
-            else {
-                IgniteEx curIgn = startGrid(getCurrentIgniteConfiguration(null));
-                new PostStartupClosure().apply(curIgn);
-            }
+            startGrid(
+                1,
+                OLD_IGNITE_VERSION,
+                new ConfigurationClosure(incrementalSnp, consistentId),
+                new PostStartupClosure(incrementalSnp)
+            );
+
+            stopAllGrids();
+
+            cleanPersistenceDir(true);
+
+            IgniteEx curIgn = startGrid(getCurrentIgniteConfiguration(incrementalSnp, consistentId));
+
+            curIgn.cluster().state(ClusterState.ACTIVE);
+
+            if (incrementalSnp)
+                curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
+            else
+                curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME)).get();
+
+            checkCache(curIgn.cache(CACHE_NAME), incrementalSnp ? BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT : BASE_CACHE_SIZE);
         }
         finally {
             stopAllGrids();
@@ -85,29 +111,30 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         }
     }
 
-    /**
-     *
-     */
-    private @NotNull IgniteConfiguration getCurrentIgniteConfiguration(String consistentId) throws Exception {
+    /** */
+    private @NotNull IgniteConfiguration getCurrentIgniteConfiguration(boolean incrementalSnp, String consistentId) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
-        new ConfigurationClosure(consistentId).apply(cfg);
+        // We configure current Ignite version in the same way as the old one.
+        new ConfigurationClosure(incrementalSnp, consistentId).apply(cfg);
 
         return cfg;
     }
 
     /**
-     *
+     * Configuration closure for old Ignite version.
      */
     private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
         private final String consistentId;
 
-        /**
-         * @param consistentId ConsistentID.
-         */
-        public ConfigurationClosure(String consistentId) {
+        /** */
+        private final boolean incrementalSnp;
+
+        /** */
+        public ConfigurationClosure(boolean incrementalSnp, String consistentId) {
             this.consistentId = consistentId;
+            this.incrementalSnp = incrementalSnp;
         }
 
         /** {@inheritDoc} */
@@ -116,18 +143,27 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
-            storageCfg.setWalCompactionEnabled(true);
-
             igniteConfiguration.setDataStorageConfiguration(storageCfg);
 
             igniteConfiguration.setConsistentId(consistentId);
+
+            if (incrementalSnp)
+                storageCfg.setWalCompactionEnabled(true);
         }
     }
 
     /**
-     *
+     * Post startup closure for old Ignite version.
      */
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
+        /** */
+        private final boolean incrementalSnp;
+
+        /** */
+        public PostStartupClosure(boolean incrementalSnp) {
+            this.incrementalSnp = incrementalSnp;
+        }
+
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             ignite.cluster().state(ClusterState.ACTIVE);
@@ -138,15 +174,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-            addItemsToCache(cache, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
+            if (incrementalSnp) {
+                addItemsToCache(cache, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
 
-            ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
-
-            cache.destroy();
-
-            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_NAME), 1).get();
-
-            checkCache(cache, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
+                ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+            }
         }
     }
 
