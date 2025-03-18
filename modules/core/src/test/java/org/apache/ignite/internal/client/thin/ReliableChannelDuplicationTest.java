@@ -70,8 +70,6 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
 
         startGrids(gridCnt);
 
-        client.cacheNames();
-
         assertNoDuplicates(((TcpIgniteClient)client).reliableChannel().getChannelHolders());
     }
 
@@ -82,7 +80,7 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     public void testStopSingleNodeDuringOperation() throws Exception {
         Assume.assumeFalse(gridCnt == 1);
 
-        testChannelDuplication(gridCnt, 1, 0);
+        testChannelDuplication(1, 0);
     }
 
     /**
@@ -92,7 +90,7 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     public void testStopAndRestartNode() throws Exception {
         Assume.assumeFalse(gridCnt == 1);
 
-        testChannelDuplication(gridCnt, 1, 1);
+        testChannelDuplication(1, 1);
     }
 
     /**
@@ -102,7 +100,7 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
     public void testStopMultipleNodesDuringOperation() throws Exception {
         Assume.assumeFalse(gridCnt < 3);
 
-        testChannelDuplication(gridCnt, 2, 2);
+        testChannelDuplication(2, 2);
     }
 
     /**
@@ -128,18 +126,15 @@ public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionA
         stopGrid(idx);
 
         detectTopologyChange();
-
-        client.cacheNames();
     }
 
     /**
      * Tests that no duplicate channel holders are created during node restarts and topology changes.
      *
-     * @param gridCnt int Grids to start.
      * @param gridsStop int Grids to stop.
      * @param gridsRestart int Grids to restart after stop.
      */
-    private void testChannelDuplication(int gridCnt, int gridsStop, int gridsRestart) throws Exception {
+    private void testChannelDuplication(int gridsStop, int gridsRestart) throws Exception {
         startGrids(gridCnt);
 
         initClient(getClientConfiguration(range(0, gridCnt).toArray()), range(0, gridCnt).toArray());

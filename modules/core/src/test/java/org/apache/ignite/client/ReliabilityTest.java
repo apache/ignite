@@ -307,8 +307,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            Throwable syncEx = GridTestUtils.assertThrows(null,
-                () -> cache.get(0),
+            Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
                 ClientConnectionException.class, "Channel is closed");
 
             GridTestUtils.assertContains(null, syncEx.getMessage(), F.first(cluster.clientAddresses()));

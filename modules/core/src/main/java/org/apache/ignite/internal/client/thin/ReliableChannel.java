@@ -672,7 +672,7 @@ final class ReliableChannel implements AutoCloseable {
 
         int idx = curChIdx;
 
-        if (idx != -1 && holders != null)
+        if (idx != -1)
             currDfltHolder = holders.get(idx);
 
         for (List<InetSocketAddress> addrs : newAddrs) {
@@ -913,7 +913,22 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 channel = hld.getOrCreateChannel();
 
-                return function.apply(channel);
+                try {
+                    return function.apply(channel);
+                }
+                catch (ClientConnectionException e) {
+                    if (partitionAwarenessEnabled) {
+                        // In case of stale channel, when partition awareness is enabled, try to reconnect to the
+                        // same channel and repeat the operation.
+                        onChannelFailure(hld, channel, e, failures);
+
+                        channel = hld.getOrCreateChannel();
+
+                        return function.apply(channel);
+                    }
+                    else
+                        throw e;
+                }
             }
             catch (ClientConnectionException e) {
                 failures = new ArrayList<>();
