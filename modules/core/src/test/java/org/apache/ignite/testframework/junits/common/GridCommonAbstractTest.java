@@ -137,6 +137,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -2829,5 +2832,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertThat(timeoutProp, notNullValue());
 
         return timeoutProp;
+    }
+
+    /**
+     * Adds test {@link MarshallerContext} to {@code marsh} instance and returns it.
+     * @param marsh Marshaller.
+     * @return Marshaller from input.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected Marshaller initTestMarshallerContext(Marshaller marsh) throws IgniteCheckedException {
+        MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
+
+        ctx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
+        ctx.onMarshallerProcessorStarted(newContext(), null);
+
+        marsh.setContext(ctx);
+
+        return marsh;
     }
 }
