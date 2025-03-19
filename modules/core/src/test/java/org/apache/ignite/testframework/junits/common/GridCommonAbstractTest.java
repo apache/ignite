@@ -2840,7 +2840,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Marshaller from input.
      * @throws IgniteCheckedException If failed.
      */
-    protected Marshaller initTestMarshallerContext(Marshaller marsh) throws IgniteCheckedException {
+    protected <M extends Marshaller> M initTestMarshallerContext(M marsh) throws IgniteCheckedException {
         MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
 
         ctx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
