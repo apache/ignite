@@ -392,7 +392,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 snpSndr.sendPart(
                     partitionFile(ft, pair),
                     partitionFile(sft, pair),
-                    dataRegionname(pair),
+                    dataRegionName(pair),
                     pair,
                     partLen);
 
@@ -528,7 +528,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** @return Data region name. */
-    private String dataRegionname(GroupPartitionId grpAndPart) throws IgniteCheckedException {
+    private String dataRegionName(GroupPartitionId grpAndPart) throws IgniteCheckedException {
         if (grpAndPart.getGroupId() == MetaStorage.METASTORAGE_CACHE_ID)
             return null;
 

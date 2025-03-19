@@ -267,14 +267,14 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static File ensureExists(File file) {
+    private File ensureExists(File file) {
         assertTrue(file.getAbsolutePath() + " must exists", file.exists());
 
         return file;
     }
 
     /** */
-    private static CacheConfiguration<?, ?> ccfg(String name, String grp, String dr) {
+    private CacheConfiguration<?, ?> ccfg(String name, String grp, String dr) {
         return new CacheConfiguration<>(name)
             .setGroupName(grp)
             .setDataRegionName(dr)
