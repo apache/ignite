@@ -191,30 +191,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /**
-     * Create and add test data via Streamer API.
-     *
-     * @param grid to get streamer.
-     * @return test object (it is key and val).
-     */
-    private TestObj streamData(final Ignite grid) {
-        final IgniteDataStreamer<TestObj, TestObj> streamer = grid.dataStreamer(CACHE_NAME);
-
-        TestObj entity = null;
-
-        for (int i = 0; i < 1; i++) {
-            entity = new TestObj(i);
-
-            streamer.addData(entity, entity);
-        }
-
-        streamer.flush();
-        streamer.close();
-        streamer.future().get();
-
-        return entity;
-    }
-
-    /**
      * Create and add binary data via Streamer API.
      *
      * @param grid to get streamer.
