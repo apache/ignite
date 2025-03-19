@@ -245,20 +245,15 @@ public class IgniteTestResources {
 
     /**
      * @return Marshaller.
-     * @throws IgniteCheckedException If failed.
      */
-    public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        Marshaller marsh = new BinaryMarshaller();
+    public static synchronized Marshaller getMarshaller() {
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl());
-
-        if (marsh instanceof BinaryMarshaller) {
-            BinaryMarshaller binaryMarsh = (BinaryMarshaller)marsh;
-
-            BinaryContext ctx =
-                new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger());
-            binaryMarsh.setBinaryContext(ctx, new IgniteConfiguration());
-        }
+        marsh.setBinaryContext(
+            new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger()),
+            new IgniteConfiguration()
+        );
 
         return marsh;
     }
