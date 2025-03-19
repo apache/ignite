@@ -303,6 +303,86 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * Try to apply specified async {@code function} on a channel corresponding to {@code nodeId}.
+     * If connection fails, attempt to reconnect to the same channel.
+     * If that fails too, fallback to default channel.
+     */
+    public <T> IgniteClientFuture<T> applyOnNodeChannelWithFallbackAsync(
+        UUID nodeId,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) {
+        CompletableFuture<T> fut = new CompletableFuture<>();
+        List<ClientConnectionException> failures = new ArrayList<>();
+
+        ClientChannelHolder hld = nodeChannels.get(nodeId);
+
+        if (hld != null) {
+            try {
+                ClientChannel channel = hld.getOrCreateChannel();
+
+                channel.serviceAsync(op, payloadWriter, payloadReader)
+                    .handle((res, err) -> {
+                        if (err == null)
+                            fut.complete(res);
+                        else if (err instanceof ClientConnectionException) {
+                            ClientConnectionException connEx = (ClientConnectionException)err;
+                            failures.add(connEx);
+
+                            if (shouldRetry(op, failures.size() - 1, connEx)) {
+                                try {
+                                    onChannelFailure(hld, channel, connEx, failures);
+
+                                    // Try to reconnect and retry on the same channel
+                                    ClientChannel newChannel = hld.getOrCreateChannel();
+                                    newChannel.serviceAsync(op, payloadWriter, payloadReader)
+                                        .handle((retryRes, retryErr) -> {
+                                            if (retryErr == null)
+                                                fut.complete(retryRes);
+                                            else {
+                                                if (retryErr instanceof ClientConnectionException) {
+                                                    failures.add((ClientConnectionException)retryErr);
+                                                    onChannelFailure(hld, newChannel, retryErr, failures);
+                                                }
+
+                                                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                                            }
+
+                                            return null;
+                                        });
+                                }
+                                catch (Exception ex) {
+                                    // If can't reconnect, fallback to default channel
+                                    if (ex instanceof ClientConnectionException)
+                                        failures.add((ClientConnectionException)ex);
+
+                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                                }
+                            }
+                            else
+                                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                        }
+                        else // For other exceptions, just complete the future
+                            fut.completeExceptionally(err);
+
+                        return null;
+                    });
+            }
+            catch (Exception ex) {
+                if (ex instanceof ClientConnectionException)
+                    failures.add((ClientConnectionException)ex);
+
+                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+            }
+        }
+        else
+            handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+
+        return new IgniteClientFutureImpl<>(fut);
+    }
+
+    /**
      * Send request without payload and handle response.
      */
     public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
@@ -392,17 +472,12 @@ final class ReliableChannel implements AutoCloseable {
             UUID affNodeId = affinityCtx.affinityNode(cacheId, key);
 
             if (affNodeId != null) {
-                CompletableFuture<T> fut = new CompletableFuture<>();
-                List<ClientConnectionException> failures = new ArrayList<>();
-
-                Object result = applyOnNodeChannel(
+                return applyOnNodeChannelWithFallbackAsync(
                     affNodeId,
-                    channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
-                    failures
+                    op,
+                    payloadWriter,
+                    payloadReader
                 );
-
-                if (result != null)
-                    return new IgniteClientFutureImpl<>(fut);
             }
         }
 
