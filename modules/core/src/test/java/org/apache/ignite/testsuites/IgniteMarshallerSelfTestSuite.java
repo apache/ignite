@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputByteOrderSelf
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
 import org.apache.ignite.marshaller.MarshallerEnumDeadlockMultiJvmTest;
 import org.apache.ignite.marshaller.ObjectInputStreamFilteringTest;
+import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -39,6 +40,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     GridUnsafeDataOutputArraySizingSelfTest.class,
+    GridJdkMarshallerSelfTest.class,
     OptimizedMarshallerEnumSelfTest.class,
     OptimizedMarshallerSelfTest.class,
     OptimizedMarshallerTest.class,
