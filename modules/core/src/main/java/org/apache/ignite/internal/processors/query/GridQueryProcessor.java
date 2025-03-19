@@ -4441,4 +4441,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public IgniteStatisticsManager statsManager() {
         return statsMgr;
     }
+
+    /** @return Default query engine. */
+    public QueryEngine defaultQueryEngine() {
+        return dfltQryEngine;
+    }
 }
