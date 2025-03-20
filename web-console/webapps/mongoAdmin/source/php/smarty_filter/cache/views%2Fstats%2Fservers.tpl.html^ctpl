@@ -1,0 +1,58 @@
+a:5:{s:4:"type";s:4:"ctpl";s:7:"version";s:4:"0.83";s:8:"bytecode";a:126:{i:0;s:4:"echo";i:1;s:244:"<div class="panel panel-default stats">
+  <div class="panel-heading">
+    <h3>Server Status</h3>
+  </div>
+<table class="table table-bordered">
+  <tr>
+    <td class="span2"><strong>Hostname</strong></td>
+    <td class="span3" id="dbHost">";i:2;s:6:"lookup";i:3;s:4:"info";i:4;s:4:"push";i:5;s:4:"host";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:130:"</td>    
+  </tr>
+  <tr>    
+    <td class="span2"><strong>MongoDB Version</strong></td>
+    <td class="span3" id="dbVersion">";i:10;s:6:"lookup";i:11;s:4:"info";i:12;s:4:"push";i:13;s:7:"version";i:14;s:1:".";i:15;s:5:"print";i:16;s:4:"echo";i:17;s:70:"</td>
+  </tr>
+  <tr>
+    <td><strong>Uptime</strong></td>
+    <td>";i:18;s:6:"lookup";i:19;s:4:"info";i:20;s:4:"push";i:21;s:6:"uptime";i:22;s:1:".";i:23;s:5:"print";i:24;s:4:"echo";i:25;s:9:" seconds ";i:26;s:2:"if";i:27;a:1:{i:0;a:2:{i:0;a:8:{i:0;s:6:"lookup";i:1;s:4:"info";i:2;s:4:"push";i:3;s:6:"uptime";i:4;s:1:".";i:5;s:4:"push";i:6;i:86400;i:7;s:1:">";}i:1;a:13:{i:0;s:4:"echo";i:1;s:2:" (";i:2;s:6:"lookup";i:3;s:4:"info";i:4;s:4:"push";i:5;s:6:"uptime";i:6;s:1:".";i:7;s:4:"push";i:8;i:86400;i:9;s:1:"/";i:10;s:5:"print";i:11;s:4:"echo";i:12;s:7:" days) ";}}}i:28;s:4:"echo";i:29;s:79:"</td>    
+  </tr>
+  <tr>
+    <td><strong>Server Time</strong></td>
+    <td>";i:30;s:6:"lookup";i:31;s:4:"info";i:32;s:4:"push";i:33;s:9:"localTime";i:34;s:1:".";i:35;s:5:"print";i:36;s:4:"echo";i:37;s:78:"</td>    
+  </tr>
+  <tr>
+    <td><strong>Server Pid</strong></td>
+    <td>";i:38;s:6:"lookup";i:39;s:4:"info";i:40;s:4:"push";i:41;s:3:"pid";i:42;s:1:".";i:43;s:5:"print";i:44;s:4:"echo";i:45;s:90:"</td>    
+  </tr>
+ 
+  <tr>
+    <td><strong>Current Connections</strong></td>
+    <td>";i:46;s:6:"lookup";i:47;s:4:"info";i:48;s:4:"push";i:49;s:11:"connections";i:50;s:1:".";i:51;s:4:"push";i:52;s:7:"current";i:53;s:1:".";i:54;s:5:"print";i:55;s:4:"echo";i:56;s:82:"</td>    
+  </tr>
+  <tr>
+    <td><strong>Active Cursors</strong></td>
+    <td>";i:57;s:6:"lookup";i:58;s:4:"info";i:59;s:4:"push";i:60;s:7:"metrics";i:61;s:1:".";i:62;s:4:"push";i:63;s:4:"open";i:64;s:1:".";i:65;s:4:"push";i:66;s:5:"total";i:67;s:1:".";i:68;s:5:"print";i:69;s:4:"echo";i:70;s:86:"</td>    
+  </tr>  
+  <tr>
+    <td><strong>TimedOut Cursors</strong></td>
+    <td>";i:71;s:6:"lookup";i:72;s:4:"info";i:73;s:4:"push";i:74;s:7:"metrics";i:75;s:1:".";i:76;s:4:"push";i:77;s:8:"timedOut";i:78;s:1:".";i:79;s:5:"print";i:80;s:4:"echo";i:81;s:95:"</td>    
+  </tr>  
+  
+  
+  <tr>    
+    <td><strong>Total Queries</strong></td>
+    <td>";i:82;s:6:"lookup";i:83;s:4:"info";i:84;s:4:"push";i:85;s:10:"opcounters";i:86;s:1:".";i:87;s:4:"push";i:88;s:5:"query";i:89;s:1:".";i:90;s:5:"print";i:91;s:4:"echo";i:92;s:77:"</td>
+  </tr>
+  <tr>
+    <td><strong>Total Inserts</strong></td>
+    <td>";i:93;s:6:"lookup";i:94;s:4:"info";i:95;s:4:"push";i:96;s:10:"opcounters";i:97;s:1:".";i:98;s:4:"push";i:99;s:6:"insert";i:100;s:1:".";i:101;s:5:"print";i:102;s:4:"echo";i:103;s:81:"</td>    
+  </tr>
+  <tr>
+    <td><strong>Total Updates</strong></td>
+    <td>";i:104;s:6:"lookup";i:105;s:4:"info";i:106;s:4:"push";i:107;s:10:"opcounters";i:108;s:1:".";i:109;s:4:"push";i:110;s:6:"update";i:111;s:1:".";i:112;s:5:"print";i:113;s:4:"echo";i:114;s:85:"</td>    
+  </tr>
+  <tr>    
+    <td><strong>Total Deletes</strong></td>
+    <td>";i:115;s:6:"lookup";i:116;s:4:"info";i:117;s:4:"push";i:118;s:10:"opcounters";i:119;s:1:".";i:120;s:4:"push";i:121;s:6:"delete";i:122;s:1:".";i:123;s:5:"print";i:124;s:4:"echo";i:125;s:32:"</td>
+  </tr>
+</table>
+</div>";}s:7:"inherit";N;s:8:"sections";a:0:{}}

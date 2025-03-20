@@ -1,0 +1,20 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+
+ <g>
+  <title>background</title>
+  <rect fill="none" id="canvas_background" height="402" width="582" y="-1" x="-1"/>
+ </g>
+ <g>
+  <title>Layer 1</title>
+  <circle id="svg_2" r="32" fill="#25b7d3" cy="32" cx="32"/>
+  <path opacity="0.2" id="svg_6" fill="#231F20" d="m36,23l0,-9l-17,0c-1.657,0 -3,1.343 -3,3l0,34c0,1.657 1.343,3 3,3l26,0c1.657,0 3,-1.343 3,-3l0,-25l-9,0c-1.657,0 -3,-1.343 -3,-3z"/>
+  <path id="svg_8" fill="#E0E0D1" d="m36,21l0,-9l-17,0c-1.657,0 -3,1.343 -3,3l0,34c0,1.657 1.343,3 3,3l26,0c1.657,0 3,-1.343 3,-3l0,-25l-9,0c-1.657,0 -3,-1.343 -3,-3z"/>
+  <polygon opacity="0.2" id="svg_10" points="37.016,23.294 48,33 48,24     " fill="#231F20"/>
+  <path id="svg_12" fill="#FFFFFF" d="m36,12l0,9c0,1.657 1.343,3 3,3l9,0l-12,-12z"/>
+  <rect opacity="0.2" id="svg_14" y="22" x="22" width="9.625" height="2" fill="#231F20"/>
+  <rect opacity="0.2" id="svg_16" y="32" x="22" width="20" height="2" fill="#231F20"/>
+  <rect opacity="0.2" id="svg_18" y="27" x="22" width="20" height="2" fill="#231F20"/>
+  <rect opacity="0.2" id="svg_20" y="37" x="22" width="20" height="2" fill="#231F20"/>
+  <rect opacity="0.2" id="svg_22" y="42" x="22" width="20" height="2" fill="#231F20"/>
+ </g>
+</svg>

@@ -1,0 +1,83 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'concurrency'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Data Provider Caches
+    panel-description
+        | 设置数据提供者，可以选择多个.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-12.pc-form-grid-row
+            .pc-form-grid-col-120
+                .ignite-form-field
+                    list-editable.pcb-caches-list(
+                        ng-model='$ctrl.cacheDataProvider'
+                        list-editable-one-way
+                        on-item-change='$ctrl.changeCache($event)'
+                        on-item-remove='$ctrl.removeCache($event)'
+                        list-editable-cols='::$ctrl.cachesColDefs'
+                        list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
+                    )
+                        list-editable-item-view
+                            div {{ $item.sourceCluster }}
+                            div {{ $item.source }}                            
+                            div {{ $item.existingMode }}
+                            div {{ $item.atomicityMode }}
+                            div {{ $item.readFromBackup }}
+                        list-editable-item-edit
+                            div
+                                +form-field__dropdown({
+                                    label: 'Source Cluster',
+                                    model: '$item.sourceCluster',
+                                    name: '"sourceCluster"',
+                                    placeholder: 'Select sourse cluster',
+                                    options: '::$ctrl.clustersOptions',
+                                    required: true
+                                })
+                                                             
+                            div
+                                +form-field__text({
+                                    label: 'Cache Name',
+                                    model: '$item.source',
+                                    name: '"source"',
+                                    placeholder: '',
+                                    required: true
+                                })                                          
+                            
+                            div
+                                +form-field__dropdown({
+                                    label: 'Existing Update Mode:',
+                                    model: '$item.existingMode',
+                                    name: '"existingMode"',
+                                    placeholder: 'REPLACE_EXISTING',
+                                    options: '::$ctrl.TaskFlows.updateModes'
+                                })
+                            div
+                                +form-field__dropdown({
+                                    label: 'Atomicity:',
+                                    model: '$item.atomicityMode',
+                                    name: '"atomicityMode"',
+                                    placeholder: 'ATOMIC',
+                                    options: '::$ctrl.TaskFlows.atomicityModes'
+                                })
+                            div
+                                +form-field__checkbox({
+                                    label: 'Read from backup',
+                                    model: `$item.readFromBackup`,
+                                    name: '"readFromBackup"',                                    
+                                })
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item='$ctrl.addCache()'
+                                label-single='cache'
+                                label-multiple='caches'
+                            )
+
+            
+
+            
+        

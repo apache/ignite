@@ -38,8 +38,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
+
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
@@ -580,64 +579,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     @SuppressWarnings("deprecation")
     @Nullable private ClientConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
         throws IgniteCheckedException {
-        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
-        SqlConnectorConfiguration sqlConnCfg = cfg.getSqlConnectorConfiguration();
+       
         ClientConnectorConfiguration cliConnCfg = cfg.getClientConnectorConfiguration();
 
-        if (cliConnCfg == null && sqlConnCfg == null && odbcCfg == null)
-            return null;
 
         if (isNotDefault(cliConnCfg)) {
-            // User set configuration explicitly. User it, but print a warning about ignored SQL/ODBC configs.
-            if (odbcCfg != null) {
-                U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
-                    ClientConnectorConfiguration.class.getSimpleName() + " is set.");
-            }
-
-            if (sqlConnCfg != null) {
-                U.warn(log, "Deprecated " + SqlConnectorConfiguration.class.getSimpleName() + " will be ignored " +
-                    "because " + ClientConnectorConfiguration.class.getSimpleName() + " is set.");
-            }
+            
         }
         else {
             cliConnCfg = new ClientConnectorConfiguration();
-
-            if (sqlConnCfg != null) {
-                // Migrate from SQL configuration.
-                cliConnCfg.setHost(sqlConnCfg.getHost());
-                cliConnCfg.setMaxOpenCursorsPerConnection(sqlConnCfg.getMaxOpenCursorsPerConnection());
-                cliConnCfg.setPort(sqlConnCfg.getPort());
-                cliConnCfg.setPortRange(sqlConnCfg.getPortRange());
-                cliConnCfg.setSocketSendBufferSize(sqlConnCfg.getSocketSendBufferSize());
-                cliConnCfg.setSocketReceiveBufferSize(sqlConnCfg.getSocketReceiveBufferSize());
-                cliConnCfg.setTcpNoDelay(sqlConnCfg.isTcpNoDelay());
-                cliConnCfg.setThreadPoolSize(sqlConnCfg.getThreadPoolSize());
-
-                U.warn(log, "Automatically converted deprecated "
-                    + SqlConnectorConfiguration.class.getSimpleName() +
-                    " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
-
-                if (odbcCfg != null) {
-                    U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() +
-                        " will be ignored because " +
-                        SqlConnectorConfiguration.class.getSimpleName() + " is set.");
-                }
-            }
-            else if (odbcCfg != null) {
-                // Migrate from ODBC configuration.
-                HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
-
-                cliConnCfg.setHost(hostAndPort.host());
-                cliConnCfg.setPort(hostAndPort.portFrom());
-                cliConnCfg.setPortRange(hostAndPort.portTo() - hostAndPort.portFrom());
-                cliConnCfg.setThreadPoolSize(odbcCfg.getThreadPoolSize());
-                cliConnCfg.setSocketSendBufferSize(odbcCfg.getSocketSendBufferSize());
-                cliConnCfg.setSocketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize());
-                cliConnCfg.setMaxOpenCursorsPerConnection(odbcCfg.getMaxOpenCursors());
-
-                U.warn(log, "Automatically converted deprecated " + OdbcConfiguration.class.getSimpleName() +
-                    " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
-            }
         }
 
         return cliConnCfg;
@@ -659,33 +609,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         assertParameter(cfg.getThreadPoolSize() > 0, "threadPoolSize > 0");
     }
 
-    /**
-     * Parse ODBC endpoint.
-     *
-     * @param odbcCfg ODBC configuration.
-     * @return ODBC host and port range.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("deprecation")
-    private HostAndPortRange parseOdbcEndpoint(OdbcConfiguration odbcCfg) throws IgniteCheckedException {
-        HostAndPortRange res;
-
-        if (F.isEmpty(odbcCfg.getEndpointAddress())) {
-            res = new HostAndPortRange(OdbcConfiguration.DFLT_TCP_HOST,
-                OdbcConfiguration.DFLT_TCP_PORT_FROM,
-                OdbcConfiguration.DFLT_TCP_PORT_TO
-            );
-        }
-        else {
-            res = HostAndPortRange.parse(odbcCfg.getEndpointAddress(),
-                OdbcConfiguration.DFLT_TCP_PORT_FROM,
-                OdbcConfiguration.DFLT_TCP_PORT_TO,
-                "Failed to parse ODBC endpoint address"
-            );
-        }
-
-        return res;
-    }
+    
 
     /**
      * Check whether configuration is not default.

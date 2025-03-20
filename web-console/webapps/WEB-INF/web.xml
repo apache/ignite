@@ -1,0 +1,44 @@
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+     http://java.sun.com/xml/ns/javaee/web-app_3_1.xsd"
+   version="3.1">
+
+	
+  <servlet>
+     <servlet-name>Quercus Servlet</servlet-name>
+     <servlet-class>com.caucho.quercus.servlet.QuercusServlet</servlet-class>
+      <init-param>
+       <param-name>license-directory</param-name>
+       <param-value>WEB-INF/licenses</param-value>
+      </init-param>
+      <init-param>
+        <param-name>ini-file</param-name>
+            <param-value>WEB-INF/php.ini</param-value>
+      </init-param>
+      <init-param>
+        <param-name>xdebug</param-name>
+        <param-value>false</param-value>
+      </init-param>
+      <init-param>
+        <param-name>script-encoding</param-name>
+            <param-value>utf-8</param-value>
+        </init-param>
+        <init-param>
+        <param-name>unicode.semantics</param-name>
+		<param-value>off</param-value>
+	</init-param>
+  </servlet>
+ 
+ 
+  <servlet-mapping>
+    <servlet-name>Quercus Servlet</servlet-name>
+    <url-pattern>*.php</url-pattern>     
+  </servlet-mapping>
+ 
+  <welcome-file-list>
+    <welcome-file>index.php</welcome-file>  
+    <welcome-file>index.html</welcome-file>
+  </welcome-file-list>
+
+</web-app>

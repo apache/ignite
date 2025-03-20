@@ -1,0 +1,12 @@
+
+
+mixin form-field__tooltip({ title, options = { placement: 'auto' }})
+    if title
+        svg(
+            ignite-icon='info'
+            bs-tooltip=''
+
+            data-title=title
+            data-container=options && options.container || false
+            data-placement=options && options.placement || false
+        )&attributes(attributes)

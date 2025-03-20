@@ -1,0 +1,64 @@
+
+
+$expander-width: 20px;
+
+stacktrace-tree {
+    .stacktrace-viewer__items {
+        height: 60vh;
+        overflow-x: hidden;
+        overflow-y: scroll;
+    }
+
+    stacktrace-item {
+        display: block;
+    }
+
+    .stacktrace-viewer__cause {
+        margin-left: -10px;
+        display: flex;
+        border-bottom: solid 1px #dddddd;
+
+        & > div {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+    }
+
+    .stacktrace-viewer__cause_message {
+        display:  flex;
+        align-items: center;
+        padding-left: 30px;
+
+        .stacktrace-viewer__expander {
+            margin-right: 15px;
+            width: 13px;
+            div {
+                display: flex;
+            }
+        }
+    }
+
+    .stacktrace-viewer__trace {
+        margin-left: -10px;
+        display: flex;
+
+        & > div {
+            padding-top: 10px;
+        }
+    }
+
+    .stacktrace-viewer__trace:last-child {
+        border-bottom: solid 1px #dddddd;
+        padding-bottom: 10px;
+    }
+
+    .stacktrace-viewer__trace_message {
+        display:  flex;
+        align-items: center;
+        padding-left: 60px;
+    }
+
+    [ignite-icon='collapse'], [ignite-icon='expand'] {
+        color: #757575;
+    }
+}

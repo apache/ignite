@@ -175,22 +175,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     /** {@inheritDoc} */
     @Nullable @Override public String label() {
         return tx().label();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport withAsync() {
-        throw new UnsupportedOperationException("Operation deprecated.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        throw new UnsupportedOperationException("Operation deprecated.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new UnsupportedOperationException("Operation deprecated.");
-    }
+    }    
 
     /**
      * @return local transaction

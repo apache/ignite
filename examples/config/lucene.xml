@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+        
+    
+	
+	<bean id="simple_text" class="org.apache.lucene.analysis.core.SimpleAnalyzer">		
+	</bean> 
+	
+	
+	<bean id="index_text_cn" class="com.hankcs.lucene.HanLPIndexAnalyzer">		
+	</bean>   
+	<bean id="query_text_cn" class="com.hankcs.lucene.HanLPAnalyzer">		
+	</bean> 
+	
+	<bean id="_default" class="org.apache.ignite.cache.LuceneConfiguration">
+	
+	</bean>
+</beans>

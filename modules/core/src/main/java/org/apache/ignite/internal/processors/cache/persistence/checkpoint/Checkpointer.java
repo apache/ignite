@@ -492,7 +492,7 @@ public class Checkpointer extends GridWorker {
                     return;
             }
             else {
-                if (log.isInfoEnabled())
+                if (log.isDebugEnabled())
                     LT.info(log, String.format(
                         "Skipping checkpoint (no pages were modified) [" +
                             "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
