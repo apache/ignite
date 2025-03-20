@@ -57,7 +57,7 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlUnknownLiteral;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.DateString;
@@ -463,19 +463,16 @@ public class TypeUtils {
             storageType = Primitive.box(storageType); // getValueAs() implemented only for boxed classes.
 
             if (Date.class.equals(storageType)) {
-                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.DATE);
-
-                internalVal = literal0.getValueAs(DateString.class).getDaysSinceEpoch();
+                internalVal = SqlParserUtil.parseDateLiteral(literal.toValue(), literal.getParserPosition())
+                    .getValueAs(DateString.class).getDaysSinceEpoch();
             }
             else if (Time.class.equals(storageType)) {
-                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIME);
-
-                internalVal = literal0.getValueAs(TimeString.class).getMillisOfDay();
+                internalVal = SqlParserUtil.parseTimeLiteral(literal.toValue(), literal.getParserPosition())
+                    .getValueAs(TimeString.class).getMillisOfDay();
             }
             else if (Timestamp.class.equals(storageType)) {
-                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIMESTAMP);
-
-                internalVal = literal0.getValueAs(TimestampString.class).getMillisSinceEpoch();
+                internalVal = SqlParserUtil.parseTimestampLiteral(literal.toValue(), literal.getParserPosition())
+                    .getValueAs(TimestampString.class).getMillisSinceEpoch();
             }
             else if (Duration.class.equals(storageType)) {
                 if (literal instanceof SqlIntervalLiteral &&
