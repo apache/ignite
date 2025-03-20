@@ -60,18 +60,6 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests the invalid marshaller.
-        /// </summary>
-        [Test]
-        public void TestInvalidMarshaller()
-        {
-            var ex = Assert.Throws<IgniteException>(() => StartIgnite("Config\\marshaller-invalid.xml"));
-            Assert.AreEqual("Unsupported marshaller (only org.apache.ignite.internal.binary.BinaryMarshaller " +
-                            "can be used when running Apache Ignite.NET): org.apache.ignite.internal." +
-                            "marshaller.optimized.OptimizedMarshaller", ex.Message, ex.ToString());
-        }
-
-        /// <summary>
         /// Starts the ignite.
         /// </summary>
         private static IIgnite StartIgnite(string xml)

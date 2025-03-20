@@ -59,7 +59,6 @@
     <None Update="Config\cache-default.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\native-client-test-cache-store.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\cache-query.xml" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Config\marshaller-invalid.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\cache-query-continuous.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\ignite-dotnet-cfg-logger.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\cache-binarizables.xml" CopyToOutputDirectory="PreserveNewest" />
