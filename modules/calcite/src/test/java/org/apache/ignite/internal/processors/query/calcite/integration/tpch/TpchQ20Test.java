@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /** */
@@ -27,7 +26,6 @@ public class TpchQ20Test extends AbstractBasicIntegrationTest {
      * Test the Q20 TPC-H query can be planned and executed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-24730")
     public void testQ20() throws Exception {
         TpchHelper.createTables(client);
 
