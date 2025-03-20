@@ -1619,7 +1619,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
-        if (cfg.getMarshaller() instanceof BinaryMarshaller) {
+        if (ctx.marshaller() instanceof BinaryMarshaller) {
             add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
                 BinaryConfiguration.DFLT_COMPACT_FOOTER :
                 cfg.getBinaryConfiguration().isCompactFooter());
