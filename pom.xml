@@ -39,6 +39,7 @@
         <module>parent-internal</module>
         <module>modules/bom</module>
         <module>modules/tools</module>
+        <module>modules/commons</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
