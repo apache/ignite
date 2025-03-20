@@ -725,7 +725,7 @@ public class GridCacheUtils {
         throws IgniteCheckedException {
         assert ctx != null;
 
-        return marshal(ctx.shared(), ctx.deploymentEnabled(), obj);
+        return marshal(ctx.shared(), false, obj);
     }
 
     /**

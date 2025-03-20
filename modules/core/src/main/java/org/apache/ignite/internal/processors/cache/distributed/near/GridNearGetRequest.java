@@ -126,7 +126,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param taskNameHash Task name hash.
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
-     * @param addDepInfo Deployment info.
      * @param txLbl Transaction label.
      */
     public GridNearGetRequest(
@@ -142,7 +141,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         long accessTtl,
         boolean addReader,
         boolean skipVals,
-        boolean addDepInfo,
         boolean recovery,
         @Nullable String txLbl
     ) {
@@ -171,7 +169,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
-        this.addDepInfo = addDepInfo;
         this.txLbl = txLbl;
 
         if (readThrough)

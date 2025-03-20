@@ -263,9 +263,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
-    /** Deployment enabled flag for this specific cache */
-    private boolean depEnabled;
-
     /** */
     private boolean deferredDel;
 
@@ -385,7 +382,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.locStartTopVer = locStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
 
         /*
          * Managers in starting order!
@@ -1418,13 +1414,6 @@ public class GridCacheContext<K, V> implements Externalizable {
                 }
             }
         };
-    }
-
-    /**
-     * @return {@code True} if deployment is enabled.
-     */
-    public boolean deploymentEnabled() {
-        return depEnabled;
     }
 
     /**

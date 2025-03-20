@@ -52,10 +52,9 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     /**
      * @param cacheId Cache ID.
      * @param dhtCnt Key count.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridDhtUnlockRequest(int cacheId, int dhtCnt, boolean addDepInfo) {
-        super(cacheId, dhtCnt, addDepInfo);
+    public GridDhtUnlockRequest(int cacheId, int dhtCnt) {
+        super(cacheId, dhtCnt);
     }
 
     /**

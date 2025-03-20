@@ -355,7 +355,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 skipVals,
                 /*add reader*/false,
                 needVer,
-                cctx.deploymentEnabled(),
                 recovery,
                 txLbl
             );

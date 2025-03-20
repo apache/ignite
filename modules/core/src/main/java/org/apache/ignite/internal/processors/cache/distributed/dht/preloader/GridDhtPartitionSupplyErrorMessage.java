@@ -58,10 +58,9 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
         long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
-        boolean addDepInfo,
         Throwable err
     ) {
-        super(rebalanceId, grpId, topVer, addDepInfo);
+        super(rebalanceId, grpId, topVer);
 
         this.err = err;
     }

@@ -70,13 +70,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
      * @param cacheId Cache ID.
      * @param partId Partition.
      * @param futId Future ID.
-     * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId, boolean addDepInfo) {
+    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId) {
         this.cacheId = cacheId;
         this.partId = partId;
         this.futId = futId;
-        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */

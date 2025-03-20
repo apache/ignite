@@ -54,10 +54,9 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
-        super(keyCnt, addDepInfo);
+    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
+        super(keyCnt, false);
 
         this.cacheId = cacheId;
     }

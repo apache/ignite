@@ -714,16 +714,6 @@ public class CacheQuery<T> {
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
 
-        if (cctx.deploymentEnabled()) {
-            try {
-                cctx.deploy().registerClasses(filter, rmtReducer);
-                cctx.deploy().registerClasses(args);
-            }
-            catch (IgniteCheckedException e) {
-                return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
-            }
-        }
-
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
@@ -777,9 +767,6 @@ public class CacheQuery<T> {
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
-
-        if (cctx.deploymentEnabled())
-            cctx.deploy().registerClasses(filter);
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 

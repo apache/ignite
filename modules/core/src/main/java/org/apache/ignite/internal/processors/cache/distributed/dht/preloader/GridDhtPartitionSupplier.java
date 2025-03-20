@@ -227,8 +227,7 @@ public class GridDhtPartitionSupplier {
         GridDhtPartitionSupplyMessage supplyMsg = new GridDhtPartitionSupplyMessage(
             demandMsg.rebalanceId(),
             grp.groupId(),
-            demandMsg.topologyVersion(),
-            grp.deploymentEnabled()
+            demandMsg.topologyVersion()
         );
 
         try {
@@ -338,8 +337,8 @@ public class GridDhtPartitionSupplier {
 
                         supplyMsg = new GridDhtPartitionSupplyMessage(demandMsg.rebalanceId(),
                             grp.groupId(),
-                            demandMsg.topologyVersion(),
-                            grp.deploymentEnabled());
+                            demandMsg.topologyVersion()
+                        );
                     }
                 }
 
@@ -492,7 +491,6 @@ public class GridDhtPartitionSupplier {
                         demandMsg.rebalanceId(),
                         grp.groupId(),
                         demandMsg.topologyVersion(),
-                        grp.deploymentEnabled(),
                         t
                     );
                 }

@@ -747,7 +747,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
                 true,
                 skipVals,
-                cctx.deploymentEnabled(),
                 recovery,
                 null
             );

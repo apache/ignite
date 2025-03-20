@@ -68,7 +68,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         cacheCtx = ctx;
         this.recovery = recovery;
 
-        tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+        tx.activeCachesDeploymentEnabled(false);
     }
 
     /** {@inheritDoc} */

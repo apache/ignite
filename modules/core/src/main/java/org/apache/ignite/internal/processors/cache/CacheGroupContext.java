@@ -116,9 +116,6 @@ public class CacheGroupContext {
     private final byte ioPlc;
 
     /** */
-    private final boolean depEnabled;
-
-    /** */
     private final boolean storeCacheId;
 
     /** We modify content under lock, by making defensive copy, field always contains unmodifiable list. */
@@ -248,16 +245,16 @@ public class CacheGroupContext {
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
-        this.globalWalEnabled = walEnabled;
+        globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
-        this.locWalEnabled = true;
-        this.idxWalEnabled = true;
+        locWalEnabled = true;
+        idxWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
         this.compressHnd = compressHnd;
 
         ioPlc = cacheType.ioPolicy();
 
-        depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
+        ctx.kernalContext().deploy().enabled();
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
         
@@ -300,13 +297,6 @@ public class CacheGroupContext {
      */
     public boolean storeCacheIdInDataPage() {
         return storeCacheId;
-    }
-
-    /**
-     * @return {@code True} if deployment is enabled.
-     */
-    public boolean deploymentEnabled() {
-        return depEnabled;
     }
 
     /**

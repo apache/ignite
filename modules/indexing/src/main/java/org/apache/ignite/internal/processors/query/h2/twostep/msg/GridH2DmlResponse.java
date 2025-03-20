@@ -129,18 +129,10 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         if (errKeys != null || errKeysBytes == null)
             return;
 
-        try {
-            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
-
-            if (m instanceof BinaryMarshaller)
-                // To avoid deserializing of enum types.
-                errKeys = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr));
-            else
-                errKeys = U.unmarshal(m, errKeysBytes, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        errKeys = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(
+            errKeysBytes,
+            U.resolveClassLoader(ctx.config())
+        ));
     }
 
     /** {@inheritDoc} */
