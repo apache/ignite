@@ -326,7 +326,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
         log = U.logger(ctx, logRef, this);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
 

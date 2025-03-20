@@ -43,10 +43,6 @@
         <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
-        </property>
-
         <!-- Enable cache events for examples. -->
         <property name="includeEventTypes">
             <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>

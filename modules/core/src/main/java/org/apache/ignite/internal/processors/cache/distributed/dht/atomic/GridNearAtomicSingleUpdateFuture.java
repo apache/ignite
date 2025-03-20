@@ -563,7 +563,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     invokeArgs,
                     taskNameHash,
                     flags,
-                    cctx.deploymentEnabled());
+                    false);
             }
             else {
                 if (filter == null || filter.length == 0) {
@@ -576,7 +576,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         op,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled());
+                        false);
                 }
                 else {
                     req = new GridNearAtomicSingleUpdateFilterRequest(
@@ -589,7 +589,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         filter,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled());
+                        false);
                 }
             }
         }
@@ -606,7 +606,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 filter,
                 taskNameHash,
                 flags,
-                cctx.deploymentEnabled(),
+                false,
                 1);
         }
 

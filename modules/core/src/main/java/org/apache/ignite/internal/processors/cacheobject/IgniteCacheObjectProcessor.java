@@ -92,13 +92,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isBinaryObject(Object obj);
 
     /**
-     * Checks whether given class is binary.
-     *
-     * @return {@code true} If binary objects are enabled.
-     */
-    public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg);
-
-    /**
      * @param obj Binary object to get field from.
      * @param fieldName Field name.
      * @return Field value.

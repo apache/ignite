@@ -71,15 +71,13 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info.
      */
     GridDhtForceKeysRequest(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -90,7 +88,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         this.miniId = miniId;
         this.keys = keys;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
     }
 
     /**

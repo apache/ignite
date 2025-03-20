@@ -62,7 +62,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -263,9 +262,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
-    /** Deployment enabled flag for this specific cache */
-    private boolean depEnabled;
-
     /** */
     private boolean deferredDel;
 
@@ -385,7 +381,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.locStartTopVer = locStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
 
         /*
          * Managers in starting order!
@@ -975,7 +970,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Marshaller.
      */
     public Marshaller marshaller() {
-        return ctx.config().getMarshaller();
+        return ctx.marshaller();
     }
 
     /**
@@ -1421,13 +1416,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if deployment is enabled.
-     */
-    public boolean deploymentEnabled() {
-        return depEnabled;
-    }
-
-    /**
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
@@ -1685,13 +1673,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public IgniteCacheObjectProcessor cacheObjects() {
         return kernalContext().cacheObjects();
-    }
-
-    /**
-     * @return {@code True} if {@link BinaryMarshaller is configured}.
-     */
-    public boolean binaryMarshaller() {
-        return marshaller() instanceof BinaryMarshaller;
     }
 
     /**
@@ -2242,7 +2223,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param builder Builder.
      */
     public void prepareAffinityField(BinaryObjectBuilder builder) {
-        assert binaryMarshaller();
         assert builder instanceof BinaryObjectBuilderImpl;
 
         BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;

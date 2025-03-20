@@ -97,20 +97,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * @param futId Future ID.
      * @param partId Partition.
      * @param nodeLeft {@code True} if primary node failed.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearAtomicUpdateResponse(int cacheId,
         UUID nodeId,
         long futId,
         int partId,
-        boolean nodeLeft,
-        boolean addDepInfo) {
+        boolean nodeLeft) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
         this.partId = partId;
         this.nodeLeft = nodeLeft;
-        this.addDepInfo = addDepInfo;
     }
 
     /**

@@ -426,18 +426,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     PreparedStatement stmt = conn.prepareStatement(qry, H2StatementCache.queryFlags(qryDesc));
 
                     // Convert parameters into BinaryObjects.
-                    Marshaller m = ctx.config().getMarshaller();
+                    Marshaller m = ctx.marshaller();
                     byte[] paramsBytes = U.marshal(m, qryParams.arguments());
                     final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-                    Object[] params;
-
-                    if (m instanceof BinaryMarshaller) {
-                        params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
-                            .unmarshal(paramsBytes, ldr));
-                    }
-                    else
-                        params = U.unmarshal(m, paramsBytes, ldr);
+                    Object[] params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
+                        .unmarshal(paramsBytes, ldr));
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
@@ -1581,7 +1575,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.start();
 
         nodeId = ctx.localNodeId();
-        marshaller = ctx.config().getMarshaller();
+        marshaller = ctx.marshaller();
 
         mapQryExec = new GridMapQueryExecutor();
         rdcQryExec = new GridReduceQueryExecutor();
@@ -1660,7 +1654,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             if (msg instanceof GridCacheQueryMarshallable)
-                ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+                ((GridCacheQueryMarshallable)msg).unmarshall(ctx.marshaller(), ctx);
 
             try {
                 boolean processed = true;

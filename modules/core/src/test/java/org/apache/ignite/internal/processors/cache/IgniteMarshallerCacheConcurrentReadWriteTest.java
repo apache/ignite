@@ -92,7 +92,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
 
             data.put(i, obj);
 
-            dataBytes.put(i, ignite.configuration().getMarshaller().marshal(obj));
+            dataBytes.put(i, marshaller(ignite).marshal(obj));
         }
 
         ignite.cache(DEFAULT_CACHE_NAME).putAll(data);
@@ -113,7 +113,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
                     IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     for (Map.Entry<Integer, byte[]> e : dataBytes.entrySet()) {
-                        Object obj = ignite.configuration().getMarshaller().unmarshal(e.getValue(), null);
+                        Object obj = marshaller(ignite).unmarshal(e.getValue(), null);
 
                         cache.put(e.getKey(), obj);
                     }

@@ -89,18 +89,15 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param rebalanceId Rebalance id.
      * @param grpId Cache group ID.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info flag.
      */
     GridDhtPartitionSupplyMessage(
         long rebalanceId,
         int grpId,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         this.grpId = grpId;
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
     }
 
     /**

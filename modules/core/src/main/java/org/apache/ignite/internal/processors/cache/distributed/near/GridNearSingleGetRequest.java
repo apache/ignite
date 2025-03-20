@@ -101,7 +101,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
-     * @param addDepInfo Deployment info.
      * @param txLbl Transaction label.
      */
     public GridNearSingleGetRequest(
@@ -116,7 +115,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean skipVals,
         boolean addReader,
         boolean needVer,
-        boolean addDepInfo,
         boolean recovery,
         @Nullable String txLbl
     ) {
@@ -129,7 +127,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
-        this.addDepInfo = addDepInfo;
         this.txLbl = txLbl;
 
         if (readThrough)

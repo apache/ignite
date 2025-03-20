@@ -94,7 +94,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         msg.setCacheMetrics(UUID.randomUUID(), cacheMetrics);
 
-        Marshaller marshaller = grid(0).context().config().getMarshaller();
+        Marshaller marshaller = marshaller(grid(0));
 
         byte[] buf = marshaller.marshal(msg);
 
