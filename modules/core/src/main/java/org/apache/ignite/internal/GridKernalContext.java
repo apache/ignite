@@ -650,7 +650,5 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * @return Marshaller instance.
      */
-    public default Marshaller marshaller() {
-        return config().getMarshaller();
-    }
+    public Marshaller marshaller();
 }
