@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
@@ -46,7 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_S
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatisticsSystemViewWriter {
+public class FilePerformanceStatisticsSystemViewWriter extends GridWorker {
     /**
      * Directory to store performance statistics files. Placed under Ignite work directory.
      */
@@ -79,23 +77,13 @@ public class FilePerformanceStatisticsSystemViewWriter {
     private final int cachedStrsThreshold =
         IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD, DFLT_CACHED_STRINGS_THRESHOLD);
 
-    /**
-     * Performance statistics file writer worker.
-     */
-    private final FileWriter fileWriter;
-
-    /**
-     * Data stream.
-     */
+    /** */
     private final RandomAccessFile file;
 
-    /**
-     * System view managr.
-     */
+    /** System view manager. */
     private final GridSystemViewManager sysViewMngr;
-    /**
-     * Logger.
-     */
+
+    /** Logger.*/
     private final IgniteLogger log;
     /**
      * File writer thread started flag.
@@ -108,43 +96,9 @@ public class FilePerformanceStatisticsSystemViewWriter {
     public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
 
-        fileWriter = new FileWriter(ctx, log);
-
         sysViewMngr = ctx.systemView();
 
-        file.write(OperationType.VERSION.id());
-        file.writeShort(FILE_FORMAT_VERSION);
-    }
-
-    /**
-     * Starts collecting performance statistics.
-     */
-    public synchronized void start() {
-        assert !started;
-
         file = resolveStatisticsFile(ctx);
-
-        new IgniteThread(fileWriter).start();
-
-        started = true;
-    }
-
-    /**
-     * Stops collecting performance statistics.
-     */
-    public synchronized void stop() {
-        assert started;
-
-        U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
-
-        try {
-            file.close();
-        }
-        catch (IOException e) {
-            log.warning("Failed to fsync the performance statistics file.", e);
-        }
-
-        started = false;
     }
 
     /**
@@ -168,216 +122,220 @@ public class FilePerformanceStatisticsSystemViewWriter {
         }
         log.info("Performance statistics system view file created [file=" + file.getAbsolutePath() + ']');
 
-        return new RandomAccessFile(file.getAbsolutePath(), "w");
+        return new RandomAccessFile(file.getAbsolutePath(), "rw");
     }
 
     /**
-     * Worker to write to performance statistics file.
+     * Hashcodes of cached strings.
      */
-    private class FileWriter extends GridWorker {
-        /**
-         * Hashcodes of cached strings.
-         */
-        private final Set<Integer> knownStrs = new HashSet<>();
+    private final Set<Integer> knownStrs = new HashSet<>();
 
-        /**
-         * @param ctx Kernal context.
-         * @param log Logger.
-         */
-        FileWriter(GridKernalContext ctx, IgniteLogger log) {
-            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log, ctx.workersRegistry());
+    /**
+     * @param ctx Kernal context.
+     * @param log Logger.
+     */
+    FileWriter(GridKernalContext ctx, IgniteLogger log) {
+        super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log, ctx.workersRegistry());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        try {
+            file.writeShort(FILE_FORMAT_VERSION);
+            file.write(OperationType.VERSION.id());
+        }
+        catch (IOException e) {
+            log.error("Failed to write system view statistics file", e);
+        }
+
+        sysViewMngr.forEach(view -> {
+            try {
+                systemView(view);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /**
+     * @param view System view to write.
+     */
+    public void systemView(SystemView<?> view) throws IOException {
+        // TODO: Write view.name()
+        long startPos = file.getFilePointer();
+
+        file.skipBytes(Long.BYTES);
+
+        SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
+
+        AttributeWriterVisitor attrVisitor = new AttributeWriterVisitor();
+        walker.visitAll(attrVisitor);
+
+        AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
+        view.forEach(row -> walker.visitAll(row, valVisitor));
+
+        long endPos = file.getFilePointer();
+
+        long recSize = endPos - startPos;
+
+        file.seek(startPos);
+
+        file.writeLong(recSize);
+
+        file.seek(endPos);
+    }
+
+    /**
+     * @return {@code True} if string was cached and can be written as hashcode.
+     */
+    private boolean cacheIfPossible(String str) {
+        if (knownStrs.size() >= cachedStrsThreshold)
+            return false;
+
+        int hash = str.hashCode();
+
+        return knownStrs.contains(hash) || !knownStrs.add(hash);
+    }
+
+    /** Write schema of system view to file. */
+    private class AttributeWriterVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
+        /** {@inheritDoc} */
+        @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+            try {
+                writeString(name);
+
+                if (clazz.isPrimitive())
+                    writeString(clazz.getSimpleName());
+                else
+                    writeString(String.class.getSimpleName());
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         /**
-         * {@inheritDoc}
+         * @param str String to write.
          */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            sysViewMngr.forEach(view -> {
-                try {
-                    systemView(view);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
+        private void writeString(String str) throws IOException {
+            file.writeByte(cached ? (byte)1 : 0);
 
-        /**
-         * @param view System view to write.
-         */
-        public void systemView(SystemView<?> view) throws IOException {
-            // TODO: Write view.name()
-            long startPos = file.getFilePointer();
+            if (cached)
+                dataOutputStream.writeInt(str.hashCode());
+            else {
+                byte[] bytes = str.getBytes();
 
-            file.skipBytes(Long.BYTES);
-
-            SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
-
-            AttributeWriterVisitor attrVisitor = new AttributeWriterVisitor();
-            walker.visitAll(attrVisitor);
-
-            AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
-            view.forEach(row -> walker.visitAll(row, valVisitor));
-
-            long endPos = file.getFilePointer();
-
-            long recSize = endPos - startPos;
-
-            file.seek(startPos);
-
-            file.writeLong(recSize);
-
-            file.seek(endPos);
-        }
-
-        /**
-         * @return {@code True} if string was cached and can be written as hashcode.
-         */
-        private boolean cacheIfPossible(String str) {
-            if (knownStrs.size() >= cachedStrsThreshold)
-                return false;
-
-            int hash = str.hashCode();
-
-            return knownStrs.contains(hash) || !knownStrs.add(hash);
-        }
-
-        /** Write schema of system view to file. */
-        private class AttributeWriterVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
-            /** {@inheritDoc} */
-            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                try {
-                    writeString(name);
-
-                    if (clazz.isPrimitive())
-                        writeString(clazz.getSimpleName());
-                    else
-                        writeString(String.class.getSimpleName());
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /**
-             * @param str String to write.
-             */
-            private void writeString(String str) throws IOException {
-                file.writeByte(cached ? (byte)1 : 0);
-
-                if (cached)
-                    dataOutputStream.writeInt(str.hashCode());
-                else {
-                    byte[] bytes = str.getBytes();
-
-                    dataOutputStream.writeInt(bytes.length);
-                    dataOutputStream.write(bytes);
-                }
-            }
-        }
-
-        /** Writes view row to file. */
-        private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
-
-            /**
-             *
-             */
-            private final RandomAccessFile file;
-
-            public AttributeWithValueWriterVisitor(RandomAccessFile file) {
-                this.file = file;
-            }
-
-            /** {@inheritDoc} */
-            @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
-                try {
-                    String str = String.valueOf(val);
-                    file.writeBytes(str);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptBoolean(int idx, String name, boolean val) {
-                try {
-                    file.writeBoolean(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptChar(int idx, String name, char val) {
-                try {
-                    file.writeChar(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptByte(int idx, String name, byte val) {
-                try {
-                    file.writeByte(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptShort(int idx, String name, short val) {
-                try {
-                    file.writeShort(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptInt(int idx, String name, int val) {
-                try {
-                    file.writeInt(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptLong(int idx, String name, long val) {
-                try {
-                    file.writeLong(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptFloat(int idx, String name, float val) {
-                try {
-                    file.writeFloat(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void acceptDouble(int idx, String name, double val) {
-                try {
-                    file.writeDouble(val);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                dataOutputStream.writeInt(bytes.length);
+                dataOutputStream.write(bytes);
             }
         }
     }
+
+    /** Writes view row to file. */
+    private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
+
+        /**
+         *
+         */
+        private final RandomAccessFile file;
+
+        public AttributeWithValueWriterVisitor(RandomAccessFile file) {
+            this.file = file;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
+            try {
+                String str = String.valueOf(val);
+                file.writeBytes(str);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptBoolean(int idx, String name, boolean val) {
+            try {
+                file.writeBoolean(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptChar(int idx, String name, char val) {
+            try {
+                file.writeChar(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptByte(int idx, String name, byte val) {
+            try {
+                file.writeByte(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptShort(int idx, String name, short val) {
+            try {
+                file.writeShort(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptInt(int idx, String name, int val) {
+            try {
+                file.writeInt(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptLong(int idx, String name, long val) {
+            try {
+                file.writeLong(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptFloat(int idx, String name, float val) {
+            try {
+                file.writeFloat(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptDouble(int idx, String name, double val) {
+            try {
+                file.writeDouble(val);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}
 }
