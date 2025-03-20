@@ -52,6 +52,7 @@ import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -223,7 +224,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testSingleServerDuplicatedFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setAddresses(F.first(cluster.clientAddresses()))
                  .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
@@ -234,7 +235,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            // Reuse second address without fail.
+            // Reuse the address after retry without fail.
             cachePut(cache, 0, 0);
         }
     }
@@ -247,7 +248,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ClientRetryReadPolicy())
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setAddresses(F.first(cluster.clientAddresses()))
                  .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
@@ -273,27 +274,25 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ExceptionRetryPolicy())
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setAddresses(F.first(cluster.clientAddresses()))
                  .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
+
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            Throwable asyncEx = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
+            Throwable ex;
+            if (async) {
+                ex = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
                     ExecutionException.class, "Channel is closed");
-
-            GridTestUtils.assertContains(null, asyncEx.getMessage(), F.first(cluster.clientAddresses()));
-
-            dropAllThinClientConnections(Ignition.allGrids().get(0));
-
-            Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
-                ClientConnectionException.class, "Channel is closed");
-
-            GridTestUtils.assertContains(null, syncEx.getMessage(), F.first(cluster.clientAddresses()));
-
-            for (Throwable t : new Throwable[] {asyncEx.getCause(), syncEx}) {
-                assertEquals("Error in policy.", t.getSuppressed()[0].getMessage());
             }
+            else {
+                ex = GridTestUtils.assertThrows(null, () -> cache.get(0),
+                    ClientConnectionException.class, "Channel is closed");
+            }
+
+            X.hasCause(ex, "Error in policy");
+            GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
         }
     }
 
