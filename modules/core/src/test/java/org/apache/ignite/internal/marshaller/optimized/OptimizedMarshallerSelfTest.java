@@ -36,8 +36,8 @@ import org.junit.Test;
 @GridCommonTest(group = "Marshaller")
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new OptimizedMarshaller(false);
+    @Override protected Marshaller marshaller() throws IgniteCheckedException {
+        return initTestMarshallerContext(new OptimizedMarshaller(false));
     }
 
     /**

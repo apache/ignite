@@ -21,6 +21,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamField;
 import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.junit.Test;
@@ -30,8 +31,8 @@ import org.junit.Test;
  */
 public class OptimizedMarshallerSerialPersistentFieldsSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new OptimizedMarshaller(false);
+    @Override protected Marshaller marshaller() throws IgniteCheckedException {
+        return initTestMarshallerContext(new OptimizedMarshaller(false));
     }
 
     /**

@@ -138,7 +138,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setMarshaller(marshaller());
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), namedCache);
 
         return cfg;
@@ -147,11 +146,11 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @return Marshaller.
      */
-    protected abstract Marshaller marshaller();
+    protected abstract Marshaller marshaller() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        marsh = grid().configuration().getMarshaller();
+        marsh = marshaller();
         igniteInstanceName = grid().configuration().getIgniteInstanceName();
     }
 
