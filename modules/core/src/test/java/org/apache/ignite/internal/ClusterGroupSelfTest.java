@@ -267,7 +267,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
      */
     @Test
     public void testAgeClusterGroupSerialization() throws Exception {
-        Marshaller marshaller = ignite.configuration().getMarshaller();
+        Marshaller marshaller = marshaller(ignite);
 
         ClusterGroup grp = ignite.cluster().forYoungest();
         ClusterNode node = grp.node();

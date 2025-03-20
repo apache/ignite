@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 
@@ -645,4 +646,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Executor that is in charge of processing user async continuations.
      */
     public Executor getAsyncContinuationExecutor();
+
+    /**
+     * @return Marshaller instance.
+     */
+    public default Marshaller marshaller() {
+        return config().getMarshaller();
+    }
 }
