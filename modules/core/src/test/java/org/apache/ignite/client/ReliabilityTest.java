@@ -53,6 +53,7 @@ import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -289,9 +290,9 @@ public class ReliabilityTest extends AbstractThinClientTest {
             else {
                 ex = GridTestUtils.assertThrows(null, () -> cache.get(0),
                     ClientConnectionException.class, "Channel is closed");
-                assertEquals("Error in policy.", ex.getSuppressed()[0].getMessage());
             }
 
+            X.hasCause(ex, "Error in policy");
             GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
         }
     }
