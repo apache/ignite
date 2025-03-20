@@ -223,7 +223,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testSingleServerDuplicatedFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setAddresses(F.first(cluster.clientAddresses()))
                  .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
@@ -234,7 +234,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            // Reuse second address without fail.
+            // Reuse the address after retry without fail.
             cachePut(cache, 0, 0);
         }
     }
@@ -247,7 +247,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ClientRetryReadPolicy())
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setAddresses(F.first(cluster.clientAddresses()))
                  .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
@@ -264,25 +264,45 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests retry policy exception handling.
+     * Tests that retry policy exception handling for async operations propagates to the caller.
      */
     @Test
-    public void testExceptionInRetryPolicyPropagatesToCaller() {
+    public void testExceptionInRetryPolicyPropagatesToCallerAsync() {
         Assume.assumeFalse(partitionAware);
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ExceptionRetryPolicy())
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setAddresses(F.first(cluster.clientAddresses()))
                  .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
+
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            Throwable asyncEx = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
-                    ExecutionException.class, "Channel is closed");
+            Throwable asyncEx = GridTestUtils.assertThrows(null,
+                () -> cache.getAsync(0).get(),
+                ExecutionException.class, "Channel is closed");
 
             GridTestUtils.assertContains(null, asyncEx.getMessage(), F.first(cluster.clientAddresses()));
+        }
+    }
+
+
+    /**
+     * Tests that retry policy exception handling for sync operations propagates to the caller.
+     */
+    @Test
+    public void testExceptionInRetryPolicyPropagatesToCallerSync() {
+        Assume.assumeFalse(partitionAware);
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ExceptionRetryPolicy())
+                 .setAddresses(F.first(cluster.clientAddresses()))
+                 .setClusterDiscoveryEnabled(false))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
 
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
@@ -291,16 +311,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             GridTestUtils.assertContains(null, syncEx.getMessage(), F.first(cluster.clientAddresses()));
 
-            for (Throwable t : new Throwable[] {asyncEx.getCause(), syncEx}) {
-                assertEquals("Error in policy.", t.getSuppressed()[0].getMessage());
-            }
+            assertEquals("Error in policy.", syncEx.getSuppressed()[0].getMessage());
         }
     }
 
     /**
      * Tests that retry limit of 1 effectively disables retry/failover.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testRetryLimitDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
@@ -317,9 +334,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            // Reuse second address without fail.
-            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
-                    "Channel is closed");
+            if (!partitionAware) {
+                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+
+                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
+            }
+
+            cachePut(cache, 0, 0);
         }
     }
 
