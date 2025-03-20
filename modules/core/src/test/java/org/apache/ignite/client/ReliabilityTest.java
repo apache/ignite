@@ -265,10 +265,10 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests that retry policy exception handling for async operations propagates to the caller.
+     * Tests retry policy exception handling.
      */
     @Test
-    public void testExceptionInRetryPolicyPropagatesToCallerAsync() {
+    public void testExceptionInRetryPolicyPropagatesToCaller() {
         Assume.assumeFalse(partitionAware);
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
@@ -281,38 +281,18 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            Throwable asyncEx = GridTestUtils.assertThrows(null,
-                () -> cache.getAsync(0).get(),
-                ExecutionException.class, "Channel is closed");
+            Throwable ex;
+            if (async) {
+                ex = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
+                    ExecutionException.class, "Channel is closed");
+            }
+            else {
+                ex = GridTestUtils.assertThrows(null, () -> cache.get(0),
+                    ClientConnectionException.class, "Channel is closed");
+                assertEquals("Error in policy.", ex.getSuppressed()[0].getMessage());
+            }
 
-            GridTestUtils.assertContains(null, asyncEx.getMessage(), F.first(cluster.clientAddresses()));
-        }
-    }
-
-
-    /**
-     * Tests that retry policy exception handling for sync operations propagates to the caller.
-     */
-    @Test
-    public void testExceptionInRetryPolicyPropagatesToCallerSync() {
-        Assume.assumeFalse(partitionAware);
-
-        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
-             IgniteClient client = Ignition.startClient(getClientConfiguration()
-                 .setRetryPolicy(new ExceptionRetryPolicy())
-                 .setAddresses(F.first(cluster.clientAddresses()))
-                 .setClusterDiscoveryEnabled(false))
-        ) {
-            ClientCache<Integer, Integer> cache = client.createCache("cache");
-
-            dropAllThinClientConnections(Ignition.allGrids().get(0));
-
-            Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
-                ClientConnectionException.class, "Channel is closed");
-
-            GridTestUtils.assertContains(null, syncEx.getMessage(), F.first(cluster.clientAddresses()));
-
-            assertEquals("Error in policy.", syncEx.getSuppressed()[0].getMessage());
+            GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
         }
     }
 

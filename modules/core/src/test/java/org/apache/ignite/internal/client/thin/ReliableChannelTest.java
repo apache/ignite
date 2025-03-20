@@ -132,7 +132,7 @@ public class ReliableChannelTest {
      * Checks that reinitialization of duplicated address is correct.
      */
     @Test
-    public void testReinitDuplicatedAddressMerging() {
+    public void testReinitDuplicatedAddress() {
         TestAddressFinder finder = new TestAddressFinder()
             .nextAddresesResponse("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802")
             .nextAddresesResponse("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10805")
