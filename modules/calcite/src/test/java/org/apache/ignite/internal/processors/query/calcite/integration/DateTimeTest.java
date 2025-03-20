@@ -204,76 +204,6 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     @Test
-    public void testOldDateLiterals() throws Exception {
-        assertQuery("SELECT DATE '1582-10-20'").returns(sqlDate("1582-10-20")).check();
-        assertQuery("SELECT DATE '1582-10-15'").returns(sqlDate("1582-10-15")).check();
-        assertQuery("SELECT DATE '1582-10-01'").returns(sqlDate("1582-10-01")).check();
-        assertQuery("SELECT DATE '1582-09-30'").returns(sqlDate("1582-09-30")).check();
-        assertQuery("SELECT DATE '1000-01-01'").returns(sqlDate("1000-01-01")).check();
-        assertQuery("SELECT DATE '0550-05-05'").returns(sqlDate("0550-05-05")).check();
-
-        assertQuery("SELECT ?").returns(sqlDate("1582-10-20")).withParams(sqlDate("1582-10-20")).check();
-        assertQuery("SELECT ?").returns(sqlDate("1582-10-01")).withParams(sqlDate("1582-10-01")).check();
-        assertQuery("SELECT ?").returns(sqlDate("1000-01-01")).withParams(sqlDate("1000-01-01")).check();
-
-        assertQuery("SELECT TIMESTAMP '1582-10-20 17:12:47.111'").returns(sqlTimestamp("1582-10-20 17:12:47.111"))
-            .check();
-        assertQuery("SELECT TIMESTAMP '1582-10-15 00:00:00.001'").returns(sqlTimestamp("1582-10-15 00:00:00.001"))
-            .check();
-        assertQuery("SELECT TIMESTAMP '1582-10-01 01:01:15.555'").returns(sqlTimestamp("1582-10-01 01:01:15.555"))
-            .check();
-        assertQuery("SELECT TIMESTAMP '1582-09-30 23:23:59.999'").returns(sqlTimestamp("1582-09-30 23:23:59.999"))
-            .check();
-        assertQuery("SELECT TIMESTAMP '1000-01-01 23:23:59.999'").returns(sqlTimestamp("1000-01-01 23:23:59.999"))
-            .check();
-        assertQuery("SELECT TIMESTAMP '0550-05-05 04:04:31.015'").returns(sqlTimestamp("0550-05-05 04:04:31.015"))
-            .check();
-
-        assertQuery("SELECT ?").withParams(sqlTimestamp("1582-10-20 17:12:47.111"))
-            .returns(sqlTimestamp("1582-10-20 17:12:47.111")).check();
-        assertQuery("SELECT ?").withParams(sqlTimestamp("1582-10-15 00:00:00.001"))
-            .returns(sqlTimestamp("1582-10-15 00:00:00.001")).check();
-        assertQuery("SELECT ?").withParams(sqlTimestamp("0550-05-05 04:04:31.015"))
-            .returns(sqlTimestamp("0550-05-05 04:04:31.015")).check();
-    }
-
-    /** */
-    @Test
-    public void testOldDateLiteralsWithTable() throws Exception {
-        sql(client, "INSERT INTO datetimetable (ID, SQLDATE, SQLTIMESTAMP) VALUES(?, ?, ? )", 5, sqlDate("1582-10-04"),
-            sqlTimestamp("1582-10-04 15:31:47.381"));
-        sql(client, "INSERT INTO datetimetable (ID, SQLDATE, SQLTIMESTAMP) VALUES(6, DATE '1582-10-04'," +
-            " TIMESTAMP '1582-10-04 15:31:47.381')");
-
-        assertQuery("SELECT SQLDATE from datetimetable WHERE ID=5").returns(sqlDate("1582-10-04")).check();
-        assertQuery("SELECT SQLDATE from datetimetable WHERE ID=6").returns(sqlDate("1582-10-04")).check();
-        assertQuery("SELECT SQLDATE + INTERVAL 1 DAYS from datetimetable WHERE ID=5").returns(sqlDate("1582-10-15"))
-            .check();
-        assertQuery("SELECT SQLDATE + INTERVAL 1 DAYS from datetimetable WHERE ID=6").returns(sqlDate("1582-10-15"))
-            .check();
-
-        assertQuery("SELECT SQLTIMESTAMP from datetimetable WHERE ID=5").returns(sqlTimestamp("1582-10-04 15:31:47.381")).check();
-        assertQuery("SELECT SQLTIMESTAMP from datetimetable WHERE ID=6").returns(sqlTimestamp("1582-10-04 15:31:47.381")).check();
-        assertQuery("SELECT SQLTIMESTAMP + INTERVAL 1 DAYS from datetimetable WHERE ID=5").returns(sqlTimestamp("1582-10-15 15:31:47.381"))
-            .check();
-        assertQuery("SELECT SQLTIMESTAMP + INTERVAL 1 DAYS from datetimetable WHERE ID=6").returns(sqlTimestamp("1582-10-15 15:31:47.381"))
-            .check();
-    }
-
-    /** */
-    @Test
-    public void testDefaultTemporalValues() throws Exception {
-//        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT '2020-07-07', TT TIME DEFAULT '14:30:43', " +
-//            "TS TIMESTAMP DEFAULT '2023-07-05 01:02:03.456')");
-        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-04')");
-
-        sql("INSERT INTO TBL(ID) VALUES(1)");
-
-        assertQuery("SELECT DT FROM TBL").returns(sqlDate("1582-10-04")).check();
-    }
-
-    /** */
-    @Test
     public void testDateTimeCast() throws Exception {
         assertQuery("SELECT CAST('2021-01-01 01:02:03.456' AS TIMESTAMP)")
             .returns(sqlTimestamp("2021-01-01 01:02:03.456")).check();
@@ -298,18 +228,6 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertThrows("SELECT CAST('2021-01-02' AS DATE FORMAT 'DD-MM-YY')", IgniteSQLException.class,
             "Operator 'CAST' supports only the parameters: value and target type.");
-    }
-
-    /** */
-    @Test
-    public void testDefaultTemporalValues() throws Exception {
-//        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT '2020-07-07', TT TIME DEFAULT '14:30:43', " +
-//            "TS TIMESTAMP DEFAULT '2023-07-05 01:02:03.456')");
-        sql(client, "CREATE TABLE TBL(ID INTEGER, DT DATE DEFAULT DATE '1582-10-20')");
-
-        sql("INSERT INTO TBL(ID) VALUES(1)");
-
-        assertQuery("SELECT DT FROM TBL").returns(sqlDate("1582-10-20")).check();
     }
 
     /** */
