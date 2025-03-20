@@ -735,11 +735,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public Marshaller marshaller() {
-        return config().getMarshaller();
-    }
-
     /**
      * @param kctx Kernal context.
      * @throws IgniteCheckedException In case of any error.

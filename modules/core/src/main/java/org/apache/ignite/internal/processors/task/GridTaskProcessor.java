@@ -176,7 +176,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     public GridTaskProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         discoLsnr = new TaskDiscoveryListener();
 
