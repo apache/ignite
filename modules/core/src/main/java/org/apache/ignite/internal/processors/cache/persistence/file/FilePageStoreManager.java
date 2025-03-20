@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
@@ -86,17 +88,12 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  * File page store manager.
  */
 public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager,
     PageStoreCollection {
-    /** */
-    public static final String DFLT_STORE_DIR = "db";
-
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
@@ -175,20 +172,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         ft = ctx.pdsFolderResolver().fileTree();
 
-        U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
+        FileTreeUtils.createCacheStorages(ft, log);
 
-        String tmpDir = System.getProperty("java.io.tmpdir");
-
-        if (tmpDir != null && ft.nodeStorage().getAbsolutePath().startsWith(tmpDir)) {
-            log.warning("Persistence store directory is in the temp directory and may be cleaned." +
-                "To avoid this set \"IGNITE_HOME\" environment variable properly or " +
-                "change location of persistence directories in data storage configuration " +
-                "(see DataStorageConfiguration#walPath, DataStorageConfiguration#walArchivePath, " +
-                "DataStorageConfiguration#storagePath properties). " +
-                "Current persistence store directory is: [" + ft.nodeStorage().getAbsolutePath() + "]");
-        }
-
-        List<File> files = ft.allCacheDirs();
+        List<File> files = ft.existingCacheDirs();
 
         for (File file : files) {
             File[] tmpFiles = file.listFiles(NodeFileTree::tmpCacheConfig);
@@ -228,7 +214,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace() {
-        ft.cacheDirsWithoutMeta().forEach(U::delete);
+        ft.existingCacheDirsWithoutMeta().forEach(U::delete);
     }
 
     /** {@inheritDoc} */
@@ -392,8 +378,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void initializeForMetastorage() throws IgniteCheckedException {
-        assert ft.nodeStorage() != null;
-
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
         if (!idxCacheStores.containsKey(grpId)) {
@@ -401,7 +385,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
             CacheStoreHolder holder = initDir(
-                METASTORAGE_DIR_NAME,
+                ft.metaStorage(),
+                p -> ft.metaStoragePartition(p).toPath(),
                 grpId,
                 MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
@@ -496,7 +481,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpDesc.groupId());
 
         return initDir(
-            ft.cacheDirName(ccfg),
+            ft.cacheStorage(ccfg),
+            p -> ft.partitionFile(ccfg, p).toPath(),
             grpDesc.groupId(),
             ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
@@ -569,7 +555,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheDir Cache dir name.
+     * @param cacheWorkDir Cache work dir.
      * @param grpId Group ID.
      * @param cacheName Cache name.
      * @param partitions Number of partitions.
@@ -579,7 +565,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(
-        String cacheDir,
+        File cacheWorkDir,
+        IntFunction<Path> partitionFile,
         int grpId,
         String cacheName,
         int partitions,
@@ -587,8 +574,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         boolean encrypted,
         Collection<String> grpCaches) throws IgniteCheckedException {
         try {
-            File cacheWorkDir = ft.cacheStorage(cacheDir);
-
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
             if (dirExisted) {
@@ -598,7 +583,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
             }
 
-            File idxFile = new File(cacheWorkDir, partitionFileName(INDEX_PARTITION));
+            File idxFile = partitionFile.apply(INDEX_PARTITION).toFile();
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
@@ -638,7 +623,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageStore.TYPE_DATA,
-                        () -> ft.partitionFile(cacheDir, p).toPath(),
+                        () -> partitionFile.apply(p),
                         pageMetrics.totalPages()::add);
 
                 partStores[partId] = partStore;

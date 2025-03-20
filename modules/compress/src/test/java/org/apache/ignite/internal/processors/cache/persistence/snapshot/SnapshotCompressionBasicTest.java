@@ -66,7 +66,6 @@ import org.mockito.Mockito;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
 public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
@@ -274,7 +273,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    @Override protected void cleanPersistenceDir(boolean saveSnap) throws Exception {
+    @Override protected void cleanPersistenceDir(boolean saveSnap) {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         String mask = U.maskForFileName(getTestIgniteInstanceName());
@@ -292,7 +291,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 NodeFileTree ft = nodeFileTree(dir.toString());
 
                 U.delete(ft.checkpoint());
-                U.delete(ft.nodeStorage().getParentFile());
+                U.delete(ft.db());
                 U.delete(ft.marshaller());
                 U.delete(ft.binaryMetaRoot());
             }
@@ -403,7 +402,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long persistenseSize(Collection<Ignite> grids) {
         return grids.stream()
-            .map(ig -> workingDirectory(ig).resolve(DFLT_STORE_DIR))
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().nodeStorage().toPath())
             .reduce(0L, (acc, p) -> acc + directorySize(p), Long::sum);
     }
 

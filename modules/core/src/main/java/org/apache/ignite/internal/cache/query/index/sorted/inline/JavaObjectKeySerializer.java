@@ -38,8 +38,18 @@ public class JavaObjectKeySerializer {
      * @param cfg Ignite configuration.
      */
     public JavaObjectKeySerializer(IgniteConfiguration cfg) {
-        marshaller = cfg.getMarshaller();
-        clsLdr = U.resolveClassLoader(cfg);
+        this(U.resolveClassLoader(cfg), cfg.getMarshaller());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param marshaller Marshaller.
+     * @param clsLdr Class loader.
+     */
+    public JavaObjectKeySerializer(ClassLoader clsLdr, Marshaller marshaller) {
+        this.clsLdr = clsLdr;
+        this.marshaller = marshaller;
     }
 
     /** */

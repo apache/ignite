@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
@@ -79,11 +80,11 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     // No-op.
                 }
 
-                @Override protected void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override protected void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
                     // No-op.
                 }
 
-                @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                @Override protected void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                     // No-op.
                 }
             },

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -203,7 +202,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If it was not possible to delete some temporary directory.
      */
     protected void cleanup() throws IgniteCheckedException {
-        for (File dir : ft.nodeStorage().listFiles((FileFilter)NodeFileTree::tmpCacheStorage)) {
+        for (File dir : ft.existingTmpCacheStorages()) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -750,7 +749,7 @@ public class SnapshotRestoreProcess {
                 req.snapshotPath(),
                 meta.folderName(),
                 meta.consistentId()
-            ).cacheDirsWithoutMeta();
+            ).existingCacheDirsWithoutMeta();
 
             for (File snpCacheDir : cacheDirs) {
                 String grpName = cacheName(snpCacheDir);
@@ -758,7 +757,18 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                File cacheDir = ft.cacheStorage(snpCacheDir.getName());
+                Map<String, StoredCacheData> ccfgs = new HashMap<>();
+
+                locCfgMgr.readCacheGroupCaches(snpCacheDir, ccfgs);
+
+                if (F.isEmpty(ccfgs))
+                    continue;
+
+                cfgsByName.putAll(ccfgs);
+
+                CacheConfiguration<?, ?> ccfg = F.first(ccfgs.values()).config();
+
+                File cacheDir = ft.cacheStorage(ccfg);
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -778,14 +788,12 @@ public class SnapshotRestoreProcess {
                     }
                 }
 
-                File tmpCacheDir = ft.tmpCacheStorage(cacheDir.getName());
+                File tmpCacheDir = ft.tmpCacheStorage(ccfg);
 
                 if (tmpCacheDir.exists()) {
                     throw new IgniteCheckedException("Unable to restore cache group, temp directory already exists " +
                         "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
                 }
-
-                locCfgMgr.readCacheGroupCaches(snpCacheDir, cfgsByName);
             }
         }
 
@@ -946,7 +954,7 @@ public class SnapshotRestoreProcess {
                                 ? sft.incrementalSnapshotFileTree(opCtx0.incIdx)
                                 : sft;
 
-                            ctx.cacheObjects().updateMetadata(metaFt.binaryMeta(), opCtx0.stopChecker);
+                            ctx.cacheObjects().updateMetadata(metaFt, opCtx0.stopChecker);
 
                             restoreMappings(metaFt.marshaller(), opCtx0.stopChecker);
                         }
@@ -974,11 +982,15 @@ public class SnapshotRestoreProcess {
             for (File dir : opCtx0.dirs) {
                 String cacheOrGrpName = cacheName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
+                CacheConfiguration<?, ?> ccfg = opCtx0.cfgs.values().stream()
+                    .map(StoredCacheData::configuration)
+                    .filter(ccfg0 -> CU.cacheGroupId(ccfg0) == grpId)
+                    .findFirst().orElseThrow();
 
                 if (log.isInfoEnabled())
                     cacheGrpNames.put(grpId, cacheOrGrpName);
 
-                ft.tmpCacheStorage(dir.getName()).mkdir();
+                ft.tmpCacheStorage(ccfg).mkdir();
 
                 Set<PartitionRestoreFuture> leftParts;
 
@@ -1018,21 +1030,21 @@ public class SnapshotRestoreProcess {
                         = new SnapshotFileTree(ctx, opCtx0.snpName, opCtx0.snpPath, meta.folderName(), meta.consistentId());
 
                     leftParts.removeIf(partFut -> {
-                        boolean doCopy = ofNullable(meta.partitions().get(grpId))
-                            .orElse(Collections.emptySet())
-                            .contains(partFut.partId);
+                        Set<Integer> snpGrpParts = meta.partitions().getOrDefault(grpId, Collections.emptySet());
 
-                        if (doCopy) {
+                        if (snpGrpParts.contains(partFut.partId)) {
                             copyLocalAsync(
                                 opCtx0,
-                                sft.partitionFile(dir.getName(), partFut.partId),
-                                ft.tmpPartition(dir.getName(), partFut.partId),
+                                sft.partitionFile(ccfg, partFut.partId),
+                                ft.tmpPartition(ccfg, partFut.partId),
                                 grpId,
                                 partFut
                             );
+
+                            return true;
                         }
 
-                        return doCopy;
+                        return false;
                     });
 
                     if (meta == full) {
@@ -1044,7 +1056,7 @@ public class SnapshotRestoreProcess {
                                 ", dir=" + dir.getName() + ']');
                         }
 
-                        File snpFile = sft.partitionFile(dir.getName(), INDEX_PARTITION);
+                        File snpFile = sft.partitionFile(ccfg, INDEX_PARTITION);
 
                         if (snpFile.exists()) {
                             PartitionRestoreFuture idxFut;
@@ -1052,7 +1064,7 @@ public class SnapshotRestoreProcess {
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION, opCtx0.processedParts));
 
-                            copyLocalAsync(opCtx0, snpFile, ft.tmpPartition(dir.getName(), INDEX_PARTITION), grpId, idxFut);
+                            copyLocalAsync(opCtx0, snpFile, ft.tmpPartition(ccfg, INDEX_PARTITION), grpId, idxFut);
                         }
                     }
                 }
@@ -1157,7 +1169,7 @@ public class SnapshotRestoreProcess {
                             throw new IgniteInterruptedException("The operation has been stopped on temporary directory switch.");
 
                         for (File src : opCtx0.dirs)
-                            Files.move(ft.tmpCacheStorage(src.getName()).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                            Files.move(ft.tmpCacheStorage(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -1638,7 +1650,7 @@ public class SnapshotRestoreProcess {
                 IgniteCheckedException ex = null;
 
                 for (File cacheDir : opCtx0.dirs) {
-                    File tmpCacheDir = ft.tmpCacheStorage(cacheDir.getName());
+                    File tmpCacheDir = ft.tmpCacheStorage(cacheDir);
 
                     if (tmpCacheDir.exists() && !U.delete(tmpCacheDir)) {
                         log.error("Unable to perform rollback routine completely, cannot remove temp directory " +
