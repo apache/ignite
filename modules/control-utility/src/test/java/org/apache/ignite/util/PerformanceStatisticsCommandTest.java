@@ -21,10 +21,12 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsTask.STATUS_DISABLED;
 import static org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsTask.STATUS_ENABLED;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.TIMEOUT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.statisticsFiles;
@@ -44,6 +46,12 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
 
     /** */
     public static final String STATUS = "status";
+
+    /** */
+    public static final String ALL_VIEWS = "--all-system-views";
+
+    /** */
+    public static final String VIEWS = "--system-views";
 
     /** */
     public static final String PERFORMANCE_STATISTICS = "--performance-statistics";
@@ -148,6 +156,23 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
     public void testStopAlreadyStopped() {
         int res = execute(PERFORMANCE_STATISTICS, STOP);
 
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testSystemViews() {
+        int res = execute(PERFORMANCE_STATISTICS, START, VIEWS);
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, res);
+
+        res = execute(PERFORMANCE_STATISTICS, START, ALL_VIEWS);
+        assertEquals(EXIT_CODE_OK, res);
+
+        res = execute(PERFORMANCE_STATISTICS, STOP);
+        assertEquals(EXIT_CODE_OK, res);
+
+        res = execute(PERFORMANCE_STATISTICS, START, VIEWS, CACHES_VIEW);
         assertEquals(EXIT_CODE_OK, res);
     }
 }
