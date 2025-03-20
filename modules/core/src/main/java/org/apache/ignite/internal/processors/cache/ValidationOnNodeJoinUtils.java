@@ -280,8 +280,6 @@ public class ValidationOnNodeJoinUtils {
                     " 'true' [cacheName=" + U.maskName(cc.getName()) + ']');
         }
 
-        DeploymentMode depMode = c.getDeploymentMode();
-
         if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
             throw new IgniteCheckedException("Affinity function must return at most " +
                 CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
