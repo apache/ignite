@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -286,7 +287,7 @@ public class WebSessionFilter implements Filter {
 
         log = webSesIgnite.log();
 
-        marshaller = webSesIgnite.configuration().getMarshaller();
+        marshaller = ((IgniteEx)webSesIgnite).context().marshaller();
 
         initCache();
 

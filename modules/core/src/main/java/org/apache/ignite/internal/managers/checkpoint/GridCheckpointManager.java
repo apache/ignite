@@ -81,7 +81,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     public GridCheckpointManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCheckpointSpi());
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         if (enabled()) {
             keyMap = new ConcurrentHashMap<>();

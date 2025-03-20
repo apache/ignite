@@ -77,7 +77,7 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
             for (Map.Entry<KeyCacheObject, CacheObject> entry0 : col) {
                 GridCacheRawVersionedEntry entry = (GridCacheRawVersionedEntry)entry0;
 
-                entry.unmarshal(cacheObjCtx, ctx.config().getMarshaller());
+                entry.unmarshal(cacheObjCtx, ctx.marshaller());
 
                 KeyCacheObject key = entry.getKey();
 

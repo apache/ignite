@@ -38,13 +38,6 @@
         -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <!--
-            Configure binary marshaller.
-        -->
-        <property name="marshaller">
-            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
-        </property>
-
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 

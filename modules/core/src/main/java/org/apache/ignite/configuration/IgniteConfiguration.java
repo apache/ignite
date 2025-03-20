@@ -57,7 +57,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -331,9 +330,6 @@ public class IgniteConfiguration {
 
     /** Local node ID. */
     private UUID nodeId;
-
-    /** Marshaller. */
-    private Marshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -682,7 +678,6 @@ public class IgniteConfiguration {
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
         lsnrs = cfg.getLocalEventListeners();
-        marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
         metricsExpTime = cfg.getMetricsExpireTime();
@@ -1388,36 +1383,6 @@ public class IgniteConfiguration {
     @Deprecated
     public IgniteConfiguration setNodeId(UUID nodeId) {
         this.nodeId = nodeId;
-
-        return this;
-    }
-
-    /**
-     * Should return an instance of marshaller to use in grid. If not provided,
-     * default marshaller implementation that allows to read object field values
-     * without deserialization will be used.
-     *
-     * @return Marshaller to use in grid.
-     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
-     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
-     */
-    @Deprecated
-    public Marshaller getMarshaller() {
-        return marsh;
-    }
-
-    /**
-     * Sets marshaller to use within grid.
-     *
-     * @param marsh Marshaller to use within grid.
-     * @see IgniteConfiguration#getMarshaller()
-     * @return {@code this} for chaining.
-     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
-     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
-     */
-    @Deprecated
-    public IgniteConfiguration setMarshaller(Marshaller marsh) {
-        this.marsh = marsh;
 
         return this;
     }

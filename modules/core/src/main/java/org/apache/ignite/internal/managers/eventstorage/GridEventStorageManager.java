@@ -136,7 +136,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public GridEventStorageManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEventStorageSpi());
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 

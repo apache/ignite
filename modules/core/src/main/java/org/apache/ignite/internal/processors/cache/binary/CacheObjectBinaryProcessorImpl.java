@@ -215,7 +215,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     public CacheObjectBinaryProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.grid().configuration().getMarshaller();
+        marsh = ctx.grid().context().marshaller();
 
         ctx.systemView().registerView(BINARY_METADATA_VIEW, BINARY_METADATA_DESC, new BinaryMetadataViewWalker(),
             metadataLocCache.values(), val -> new BinaryMetadataView(val.metadata()));

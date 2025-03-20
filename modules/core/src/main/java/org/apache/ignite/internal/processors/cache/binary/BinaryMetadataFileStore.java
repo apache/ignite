@@ -227,7 +227,7 @@ class BinaryMetadataFileStore {
     /** */
     private void restoreMetadata(File file) {
         try (FileInputStream in = new FileInputStream(file)) {
-            BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+            BinaryMetadata meta = U.unmarshal(ctx.marshaller(), in, U.resolveClassLoader(ctx.config()));
 
             metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
         }
@@ -267,7 +267,7 @@ class BinaryMetadataFileStore {
             return null;
 
         try (FileInputStream in = new FileInputStream(file)) {
-            return U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+            return U.unmarshal(ctx.marshaller(), in, U.resolveClassLoader(ctx.config()));
         }
         catch (Exception e) {
             U.warn(log, "Failed to restore metadata from file: " + file.getName() +

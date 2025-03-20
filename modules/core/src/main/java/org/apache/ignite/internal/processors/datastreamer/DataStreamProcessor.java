@@ -92,7 +92,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             });
         }
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
     }
 
     /** {@inheritDoc} */

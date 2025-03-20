@@ -30,7 +30,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
 
 /**
@@ -69,19 +68,6 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         PlatformCppConfigurationEx cppCfg0 = new PlatformCppConfigurationEx(cppCfg, gate, memMgr);
 
         igniteCfg.setPlatformConfiguration(cppCfg0);
-
-        // Check marshaller
-        Marshaller marsh = igniteCfg.getMarshaller();
-
-        if (marsh == null) {
-            igniteCfg.setMarshaller(new BinaryMarshaller());
-
-            cppCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
-        }
-        else if (!(marsh instanceof BinaryMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
-                " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
 
         BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
 

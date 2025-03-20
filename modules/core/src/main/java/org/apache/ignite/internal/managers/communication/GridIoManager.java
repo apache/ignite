@@ -382,7 +382,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         locNodeId = ctx.localNodeId();
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
