@@ -219,9 +219,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         if (ft != null && ft.marshaller().exists()) {
             marshallerCtx.setMarshallerMappingFileStoreDir(ft.marshaller());
             marshallerCtx.onMarshallerProcessorStarted(this, null);
-
-            marsh.setContext(marshallerCtx);
         }
+
+        marsh.setContext(marshallerCtx);
 
         this.compressProc = compressProc;
     }
