@@ -25,6 +25,7 @@ import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 
 /**
  * Holds supported SQL hints and their settings.
@@ -67,7 +68,12 @@ public enum HintDefinition {
         /** {@inheritDoc} */
         @Override public Collection<RelOptRule> disabledRules() {
             // CoreRules#JOIN_COMMUTE also disables CoreRules.JOIN_COMMUTE_OUTER.
-            return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT);
+            // Disabling JoinToMultiJoinRule also disables IgniteMultiJoinOptimizeRule because it won't
+            // receive a MultiJoin. Disabling IgniteMultiJoinOptimizeRule in this way doesn't actually work because
+            // MultiJoin, unfortunately, is not a Hintable and HintStrategyTable ignores it. We keep it here as slight
+            // optimization, to remove more unnecessary rules from the planning.
+            return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT,
+                CoreRules.JOIN_TO_MULTI_JOIN, IgniteMultiJoinOptimizeRule.INSTANCE);
         }
     },
 
