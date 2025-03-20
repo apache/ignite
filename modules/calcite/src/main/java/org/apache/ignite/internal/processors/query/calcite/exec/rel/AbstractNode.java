@@ -105,7 +105,29 @@ public abstract class AbstractNode<Row> implements Node<Row> {
         this.sources = sources;
 
         for (int i = 0; i < sources.size(); i++)
-            sources.get(i).onRegister(requestDownstream(i));
+            sources.get(i).onRegister(new DelegateDownstream(requestDownstream(i)));
+    }
+
+    /** */
+    public String dump(String indent) {
+        StringBuilder sb = new StringBuilder();
+
+        if (getClass().getEnclosingClass() != null)
+            sb.append(indent + getClass().getEnclosingClass().getSimpleName() + "." + getClass().getSimpleName());
+        else
+            sb.append(indent + getClass().getSimpleName());
+
+        if (downstream != null)
+            sb.append(" [" + ((DelegateDownstream)downstream).dump() + ']');
+
+        sb.append(System.lineSeparator());
+
+        if (sources != null) {
+            for (Node<Row> src : sources)
+                sb.append(((AbstractNode<Row>)src).dump(indent + "  "));
+        }
+
+        return sb.toString();
     }
 
     /** {@inheritDoc} */
@@ -191,5 +213,48 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     @Override public Downstream<Row> downstream() {
         return downstream;
+    }
+
+    /** */
+    private class DelegateDownstream implements Downstream<Row> {
+        /** */
+        private final Downstream<Row> delegate;
+
+        /** */
+        private long pushed;
+
+        /** */
+        private boolean ended;
+
+        /** */
+        private Throwable error;
+
+        /** */
+        public DelegateDownstream(Downstream<Row> delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void push(Row row) throws Exception {
+            pushed++;
+            delegate.push(row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void end() throws Exception {
+            ended = true;
+            delegate.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onError(Throwable e) {
+            error = e;
+            delegate.onError(e);
+        }
+
+        /** */
+        private String dump() {
+            return "pushed=" + pushed + ", ended=" + ended + ", error=" + error;
+        }
     }
 }

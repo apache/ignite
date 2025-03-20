@@ -444,7 +444,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             .append(", type=CALCITE")
             .append(", state=").append(state)
             .append(", schema=").append(ctx.schemaName())
-            .append(", sql='").append(sql);
+            .append(", sql='").append(sql).append('\'')
+            .append(", dump='").append(root == null ? null : root.dump("")).append('\'');
 
         msgSb.append(']');
 
