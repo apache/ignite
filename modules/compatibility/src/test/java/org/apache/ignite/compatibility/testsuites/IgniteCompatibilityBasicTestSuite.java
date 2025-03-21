@@ -22,8 +22,12 @@ import org.apache.ignite.compatibility.clients.JdbcThinCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.CompoundIndexCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.IgnitePKIndexesMigrationToUnwrapPkTest;
+import org.apache.ignite.compatibility.persistence.IndexTypesCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.InlineJavaObjectCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
+import org.apache.ignite.compatibility.persistence.MoveBinaryMetadataCompatibility;
+import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -32,9 +36,13 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    PersistenceBasicCompatibilityTest.class,
+    InlineJavaObjectCompatibilityTest.class,
+    IndexTypesCompatibilityTest.class,
     FoldersReuseCompatibilityTest.class,
     MigratingToWalV2SerializerWithCompactionTest.class,
     MetaStorageCompatibilityTest.class,
+    MoveBinaryMetadataCompatibility.class,
     JdbcThinCompatibilityTest.class,
     JavaThinCompatibilityTest.class,
     IgnitePKIndexesMigrationToUnwrapPkTest.class,

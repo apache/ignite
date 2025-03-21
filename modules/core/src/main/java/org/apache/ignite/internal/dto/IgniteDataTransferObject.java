@@ -92,7 +92,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         int hdr = in.readInt();
 
-        if (hdr != MAGIC)
+        if ((hdr & MAGIC) != MAGIC)
             throw new IOException("Unexpected IgniteDataTransferObject header " +
                 "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
