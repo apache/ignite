@@ -88,6 +88,11 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
     }
 
     /** {@inheritDoc} */
+    @Override public RelCollation collation() {
+        return collation;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceSortAggregate(
             cluster,
