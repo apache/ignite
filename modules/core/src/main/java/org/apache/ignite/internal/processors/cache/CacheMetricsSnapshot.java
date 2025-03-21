@@ -1149,7 +1149,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         reads = in.readLong();
         puts = in.readLong();
         hits = in.readLong();

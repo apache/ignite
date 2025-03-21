@@ -64,7 +64,7 @@ public class DefragmentationTaskResult extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException {
         success = in.readBoolean();
 
         msg = U.readString(in);

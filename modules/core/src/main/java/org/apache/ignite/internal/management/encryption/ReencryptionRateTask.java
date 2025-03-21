@@ -127,7 +127,7 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
             limit = in.readDouble();
         }
     }

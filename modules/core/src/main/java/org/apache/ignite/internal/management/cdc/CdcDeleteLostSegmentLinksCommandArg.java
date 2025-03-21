@@ -43,7 +43,7 @@ public class CdcDeleteLostSegmentLinksCommandArg extends IgniteDataTransferObjec
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
     }
 
