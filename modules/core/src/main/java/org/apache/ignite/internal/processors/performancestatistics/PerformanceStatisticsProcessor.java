@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
@@ -41,6 +43,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -73,13 +77,30 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics process. */
     private DistributedProcess<Serializable, Serializable> rotateProc;
 
+    /** System view predicate to filter recorded views. */
+    private final Predicate<SystemView<?>> sysViewPredicate;
+    private FilePerformanceStatisticsSystemViewWriter sysViewWriter;
+
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        // System views that won't be recorded. They may be large or copy another PerfStat values.
+        Set<String> ignoredViews = Set.of("baseline.node.attributes",
+            "metrics",
+            "caches",
+            "sql.queries",
+            "nodes");
+        sysViewPredicate = view -> !ignoredViews.contains(view.name());
+
         registerStateListener(() -> {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
+
+            ctx.systemView().forEach(view -> {
+                if (sysViewPredicate.test(view))
+                    systemView(view);
+            });
         });
     }
 
@@ -170,6 +191,13 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         write(writer -> writer.query(type, text, id, startTime, duration, success));
+    }
+
+    /**
+     * @param view System view to extract data from.
+     */
+    public void systemView(SystemView<?> view) {
+        write(writer -> writer.systemView(view.name(), view));
     }
 
     /**
@@ -365,8 +393,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
+                sysViewWriter = new FilePerformanceStatisticsSystemViewWriter(ctx, ctx.log(FilePerformanceStatisticsSystemViewWriter.class));
 
                 writer.start();
+                new IgniteThread(sysViewWriter).start();
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -389,6 +419,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             this.writer = null;
 
             writer.stop();
+            sysViewWriter.stop();
         }
 
         log.info("Performance statistics writer stopped.");

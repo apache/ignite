@@ -21,9 +21,12 @@ import java.io.File;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
@@ -41,6 +44,14 @@ public class StringCacheTest extends AbstractPerformanceStatisticsTest {
 
         String testTaskName = "TestTask";
         int executions = 5;
+
+        GridTestUtils.setFieldValue(ignite.context().performanceStatistics(), "sysViewPredicate",
+            new Predicate<SystemView<?>>() {
+                @Override public boolean test(SystemView<?> view) {
+                    return false;
+                }
+            }
+        );
 
         startCollectStatistics();
 
