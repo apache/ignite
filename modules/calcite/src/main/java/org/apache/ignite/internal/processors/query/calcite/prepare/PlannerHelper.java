@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +35,9 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -58,6 +62,18 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
+    /**
+     * Rule {@link JoinCommuteRule} takes too long when joins number grows. We disable this rule if query has joins
+     * count bigger than this value.
+     */
+    public static final int MAX_JOINS_TO_COMMUTE = 3;
+
+    /**
+     * Rules {@link JoinPushThroughJoinRule} (left and right) take too long when joins number grows. We disable this rule
+     * if query has joins count bigger than this value.
+     */
+    public static final int MAX_JOINS_TO_COMMUTE_INPUTS = 5;
+
     /**
      * Default constructor.
      */
@@ -103,6 +119,14 @@ public class PlannerHelper {
                 .replace(IgniteDistributions.single())
                 .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
                 .simplify();
+
+            int joinsCnt = RelOptUtil.countJoins(rel);
+
+            if (joinsCnt > MAX_JOINS_TO_COMMUTE)
+                planner.setDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
+
+            if (joinsCnt > MAX_JOINS_TO_COMMUTE_INPUTS)
+                planner.setDisabledRules(Arrays.asList(JoinPushThroughJoinRule.LEFT.toString(), JoinPushThroughJoinRule.RIGHT.toString()));
 
             IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 

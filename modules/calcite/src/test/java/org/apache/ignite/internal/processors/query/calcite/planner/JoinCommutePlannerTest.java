@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /** Tests correctness applying of JOIN_COMMUTE* rules. */
@@ -74,6 +75,70 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                 }
             }
         );
+    }
+
+    /** */
+    @Test
+    public void testCommuteDisabledForManyJoins() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        int tablesCnt = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE) + 2;
+
+        try {
+            for (int i = 0; i < tablesCnt; ++i) {
+                publicSchema.addTable(
+                    "TBL" + i,
+                    new TestTable(
+                        new RelDataTypeFactory.Builder(f)
+                            .add("ID", f.createJavaType(Integer.class))
+                            .add("IVAL", f.createJavaType(Integer.class))
+                            .build(), (i ^ 1) == 0 ? 100 : 10) {
+
+                        @Override public IgniteDistribution distribution() {
+                            return IgniteDistributions.affinity(0, "HUGE", "hash");
+                        }
+                    }
+                );
+            }
+
+            doTestCommuteDisabledForManyJoins(PlannerHelper.MAX_JOINS_TO_COMMUTE + 1);
+            doTestCommuteDisabledForManyJoins(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS + 1);
+        }
+        finally {
+            for (int i = 0; i < tablesCnt; ++i)
+                publicSchema.removeTable("TBL" + i);
+        }
+    }
+
+    /** */
+    private void doTestCommuteDisabledForManyJoins(int joinsCnt) throws Exception {
+        StringBuilder select = new StringBuilder();
+        StringBuilder joins = new StringBuilder();
+
+        for (int i = 0; i < joinsCnt + 1; ++i) {
+            select.append("t").append(i).append(".id, ");
+
+            if (i == 0)
+                joins.append("TBL0 t0");
+            else {
+                joins.append(" JOIN TBL").append(i).append(" t").append(i).append(" ON t").append(i - 1).append(".id = t")
+                    .append(i).append(".ival");
+            }
+        }
+
+        String sql = "SELECT " + select.substring(0, select.length() - 2) + " from " + joins;
+
+        long timing = System.nanoTime();
+
+        physicalPlan(sql, publicSchema);
+
+        timing = U.nanosToMillis(System.nanoTime() - timing);
+
+        if (log.isInfoEnabled())
+            log.info("The planning took " + timing + " millis.");
+
+        // Without the commuting it takes several minutes.
+        assertTrue(timing < 45 * 1000);
     }
 
     /** */

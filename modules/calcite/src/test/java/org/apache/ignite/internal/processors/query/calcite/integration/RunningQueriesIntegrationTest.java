@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -106,7 +107,10 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         mreg.reset();
 
         CalciteQueryProcessor engine = queryProcessor(client);
-        int cnt = 9;
+
+        // Calcite takes time to reorder joins. To prevent long planning we disable default joins optimizations
+        // by the joins number. But even small joins count takes time to plan. We use several joins here as a long query.
+        int cnt = Math.min(PlannerHelper.MAX_JOINS_TO_COMMUTE, PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS);
 
         for (int i = 0; i < cnt; i++)
             sql("CREATE TABLE test_tbl" + i + " (id int, val varchar)");
@@ -117,11 +121,12 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
 
         assertTrue(GridTestUtils.waitForCondition(
-            () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
+            () -> !engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         Collection<? extends Query<?>> running = engine.runningQueries();
 
         assertEquals("Running: " + running, 1, running.size());
+        assertFalse(fut.isDone());
 
         Query<?> qry = F.first(running);
 
