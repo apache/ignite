@@ -111,32 +111,10 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                     TASK_PREFIX,
                     (k, v) -> {
                         DurableBackgroundTask task = ((DurableBackgroundTask<?>)v);
-                        DurableBackgroundTask convertedTask = task.convertAfterRestoreIfNeeded();
-
-                        boolean converted = false;
-
-                        if (task != convertedTask) {
-                            assert !task.name().equals(convertedTask.name()) :
-                                "Duplicate task names [original=" + task.name() +
-                                    ", converted=" + convertedTask.name() + ']';
-
-                            GridFutureAdapter<?> outFut = new GridFutureAdapter<>();
-                            outFut.onDone();
-
-                            DurableBackgroundTaskState<?> state =
-                                new DurableBackgroundTaskState<>(task, outFut, true, false);
-
-                            state.state(COMPLETED);
-
-                            tasks.put(task.name(), state);
-
-                            task = convertedTask;
-                            converted = true;
-                        }
 
                         tasks.put(
                             task.name(),
-                            new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), true, converted)
+                            new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), true)
                         );
                     },
                     true
@@ -154,18 +132,6 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
             return;
 
         try {
-            for (DurableBackgroundTaskState<?> state : tasks.values()) {
-                if (state.converted()) {
-                    metaStorageOperation(metaStorage -> {
-                        assert metaStorage != null;
-
-                        DurableBackgroundTask<?> task = state.task();
-
-                        metaStorage.write(metaStorageKey(state.task()), task);
-                    });
-                }
-            }
-
             ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
         }
         finally {
@@ -280,7 +246,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                             taskName);
                     }
 
-                    return new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), save, false);
+                    return new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), save);
                 });
 
             if (save) {
