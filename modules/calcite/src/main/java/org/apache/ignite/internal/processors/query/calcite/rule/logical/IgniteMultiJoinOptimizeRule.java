@@ -21,11 +21,9 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
@@ -48,6 +46,8 @@ import org.apache.calcite.util.mapping.Mappings.TargetMapping;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -125,9 +125,9 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
         List<RexNode> unusedConditions = new ArrayList<>();
 
         // Edges by vertex (rel.) number in pow2 starting.
-        Map<Integer, List<Edge>> edges = collectEdges(multiJoin, unusedConditions);
+        IntMap<List<Edge>> edges = collectEdges(multiJoin, unusedConditions);
         BitSet connections = new BitSet(1 << relCnt);
-        Map<Integer, Vertex> bestPlan = new HashMap<>();
+        IntMap<Vertex> bestPlan = new IntRWHashMap<>();
 
         int fldMappingOffset = 0;
         int relNumPow2 = 1;
@@ -206,17 +206,17 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
     }
 
     /** */
-    private static void aggregateEdges(Map<Integer, List<Edge>> edges, int lhs, int rhs) {
+    private static void aggregateEdges(IntMap<List<Edge>> edges, int lhs, int rhs) {
         int id = lhs | rhs;
 
         if (!edges.containsKey(id)) {
             Set<Edge> used = Collections.newSetFromMap(new IdentityHashMap<>());
 
-            List<Edge> union = new ArrayList<>(edges.getOrDefault(lhs, Collections.emptyList()));
+            List<Edge> union = new ArrayList<>(edges.computeIfAbsent(lhs, k -> Collections.emptyList()));
 
             used.addAll(union);
 
-            edges.getOrDefault(rhs, Collections.emptyList()).forEach(edge -> {
+            edges.computeIfAbsent(rhs, k -> Collections.emptyList()).forEach(edge -> {
                 if (used.add(edge))
                     union.add(edge);
             });
@@ -229,8 +229,8 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
     /** */
     private static Vertex composeCartesianJoin(
         int allRelationsMask,
-        Map<Integer, Vertex> bestPlan,
-        Map<Integer, List<Edge>> edges,
+        IntMap<Vertex> bestPlan,
+        IntMap<List<Edge>> edges,
         @Nullable Vertex bestSoFar,
         RelMetadataQuery mq,
         RelBuilder relBuilder,
@@ -282,8 +282,8 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
     }
 
     /** */
-    private static Map<Integer, List<Edge>> collectEdges(LoptMultiJoin multiJoin, List<RexNode> unusedConditions) {
-        Map<Integer, List<Edge>> edges = new HashMap<>();
+    private static IntMap<List<Edge>> collectEdges(LoptMultiJoin multiJoin, List<RexNode> unusedConditions) {
+        IntMap<List<Edge>> edges = new IntRWHashMap();
 
         for (RexNode joinCondition : multiJoin.getJoinFilters()) {
             // Involved rel numbers starting from 0.
@@ -332,14 +332,11 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
 
         edges.forEach(e -> conditions.add(e.condition));
 
-        double leftSize = metadataQry.getRowCount(lhs.rel);
-        double rightSize = metadataQry.getRowCount(rhs.rel);
-
         Vertex majorFactor;
         Vertex minorFactor;
 
         // Right side will probably be materialized. Let's put bigger input on left side.
-        if (leftSize >= rightSize) {
+        if (lhs.cost <= rhs.cost) {
             majorFactor = lhs;
             minorFactor = rhs;
         }
@@ -379,7 +376,7 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
      * @param edges All the edges.
      * @return Edges connecting given subtrees.
      */
-    private static List<Edge> findEdges(int lhs, int rhs, Map<Integer, List<Edge>> edges) {
+    private static List<Edge> findEdges(int lhs, int rhs, IntMap<List<Edge>> edges) {
         List<Edge> result = new ArrayList<>();
 
         List<Edge> fromLeft = edges.getOrDefault(lhs, Collections.emptyList());

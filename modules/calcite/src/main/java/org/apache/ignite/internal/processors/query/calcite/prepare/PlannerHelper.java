@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +35,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
@@ -44,6 +47,7 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteLogger;
@@ -63,6 +67,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /** */
 public class PlannerHelper {
@@ -92,7 +98,7 @@ public class PlannerHelper {
 
             root = addExternalOptions(root);
 
-            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
+            planner.addDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
@@ -152,46 +158,6 @@ public class PlannerHelper {
         }
     }
 
-    /** */
-    private static RelNode actualTopLevelJoinTypeHints(RelNode rel, List<RelHint> topLevelHints) {
-        assert rel instanceof Hintable;
-
-        List<RelHint> curHints = ((Hintable)rel).getHints();
-
-        List<RelHint> res = new ArrayList<>(topLevelHints.size());
-
-        for (RelHint topHint : topLevelHints) {
-            assert topHint.inheritPath.isEmpty();
-
-            if (!JOIN_TYPE_HINT_NAMES.contains(topHint.hintName))
-                continue;
-
-            if (curHints.isEmpty()) {
-                res.add(topHint);
-
-                continue;
-            }
-
-            for (RelHint curHint : curHints) {
-                // Consider only hints of the join types and which differ by name or parameters.
-                if (!JOIN_TYPE_HINT_NAMES.contains(curHint.hintName)
-                    || topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList())))
-                    continue;
-
-                res.add(topHint);
-            }
-        }
-
-        if (!res.isEmpty()) {
-            rel = ((Hintable)rel).withHints(res);
-
-            if (!curHints.isEmpty())
-                rel = ((Hintable)rel).attachHints(curHints);
-        }
-
-        return rel;
-    }
-
     /**
      * Tries to optimize joins order.
      *
@@ -230,8 +196,8 @@ public class PlannerHelper {
             return root;
 
         // If a new joins order was proposed, no need to launch another join order optimizations.
-        planner.setDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
-            .collect(Collectors.toList()));
+        planner.addDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
+            .collect(Collectors.toSet()));
 
         if (!topLevelHints.isEmpty()) {
             res = actualTopLevelJoinTypeHints(res, topLevelHints);
@@ -242,6 +208,50 @@ public class PlannerHelper {
         return res;
     }
 
+    /** */
+    private static RelNode actualTopLevelJoinTypeHints(RelNode rel, List<RelHint> topLevelHints) {
+        assert rel instanceof Hintable;
+
+        List<RelHint> curHints = ((Hintable)rel).getHints();
+
+        List<RelHint> res = new ArrayList<>(topLevelHints.size());
+
+        RelNode joinNode = RelBuilder.create(Commons.context(rel).config()).join(JoinRelType.INNER).build();
+
+        assert joinNode instanceof Join;
+
+        for (RelHint topHint : topLevelHints) {
+            assert topHint.inheritPath.isEmpty();
+
+            if (!JOIN_TYPE_HINT_NAMES.contains(topHint.hintName))
+                continue;
+
+            if (curHints.isEmpty()) {
+                res.add(topHint);
+
+                continue;
+            }
+
+            for (RelHint curHint : curHints) {
+                // Consider only hints of the join types and which differ by name or parameters.
+                if (!JOIN_TYPE_HINT_NAMES.contains(curHint.hintName)
+                    || topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList())))
+                    continue;
+
+                res.add(topHint);
+            }
+        }
+
+        if (!res.isEmpty()) {
+            rel = ((Hintable)rel).withHints(res);
+
+            if (!curHints.isEmpty())
+                rel = ((Hintable)rel).attachHints(curHints);
+        }
+
+        return rel;
+    }
+
     /**
      * A join type hint might be assigned to a query root (top-level hint) or to a table. Originally, SELECT-level hints
      * are propagated and assigned to following Joins and TableScans. We lose assigned to Join nodes ones
@@ -250,7 +260,7 @@ public class PlannerHelper {
     private static void restoreJoinTypeHints(RelNode root) {
         RelShuttle visitor = new RelHomogeneousShuttle() {
             /** Hints to assign on current tree level. */
-            private final List<List<RelHint>> hintsStack = new ArrayList<>();
+            private final Deque<List<RelHint>> hintsStack = new ArrayDeque<>();
 
             /** Current hint inheritance path. It is important for hint priority. */
             private final List<Integer> inputsStack = new ArrayList<>();
@@ -265,7 +275,7 @@ public class PlannerHelper {
 
                 if ((rel instanceof Hintable) && !(rel instanceof Join) && !((Hintable)rel).getHints().isEmpty()) {
                     for (RelHint hint : ((Hintable)rel).getHints()) {
-                        // Reassing only top-level hints (without the inherit path).
+                        // Reassign only top-level hints (without the inherit path).
                         if (!hint.inheritPath.isEmpty() || !JOIN_TYPE_HINT_NAMES.contains(hint.hintName))
                             continue;
 
@@ -278,21 +288,21 @@ public class PlannerHelper {
 
                 // We may find additional top-level hints in a subquery. From this point, we need to combine them.
                 if (!stack.isEmpty()) {
-                    List<RelHint> prevHints = hintsStack.get(hintsStack.size() - 1);
+                    List<RelHint> prevHints = hintsStack.peekLast();
 
                     if (!curHints.isEmpty() && !prevHints.isEmpty())
                         curHints.addAll(prevHints);
                     else if (curHints.isEmpty())
                         curHints = prevHints;
 
-                    assert curHints.size() >= hintsStack.get(hintsStack.size() - 1).size();
+                    assert curHints.size() >= hintsStack.peekLast().size();
                 }
 
                 hintsStack.add(curHints);
 
                 RelNode res = super.visit(rel);
 
-                hintsStack.remove(hintsStack.size() - 1);
+                hintsStack.removeLast();
 
                 return res;
             }
@@ -302,7 +312,7 @@ public class PlannerHelper {
                 inputsStack.add(i);
 
                 if (child instanceof Join && !hintsStack.isEmpty()) {
-                    List<RelHint> curHints = hintsStack.get(hintsStack.size() - 1);
+                    List<RelHint> curHints = hintsStack.peekLast();
 
                     if (!curHints.isEmpty()) {
                         curHints = curHints.stream().map(h -> h.copy(inputsStack)).collect(Collectors.toList());
@@ -490,7 +500,7 @@ public class PlannerHelper {
     }
 
     /**
-     * @return Found dodes of type {@code nodeType} in the tree. Empty list if no match found. Single value list if a node
+     * @return Nodes of type {@code nodeType} in the tree. Empty list if no match found. Single value list if a node
      * found and {@code stopOnFirst} is {@code true}.
      */
     public static <T extends RelNode> List<T> findNodes(RelNode root, Class<T> nodeType, boolean stopOnFirst) {

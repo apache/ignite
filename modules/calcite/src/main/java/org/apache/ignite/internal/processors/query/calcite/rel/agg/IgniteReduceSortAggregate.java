@@ -117,11 +117,6 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
     }
 
     /** {@inheritDoc} */
-    @Override public RelCollation collation() {
-        return collation;
-    }
-
-    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
