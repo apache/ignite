@@ -656,21 +656,86 @@ Here is an example on how to start Active-Active inter-cluster communication wit
 ./cdc-start-up.sh --kafka-to-ignite thin cluster-1
 ```
 
-NOTE: Kafka-to-Ignite applier starts alongside the destination cluster and uses its configuration to connect to it.
+NOTE: The Kafka-to-Ignite applier starts alongside the destination cluster and uses its configuration to connect to it.
 
-* You can check CDC replication with `--check-cdc`. Use it in parallel with Active-Passive/Active-Active replication. To start CDC check for proposed entry:
+* You can verify CDC replication with the `--check-cdc` option.  Use it in parallel with Active-Passive or Active-Active replication setups. To initiate a CDC check for a specific entry, run:
+
 ```
 ./cdc-start-up.sh --check-cdc --key keyVal --value '{"val": 1, "ver": 1}' --cluster 1
 ```
 
-The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transferred. Make sure you specify entry as JSON of two fields: "val" and "ver". The former is a single integer that represents value and version is used as `conflictResolverField` by `CacheVersionConflictResolverPluginProvider`. To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system.
+This command inserts the specified entry into the chosen cluster and then monitors the differences between the clusters until the data is fully replicated. Ensure that you specify the entry as a JSON object containing two fields: `"val"` and `"ver"`. The `"val"` field is a String representing the value, and `"ver"` is used as the `conflictResolverField` by the `CacheVersionConflictResolverPluginProvider`. To test this with Active-Active replication, push entries into different clusters and observe the results.
 
-Try to play with version value to see how the conflict resolver works. We propose the following sequence of operations with Active-Active:
+Experiment with different values for the `"ver"` field to understand how the conflict resolver functions. Here’s a recommended sequence of operations for Active-Active testing:
 
 ```
-./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 1, "version": 1}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 2, "version": 2}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 3, "version": 3}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"intVal": 2, "version": 2}' --cluster 2
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 1, "ver": 1}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 2, "ver": 2}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 3, "ver": 3}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 2, "ver": 2}' --cluster 2
 ```
-This sequence simulates the case when the first cluster receives outdated value from the second. In our case the data will not be replicated in the last command and the check would timeout after 1 minute.
+This sequence simulates a scenario where the first cluster receives an outdated value from the second.  In this specific case, the data will not be replicated by the last command, and the check will time out after 1 minute.
+
+The example script allows omitting the `"ver"` field in the JSON value.  This simulates an entry insert with a `null` `conflictResolverField` value.  In Active-Passive replication, there will be no difference if the entry has a `null` `conflictResolverField` since the entries originate from the same Active cluster. However, this behavior changes in Active-Active replication. The `conflictResolverField` is used to compare entries originating from different clusters (inserted into different clusters). When the entries have a `null` `conflictResolverField` value, any comparison attempt will result in a NullPointerException (NPE) and no update will occur.  Try the following examples to simulate this scenario:
+
+```
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 1}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 2}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 3}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 4}' --cluster 2
+```
+
+The last attempt will not be replicated.  The first cluster will contain Entry[key=1, val=3], and the second will contain Entry[key=1, val=4].  You will also see a corresponding WARN message in the log of the first cluster.  You can also view these values using the `control.sh` utility:
+
+```
+./control.sh --cache scan terminator --port 10800
+./control.sh --cache scan terminator --port 10850
+```
+
+These commands are for the first and second clusters, respectively.
+
+Finally, let's examine a more advanced replication scenario. Using Kafka topics, you can easily establish Active-NPassive inter-cluster communication with a single source cluster and N destination stand-by passive clusters. To accomplish this, start a Kafka-to-Ignite applier for each passive cluster, which will replicate data from the Kafka topic. Let's break down this replication process step by step:
+
+1.  Start the clusters. For simplicity, we will start with one source cluster and two destination clusters.
+
+    ----
+    ./cdc-start-up.sh --ignite cluster-1
+    ./cdc-start-up.sh --ignite cluster-2
+    ./cdc-start-up.sh --ignite cluster-3
+    ----
+
+2.  Create Kafka topics for replication. We'll use the same topics as in the `cluster 1 -> cluster 2` example.
+
+    ----
+    ./kafka-topics.sh --create --partitions 16 --replication-factor 1 --topic dc1_to_dc2 --bootstrap-server localhost:9092
+    ./kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic metadata_from_dc1 --bootstrap-server localhost:9092
+    ----
+
+3.  Start replication from cluster-1 to the Kafka topic using a CDC consumer.
+
+    ----
+    ./cdc-start-up.sh --ignite-cdc ignite-to-kafka cluster-1
+    ----
+
+4.  Start a Kafka-to-Ignite applier for each destination cluster. We will use a thin client applier in this example.
+
+    ----
+    ./cdc-start-up.sh --kafka-to-ignite thin cluster-2
+    ./cdc-start-up.sh --kafka-to-ignite thin cluster-3
+    ----
+
+5.  You can now replicate data from cluster-1. Use the `--check-cdc` option to verify the replication:
+
+    ----
+    ./cdc-start-up.sh --check-cdc --key some-key --value '{"val": "some-value"}' --cluster 1
+    ----
+
+To compare the entries, use the `control.sh` utility:
+
+```
+./control.sh --cache scan terminator --port 10800
+./control.sh --cache scan terminator --port 10850
+./control.sh --cache scan terminator --port 10900
+```
+
+These commands are for the first, second, and third clusters, respectively.
