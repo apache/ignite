@@ -315,47 +315,6 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * Checking the correctness of using the {@link DurableBackgroundTask#convertAfterRestoreIfNeeded}.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConvertAfterRestoreIfNeeded() throws Exception {
-        IgniteEx n = startGrid(0);
-        n.cluster().state(ACTIVE);
-
-        String taskName0 = "test-task0";
-        String taskName1 = "test-task1";
-
-        ConvertibleTask t0 = new ConvertibleTask(taskName0);
-        SimpleTask t1 = new SimpleTask(taskName1);
-
-        SimpleTask t2 = (SimpleTask)t0.convertAfterRestoreIfNeeded();
-        assertEquals("converted-task-" + taskName0, t2.name());
-
-        assertNotNull(n.context().durableBackgroundTask().executeAsync(t0, true));
-        assertNotNull(n.context().durableBackgroundTask().executeAsync(t1, true));
-
-        assertEquals(2, tasks(n).size());
-
-        checkStateAndMetaStorage(n, t0, STARTED, true, false);
-        checkStateAndMetaStorage(n, t1, STARTED, true, false);
-
-        stopGrid(0);
-
-        n = startGrid(0);
-
-        assertEquals(3, tasks(n).size());
-
-        checkStateAndMetaStorage(n, t0, COMPLETED, true, true, false);
-        checkStateAndMetaStorage(n, t1, INIT, true, false, false);
-
-        n.cluster().state(ACTIVE);
-
-        checkStateAndMetaStorage(n, t2, STARTED, true, false, true);
-    }
-
-    /**
      * Check that the task will be restarted correctly.
      *
      * @param save Save to MetaStorage.
@@ -507,29 +466,6 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         boolean expSaved,
         boolean expDone
     ) throws IgniteCheckedException {
-        checkStateAndMetaStorage(n, t, expState, expSaved, expDone, null);
-    }
-
-    /**
-     * Checking the internal {@link DurableBackgroundTaskState state} of the task and storage in the MetaStorage.
-     *
-     * @param n Node.
-     * @param t Task.
-     * @param expState Expected state of the task, {@code null} means that the task should not be.
-     * @param expSaved Task is expected to be stored in MetaStorage.
-     * @param expDone Expect completion of the futures task.
-     * @param expConverted Expected value of the {@link DurableBackgroundTaskState#converted()},
-     *      {@code null} if no validation is required.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void checkStateAndMetaStorage(
-        IgniteEx n,
-        DurableBackgroundTask<?> t,
-        @Nullable State expState,
-        boolean expSaved,
-        boolean expDone,
-        @Nullable Boolean expConverted
-    ) throws IgniteCheckedException {
         DurableBackgroundTaskState<?> taskState = tasks(n).get(t.name());
 
         if (expState == null)
@@ -538,9 +474,6 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
             assertEquals(expState, taskState.state());
             assertEquals(expSaved, taskState.saved());
             assertEquals(expDone, taskState.outFuture().isDone());
-
-            if (expConverted != null)
-                assertEquals(expConverted.booleanValue(), taskState.converted());
         }
 
         DurableBackgroundTask<?> ser =

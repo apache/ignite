@@ -47,13 +47,4 @@ public interface DurableBackgroundTask<R> extends Serializable {
      * @return Future of the tasks.
      */
     IgniteInternalFuture<DurableBackgroundTaskResult<R>> executeAsync(GridKernalContext ctx);
-
-    /**
-     * Converting the current task to another after restoring from metaStorage.
-     *
-     * @return Converted task.
-     */
-    default DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
-        return this;
-    }
 }
