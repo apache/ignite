@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -78,6 +79,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** System view predicate to filter recorded views. */
     private final Predicate<SystemView<?>> sysViewPredicate;
+    private FilePerformanceStatisticsSystemViewWriter sysViewWriter;
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
@@ -391,8 +393,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
+                sysViewWriter = new FilePerformanceStatisticsSystemViewWriter(ctx, ctx.log(FilePerformanceStatisticsSystemViewWriter.class));
 
                 writer.start();
+                new IgniteThread(sysViewWriter).start();
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -415,6 +419,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             this.writer = null;
 
             writer.stop();
+            sysViewWriter.stop();
         }
 
         log.info("Performance statistics writer stopped.");
