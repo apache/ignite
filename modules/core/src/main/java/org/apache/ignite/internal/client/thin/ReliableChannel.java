@@ -913,7 +913,21 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 channel = hld.getOrCreateChannel();
 
-                return function.apply(channel);
+                try {
+                    return function.apply(channel);
+                }
+                catch (ClientConnectionException e) {
+                    if (shouldRetry(op, 0, e)) {
+                        // In case of stale channel try to reconnect to the same channel and repeat the operation.
+                        onChannelFailure(hld, channel, e, null);
+
+                        channel = hld.getOrCreateChannel();
+
+                        return function.apply(channel);
+                    }
+                    else
+                        throw e;
+                }
             }
             catch (ClientConnectionException e) {
                 failures = new ArrayList<>();
@@ -921,7 +935,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 onChannelFailure(hld, channel, e, failures);
 
-                if (attemptsLimit == 1 || !shouldRetry(op, 0, e))
+                if (attemptsLimit == 1 || !shouldRetry(op, 1, e))
                     throw e;
             }
         }
@@ -961,6 +975,10 @@ final class ReliableChannel implements AutoCloseable {
 
         try {
             boolean res = plc.shouldRetry(ctx);
+
+            // Setting retryLimit in clientCfg to 1 disables connection retry attempts.
+            if (clientCfg.getRetryLimit() == 1)
+                res = false;
 
             if (log.isDebugEnabled())
                 log.debug("Retry policy returned " + res + " [op=" + op + ", iteration=" + iteration + ']');
