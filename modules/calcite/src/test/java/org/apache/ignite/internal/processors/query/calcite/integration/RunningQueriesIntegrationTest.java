@@ -108,9 +108,8 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         CalciteQueryProcessor engine = queryProcessor(client);
 
-        // Calcite takes time to reorder joins. We disable some default joins reorder rules by the joins number to preveng
-        // long planning. But even with a small joins count there is significant time to optimize joins.
-        // We use several joins here as a long planning.
+        // Calcite takes time to reorder joins. To prevent long planning we disable default joins optimizations
+        // by the joins number. But even small joins count takes time to plan. We use several joins here as a long query.
         int cnt = Math.min(PlannerHelper.MAX_JOINS_TO_COMMUTE, PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS);
 
         for (int i = 0; i < cnt; i++)
