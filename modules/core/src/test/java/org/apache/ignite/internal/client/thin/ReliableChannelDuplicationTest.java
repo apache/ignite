@@ -24,7 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -35,6 +37,10 @@ import static java.util.stream.IntStream.range;
  */
 @RunWith(Parameterized.class)
 public class ReliableChannelDuplicationTest extends ThinClientAbstractPartitionAwarenessTest {
+    /** Global timeout. */
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(15);
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
