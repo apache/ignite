@@ -180,7 +180,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                assertEquals(CLUSTER_SIZE - 1, suppressed.length);
+                // Each node gets 2 attempts (initial + retry), so we expect (CLUSTER_SIZE-1)*2 suppressed exceptions.
+                assertEquals((CLUSTER_SIZE - 1) * 2, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
@@ -206,12 +207,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            if (!partitionAware) {
-                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
-
-                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
-            }
-
             // Recover after fail.
             cachePut(cache, 0, 0);
         }
@@ -234,12 +229,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
-
-            if (!partitionAware) {
-                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
-
-                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
-            }
 
             // Reuse the address after retry without fail.
             cachePut(cache, 0, 0);
@@ -264,12 +253,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
-
-            if (!partitionAware) {
-                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
-
-                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
-            }
 
             // Reuse second address without fail.
             cache.get(0);
@@ -530,6 +513,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ClientRetryNonePolicy())
                  .setReconnectThrottlingPeriod(throttlingPeriod)
                  .setReconnectThrottlingRetries(throttlingRetries)
                  .setAddresses(cluster.clientAddresses().toArray(new String[1])))
