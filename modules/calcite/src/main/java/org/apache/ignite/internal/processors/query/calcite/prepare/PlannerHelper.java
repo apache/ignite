@@ -519,9 +519,9 @@ public class PlannerHelper {
     }
 
     /**
-     * Searches {@code root} tree for nodes of types {@code nodeTypes}.
+     * Searches tree {@code root} for nodes of {@code nodeTypes}.
      *
-     * @return Nodes list if they match one of {@code nodeTypes}. Empty list if no match found. Single value list if a node
+     * @return Nodes matching one of {@code nodeTypes}. Empty list if none match. Single value list if a node
      * found and {@code stopOnFirst} is {@code true}.
      */
     public static List<RelNode> findNodes(RelNode root, boolean stopOnFirst, Class<? extends RelNode>... nodeTypes) {
