@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** */
-public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 3;
@@ -31,7 +31,7 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransacti
 
     /** Test that resources (in particular inboxes) are cleaned up after executing join with rehashing. */
     @Test
-    public void testResourceCleanup() throws Exception {
+    public void testRehashResourceCleanup() throws Exception {
         prepareTables();
 
         String sql = "SELECT sum(i.price * i.amount)" +
@@ -55,7 +55,7 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransacti
 
     /** Tests that null values are filtered out on rehashing. */
     @Test
-    public void testNullAffinityKeys() {
+    public void testRehashNullAffinityKeys() {
         prepareTables();
 
         // Add null values.
@@ -83,6 +83,20 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransacti
             "WHERE oi.orderId between 2 and 3 and oi.itemId between 4 and 5")
             .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
             .returns(2, 4).returns(2, 5).returns(3, 4).returns(3, 5)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testTrimExchange() {
+        sql("CREATE TABLE order_ids(id INTEGER PRIMARY KEY) WITH TEMPLATE=REPLICATED," + atomicity());
+        prepareTables();
+
+        sql("INSERT INTO order_ids(id) SELECT id FROM orders");
+
+        assertQuery("SELECT sum(o.id) FROM orders o JOIN order_ids oid ON (o.id = oid.id)")
+            .matches(QueryChecker.containsSubPlan("IgniteTrimExchange"))
+            .returns(435L)
             .check();
     }
 

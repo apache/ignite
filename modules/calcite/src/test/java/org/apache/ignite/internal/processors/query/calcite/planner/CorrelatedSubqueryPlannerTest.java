@@ -35,6 +35,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -280,6 +281,14 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             "   SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.b" +
             ")) FROM th1";
         assertPlan(sql, schema, colocatedPredicate);
+
+        // Correlate on top of another join.
+        sql = "SELECT a FROM ta1 WHERE ta1.a IN (SELECT a FROM th1) AND EXISTS (SELECT 1 FROM ta2 WHERE ta2.b = ta1.a)";
+        assertPlan(sql, schema, hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, isInstanceOf(AbstractIgniteJoin.class)))
+            .and(input(1, isInstanceOf(IgniteColocatedAggregateBase.class)
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
+        ))));
 
         // Condition on not colocated column.
         sql = "SELECT a FROM ta1 WHERE EXISTS (SELECT a FROM ta2 WHERE ta2.a = ta1.a)";
