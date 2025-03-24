@@ -71,7 +71,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             new TestTable(
                 new RelDataTypeFactory.Builder(f)
                     .add("ID", f.createJavaType(Integer.class))
-                    .build(), 1_00) {
+                    .build(), 100) {
 
                 @Override public IgniteDistribution distribution() {
                     return IgniteDistributions.affinity(0, "HUGE", "hash");
@@ -107,7 +107,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     public void testOuterCommute() throws Exception {
         LogListener lsnr = LogListener.matches("Joins order optimization took").times(0).build();
 
-        lsnrLog.registerAllListeners(lsnr);
+        lsnrLog.registerListener(lsnr);
 
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
@@ -172,7 +172,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         LogListener lsnr = LogListener.matches("Joins order optimization took").build();
 
-        lsnrLog.registerAllListeners(lsnr);
+        lsnrLog.registerListener(lsnr);
 
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
@@ -193,7 +193,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     public void testInnerCommute() throws Exception {
         LogListener lsnr = LogListener.matches("Joins order optimization took").times(0).build();
 
-        lsnrLog.registerAllListeners(lsnr);
+        lsnrLog.registerListener(lsnr);
 
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 

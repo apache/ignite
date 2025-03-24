@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.processors.query.stat.StatisticsProcessor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.logging.log4j.Level;
@@ -243,7 +244,13 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND P.ProdId = R.ProdId"
                 + "  AND U.UsrId = R.UsrId\n"
                 + "  AND P.ProdId = D.ProdId\n"
-                + "  AND W.WrhId = (P.ProdId % 5 + 1)"
+                + "  AND W.WrhId = (P.ProdId % 5 + 1)",
+
+            // Produces a correlate.
+            "SELECT OD.OrdDetId, O.OrdId, P.ProdId, (SELECT sum(Qnty) from OrderDetails C where OD.OrdId=C.OrdDetId and OD.OrdId<>2) as corr " +
+                "from OrderDetails OD " +
+                "JOIN Orders O on O.OrdId = OD.OrdId " +
+                "JOIN Products P on P.ProdId = OD.ProdId"
         );
     }
 

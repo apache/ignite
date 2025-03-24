@@ -34,6 +34,7 @@ import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
+import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
@@ -167,16 +168,28 @@ public class PlannerHelper {
      * @return An node with optimized joins or original {@code root} if didn't optimize.
      */
     private static RelNode optimizeJoinsOrder(IgnitePlanner planner, RelNode root, List<RelHint> topLevelHints) {
-        List<Join> joins = findNodes(root, Join.class, false);
+        // Join or correlates.
+        List<RelNode> joins = findNodes(root, false, Join.class, Correlate.class);
 
         if (joins.isEmpty())
             return root;
 
         int disabledCnt = 0;
 
+        Join joinToFilterHints = null;
+
         // If all the joins have the forced order, no need to optimize the joins order at all.
-        for (Join join : joins) {
-            for (RelHint hint : join.getHints()) {
+        for (RelNode joinOrCorr : joins) {
+            // Correlates doesn't accept hints currently.
+            if (!(joinOrCorr instanceof Join))
+                continue;
+
+            assert joinOrCorr instanceof Hintable;
+
+            if (joinToFilterHints == null)
+                joinToFilterHints = (Join)joinOrCorr;
+
+            for (RelHint hint : ((Hintable)joinOrCorr).getHints()) {
                 if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName)) {
                     ++disabledCnt;
 
@@ -188,20 +201,22 @@ public class PlannerHelper {
         if (joins.size() - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
             return root;
 
-        long time = System.currentTimeMillis();
+        long time = System.nanoTime();
 
         RelNode res = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
 
+        time = System.nanoTime() - time;
+
         // Still has a MultiJoin, didn't manage to collect one flat join to optimize.
-        if (!findNodes(res, MultiJoin.class, true).isEmpty())
+        if (!findNodes(res, true, MultiJoin.class).isEmpty())
             return root;
 
         // If a new joins order was proposed, no need to launch another join order optimizations.
         planner.addDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
             .collect(Collectors.toSet()));
 
-        if (!topLevelHints.isEmpty()) {
-            res = actualTopLevelJoinTypeHints(res, topLevelHints, joins.get(0));
+        if (!topLevelHints.isEmpty() && joinToFilterHints != null) {
+            res = actualTopLevelJoinTypeHints(res, topLevelHints, joinToFilterHints);
 
             restoreJoinTypeHints(res);
         }
@@ -209,7 +224,7 @@ public class PlannerHelper {
         IgniteLogger log = Commons.context(root).logger();
 
         if (log.isDebugEnabled())
-            log.debug("Joins order optimization took " + (System.currentTimeMillis() - time) + " nanos.");
+            log.debug("Joins order optimization took " + time + " nanos.");
 
         return res;
     }
@@ -504,20 +519,26 @@ public class PlannerHelper {
     }
 
     /**
-     * @return Nodes of type {@code nodeType} in the tree. Empty list if no match found. Single value list if a node
+     * Searches {@code root} tree for nodes of types {@code nodeTypes}.
+     *
+     * @return Nodes list if they match one of {@code nodeTypes}. Empty list if no match found. Single value list if a node
      * found and {@code stopOnFirst} is {@code true}.
      */
-    public static <T extends RelNode> List<T> findNodes(RelNode root, Class<T> nodeType, boolean stopOnFirst) {
-        List<T> rels = new ArrayList<>();
+    public static List<RelNode> findNodes(RelNode root, boolean stopOnFirst, Class<? extends RelNode>... nodeTypes) {
+        List<RelNode> rels = new ArrayList<>();
 
         try {
             RelShuttle visitor = new RelHomogeneousShuttle() {
                 @Override public RelNode visit(RelNode node) {
-                    if (nodeType.isAssignableFrom(node.getClass())) {
-                        rels.add((T)node);
+                    for (Class<? extends RelNode> nodeType : nodeTypes) {
+                        if (nodeType.isAssignableFrom(node.getClass())) {
+                            rels.add(node);
 
-                        if (stopOnFirst)
-                            throw Util.FoundOne.NULL;
+                            if (stopOnFirst)
+                                throw Util.FoundOne.NULL;
+
+                            break;
+                        }
                     }
 
                     return super.visit(node);

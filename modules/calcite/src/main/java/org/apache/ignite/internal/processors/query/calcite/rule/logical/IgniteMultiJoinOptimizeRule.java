@@ -324,14 +324,11 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
 
         edges.forEach(e -> conditions.add(e.condition));
 
-        double leftSize = metadataQry.getRowCount(lhs.rel);
-        double rightSize = metadataQry.getRowCount(rhs.rel);
-
         Vertex majorFactor;
         Vertex minorFactor;
 
         // Right side will probably be materialized. Let's put bigger input on left side.
-        if (leftSize <= rightSize) {
+        if (lhs.cost <= rhs.cost) {
             majorFactor = lhs;
             minorFactor = rhs;
         }
