@@ -21,22 +21,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 
 /**
  * Performance statistics writer based on logging to a file.
@@ -45,41 +37,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatisticsSystemViewWriter extends GridWorker {
-    /**
-     * Directory to store performance statistics files. Placed under Ignite work directory.
-     */
-    public static final String PERF_STAT_DIR = "perf_stat";
-
-    /**
-     * Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded.
-     */
-    public static final long DFLT_FILE_MAX_SIZE = 32 * U.GB;
-
-    /**  */
-    private final long fileMaxSize = IgniteSystemProperties.getLong(IGNITE_PERF_STAT_FILE_MAX_SIZE, DFLT_FILE_MAX_SIZE);
-
-    /**
-     * Default maximum cached strings threshold. String caching will stop on threshold excess.
-     */
-    public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
-
-    /**
-     * File format version. This version should be incremented each time when format of existing events are
-     * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
-     */
-    public static final short FILE_FORMAT_VERSION = 1;
-
+public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerformanceStatisticsWriter {
     /**
      * File writer thread name.
      */
     private static final String WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
-
-    /**
-     * Maximum cached strings threshold. String caching will stop on threshold excess.
-     */
-    private final int cachedStrsThreshold =
-        IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD, DFLT_CACHED_STRINGS_THRESHOLD);
 
     /**  */
     private final RandomAccessFile file;
@@ -90,11 +52,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends GridWorker {
     /** Logger. */
     private final IgniteLogger log;
 
-    /**
-     * Hashcodes of cached strings.
-     */
-    private final Set<Integer> knownStrs = new HashSet<>();
-
     /**  */
     private volatile boolean stop;
 
@@ -102,11 +59,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends GridWorker {
      * @param ctx Kernal context.
      * @param log Logger.
      */
-    public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx,
-        IgniteLogger log) throws IgniteCheckedException, IOException {
-        super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log, ctx.workersRegistry());
-        this.log = log;
-
+    public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         sysViewMngr = ctx.systemView();
 
         file = resolveStatisticsFile(ctx);
@@ -136,48 +89,17 @@ public class FilePerformanceStatisticsSystemViewWriter extends GridWorker {
         return new RandomAccessFile(file.getAbsolutePath(), "rw");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-        try {
-            file.writeShort(FILE_FORMAT_VERSION);
-            file.write(OperationType.VERSION.id());
-        }
-        catch (IOException e) {
-            log.error("Failed to write system view statistics file", e);
-        }
 
-        for (SystemView<?> view : sysViewMngr) {
-            if (!stop) {
-                try {
-                    systemView(view);
-                }
-                catch (IOException e) {
-                    log.error("Failed to write system view statistics file", e);
-                    break;
-                }
-            }
-        }
+    @Override public void start() {
+
+    }
+
+    @Override public void stop() {
+
     }
 
     /** {@inheritDoc} */
-    @Override protected void cleanup() {
-        try {
-            file.close();
-        }
-        catch (IOException e) {
-            log.error("Failed to close file", e);
-        }
-    }
-
-    /**  */
-    public void stop() {
-        stop = true;
-    }
-
-    /**
-     * @param view System view to write.
-     */
-    public void systemView(SystemView<?> view) throws IOException {
+    @Override public void systemView(SystemView<?> view) throws IOException {
         // TODO: Write view.name()
         long startPos = file.getFilePointer();
 
@@ -202,37 +124,13 @@ public class FilePerformanceStatisticsSystemViewWriter extends GridWorker {
         file.seek(endPos);
     }
 
-    /**
-     * @return {@code True} if string was cached and can be written as hashcode.
-     */
-    private boolean cacheIfPossible(String str) {
-        if (knownStrs.size() >= cachedStrsThreshold)
-            return false;
-
-        int hash = str.hashCode();
-
-        return knownStrs.contains(hash) || !knownStrs.add(hash);
-    }
-
-    /**  */
-    private void writeCacheableString(String str, boolean cached) throws IOException {
-        file.write(cached ? (byte)1 : 0);
-
-        if (cached) {
-            file.writeInt(str.hashCode());
-            return;
-        }
-
-        file.writeInt(str.length());
-        file.write(str.getBytes());
-    }
-
     /** Write schema of system view to file. */
     private class AttributeWriterVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz) {
             try {
-                writeCacheableString(name);
+                cacheIfPossible(name);
+                writeString(file, name);
 
                 if (clazz.isPrimitive())
                     writeCacheableString(clazz.getSimpleName());

@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,13 +32,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,9 +47,7 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
@@ -84,39 +79,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatisticsWriter {
-    /** Directory to store performance statistics files. Placed under Ignite work directory. */
-    public static final String PERF_STAT_DIR = "perf_stat";
-
-    /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
-    public static final long DFLT_FILE_MAX_SIZE = 32 * U.GB;
-
-    /** Default off heap buffer size in bytes. */
-    public static final int DFLT_BUFFER_SIZE = (int)(32 * U.MB);
-
-    /** Default minimal batch size to flush in bytes. */
-    public static final int DFLT_FLUSH_SIZE = (int)(8 * U.MB);
-
-    /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
-    public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
-
-    /**
-     * File format version. This version should be incremented each time when format of existing events are
-     * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
-     */
-    public static final short FILE_FORMAT_VERSION = 1;
-
-    /** File writer thread name. */
-    static final String WRITER_THREAD_NAME = "performance-statistics-writer";
-
-    /** Minimal batch size to flush in bytes. */
-    private final int flushSize =
-        IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
-
-    /** Maximum cached strings threshold. String caching will stop on threshold excess. */
-    private final int cachedStrsThreshold =
-        IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD, DFLT_CACHED_STRINGS_THRESHOLD);
-
+public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStatisticsWriter {
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
@@ -147,12 +110,6 @@ public class FilePerformanceStatisticsWriter {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Hashcodes of cached strings. */
-    private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
-
-    /** Count of cached strings. */
-    private volatile int knownStrsSz;
-
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
@@ -174,7 +131,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Starts collecting performance statistics. */
-    public synchronized void start() {
+    @Override public synchronized void start() {
         assert !started;
 
         new IgniteThread(fileWriter).start();
@@ -183,7 +140,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Stops collecting performance statistics. */
-    public synchronized void stop() {
+    @Override public synchronized void stop() {
         assert started;
 
         // Stop accepting new records.
@@ -215,7 +172,7 @@ public class FilePerformanceStatisticsWriter {
      * @param cacheId Cache id.
      * @param name Cache name.
      */
-    public void cacheStart(int cacheId, String name) {
+    @Override public void cacheStart(int cacheId, String name) {
         boolean cached = cacheIfPossible(name);
 
         doWrite(CACHE_START, cacheStartRecordSize(cached ? 0 : name.getBytes().length, cached), buf -> {
@@ -230,7 +187,7 @@ public class FilePerformanceStatisticsWriter {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
+    @Override public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
         doWrite(type, cacheRecordSize(), buf -> {
             buf.putInt(cacheId);
             buf.putLong(startTime);
@@ -244,7 +201,7 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Duration in nanoseconds.
      * @param commited {@code True} if commited.
      */
-    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
+    @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
         doWrite(commited ? TX_COMMIT : TX_ROLLBACK, transactionRecordSize(cacheIds.size()), buf -> {
             buf.putInt(cacheIds.size());
 
@@ -266,7 +223,7 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Duration in nanoseconds.
      * @param success Success flag.
      */
-    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
+    @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         boolean cached = cacheIfPossible(text);
 
         doWrite(QUERY, queryRecordSize(cached ? 0 : text.getBytes().length, cached), buf -> {
@@ -283,7 +240,7 @@ public class FilePerformanceStatisticsWriter {
      * @param viewName Name of system view.
      * @param view System view.
      */
-    public void systemView(String viewName, SystemView<?> view) {
+    @Override public void systemView(String viewName, SystemView<?> view) {
         boolean cachedName = cacheIfPossible(viewName);
         ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
 
@@ -309,15 +266,15 @@ public class FilePerformanceStatisticsWriter {
 
     /**
      * @param type Cache query type.
-     * @param queryNodeId Originating node id.
+     * @param qryNodeId Originating node id.
      * @param id Query id.
      * @param logicalReads Number of logical reads.
      * @param physicalReads Number of physical reads.
      */
-    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
+    @Override public void queryReads(GridCacheQueryType type, UUID qryNodeId, long id, long logicalReads, long physicalReads) {
         doWrite(QUERY_READS, queryReadsRecordSize(), buf -> {
             buf.put((byte)type.ordinal());
-            writeUuid(buf, queryNodeId);
+            writeUuid(buf, qryNodeId);
             buf.putLong(id);
             buf.putLong(logicalReads);
             buf.putLong(physicalReads);
@@ -331,7 +288,7 @@ public class FilePerformanceStatisticsWriter {
      * @param action Action with rows.
      * @param rows Number of rows.
      */
-    public void queryRows(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
+    @Override public void queryRows(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
         boolean cached = cacheIfPossible(action);
 
         doWrite(QUERY_ROWS, queryRowsRecordSize(cached ? 0 : action.getBytes().length, cached), buf -> {
@@ -350,7 +307,7 @@ public class FilePerformanceStatisticsWriter {
      * @param name Query property name.
      * @param val Query property value.
      */
-    public void queryProperty(GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
+    @Override public void queryProperty(GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
         if (val == null)
             return;
 
@@ -375,7 +332,7 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Duration.
      * @param affPartId Affinity partition id.
      */
-    public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+    @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
         boolean cached = cacheIfPossible(taskName);
 
         doWrite(TASK, taskRecordSize(cached ? 0 : taskName.getBytes().length, cached), buf -> {
@@ -394,7 +351,7 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Job execution time.
      * @param timedOut {@code True} if job is timed out.
      */
-    public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+    @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
         doWrite(JOB, jobRecordSize(), buf -> {
             writeIgniteUuid(buf, sesId);
             buf.putLong(queuedTime);
@@ -427,7 +384,7 @@ public class FilePerformanceStatisticsWriter {
      * @param dataPagesWritten Data pages written.
      * @param cowPagesWritten Cow pages written.
      */
-    public void checkpoint(
+    @Override public void checkpoint(
         long beforeLockDuration,
         long lockWaitDuration,
         long listenersExecDuration,
@@ -469,7 +426,7 @@ public class FilePerformanceStatisticsWriter {
      * @param endTime End time in milliseconds.
      * @param duration Duration in milliseconds.
      */
-    public void pagesWriteThrottle(long endTime, long duration) {
+    @Override public void pagesWriteThrottle(long endTime, long duration) {
         doWrite(PAGES_WRITE_THROTTLE, pagesWriteThrottleRecordSize(), buf -> {
             buf.putLong(endTime);
             buf.putLong(duration);
@@ -523,73 +480,6 @@ public class FilePerformanceStatisticsWriter {
         }
     }
 
-    /** @return Performance statistics file. */
-    private static File resolveStatisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
-        String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
-
-        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
-
-        File file = new File(fileDir, "node-" + ctx.localNodeId() + ".prf");;
-
-        int idx = 0;
-
-        while (file.exists()) {
-            idx++;
-
-            file = new File(fileDir, "node-" + ctx.localNodeId() + '-' + idx + ".prf");
-        }
-
-        return file;
-    }
-
-    /** Writes {@link UUID} to buffer. */
-    private static void writeUuid(ByteBuffer buf, UUID uuid) {
-        buf.putLong(uuid.getMostSignificantBits());
-        buf.putLong(uuid.getLeastSignificantBits());
-    }
-
-    /** Writes {@link IgniteUuid} to buffer. */
-    static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
-        buf.putLong(uuid.globalId().getMostSignificantBits());
-        buf.putLong(uuid.globalId().getLeastSignificantBits());
-        buf.putLong(uuid.localId());
-    }
-
-    /**
-     * @param buf Buffer to write to.
-     * @param str String to write.
-     * @param cached {@code True} if string cached.
-     */
-    static void writeString(ByteBuffer buf, String str, boolean cached) {
-        buf.put(cached ? (byte)1 : 0);
-
-        if (cached)
-            buf.putInt(str.hashCode());
-        else {
-            byte[] bytes = str.getBytes();
-
-            buf.putInt(bytes.length);
-            buf.put(bytes);
-        }
-    }
-
-    /** @return {@code True} if string was cached and can be written as hashcode. */
-    private boolean cacheIfPossible(String str) {
-        if (knownStrsSz >= cachedStrsThreshold)
-            return false;
-
-        int hash = str.hashCode();
-
-        // We can cache slightly more strings then threshold value.
-        // Don't implement solution with synchronization here, because our primary goal is avoid any contention.
-        if (knownStrs.contains(hash) || !knownStrs.add(hash))
-            return true;
-
-        knownStrsSz = knownStrs.size();
-
-        return false;
-    }
-
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
         /**
@@ -601,7 +491,7 @@ public class FilePerformanceStatisticsWriter {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        @Override protected void body() {
             try {
                 long writtenToFile = 0;
 
