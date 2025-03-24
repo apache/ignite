@@ -857,7 +857,7 @@ final class ReliableChannel implements AutoCloseable {
                     return function.apply(c);
                 }
                 catch (ClientConnectionException e) {
-                    if (c0 == c && shouldRetry(op, 0, e)) {
+                    if (c0 == c && shouldRetry(op,  F.size(failures), e)) {
                         // In case of stale channel, when partition awareness is enabled, try to reconnect to the
                         // same channel and repeat the operation.
                         onChannelFailure(hld, c, e, failures);
