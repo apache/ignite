@@ -247,7 +247,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Creates callable for atomic long test.
+     * Crates callable for atomic long test.
      *
      * @return Callable.
      * @throws Exception If failed.

@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  * Planner test for index hints.
  */
 public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
-    /** */
+    /** All the join order optimization rules (not only default/core). Should be renamed in the future. */
     private static final String[] CORE_JOIN_REORDER_RULES = Stream.of(
         CoreRules.JOIN_COMMUTE,
         JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT,
@@ -542,7 +542,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     public void testNestedHintOverridesWithReordering() throws Exception {
         assert PlannerHelper.JOINS_COUNT_FOR_HEURISTIC_ORDER >= 3;
 
-        // We have 6 test queries. Thus, we expect 6 log messages.
+        // We have 6 test queries with possible joins order optimization (and 3 unsupported). Thus, we expect 6 log messages.
         LogListener logListener = LogListener.matches("Joins order optimization took").times(6).build();
 
         this.lsnrLog.registerListener(logListener);
@@ -587,6 +587,29 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             schema, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
                     .and(hasNestedTableScan("TBL1"))
                     .and(hasNestedTableScan("TBL3")))))
+        );
+
+        // Produces unsupported left join.
+        assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 not in (SELECT /*+ " + MERGE_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
+                .and(hasNestedTableScan("TBL1"))
+                .and(hasNestedTableScan("TBL3")))))
+        );
+
+        // Produces unsupported outer join.
+        assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 FULL OUTER JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
+                .and(hasNestedTableScan("TBL1"))
+                .and(hasNestedTableScan("TBL3")))))
+        );
+
+        // Produces unsupported outer join.
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT /*+ " + NL_JOIN + "(TBL3) */ t3.v3 from TBL3 t3 FULL OUTER JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                .and(hasChildThat(isInstanceOf(IgniteNestedLoopJoin.class).and(hasNestedTableScan("TBL3")))))
         );
 
         assertTrue(logListener.check());

@@ -40,6 +40,8 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rex.RexBuilder;
@@ -65,12 +67,13 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PlannerHelper {
     /**
-     * Mininal joins number to launch {@link IgniteMultiJoinOptimizeRule}.
+     * Mininal joins number to launch {@link IgniteMultiJoinOptimizeRule}. Calcite's default join order optimization rules
+     * like {@link JoinCommuteRule} or {@link JoinPushThroughJoinRule} take time but can give us better plans. They produce
+     * more join variants. And we estimate their physical costs. While the joins count is small, lets use the default rules.
      *
      * @see #optimizeJoinsOrder(IgnitePlanner, RelNode, List)
      */
@@ -114,7 +117,7 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
 
-            // The following pushed down project can erase top-level hints. We store them to reassign hints of the join types.
+            // The following pushed down project can erase top-level hints. We store them to reassign hints for join nodes.
             // Clear the inherit pathes to consider the hints as not propogated ones.
             List<RelHint> topHints = HintUtils.allRelHints(rel).stream().map(h -> h.inheritPath.isEmpty()
                 ? h
@@ -166,7 +169,6 @@ public class PlannerHelper {
     private static RelNode optimizeJoinsOrder(IgnitePlanner planner, RelNode root, List<RelHint> topLevelHints) {
         List<Join> joins = findNodes(root, Join.class, false);
 
-        // No original joins found, nothing to optimize.
         if (joins.isEmpty())
             return root;
 
@@ -207,7 +209,7 @@ public class PlannerHelper {
         IgniteLogger log = Commons.context(root).logger();
 
         if (log.isDebugEnabled())
-            log.debug("Joins order optimization took " + U.nanosToMillis(System.currentTimeMillis() - time) + " millis.");
+            log.debug("Joins order optimization took " + (System.currentTimeMillis() - time) + " nanos.");
 
         return res;
     }

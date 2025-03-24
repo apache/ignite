@@ -71,7 +71,6 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             new TestTable(
                 new RelDataTypeFactory.Builder(f)
                     .add("ID", f.createJavaType(Integer.class))
-                    .add("IVAL", f.createJavaType(Integer.class))
                     .build(), 1_00) {
 
                 @Override public IgniteDistribution distribution() {
@@ -106,6 +105,12 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testOuterCommute() throws Exception {
+        LogListener lsnr = LogListener.matches("Joins order optimization took").times(0).build();
+
+        lsnrLog.registerAllListeners(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
         String sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         IgniteRel phys = physicalPlan(sql, publicSchema,
@@ -154,14 +159,16 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         System.out.println("plan: " + RelOptUtil.toString(phys));
 
         assertTrue(costWithCommute.isLt(costWithoutCommute));
+
+        assertTrue(lsnr.check());
     }
 
     /** */
     @Test
     public void testHeuristicReordering() throws Exception {
-        assert PlannerHelper.JOINS_COUNT_FOR_HEURISTIC_ORDER == 3;
+        assert PlannerHelper.JOINS_COUNT_FOR_HEURISTIC_ORDER >= 3;
 
-        String sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
+        String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
 
         LogListener lsnr = LogListener.matches("Joins order optimization took").build();
 
@@ -173,14 +180,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertFalse(lsnr.check());
 
-        lsnrLog.clearListeners();
-
-        lsnr = LogListener.matches("Joins order optimization took").build();
-
-        lsnrLog.registerAllListeners(lsnr);
-
-        sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
-            "JOIN SMALL ss on ss.id = a.ival";
+        sql = "SELECT s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
+            "JOIN SMALL ss on ss.id = a.id";
 
         physicalPlan(sql, publicSchema);
 
@@ -190,6 +191,12 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testInnerCommute() throws Exception {
+        LogListener lsnr = LogListener.matches("Joins order optimization took").times(0).build();
+
+        lsnrLog.registerAllListeners(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
         String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         IgniteRel phys = physicalPlan(sql, publicSchema,
@@ -268,5 +275,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         System.out.println("plan: " + RelOptUtil.toString(phys));
 
         assertTrue(costWithCommute.isLt(costWithoutCommute));
+
+        assertTrue(lsnr.check());
     }
 }
