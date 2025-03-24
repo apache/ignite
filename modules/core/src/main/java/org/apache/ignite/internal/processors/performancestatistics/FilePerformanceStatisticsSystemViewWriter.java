@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.Nullable;
@@ -38,90 +35,74 @@ import org.jetbrains.annotations.Nullable;
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
 public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerformanceStatisticsWriter {
-    /**
-     * File writer thread name.
-     */
-    private static final String WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
-
     /**  */
-    private final RandomAccessFile file;
-
-    /** System view manager. */
-    private final GridSystemViewManager sysViewMngr;
+    private RandomAccessFile file;
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /**  */
-    private volatile boolean stop;
 
     /**
      * @param ctx Kernal context.
      * @param log Logger.
      */
-    public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
-        sysViewMngr = ctx.systemView();
-
-        file = resolveStatisticsFile(ctx);
-    }
-
-    /**
-     * @return Performance statistics file.
-     */
-    private RandomAccessFile resolveStatisticsFile(
-        GridKernalContext ctx) throws IgniteCheckedException, FileNotFoundException {
-        String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
-
-        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
-
-        File file = new File(fileDir, "node-" + ctx.localNodeId() + "-system-view.prf");
-
-        int idx = 0;
-
-        while (file.exists()) {
-            idx++;
-
-            file = new File(fileDir, "node-" + ctx.localNodeId() + '-' + idx + ".prf");
+    public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) {
+        try {
+            file = new RandomAccessFile(resolveStatisticsFile(ctx).getAbsolutePath(), "rw");
         }
-
-        log.info("Performance statistics system view file created [file=" + file.getAbsolutePath() + ']');
-
-        return new RandomAccessFile(file.getAbsolutePath(), "rw");
+        catch (FileNotFoundException | IgniteCheckedException e) {
+            file = null;
+        }
+        log = ctx.log(getClass());
     }
-
 
     @Override public void start() {
-
+        try {
+            file.write(OperationType.VERSION.id());
+            file.write(FILE_FORMAT_VERSION);
+        }
+        catch (IOException e) {
+            log.error("Failed to close statistics file", e);
+        }
     }
 
     @Override public void stop() {
-
+        try {
+            file.close();
+        }
+        catch (IOException e) {
+            log.error("Failed to close statistics file", e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void systemView(SystemView<?> view) throws IOException {
-        // TODO: Write view.name()
-        long startPos = file.getFilePointer();
+    @Override public void systemView(SystemView<?> view) {
+        try {
+            writeString(file, view.name(), cacheIfPossible(view.name()));
+            long startPos = file.getFilePointer();
 
-        file.skipBytes(Long.BYTES);
+            file.skipBytes(Long.BYTES);
 
-        SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
+            SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
 
-        AttributeWriterVisitor attrVisitor = new AttributeWriterVisitor();
-        walker.visitAll(attrVisitor);
+            AttributeWriterVisitor attrVisitor = new AttributeWriterVisitor();
+            walker.visitAll(attrVisitor);
 
-        AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
-        view.forEach(row -> walker.visitAll(row, valVisitor));
+            AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
+            view.forEach(row -> walker.visitAll(row, valVisitor));
 
-        long endPos = file.getFilePointer();
+            long endPos = file.getFilePointer();
 
-        long recSize = endPos - startPos;
+            long recSize = endPos - startPos;
 
-        file.seek(startPos);
+            file.seek(startPos);
 
-        file.writeLong(recSize);
+            file.writeLong(recSize);
 
-        file.seek(endPos);
+            file.seek(endPos);
+        }
+        catch (IOException e) {
+            log.error("Failed to close statistics file", e);
+        }
     }
 
     /** Write schema of system view to file. */
@@ -129,16 +110,15 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz) {
             try {
-                cacheIfPossible(name);
-                writeString(file, name);
+                writeString(file, name, cacheIfPossible(name));
 
                 if (clazz.isPrimitive())
-                    writeCacheableString(clazz.getSimpleName());
+                    writeString(file, clazz.getName(), cacheIfPossible(clazz.getName()));
                 else
-                    writeCacheableString(String.class.getSimpleName());
+                    writeString(file, String.class.getName(), cacheIfPossible(String.class.getName()));
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
     }
@@ -149,10 +129,10 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
             try {
                 String str = String.valueOf(val);
-                file.writeBytes(str);
+                writeString(file, str, cacheIfPossible(str));
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -162,7 +142,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeBoolean(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -172,7 +152,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeChar(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -182,7 +162,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeByte(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -192,7 +172,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeShort(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -202,7 +182,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeInt(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -212,7 +192,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeLong(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -222,7 +202,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeFloat(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
 
@@ -232,7 +212,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 file.writeDouble(val);
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Failed to close statistics file", e);
             }
         }
     }

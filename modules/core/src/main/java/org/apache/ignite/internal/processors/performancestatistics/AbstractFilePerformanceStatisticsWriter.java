@@ -1,6 +1,8 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.DataOutput;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
@@ -101,6 +103,24 @@ abstract class AbstractFilePerformanceStatisticsWriter implements FilePerformanc
 
             buf.putInt(bytes.length);
             buf.put(bytes);
+        }
+    }
+
+    /**
+     * @param buf    Buffer to write to.
+     * @param str    String to write.
+     * @param cached {@code True} if string cached.
+     */
+    static void writeString(DataOutput buf, String str, boolean cached) throws IOException {
+        buf.writeByte(cached ? 1 : 0);
+
+        if (cached)
+            buf.writeInt(str.hashCode());
+        else {
+            byte[] bytes = str.getBytes();
+
+            buf.writeInt(bytes.length);
+            buf.write(bytes);
         }
     }
 
