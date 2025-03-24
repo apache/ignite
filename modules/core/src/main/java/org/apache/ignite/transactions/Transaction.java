@@ -117,7 +117,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  */
-public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
+public interface Transaction extends AutoCloseable {
     /**
      * Gets unique identifier for this transaction.
      *

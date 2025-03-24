@@ -1,0 +1,11 @@
+{
+  "env": {
+    "browser": true
+  },
+  "extends": "standard",
+  "rules": {
+    "space-before-function-paren": "off",
+    "padded-blocks": "off",
+    "no-trailing-spaces": "warn"
+  }
+}

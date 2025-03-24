@@ -1602,4 +1602,29 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public String toString() {
         return S.toString(GridCacheProxyImpl.class, this);
     }
+
+
+    /** {@inheritDoc} */
+    @Override public boolean isIgfsDataCache() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.isIgfsDataCache();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long igfsDataSpaceUsed() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.igfsDataSpaceUsed();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
 }

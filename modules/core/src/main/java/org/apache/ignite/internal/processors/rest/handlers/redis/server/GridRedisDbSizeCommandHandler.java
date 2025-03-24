@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis.server;
 
 import java.nio.ByteBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -34,7 +37,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DBSIZE;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
+
 
 /**
  * Redis DBSIZE command handler.
@@ -69,15 +73,18 @@ public class GridRedisDbSizeCommandHandler extends GridRedisRestCommandHandler {
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.command(CACHE_SIZE);
-        restReq.cacheName(msg.cacheName());
+        GridRedisCommand cmd = msg.command();
+        if(cmd == DBSIZE) {
+	        restReq.command(CACHE_SIZE);
+	        restReq.cacheName(msg.cacheName());
+        }        
 
         return restReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
+        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
             : GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse())));
     }
 }

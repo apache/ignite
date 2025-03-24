@@ -1,0 +1,20 @@
+
+
+.stacktrace-viewer__cause(
+    ng-click='$ctrl.toggleProperty()'
+)
+    .stacktrace-viewer__cause_message
+        .stacktrace-viewer__expander
+            div(ng-switch='$ctrl.expanded')
+                svg(ng-switch-when='true' ignite-icon='collapse')
+                svg(ng-switch-when='false' ignite-icon='expand')
+        span(ng-class='{bold: $ctrl.cause && $ctrl.expanded}') {{ $ctrl.cause.message }}
+.stacktrace-viewer__trace(
+    ng-show='$ctrl.expanded && $ctrl.cause.stacktrace'
+    ng-repeat='trace in $ctrl.cause.stacktrace track by $index'
+)
+    .stacktrace-viewer__trace_message
+        span {{ trace }}
+.stacktrace-viewer__trace(ng-if='$ctrl.expanded && !$ctrl.cause.stacktrace')
+    .stacktrace-viewer__trace_message
+        span {{ "queries.notebook.stackTraceDialog.noStacktraceMessage"|translate }}

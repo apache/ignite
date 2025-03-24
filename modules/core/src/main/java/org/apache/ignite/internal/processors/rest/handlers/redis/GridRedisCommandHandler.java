@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.util.Collection;
+import java.util.List;
+
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
@@ -38,4 +40,19 @@ public interface GridRedisCommandHandler {
      * @return Future.
      */
     public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg);
+    
+    /**
+     * named params
+     * @param name
+     * @param params
+     * @return
+     */
+    public default String stringValue(String name,List<String> params) {
+    	for(int i=0;i<params.size();i++) {
+    		if(params.get(i).equalsIgnoreCase(name) && i+1<params.size()) {
+    			return params.get(i+1);
+    		}
+    	}
+    	return null;
+    }
 }

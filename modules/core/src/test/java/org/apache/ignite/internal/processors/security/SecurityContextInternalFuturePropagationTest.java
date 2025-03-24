@@ -86,7 +86,7 @@ public class SecurityContextInternalFuturePropagationTest extends GridCommonAbst
             cache -> cache.getAndRemoveAsync(nextKey()), // 4
             cache -> cache.getAndReplaceAsync(nextKey(), 0), // 5
             cache -> cache.getAsync(nextKey()), // 6
-            cache -> cache.putAllAsync(new HashMap<>() {{ put(nextKey(), 0); put(nextKey(), 0); }}), // 7
+            cache -> cache.putAllAsync(new HashMap<Object, Object>() {{ put(nextKey(), 0); put(nextKey(), 0); }}), // 7
             cache -> cache.putAsync(nextKey(), 0), // 8
             cache -> cache.putIfAbsentAsync(PRELOADED_KEY_CNT + nextKey(), 0), // 9
             cache -> cache.removeAsync(nextKey()), // 10
