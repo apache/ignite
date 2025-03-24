@@ -35,7 +35,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
@@ -47,7 +46,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteLogger;
@@ -67,17 +65,16 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PlannerHelper {
-    /** */
-    private static final Collection<String> JOIN_TYPE_HINT_NAMES = Stream.of(
-        HintDefinition.NL_JOIN, HintDefinition.NO_NL_JOIN,
-        HintDefinition.CNL_JOIN, HintDefinition.NO_CNL_JOIN,
-        HintDefinition.MERGE_JOIN, HintDefinition.NO_MERGE_JOIN
-    ).map(Enum::name).collect(Collectors.toSet());
+    /**
+     * Mininal joins number to launch {@link IgniteMultiJoinOptimizeRule}.
+     *
+     * @see #optimizeJoinsOrder(IgnitePlanner, RelNode, List)
+     */
+    public static final int JOINS_COUNT_FOR_HEURISTIC_ORDER = 3;
 
     /**
      * Default constructor.
@@ -186,8 +183,10 @@ public class PlannerHelper {
             }
         }
 
-        if (disabledCnt == joins.size())
+        if (joins.size() - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
             return root;
+
+        long time = System.currentTimeMillis();
 
         RelNode res = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
 
@@ -200,53 +199,53 @@ public class PlannerHelper {
             .collect(Collectors.toSet()));
 
         if (!topLevelHints.isEmpty()) {
-            res = actualTopLevelJoinTypeHints(res, topLevelHints);
+            res = actualTopLevelJoinTypeHints(res, topLevelHints, joins.get(0));
 
             restoreJoinTypeHints(res);
         }
+
+        IgniteLogger log = Commons.context(root).logger();
+
+        if (log.isDebugEnabled())
+            log.debug("Joins order optimization took " + U.nanosToMillis(System.currentTimeMillis() - time) + " millis.");
 
         return res;
     }
 
     /** */
-    private static RelNode actualTopLevelJoinTypeHints(RelNode rel, List<RelHint> topLevelHints) {
+    private static RelNode actualTopLevelJoinTypeHints(RelNode rel, List<RelHint> topLevelHints, Join filterNode) {
         assert rel instanceof Hintable;
 
-        List<RelHint> curHints = ((Hintable)rel).getHints();
+        List<RelHint> relHints = ((Hintable)rel).getHints();
 
         List<RelHint> res = new ArrayList<>(topLevelHints.size());
-
-        RelNode joinNode = RelBuilder.create(Commons.context(rel).config()).join(JoinRelType.INNER).build();
-
-        assert joinNode instanceof Join;
 
         for (RelHint topHint : topLevelHints) {
             assert topHint.inheritPath.isEmpty();
 
-            if (!JOIN_TYPE_HINT_NAMES.contains(topHint.hintName))
-                continue;
+            boolean storeHint = true;
 
-            if (curHints.isEmpty()) {
-                res.add(topHint);
+            for (RelHint curHint : relHints) {
+                // Ignore inheritance.
+                if (topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList()))) {
+                    storeHint = false;
 
-                continue;
+                    break;
+                }
             }
 
-            for (RelHint curHint : curHints) {
-                // Consider only hints of the join types and which differ by name or parameters.
-                if (!JOIN_TYPE_HINT_NAMES.contains(curHint.hintName)
-                    || topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList())))
-                    continue;
-
+            if (storeHint)
                 res.add(topHint);
-            }
         }
+
+        // Keep hints only for joins.
+        res = Commons.context(filterNode).config().getSqlToRelConverterConfig().getHintStrategyTable().apply(res, filterNode);
 
         if (!res.isEmpty()) {
             rel = ((Hintable)rel).withHints(res);
 
-            if (!curHints.isEmpty())
-                rel = ((Hintable)rel).attachHints(curHints);
+            if (!relHints.isEmpty())
+                rel = ((Hintable)rel).attachHints(relHints);
         }
 
         return rel;
@@ -267,7 +266,7 @@ public class PlannerHelper {
 
             /** {@inheritDoc} */
             @Override public RelNode visit(RelNode rel) {
-                // Leaf TableScans have no inputs. And we are interrested only in Joins.
+                // Leaf sacn has no inputs. And we are interrested only in Joins.
                 if (rel.getInputs().isEmpty())
                     return rel;
 
@@ -276,7 +275,7 @@ public class PlannerHelper {
                 if ((rel instanceof Hintable) && !(rel instanceof Join) && !((Hintable)rel).getHints().isEmpty()) {
                     for (RelHint hint : ((Hintable)rel).getHints()) {
                         // Reassign only top-level hints (without the inherit path).
-                        if (!hint.inheritPath.isEmpty() || !JOIN_TYPE_HINT_NAMES.contains(hint.hintName))
+                        if (!hint.inheritPath.isEmpty())
                             continue;
 
                         if (curHints == Collections.EMPTY_LIST)
@@ -315,6 +314,9 @@ public class PlannerHelper {
                     List<RelHint> curHints = hintsStack.peekLast();
 
                     if (!curHints.isEmpty()) {
+                        assert Commons.context(child).config().getSqlToRelConverterConfig().getHintStrategyTable()
+                            .apply(curHints, child).size() == curHints.size() : "Not all hints are applicable.";
+
                         curHints = curHints.stream().map(h -> h.copy(inputsStack)).collect(Collectors.toList());
 
                         // Join is a Hintable.

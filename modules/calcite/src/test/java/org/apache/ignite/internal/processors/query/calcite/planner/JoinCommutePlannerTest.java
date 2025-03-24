@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -34,6 +35,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /** Tests correctness applying of JOIN_COMMUTE* rules. */
@@ -63,6 +67,20 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         );
 
         publicSchema.addTable(
+            "AVERAGE",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("IVAL", f.createJavaType(Integer.class))
+                    .build(), 1_00) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "HUGE", "hash");
+                }
+            }
+        );
+
+        publicSchema.addTable(
             "SMALL",
             new TestTable(
                 new RelDataTypeFactory.Builder(f)
@@ -74,6 +92,15 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                 }
             }
         );
+    }
+
+    /** */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        lsnrLog.clearListeners();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
     }
 
     /** */
@@ -131,10 +158,42 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testInnerCommute() throws Exception {
-        String sql = "SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN */ COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+    public void testHeuristicReordering() throws Exception {
+        assert PlannerHelper.JOINS_COUNT_FOR_HEURISTIC_ORDER == 3;
 
-        IgniteRel phys = physicalPlan(sql, publicSchema);
+        String sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
+
+        LogListener lsnr = LogListener.matches("Joins order optimization took").build();
+
+        lsnrLog.registerAllListeners(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+        physicalPlan(sql, publicSchema);
+
+        assertFalse(lsnr.check());
+
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Joins order optimization took").build();
+
+        lsnrLog.registerAllListeners(lsnr);
+
+        sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
+            "JOIN SMALL ss on ss.id = a.ival";
+
+        physicalPlan(sql, publicSchema);
+
+        assertTrue(lsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testInnerCommute() throws Exception {
+        String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+
+        IgniteRel phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
 
         assertNotNull(phys);
 
@@ -172,9 +231,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        String[] disabledRules = new String[] {"JoinCommuteRule", "JoinToMultiJoinRule", "IgniteMultiJoinOptimizeRule"};
-
-        phys = physicalPlan(sql, publicSchema, disabledRules);
+        phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
         join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
         proj = findFirstNode(phys, byClass(IgniteProject.class));
@@ -200,7 +258,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema, disabledRules);
+        ctx = plannerCtx(sql, publicSchema,
+            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
         pl = ctx.cluster().getPlanner();
 

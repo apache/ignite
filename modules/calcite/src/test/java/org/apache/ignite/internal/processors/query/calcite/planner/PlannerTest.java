@@ -787,18 +787,18 @@ public class PlannerTest extends AbstractPlannerTest {
             "from dept d, emp e " +
             "where d.deptno + e.deptno = 2";
 
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-            .and(cnlj -> "=(+($1, $0), 2)".equals(cnlj.getCondition().toString()))
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(cnlj -> "=(+($0, $1), 2)".equals(cnlj.getCondition().toString()))
             .and(cnlj -> cnlj.getJoinType() == JoinRelType.INNER)
             .and(cnlj -> cnlj.getVariablesSet().size() == 1)
-            .and(input(0, isTableScan("EMP")
-                .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(2)))
-            ))
-            .and(input(1, isTableScan("DEPT")
+            .and(input(0, isTableScan("DEPT")
                 .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(0)))
-                .and(t -> "=(+($t0, $cor0.DEPTNO), 2)".equals(t.condition().toString()))
             ))
-        ));
+            .and(input(1, isTableScan("EMP")
+                .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(2)))
+                .and(t -> "=(+($cor1.DEPTNO, $t0), 2)".equals(t.condition().toString()))
+            ))
+        );
     }
 
     /** */

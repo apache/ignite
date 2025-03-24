@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -43,9 +42,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.mapping.Mappings.TargetMapping;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.immutables.value.Value;
@@ -110,11 +107,6 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
             if (joinType != JoinRelType.INNER)
                 return;
         }
-
-        IgniteLogger log = Commons.context(multiJoinRel).logger();
-
-        if (log.isDebugEnabled())
-            log.debug("Optimizing multi-join " + RelOptUtil.toString(multiJoinRel));
 
         LoptMultiJoin multiJoin = new LoptMultiJoin(multiJoinRel);
 
@@ -332,11 +324,14 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
 
         edges.forEach(e -> conditions.add(e.condition));
 
+        double leftSize = metadataQry.getRowCount(lhs.rel);
+        double rightSize = metadataQry.getRowCount(rhs.rel);
+
         Vertex majorFactor;
         Vertex minorFactor;
 
         // Right side will probably be materialized. Let's put bigger input on left side.
-        if (lhs.cost <= rhs.cost) {
+        if (leftSize <= rightSize) {
             majorFactor = lhs;
             minorFactor = rhs;
         }
@@ -379,7 +374,7 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
     private static List<Edge> findEdges(int lhs, int rhs, IntMap<List<Edge>> edges) {
         List<Edge> result = new ArrayList<>();
 
-        List<Edge> fromLeft = edges.getOrDefault(lhs, Collections.emptyList());
+        List<Edge> fromLeft = edges.computeIfAbsent(lhs, k -> Collections.emptyList());
 
         for (Edge edge : fromLeft) {
             int requiredInputs = edge.connectedInputs & ~lhs;
