@@ -47,7 +47,7 @@ public class SnapshotCancelCommandArg extends CancelSnapshotArg {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readUuid(in);
         name = U.readString(in);
     }
