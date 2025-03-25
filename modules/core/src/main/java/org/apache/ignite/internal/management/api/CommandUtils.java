@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.IgniteClient;
@@ -888,5 +889,12 @@ public class CommandUtils {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /** Load external commands plugged by SPI */
+    public static List<Command<?, ?>> loadJmxExternalCommands() {
+        Iterable<JmxCommandsProvider> it = U.loadService(JmxCommandsProvider.class);
+        return StreamSupport.stream(it.spliterator(),
+            false).flatMap(provider -> provider.commands().stream()).collect(Collectors.toList());
     }
 }

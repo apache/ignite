@@ -19,8 +19,10 @@ package org.apache.ignite.internal.management.api;
 
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.junit.Test;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /** */
 public class CommandUtilsSelfTest {
@@ -63,5 +65,11 @@ public class CommandUtilsSelfTest {
     @Test
     public void testFromCommandName() {
         assertEquals("ConfigureHistogram", CommandUtils.fromFormattedCommandName("configure-histogram", CMD_WORDS_DELIM));
+    }
+
+    /**  */
+    @Test
+    public void testLoadJmxExternalCommands() {
+        assertFalse(CommandUtils.loadJmxExternalCommands().isEmpty());
     }
 }
