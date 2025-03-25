@@ -537,6 +537,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
         final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
+        // To avoid deserializing of enum types.
         params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
     }
 

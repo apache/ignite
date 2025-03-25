@@ -130,6 +130,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
         final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
+        // To avoid deserializing of enum types.
         errKeys = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(errKeysBytes, ldr));
     }
 
