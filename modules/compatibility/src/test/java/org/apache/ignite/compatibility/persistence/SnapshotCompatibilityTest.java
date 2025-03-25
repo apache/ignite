@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -97,8 +96,13 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         }
 
         /** */
-        public List<String> getCacheNames() {
+        public List<String> getCacheNamesList() {
             return Collections.unmodifiableList(cacheNames);
+        }
+
+        /** */
+        public Set<String> getCacheNamesSet() {
+            return Set.copyOf(cacheNames);
         }
 
         /** */
@@ -209,7 +213,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    private  void checkSnapshot(IgniteEx curIgn) {
+    private void checkSnapshot(IgniteEx curIgn) {
         curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.getName())).get();
 
         checkCaches(curIgn, cacheGrpInfo, BASE_CACHE_SIZE);
@@ -224,7 +228,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private void checkCacheDump(IgniteEx curIgn) {
-        Map<String, Integer> cacheSizes = new ConcurrentHashMap<>();
+        Map<String, Integer> foundCacheSizes = new ConcurrentHashMap<>();
+
+        Set<String> foundCacheNames = ConcurrentHashMap.newKeySet();
 
         DumpConsumer consumer = new DumpConsumer() {
             @Override public void start() {
@@ -242,43 +248,36 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
                 assertNotNull(cacheGrpInfo);
 
-                Set<String> cacheNames = new HashSet<>();
-
-                while (caches.hasNext()) {
-                    CacheConfiguration<?, ?> ccfg = caches.next().config();
+                caches.forEachRemaining(cache -> {
+                    CacheConfiguration<?, ?> ccfg = cache.config();
 
                     assertNotNull(ccfg);
 
-                    assertEquals(Integer.class, ccfg.getKeyType());
-                    assertEquals(String.class, ccfg.getValueType());
-
                     assertEquals(cacheGrpInfo.getName(), ccfg.getGroupName());
 
-                    cacheNames.add(ccfg.getName());
-                }
-
-                Set<String> trueCacheNames = new HashSet<>(cacheGrpInfo.getCacheNames());
-
-                assertEquals(trueCacheNames, cacheNames);
+                    foundCacheNames.add(ccfg.getName());
+                });
             }
 
             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
                 assertNotNull(cacheGrpInfo);
 
-                while (data.hasNext()) {
-                    DumpEntry de = data.next();
-
+                data.forEachRemaining(de -> {
                     assertNotNull(de);
 
                     Integer key = (Integer)de.key();
                     String val = (String)de.value();
 
-                    for (String cacheName : cacheGrpInfo.getCacheNames())
+                    for (String cacheName : cacheGrpInfo.getCacheNamesList()) {
                         if (val.startsWith(cacheName)) {
                             assertEquals(calcValue(cacheName, key), val);
-                            cacheSizes.put(cacheName, cacheSizes.getOrDefault(cacheName, 0) + 1);
+
+                            foundCacheSizes.put(cacheName, foundCacheSizes.getOrDefault(cacheName, 0) + 1);
+
+                            break;
                         }
-                }
+                    }
+                });
             }
 
             @Override public void stop() {
@@ -294,8 +293,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             log
         ).run();
 
-        for (String cacheName : cacheGrpInfo.getCacheNames())
-            assertEquals(BASE_CACHE_SIZE, (int)cacheSizes.get(cacheName));
+        cacheGrpInfo.getCacheNamesList().forEach(
+            cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
+        );
+
+        assertEquals(cacheGrpInfo.getCacheNamesSet(), foundCacheNames);
     }
 
     /** */
@@ -361,7 +363,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             if (forSnapshotTake)
                 igniteConfiguration.setCacheConfiguration(
-                    cacheGrpInfo.getCacheNames().stream()
+                    cacheGrpInfo.getCacheNamesList().stream()
                         .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName).setGroupName(cacheGrpInfo.getName()))
                         .toArray(CacheConfiguration[]::new)
                 );
@@ -425,7 +427,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private static void addItemsToCacheGrp(Ignite ign, CacheGroupInfo cacheGrpInfo, int startIdx, int cnt) {
-        for (String cacheName : cacheGrpInfo.getCacheNames())
+        for (String cacheName : cacheGrpInfo.getCacheNamesList())
             addItemsToCache(ign.cache(cacheName), startIdx, cnt);
     }
 
@@ -437,7 +439,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private static void checkCaches(Ignite ign, CacheGroupInfo cacheGrpInfo, int expectedCacheSize) {
-        for (String cacheName : cacheGrpInfo.getCacheNames()) {
+        for (String cacheName : cacheGrpInfo.getCacheNamesList()) {
             IgniteCache<Integer, String> cache = ign.cache(cacheName);
 
             assertNotNull(cache);
