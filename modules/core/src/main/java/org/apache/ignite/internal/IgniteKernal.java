@@ -1485,6 +1485,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** */
     private void initializeMarshaller() {
+        if (!BinaryMarshaller.available()) {
+            String msg = "Standard BinaryMarshaller can't be used on this JVM. " +
+                "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.";
+
+            U.warn(log, msg);
+
+            throw new IgniteException(msg);
+        }
+
         Marshaller marsh = ctx.marshaller();
 
         marsh.setContext(ctx.marshallerContext());

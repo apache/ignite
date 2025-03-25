@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -1331,8 +1330,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), alias);
 
                 // Clear optimized marshaller's cache.
-                if (ctx.marshaller() instanceof AbstractMarshaller)
-                    ((AbstractMarshaller)ctx.marshaller()).onUndeploy(ldr);
+                ctx.marshaller().onUndeploy(ldr);
 
                 clearSerializationCaches();
 

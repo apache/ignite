@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
@@ -576,8 +575,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 ctx.resource().onUndeployed(dep);
 
                 // Clear optimized marshaller's cache.
-                if (ctx.marshaller() instanceof AbstractMarshaller)
-                    ((AbstractMarshaller)ctx.marshaller()).onUndeploy(ldr);
+                ctx.marshaller().onUndeploy(ldr);
 
                 clearSerializationCaches();
 

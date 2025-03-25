@@ -67,7 +67,7 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         springxmlconfig = U.readString(in);
         fileContent = U.readString(in);
         skipExisting = in.readBoolean();
