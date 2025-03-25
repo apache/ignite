@@ -88,6 +88,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
@@ -1485,6 +1486,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** */
     private void initializeMarshaller() {
+        if (!BinaryMarshaller.available()) {
+            String msg = "Standard BinaryMarshaller can't be used on this JVM. " +
+                "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.";
+
+            U.warn(log, msg);
+
+            throw new IgniteException(msg);
+        }
+
         Marshaller marsh = ctx.marshaller();
 
         marsh.setContext(ctx.marshallerContext());
