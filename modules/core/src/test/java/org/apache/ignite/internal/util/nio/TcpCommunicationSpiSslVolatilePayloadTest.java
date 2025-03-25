@@ -123,7 +123,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
                 toDesc.add(new GridNioServer.WriteRequestImpl(toDesc.session(), createMessage(), false, null));
 
             // Close connection to re-initiate handshake between nodes.
-            fromDesc.session().close().get(getTestTimeout());
+            fromDesc.session().close().get(5000);
         }
 
         assertTrue(waitForCondition(() -> msgCreatedCntr.get() == msgReceivedCntr.get(), 5000));
@@ -159,7 +159,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
 
         ((TcpCommunicationSpi)spis.get(from.id())).sendMessage(to, msg, e -> ackReceivedLatch.countDown());
 
-        ackReceivedLatch.await(5000, TimeUnit.MILLISECONDS);
+        assertTrue(ackReceivedLatch.await(5000, TimeUnit.MILLISECONDS));
     }
 
     /** */
