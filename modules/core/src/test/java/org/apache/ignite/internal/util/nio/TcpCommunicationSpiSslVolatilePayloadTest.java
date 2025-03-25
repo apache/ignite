@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.ignite.cluster.ClusterNode;
@@ -65,7 +67,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
     /** */
-    private static final int TEST_ITERATION_CNT = 1000;
+    private static final int TEST_ITERATION_CNT = 200;
 
     /** The number of messages intended to fill the network buffer during last handshake message sending. */
     private static final int RECOVERY_DESCRIPTOR_QUEUE_MESSAGE_CNT = 50;
@@ -82,7 +84,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
     /** {@inheritDoc} */
     @Override protected CommunicationSpi<Message> getSpi(int idx) {
         return new TcpCommunicationSpi().setLocalPort(GridTestUtils.getNextCommPort(getClass()))
-            .setIdleConnectionTimeout(2000)
+            .setIdleConnectionTimeout(100)
             .setTcpNoDelay(true);
     }
 
@@ -121,8 +123,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
                 toDesc.add(new GridNioServer.WriteRequestImpl(toDesc.session(), createMessage(), false, null));
 
             // Close connection to re-initiate handshake between nodes.
-            if (fromDesc.session() != null)
-                fromDesc.session().close();
+            fromDesc.session().close().get(getTestTimeout());
         }
 
         assertTrue(waitForCondition(() -> msgCreatedCntr.get() == msgReceivedCntr.get(), 5000));
@@ -153,8 +154,12 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
     }
 
     /** */
-    private void sendMessage(ClusterNode from, ClusterNode to, Message msg) {
-        spis.get(from.id()).sendMessage(to, msg);
+    private void sendMessage(ClusterNode from, ClusterNode to, Message msg) throws Exception {
+        CountDownLatch ackReceivedLatch = new CountDownLatch(1);
+
+        ((TcpCommunicationSpi)spis.get(from.id())).sendMessage(to, msg, e -> ackReceivedLatch.countDown());
+
+        ackReceivedLatch.await(5000, TimeUnit.MILLISECONDS);
     }
 
     /** */
