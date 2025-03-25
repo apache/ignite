@@ -197,7 +197,7 @@ public final class PlanningContext implements Context {
      *
      * @param rulesFilter Rules filter.
      */
-    public void rulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
+    public void addRulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
         this.rulesFilter = this.rulesFilter == null ? rulesFilter : this.rulesFilter.andThen(rulesFilter);
     }
 

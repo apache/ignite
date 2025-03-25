@@ -22,19 +22,25 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttle;
+import org.apache.calcite.rel.core.Correlate;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
@@ -93,7 +99,7 @@ public class PlannerHelper {
 
             root = addExternalOptions(root);
 
-            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
+            planner.addDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
@@ -114,19 +120,13 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
+            optimizeJoins(planner, rel);
+
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
                 .simplify();
-
-            int joinsCnt = RelOptUtil.countJoins(rel);
-
-            if (joinsCnt > MAX_JOINS_TO_COMMUTE)
-                planner.setDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
-
-            if (joinsCnt > MAX_JOINS_TO_COMMUTE_INPUTS)
-                planner.setDisabledRules(Arrays.asList(JoinPushThroughJoinRule.LEFT.toString(), JoinPushThroughJoinRule.RIGHT.toString()));
 
             IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
@@ -150,6 +150,19 @@ public class PlannerHelper {
             log.error(planner.dump());
 
             throw ex;
+        }
+    }
+
+    /** */
+    private static void optimizeJoins(IgnitePlanner planner, RelNode rel) {
+        int joinsCnt = joinsCount(rel);
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE)
+            planner.addDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE_INPUTS) {
+            planner.addDisabledRules(Arrays.asList(JoinPushThroughJoinRule.LEFT.toString(),
+                JoinPushThroughJoinRule.RIGHT.toString()));
         }
     }
 
@@ -314,6 +327,74 @@ public class PlannerHelper {
          */
         private boolean modifyNodeInsertsData() {
             return modifyNode.isInsert();
+        }
+    }
+
+    /** */
+    private static int joinsCount(RelNode root) {
+        AtomicInteger cnt = new AtomicInteger();
+
+        JoinSizeFinder jCnt = new JoinSizeFinder();
+
+        jCnt.visit(root);
+
+        int g = jCnt.sizeOfBiggestJoin();
+
+        RelShuttle visitor = new RelHomogeneousShuttle() {
+            @Override public RelNode visit(RelNode node) {
+                if (node instanceof Join || node instanceof Correlate)
+                    cnt.incrementAndGet();
+
+                return super.visit(node);
+            }
+        };
+
+        root.accept(visitor);
+
+        return cnt.get();
+    }
+
+    /**
+     * A shuttle to estimate a biggest join to optimize.
+     *
+     * <p>There are only two rules: <ol>
+     *     <li>Each achievable leaf node contribute to join complexity, thus must be counted</li>
+     *     <li>If this shuttle reach the {@link LogicalCorrelate} node, only left shoulder will be
+     *         analysed by this shuttle. For right shoulder a new shuttle will be created, and maximum
+     *         of previously found subquery and current one will be saved</li>
+     * </ol>
+     */
+    private static class JoinSizeFinder extends RelHomogeneousShuttle {
+        private int countOfSources = 0;
+        private int maxCountOfSourcesInSubQuery = 0;
+
+        /** {@inheritDoc} */
+        @Override
+        public RelNode visit(RelNode other) {
+            if (other.getInputs().isEmpty()) {
+                countOfSources++;
+
+                return other;
+            }
+
+            return super.visit(other);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelNode visit(LogicalCorrelate correlate) {
+            JoinSizeFinder inSubquerySizeFinder = new JoinSizeFinder();
+            inSubquerySizeFinder.visit(correlate.getInput(1));
+
+            maxCountOfSourcesInSubQuery = Math.max(
+                maxCountOfSourcesInSubQuery,
+                inSubquerySizeFinder.sizeOfBiggestJoin()
+            );
+
+            return visitChild(correlate, 0, correlate.getInput(0));
+        }
+
+        int sizeOfBiggestJoin() {
+            return Math.max(countOfSources, maxCountOfSourcesInSubQuery);
         }
     }
 }

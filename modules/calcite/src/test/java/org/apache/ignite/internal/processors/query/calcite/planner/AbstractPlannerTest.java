@@ -236,7 +236,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(planner);
 
-        planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
+        planner.addDisabledRules(ImmutableSet.copyOf(disabledRules));
 
         return ctx;
     }

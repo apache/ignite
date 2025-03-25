@@ -91,17 +91,17 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                     new TestTable(
                         new RelDataTypeFactory.Builder(f)
                             .add("ID", f.createJavaType(Integer.class))
-                            .add("IVAL", f.createJavaType(Integer.class))
-                            .build(), (i ^ 1) == 0 ? 100 : 10) {
+                            .build(), Math.pow(100, (1 + (i % 3)))) {
 
                         @Override public IgniteDistribution distribution() {
-                            return IgniteDistributions.affinity(0, "HUGE", "hash");
+                            return IgniteDistributions.affinity(0, "TEST_CACHE", "hash");
                         }
                     }
                 );
             }
 
             doTestCommuteDisabledForManyJoins(PlannerHelper.MAX_JOINS_TO_COMMUTE + 1);
+
             doTestCommuteDisabledForManyJoins(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS + 1);
         }
         finally {
@@ -121,13 +121,42 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             if (i == 0)
                 joins.append("TBL0 t0");
             else {
-                joins.append(" JOIN TBL").append(i).append(" t").append(i).append(" ON t").append(i - 1).append(".id = t")
-                    .append(i).append(".ival");
+                joins.append(" JOIN TBL").append(i).append(" t").append(i).append(" ON t").append(i - 1).append(".id=t")
+                    .append(i).append(".id");
             }
         }
 
         String sql = "SELECT " + select.substring(0, select.length() - 2) + " from " + joins;
 
+        estimateJoinsQuery(sql);
+    }
+
+    /** */
+    @Test
+    public void testCorrelatedJoinsCount() throws Exception {
+        //doTestCorrelatedJoinsCount(PlannerHelper.MAX_JOINS_TO_COMMUTE + 1);
+
+        doTestCorrelatedJoinsCount(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS + 1);
+    }
+
+    /** */
+    private void doTestCorrelatedJoinsCount(int jCnt) throws Exception {
+        assert jCnt > 0;
+
+        StringBuilder b = new StringBuilder("SELECT s.id, ");
+
+        for (int i = 0; i < jCnt; ++i)
+            b.append("\n(SELECT MAX(h.id) from HUGE h WHERE h.id=s.id + ").append(i + 1).append(") as corr").append(i).append(", ");
+
+        b.delete(b.length() - 2, b.length());
+
+        b.append("\nFROM small s");
+
+        estimateJoinsQuery(b.toString());
+    }
+
+    /** */
+    private void estimateJoinsQuery(String sql) throws Exception {
         long timing = System.nanoTime();
 
         physicalPlan(sql, publicSchema);
@@ -135,7 +164,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         timing = U.nanosToMillis(System.nanoTime() - timing);
 
         if (log.isInfoEnabled())
-            log.info("The planning took " + timing + " millis.");
+            log.info("The planning took " + timing + "ms.");
 
         // Without the commuting it takes several minutes.
         assertTrue(timing < 45 * 1000);
