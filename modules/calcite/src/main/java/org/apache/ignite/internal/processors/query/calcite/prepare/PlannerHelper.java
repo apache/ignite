@@ -284,7 +284,7 @@ public class PlannerHelper {
 
             /** {@inheritDoc} */
             @Override public RelNode visit(RelNode rel) {
-                // Leaf sacn has no inputs. And we are interrested only in Joins.
+                // Leaf scans has no inputs. And we are interrested only in Joins.
                 if (rel.getInputs().isEmpty())
                     return rel;
 
