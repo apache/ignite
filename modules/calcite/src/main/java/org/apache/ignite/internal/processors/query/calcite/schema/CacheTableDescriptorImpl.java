@@ -362,7 +362,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             if (fieldVal != null) {
                 if (key == null)
-                    key = newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
+                    key = newVal(typeDesc.keyTypeName());
 
                 desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
@@ -381,7 +381,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object val = hnd.get(valField, row);
 
         if (val == null) {
-            val = newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
+            val = newVal(typeDesc.valueTypeName());
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
@@ -400,7 +400,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
+    private Object newVal(String typeName) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = cacheContext();
 
         BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
