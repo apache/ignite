@@ -62,7 +62,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -1688,13 +1687,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if {@link BinaryMarshaller is configured}.
-     */
-    public boolean binaryMarshaller() {
-        return marshaller() instanceof BinaryMarshaller;
-    }
-
-    /**
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
@@ -2242,7 +2234,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param builder Builder.
      */
     public void prepareAffinityField(BinaryObjectBuilder builder) {
-        assert binaryMarshaller();
         assert builder instanceof BinaryObjectBuilderImpl;
 
         BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
