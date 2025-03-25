@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
@@ -32,7 +31,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
@@ -120,7 +118,7 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
-            optimizeJoins(planner, rel);
+            fastenJoinsOrder(planner, rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
@@ -153,9 +151,16 @@ public class PlannerHelper {
         }
     }
 
-    /** */
-    private static void optimizeJoins(IgnitePlanner planner, RelNode rel) {
-        int joinsCnt = joinsCount(rel);
+    /**
+     * To prevent long join order planning, disables {@link JoinCommuteRule} and {@link JoinPushThroughJoinRule} rules
+     * if joins count reaches the thresholds.
+     */
+    private static void fastenJoinsOrder(IgnitePlanner planner, RelNode rel) {
+        JoinsFinder jf = new JoinsFinder();
+
+        jf.visit(rel);
+
+        int joinsCnt = jf.sourcesCnt() - 1;
 
         if (joinsCnt > MAX_JOINS_TO_COMMUTE)
             planner.addDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
@@ -330,71 +335,49 @@ public class PlannerHelper {
         }
     }
 
-    /** */
-    private static int joinsCount(RelNode root) {
-        AtomicInteger cnt = new AtomicInteger();
-
-        JoinSizeFinder jCnt = new JoinSizeFinder();
-
-        jCnt.visit(root);
-
-        int g = jCnt.sizeOfBiggestJoin();
-
-        RelShuttle visitor = new RelHomogeneousShuttle() {
-            @Override public RelNode visit(RelNode node) {
-                if (node instanceof Join || node instanceof Correlate)
-                    cnt.incrementAndGet();
-
-                return super.visit(node);
-            }
-        };
-
-        root.accept(visitor);
-
-        return cnt.get();
-    }
-
     /**
-     * A shuttle to estimate a biggest join to optimize.
-     *
-     * <p>There are only two rules: <ol>
-     *     <li>Each achievable leaf node contribute to join complexity, thus must be counted</li>
-     *     <li>If this shuttle reach the {@link LogicalCorrelate} node, only left shoulder will be
-     *         analysed by this shuttle. For right shoulder a new shuttle will be created, and maximum
-     *         of previously found subquery and current one will be saved</li>
-     * </ol>
+     * Finds join-related nodes in a rel tree. Estimates leaf nodes number. If meets a {@link LogicalCorrelate},
+     * analyses only the left shoulder. For the right shoulder a new finder is created. The maximum of current leafs count
+     * and found by the another finder is the result.
      */
-    private static class JoinSizeFinder extends RelHomogeneousShuttle {
-        private int countOfSources = 0;
-        private int maxCountOfSourcesInSubQuery = 0;
+    private static final class JoinsFinder extends RelHomogeneousShuttle {
+        /** */
+        private boolean joinFound;
+
+        /** */
+        private int srcCnt;
+
+        /** */
+        private int correlateRightSrcCnt;
 
         /** {@inheritDoc} */
-        @Override
-        public RelNode visit(RelNode other) {
-            if (other.getInputs().isEmpty()) {
-                countOfSources++;
+        @Override public RelNode visit(RelNode node) {
+            if (node instanceof Join || node instanceof Correlate)
+                joinFound = true;
 
-                return other;
+            if (node.getInputs().isEmpty()) {
+                ++srcCnt;
+
+                return node;
             }
 
-            return super.visit(other);
+            return super.visit(node);
         }
 
         /** {@inheritDoc} */
         @Override public RelNode visit(LogicalCorrelate correlate) {
-            JoinSizeFinder inSubquerySizeFinder = new JoinSizeFinder();
+            JoinsFinder inSubquerySizeFinder = new JoinsFinder();
+
             inSubquerySizeFinder.visit(correlate.getInput(1));
 
-            maxCountOfSourcesInSubQuery = Math.max(
-                maxCountOfSourcesInSubQuery,
-                inSubquerySizeFinder.sizeOfBiggestJoin()
-            );
+            correlateRightSrcCnt = Math.max(correlateRightSrcCnt, inSubquerySizeFinder.sourcesCnt());
 
             return visitChild(correlate, 0, correlate.getInput(0));
         }
 
-        int sizeOfBiggestJoin() {
-            return Math.max(countOfSources, maxCountOfSourcesInSubQuery);
+        /** */
+        private int sourcesCnt() {
+            return joinFound ? Math.max(srcCnt, correlateRightSrcCnt) : 0;
         }
     }
 }

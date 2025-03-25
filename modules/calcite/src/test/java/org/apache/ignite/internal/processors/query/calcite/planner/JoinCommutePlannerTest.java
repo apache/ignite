@@ -21,8 +21,13 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelHomogeneousShuttle;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -82,7 +87,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     public void testCommuteDisabledForManyJoins() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        int tablesCnt = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE) + 2;
+        int maxJoinsToOptimize = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE);
+
+        int tablesCnt = maxJoinsToOptimize + 2;
 
         try {
             for (int i = 0; i < tablesCnt; ++i) {
@@ -100,9 +107,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            doTestCommuteDisabledForManyJoins(PlannerHelper.MAX_JOINS_TO_COMMUTE + 1);
+            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false, "TBL");
 
-            doTestCommuteDisabledForManyJoins(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS + 1);
+            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, true, "TBL");
         }
         finally {
             for (int i = 0; i < tablesCnt; ++i)
@@ -111,12 +118,22 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private void doTestCommuteDisabledForManyJoins(int joinsCnt) throws Exception {
+    private void doTestCommuteDisabledForManyJoins(int joinsCnt, boolean withCorrelated, String tblNamePrefix) throws Exception {
         StringBuilder select = new StringBuilder();
         StringBuilder joins = new StringBuilder();
 
         for (int i = 0; i < joinsCnt + 1; ++i) {
-            select.append("t").append(i).append(".id, ");
+            if (withCorrelated && i == joinsCnt) {
+                String alias = "t" + i;
+
+                select.append("\n(SELECT MAX(").append(alias).append(".id) FROM TBL").append(i).append(" ").append(alias)
+                    .append(" WHERE ").append(alias).append(".id=").append("t0").append(".id + 1) as corr")
+                    .append(i).append(", ");
+
+                continue;
+            }
+
+            select.append("\nt").append(i).append(".id, ");
 
             if (i == 0)
                 joins.append("TBL0 t0");
@@ -126,48 +143,37 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             }
         }
 
-        String sql = "SELECT " + select.substring(0, select.length() - 2) + " from " + joins;
+        String sql = "SELECT " + select.substring(0, select.length() - 2) + "\nfrom " + joins;
 
-        estimateJoinsQuery(sql);
-    }
-
-    /** */
-    @Test
-    public void testCorrelatedJoinsCount() throws Exception {
-        //doTestCorrelatedJoinsCount(PlannerHelper.MAX_JOINS_TO_COMMUTE + 1);
-
-        doTestCorrelatedJoinsCount(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS + 1);
-    }
-
-    /** */
-    private void doTestCorrelatedJoinsCount(int jCnt) throws Exception {
-        assert jCnt > 0;
-
-        StringBuilder b = new StringBuilder("SELECT s.id, ");
-
-        for (int i = 0; i < jCnt; ++i)
-            b.append("\n(SELECT MAX(h.id) from HUGE h WHERE h.id=s.id + ").append(i + 1).append(") as corr").append(i).append(", ");
-
-        b.delete(b.length() - 2, b.length());
-
-        b.append("\nFROM small s");
-
-        estimateJoinsQuery(b.toString());
-    }
-
-    /** */
-    private void estimateJoinsQuery(String sql) throws Exception {
         long timing = System.nanoTime();
 
-        physicalPlan(sql, publicSchema);
+        IgniteRel plan = physicalPlan(sql, publicSchema);
 
         timing = U.nanosToMillis(System.nanoTime() - timing);
 
         if (log.isInfoEnabled())
             log.info("The planning took " + timing + "ms.");
 
-        // Without the commuting it takes several minutes.
-        assertTrue(timing < 45 * 1000);
+        RelShuttle shuttle = new RelHomogeneousShuttle() {
+            private int prev = Integer.MIN_VALUE;
+
+            @Override public RelNode visit(TableScan scan) {
+                String tblName = Util.last(scan.getTable().getQualifiedName());
+
+                assert tblName.startsWith(tblNamePrefix);
+
+                int tblNum = Integer.parseInt(tblName.replace(tblNamePrefix, ""));
+
+                if (prev == Integer.MIN_VALUE)
+                    prev = tblNum;
+                else if (tblNum < prev)
+                    throw new IllegalStateException("Wrong table number found. Current: " + tblNum + ", previous: " + prev + '.');
+
+                return super.visit(scan);
+            }
+        };
+
+        shuttle.visit(plan);
     }
 
     /** */
