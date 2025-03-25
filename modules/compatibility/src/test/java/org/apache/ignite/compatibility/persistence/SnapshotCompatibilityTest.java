@@ -227,7 +227,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    private void checkCacheDump(IgniteEx curIgn) {
+    private void checkCacheDump(IgniteEx curIgn) throws IgniteCheckedException {
         Map<String, Integer> foundCacheSizes = new ConcurrentHashMap<>();
 
         Set<String> foundCacheNames = ConcurrentHashMap.newKeySet();
@@ -285,7 +285,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, null, curIgn.configuration(), consumer), log).run();
+        new DumpReader(new DumpReaderConfiguration(
+            CACHE_DUMP_NAME,
+            customSnpPath ? getCustomSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
+            curIgn.configuration(),
+            consumer
+        ), log).run();
 
         cacheGrpInfo.getCacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
