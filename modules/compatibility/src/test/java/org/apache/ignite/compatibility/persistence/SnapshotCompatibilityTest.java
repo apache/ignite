@@ -78,6 +78,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
 
     /** */
+    private static final String CONSISTENT_ID = "db3e5e20-91c1-4b2d-95c9-f7e5f7a0b8d3";
+
+    /** */
     private CacheGroupInfo cacheGrpInfo;
 
     /** */
@@ -115,7 +118,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         List<Object[]> data = new ArrayList<>();
 
         List<Boolean> incrementalSnpValues = Arrays.asList(true, false);
-        List<String> consistentIdValues = Arrays.asList("CONSISTENT_ID", null);
+        List<String> consistentIdValues = Arrays.asList(CONSISTENT_ID, null);
         List<Integer> oldNodesCntValues = Arrays.asList(1, 3);
         List<Boolean> createDumpValues = Arrays.asList(true, false);
         List<Boolean> customSnpPathValues = Arrays.asList(true, false);
@@ -238,6 +241,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
                 assertNotNull(cacheGrpInfo);
+
                 Set<String> cacheNames = new HashSet<>();
 
                 while (caches.hasNext()) {
@@ -400,7 +404,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             addItemsToCacheGrp(ign, cacheGrpInfo, 0, BASE_CACHE_SIZE);
 
             if (cacheDump)
-                ign.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(cacheGrpInfo.getName()));
+                ign.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(cacheGrpInfo.getName())).get();
             else
                 ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
