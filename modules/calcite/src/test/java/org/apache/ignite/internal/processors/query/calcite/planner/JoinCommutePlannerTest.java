@@ -181,13 +181,13 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertFalse(lsnr.check());
 
-        // Joins number is enough but the optimization is disabled by a hint for all the joins.
+        // Joins number is enough. But the optimization is disabled by the hint.
         sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id " +
             "JOIN AVERAGE a on a.id = h.id JOIN SMALL ss on ss.id = a.id";
         physicalPlan(sql, publicSchema);
         assertFalse(lsnr.check());
 
-        // Joins number is enough but the optimization is disabled by a hint for some joins.
+        // Joins number is enough. But the optimization is disabled by the hint for some joins.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
             "(SELECT /*+ ENFORCE_JOIN_ORDER */ h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
             "JOIN SMALL s2 ON a.id=s2.id) j ON s.id=j.a";
@@ -196,7 +196,15 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertFalse(lsnr.check());
 
-        // Enough joins count and nothing is disabled.
+        // Joins number is enough with the correlated query. But the optimization is disabled by the hint.
+        sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id, (SELECT MAX(ss.id) FROM SMALL ss WHERE ss.id = a.id + 1) as corr " +
+            "FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
+
+        physicalPlan(sql, publicSchema);
+
+        assertFalse(lsnr.check());
+
+        // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
             "(SELECT h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
             "JOIN SMALL s2 ON a.id=s2.id) j ON s.id=j.a";
@@ -205,11 +213,21 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertTrue(lsnr.check());
 
-        lsnr.reset();
-
-        // Enough joins count and nothing is disabled.
+        // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
             "JOIN SMALL ss on ss.id = a.id";
+
+        lsnr.reset();
+
+        physicalPlan(sql, publicSchema);
+
+        assertTrue(lsnr.check());
+
+        // Joins number is enough with the correlated query and nothing is disabled.
+        sql = "SELECT s.id, h.id, a.id, (SELECT MAX(ss.id) FROM SMALL ss WHERE ss.id = a.id + 1) as corr FROM SMALL s " +
+            "JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
+
+        lsnr.reset();
 
         physicalPlan(sql, publicSchema);
 
