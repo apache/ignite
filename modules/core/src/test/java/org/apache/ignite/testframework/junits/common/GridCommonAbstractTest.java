@@ -2850,4 +2850,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         return marsh;
     }
+
+    /** @return Marshaller. */
+    protected static Marshaller marshaller(Ignite ign) {
+        return ((IgniteEx)ign).context().marshaller();
+    }
 }

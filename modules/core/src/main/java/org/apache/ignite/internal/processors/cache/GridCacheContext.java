@@ -975,7 +975,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Marshaller.
      */
     public Marshaller marshaller() {
-        return ctx.config().getMarshaller();
+        return ctx.marshaller();
     }
 
     /**

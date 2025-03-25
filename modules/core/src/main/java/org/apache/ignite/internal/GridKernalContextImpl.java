@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -394,6 +395,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
+
+    /** Marshaller. */
+    private final BinaryMarshaller marsh = new BinaryMarshaller();
 
     /**
      * No-arg constructor is required by externalization.
@@ -1101,5 +1105,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return config().getAsyncContinuationExecutor() == null
                 ? ForkJoinPool.commonPool()
                 : config().getAsyncContinuationExecutor();
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryMarshaller marshaller() {
+        return marsh;
     }
 }
