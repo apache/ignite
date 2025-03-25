@@ -398,7 +398,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private boolean recoveryMode = true;
 
     /** Marshaller. */
-    private final Marshaller marsh = new BinaryMarshaller();
+    private final BinaryMarshaller marsh = new BinaryMarshaller();
 
     /**
      * No-arg constructor is required by externalization.
@@ -1109,7 +1109,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public Marshaller marshaller() {
+    @Override public BinaryMarshaller marshaller() {
         return marsh;
     }
 }

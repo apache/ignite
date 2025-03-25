@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -343,11 +342,11 @@ public class GridServiceProxy<T> implements Serializable {
 
     /** */
     private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
-        Marshaller marsh = ctx.marshaller();
+        BinaryMarshaller marsh = ctx.marshaller();
 
-        if (keepBinary && BinaryArray.useBinaryArrays() && marsh instanceof BinaryMarshaller) {
+        if (keepBinary && BinaryArray.useBinaryArrays()) {
             // To avoid deserializing of enum types and BinaryArrays.
-            return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
+            return marsh.binaryMarshaller().unmarshal(res, null);
         }
         else
             return U.unmarshal(marsh, res, null);
