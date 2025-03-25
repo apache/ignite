@@ -82,7 +82,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         );
     }
 
-    /** */
+    /** Ensures that join commute rules are disabled if joins count is too high. Checks the tables order in the query. */
     @Test
     public void testCommuteDisabledForManyJoins() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
