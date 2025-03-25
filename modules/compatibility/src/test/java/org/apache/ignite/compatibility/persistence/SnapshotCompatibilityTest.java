@@ -285,13 +285,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             }
         };
 
-        new DumpReader(
-            new DumpReaderConfiguration(
-                new File(sharedFileTree(curIgn.configuration()).snapshotsRoot(), CACHE_DUMP_NAME),
-                consumer
-            ),
-            log
-        ).run();
+        new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, null, curIgn.configuration(), consumer), log).run();
 
         cacheGrpInfo.getCacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
