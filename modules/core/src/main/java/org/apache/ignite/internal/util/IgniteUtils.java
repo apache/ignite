@@ -10811,7 +10811,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -10912,7 +10912,7 @@ public abstract class IgniteUtils {
     public static byte[] marshal(GridKernalContext ctx, Object obj) throws IgniteCheckedException {
         assert ctx != null;
 
-        return marshal(ctx.config().getMarshaller(), obj);
+        return marshal(ctx.marshaller(), obj);
     }
 
     /**

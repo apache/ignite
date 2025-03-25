@@ -72,6 +72,7 @@ import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.SqlConfiguration.DFLT_SQL_PLAN_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -192,14 +193,19 @@ public class RunningQueryManager {
 
         localNodeId = ctx.localNodeId();
 
-        histSz = ctx.config().getSqlConfiguration().getSqlQueryHistorySize();
+        final SqlConfiguration sqlCfg = ctx.config().getSqlConfiguration();
+
+        histSz = sqlCfg.getSqlQueryHistorySize();
         closure = ctx.closure();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
 
         heavyQrysTracker = ctx.query().moduleEnabled() ? new HeavyQueriesTracker(ctx) : null;
 
-        planHistSz = ctx.config().getSqlConfiguration().getSqlPlanHistorySize();
+        if (sqlCfg.getSqlPlanHistorySize() < 0 && ctx.query().defaultQueryEngine() != null)
+            sqlCfg.setSqlPlanHistorySize(DFLT_SQL_PLAN_HISTORY_SIZE);
+
+        planHistSz = sqlCfg.getSqlPlanHistorySize();
 
         planHistTracker = new SqlPlanHistoryTracker(planHistSz);
 

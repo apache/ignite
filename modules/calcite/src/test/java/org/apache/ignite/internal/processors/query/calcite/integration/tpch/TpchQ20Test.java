@@ -14,18 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.Marshaller;
+package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-/**
- * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
- */
-public class IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest
-    extends IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest {
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new OptimizedMarshaller(false);
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
+import org.junit.Test;
+
+/** */
+public class TpchQ20Test extends AbstractBasicIntegrationTest {
+    /**
+     * Test the Q20 TPC-H query can be planned and executed.
+     */
+    @Test
+    public void testQ20() throws Exception {
+        TpchHelper.createTables(client);
+
+        TpchHelper.fillTables(client, 0.01);
+
+        TpchHelper.collectSqlStatistics(client);
+
+        sql(TpchHelper.getQuery(20));
     }
 }

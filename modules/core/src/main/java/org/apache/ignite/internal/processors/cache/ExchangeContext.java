@@ -20,14 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 
@@ -35,10 +33,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  *
  */
 public class ExchangeContext {
-    /** Enables exchange compatibility with protocol version 1. */
-    @SystemProperty(value = "Enables the compatibility mode for the exchange protocol of version 1")
-    public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -68,9 +62,6 @@ public class ExchangeContext {
     /** */
     private final ExchangeDiscoveryEvents evts;
 
-    /** */
-    private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
-
     /**
      * @param cctx Context.
      * @param crd Coordinator flag.
@@ -81,12 +72,11 @@ public class ExchangeContext {
 
         boolean pmeFreeAvailable = (fut.wasRebalanced() && fut.isBaselineNodeFailed()) || isSnapshotOperation(fut.firstEvent());
 
-        if (!compatibilityNode &&
-            pmeFreeAvailable) {
+        if (pmeFreeAvailable) {
             exchangeFreeSwitch = true;
             merge = false;
         }
-        else if (compatibilityNode || (crd && fut.localJoinExchange())) {
+        else if (crd && fut.localJoinExchange()) {
             fetchAffOnJoin = true;
             merge = false;
         }
@@ -102,13 +92,6 @@ public class ExchangeContext {
         evts = new ExchangeDiscoveryEvents(fut);
 
         remapStaleCacheReq = isSnapshotOperation(fut.firstEvent());
-    }
-
-    /**
-     * @return {@code True} if node supports exchange merge protocol.
-     */
-    boolean supportsMergeExchanges() {
-        return !compatibilityNode;
     }
 
     /**
