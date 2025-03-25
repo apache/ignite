@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -408,13 +407,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         cctx.prepareAffinityField(builder);
 
         return builder;
-    }
-
-    /** */
-    private IgniteCheckedException instantiationException(String typeName, ReflectiveOperationException e) {
-        return S.includeSensitive()
-            ? new IgniteCheckedException("Failed to instantiate key [type=" + typeName + ']', e)
-            : new IgniteCheckedException("Failed to instantiate key", e);
     }
 
     /** */

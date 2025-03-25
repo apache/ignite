@@ -202,8 +202,6 @@ public final class UpdatePlan {
         GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
-        GridCacheContext cctx = rowDesc.context();
-
         Object key = keySupplier.apply(row);
 
         if (QueryUtils.isSqlType(desc.keyClass())) {

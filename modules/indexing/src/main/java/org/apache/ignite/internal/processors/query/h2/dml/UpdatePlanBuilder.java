@@ -293,8 +293,8 @@ public final class UpdatePlanBuilder {
 
         verifyDmlColumns(tbl.dataTable(), F.viewReadOnly(Arrays.asList(cols), TO_H2_COL));
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         String selectSql = sel != null ? sel.getSQL() : null;
 
@@ -472,7 +472,7 @@ public final class UpdatePlanBuilder {
                 int newValColIdx = (hasNewVal ? valColIdx : 1);
 
                 KeyValueSupplier valSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
-                    false, true);
+                    false);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate)stmt);
 
@@ -605,9 +605,9 @@ public final class UpdatePlanBuilder {
         verifyDmlColumns(tbl, Arrays.asList(h2Cols));
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
-            true, false);
+            true);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps,
-            false, false);
+            false);
 
         return new UpdatePlan(
             UpdateMode.BULK_LOAD,
@@ -638,13 +638,12 @@ public final class UpdatePlanBuilder {
      * @param colIdx Column index if key or value is present in columns list, {@code -1} if it's not.
      * @param hasProps Whether column list affects individual properties of key or value.
      * @param key Whether supplier should be created for key or for value.
-     * @param forUpdate {@code true} if called for {@code UPDATE} statement.
      * @return Closure returning key or value.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked", "IfMayBeConditional"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
-        final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
+        final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
