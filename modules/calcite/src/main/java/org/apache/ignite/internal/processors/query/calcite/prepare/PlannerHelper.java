@@ -75,7 +75,7 @@ public class PlannerHelper {
     /**
      * Mininal joins number to launch {@link IgniteMultiJoinOptimizeRule}. Calcite's default join order optimization rules
      * like {@link JoinCommuteRule} or {@link JoinPushThroughJoinRule} take time but can give us better plans. They produce
-     * more join variants. And we estimate their physical costs. While the joins count is small, lets use the default rules.
+     * more join variants. And we estimate their physical costs. While the joins count is small, let's use the default rules.
      *
      * @see #optimizeJoinsOrder(IgnitePlanner, RelNode, List)
      */
@@ -202,11 +202,11 @@ public class PlannerHelper {
         if (joins.size() - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
             return root;
 
-        long time = System.nanoTime();
+        long timing = System.nanoTime();
 
         RelNode res = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
 
-        time = System.nanoTime() - time;
+        timing = System.nanoTime() - timing;
 
         // Still has a MultiJoin, didn't manage to collect one flat join to optimize.
         if (!findNodes(res, true, MultiJoin.class).isEmpty())
@@ -225,7 +225,7 @@ public class PlannerHelper {
         IgniteLogger log = Commons.context(root).logger();
 
         if (log.isDebugEnabled())
-            log.debug("Joins order optimization took " + U.nanosToMillis(time) + "ms.");
+            log.debug("Joins order optimization took " + U.nanosToMillis(timing) + "ms.");
 
         return res;
     }
@@ -522,7 +522,7 @@ public class PlannerHelper {
     /**
      * Searches tree {@code root} for nodes of {@code nodeTypes}.
      *
-     * @return Nodes matching one of {@code nodeTypes}. Empty list if none match. Single value list if a node
+     * @return Nodes matching one of {@code nodeTypes}. An empty list if none matches. A single value list if a node
      * found and {@code stopOnFirst} is {@code true}.
      */
     public static List<RelNode> findNodes(RelNode root, boolean stopOnFirst, Class<? extends RelNode>... nodeTypes) {

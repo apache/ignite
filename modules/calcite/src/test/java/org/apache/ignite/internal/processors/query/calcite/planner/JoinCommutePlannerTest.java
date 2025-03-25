@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJ
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -163,9 +164,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         assertTrue(lsnr.check());
     }
 
-    /** */
+    /** Tests that {@link IgniteMultiJoinOptimizeRule} is enabled if joins number reaches the threshold. */
     @Test
-    public void testHeuristicReordering() throws Exception {
+    public void testHeuristicReorderingIsEnabledByJoinsCount() throws Exception {
         assert PlannerHelper.JOINS_COUNT_FOR_HEURISTIC_ORDER >= 3;
 
         String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
@@ -180,6 +181,33 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertFalse(lsnr.check());
 
+        // Joins number is enough but the optimization is disabled by a hint for all the joins.
+        sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id " +
+            "JOIN AVERAGE a on a.id = h.id JOIN SMALL ss on ss.id = a.id";
+        physicalPlan(sql, publicSchema);
+        assertFalse(lsnr.check());
+
+        // Joins number is enough but the optimization is disabled by a hint for some joins.
+        sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
+            "(SELECT /*+ ENFORCE_JOIN_ORDER */ h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
+            "JOIN SMALL s2 ON a.id=s2.id) j ON s.id=j.a";
+
+        physicalPlan(sql, publicSchema);
+
+        assertFalse(lsnr.check());
+
+        // Enough joins count and nothing is disabled.
+        sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
+            "(SELECT h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
+            "JOIN SMALL s2 ON a.id=s2.id) j ON s.id=j.a";
+
+        physicalPlan(sql, publicSchema);
+
+        assertTrue(lsnr.check());
+
+        lsnr.reset();
+
+        // Enough joins count and nothing is disabled.
         sql = "SELECT s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
             "JOIN SMALL ss on ss.id = a.id";
 
