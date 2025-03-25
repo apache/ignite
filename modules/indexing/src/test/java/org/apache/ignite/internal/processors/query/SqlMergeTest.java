@@ -38,6 +38,10 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
     /** Node. */
     protected IgniteEx node;
 
+    /** */
+    private final LogListener logLsnr = LogListener
+        .matches("The search row by explicit KEY isn't supported. The primary key is always used to search row")
+        .build();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -59,6 +63,10 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         super.beforeTest();
 
         node = srv;
+
+        ListeningTestLogger listeningTestLog = testLog();
+
+        listeningTestLog.registerListener(logLsnr);
     }
 
     /**
@@ -71,21 +79,25 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         checkMergeQuery("MERGE INTO test1 (id, id2, name) VALUES (1, 2, 'Kyle')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1",
             Arrays.asList(1, 2, "Kyle"));
+        assertFalse(logLsnr.check());
 
         checkMergeQuery("MERGE INTO test1 (id2, id, name) VALUES (3, 2, 'Santa Claus')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 2",
             Arrays.asList(2, 3, "Santa Claus"));
+        assertFalse(logLsnr.check());
 
         checkMergeQuery("MERGE INTO test1 (name, id, id2) VALUES ('Holy Jesus', 1, 2), ('Kartman', 3, 4)", 2L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1",
             Arrays.asList(1, 2, "Holy Jesus"));
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 3",
             Arrays.asList(3, 4, "Kartman"));
+        assertFalse(logLsnr.check());
 
         checkMergeQuery("MERGE INTO test1 (id, id2, name) " +
             "SELECT id, id2 * 1000, UPPER(name) FROM test1 WHERE id < 2", 1L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1 AND id2 = 2000",
             Arrays.asList(1, 2000, "HOLY JESUS"));
+        assertFalse(logLsnr.check());
     }
 
     /**
@@ -93,27 +105,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testCheckKeysWarning() throws Exception {
-        LogListener logLsnr = LogListener
-            .matches("The search row by explicit KEY isn't supported. The primary key is always used to search row")
-            .build();
-
-        ListeningTestLogger listeningTestLog = testLog();
-
-        listeningTestLog.registerListener(logLsnr);
-
         sql("CREATE TABLE test2 (id INT, id2 INT, name VARCHAR, PRIMARY KEY (id, id2))");
-
-        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(_key) VALUES (100, 1, 'Bob')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 100",
-            Arrays.asList(100, 1, "Bob"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
-
-        checkMergeQuery("MERGE INTO test2 (id2, id, name) KEY(_key) VALUES (2, 100, 'Alice')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 100 AND id2 = 2",
-            Arrays.asList(100, 2, "Alice"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
 
         checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(id, id2) VALUES (3, 5, 'Stan')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 3",

@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
@@ -826,9 +827,16 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
 
-        if (!F.isEmpty(MERGE_KEYS.get(merge))) {
-            log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
-                "[sql=" + merge.getSQL() + ']');
+        Column[] srcKeys = MERGE_KEYS.get(merge);
+
+        if (!F.isEmpty(srcKeys)) {
+            GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
+            Column[] pkCols = intoTbl.getPrimaryKey().getColumns();
+
+            if (!Arrays.equals(srcKeys, pkCols)) {
+                log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
+                    "[columns=" + Arrays.toString(srcKeys) + ']');
+            }
         }
 
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
