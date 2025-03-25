@@ -111,7 +111,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -155,7 +154,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     private BinaryContext binaryCtx;
 
     /** */
-    private Marshaller marsh;
+    private final BinaryMarshaller marsh;
 
     /** */
     private GridBinaryMarshaller binaryMarsh;
@@ -285,15 +284,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 }
             };
 
-            BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
-
             binaryCtx = useTestBinaryCtx ?
                 new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class)) :
                 new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
-            bMarsh0.setBinaryContext(binaryCtx, ctx.config());
+            marsh.setBinaryContext(binaryCtx, ctx.config());
 
             binaryMarsh = new GridBinaryMarshaller(binaryCtx);
 
@@ -1173,8 +1170,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
         boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName());
-
-        AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
 
         AffinityKeyMapper dfltAffMapper = binaryEnabled ?
             new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
