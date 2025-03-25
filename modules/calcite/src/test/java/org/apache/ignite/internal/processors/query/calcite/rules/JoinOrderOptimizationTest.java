@@ -105,16 +105,6 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         int ordSz = 20000;
         int ordDetSz = 100000;
 
-        sql("CREATE TABLE Warehouses (WrhId INT PRIMARY KEY, WrhNm VARCHAR(100), LocNm VARCHAR(100))");
-        sql("INSERT INTO Warehouses SELECT x, 'Wrh_' || x::VARCHAR, 'Location_' || x::VARCHAR FROM system_range(1, ?)", warehsSz);
-
-        sql("CREATE TABLE Categories (CatgId INT PRIMARY KEY, CatgName VARCHAR(100))");
-        sql("INSERT INTO Categories SELECT x, 'Category_' || x::VARCHAR FROM system_range(1, ?)", catgSz);
-
-        sql("CREATE TABLE Reviews (RevId INT PRIMARY KEY, ProdId INT, usrId INT, RevTxt VARCHAR, Rating INT)");
-        sql("INSERT INTO Reviews SELECT x, 1 + RAND_INTEGER(?), 1 + RAND_INTEGER(?), 'Prod. review ' || x::VARCHAR, 1 + RAND_INTEGER(4) " +
-            "FROM system_range(1, ?)", prodSz - 1, usrSz - 1, reviewSz);
-
         sql("CREATE TABLE Products (ProdId INT PRIMARY KEY, ProdNm VARCHAR(100), Price DECIMAL(10, 2)) WITH \"VALUE_TYPE='PROD'\"");
         sql("INSERT INTO Products SELECT x, 'Product_' || x::VARCHAR, 100.0 + x % 100.0 FROM system_range(1, ?)",
             prodSz);
@@ -135,13 +125,24 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         sql("INSERT INTO Users SELECT x, 'User_' || x::VARCHAR, 'email_' || x::VARCHAR || '@nowhere.xyz' FROM system_range(1, ?)",
             usrSz);
 
-        sql("CREATE TABLE Orders (OrdId INT PRIMARY KEY, UsrId INT, OrdDate DATE, TotalAmount DECIMAL(10, 2))  WITH \"VALUE_TYPE='ORD'\"");
-        sql("INSERT INTO Orders SELECT x, 1 + RAND_INTEGER(?), date '2025-02-10' + (x % 365)::INTERVAL DAYS, " +
-            "1 + x % 10 FROM system_range(1, ?)", usrSz - 1, ordSz);
+        sql("CREATE TABLE Orders (OrdId INT PRIMARY KEY, UsrId INT, ProdId INT, OrdDate DATE, TotalAmount DECIMAL(10, 2)) " +
+            "WITH \"VALUE_TYPE='ORD'\"");
+        sql("INSERT INTO Orders SELECT x, 1 + RAND_INTEGER(?), 1 + RAND_INTEGER(?), date '2025-02-10' + (x % 365)::INTERVAL DAYS, " +
+            "1 + x % 10 FROM system_range(1, ?)", usrSz - 1, prodSz, ordSz);
 
         sql("CREATE TABLE OrderDetails (OrdDetId INT PRIMARY KEY, OrdId INT, ProdId INT, Qnty INT)  WITH \"VALUE_TYPE='ORD_DET'\"");
         sql("INSERT INTO OrderDetails SELECT x, 1 + RAND_INTEGER(?), 1 + RAND_INTEGER(?), 1 + x % 10 FROM system_range(1, ?)",
             ordSz - 1, prodSz - 1, ordDetSz);
+
+        sql("CREATE TABLE Warehouses (WrhId INT PRIMARY KEY, WrhNm VARCHAR(100), LocNm VARCHAR(100))");
+        sql("INSERT INTO Warehouses SELECT x, 'Wrh_' || x::VARCHAR, 'Location_' || x::VARCHAR FROM system_range(1, ?)", warehsSz);
+
+        sql("CREATE TABLE Categories (CatgId INT PRIMARY KEY, CatgName VARCHAR(100))");
+        sql("INSERT INTO Categories SELECT x, 'Category_' || x::VARCHAR FROM system_range(1, ?)", catgSz);
+
+        sql("CREATE TABLE Reviews (RevId INT PRIMARY KEY, ProdId INT, usrId INT, RevTxt VARCHAR, Rating INT)");
+        sql("INSERT INTO Reviews SELECT x, 1 + RAND_INTEGER(?), 1 + RAND_INTEGER(?), 'Prod. review ' || x::VARCHAR, 1 + RAND_INTEGER(4) " +
+            "FROM system_range(1, ?)", prodSz - 1, usrSz - 1, reviewSz);
     }
 
     /** Tests that query result doesn't change with the joins order optimization. */
@@ -165,8 +166,6 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         assertFalse(logLsnr.check());
 
         assertFalse(expectedResult.isEmpty());
-
-        qry = qry.replaceAll("SELECT", "SELECT /*+ NO_NL_JOIN */");
 
         QueryChecker checker = assertQuery(qry);
 
@@ -245,12 +244,20 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND P.ProdId = D.ProdId\n"
                 + "  AND W.WrhId = (P.ProdId % 5 + 1)",
 
-            // Produces a correlate.
-            "SELECT OD.OrdDetId, O.OrdId, P.ProdId, (SELECT sum(Qnty) from OrderDetails C where OD.OrdId=C.OrdDetId " +
-                "and OD.OrdId<>2) as corr " +
+            // Correlated query.
+            "SELECT OD.OrdDetId, O.OrdId, P.ProdId, " +
+                "(SELECT MAX(C.ShippDate) from Shipping C where C.OrdId=OD.OrdId) as corr " +
                 "from OrderDetails OD " +
                 "JOIN Orders O on O.OrdId = OD.OrdId " +
-                "JOIN Products P on P.ProdId = OD.ProdId"
+                "JOIN Products P on P.ProdId = OD.ProdId",
+
+            // Yet another correlated query.
+            "SELECT S.ShippDate, O.OrdId, P.ProdId, " +
+                "(SELECT MAX(C.Qnty) from OrderDetails C where C.OrdId=O.OrdId and C.ProdId=O.ProdId) as corr, " +
+                "(SELECT AVG(C2.TotalAmount) from Orders C2 where C2.ProdId=O.ProdId) as corr2 " +
+                "from Shipping S " +
+                "JOIN Orders O on O.OrdId = S.OrdId " +
+                "JOIN Products P on P.ProdId = O.ProdId"
         );
     }
 

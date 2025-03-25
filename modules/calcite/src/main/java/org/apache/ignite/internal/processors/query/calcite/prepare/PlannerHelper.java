@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PlannerHelper {
@@ -224,7 +225,7 @@ public class PlannerHelper {
         IgniteLogger log = Commons.context(root).logger();
 
         if (log.isDebugEnabled())
-            log.debug("Joins order optimization took " + time + " nanos.");
+            log.debug("Joins order optimization took " + U.nanosToMillis(time) + "ms.");
 
         return res;
     }
