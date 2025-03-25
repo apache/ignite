@@ -661,7 +661,7 @@ NOTE: The Kafka-to-Ignite applier starts alongside the destination cluster and u
 * You can verify CDC replication with the `--check-cdc` option.  Use it in parallel with Active-Passive or Active-Active replication setups. To initiate a CDC check for a specific entry, run:
 
 ```
-./cdc-start-up.sh --check-cdc --key keyVal --value '{"val": 1, "ver": 1}' --cluster 1
+./cdc-start-up.sh --check-cdc --key keyVal --value '{"val": "123", "ver": "XXX"}' --cluster 1
 ```
 
 This command inserts the specified entry into the chosen cluster and then monitors the differences between the clusters until the data is fully replicated. Ensure that you specify the entry as a JSON object containing two fields: `"val"` and `"ver"`. The `"val"` field is a String representing the value, and `"ver"` is used as the `conflictResolverField` by the `CacheVersionConflictResolverPluginProvider`. To test this with Active-Active replication, push entries into different clusters and observe the results.
@@ -669,20 +669,20 @@ This command inserts the specified entry into the chosen cluster and then monito
 Experiment with different values for the `"ver"` field to understand how the conflict resolver functions. Here’s a recommended sequence of operations for Active-Active testing:
 
 ```
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 1, "ver": 1}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 2, "ver": 2}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 3, "ver": 3}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 2, "ver": 2}' --cluster 2
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "1", "ver": "1"}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "2", "ver": "2"}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "3", "ver": "3"}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "2", "ver": "2"}' --cluster 2
 ```
 This sequence simulates a scenario where the first cluster receives an outdated value from the second.  In this specific case, the data will not be replicated by the last command, and the check will time out after 1 minute.
 
 The example script allows omitting the `"ver"` field in the JSON value.  This simulates an entry insert with a `null` `conflictResolverField` value.  In Active-Passive replication, there will be no difference if the entry has a `null` `conflictResolverField` since the entries originate from the same Active cluster. However, this behavior changes in Active-Active replication. The `conflictResolverField` is used to compare entries originating from different clusters (inserted into different clusters). When the entries have a `null` `conflictResolverField` value, any comparison attempt will result in a NullPointerException (NPE) and no update will occur.  Try the following examples to simulate this scenario:
 
 ```
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 1}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 2}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 3}' --cluster 1
-./cdc-start-up.sh --check-cdc --key 1 --value '{"val": 4}' --cluster 2
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "1"}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "2"}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "3"}' --cluster 1
+./cdc-start-up.sh --check-cdc --key 1 --value '{"val": "4"}' --cluster 2
 ```
 
 The last attempt will not be replicated.  The first cluster will contain Entry[key=1, val=3], and the second will contain Entry[key=1, val=4].  You will also see a corresponding WARN message in the log of the first cluster.  You can also view these values using the `control.sh` utility:
