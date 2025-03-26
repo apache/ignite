@@ -45,7 +45,7 @@ public class SqlPlanHistoryTracker {
      * @param engine SQL engine.
      */
     public void addPlan(String plan, String qry, String schema, boolean loc, String engine) {
-        if (sqlPlanHistory == EMPTY_MAP)
+        if (sqlPlanHistory == EMPTY_MAP || plan.isEmpty())
             return;
 
         SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
