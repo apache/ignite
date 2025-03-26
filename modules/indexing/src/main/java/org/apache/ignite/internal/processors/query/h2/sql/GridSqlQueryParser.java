@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -107,6 +108,7 @@ import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.sqlWithoutConst;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER_EQUAL;
@@ -827,18 +829,6 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
 
-        Column[] srcKeys = MERGE_KEYS.get(merge);
-
-        if (!F.isEmpty(srcKeys)) {
-            GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
-            Column[] pkCols = intoTbl.getPrimaryKey().getColumns();
-
-            if (!Arrays.equals(srcKeys, pkCols)) {
-                log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
-                    "[columns=" + Arrays.toString(srcKeys) + ']');
-            }
-        }
-
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
         if (!srcRows.isEmpty()) {
             List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
@@ -861,6 +851,18 @@ public class GridSqlQueryParser {
         else {
             res.rows(Collections.emptyList());
             res.query(parseQuery(MERGE_QUERY.get(merge)));
+        }
+
+        Column[] srcKeys = MERGE_KEYS.get(merge);
+
+        if (!F.isEmpty(srcKeys)) {
+            GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
+            Column[] pkCols = intoTbl.getPrimaryKey().getColumns();
+
+            if (!Arrays.equals(srcKeys, pkCols)) {
+                LT.warn(log, "The search row by explicit KEY isn't supported. " +
+                    "The primary key is always used to search row [sql=" + sqlWithoutConst(res) + ']');
+            }
         }
 
         return res;

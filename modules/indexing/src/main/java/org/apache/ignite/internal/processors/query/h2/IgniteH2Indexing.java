@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -149,6 +148,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.sqlWithoutConst;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
@@ -1340,23 +1340,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return res;
-    }
-
-    /**
-     * @param stmnt Statement to print.
-     * @return SQL query where constant replaced with '?' char.
-     * @see GridSqlConst#getSQL()
-     * @see QueryUtils#includeSensitive()
-     */
-    private String sqlWithoutConst(GridSqlStatement stmnt) {
-        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
-
-        try {
-            return stmnt.getSQL();
-        }
-        finally {
-            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
-        }
     }
 
     /**

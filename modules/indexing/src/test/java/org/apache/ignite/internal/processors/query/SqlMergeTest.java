@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
+
 /**
  * Tests for SQL MERGE.
  */
@@ -43,6 +45,9 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         .matches("The search row by explicit KEY isn't supported. The primary key is always used to search row")
         .build();
 
+    /** */
+    private ListeningTestLogger listeningTestLog;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -52,6 +57,8 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        QueryUtils.INCLUDE_SENSITIVE = DFLT_TO_STRING_INCLUDE_SENSITIVE;
+
         for (String cache : srv.cacheNames())
             srv.cache(cache).destroy();
 
@@ -64,7 +71,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
 
         node = srv;
 
-        ListeningTestLogger listeningTestLog = testLog();
+        listeningTestLog = testLog();
 
         listeningTestLog.registerListener(logLsnr);
     }
@@ -137,12 +144,26 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         assertTrue(logLsnr.check());
         logLsnr.reset();
 
+        LogListener sensitiveLsnr = LogListener.matches("Sherlock").build();
+
+        listeningTestLog.registerListener(sensitiveLsnr);
+
+        // Check sensitive log output.
         checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(name) VALUES (10, -11, 'Sherlock')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 10 and id2=-11",
             Arrays.asList(10, -11, "Sherlock"));
         assertTrue(logLsnr.check());
+        assertTrue(sensitiveLsnr.check());
         logLsnr.reset();
+        sensitiveLsnr.reset();
 
+        QueryUtils.INCLUDE_SENSITIVE = false;
+
+        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(name) VALUES (10, -12, 'Sherlock')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 10 and id2=-12",
+            Arrays.asList(10, -12, "Sherlock"));
+        assertTrue(logLsnr.check());
+        assertFalse(sensitiveLsnr.check());
     }
 
     /**
