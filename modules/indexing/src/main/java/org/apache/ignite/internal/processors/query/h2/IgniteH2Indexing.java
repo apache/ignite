@@ -129,7 +129,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
@@ -195,7 +194,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private UUID nodeId;
 
     /** */
-    private Marshaller marshaller;
+    private BinaryMarshaller marshaller;
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -426,18 +425,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     PreparedStatement stmt = conn.prepareStatement(qry, H2StatementCache.queryFlags(qryDesc));
 
                     // Convert parameters into BinaryObjects.
-                    Marshaller m = ctx.marshaller();
+                    BinaryMarshaller m = ctx.marshaller();
                     byte[] paramsBytes = U.marshal(m, qryParams.arguments());
                     final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-                    Object[] params;
-
-                    if (m instanceof BinaryMarshaller) {
-                        params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
-                            .unmarshal(paramsBytes, ldr));
-                    }
-                    else
-                        params = U.unmarshal(m, paramsBytes, ldr);
+                    Object[] params = BinaryUtils.rawArrayFromBinary(m.binaryMarshaller()
+                        .unmarshal(paramsBytes, ldr));
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
@@ -1660,7 +1653,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             if (msg instanceof GridCacheQueryMarshallable)
-                ((GridCacheQueryMarshallable)msg).unmarshall(ctx.marshaller(), ctx);
+                ((GridCacheQueryMarshallable)msg).unmarshall(ctx);
 
             try {
                 boolean processed = true;
