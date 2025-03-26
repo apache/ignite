@@ -320,7 +320,7 @@ public class IgniteMBeansManager {
      * @param registry registry for registration
      */
     private void registerExternalPluggedCommands(IgniteCommandRegistry registry) {
-        List<Command<?, ?>> cmds = CommandUtils.loadJmxExternalCommands();
+        List<Command<?, ?>> cmds = CommandUtils.loadExternalCommands();
 
         if (log.isDebugEnabled())
             log.debug("Load external plugged commands: " + cmds);

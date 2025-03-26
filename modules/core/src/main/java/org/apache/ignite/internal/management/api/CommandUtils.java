@@ -892,8 +892,8 @@ public class CommandUtils {
     }
 
     /** Load external commands plugged by SPI */
-    public static List<Command<?, ?>> loadJmxExternalCommands() {
-        Iterable<JmxCommandsProvider> it = U.loadService(JmxCommandsProvider.class);
+    public static List<Command<?, ?>> loadExternalCommands() {
+        Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
         return StreamSupport.stream(it.spliterator(),
             false).flatMap(provider -> provider.commands().stream()).collect(Collectors.toList());
     }

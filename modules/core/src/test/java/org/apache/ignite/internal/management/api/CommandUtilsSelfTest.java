@@ -69,7 +69,7 @@ public class CommandUtilsSelfTest {
 
     /**  */
     @Test
-    public void testLoadJmxExternalCommands() {
-        assertFalse(CommandUtils.loadJmxExternalCommands().isEmpty());
+    public void testLoadExternalCommands() {
+        assertFalse(CommandUtils.loadExternalCommands().isEmpty());
     }
 }

@@ -5,7 +5,7 @@ import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** @inheritDoc */
-public class TestJmxCommandsProvider implements JmxCommandsProvider {
+public class TestCommandsProvider implements CommandsProvider {
     /** @inheritDoc */
     @Override public Collection<Command<?, ?>> commands() {
         return List.of(new Command<>() {
