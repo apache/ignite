@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -37,7 +37,6 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -46,9 +45,7 @@ import org.junit.Test;
  *
  */
 public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAbstractTest {
-    /**
-     *
-     */
+    /** */
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
@@ -63,7 +60,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
 
             cleanPersistenceDir(true);
 
-            IgniteEx curIgn = startGrid(getCurrentIgniteConfiguration(incrementalSnp, consistentId, customSnpPath));
+            IgniteEx curIgn = startGrid(currentIgniteConfiguration(incrementalSnp, consistentId, customSnpPath));
 
             curIgn.cluster().state(ClusterState.ACTIVE);
 
@@ -81,27 +78,21 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private void checkSnapshot(IgniteEx curIgn) {
-        curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.getName())).get();
+        curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.name())).get();
 
-        checkCaches(curIgn, cacheGrpInfo, BASE_CACHE_SIZE);
+        cacheGrpInfo.checkCaches(curIgn, BASE_CACHE_SIZE);
     }
 
-    /**
-     *
-     */
+    /** */
     private void checkIncrementalSnapshot(IgniteEx curIgn) {
-        curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.getName()), 1).get();
+        curIgn.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.name()), 1).get();
 
-        checkCaches(curIgn, cacheGrpInfo, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
+        cacheGrpInfo.checkCaches(curIgn, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
     }
 
-    /**
-     *
-     */
+    /** */
     private void checkCacheDump(IgniteEx curIgn) throws IgniteCheckedException {
         Map<String, Integer> foundCacheSizes = new ConcurrentHashMap<>();
 
@@ -128,7 +119,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
 
                     assertNotNull(ccfg);
 
-                    assertEquals(cacheGrpInfo.getName(), ccfg.getGroupName());
+                    assertEquals(cacheGrpInfo.name(), ccfg.getGroupName());
 
                     foundCacheNames.add(ccfg.getName());
                 });
@@ -143,7 +134,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
                     Integer key = (Integer)de.key();
                     String val = (String)de.value();
 
-                    for (String cacheName : cacheGrpInfo.getCacheNamesList()) {
+                    for (String cacheName : cacheGrpInfo.cacheNamesList()) {
                         if (val.startsWith(cacheName)) {
                             assertEquals(calcValue(cacheName, key), val);
 
@@ -162,22 +153,21 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
 
         new DumpReader(new DumpReaderConfiguration(
             CACHE_DUMP_NAME,
-            customSnpPath ? getCustomSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
+            customSnpPath ? customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
             curIgn.configuration(),
             consumer
         ), log).run();
 
-        cacheGrpInfo.getCacheNamesList().forEach(
+        cacheGrpInfo.cacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
         );
 
-        assertEquals(cacheGrpInfo.getCacheNamesSet(), foundCacheNames);
+        assertTrue(cacheGrpInfo.cacheNamesList().containsAll(foundCacheNames));
+        assertEquals(cacheGrpInfo.cacheNamesList().size(), foundCacheNames.size());
     }
 
-    /**
-     *
-     */
-    private @NotNull IgniteConfiguration getCurrentIgniteConfiguration(
+    /** */
+    private @NotNull IgniteConfiguration currentIgniteConfiguration(
         boolean incrementalSnp,
         String consistentId,
         boolean customSnpPath
@@ -191,91 +181,25 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
     }
 
     /**
-     *
-     */
-    private static String getCustomSnapshotPath(String relativePath,
-        boolean forSnapshotTake) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, forSnapshotTake).getAbsolutePath();
-    }
-
-    /**
-     *
-     */
-    private static void addItemsToCacheGrp(Ignite ign, CacheGroupInfo cacheGrpInfo, int startIdx, int cnt) {
-        for (String cacheName : cacheGrpInfo.getCacheNamesList())
-            addItemsToCache(ign.cache(cacheName), startIdx, cnt);
-    }
-
-    /**
-     *
-     */
-    private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
-        for (int i = startIdx; i < startIdx + cnt; ++i)
-            cache.put(i, calcValue(cache.getName(), i));
-    }
-
-    /**
-     *
-     */
-    private static void checkCaches(Ignite ign, CacheGroupInfo cacheGrpInfo, int expectedCacheSize) {
-        for (String cacheName : cacheGrpInfo.getCacheNamesList()) {
-            IgniteCache<Integer, String> cache = ign.cache(cacheName);
-
-            assertNotNull(cache);
-
-            checkCache(cache, expectedCacheSize);
-        }
-    }
-
-    /**
-     *
-     */
-    private static void checkCache(IgniteCache<Integer, String> cache, int expectedSize) {
-        assertEquals(expectedSize, cache.size());
-
-        for (int i = 0; i < expectedSize; ++i)
-            assertEquals(calcValue(cache.getName(), i), cache.get(i));
-    }
-
-    /**
-     *
-     */
-    private static String calcValue(String cacheName, int key) {
-        return cacheName + "-organization-" + key;
-    }
-
-    /**
      * Configuration closure both for old and current Ignite version.
      */
     private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /**
-         *
-         */
+        /** */
         private final String consistentId;
 
-        /**
-         *
-         */
+        /** */
         private final boolean incrementalSnp;
 
-        /**
-         *
-         */
+        /** */
         private final boolean customSnpPath;
 
-        /**
-         *
-         */
+        /** */
         private final boolean forSnapshotTake;
 
-        /**
-         *
-         */
+        /** */
         private final CacheGroupInfo cacheGrpInfo;
 
-        /**
-         *
-         */
+        /** */
         public ConfigurationClosure(
             boolean incrementalSnp,
             String consistentId,
@@ -290,9 +214,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
             this.cacheGrpInfo = cacheGrpInfo;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration igniteConfiguration) {
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
@@ -307,14 +229,17 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
 
             if (forSnapshotTake)
                 igniteConfiguration.setCacheConfiguration(
-                    cacheGrpInfo.getCacheNamesList().stream()
-                        .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName).setGroupName(cacheGrpInfo.getName()))
+                    cacheGrpInfo.cacheNamesList().stream()
+                        .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
+                            .setGroupName(cacheGrpInfo.name())
+                            .setAffinity(new RendezvousAffinityFunction(false, 10))
+                        )
                         .toArray(CacheConfiguration[]::new)
                 );
 
             if (customSnpPath) {
                 try {
-                    igniteConfiguration.setSnapshotPath(getCustomSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, forSnapshotTake));
+                    igniteConfiguration.setSnapshotPath(customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, forSnapshotTake));
                 }
                 catch (IgniteCheckedException e) {
                     throw new RuntimeException(e);
@@ -327,45 +252,35 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
      * Post startup closure for old Ignite version.
      */
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
-        /**
-         *
-         */
+        /** */
         private final boolean incrementalSnp;
 
-        /**
-         *
-         */
+        /** */
         private final boolean cacheDump;
 
-        /**
-         *
-         */
+        /** */
         private final CacheGroupInfo cacheGrpInfo;
 
-        /**
-         *
-         */
+        /** */
         public PostStartupClosure(boolean incrementalSnp, boolean cacheDump, CacheGroupInfo cacheGrpInfo) {
             this.incrementalSnp = incrementalSnp;
             this.cacheDump = cacheDump;
             this.cacheGrpInfo = cacheGrpInfo;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void apply(Ignite ign) {
             ign.cluster().state(ClusterState.ACTIVE);
 
-            addItemsToCacheGrp(ign, cacheGrpInfo, 0, BASE_CACHE_SIZE);
+            cacheGrpInfo.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE);
 
             if (cacheDump)
-                ign.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(cacheGrpInfo.getName())).get();
+                ign.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(cacheGrpInfo.name())).get();
             else
                 ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
             if (incrementalSnp) {
-                addItemsToCacheGrp(ign, cacheGrpInfo, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
+                cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
 
                 ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
             }
