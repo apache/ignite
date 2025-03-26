@@ -173,7 +173,9 @@ public class PlannerHelper {
 
         jf.visit(root);
 
-        if (jf.sourcesCnt() == 0)
+        int joinsCnt = jf.sourcesCnt() - 1;
+
+        if (joinsCnt <= 0)
             return root;
 
         int disabledCnt = 0;
@@ -200,7 +202,7 @@ public class PlannerHelper {
             }
         }
 
-        if (jf.sourcesCnt() - disabledCnt <= JOINS_COUNT_FOR_HEURISTIC_ORDER)
+        if (joinsCnt - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
             return root;
 
         long timing = System.nanoTime();

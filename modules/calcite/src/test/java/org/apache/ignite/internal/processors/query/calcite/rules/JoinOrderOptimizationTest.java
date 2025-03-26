@@ -245,19 +245,21 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 + "  AND W.WrhId = (P.ProdId % 5 + 1)",
 
             // Correlated query.
-            "SELECT OD.OrdDetId, O.OrdId, P.ProdId, " +
+            "SELECT OD.OrdDetId, O.OrdId, P.ProdId, U.UsrNm, " +
                 "(SELECT MAX(C.ShippDate) from Shipping C where C.OrdId=OD.OrdId) as corr " +
                 "from OrderDetails OD " +
                 "JOIN Orders O on O.OrdId = OD.OrdId " +
-                "JOIN Products P on P.ProdId = OD.ProdId",
+                "JOIN Products P on P.ProdId = OD.ProdId " +
+                "JOIN Users U on O.UsrId = U.UsrId",
 
             // Yet another correlated query.
-            "SELECT S.ShippDate, O.OrdId, P.ProdId, " +
+            "SELECT S.ShippDate, O.OrdId, P.ProdId, U.UsrNm, " +
                 "(SELECT MAX(C.Qnty) from OrderDetails C where C.OrdId=O.OrdId and C.ProdId=O.ProdId) as corr, " +
                 "(SELECT AVG(C2.TotalAmount) from Orders C2 where C2.ProdId=O.ProdId) as corr2 " +
                 "from Shipping S " +
                 "JOIN Orders O on O.OrdId = S.OrdId " +
-                "JOIN Products P on P.ProdId = O.ProdId"
+                "JOIN Products P on P.ProdId = O.ProdId " +
+                "JOIN Users U on O.UsrId = U.UsrId"
         );
     }
 
