@@ -83,7 +83,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private CacheGroupInfo cacheGrpInfo;
 
     /** */
-    private class CacheGroupInfo {
+    private static class CacheGroupInfo {
         /** */
         public CacheGroupInfo(String name, List<String> cacheNames) {
             this.name = name;
@@ -419,9 +419,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private static String getCustomSnapshotPath(String relativePath, boolean forSnapshotTake) throws IgniteCheckedException {
-        File exSnpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, forSnapshotTake);
-
-        return exSnpDir.getAbsolutePath();
+        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, forSnapshotTake).getAbsolutePath();
     }
 
     /** */
