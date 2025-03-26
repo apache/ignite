@@ -152,8 +152,8 @@ public class PlannerHelper {
     }
 
     /**
-     * To prevent long join order planning, disables {@link JoinCommuteRule} and {@link JoinPushThroughJoinRule} rules
-     * if joins count reaches the thresholds.
+     * To prevent long join order planning, disables {@link JoinCommuteRule} and/or {@link JoinPushThroughJoinRule} rules
+     * if the joins count reaches the thresholds.
      */
     private static void fastenJoinsOrder(IgnitePlanner planner, RelNode rel) {
         JoinsFinder jf = new JoinsFinder();
