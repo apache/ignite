@@ -818,7 +818,7 @@ final class ReliableChannel implements AutoCloseable {
         if (partitionAwarenessEnabled && channelsCnt.get() > 1)
             fixedAttemptsLimit++;
 
-        while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
+        while (fixedAttemptsLimit > F.size(failures)) {
             ClientChannelHolder hld = null;
             ClientChannel c = null;
 
@@ -919,6 +919,10 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException e) {
                     if (shouldRetry(op, 0, e)) {
                         // In case of stale channel try to reconnect to the same channel and repeat the operation.
+                        failures = new ArrayList<>();
+
+                        failures.add(e);
+
                         onChannelFailure(hld, channel, e, null);
 
                         channel = hld.getOrCreateChannel();
@@ -930,7 +934,9 @@ final class ReliableChannel implements AutoCloseable {
                 }
             }
             catch (ClientConnectionException e) {
-                failures = new ArrayList<>();
+                if (failures == null)
+                    failures = new ArrayList<>();
+
                 failures.add(e);
 
                 onChannelFailure(hld, channel, e, failures);
@@ -975,10 +981,6 @@ final class ReliableChannel implements AutoCloseable {
 
         try {
             boolean res = plc.shouldRetry(ctx);
-
-            // Setting retryLimit in clientCfg to 1 disables connection retry attempts.
-            if (clientCfg.getRetryLimit() == 1)
-                res = false;
 
             if (log.isDebugEnabled())
                 log.debug("Retry policy returned " + res + " [op=" + op + ", iteration=" + iteration + ']');
