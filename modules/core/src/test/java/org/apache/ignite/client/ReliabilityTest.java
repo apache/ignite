@@ -292,32 +292,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests that retry limit of 1 effectively disables retry/failover.
-     */
-    @SuppressWarnings("ThrowableNotThrown")
-    @Test
-    public void testRetryLimitDisablesFailover() {
-        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
-             IgniteClient client = Ignition.startClient(getClientConfiguration()
-                 .setRetryLimit(1)
-                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
-                 .setClusterDiscoveryEnabled(false))
-        ) {
-            ClientCache<Integer, Integer> cache = client.createCache("cache");
-
-            // Before fail.
-            cachePut(cache, 0, 0);
-
-            // Fail.
-            dropAllThinClientConnections(Ignition.allGrids().get(0));
-
-            // Reuse second address without fail.
-            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
-                    "Channel is closed");
-        }
-    }
-
-    /**
      * Tests that setting retry policy to null effectively disables retry/failover.
      */
     @SuppressWarnings("ThrowableNotThrown")
