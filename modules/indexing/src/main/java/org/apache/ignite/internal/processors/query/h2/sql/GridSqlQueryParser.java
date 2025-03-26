@@ -834,8 +834,8 @@ public class GridSqlQueryParser {
             Column[] pkCols = intoTbl.getPrimaryKey().getColumns();
 
             if (!Arrays.equals(srcKeys, pkCols)) {
-                throw new IgniteSQLException("The search row by explicit KEY isn't supported.",
-                    IgniteQueryErrorCode.PARSING);
+                log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
+                    "[columns=" + Arrays.toString(srcKeys) + ']');
             }
         }
 
