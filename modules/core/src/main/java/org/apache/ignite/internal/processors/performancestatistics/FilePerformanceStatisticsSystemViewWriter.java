@@ -78,27 +78,18 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
     @Override public void systemView(SystemView<?> view) {
         try {
             writeString(file, view.name(), cacheIfPossible(view.name()));
-            long startPos = file.getFilePointer();
-
-            file.skipBytes(Long.BYTES);
 
             SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
+
+            file.writeInt(walker.count());
 
             AttributeWriterVisitor attrVisitor = new AttributeWriterVisitor();
             walker.visitAll(attrVisitor);
 
             AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
+
             view.forEach(row -> walker.visitAll(row, valVisitor));
 
-            long endPos = file.getFilePointer();
-
-            long recSize = endPos - startPos;
-
-            file.seek(startPos);
-
-            file.writeLong(recSize);
-
-            file.seek(endPos);
         }
         catch (IOException e) {
             log.error("Failed to close statistics file", e);

@@ -393,7 +393,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
-                sysViewWriter = new FilePerformanceStatisticsSystemViewWriter(ctx, ctx.log(FilePerformanceStatisticsSystemViewWriter.class));
+                sysViewWriter = new FilePerformanceStatisticsSystemViewWriter(ctx);
 
                 writer.start();
                 new IgniteThread(sysViewWriter).start();

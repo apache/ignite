@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.File;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
@@ -146,4 +147,6 @@ public interface FilePerformanceStatisticsWriterSPI {
      */
     void systemView(SystemView<?> sysView);
 
+    /** */
+    File file();
 }
