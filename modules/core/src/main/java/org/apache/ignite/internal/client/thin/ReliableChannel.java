@@ -913,36 +913,31 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 channel = hld.getOrCreateChannel();
 
-                try {
-                    return function.apply(channel);
-                }
-                catch (ClientConnectionException e) {
-                    if (shouldRetry(op, 0, e)) {
-                        // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                        failures = new ArrayList<>();
-
-                        failures.add(e);
-
-                        onChannelFailure(hld, channel, e, null);
-
-                        channel = hld.getOrCreateChannel();
-
-                        return function.apply(channel);
-                    }
-                    else
-                        throw e;
-                }
+                return function.apply(channel);
             }
             catch (ClientConnectionException e) {
-                if (failures == null)
-                    failures = new ArrayList<>();
+                failures = new ArrayList<>();
 
                 failures.add(e);
 
                 onChannelFailure(hld, channel, e, failures);
 
-                if (attemptsLimit == 1 || !shouldRetry(op, 1, e))
-                    throw e;
+                try {
+                    if (shouldRetry(op, 0, e)) {
+                        // In case of stale channel try to reconnect to the same channel and repeat the operation.
+                        channel = hld.getOrCreateChannel();
+
+                        return function.apply(channel);
+                    }
+                }
+                catch (ClientConnectionException err) {
+                    failures.add(err);
+
+                    onChannelFailure(hld, channel, err, failures);
+
+                    if (attemptsLimit == 1)
+                        throw err;
+                }
             }
         }
 
