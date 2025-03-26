@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.persistence;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,6 +58,30 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
+    @Parameterized.Parameter
+    public boolean incrementalSnp;
+
+    /** */
+    @Parameterized.Parameter(1)
+    @Nullable public String consistentId;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public int oldNodesCnt;
+
+    /** */
+    @Parameterized.Parameter(3)
+    public boolean cacheDump;
+
+    /** */
+    @Parameterized.Parameter(4)
+    public boolean customSnpPath;
+
+    /** */
+    @Parameterized.Parameter(5)
+    public boolean testCacheGrp;
+
+    /** */
     private static final String OLD_IGNITE_VERSION = "2.16.0";
 
     /** */
@@ -81,36 +104,6 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     private CacheGroupInfo cacheGrpInfo;
-
-    /** */
-    private static class CacheGroupInfo {
-        /** */
-        public CacheGroupInfo(String name, List<String> cacheNames) {
-            this.name = name;
-            this.cacheNames = cacheNames;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public List<String> getCacheNamesList() {
-            return Collections.unmodifiableList(cacheNames);
-        }
-
-        /** */
-        public Set<String> getCacheNamesSet() {
-            return Set.copyOf(cacheNames);
-        }
-
-        /** */
-        private final String name;
-
-        /** */
-        private final List<String> cacheNames;
-    }
 
     /**
      * The test is parameterized by whether an incremental snapshot is taken and by consistentId.
@@ -154,30 +147,6 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
         cacheGrpInfo = new CacheGroupInfo("test-cache", cacheNames);
     }
-
-    /** */
-    @Parameterized.Parameter
-    public boolean incrementalSnp;
-
-    /** */
-    @Parameterized.Parameter(1)
-    @Nullable public String consistentId;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public int oldNodesCnt;
-
-    /** */
-    @Parameterized.Parameter(3)
-    public boolean cacheDump;
-
-    /** */
-    @Parameterized.Parameter(4)
-    public boolean customSnpPath;
-
-    /** */
-    @Parameterized.Parameter(5)
-    public boolean testCacheGrp;
 
     /** */
     @Test
@@ -313,6 +282,47 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         return cfg;
     }
 
+    /** */
+    private static String getCustomSnapshotPath(String relativePath, boolean forSnapshotTake) throws IgniteCheckedException {
+        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, forSnapshotTake).getAbsolutePath();
+    }
+
+    /** */
+    private static void addItemsToCacheGrp(Ignite ign, CacheGroupInfo cacheGrpInfo, int startIdx, int cnt) {
+        for (String cacheName : cacheGrpInfo.getCacheNamesList())
+            addItemsToCache(ign.cache(cacheName), startIdx, cnt);
+    }
+
+    /** */
+    private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
+        for (int i = startIdx; i < startIdx + cnt; ++i)
+            cache.put(i, calcValue(cache.getName(), i));
+    }
+
+    /** */
+    private static void checkCaches(Ignite ign, CacheGroupInfo cacheGrpInfo, int expectedCacheSize) {
+        for (String cacheName : cacheGrpInfo.getCacheNamesList()) {
+            IgniteCache<Integer, String> cache = ign.cache(cacheName);
+
+            assertNotNull(cache);
+
+            checkCache(cache, expectedCacheSize);
+        }
+    }
+
+    /** */
+    private static void checkCache(IgniteCache<Integer, String> cache, int expectedSize) {
+        assertEquals(expectedSize, cache.size());
+
+        for (int i = 0; i < expectedSize; ++i)
+            assertEquals(calcValue(cache.getName(), i), cache.get(i));
+    }
+
+    /** */
+    private static String calcValue(String cacheName, int key) {
+        return cacheName + "-organization-" + key;
+    }
+
     /**
      * Configuration closure both for old and current Ignite version.
      */
@@ -418,43 +428,32 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    private static String getCustomSnapshotPath(String relativePath, boolean forSnapshotTake) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, forSnapshotTake).getAbsolutePath();
-    }
-
-    /** */
-    private static void addItemsToCacheGrp(Ignite ign, CacheGroupInfo cacheGrpInfo, int startIdx, int cnt) {
-        for (String cacheName : cacheGrpInfo.getCacheNamesList())
-            addItemsToCache(ign.cache(cacheName), startIdx, cnt);
-    }
-
-    /** */
-    private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
-        for (int i = startIdx; i < startIdx + cnt; ++i)
-            cache.put(i, calcValue(cache.getName(), i));
-    }
-
-    /** */
-    private static void checkCaches(Ignite ign, CacheGroupInfo cacheGrpInfo, int expectedCacheSize) {
-        for (String cacheName : cacheGrpInfo.getCacheNamesList()) {
-            IgniteCache<Integer, String> cache = ign.cache(cacheName);
-
-            assertNotNull(cache);
-
-            checkCache(cache, expectedCacheSize);
+    private static class CacheGroupInfo {
+        /** */
+        public CacheGroupInfo(String name, List<String> cacheNames) {
+            this.name = name;
+            this.cacheNames = cacheNames;
         }
-    }
 
-    /** */
-    private static void checkCache(IgniteCache<Integer, String> cache, int expectedSize) {
-        assertEquals(expectedSize, cache.size());
+        /** */
+        public String getName() {
+            return name;
+        }
 
-        for (int i = 0; i < expectedSize; ++i)
-            assertEquals(calcValue(cache.getName(), i), cache.get(i));
-    }
+        /** */
+        public List<String> getCacheNamesList() {
+            return Collections.unmodifiableList(cacheNames);
+        }
 
-    /** */
-    private static String calcValue(String cacheName, int key) {
-        return cacheName + "-organization-" + key;
+        /** */
+        public Set<String> getCacheNamesSet() {
+            return Set.copyOf(cacheNames);
+        }
+
+        /** */
+        private final String name;
+
+        /** */
+        private final List<String> cacheNames;
     }
 }
