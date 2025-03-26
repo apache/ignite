@@ -91,6 +91,7 @@ import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
 import org.h2.expression.TableFunction;
 import org.h2.expression.ValueExpression;
+import org.h2.index.Index;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
@@ -853,13 +854,17 @@ public class GridSqlQueryParser {
             res.query(parseQuery(MERGE_QUERY.get(merge)));
         }
 
-        Column[] srcKeys = MERGE_KEYS.get(merge);
+        Column[] srcKeys0 = MERGE_KEYS.get(merge);
 
-        if (!F.isEmpty(srcKeys)) {
-            GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
-            Column[] pkCols = intoTbl.getPrimaryKey().getColumns();
+        if (!F.isEmpty(srcKeys0)) {
+            ArrayList<Index> idxs = DmlAstUtils.gridTableForElement(tbl).dataTable().getIndexes();
 
-            if (!Arrays.equals(srcKeys, pkCols)) {
+            boolean matchPkCols = idxs.stream()
+                .filter(idx -> idx.getIndexType().isPrimaryKey())
+                .anyMatch(idx -> Arrays.equals(srcKeys0, idx.getColumns())
+                    || F.eqNotOrdered(Arrays.asList(srcKeys0), Arrays.asList(idx.getColumns())));
+
+            if (!matchPkCols) {
                 LT.warn(log, "The search row by explicit KEY isn't supported. " +
                     "The primary key is always used to search row [sql=" + sqlWithoutConst(res) + ']');
             }

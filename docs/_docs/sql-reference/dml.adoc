@@ -270,15 +270,11 @@ SELECT sum(FIRST_COLUMN) FROM cte2;
 
 Merge data into a table.
 
-
 [source,sql]
 ----
 MERGE INTO tableName [(columnName [,...])]
-  [KEY (columnName [,...])]
   {VALUES {({ DEFAULT | expression } [,...])} [,...] | select}
 ----
-
-
 
 === Parameters
 - `tableName` - the name of the table to be updated.
@@ -291,6 +287,8 @@ Because Ignite stores all the data in a form of key-value pairs, all the `MERGE`
 
 `MERGE` is one of the most straightforward operations because it is translated into `cache.put(...)` and `cache.putAll(...)` operations depending on the number of rows that need to be inserted or updated as part of the `MERGE` query.
 
+NOTE: The search row by explicit KEY isn't supported. The primary key is always used to search row.
+
 ////
 Refer to the *TODO* link:https://apacheignite-sql.readme.io/docs/how-ignite-sql-works#section-concurrent-modifications[concurrent modifications, window=_blank] section, which explains how the SQL engine solves concurrency issues.
 ////
@@ -299,7 +297,6 @@ Refer to the *TODO* link:https://apacheignite-sql.readme.io/docs/how-ignite-sql-
 === Examples
 Merge some rows into the `Person` table:
 
-
 [source,sql]
 ----
 MERGE INTO Person(id, name, city_id) VALUES
@@ -307,9 +304,7 @@ MERGE INTO Person(id, name, city_id) VALUES
         (2, 'Mary Jones', 5);
 ----
 
-
 Fill in the `Person` table with the data retrieved from the `Account` table:
-
 
 [source,sql]
 ----
@@ -317,8 +312,6 @@ MERGE INTO Person(id, name, city_id)
    (SELECT a.id + 1000, concat(a.firstName, a.secondName), a.city_id
    FROM Account a WHERE a.id > 100 AND a.id < 1000);
 ----
-
-
 
 == DELETE
 
@@ -360,4 +353,3 @@ Delete all the `Persons` with a specific name:
 ----
 DELETE FROM Person WHERE name = 'John Doe';
 ----
-

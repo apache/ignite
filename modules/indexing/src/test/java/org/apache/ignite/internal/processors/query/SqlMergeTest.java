@@ -105,6 +105,30 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1 AND id2 = 2000",
             Arrays.asList(1, 2000, "HOLY JESUS"));
         assertFalse(logLsnr.check());
+
+        checkMergeQuery("MERGE INTO test1 (id, id2, name) KEY(_key) VALUES (100, 1, 'Bob')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 100",
+            Arrays.asList(100, 1, "Bob"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
+
+        checkMergeQuery("MERGE INTO test1 (id2, id, name) KEY(id, id2) VALUES (2, 100, 'Alice')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 100 AND id2 = 2",
+            Arrays.asList(100, 2, "Alice"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
+
+        checkMergeQuery("MERGE INTO test1 (id, id2, name) KEY(id, id2) VALUES (6, 5, 'Stan')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 6",
+            Arrays.asList(6, 5, "Stan"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
+
+        checkMergeQuery("MERGE INTO test1 (id, id2, name) KEY(id2, id) VALUES (10, 100, 'Satan')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 10",
+            Arrays.asList(10, 100, "Satan"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
     }
 
     /**
@@ -113,18 +137,6 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
     @Test
     public void testCheckKeysWarning() throws Exception {
         sql("CREATE TABLE test2 (id INT, id2 INT, name VARCHAR, PRIMARY KEY (id, id2))");
-
-        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(id, id2) VALUES (3, 5, 'Stan')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 3",
-            Arrays.asList(3, 5, "Stan"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
-
-        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(id2, id) VALUES (1, 100, 'Satan')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 1",
-            Arrays.asList(1, 100, "Satan"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
 
         checkMergeQuery("MERGE INTO test2 (id2, id, name) KEY(id) VALUES (15, 32, 'Kyle')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 32",
