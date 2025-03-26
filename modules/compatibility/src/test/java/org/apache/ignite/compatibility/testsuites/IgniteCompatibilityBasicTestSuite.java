@@ -49,7 +49,7 @@ import org.junit.runners.Suite;
     JavaThinCompatibilityTest.class,
     IgnitePKIndexesMigrationToUnwrapPkTest.class,
     CompoundIndexCompatibilityTest.class,
-    SnapshotCompatibilityTest.class
+    SnapshotCompatibilityTest.class,
     NodeFileTreeTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {
