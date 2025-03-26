@@ -1098,11 +1098,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return obj instanceof BinaryObject;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
-        return marsh instanceof BinaryMarshaller;
-    }
-
     /**
      * Get affinity key field.
      *
@@ -1166,8 +1161,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
 
-        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
-            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
+        boolean storeVal = !ccfg.isCopyOnRead();
 
         boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName());
 
@@ -1183,7 +1177,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
-            ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),
+            false,
             binaryEnabled
         );
     }

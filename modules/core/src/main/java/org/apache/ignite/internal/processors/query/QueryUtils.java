@@ -472,8 +472,6 @@ public class QueryUtils {
         throws IgniteCheckedException {
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
-        boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
@@ -507,7 +505,7 @@ public class QueryUtils {
 
         desc.tableName(qryEntity.getTableName());
 
-        if (binaryEnabled && !keyOrValMustDeserialize) {
+        if (!keyOrValMustDeserialize) {
             // Safe to check null.
             if (SQL_TYPES.contains(valCls))
                 desc.valueClass(valCls);
@@ -534,7 +532,7 @@ public class QueryUtils {
         desc.keyFieldName(qryEntity.getKeyFieldName());
         desc.valueFieldName(qryEntity.getValueFieldName());
 
-        if (binaryEnabled && keyOrValMustDeserialize) {
+        if (keyOrValMustDeserialize) {
             if (keyMustDeserialize)
                 mustDeserializeClss.add(keyCls);
 
@@ -547,7 +545,7 @@ public class QueryUtils {
 
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
 
-        if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+        if (valCls == null || !keyOrValMustDeserialize) {
             processBinaryMeta(ctx, qryEntity, desc);
 
             typeId = new QueryTypeIdKey(cacheName, valTypeId);
