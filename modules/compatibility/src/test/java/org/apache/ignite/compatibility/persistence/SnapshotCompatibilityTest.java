@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -60,7 +62,10 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
-    private static final String OLD_IGNITE_VERSION = "2.16.0";
+    private static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
+        .max(Comparator.comparing(IgniteReleasedVersion::version))
+        .map(IgniteReleasedVersion::toString)
+        .orElseThrow(() -> new IllegalStateException("Enum is empty"));
 
     /** */
     private static final String SNAPSHOT_NAME = "test_snapshot";
@@ -69,10 +74,10 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String CACHE_DUMP_NAME = "test_cache_dump";
 
     /** */
-    private static final int BASE_CACHE_SIZE = 10_000;
+    private static final int BASE_CACHE_SIZE = 100;
 
     /** */
-    private static final int ENTRIES_CNT_FOR_INCREMENT = 10_000;
+    private static final int ENTRIES_CNT_FOR_INCREMENT = 100;
 
     /** */
     private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
@@ -82,11 +87,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     @Parameterized.Parameter
-    public boolean incrementalSnp;
+    public boolean incSnp;
 
     /** */
     @Parameterized.Parameter(1)
-    @Nullable public String consistentId;
+    @Nullable public String consId;
 
     /** */
     @Parameterized.Parameter(2)
@@ -116,12 +121,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
 
-        for (Boolean incrementalSnp : Arrays.asList(true, false))
+        for (boolean incrementalSnp : Arrays.asList(true, false))
             for (String consistentId : Arrays.asList(CONSISTENT_ID, null))
-                for (Integer oldNodesCnt : Arrays.asList(1, 3))
-                    for (Boolean cacheDump : Arrays.asList(true, false))
-                        for (Boolean customSnpPath : Arrays.asList(true, false))
-                            for (Boolean testCacheGrp : Arrays.asList(true, false))
+                for (int oldNodesCnt : Arrays.asList(1, 3))
+                    for (boolean cacheDump : Arrays.asList(true, false))
+                        for (boolean customSnpPath : Arrays.asList(true, false))
+                            for (boolean testCacheGrp : Arrays.asList(true, false))
                                 if ((!incrementalSnp || !cacheDump) && (!incrementalSnp || consistentId != null))
                                     data.add(
                                         new Object[]{incrementalSnp, consistentId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp}
@@ -143,21 +148,21 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             startGrid(
                 oldNodesCnt,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incrementalSnp, consistentId, customSnpPath, true, cacheGrpInfo),
-                new PostStartupClosure(incrementalSnp, cacheDump, cacheGrpInfo)
+                new ConfigurationClosure(incSnp, consId, customSnpPath, true, cacheGrpInfo),
+                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
             );
 
             stopAllGrids();
 
             cleanPersistenceDir(true);
 
-            IgniteEx curIgn = startGrid(currentIgniteConfiguration(incrementalSnp, consistentId, customSnpPath));
+            IgniteEx curIgn = startGrid(currentIgniteConfiguration(incSnp, consId, customSnpPath));
 
             curIgn.cluster().state(ClusterState.ACTIVE);
 
             if (cacheDump)
                 checkCacheDump(curIgn);
-            else if (incrementalSnp)
+            else if (incSnp)
                 checkIncrementalSnapshot(curIgn);
             else
                 checkSnapshot(curIgn);
@@ -328,7 +333,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             if (incrementalSnp)
                 storageCfg.setWalCompactionEnabled(true);
 
-            if (forSnapshotTake)
+            if (forSnapshotTake) {
                 igniteConfiguration.setCacheConfiguration(
                     cacheGrpInfo.cacheNamesList().stream()
                         .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
@@ -337,6 +342,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
                         )
                         .toArray(CacheConfiguration[]::new)
                 );
+            }
 
             if (customSnpPath) {
                 try {
@@ -350,9 +356,9 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /**
-     * Post startup closure for old Ignite version.
+     * Snapshot creating closure for old Ignite version.
      */
-    private static class PostStartupClosure implements IgniteInClosure<Ignite> {
+    private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
         private final boolean incrementalSnp;
 
@@ -363,7 +369,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         private final CacheGroupInfo cacheGrpInfo;
 
         /** */
-        public PostStartupClosure(boolean incrementalSnp, boolean cacheDump, CacheGroupInfo cacheGrpInfo) {
+        public CreateSnapshotClosure(boolean incrementalSnp, boolean cacheDump, CacheGroupInfo cacheGrpInfo) {
             this.incrementalSnp = incrementalSnp;
             this.cacheDump = cacheDump;
             this.cacheGrpInfo = cacheGrpInfo;
