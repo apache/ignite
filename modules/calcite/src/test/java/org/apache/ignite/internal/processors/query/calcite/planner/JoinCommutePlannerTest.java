@@ -93,7 +93,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                     IgniteDistributions.affinity(0, "TEST_CACHE", "hash"),
                     "ID", Integer.class);
 
-                publicSchema.addTable("TBL" + i, tbl);
+                publicSchema.addTable(tbl.name(), tbl);
             }
 
             doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false);
