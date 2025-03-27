@@ -40,9 +40,4 @@ interface GridNioWorker {
      * @return Session state change requests.
      */
     @Nullable public List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
-
-    /**
-     * @param ses Session to register write interest for.
-     */
-    public void registerWrite(GridSelectorNioSessionImpl ses);
 }
