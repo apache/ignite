@@ -34,7 +34,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Object> params() {
-        return F.asList(16, 20);
+        return F.asList(16, 19, 20);
     }
 
     /** {@inheritDoc} */
