@@ -35,10 +35,7 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  */
 public class SqlMergeTest extends AbstractIndexingCommonTest {
     /** Node. */
-    private static IgniteEx srv;
-
-    /** Node. */
-    protected IgniteEx node;
+    private IgniteEx srv;
 
     /** */
     private final LogListener logLsnr = LogListener
@@ -69,11 +66,14 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        node = srv;
-
         listeningTestLog = testLog();
 
         listeningTestLog.registerListener(logLsnr);
+    }
+
+    /** @return Node to execute queries. */
+    protected IgniteEx node() {
+        return grid(0);
     }
 
     /**
@@ -204,7 +204,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
      * @return Results.
      */
     protected List<List<?>> sql(String sql) throws Exception {
-        GridQueryProcessor qryProc = node.context().query();
+        GridQueryProcessor qryProc = node().context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC");
 
@@ -219,7 +219,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
     private ListeningTestLogger testLog() {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        GridTestUtils.setFieldValue(((IgniteH2Indexing)node.context().query().getIndexing()).parser(), "log", testLog);
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)node().context().query().getIndexing()).parser(), "log", testLog);
 
         return testLog;
     }

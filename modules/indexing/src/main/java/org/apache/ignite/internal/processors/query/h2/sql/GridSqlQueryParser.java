@@ -109,6 +109,7 @@ import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.sqlWithoutConst;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER;
@@ -856,7 +857,9 @@ public class GridSqlQueryParser {
 
         Column[] srcKeys0 = MERGE_KEYS.get(merge);
 
-        if (!F.isEmpty(srcKeys0)) {
+        boolean isKeyFld = srcKeys0.length == 1 && KEY_FIELD_NAME.equalsIgnoreCase(srcKeys0[0].getName());
+
+        if (!isKeyFld && !F.isEmpty(srcKeys0)) {
             ArrayList<Index> idxs = DmlAstUtils.gridTableForElement(tbl).dataTable().getIndexes();
 
             boolean matchPkCols = idxs.stream()
@@ -1160,7 +1163,7 @@ public class GridSqlQueryParser {
                 throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
         }
 
-        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+        if (cols.containsKey(KEY_FIELD_NAME.toUpperCase()) ||
             cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase())) {
             throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
                 IgniteQueryErrorCode.PARSING);
