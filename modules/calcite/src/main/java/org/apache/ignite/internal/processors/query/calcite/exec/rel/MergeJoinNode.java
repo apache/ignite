@@ -100,6 +100,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
+        context().logger().error("TEST | rewindInternal()");
         requested = 0;
         waitingLeft = 0;
         waitingRight = 0;
@@ -153,6 +154,9 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
+        if (waitingRight == NOT_WAITING)
+            context().logger().error("TEST | pushLeft()");
+
         checkState();
 
         waitingLeft--;
@@ -173,6 +177,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         rightInBuf.add(row);
 
+        context().logger().error("TEST | pushRight()");
+
         join();
     }
 
@@ -182,6 +188,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert waitingLeft > 0;
 
         checkState();
+
+        context().logger().error("TEST | endLeft()");
 
         waitingLeft = NOT_WAITING;
 
@@ -194,6 +202,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert waitingRight > 0;
 
         checkState();
+
+        context().logger().error("TEST | endRight()");
 
         waitingRight = NOT_WAITING;
 
@@ -298,18 +308,26 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         /** {@inheritDoc} */
         @Override protected void join() throws Exception {
+            int processed = 0;
             inLoop = true;
             try {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && (right != null || !rightInBuf.isEmpty()
                     || rightMaterialization != null)) {
                     checkState();
 
+//                    if (processed++ > IN_BUFFER_SIZE) {
+//                        // Allow others to do their job.
+//                        context().execute(this::join, this::onError);
+//
+//                        return;
+//                    }
+
                     if (left == null)
                         left = leftInBuf.remove();
 
                     if (right == null) {
-                        if (rightInBuf.isEmpty() && waitingRight != NOT_WAITING)
-                            break;
+//                        if (rightInBuf.isEmpty() && waitingRight != NOT_WAITING)
+//                            break;
 
                         if (!rightInBuf.isEmpty())
                             right = rightInBuf.remove();

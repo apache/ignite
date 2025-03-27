@@ -6,7 +6,7 @@
 
 
 select
-    sum(l_extendedprice) / 7.0 as avg_yearly
+    *
 from
     lineitem,
     part
@@ -16,7 +16,7 @@ where
     and p_container = 'MED BOX'
     and l_quantity < (
         select
-            0.2 * avg(l_quantity)
+            max(l_quantity)
         from
             lineitem
         where
