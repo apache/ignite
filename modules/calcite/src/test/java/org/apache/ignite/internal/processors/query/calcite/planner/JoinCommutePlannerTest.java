@@ -21,13 +21,11 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelHomogeneousShuttle;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelShuttle;
+import org.apache.calcite.plan.visualizer.RuleMatchVisualizer;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -39,7 +37,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /** Tests correctness applying of JOIN_COMMUTE* rules. */
@@ -85,31 +82,23 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     /** Ensures that join commute rules are disabled if joins count is too high. Checks the tables order in the query. */
     @Test
     public void testCommuteDisabledForManyJoins() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
         int maxJoinsToOptimize = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE);
 
+        // +2 tables because we use 1 more join in the query and 1 extra table for the correlated query.
         int tablesCnt = maxJoinsToOptimize + 3;
 
         try {
             for (int i = 0; i < tablesCnt; ++i) {
-                publicSchema.addTable(
-                    "TBL" + i,
-                    new TestTable(
-                        new RelDataTypeFactory.Builder(f)
-                            .add("ID", f.createJavaType(Integer.class))
-                            .build(), Math.pow(100, (1 + (i % 3)))) {
+                TestTable tbl = createTable("TBL" + i, (int)Math.pow(100, (1 + (i % 3))),
+                    IgniteDistributions.affinity(0, "TEST_CACHE", "hash"),
+                    "ID", Integer.class);
 
-                        @Override public IgniteDistribution distribution() {
-                            return IgniteDistributions.affinity(0, "TEST_CACHE", "hash");
-                        }
-                    }
-                );
+                publicSchema.addTable("TBL" + i, tbl);
             }
 
             doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false, "TBL");
 
-            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 2, true, "TBL");
+            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, true, "TBL");
         }
         finally {
             for (int i = 0; i < tablesCnt; ++i)
@@ -118,62 +107,45 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private void doTestCommuteDisabledForManyJoins(int joinsCnt, boolean withCorrelated, String tblNamePrefix) throws Exception {
+    private void doTestCommuteDisabledForManyJoins(int joinsCnt, boolean addCorrelated, String tblNamePrefix) throws Exception {
         StringBuilder select = new StringBuilder();
         StringBuilder joins = new StringBuilder();
 
         for (int i = 0; i < joinsCnt + 1; ++i) {
-            if (withCorrelated && i == joinsCnt) {
-                String alias = "t" + i;
-
-                select.append("\n(SELECT MAX(").append(alias).append(".id) FROM TBL").append(i).append(" ").append(alias)
-                    .append(" WHERE ").append(alias).append(".id=").append("t0").append(".id + 1) as corr")
-                    .append(i).append(", ");
-
-                continue;
-            }
-
             select.append("\nt").append(i).append(".id, ");
 
             if (i == 0)
                 joins.append("TBL0 t0");
             else {
-                joins.append(" JOIN TBL").append(i).append(" t").append(i).append(" ON t").append(i - 1).append(".id=t")
+                joins.append(" LEFT JOIN TBL").append(i).append(" t").append(i).append(" ON t").append(i - 1).append(".id=t")
                     .append(i).append(".id");
             }
         }
 
-        String sql = "SELECT " + select.substring(0, select.length() - 2) + "\nfrom " + joins;
+        if (addCorrelated) {
+            int tblNum = joinsCnt + 1;
+            String alias = "t" + tblNum;
 
-        long timing = System.nanoTime();
+            select.append("\n(SELECT MAX(").append(alias).append(".id) FROM TBL").append(tblNum).append(" ").append(alias)
+                .append(" WHERE ").append(alias).append(".id>").append("t0").append(".id + 1) as corr")
+                .append(tblNum).append(", ");
+        }
 
-        IgniteRel plan = physicalPlan(sql, publicSchema);
+        String sql = "SELECT " + select.substring(0, select.length() - 2) + "\nFROM " + joins;
 
-        timing = U.nanosToMillis(System.nanoTime() - timing);
+        PlanningContext ctx = plannerCtx(sql, publicSchema);
 
-        if (log.isInfoEnabled())
-            log.info("The planning took " + timing + "ms.");
+        RuleMatchVisualizer lsnr = new RuleMatchVisualizer();
 
-        RelShuttle shuttle = new RelHomogeneousShuttle() {
-            private int prev = Integer.MIN_VALUE;
+        lsnr.attachTo(ctx.cluster().getPlanner());
 
-            @Override public RelNode visit(TableScan scan) {
-                String tblName = Util.last(scan.getTable().getQualifiedName());
+        physicalPlan(ctx);
 
-                assert tblName.startsWith(tblNamePrefix);
+        String lsnrRes = lsnr.getJsonStringResult();
 
-                int tblNum = Integer.parseInt(tblName.replace(tblNamePrefix, ""));
-
-                if (prev == Integer.MIN_VALUE)
-                    prev = tblNum;
-                else if (tblNum < prev)
-                    throw new IllegalStateException("Wrong table number found. Current: " + tblNum + ", previous: " + prev + '.');
-
-                return super.visit(scan);
-            }
-        };
-
-        shuttle.visit(plan);
+        assertFalse(lsnrRes.contains(CoreRules.JOIN_COMMUTE.toString()));
+        assertFalse(lsnrRes.contains(JoinPushThroughJoinRule.LEFT.toString()));
+        assertFalse(lsnrRes.contains(JoinPushThroughJoinRule.RIGHT.toString()));
     }
 
     /** */
