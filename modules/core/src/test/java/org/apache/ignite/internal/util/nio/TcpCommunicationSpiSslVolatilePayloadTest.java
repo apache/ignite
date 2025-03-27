@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -27,6 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -41,6 +44,8 @@ import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -65,6 +70,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * first network packet, wait for the next network packet and finish MESSAGE deserialization.
  *
  */
+@RunWith(Parameterized.class)
 public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
     /** */
     private static final int TEST_ITERATION_CNT = 200;
@@ -80,6 +86,18 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
 
     /** */
     private static final Map<Integer, TestVolatilePayloadMessage> messages = new ConcurrentHashMap<>();
+
+    /** */
+    @Parameterized.Parameter
+    public int idx;
+
+    /**
+     * @return Test parameters.
+     */
+    @Parameterized.Parameters(name = "idx={0}")
+    public static Collection<Object> data() {
+        return IntStream.range(0, 150).boxed().collect(Collectors.toSet());
+    }
 
     /** {@inheritDoc} */
     @Override protected CommunicationSpi<Message> getSpi(int idx) {
