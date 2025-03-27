@@ -862,12 +862,12 @@ public class GridSqlQueryParser {
         if (!isKeyFld && !F.isEmpty(srcKeys0)) {
             ArrayList<Index> idxs = DmlAstUtils.gridTableForElement(tbl).dataTable().getIndexes();
 
-            boolean matchPkCols = idxs.stream()
+            boolean isPkCols = idxs.stream()
                 .filter(idx -> idx.getIndexType().isPrimaryKey())
                 .anyMatch(idx -> Arrays.equals(srcKeys0, idx.getColumns())
                     || F.eqNotOrdered(Arrays.asList(srcKeys0), Arrays.asList(idx.getColumns())));
 
-            if (!matchPkCols) {
+            if (!isPkCols) {
                 LT.warn(log, "The search row by explicit KEY isn't supported. " +
                     "The primary key is always used to search row [sql=" + sqlWithoutConst(res) + ']');
             }
