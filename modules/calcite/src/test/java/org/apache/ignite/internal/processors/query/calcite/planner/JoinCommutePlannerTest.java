@@ -196,14 +196,6 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertFalse(lsnr.check());
 
-        // Joins number is enough with the correlated query. But the optimization is disabled by the hint.
-        sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id, (SELECT MAX(ss.id) FROM SMALL ss WHERE ss.id = a.id + 1) as corr " +
-            "FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
-
-        physicalPlan(sql, publicSchema);
-
-        assertFalse(lsnr.check());
-
         // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
             "(SELECT h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
@@ -216,16 +208,6 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
             "JOIN SMALL ss on ss.id = a.id";
-
-        lsnr.reset();
-
-        physicalPlan(sql, publicSchema);
-
-        assertTrue(lsnr.check());
-
-        // Joins number is enough with the correlated query and nothing is disabled.
-        sql = "SELECT s.id, h.id, a.id, (SELECT MAX(ss.id) FROM SMALL ss WHERE ss.id = a.id + 1) as corr FROM SMALL s " +
-            "JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
 
         lsnr.reset();
 

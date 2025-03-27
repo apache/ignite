@@ -34,14 +34,12 @@ import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
-import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
@@ -51,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
@@ -169,30 +168,15 @@ public class PlannerHelper {
      * @return An node with optimized joins or original {@code root} if didn't optimize.
      */
     private static RelNode optimizeJoinsOrder(IgnitePlanner planner, RelNode root, List<RelHint> topLevelHints) {
-        JoinsFinder jf = new JoinsFinder();
+        List<Join> joins = findNodes(root, Join.class, false);
 
-        jf.visit(root);
-
-        int joinsCnt = jf.sourcesCnt() - 1;
-
-        if (joinsCnt <= 0)
+        if (joins.isEmpty())
             return root;
 
         int disabledCnt = 0;
 
-        Join joinToFilterHints = null;
-
         // If all the joins have the forced order, no need to optimize the joins order at all.
-        for (RelNode joinOrCorr : jf.rels) {
-            // Correlates doesn't accept hints currently.
-            if (!(joinOrCorr instanceof Join))
-                continue;
-
-            assert joinOrCorr instanceof Hintable;
-
-            if (joinToFilterHints == null)
-                joinToFilterHints = (Join)joinOrCorr;
-
+        for (RelNode joinOrCorr : joins) {
             for (RelHint hint : ((Hintable)joinOrCorr).getHints()) {
                 if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName)) {
                     ++disabledCnt;
@@ -202,7 +186,7 @@ public class PlannerHelper {
             }
         }
 
-        if (joinsCnt - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
+        if (joins.size() - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
             return root;
 
         long timing = System.nanoTime();
@@ -211,16 +195,16 @@ public class PlannerHelper {
 
         timing = System.nanoTime() - timing;
 
-        // Still has a MultiJoin, didn't manage to optimize.
-        if (jf.findMultyJoin(res))
+        // Still has a MultiJoin, didn't manage to collect one flat join to optimize.
+        if (!findNodes(res, MultiJoin.class, true).isEmpty())
             return root;
 
         // If a new joins order was proposed, no need to launch another join order optimizations.
         planner.addDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
             .collect(Collectors.toSet()));
 
-        if (!topLevelHints.isEmpty() && joinToFilterHints != null) {
-            res = actualTopLevelJoinTypeHints(res, topLevelHints, joinToFilterHints);
+        if (!topLevelHints.isEmpty()) {
+            res = actualTopLevelJoinTypeHints(res, topLevelHints, joins.get(0));
 
             restoreJoinTypeHints(res);
         }
@@ -523,86 +507,34 @@ public class PlannerHelper {
     }
 
     /**
-     * Finds join-related nodes in a rel tree. Estimates leaf nodes number. If meets a {@link LogicalCorrelate},
-     * analyses only the left shoulder. For the right shoulder a new finder is created. The maximum of current leafs count
-     * and found by the another finder is the result.
+     * Searches tree {@code root} for nodes of {@code nodeType}.
+     *
+     * @return Nodes matching {@code nodeType}. An empty list if none matches. A single value list if a node
+     * found and {@code stopOnFirst} is {@code true}.
      */
-    private static final class JoinsFinder extends RelHomogeneousShuttle {
-        /** */
-        private List<RelNode> rels;
+    public static <T extends RelNode> List<T> findNodes(RelNode root,  Class<T> nodeType, boolean stopOnFirst) {
+        List<T> rels = new ArrayList<>();
 
-        /** */
-        private int srcCnt;
+        try {
+            RelShuttle visitor = new RelHomogeneousShuttle() {
+                @Override public RelNode visit(RelNode node) {
+                    if (nodeType.isAssignableFrom(node.getClass())) {
+                        rels.add((T)node);
 
-        /** */
-        private int correlateRightSrcCnt;
+                        if (stopOnFirst)
+                            throw Util.FoundOne.NULL;
+                    }
 
-        /** */
-        private boolean findMultyJoin;
-
-        /** @return {@code True} if a {@link MultiJoin} found in tree {@code node}. */
-        private boolean findMultyJoin(RelNode node) {
-            findMultyJoin = true;
-            srcCnt = 0;
-
-            visit(node);
-
-            boolean res = srcCnt != 0;
-
-            // Reset to correct empty state.
-            findMultyJoin = false;
-            srcCnt = 0;
-            correlateRightSrcCnt = 0;
-            rels = null;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelNode visit(RelNode node) {
-            if (findMultyJoin) {
-                if (node instanceof MultiJoin) {
-                    srcCnt = 1;
-
-                    return node;
+                    return super.visit(node);
                 }
+            };
 
-                return super.visit(node);
-            }
-
-            if (node instanceof Join || node instanceof Correlate) {
-                if (rels == null)
-                    rels = new ArrayList<>();
-
-                rels.add(node);
-            }
-
-            if (node.getInputs().isEmpty()) {
-                ++srcCnt;
-
-                return node;
-            }
-
-            return super.visit(node);
+            root.accept(visitor);
+        }
+        catch (Util.FoundOne ignored) {
+            // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public RelNode visit(LogicalCorrelate correlate) {
-            if (findMultyJoin)
-                return super.visit(correlate);
-
-            JoinsFinder inSubquerySizeFinder = new JoinsFinder();
-
-            inSubquerySizeFinder.visit(correlate.getInput(1));
-
-            correlateRightSrcCnt = Math.max(correlateRightSrcCnt, inSubquerySizeFinder.sourcesCnt());
-
-            return visitChild(correlate, 0, correlate.getInput(0));
-        }
-
-        /** */
-        private int sourcesCnt() {
-            return rels == null ? 0 : Math.max(srcCnt, correlateRightSrcCnt);
-        }
+        return rels;
     }
 }
