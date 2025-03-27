@@ -79,7 +79,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         );
     }
 
-    /** Ensures that join commute rules are disabled if joins count is too high. Checks the tables order in the query. */
+    /** Ensures that join commute rules are disabled if joins count is too high. */
     @Test
     public void testCommuteDisabledForManyJoins() throws Exception {
         int maxJoinsToOptimize = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE);
