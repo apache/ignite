@@ -34,16 +34,12 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 
 /**
  * Defines global scope.
@@ -960,22 +956,6 @@ public final class X {
         }
 
         return cnt;
-    }
-
-    /**
-     * Tries to resolve Ignite installation home folder.
-     *
-     * @return Installation home folder.
-     * @throws IgniteCheckedException If Ignite home folder was not set.
-     */
-    public static String resolveIgniteHome() throws IgniteCheckedException {
-        String var = IgniteSystemProperties.getString(IGNITE_HOME);
-
-        if (var != null)
-            return var;
-        else
-            throw new IgniteCheckedException("Failed to resolve Ignite home folder " +
-                "(please set 'IGNITE_HOME' environment or system variable)");
     }
 
     /**
