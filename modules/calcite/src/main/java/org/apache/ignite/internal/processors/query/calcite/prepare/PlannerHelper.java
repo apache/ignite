@@ -28,17 +28,13 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.core.Correlate;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
@@ -156,11 +152,7 @@ public class PlannerHelper {
      * if the joins count reaches the thresholds.
      */
     private static void fastenJoinsOrder(IgnitePlanner planner, RelNode rel) {
-        JoinsFinder jf = new JoinsFinder();
-
-        jf.visit(rel);
-
-        int joinsCnt = jf.sourcesCnt() - 1;
+        int joinsCnt = RelOptUtil.countJoins(rel);
 
         if (joinsCnt > MAX_JOINS_TO_COMMUTE)
             planner.addDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
@@ -332,52 +324,6 @@ public class PlannerHelper {
          */
         private boolean modifyNodeInsertsData() {
             return modifyNode.isInsert();
-        }
-    }
-
-    /**
-     * Finds join-related nodes in a rel tree. Estimates leaf nodes number. If meets a {@link LogicalCorrelate},
-     * analyses only the left shoulder. For the right shoulder a new finder is created. The maximum of current leafs count
-     * and found by the another finder is the result.
-     */
-    private static final class JoinsFinder extends RelHomogeneousShuttle {
-        /** */
-        private boolean joinFound;
-
-        /** */
-        private int srcCnt;
-
-        /** */
-        private int correlateRightSrcCnt;
-
-        /** {@inheritDoc} */
-        @Override public RelNode visit(RelNode node) {
-            if (node instanceof Join || node instanceof Correlate)
-                joinFound = true;
-
-            if (node.getInputs().isEmpty()) {
-                ++srcCnt;
-
-                return node;
-            }
-
-            return super.visit(node);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelNode visit(LogicalCorrelate correlate) {
-            JoinsFinder inSubquerySizeFinder = new JoinsFinder();
-
-            inSubquerySizeFinder.visit(correlate.getInput(1));
-
-            correlateRightSrcCnt = Math.max(correlateRightSrcCnt, inSubquerySizeFinder.sourcesCnt());
-
-            return visitChild(correlate, 0, correlate.getInput(0));
-        }
-
-        /** */
-        private int sourcesCnt() {
-            return joinFound ? Math.max(srcCnt, correlateRightSrcCnt) : 0;
         }
     }
 }

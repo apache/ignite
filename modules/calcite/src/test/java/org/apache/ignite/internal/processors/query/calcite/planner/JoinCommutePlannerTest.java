@@ -89,7 +89,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         int maxJoinsToOptimize = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE);
 
-        int tablesCnt = maxJoinsToOptimize + 2;
+        int tablesCnt = maxJoinsToOptimize + 3;
 
         try {
             for (int i = 0; i < tablesCnt; ++i) {
@@ -109,7 +109,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
             doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false, "TBL");
 
-            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, true, "TBL");
+            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 2, true, "TBL");
         }
         finally {
             for (int i = 0; i < tablesCnt; ++i)
