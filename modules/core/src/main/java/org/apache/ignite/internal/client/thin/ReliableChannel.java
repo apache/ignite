@@ -68,8 +68,8 @@ final class ReliableChannel implements AutoCloseable {
     /** Client channel holders for each configured address. */
     private volatile List<ClientChannelHolder> channels;
 
-    /** Limit of attempts to execute each service. */
-    private volatile int attemptsLimit;
+    /** Limit of channels to execute each {@link #service}. */
+    private volatile int srvcChannelsLimit;
 
     /** Index of the current channel. */
     private volatile int curChIdx = -1;
@@ -287,7 +287,7 @@ final class ReliableChannel implements AutoCloseable {
                         return null;
                     }
 
-                    if (failures.size() < attemptsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
+                    if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
                         handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
 
                         return null;
@@ -543,7 +543,7 @@ final class ReliableChannel implements AutoCloseable {
         // Roll current channel even if a topology changes. To help find working channel faster.
         rollCurrentChannel(hld);
 
-        if (channelsCnt.get() == 0 && F.size(failures) == attemptsLimit) {
+        if (channelsCnt.get() == 0 && F.size(failures) == srvcChannelsLimit) {
             // All channels have failed.
             discoveryCtx.reset();
             channelsInit(failures);
@@ -721,7 +721,7 @@ final class ReliableChannel implements AutoCloseable {
         try {
             channels = reinitHolders;
 
-            attemptsLimit = getRetryLimit();
+            srvcChannelsLimit = getRetryLimit();
 
             curChIdx = dfltChannelIdx;
         }
@@ -750,7 +750,7 @@ final class ReliableChannel implements AutoCloseable {
 
         initChannelHolders();
 
-        if (failures == null || failures.size() < attemptsLimit) {
+        if (failures == null || failures.size() < srvcChannelsLimit) {
             // Establish default channel connection.
             applyOnDefaultChannel(channel -> null, null, failures);
 
@@ -811,7 +811,7 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        int fixedAttemptsLimit = attemptsLimit;
+        int fixedAttemptsLimit = srvcChannelsLimit;
 
         // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
         // one, then each one from #channels in sequence.
@@ -916,26 +916,26 @@ final class ReliableChannel implements AutoCloseable {
                 return function.apply(channel);
             }
             catch (ClientConnectionException e) {
-                failures = new ArrayList<>();
-
-                failures.add(e);
-
                 onChannelFailure(hld, channel, e, failures);
 
-                try {
-                    if (shouldRetry(op, 0, e)) {
-                        // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                        channel = hld.getOrCreateChannel();
+                if (!shouldRetry(op, 0, e))
+                    throw e;
 
-                        return function.apply(channel);
-                    }
+                try {
+                    // In case of stale channel try to reconnect to the same channel and repeat the operation.
+                    channel = hld.getOrCreateChannel();
+
+                    return function.apply(channel);
                 }
+
                 catch (ClientConnectionException err) {
+                    failures = new ArrayList<>();
+
                     failures.add(err);
 
                     onChannelFailure(hld, channel, err, failures);
 
-                    if (attemptsLimit == 1)
+                    if (srvcChannelsLimit == 1 || !shouldRetry(op, 1, e))
                         throw err;
                 }
             }

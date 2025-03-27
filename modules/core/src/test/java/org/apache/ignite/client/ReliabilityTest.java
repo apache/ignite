@@ -180,8 +180,12 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                // Each node gets 2 attempts (initial + retry), so we expect (CLUSTER_SIZE-1)*2 suppressed exceptions.
-                assertEquals((CLUSTER_SIZE - 1) * 2, suppressed.length);
+                // TODO retry in async case.
+                if (async)
+                    assertEquals(CLUSTER_SIZE - 1, suppressed.length);
+
+                else    // Each node gets 2 attempts (initial + retry) in sync case, so we expect (CLUSTER_SIZE-1)*2 suppressed exceptions.
+                    assertEquals((CLUSTER_SIZE - 1) * 2, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
@@ -207,6 +211,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
+            // TODO retry in async case.
+            if (async) {
+                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+
+                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
+            }
+
             // Recover after fail.
             cachePut(cache, 0, 0);
         }
@@ -229,6 +240,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // TODO retry in async case.
+            if (async) {
+                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+
+                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
+            }
 
             // Reuse the address after retry without fail.
             cachePut(cache, 0, 0);
