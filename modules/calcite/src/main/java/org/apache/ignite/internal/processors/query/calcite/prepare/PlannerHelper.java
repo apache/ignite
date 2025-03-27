@@ -512,7 +512,7 @@ public class PlannerHelper {
      * @return Nodes matching {@code nodeType}. An empty list if none matches. A single value list if a node
      * found and {@code stopOnFirst} is {@code true}.
      */
-    public static <T extends RelNode> List<T> findNodes(RelNode root,  Class<T> nodeType, boolean stopOnFirst) {
+    public static <T extends RelNode> List<T> findNodes(RelNode root, Class<T> nodeType, boolean stopOnFirst) {
         List<T> rels = new ArrayList<>();
 
         try {
