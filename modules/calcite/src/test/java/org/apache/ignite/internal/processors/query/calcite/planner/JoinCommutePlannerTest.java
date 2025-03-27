@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.visualizer.RuleMatchVisualizer;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -110,10 +109,10 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             }
 
             // Rule names to check.
-            Collection<String> commuteJoins = Collections.singletonList(CoreRules.JOIN_COMMUTE.toString());
-            Collection<String> commuteSubInputs = Stream.of(JoinPushThroughJoinRule.LEFT.toString(),
-                JoinPushThroughJoinRule.RIGHT.toString()).collect(Collectors.toSet());
-            Collection<String> allRules = Stream.concat(commuteJoins.stream(), commuteSubInputs.stream()).collect(Collectors.toSet());
+            Collection<RelOptRule> commuteJoins = Collections.singletonList(CoreRules.JOIN_COMMUTE);
+            Collection<RelOptRule> commuteSubInputs = Stream.of(JoinPushThroughJoinRule.LEFT,
+                JoinPushThroughJoinRule.RIGHT).collect(Collectors.toSet());
+            Collection<RelOptRule> allRules = Stream.concat(commuteJoins.stream(), commuteSubInputs.stream()).collect(Collectors.toSet());
 
             // With the minimal joins number all the rules are expected to launch.
             checkJoinCommutes(minJoins, false, true, allRules);
@@ -139,7 +138,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private void checkJoinCommutes(int jCnt, boolean addCorrelated, Boolean rulesExpected, Collection<String> rules) throws Exception {
+    private void checkJoinCommutes(int jCnt, boolean addCorrelated, boolean rulesExpected, Collection<RelOptRule> rules) throws Exception {
         StringBuilder select = new StringBuilder();
         StringBuilder joins = new StringBuilder();
 
@@ -167,12 +166,10 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         PlanningContext ctx = plannerCtx(sql, publicSchema);
 
-        Map<String, Boolean> ruleTries = new HashMap<>(rules.stream().collect(Collectors.toMap(r -> r, r -> false)));
-
         RuleMatchVisualizer lsnr = new RuleMatchVisualizer() {
             @Override public void ruleAttempted(RuleAttemptedEvent evt) {
-                if (rules.contains(evt.getRuleCall().getRule().toString()))
-                    ruleTries.put(evt.getRuleCall().getRule().toString(), true);
+                if (rules.contains(evt.getRuleCall().getRule()))
+                    assertTrue(rulesExpected);
 
                 super.ruleAttempted(evt);
             }
@@ -181,8 +178,6 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         lsnr.attachTo(ctx.cluster().getPlanner());
 
         physicalPlan(ctx);
-
-        rules.forEach(rule -> assertEquals(rulesExpected, ruleTries.get(rule)));
     }
 
     /** */
