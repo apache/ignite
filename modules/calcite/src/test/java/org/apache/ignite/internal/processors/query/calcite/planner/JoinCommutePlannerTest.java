@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.visualizer.RuleMatchVisualizer;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
@@ -79,10 +86,16 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         );
     }
 
-    /** Ensures that join commute rules are disabled if joins count is too high. */
+    /**
+     * Ensures that join commute rules are disabled if joins count is too high.
+     *
+     * @see JoinCommuteRule
+     * @see JoinPushThroughJoinRule
+     */
     @Test
     public void testCommuteDisabledForManyJoins() throws Exception {
         int maxJoinsToOptimize = Math.max(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE);
+        int minJoins = Math.min(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, PlannerHelper.MAX_JOINS_TO_COMMUTE);
 
         // +2 tables because we use 1 more join in the query and 1 extra table for the correlated query.
         int tablesCnt = maxJoinsToOptimize + 3;
@@ -96,9 +109,28 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                 publicSchema.addTable(tbl.name(), tbl);
             }
 
-            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false);
+            // Rule names to check.
+            Collection<String> commuteJoins = Collections.singletonList(CoreRules.JOIN_COMMUTE.toString());
+            Collection<String> commuteSubInputs = Stream.of(JoinPushThroughJoinRule.LEFT.toString(),
+                JoinPushThroughJoinRule.RIGHT.toString()).collect(Collectors.toSet());
+            Collection<String> allRules = Stream.concat(commuteJoins.stream(), commuteSubInputs.stream()).collect(Collectors.toSet());
 
-            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, true);
+            // With the minimal joins number all the rules are expected to launch.
+            checkJoinCommutes(minJoins, false, true, allRules);
+            checkJoinCommutes(minJoins, true, true, allRules);
+
+            // Checks only JoinCommuteRule rule.
+            checkJoinCommutes(PlannerHelper.MAX_JOINS_TO_COMMUTE, false, true, commuteJoins);
+            checkJoinCommutes(PlannerHelper.MAX_JOINS_TO_COMMUTE, true, true, commuteJoins);
+            checkJoinCommutes(PlannerHelper.MAX_JOINS_TO_COMMUTE + 1, false, false, commuteJoins);
+
+            // Checks only JoinPushThroughJoinRule rules.
+            checkJoinCommutes(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, false, true, commuteSubInputs);
+            checkJoinCommutes(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS, true, true, commuteSubInputs);
+            checkJoinCommutes(PlannerHelper.MAX_JOINS_TO_COMMUTE_INPUTS + 1, false, false, commuteSubInputs);
+
+            // From this joins count all the rules must not work.
+            checkJoinCommutes(maxJoinsToOptimize + 1, false, false, allRules);
         }
         finally {
             for (int i = 0; i < tablesCnt; ++i)
@@ -107,11 +139,11 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private void doTestCommuteDisabledForManyJoins(int joinsCnt, boolean addCorrelated) throws Exception {
+    private void checkJoinCommutes(int jCnt, boolean addCorrelated, Boolean rulesExpected, Collection<String> rules) throws Exception {
         StringBuilder select = new StringBuilder();
         StringBuilder joins = new StringBuilder();
 
-        for (int i = 0; i < joinsCnt + 1; ++i) {
+        for (int i = 0; i < jCnt + 1; ++i) {
             select.append("\nt").append(i).append(".id, ");
 
             if (i == 0)
@@ -123,7 +155,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         }
 
         if (addCorrelated) {
-            int tblNum = joinsCnt + 1;
+            int tblNum = jCnt + 1;
             String alias = "t" + tblNum;
 
             select.append("\n(SELECT MAX(").append(alias).append(".id) FROM TBL").append(tblNum).append(" ").append(alias)
@@ -135,17 +167,22 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         PlanningContext ctx = plannerCtx(sql, publicSchema);
 
-        RuleMatchVisualizer lsnr = new RuleMatchVisualizer();
+        Map<String, Boolean> ruleTries = new HashMap<>(rules.stream().collect(Collectors.toMap(r -> r, r -> false)));
+
+        RuleMatchVisualizer lsnr = new RuleMatchVisualizer() {
+            @Override public void ruleAttempted(RuleAttemptedEvent evt) {
+                if (rules.contains(evt.getRuleCall().getRule().toString()))
+                    ruleTries.put(evt.getRuleCall().getRule().toString(), true);
+
+                super.ruleAttempted(evt);
+            }
+        };
 
         lsnr.attachTo(ctx.cluster().getPlanner());
 
         physicalPlan(ctx);
 
-        String lsnrRes = lsnr.getJsonStringResult();
-
-        assertFalse(lsnrRes.contains(CoreRules.JOIN_COMMUTE.toString()));
-        assertFalse(lsnrRes.contains(JoinPushThroughJoinRule.LEFT.toString()));
-        assertFalse(lsnrRes.contains(JoinPushThroughJoinRule.RIGHT.toString()));
+        rules.forEach(rule -> assertEquals(rulesExpected, ruleTries.get(rule)));
     }
 
     /** */
