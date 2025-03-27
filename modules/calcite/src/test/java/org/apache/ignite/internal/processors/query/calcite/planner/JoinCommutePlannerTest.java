@@ -96,9 +96,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
                 publicSchema.addTable("TBL" + i, tbl);
             }
 
-            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false, "TBL");
+            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, false);
 
-            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, true, "TBL");
+            doTestCommuteDisabledForManyJoins(maxJoinsToOptimize + 1, true);
         }
         finally {
             for (int i = 0; i < tablesCnt; ++i)
@@ -107,7 +107,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private void doTestCommuteDisabledForManyJoins(int joinsCnt, boolean addCorrelated, String tblNamePrefix) throws Exception {
+    private void doTestCommuteDisabledForManyJoins(int joinsCnt, boolean addCorrelated) throws Exception {
         StringBuilder select = new StringBuilder();
         StringBuilder joins = new StringBuilder();
 
