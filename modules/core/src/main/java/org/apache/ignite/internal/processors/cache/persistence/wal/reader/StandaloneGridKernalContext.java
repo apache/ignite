@@ -104,7 +104,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -162,6 +161,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** */
     @Nullable private CompressionProcessor compressProc;
 
+    /** Marshaller. */
+    private final BinaryMarshaller marsh;
+
     /**
      * @param log Logger.
      * @param ft Node file tree.
@@ -185,6 +187,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     ) throws IgniteCheckedException {
         this.log = log;
         this.ft = ft;
+        this.marsh = new BinaryMarshaller();
 
         marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
         cfg = prepareIgniteConfiguration();
@@ -216,6 +219,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             marshallerCtx.setMarshallerMappingFileStoreDir(ft.marshaller());
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
+
+        marsh.setContext(marshallerCtx);
 
         this.compressProc = compressProc;
     }
@@ -249,17 +254,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
         cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
 
-        final Marshaller marshaller = new BinaryMarshaller();
-        cfg.setMarshaller(marshaller);
-
         final DataStorageConfiguration pstCfg = new DataStorageConfiguration();
         final DataRegionConfiguration regCfg = new DataRegionConfiguration();
         regCfg.setPersistenceEnabled(true);
         pstCfg.setDefaultDataRegionConfiguration(regCfg);
 
         cfg.setDataStorageConfiguration(pstCfg);
-
-        marshaller.setContext(marshallerCtx);
 
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
@@ -733,6 +733,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public Executor getAsyncContinuationExecutor() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryMarshaller marshaller() {
+        return marsh;
     }
 
     /**
