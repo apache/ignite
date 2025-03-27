@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,12 +49,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -182,7 +185,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(opCtx.snapshotFileTree(), meta.folderName());
+        GridKernalContext snpCtx = new StandaloneGridKernalContext(
+            log,
+            cctx.kernalContext().compress(),
+            new NodeFileTree(opCtx.snapshotFileTree().root(), meta.folderName())
+        );
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
@@ -350,7 +357,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     ) {
         EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-        try (Dump dump = new Dump(opCtx.snapshotFileTree().root(), opCtx.snapshotFileTree().consistentId(), true, true, encSpi, log)) {
+        List<SnapshotFileTree> sft = Collections.singletonList(opCtx.snapshotFileTree());
+        List<SnapshotMetadata> metadata = Collections.singletonList(opCtx.metadata());
+
+        try (Dump dump = new Dump(cctx.kernalContext(), sft, metadata, true, true, encSpi, log)) {
             Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
@@ -362,7 +372,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw new IgniteException("Node: " + opCtx.snapshotFileTree().consistentId(), t);
+            throw new IgniteException("Node: " + sft.get(0).consistentId(), t);
         }
     }
 

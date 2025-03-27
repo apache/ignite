@@ -1486,20 +1486,16 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** */
     private void initializeMarshaller() {
-        Marshaller marsh = ctx.config().getMarshaller();
+        if (!BinaryMarshaller.available()) {
+            String msg = "Standard BinaryMarshaller can't be used on this JVM. " +
+                "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.";
 
-        if (marsh == null) {
-            if (!BinaryMarshaller.available()) {
-                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+            U.warn(log, msg);
 
-                marsh = ctx.marshallerContext().jdkMarshaller();
-            }
-            else
-                marsh = new BinaryMarshaller();
-
-            ctx.config().setMarshaller(marsh);
+            throw new IgniteException(msg);
         }
+
+        Marshaller marsh = ctx.marshaller();
 
         marsh.setContext(ctx.marshallerContext());
 
@@ -1523,9 +1519,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
-
-        if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
-            perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
     }
 
     /**
@@ -1614,20 +1607,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
-        add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
+        add(ATTR_MARSHALLER, ctx.marshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
-        if (cfg.getMarshaller() instanceof BinaryMarshaller) {
-            add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
-                BinaryConfiguration.DFLT_COMPACT_FOOTER :
-                cfg.getBinaryConfiguration().isCompactFooter());
+        add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
+            BinaryConfiguration.DFLT_COMPACT_FOOTER :
+            cfg.getBinaryConfiguration().isCompactFooter());
 
-            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
-                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
-                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
-        }
+        add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+            getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                BinaryUtils.USE_STR_SERIALIZATION_VER_2));
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_IGNITE_INSTANCE_NAME, igniteInstanceName);
@@ -2036,7 +2027,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             objs.add(cfg.getConnectorConfiguration().getSslFactory());
         }
 
-        objs.add(cfg.getMarshaller());
+        objs.add(ctx.marshaller());
         objs.add(cfg.getGridLogger());
         objs.add(cfg.getMBeanServer());
 

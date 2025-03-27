@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.lang.reflect.Constructor;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -63,10 +62,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.h2.command.Prepared;
@@ -296,8 +293,8 @@ public final class UpdatePlanBuilder {
 
         verifyDmlColumns(tbl.dataTable(), F.viewReadOnly(Arrays.asList(cols), TO_H2_COL));
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         String selectSql = sel != null ? sel.getSQL() : null;
 
@@ -475,7 +472,7 @@ public final class UpdatePlanBuilder {
                 int newValColIdx = (hasNewVal ? valColIdx : 1);
 
                 KeyValueSupplier valSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
-                    false, true);
+                    false);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate)stmt);
 
@@ -608,9 +605,9 @@ public final class UpdatePlanBuilder {
         verifyDmlColumns(tbl, Arrays.asList(h2Cols));
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
-            true, false);
+            true);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps,
-            false, false);
+            false);
 
         return new UpdatePlan(
             UpdateMode.BULK_LOAD,
@@ -641,13 +638,12 @@ public final class UpdatePlanBuilder {
      * @param colIdx Column index if key or value is present in columns list, {@code -1} if it's not.
      * @param hasProps Whether column list affects individual properties of key or value.
      * @param key Whether supplier should be created for key or for value.
-     * @param forUpdate {@code true} if called for {@code UPDATE} statement.
      * @return Closure returning key or value.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked", "IfMayBeConditional"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
-        final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
+        final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
@@ -665,112 +661,38 @@ public final class UpdatePlanBuilder {
                 throw new IgniteCheckedException((key ? "Key" : "Value") + " is missing from query");
         }
 
-        if (cctx.binaryMarshaller()) {
-            if (colIdx != -1) {
-                // If we have key or value explicitly present in query, create new builder upon them...
-                return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) {
-                        Object obj = arg.get(colIdx);
+        if (colIdx != -1) {
+            // If we have key or value explicitly present in query, create new builder upon them...
+            return new KeyValueSupplier() {
+                /** {@inheritDoc} */
+                @Override public Object apply(List<?> arg) {
+                    Object obj = arg.get(colIdx);
 
-                        if (obj == null)
-                            return null;
+                    if (obj == null)
+                        return null;
 
-                        BinaryObject bin = cctx.grid().binary().toBinary(obj);
+                    BinaryObject bin = cctx.grid().binary().toBinary(obj);
 
-                        BinaryObjectBuilder builder = cctx.grid().binary().builder(bin);
+                    BinaryObjectBuilder builder = cctx.grid().binary().builder(bin);
 
-                        cctx.prepareAffinityField(builder);
+                    cctx.prepareAffinityField(builder);
 
-                        return builder;
-                    }
-                };
-            }
-            else {
-                // ...and if we don't, just create a new builder.
-                return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) {
-                        BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-
-                        cctx.prepareAffinityField(builder);
-
-                        return builder;
-                    }
-                };
-            }
+                    return builder;
+                }
+            };
         }
         else {
-            if (colIdx != -1) {
-                if (forUpdate && colIdx == 1) {
-                    // It's the case when the old value has to be taken as the basis for the new one on UPDATE,
-                    // so we have to clone it. And on UPDATE we don't expect any key supplier.
-                    assert !key;
+            // ...and if we don't, just create a new builder.
+            return new KeyValueSupplier() {
+                /** {@inheritDoc} */
+                @Override public Object apply(List<?> arg) {
+                    BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
 
-                    return new KeyValueSupplier() {
-                        /** {@inheritDoc} */
-                        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                            byte[] oldPropBytes = cctx.marshaller().marshal(arg.get(1));
+                    cctx.prepareAffinityField(builder);
 
-                            // colVal is another object now, we can mutate it
-                            return cctx.marshaller().unmarshal(oldPropBytes, U.resolveClassLoader(cctx.gridConfig()));
-                        }
-                    };
+                    return builder;
                 }
-                else // We either are not updating, or the new value is given explicitly, no cloning needed.
-                    return new PlainValueSupplier(colIdx);
-            }
-
-            Constructor<?> ctor;
-
-            try {
-                ctor = cls.getDeclaredConstructor();
-                ctor.setAccessible(true);
-            }
-            catch (NoSuchMethodException | SecurityException ignored) {
-                ctor = null;
-            }
-
-            if (ctor != null) {
-                final Constructor<?> ctor0 = ctor;
-
-                // Use default ctor, if it's present...
-                return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                        try {
-                            return ctor0.newInstance();
-                        }
-                        catch (Exception e) {
-                            if (S.includeSensitive())
-                                throw new IgniteCheckedException("Failed to instantiate " +
-                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
-                            else
-                                throw new IgniteCheckedException("Failed to instantiate " +
-                                    (key ? "key" : "value") + '.', e);
-                        }
-                    }
-                };
-            }
-            else {
-                // ...or allocate new instance with unsafe, if it's not
-                return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                        try {
-                            return GridUnsafe.allocateInstance(cls);
-                        }
-                        catch (InstantiationException e) {
-                            if (S.includeSensitive())
-                                throw new IgniteCheckedException("Failed to instantiate " +
-                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
-                            else
-                                throw new IgniteCheckedException("Failed to instantiate " +
-                                    (key ? "key" : "value") + '.', e);
-                        }
-                    }
-                };
-            }
+            };
         }
     }
 

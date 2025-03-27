@@ -1370,7 +1370,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void registerMetadataForRegisteredCaches(boolean platformOnly) {
         for (DynamicCacheDescriptor cacheDescriptor : ctx.cache().cacheDescriptors().values())
-            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema(), platformOnly);
+            registerBinaryMetadata(cacheDescriptor.schema(), platformOnly);
     }
 
     /**
@@ -1384,7 +1384,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 continue;
 
             try {
-                registerBinaryMetadata(req.startCacheConfiguration(), req.schema(), false);
+                registerBinaryMetadata(req.schema(), false);
             }
             catch (BinaryObjectException e) {
                 ctx.cache().completeCacheStartFuture(req, false, e);
@@ -1395,23 +1395,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Register binary metadata locally.
      *
-     * @param ccfg Cache configuration.
      * @param schema Schema for which register metadata is required.
      * @param platformOnly Whether to register non-Java platformOnly types only.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema, boolean platformOnly) throws BinaryObjectException {
+    private void registerBinaryMetadata(QuerySchema schema, boolean platformOnly) throws BinaryObjectException {
         if (schema != null) {
             Collection<QueryEntity> qryEntities = schema.entities();
 
             if (!F.isEmpty(qryEntities)) {
-                boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
-                if (binaryEnabled) {
-                    for (QueryEntity qryEntity : qryEntities) {
-                        registerTypeLocally(qryEntity.findKeyType(), platformOnly);
-                        registerTypeLocally(qryEntity.findValueType(), platformOnly);
-                    }
+                for (QueryEntity qryEntity : qryEntities) {
+                    registerTypeLocally(qryEntity.findKeyType(), platformOnly);
+                    registerTypeLocally(qryEntity.findValueType(), platformOnly);
                 }
             }
         }
@@ -4440,5 +4435,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** @return Statistics manager. */
     public IgniteStatisticsManager statsManager() {
         return statsMgr;
+    }
+
+    /** @return Default query engine. */
+    public QueryEngine defaultQueryEngine() {
+        return dfltQryEngine;
     }
 }

@@ -163,6 +163,13 @@ public enum OperationType {
         return 1 + 4 + (cached ? 4 : 4 + nameLen);
     }
 
+    /**
+     * @return Cache start record size left after reading name string.
+     */
+    public static int readCacheStartRecordSize() {
+        return cacheStartRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
     /** @return Cache record size. */
     public static int cacheRecordSize() {
         return 4 + 8 + 8;
@@ -185,6 +192,13 @@ public enum OperationType {
         return 1 + (cached ? 4 : 4 + textLen) + 1 + 8 + 8 + 8 + 1;
     }
 
+    /**
+     * @return Query record size left after reading text string.
+     */
+    public static int readQueryRecordSize() {
+        return queryRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
     /** @return Query reads record size. */
     public static int queryReadsRecordSize() {
         return 1 + 16 + 8 + 8 + 8;
@@ -200,6 +214,13 @@ public enum OperationType {
     }
 
     /**
+     * @return Query rows record size left after reading action string.
+     */
+    public static int readQueryRowsRecordSize() {
+        return queryRowsRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
+    /**
      * @param nameLen Propery name length.
      * @param nameCached {@code True} if property name is cached.
      * @param valLen Propery value length.
@@ -211,12 +232,27 @@ public enum OperationType {
     }
 
     /**
+     * @return Query property record size left after reading name and val strings.
+     */
+    public static int readQueryPropertyRecordSize() {
+        return queryPropertyRecordSize(0, true, 0, true)
+            - 1 /* cached flag */ - 4 /* hash or len of name str */ - 1 /* cached flag */ - 4 /* hash or len of val str */;
+    }
+
+    /**
      * @param nameLen Task name length.
      * @param cached {@code True} if task name cached.
      * @return Task record size.
      */
     public static int taskRecordSize(int nameLen, boolean cached) {
         return 1 + (cached ? 4 : 4 + nameLen) + 24 + 8 + 8 + 4;
+    }
+
+    /**
+     * @return Task record size left after reading name string.
+     */
+    public static int readTaskRecordSize() {
+        return taskRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
     }
 
     /** @return Job record size. */

@@ -56,6 +56,12 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>mx4j</groupId>
             <artifactId>mx4j-tools</artifactId>
             <version>3.0.1</version>
@@ -206,6 +212,13 @@
 
             <resource>
                 <directory>src/main/resources</directory>
+            </resource>
+
+            <resource>
+                <directory>../commons/target/classes</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
             </resource>
         </resources>
 
