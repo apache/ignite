@@ -36,8 +36,8 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     public void testBinaryMarshaller() throws Exception {
         Ignite ignite = startGrid(0);
 
-        byte[] one = ignite.configuration().getMarshaller().marshal(DeclaredBodyEnum.ONE);
-        byte[] two = ignite.configuration().getMarshaller().marshal(DeclaredBodyEnum.TWO);
+        byte[] one = marshaller(ignite).marshal(DeclaredBodyEnum.ONE);
+        byte[] two = marshaller(ignite).marshal(DeclaredBodyEnum.TWO);
 
         startGrid(1);
 
@@ -89,9 +89,9 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
                             start.await();
 
                             if (ii == 0)
-                                ign.configuration().getMarshaller().unmarshal(one, null);
+                                marshaller(ign).unmarshal(one, null);
                             else
-                                ign.configuration().getMarshaller().unmarshal(two, null);
+                                marshaller(ign).unmarshal(two, null);
                         }
                         catch (Exception e) {
                             e.printStackTrace();

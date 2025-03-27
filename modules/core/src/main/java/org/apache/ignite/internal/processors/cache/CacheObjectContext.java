@@ -47,7 +47,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private final boolean addDepInfo;
 
-    /** Boinary enabled flag. */
+    /** Binary enabled flag. */
     private final boolean binaryEnabled;
 
     /**

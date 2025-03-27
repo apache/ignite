@@ -195,7 +195,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         retryDelay = ctx.config().getNetworkSendRetryDelay();
         retryCnt = ctx.config().getNetworkSendRetryCount();
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         ctx.event().addLocalEventListener(new DiscoveryListener(), EVT_NODE_LEFT, EVT_NODE_FAILED);
 

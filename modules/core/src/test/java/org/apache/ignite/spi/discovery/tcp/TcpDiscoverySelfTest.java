@@ -344,7 +344,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-            g1.configuration().getMarshaller().marshal(nodes, bos);
+            marshaller(g1).marshal(nodes, bos);
 
             info(">>> Approximate node connect message size [topSize=" + nodes.size() +
                 ", msgSize=" + bos.size() / 1024.0 + "KB]");

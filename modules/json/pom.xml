@@ -42,6 +42,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
             <scope>test</scope>
         </dependency>

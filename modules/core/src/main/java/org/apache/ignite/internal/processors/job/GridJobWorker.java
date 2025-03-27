@@ -256,7 +256,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         log = U.logger(ctx, logRef, this);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         UUID locNodeId = ctx.discovery().localNode().id();
 
