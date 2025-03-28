@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -351,7 +352,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         });
 
         Collection<IgniteEx> rcvrs = F.viewReadOnly(G.allGrids(), srv -> (IgniteEx)srv,
-            srv -> !F.eq(sndr.localNode(), srv.cluster().localNode()));
+            srv -> !Objects.equals(sndr.localNode(), srv.cluster().localNode()));
 
         GridCompoundFuture<Void, Void> futs = new GridCompoundFuture<>();
 
@@ -420,7 +421,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         LinkedList<T> grouped = new LinkedList<>();
 
         for (T item : list) {
-            if (!F.eq(grouped.peekLast(), item))
+            if (!Objects.equals(grouped.peekLast(), item))
                 grouped.add(item);
         }
 

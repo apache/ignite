@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -173,10 +173,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     /** */
     private boolean isDiscoveryNodeAddedMessage(Object msg, int joiningNdeIdx) {
         return msg instanceof TcpDiscoveryNodeAddedMessage &&
-            F.eq(
-                getTestIgniteInstanceName(joiningNdeIdx),
-                ((TcpDiscoveryNodeAddedMessage)msg).node().attribute(ATTR_IGNITE_INSTANCE_NAME)
-            );
+            Objects.equals(getTestIgniteInstanceName(joiningNdeIdx), ((TcpDiscoveryNodeAddedMessage)msg).node().attribute(ATTR_IGNITE_INSTANCE_NAME));
     }
 
     /** */

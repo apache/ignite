@@ -211,7 +211,7 @@ public class H2Utils {
      * @return Statement string.
      */
     public static String indexCreateSql(String fullTblName, Index h2Idx, boolean ifNotExists) {
-        boolean spatial = F.eq(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
+        boolean spatial = Objects.equals(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
 
         GridStringBuilder sb = new SB("CREATE ")
             .a(spatial ? "SPATIAL " : "")
@@ -659,7 +659,7 @@ public class H2Utils {
             if (star == 0)
                 qry = qry.substring(1).trim();
             else if (star > 0) {
-                if (F.eq('.', qry.charAt(star - 1))) {
+                if (Objects.equals('.', qry.charAt(star - 1))) {
                     t = qry.substring(0, star - 1);
 
                     qry = qry.substring(star + 1).trim();

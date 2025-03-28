@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -314,7 +315,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
             String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, igniteInstanceName))
+                if (Objects.equals(attr, igniteInstanceName))
                     return true;
             }
 
