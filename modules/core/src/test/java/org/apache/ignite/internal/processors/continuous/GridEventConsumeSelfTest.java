@@ -1251,7 +1251,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.waitForAllFutures(starterFut, stopperFut, nodeRestarterFut, jobRunnerFut);
 
-            Collection<UUID> notStopped = started.stream().filter(stopped::contains).collect(Collectors.toList());
+            Collection<UUID> notStopped = started.stream().filter(n -> !stopped.contains(n)).collect(Collectors.toList());
 
             assertEquals("Not stopped IDs: " + notStopped, 0, notStopped.size());
         }
