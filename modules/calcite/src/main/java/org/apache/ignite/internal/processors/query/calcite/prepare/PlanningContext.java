@@ -193,10 +193,12 @@ public final class PlanningContext implements Context {
     }
 
     /**
+     * Sets a rule filter. If already exists, enqueues the new one after the current filter.
+     *
      * @param rulesFilter Rules filter.
      */
-    public void rulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
-        this.rulesFilter = rulesFilter;
+    public void addRulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
+        this.rulesFilter = this.rulesFilter == null ? rulesFilter : this.rulesFilter.andThen(rulesFilter);
     }
 
     /**
