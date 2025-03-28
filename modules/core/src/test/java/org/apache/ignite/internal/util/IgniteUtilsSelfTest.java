@@ -38,7 +38,6 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -81,7 +80,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -209,15 +207,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testByteArray2String() throws Exception {
-        assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
-            U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testFormatMins() throws Exception {
         printFormatMins(0);
         printFormatMins(1);
@@ -240,68 +229,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     private void printFormatMins(long mins) {
         System.out.println("For " + mins + " minutes: " + X.formatMins(mins));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromHttp() throws Exception {
-        GridEmbeddedHttpServer srv = null;
-        try {
-            String urlPath = "/testDownloadUrl/";
-            srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveIgnitePath("/modules/core/src/test/config/tests.properties"));
-
-            File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-            file = U.downloadUrl(new URL(srv.getBaseUrl() + urlPath), file);
-
-            assert file.exists();
-            assert file.delete();
-        }
-        finally {
-            if (srv != null)
-                srv.stop(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromHttps() throws Exception {
-        GridEmbeddedHttpServer srv = null;
-        try {
-            String urlPath = "/testDownloadUrl/";
-            srv = GridEmbeddedHttpServer.startHttpsServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties"));
-
-            File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-            file = U.downloadUrl(new URL(srv.getBaseUrl() + urlPath), file);
-
-            assert file.exists();
-            assert file.delete();
-        }
-        finally {
-            if (srv != null)
-                srv.stop(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromLocalFile() throws Exception {
-        File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-        file = U.downloadUrl(
-            GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties").toURI().toURL(), file);
-
-        assert file.exists();
-        assert file.delete();
     }
 
     /**
@@ -753,14 +680,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(ips.get(ips.size() - 2).getAddress().isLoopbackAddress());
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
-    }
-
-    /** */
-    @Test
-    public void testMD5Calculation() throws Exception {
-        String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
-
-        assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
     }
 
     /**

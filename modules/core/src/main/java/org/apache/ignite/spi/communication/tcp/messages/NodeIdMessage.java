@@ -67,21 +67,6 @@ public class NodeIdMessage implements Message {
         return nodeIdBytes;
     }
 
-    /**
-     * @param nodeId Node ID.
-     * @return Marshalled node ID bytes with direct message type.
-     */
-    public static byte[] nodeIdBytesWithType(UUID nodeId) {
-        byte[] nodeIdBytesWithType = new byte[MESSAGE_FULL_SIZE];
-
-        nodeIdBytesWithType[0] = (byte)(TcpCommunicationSpi.NODE_ID_MSG_TYPE & 0xFF);
-        nodeIdBytesWithType[1] = (byte)((TcpCommunicationSpi.NODE_ID_MSG_TYPE >> 8) & 0xFF);
-
-        U.uuidToBytes(nodeId, nodeIdBytesWithType, 2);
-
-        return nodeIdBytesWithType;
-    }
-
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
