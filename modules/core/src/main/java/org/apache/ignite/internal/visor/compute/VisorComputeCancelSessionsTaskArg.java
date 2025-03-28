@@ -21,15 +21,15 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Arguments for task {@link VisorComputeCancelSessionsTask}
  */
-public class VisorComputeCancelSessionsTaskArg extends VisorDataTransferObject {
+public class VisorComputeCancelSessionsTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,7 +63,7 @@ public class VisorComputeCancelSessionsTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         sesIds = U.readSet(in);
     }
 

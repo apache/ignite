@@ -20,15 +20,15 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Input parameters for checking snapshot metadata.
  */
-public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject {
+public class SnapshotMetadataVerificationTaskArg extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -58,11 +58,6 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
         this.snpPath = snpPath;
         this.incIdx = incIdx;
         this.grpIds = grpIds;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
     }
 
     /**
@@ -102,13 +97,11 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
         snpPath = U.readString(in);
         incIdx = in.readInt();
-
-        if (protoVer > V1)
-            grpIds = U.readCollection(in);
+        grpIds = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

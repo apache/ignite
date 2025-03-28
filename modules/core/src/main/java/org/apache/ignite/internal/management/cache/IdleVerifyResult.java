@@ -33,6 +33,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.nl;
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTask}.
  */
-public class IdleVerifyResult extends VisorDataTransferObject {
+public class IdleVerifyResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -109,11 +109,6 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V4;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, cntrConflicts);
         U.writeMap(out, hashConflicts);
@@ -125,22 +120,14 @@ public class IdleVerifyResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cntrConflicts = U.readMap(in);
         hashConflicts = U.readMap(in);
         movingPartitions = U.readMap(in);
-
-        if (protoVer >= V2)
-            exceptions = U.readMap(in);
-
-        if (protoVer >= V3)
-            lostPartitions = U.readMap(in);
-
-        if (protoVer >= V4) {
-            txHashConflicts = (List)U.readCollection(in);
-            partiallyCommittedTxs = U.readMap(in);
-        }
+        exceptions = U.readMap(in);
+        lostPartitions = U.readMap(in);
+        txHashConflicts = (List)U.readCollection(in);
+        partiallyCommittedTxs = U.readMap(in);
     }
 
     /**

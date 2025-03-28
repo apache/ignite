@@ -23,15 +23,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Input parameters for checking snapshot partitions consistency task.
  */
-public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
+public class SnapshotPartitionsVerifyTaskArg extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -119,7 +119,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
         snpPath = U.readString(in);

@@ -20,14 +20,14 @@ package org.apache.ignite.internal.commandline.cache.distribution;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * DTO for CacheDistributionTask, contains information about partition
  */
-public class CacheDistributionPartition extends VisorDataTransferObject {
+public class CacheDistributionPartition extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -126,7 +126,7 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException {
         partId = in.readInt();
         primary = in.readBoolean();
         state = GridDhtPartitionState.fromOrdinal(in.readByte());

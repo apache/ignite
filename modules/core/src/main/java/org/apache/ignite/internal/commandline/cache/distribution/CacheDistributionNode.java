@@ -22,13 +22,13 @@ import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * DTO for CacheDistributionTask, contains information about node
  */
-public class CacheDistributionNode extends VisorDataTransferObject {
+public class CacheDistributionNode extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -116,8 +116,7 @@ public class CacheDistributionNode extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
         addrs = U.readString(in);
         userAttrs = U.readMap(in);
