@@ -403,12 +403,10 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         public CacheGroupInfo(String name, int cachesCnt) {
             this.name = name;
 
-            List<String> cacheNames = new ArrayList<>();
+            cacheNames = new ArrayList<>();
 
             for (int i = 0; i < cachesCnt; ++i)
                 cacheNames.add("test-cache-" + i);
-
-            this.cacheNames = Collections.unmodifiableList(cacheNames);
         }
 
         /** */
@@ -418,7 +416,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
         /** */
         public List<String> cacheNamesList() {
-            return cacheNames;
+            return Collections.unmodifiableList(cacheNames);
         }
 
         /** */
