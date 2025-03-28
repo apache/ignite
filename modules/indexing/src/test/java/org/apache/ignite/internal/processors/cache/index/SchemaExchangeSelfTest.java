@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -614,7 +615,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
 
-        if (filterNodeName != null && F.eq(name, filterNodeName))
+        if (filterNodeName != null && Objects.equals(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
 
         IgniteEx res = (IgniteEx)Ignition.start(cfg);

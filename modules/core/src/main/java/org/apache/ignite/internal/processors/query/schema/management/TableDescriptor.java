@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.schema.management;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -58,7 +59,7 @@ public class TableDescriptor {
         this.typeDesc = typeDesc;
         this.isSql = isSql;
 
-        if (F.isEmpty(typeDesc.affinityKey()) || F.eq(typeDesc.affinityKey(), typeDesc.keyFieldName()))
+        if (F.isEmpty(typeDesc.affinityKey()) || Objects.equals(typeDesc.affinityKey(), typeDesc.keyFieldName()))
             affKey = QueryUtils.KEY_FIELD_NAME;
         else if (typeDesc.customAffinityKeyMapper() || !typeDesc.fields().containsKey(typeDesc.affinityKey()))
             affKey = null;

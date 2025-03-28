@@ -18,7 +18,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -160,7 +160,7 @@ public class ColumnInformation {
 
         ColumnInformation info = (ColumnInformation)o;
 
-        return F.eq(schemaName, info.schemaName) && F.eq(tblName, info.tblName) && F.eq(colName, info.colName);
+        return Objects.equals(schemaName, info.schemaName) && Objects.equals(tblName, info.tblName) && Objects.equals(colName, info.colName);
     }
 
     /** {@inheritDoc} */

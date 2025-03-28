@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.security;
 
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.doPrivileged;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isInIgnitePackage;
@@ -49,7 +49,7 @@ public abstract class IgniteSecurityAdapter extends GridProcessorAdapter impleme
                 ProtectionDomain pd = doPrivileged(c::getProtectionDomain);
 
                 return pd != null
-                    && F.eq(CORE_CODE_SOURCE, pd.getCodeSource())
+                    && Objects.equals(CORE_CODE_SOURCE, pd.getCodeSource())
                     // It allows users create an Uber-JAR that includes both Ignite source code and custom classes
                     // and to pass mentioned classes to Ignite via public API (e.g. tasks execution).
                     // Otherwise, Ignite will treat custom classes as internal and block their execution through the

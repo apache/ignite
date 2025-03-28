@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -110,7 +110,7 @@ public class ClientListenerProtocolVersion implements Comparable<ClientListenerP
         if (obj != null && obj instanceof ClientListenerProtocolVersion) {
             ClientListenerProtocolVersion other = (ClientListenerProtocolVersion)obj;
 
-            return F.eq(major, other.major) && F.eq(minor, other.minor) && F.eq(maintenance, other.maintenance);
+            return Objects.equals(major, other.major) && Objects.equals(minor, other.minor) && Objects.equals(maintenance, other.maintenance);
         }
 
         return false;

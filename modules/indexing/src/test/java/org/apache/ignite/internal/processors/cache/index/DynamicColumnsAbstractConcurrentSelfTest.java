@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -62,7 +63,6 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.RunnableX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1156,7 +1156,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @return DDL operation future.
      */
     private static IgniteInternalFuture<?> addCols(Ignite node, String schemaName, QueryField... flds) {
-        final String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
+        final String cacheName = Objects.equals(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
 
         return ((IgniteEx)node).context().query().dynamicColumnAdd(cacheName, schemaName, TBL_NAME,
             Arrays.asList(flds), false, false);
@@ -1170,7 +1170,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @return DDL operation future.
      */
     private static IgniteInternalFuture<?> dropCols(Ignite node, String schemaName, String... flds) {
-        final String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
+        final String cacheName = Objects.equals(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
 
         return ((IgniteEx)node).context().query().dynamicColumnRemove(cacheName, schemaName, TBL_NAME,
             Arrays.asList(flds), false, false);

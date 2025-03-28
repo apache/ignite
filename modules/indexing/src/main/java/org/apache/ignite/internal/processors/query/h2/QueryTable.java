@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -152,7 +152,7 @@ public class QueryTable implements Message {
         if (obj instanceof QueryTable) {
             QueryTable other = (QueryTable)obj;
 
-            return F.eq(tbl, other.tbl) && F.eq(schema, other.schema);
+            return Objects.equals(tbl, other.tbl) && Objects.equals(schema, other.schema);
         }
 
         return super.equals(obj);

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -185,7 +186,7 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
             if (name instanceof Object[])
                 return Arrays.equals((Object[])name, (Object[])((Person)obj).name);
 
-            return F.eq(name, ((Person)obj).name);
+            return Objects.equals(name, ((Person)obj).name);
         }
     }
 

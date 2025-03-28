@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -619,13 +620,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+            if (Objects.equals(prop.name(), keyFieldAlias()) || (keyFieldName == null && Objects.equals(prop.name(), KEY_FIELD_NAME))) {
                 propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
-            else if (F.eq(prop.name(), valueFieldAlias()) ||
-                (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
+            else if (Objects.equals(prop.name(), valueFieldAlias()) ||
+                (valFieldName == null && Objects.equals(prop.name(), VAL_FIELD_NAME)))
                 propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
             else
                 propVal = prop.value(key, val);
@@ -683,12 +684,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 Object propVal;
                 Class<?> propType;
 
-                if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
+                if (Objects.equals(idxField, keyFieldAlias()) || Objects.equals(idxField, KEY_FIELD_NAME)) {
                     propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                     propType = propVal == null ? null : propVal.getClass();
                 }
-                else if (F.eq(idxField, valueFieldAlias()) || F.eq(idxField, VAL_FIELD_NAME)) {
+                else if (Objects.equals(idxField, valueFieldAlias()) || Objects.equals(idxField, VAL_FIELD_NAME)) {
                     propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
 
                     propType = propVal == null ? null : propVal.getClass();

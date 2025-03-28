@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -730,7 +731,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             GridContinuousHandler hnd = rmtInfo.hnd;
 
-            if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName()) && rmtInfo.clearDelayedRegister()) {
+            if (hnd.isQuery() && Objects.equals(ctx.name(), hnd.cacheName()) && rmtInfo.clearDelayedRegister()) {
                 GridContinuousHandler.RegisterStatus status = hnd.register(rmtInfo.nodeId, routineId, this.ctx);
 
                 assert status != GridContinuousHandler.RegisterStatus.DELAYED;
@@ -749,7 +750,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             GridContinuousHandler hnd = entry.getValue().hnd;
 
-            if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName()))
+            if (hnd.isQuery() && Objects.equals(ctx.name(), hnd.cacheName()))
                 it.remove();
         }
     }

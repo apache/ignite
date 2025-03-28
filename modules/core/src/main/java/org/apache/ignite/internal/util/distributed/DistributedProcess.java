@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -216,7 +217,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             for (Process p : processes.values()) {
                 p.initFut.listen(() -> {
-                    if (F.eq(leftNodeId, p.crdId)) {
+                    if (Objects.equals(leftNodeId, p.crdId)) {
                         ClusterNode crd = coordinator();
 
                         if (crd == null) {
@@ -233,7 +234,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         if (!ctx.clientNode() || p.waitClnRes)
                             p.resFut.listen(() -> sendSingleMessage(p));
                     }
-                    else if (F.eq(ctx.localNodeId(), p.crdId)) {
+                    else if (Objects.equals(ctx.localNodeId(), p.crdId)) {
                         boolean isEmpty = false;
 
                         synchronized (mux) {
@@ -297,7 +298,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         UUID crdId = p.crdId;
 
-        if (F.eq(ctx.localNodeId(), crdId))
+        if (Objects.equals(ctx.localNodeId(), crdId))
             onSingleNodeMessageReceived(singleMsg, crdId);
         else {
             try {

@@ -246,7 +246,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 while (futsIter.hasNext()) {
                     GenerateEncryptionKeyFuture fut = futsIter.next().getValue();
 
-                    if (!F.eq(leftNodeId, fut.nodeId()))
+                    if (!Objects.equals(leftNodeId, fut.nodeId()))
                         return;
 
                     try {
@@ -476,7 +476,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 break;
             }
 
-            if (rmtKeyEncrypted == null || F.eq(locEncKey.key(), getSpi().decryptKey(rmtKeyEncrypted.key())))
+            if (rmtKeyEncrypted == null || Objects.equals(locEncKey.key(), getSpi().decryptKey(rmtKeyEncrypted.key())))
                 continue;
 
             // The remote node should not rotate the cache key to the current one

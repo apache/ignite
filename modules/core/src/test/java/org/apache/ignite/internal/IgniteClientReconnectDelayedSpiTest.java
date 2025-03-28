@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -98,7 +98,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return F.eq(true, srvDisco.cacheClientNode(client.cluster().localNode(), DEFAULT_CACHE_NAME));
+                return Objects.equals(true, srvDisco.cacheClientNode(client.cluster().localNode(), DEFAULT_CACHE_NAME));
             }
         }, 5000));
     }

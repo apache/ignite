@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -265,7 +265,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
 
         GridTuple5<?, ?, ?, ?, ?> t = (GridTuple5<?, ?, ?, ?, ?>)o;
 
-        return F.eq(v1, t.v1) && F.eq(v2, t.v2) && F.eq(v3, t.v3) && F.eq(v4, t.v4) && F.eq(v5, t.v5);
+        return Objects.equals(v1, t.v1) && Objects.equals(v2, t.v2) && Objects.equals(v3, t.v3) && Objects.equals(v4, t.v4) && Objects.equals(v5, t.v5);
     }
 
     /** {@inheritDoc} */

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -66,7 +66,7 @@ public class PartitionReservationKey {
 
         PartitionReservationKey other = (PartitionReservationKey)o;
 
-        return F.eq(cacheName, other.cacheName) && F.eq(topVer, other.topVer);
+        return Objects.equals(cacheName, other.cacheName) && Objects.equals(topVer, other.topVer);
 
     }
 

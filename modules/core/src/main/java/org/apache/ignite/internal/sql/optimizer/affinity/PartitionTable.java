@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -89,7 +89,7 @@ public class PartitionTable {
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isAffinityColumn(String colName) {
-        return F.eq(colName, affColName) || F.eq(colName, secondAffColName);
+        return Objects.equals(colName, affColName) || Objects.equals(colName, secondAffColName);
     }
 
     /**

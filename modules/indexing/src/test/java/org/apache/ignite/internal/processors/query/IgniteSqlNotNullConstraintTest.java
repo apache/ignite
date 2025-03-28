@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
@@ -1148,7 +1149,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
     /** */
     private void checkNodeState(IgniteEx node, String schemaName, String tableName, String fieldName) {
-        String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ?
+        String cacheName = Objects.equals(schemaName, QueryUtils.DFLT_SCHEMA) ?
             QueryUtils.createTableCacheName(schemaName, tableName) : schemaName;
 
         DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
@@ -1162,7 +1163,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         QueryEntity entity = null;
 
         for (QueryEntity e : schema.entities()) {
-            if (F.eq(tableName, e.getTableName())) {
+            if (Objects.equals(tableName, e.getTableName())) {
                 entity = e;
 
                 break;
@@ -1207,7 +1208,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
             Person other = (Person)o;
 
-            return F.eq(other.name, name) && other.age == age;
+            return Objects.equals(other.name, name) && other.age == age;
         }
     }
 

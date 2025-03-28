@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql;
 
+import java.util.Objects;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
@@ -287,7 +288,7 @@ public class SqlParserUtils {
      * @param tokenTyp Expected token type.
      */
     public static void skipIfMatches(SqlLexer lex, SqlLexerTokenType tokenTyp) {
-        if (lex.shift() && F.eq(lex.tokenType(), tokenTyp))
+        if (lex.shift() && Objects.equals(lex.tokenType(), tokenTyp))
             return;
 
         throw errorUnexpectedToken(lex, tokenTyp.asString());

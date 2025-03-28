@@ -19,9 +19,9 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -112,7 +112,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
-        return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
-            F.eq(tbl.alias(), other.tbl.alias());
+        return Objects.equals(constant(), other.constant()) && Objects.equals(value(), other.value()) &&
+            Objects.equals(tbl.alias(), other.tbl.alias());
     }
 }

@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -421,7 +422,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (spi instanceof TcpDiscoverySpi)
             return ((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
         else
-            return F.eq(ctx.localNodeId(), coordinator().id());
+            return Objects.equals(ctx.localNodeId(), coordinator().id());
     }
 
     /** {@inheritDoc} */
@@ -683,7 +684,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 it.hasNext(); ) {
                 AuthenticateFuture f = it.next().getValue();
 
-                if (F.eq(nodeId, f.nodeId())) {
+                if (Objects.equals(nodeId, f.nodeId())) {
                     f.retry(true);
 
                     f.onDone();
@@ -693,7 +694,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             }
 
             // Coordinator left
-            if (F.eq(coordinator().id(), nodeId)) {
+            if (Objects.equals(coordinator().id(), nodeId)) {
                 // Refresh info about coordinator node.
                 crdNode = null;
 
@@ -792,7 +793,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (ctx.clientDisconnected() || coordinator() == null)
             return;
 
-        if (F.eq(coordinator().id(), ctx.localNodeId())) {
+        if (Objects.equals(coordinator().id(), ctx.localNodeId())) {
             assert initUsrs == null;
 
             // Creates default user on coordinator if it is the first start of PDS cluster

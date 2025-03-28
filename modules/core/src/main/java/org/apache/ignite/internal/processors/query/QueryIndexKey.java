@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -60,7 +60,7 @@ public class QueryIndexKey implements Serializable {
 
         QueryIndexKey other = (QueryIndexKey)o;
 
-        return F.eq(name, other.name) && F.eq(schemaName, other.schemaName);
+        return Objects.equals(name, other.name) && Objects.equals(schemaName, other.schemaName);
     }
 
     /** {@inheritDoc} */

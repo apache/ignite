@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
@@ -554,7 +555,7 @@ public class QueryParser {
      * @return Statement.
      */
     private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
+        if (Objects.equals(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
             throw new IgniteSQLException("DML statements are not supported on " + planKey.schemaName() + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 

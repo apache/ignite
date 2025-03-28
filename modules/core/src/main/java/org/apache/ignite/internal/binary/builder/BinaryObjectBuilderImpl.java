@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
@@ -436,7 +437,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else if (!nullFieldVal) {
             String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
 
-            if (!F.eq(newFldTypeName, oldFldTypeName) &&
+            if (!Objects.equals(newFldTypeName, oldFldTypeName) &&
                 !oldFldTypeName.equals(BinaryUtils.fieldTypeName(GridBinaryMarshaller.OBJ))) {
                 throw new BinaryObjectException(
                     "Wrong value has been set [" +

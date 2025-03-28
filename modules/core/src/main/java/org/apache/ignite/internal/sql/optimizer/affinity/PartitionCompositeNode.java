@@ -20,10 +20,10 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -239,7 +239,7 @@ public class PartitionCompositeNode implements PartitionNode {
                 for (PartitionSingleNode curConst : consts) {
                     if (curTblAlias == null)
                         curTblAlias = curConst.table().alias();
-                    else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                    else if (!Objects.equals(curTblAlias, curConst.table().alias())) {
                         sameTbl = false;
 
                         break;
@@ -250,7 +250,7 @@ public class PartitionCompositeNode implements PartitionNode {
                     for (PartitionSingleNode curConst : rightConsts) {
                         if (curTblAlias == null)
                             curTblAlias = curConst.table().alias();
-                        else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                        else if (!Objects.equals(curTblAlias, curConst.table().alias())) {
                             sameTbl = false;
 
                             break;
@@ -353,7 +353,7 @@ public class PartitionCompositeNode implements PartitionNode {
             return left;
 
         // If both sides are constants from the same table and they are not equal, this is empty set.
-        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.table().alias()))
+        if (left.constant() && right.constant() && Objects.equals(left.table().alias(), right.table().alias()))
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 

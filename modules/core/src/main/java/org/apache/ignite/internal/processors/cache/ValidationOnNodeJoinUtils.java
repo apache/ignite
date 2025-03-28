@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -170,7 +171,7 @@ public class ValidationOnNodeJoinUtils {
 
                 // Peform checks of SQL schema. If schemas' names not equal, only valid case is if local or joined
                 // QuerySchema is empty and schema name is null (when indexing enabled dynamically).
-                if (!F.eq(joinedSchema, locSchema)
+                if (!Objects.equals(joinedSchema, locSchema)
                         && (locSchema != null || !locDesc.schema().isEmpty())
                         && (joinedSchema != null || !F.isEmpty(joinedQryEntities))) {
                     errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
@@ -351,7 +352,7 @@ public class ValidationOnNodeJoinUtils {
         if (ctx.query().moduleEnabled()) {
             String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
 
-            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+            if (Objects.equals(schema, QueryUtils.SCHEMA_SYS)) {
                 if (cc.getSqlSchema() == null) {
                     // Conflict on cache name.
                     throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +

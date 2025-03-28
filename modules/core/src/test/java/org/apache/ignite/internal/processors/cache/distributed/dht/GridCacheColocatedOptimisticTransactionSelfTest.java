@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -118,7 +118,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
                 tx = cacheInner.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
                 try {
-                    assert F.eq(VAL, cacheInner.get(KEY));
+                    assert Objects.equals(VAL, cacheInner.get(KEY));
 
                     tx.commit();
                 }

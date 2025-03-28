@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -1727,7 +1728,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected CacheConfiguration cacheConfiguration(IgniteConfiguration cfg, String cacheName) {
         for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg.getName()))
+            if (Objects.equals(cacheName, ccfg.getName()))
                 return ccfg;
         }
 
@@ -1872,7 +1873,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             Object item1 = it1.next();
             Object item2 = it2.next();
 
-            if (!F.eq(item1, item2))
+            if (!Objects.equals(item1, item2))
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
@@ -1906,7 +1907,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         for (Map.Entry<K, V> e : exp.entrySet()) {
             if (!act.containsKey(e.getKey()))
                 fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
-            else if (!F.eq(e.getValue(), act.get(e.getKey())))
+            else if (!Objects.equals(e.getValue(), act.get(e.getKey())))
                 fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
         }
     }
