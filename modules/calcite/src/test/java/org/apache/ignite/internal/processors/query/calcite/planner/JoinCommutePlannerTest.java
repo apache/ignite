@@ -185,8 +185,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     public void testOuterCommute() throws Exception {
         String sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
-        IgniteRel phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+        IgniteRel phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin",
+            "HashJoinConverter");
 
         assertNotNull(phys);
 
@@ -198,8 +198,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertEquals(JoinRelType.LEFT, join.getJoinType());
 
-        PlanningContext ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter",
-            "CorrelatedNestedLoopJoin");
+        PlanningContext ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin",
+            "HashJoinConverter");
 
         RelOptPlanner pl = ctx.cluster().getPlanner();
 
@@ -209,8 +209,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "HashJoinConverter",
+            "JoinCommuteRule");
 
         join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
 
@@ -221,8 +221,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.RIGHT, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "HashJoinConverter",
+            "JoinCommuteRule");
 
         pl = ctx.cluster().getPlanner();
 
@@ -238,8 +238,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     public void testInnerCommute() throws Exception {
         String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
-        IgniteRel phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+        IgniteRel phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin",
+            "HashJoinConverter");
 
         assertNotNull(phys);
 
@@ -266,8 +266,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        PlanningContext ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter",
-            "CorrelatedNestedLoopJoin");
+        PlanningContext ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin",
+            "HashJoinConverter");
 
         RelOptPlanner pl = ctx.cluster().getPlanner();
 
@@ -277,8 +277,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "HashJoinConverter",
+            "JoinCommuteRule");
 
         join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
         proj = findFirstNode(phys, byClass(IgniteProject.class));
@@ -304,8 +304,8 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "HashJoinConverter",
+            "JoinCommuteRule");
 
         pl = ctx.cluster().getPlanner();
 
