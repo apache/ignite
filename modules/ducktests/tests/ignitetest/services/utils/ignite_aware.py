@@ -157,6 +157,24 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         for pid in pids:
             node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
 
+    def freeze_node(self, node):
+        """
+        Pause process in its current state using SIGSTOP.
+        """
+        pids = self.pids(node)
+
+        for pid in pids:
+            node.account.signal(pid, signal.SIGSTOP, allow_fail=False)
+
+    def unfreeze_node(self, node):
+        """
+        Resume execution of process paused by SIGSTOP using SIGCONT
+        """
+        pids = self.pids(node)
+
+        for pid in pids:
+            node.account.signal(pid, signal.SIGCONT, allow_fail=False)
+
     def clean(self, **kwargs):
         self.__restore_iptables()
 
