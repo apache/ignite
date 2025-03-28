@@ -19,12 +19,10 @@ package org.apache.ignite.lang;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.util.GridSetWrapper;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
@@ -131,7 +129,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
         set.add("v4");
         set.add("v5");
 
-        set.removeAll(IgniteUtils.addAll(new HashSet<String>(), "v2", "v4", "v5"));
+        set.removeAll(Set.of("v2", "v4", "v5"));
 
         assertEquals(2, set.size());
 

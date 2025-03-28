@@ -1537,15 +1537,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
-         * Awaits a signal on flush condition.
-         *
-         * @throws IgniteInterruptedCheckedException If thread was interrupted.
-         */
-        private void waitForFlush() throws IgniteInterruptedCheckedException {
-            U.await(flushCond);
-        }
-
-        /**
          * Signals flush condition.
          */
         @SuppressWarnings({"SignalWithoutCorrespondingAwait"})
