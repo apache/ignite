@@ -191,29 +191,20 @@ public class CommandHandler {
      */
     public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
-        Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        if (!F.isEmpty(it)) {
-            for (CommandsProvider provider : it) {
-                if (logger.isDebugEnabled())
-                    logger.debug("Registering pluggable commands provider: " + provider);
+        CommandUtils.loadExternalCommands().forEach(cmd -> {
+            String k = cmdText(cmd);
 
-                provider.commands().forEach(cmd -> {
-                    String k = cmdText(cmd);
+            if (logger.isDebugEnabled())
+                logger.debug("Registering command: " + k);
 
-                    if (logger.isDebugEnabled())
-                        logger.debug("Registering command: " + k);
-
-                    if (registry.command(k) != null) {
-                        throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
-                            provider + " tries to register command " + cmd + ", but this command has already been " +
-                            "registered " + registry.command(k));
-                    }
-                    else
-                        registry.register(cmd);
-                });
+            if (registry.command(k) != null) {
+                throw new IllegalArgumentException("Found conflict for command " + k + ". Tries to register command " + cmd +
+                    ", but this command has already been " + "registered " + registry.command(k));
             }
-        }
+            else
+                registry.register(cmd);
+        });
     }
 
     /**
