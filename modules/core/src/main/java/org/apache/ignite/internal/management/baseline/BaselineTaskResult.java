@@ -247,7 +247,6 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(clusterState.active());
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
@@ -259,7 +258,6 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        in.readBoolean();
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
