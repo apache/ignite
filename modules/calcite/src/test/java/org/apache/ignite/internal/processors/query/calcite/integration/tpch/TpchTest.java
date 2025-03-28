@@ -57,7 +57,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
      * Test the TPC-H query can be planned and executed.
      */
     @Test
-    public void test() throws Exception {
+    public void test() {
         sql(TpchHelper.getQuery(qryId));
     }
 }
