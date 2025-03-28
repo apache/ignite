@@ -416,7 +416,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
         /** */
         public List<String> cacheNamesList() {
-            return Collections.unmodifiableList(cacheNames);
+            return cacheNames;
         }
 
         /** */
