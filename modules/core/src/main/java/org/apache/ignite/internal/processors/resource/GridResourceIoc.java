@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -310,7 +309,7 @@ public class GridResourceIoc {
             recursiveFields = recursiveFieldsList.isEmpty() ? U.EMPTY_FIELDS
                 : recursiveFieldsList.toArray(new Field[recursiveFieldsList.size()]);
 
-            this.annMap = IgniteUtils.limitedMap(annMap.size());
+            this.annMap = U.limitedMap(annMap.size());
 
             for (Map.Entry<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> entry
                 : annMap.entrySet()) {

@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -186,7 +185,7 @@ public class QueryEntity extends VisorDataTransferObject {
         U.writeString(out, keyType);
         U.writeString(out, valType);
         U.writeCollection(out, keyFields);
-        IgniteUtils.writeStringMap(out, qryFlds);
+        U.writeStringMap(out, qryFlds);
         U.writeMap(out, aliases);
         U.writeCollection(out, grps);
         U.writeString(out, tblName);
@@ -199,7 +198,7 @@ public class QueryEntity extends VisorDataTransferObject {
         keyType = U.readString(in);
         valType = U.readString(in);
         keyFields = U.readList(in);
-        qryFlds = IgniteUtils.readStringMap(in);
+        qryFlds = U.readStringMap(in);
         aliases = U.readMap(in);
         grps = U.readList(in);
         tblName = U.readString(in);

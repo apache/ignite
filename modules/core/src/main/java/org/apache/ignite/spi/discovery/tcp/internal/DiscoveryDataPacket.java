@@ -408,21 +408,6 @@ public class DiscoveryDataPacket implements Serializable {
     }
 
     /**
-     * @param log Logger.
-     */
-    public void unzipData(IgniteLogger log) {
-        for (Map.Entry<Integer, byte[]> entry : joiningNodeData.entrySet()) {
-            try {
-                entry.setValue(U.unzip(entry.getValue()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unzip discovery data " +
-                    "[comp=" + entry.getKey() + ']', e);
-            }
-        }
-    }
-
-    /**
      * TODO https://issues.apache.org/jira/browse/IGNITE-4435
      */
     private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
