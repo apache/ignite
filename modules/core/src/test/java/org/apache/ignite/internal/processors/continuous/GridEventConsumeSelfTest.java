@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
@@ -1250,7 +1251,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.waitForAllFutures(starterFut, stopperFut, nodeRestarterFut, jobRunnerFut);
 
-            Collection<UUID> notStopped = F.lose(started, true, stopped);
+            Collection<UUID> notStopped = started.stream().filter(n -> !stopped.contains(n)).collect(Collectors.toList());
 
             assertEquals("Not stopped IDs: " + notStopped, 0, notStopped.size());
         }
