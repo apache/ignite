@@ -195,7 +195,8 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
         JdbcColumnMeta meta = (JdbcColumnMeta)o;
 
-        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName) && Objects.equals(colName, meta.colName);
+        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName)
+            && Objects.equals(colName, meta.colName);
     }
 
     /** {@inheritDoc} */

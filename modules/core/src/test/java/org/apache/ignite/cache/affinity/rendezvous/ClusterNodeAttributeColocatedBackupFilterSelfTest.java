@@ -28,9 +28,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -155,7 +155,8 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
             grid(0).cluster().setBaselineTopology(topVer);
 
             // Wait for rebalance and assignment change to ideal assignment.
-            assertTrue(GridTestUtils.waitForCondition(() -> Objects.equals(grid(0).context().discovery().topologyVersionEx(), new AffinityTopologyVersion(topVer, 2)), 5_000L));
+            assertTrue(waitForCondition(() -> Objects.equals(grid(0).context().discovery().topologyVersionEx(),
+                    new AffinityTopologyVersion(topVer, 2)), 5_000L));
 
             assertNotEquals(partToAttr, partToAttribute(grid(0).cache(DEFAULT_CACHE_NAME), aff.partitions()));
         }

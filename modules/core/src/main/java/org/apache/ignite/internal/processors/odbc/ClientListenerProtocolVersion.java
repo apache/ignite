@@ -110,7 +110,8 @@ public class ClientListenerProtocolVersion implements Comparable<ClientListenerP
         if (obj != null && obj instanceof ClientListenerProtocolVersion) {
             ClientListenerProtocolVersion other = (ClientListenerProtocolVersion)obj;
 
-            return Objects.equals(major, other.major) && Objects.equals(minor, other.minor) && Objects.equals(maintenance, other.maintenance);
+            return Objects.equals(major, other.major) && Objects.equals(minor, other.minor)
+                && Objects.equals(maintenance, other.maintenance);
         }
 
         return false;

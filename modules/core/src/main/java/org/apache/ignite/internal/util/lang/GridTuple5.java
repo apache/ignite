@@ -265,7 +265,8 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
 
         GridTuple5<?, ?, ?, ?, ?> t = (GridTuple5<?, ?, ?, ?, ?>)o;
 
-        return Objects.equals(v1, t.v1) && Objects.equals(v2, t.v2) && Objects.equals(v3, t.v3) && Objects.equals(v4, t.v4) && Objects.equals(v5, t.v5);
+        return Objects.equals(v1, t.v1) && Objects.equals(v2, t.v2) && Objects.equals(v3, t.v3)
+            && Objects.equals(v4, t.v4) && Objects.equals(v5, t.v5);
     }
 
     /** {@inheritDoc} */
