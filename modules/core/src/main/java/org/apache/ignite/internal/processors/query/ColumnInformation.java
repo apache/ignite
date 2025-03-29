@@ -160,7 +160,8 @@ public class ColumnInformation {
 
         ColumnInformation info = (ColumnInformation)o;
 
-        return Objects.equals(schemaName, info.schemaName) && Objects.equals(tblName, info.tblName) && Objects.equals(colName, info.colName);
+        return Objects.equals(schemaName, info.schemaName) && Objects.equals(tblName, info.tblName)
+            && Objects.equals(colName, info.colName);
     }
 
     /** {@inheritDoc} */

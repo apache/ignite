@@ -298,7 +298,8 @@ public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Ext
 
         GridTuple6<?, ?, ?, ?, ?, ?> t = (GridTuple6<?, ?, ?, ?, ?, ?>)o;
 
-        return Objects.equals(v1, t.v1) && Objects.equals(v2, t.v2) && Objects.equals(v3, t.v3) && Objects.equals(v4, t.v4) && Objects.equals(v5, t.v5) && Objects.equals(v6, t.v6);
+        return Objects.equals(v1, t.v1) && Objects.equals(v2, t.v2) && Objects.equals(v3, t.v3)
+            && Objects.equals(v4, t.v4) && Objects.equals(v5, t.v5) && Objects.equals(v6, t.v6);
     }
 
     /** {@inheritDoc} */

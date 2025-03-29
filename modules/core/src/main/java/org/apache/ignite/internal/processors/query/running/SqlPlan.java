@@ -102,7 +102,7 @@ public class SqlPlan {
 
         SqlPlan plan0 = (SqlPlan)o;
 
-        return Objects.equals(plan, plan0.plan) && Objects.equals(qry, plan0.qry) && Objects.equals(schema, plan0.schema) && Objects.equals(loc, plan0.loc)
-            && Objects.equals(engine, plan0.engine);
+        return Objects.equals(plan, plan0.plan) && Objects.equals(qry, plan0.qry) && Objects.equals(schema, plan0.schema)
+            && Objects.equals(loc, plan0.loc) && Objects.equals(engine, plan0.engine);
     }
 }

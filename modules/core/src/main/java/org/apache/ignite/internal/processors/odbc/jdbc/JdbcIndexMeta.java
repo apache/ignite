@@ -180,7 +180,8 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         JdbcIndexMeta meta = (JdbcIndexMeta)o;
 
-        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName) && Objects.equals(idxName, meta.idxName);
+        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName)
+            && Objects.equals(idxName, meta.idxName);
     }
 
     /** {@inheritDoc} */
