@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.lang.management.ThreadInfo;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -113,6 +114,20 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     /** Reads collecting performance statistics files. */
     public static void readFiles(List<File> files, TestHandler... handlers) throws Exception {
         new FilePerformanceStatisticsReader(handlers).read(files);
+    }
+
+    /**
+     * @param files Performance statistics files.
+     */
+    File getMainStatisticsFile(List<File> files) {
+        File file = files.stream()
+            .filter(file1 -> file1.getName()
+                .matches("node-" + nodeId(0) + ".prf"))
+            .findFirst().orElse(null);
+
+        assertNotNull(file);
+
+        return file;
     }
 
     /** Wait for statistics started/stopped in the cluster. */
@@ -235,6 +250,11 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void systemView(UUID id, String name, Map<String, Object> data) {
             // No-op.
         }
     }
