@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -28,6 +29,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.ByteBuffer.allocateDirect;
@@ -55,6 +58,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
@@ -86,7 +90,8 @@ public class FilePerformanceStatisticsReader {
         "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /** File name pattern. */
-    private static final Pattern FILE_PATTERN = Pattern.compile("^node-(" + UUID_STR_PATTERN + ")(-\\d+)?.prf$");
+    private static final List<Pattern> FILE_PATTERNS = List.of(Pattern.compile("^node-(" + UUID_STR_PATTERN + ")(-\\d+)?.prf$"),
+        Pattern.compile("^node-(" + UUID_STR_PATTERN + ")-system-views(-\\d+)?.prf$"));
 
     /** No-op handler. */
     private static final PerformanceStatisticsHandler[] NOOP_HANDLER = {};
@@ -111,6 +116,9 @@ public class FilePerformanceStatisticsReader {
 
     /** Forward read mode. */
     private ForwardRead forwardRead;
+
+    /** Walkers for reading system view recors. */
+    Map<String, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -285,6 +293,35 @@ public class FilePerformanceStatisticsReader {
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.query(nodeId, qryType, text.str, id, startTime, duration, success);
 
+            return true;
+        }
+        else if (opType == SYSTEM_VIEW) {
+            ForwardableString viewName = readString(buf);
+            if (viewName == null)
+                return false;
+
+            ForwardableString walkerName = readString(buf);
+            if (walkerName == null)
+                return false;
+
+            SystemViewRowAttributeWalker<?> walker = walkers.computeIfAbsent(walkerName.str, className -> {
+                try {
+                    return (SystemViewRowAttributeWalker<?>)Class.forName(className).getConstructor().newInstance();
+                }
+                catch (ClassNotFoundException | InvocationTargetException | InstantiationException |
+                       IllegalAccessException | NoSuchMethodException e) {
+                    return null;
+                }
+            });
+
+            if (walker == null)
+                return false;
+
+            AttributeReaderVisitor visitor = new AttributeReaderVisitor();
+            walker.visitAll(visitor);
+
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.systemView(nodeId, viewName.str, visitor.row());
             return true;
         }
         else if (opType == QUERY_READS) {
@@ -512,12 +549,12 @@ public class FilePerformanceStatisticsReader {
 
     /** @return UUID node of file. {@code Null} if this is not a statistics file. */
     @Nullable private static UUID nodeId(File file) {
-        Matcher matcher = FILE_PATTERN.matcher(file.getName());
-
-        if (matcher.matches())
-            return UUID.fromString(matcher.group(1));
-
-        return null;
+        return FILE_PATTERNS.stream()
+            .map(pattern -> pattern.matcher(file.getName()))
+            .filter(Matcher::matches)
+            .findFirst()
+            .map(matcher -> UUID.fromString(matcher.group(1)))
+            .orElse(null);
     }
 
     /**
@@ -619,6 +656,90 @@ public class FilePerformanceStatisticsReader {
             this.curRecPos = curRecPos;
             this.nextRecPos = nextRecPos;
             this.bufPos = bufPos;
+        }
+    }
+
+    /** Write schema of system view to file. */
+    private class AttributeReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
+        /** Row. */
+        private final Map<String, Object> row = new LinkedHashMap<>();
+
+        /** Not enough bytes. */
+        private boolean notEnoughBytes;
+
+        /** */
+        public Map<String, Object> row() {
+            if (notEnoughBytes)
+                return null;
+            return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+            if (notEnoughBytes)
+                return;
+
+            if (clazz == int.class) {
+                if (buf.remaining() < 4) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.getInt());
+            }
+            else if (clazz == byte.class) {
+                if (buf.remaining() < 1) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.get());
+            }
+            else if (clazz == short.class) {
+                if (buf.remaining() < 2) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.getShort());
+            }
+            else if (clazz == long.class) {
+                if (buf.remaining() < 8) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.getLong());
+            }
+            else if (clazz == float.class) {
+                if (buf.remaining() < 4) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.getFloat());
+            }
+            else if (clazz == double.class) {
+                if (buf.remaining() < 8) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.getDouble());
+            }
+            else if (clazz == char.class) {
+                if (buf.remaining() < 2) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.getChar());
+            }
+            else if (clazz == boolean.class) {
+                if (buf.remaining() < 1) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.put(name, buf.get() != 0);
+            }
+            else {
+                ForwardableString str = readString(buf);
+                if (str != null)
+                    row.put(name, str.str);
+            }
         }
     }
 }
