@@ -57,6 +57,11 @@
             <artifactId>ignite-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+        </dependency>
+
         <!--
             Indexing is required for cross-engines tests.
         -->
