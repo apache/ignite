@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -37,7 +38,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -551,7 +551,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
                 CacheEvent foundEvt = null;
 
                 for (CacheEvent evt : evts) {
-                    if (F.eq(id, evt.node().id())) {
+                    if (Objects.equals(id, evt.node().id())) {
                         assertEquals(cClsName, evt.closureClassName());
 
                         foundEvt = evt;
@@ -564,7 +564,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
                     int gridIdx = -1;
 
                     for (int i = 0; i < GRID_CNT; i++) {
-                        if (F.eq(this.ids[i], id)) {
+                        if (Objects.equals(this.ids[i], id)) {
                             gridIdx = i;
 
                             break;

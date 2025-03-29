@@ -19,13 +19,13 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.jsr166.ConcurrentLinkedHashMap.DFLT_INIT_CAP;
@@ -129,7 +129,7 @@ public class IndexRowCache implements GridQueryRowCacheCleaner {
         while (iter.hasNext()) {
             IndexRowImpl row = iter.next().getValue();
 
-            if (F.eq(cacheId, row.cacheId()))
+            if (Objects.equals(cacheId, row.cacheId()))
                 iter.remove();
         }
     }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -90,7 +90,7 @@ public class UserManagementOperation implements Serializable {
 
         UserManagementOperation op = (UserManagementOperation)o;
 
-        return F.eq(id, op.id);
+        return Objects.equals(id, op.id);
     }
 
     /** {@inheritDoc} */

@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -1463,7 +1464,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         Object locBinaryCfg = locNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
 
-        if (!F.eq(locBinaryCfg, rmtBinaryCfg)) {
+        if (!Objects.equals(locBinaryCfg, rmtBinaryCfg)) {
             String msg = "Local node's binary configuration is not equal to remote node's binary configuration " +
                 "[locNodeId=%s, rmtNodeId=%s, locBinaryCfg=%s, rmtBinaryCfg=%s]";
 

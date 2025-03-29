@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -2234,7 +2235,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (cacheName == null)
                     cacheName = meta.cacheName;
                 else
-                    assert F.eq(cacheName, meta.cacheName);
+                    assert Objects.equals(cacheName, meta.cacheName);
 
                 types.addAll(meta.types);
                 keyClasses.putAll(meta.keyClasses);

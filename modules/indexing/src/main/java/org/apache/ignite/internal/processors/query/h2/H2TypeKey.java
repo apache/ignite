@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 
 /**
  * Key for types lookup.
@@ -50,7 +50,7 @@ public class H2TypeKey {
 
         H2TypeKey other = (H2TypeKey)o;
 
-        return F.eq(typeName, other.typeName) && F.eq(cacheName, other.cacheName);
+        return Objects.equals(typeName, other.typeName) && Objects.equals(cacheName, other.cacheName);
     }
 
     /** {@inheritDoc} */

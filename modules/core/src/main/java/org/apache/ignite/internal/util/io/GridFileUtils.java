@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -102,7 +102,7 @@ public class GridFileUtils {
             FileStore fs1 = Files.getFileStore(path1);
             FileStore fs2 = Files.getFileStore(path2);
 
-            if (!F.eq(fs1.name(), fs2.name())) {
+            if (!Objects.equals(fs1.name(), fs2.name())) {
                 throw new IgniteCheckedException("Paths are not stored at the same device or partition. " +
                     "Creating hard links is not available. [path1=" + path1 + ", path2=" + path2 +
                     ", fileStoreName1=" + fs1.name() + ", fileStoreName2=" + fs2.name() + ']');

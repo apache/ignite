@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Objects;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -195,7 +195,8 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
         JdbcColumnMeta meta = (JdbcColumnMeta)o;
 
-        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName) && F.eq(colName, meta.colName);
+        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName)
+            && Objects.equals(colName, meta.colName);
     }
 
     /** {@inheritDoc} */

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Objects;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -86,7 +86,7 @@ public class DmlStatementsProcessor {
                 return null;
 
             // Something happened to the cache while we were performing map-reduce.
-            if (!F.eq(entryVal, val))
+            if (!Objects.equals(entryVal, val))
                 return false;
 
             entryModifier.apply(entry);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -213,7 +214,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
             primaryNode(primaryNodeId, topVer);
 
-            if (!F.eq(this.dhtVer, dhtVer)) {
+            if (!Objects.equals(this.dhtVer, dhtVer)) {
                 value(val);
 
                 this.ver = ver;
@@ -255,7 +256,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         try {
             if (!obsolete()) {
                 // Don't set DHT version to null until we get a match from DHT remote transaction.
-                if (F.eq(this.dhtVer, dhtVer))
+                if (Objects.equals(this.dhtVer, dhtVer))
                     this.dhtVer = null;
 
                 // If we are here, then we already tried to evict this entry.

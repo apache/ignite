@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -200,11 +200,11 @@ public class QueryEntityEx extends QueryEntity {
 
         QueryEntityEx entity = (QueryEntityEx)o;
 
-        return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
+        return super.equals(entity) && Objects.equals(notNullFields, entity.notNullFields)
             && preserveKeysOrder == entity.preserveKeysOrder
             && implicitPk == entity.implicitPk
-            && F.eq(pkInlineSize, entity.pkInlineSize)
-            && F.eq(affKeyInlineSize, entity.affKeyInlineSize);
+            && Objects.equals(pkInlineSize, entity.pkInlineSize)
+            && Objects.equals(affKeyInlineSize, entity.affKeyInlineSize);
     }
 
     /** {@inheritDoc} */

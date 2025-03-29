@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
@@ -2815,7 +2816,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (skipCustomMsg) {
                         assert customDiscardId != null;
 
-                        if (F.eq(customDiscardId, msg.id)) {
+                        if (Objects.equals(customDiscardId, msg.id)) {
                             msg.msg = null;
 
                             if (msg.verified)
@@ -2827,7 +2828,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (skipMsg) {
                         assert discardId != null;
 
-                        if (F.eq(discardId, msg.id)) {
+                        if (Objects.equals(discardId, msg.id)) {
                             msg.msg = null;
 
                             if (msg.verified)
@@ -2902,7 +2903,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (skipCustomMsg) {
                             assert customDiscardId != null;
 
-                            if (F.eq(customDiscardId, msg0.id) && msg0.verified)
+                            if (Objects.equals(customDiscardId, msg0.id) && msg0.verified)
                                 skipCustomMsg = false;
 
                             continue;
@@ -2912,7 +2913,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (skipMsg) {
                             assert discardId != null;
 
-                            if (F.eq(discardId, msg0.id) && msg0.verified)
+                            if (Objects.equals(discardId, msg0.id) && msg0.verified)
                                 skipMsg = false;
 
                             continue;
@@ -4504,7 +4505,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 final String locMarsh = locNode.attribute(ATTR_MARSHALLER);
                 final String rmtMarsh = node.attribute(ATTR_MARSHALLER);
 
-                if (!F.eq(locMarsh, rmtMarsh)) {
+                if (!Objects.equals(locMarsh, rmtMarsh)) {
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {

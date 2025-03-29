@@ -23,6 +23,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -157,7 +157,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
                             if (val == null)
                                 throw new IgniteException("Failed to find atomic stamped with given name: " + name);
 
-                            if (F.eq(expVal, val.value()) && F.eq(expStamp, val.stamp())) {
+                            if (Objects.equals(expVal, val.value()) && Objects.equals(expStamp, val.stamp())) {
                                 cacheView.put(key, new GridCacheAtomicStampedValue<>(newVal, newStamp));
 
                                 tx.commit();
@@ -347,7 +347,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
             if (val == null)
                 throw new EntryProcessorException("Failed to find atomic stamped with given name: " + e.getKey().name());
 
-            if (F.eq(expVal, val.value()) && F.eq(expStamp, val.stamp())) {
+            if (Objects.equals(expVal, val.value()) && Objects.equals(expStamp, val.stamp())) {
                 e.setValue(new GridCacheAtomicStampedValue<>(newVal, newStamp));
 
                 return true;

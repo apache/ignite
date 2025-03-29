@@ -23,6 +23,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -161,7 +161,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
 
                             T curVal = ref.get();
 
-                            if (!F.eq(expVal, curVal))
+                            if (!Objects.equals(expVal, curVal))
                                 return false;
                             else {
                                 cacheView.put(key, new GridCacheAtomicReferenceValue<>(newVal));
@@ -210,7 +210,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
 
                             T curVal = ref.get();
 
-                            if (!F.eq(expVal, curVal))
+                            if (!Objects.equals(expVal, curVal))
                                 return curVal;
                             else {
                                 cacheView.put(key, new GridCacheAtomicReferenceValue<>(newVal));
@@ -353,7 +353,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
 
             T curVal = val.get();
 
-            if (F.eq(expVal, curVal)) {
+            if (Objects.equals(expVal, curVal)) {
                 e.setValue(new GridCacheAtomicReferenceValue<T>(newVal));
 
                 return true;
@@ -401,7 +401,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
 
             T curVal = val.get();
 
-            if (F.eq(expVal, curVal))
+            if (Objects.equals(expVal, curVal))
                 e.setValue(new GridCacheAtomicReferenceValue<T>(newVal));
 
             return curVal;

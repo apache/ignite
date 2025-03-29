@@ -47,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -1006,7 +1007,7 @@ public class BinaryUtils {
             assert oldMeta.typeId() == newMeta.typeId();
 
             // Check type name.
-            if (!F.eq(oldMeta.typeName(), newMeta.typeName())) {
+            if (!Objects.equals(oldMeta.typeName(), newMeta.typeName())) {
                 throw new BinaryObjectException(
                     "Two binary types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
                         ", typeName1=" + oldMeta.typeName() + ", typeName2=" + newMeta.typeName() + ']'
@@ -1014,7 +1015,7 @@ public class BinaryUtils {
             }
 
             // Check affinity field names.
-            if (!F.eq(oldMeta.affinityKeyFieldName(), newMeta.affinityKeyFieldName())) {
+            if (!Objects.equals(oldMeta.affinityKeyFieldName(), newMeta.affinityKeyFieldName())) {
                 throw new BinaryObjectException(
                     "Binary type has different affinity key fields [" + "typeName=" + newMeta.typeName() +
                         ", affKeyFieldName1=" + oldMeta.affinityKeyFieldName() +
@@ -1061,7 +1062,7 @@ public class BinaryUtils {
                     String oldFieldTypeName = fieldTypeName(oldFieldMeta.typeId());
                     String newFieldTypeName = fieldTypeName(newField.getValue().typeId());
 
-                    if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
+                    if (!Objects.equals(oldFieldTypeName, newFieldTypeName)) {
                         throw new BinaryObjectException(
                             "Type '" + oldMeta.typeName() + "' with typeId " + oldMeta.typeId()
                                 + " has a different/incorrect type for field '" + newField.getKey()

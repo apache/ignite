@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.ClientClusterGroup;
@@ -274,7 +275,7 @@ public class ClusterGroupTest extends AbstractThinClientTest {
 
         for (ClusterNode node1 : nodes1) {
             for (ClusterNode node2 : nodes2) {
-                if (F.eq(node1.id(), node2.id())) {
+                if (Objects.equals(node1.id(), node2.id())) {
                     assertTrue(node1 == node2); // Should be exactly the same instance.
 
                     foundCnt++;

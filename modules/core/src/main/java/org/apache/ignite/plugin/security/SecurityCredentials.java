@@ -21,9 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -175,7 +175,7 @@ public class SecurityCredentials implements Externalizable {
 
         SecurityCredentials that = (SecurityCredentials)o;
 
-        return F.eq(login, that.login) && F.eq(password, that.password) && F.eq(userObj, that.userObj);
+        return Objects.equals(login, that.login) && Objects.equals(password, that.password) && Objects.equals(userObj, that.userObj);
     }
 
     /** {@inheritDoc} */

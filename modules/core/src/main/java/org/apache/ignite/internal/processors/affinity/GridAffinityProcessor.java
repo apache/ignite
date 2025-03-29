@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -816,7 +817,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             AffinityAssignmentKey that = (AffinityAssignmentKey)o;
 
-            return topVer.equals(that.topVer) && F.eq(cacheName, that.cacheName);
+            return topVer.equals(that.topVer) && Objects.equals(cacheName, that.cacheName);
         }
 
         /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import javax.cache.CacheException;
@@ -27,7 +28,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -269,7 +269,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
         assert cls != null;
 
         for (Throwable th = t; th != null; th = th.getCause()) {
-            if (cls.isAssignableFrom(th.getClass()) && F.eq(th.getMessage(), msg))
+            if (cls.isAssignableFrom(th.getClass()) && Objects.equals(th.getMessage(), msg))
                 return true;
 
             for (Throwable n : th.getSuppressed()) {

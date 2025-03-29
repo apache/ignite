@@ -22,11 +22,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -90,7 +90,7 @@ public class H2Connection implements AutoCloseable {
      * @param schema Schema name set on this connection.
      */
     void schema(@Nullable String schema) {
-        if (schema != null && !F.eq(this.schema, schema)) {
+        if (schema != null && !Objects.equals(this.schema, schema)) {
             try {
                 if (schema.trim().isEmpty()) {
                     throw new IgniteSQLException("Failed to set schema for DB connection. " +

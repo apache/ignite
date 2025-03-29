@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC primary key metadata.
@@ -122,7 +122,7 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
         JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta)o;
 
-        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName) && F.eq(name, meta.name);
+        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName) && Objects.equals(name, meta.name);
     }
 
     /** {@inheritDoc} */

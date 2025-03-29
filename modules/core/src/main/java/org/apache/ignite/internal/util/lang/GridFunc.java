@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
@@ -1993,7 +1994,7 @@ public class GridFunc {
         Iterator<?> it2 = c2.iterator();
 
         while (it1.hasNext() && it2.hasNext())
-            if (!eq(it1.next(), it2.next()))
+            if (!Objects.equals(it1.next(), it2.next()))
                 return false;
 
         return it1.hasNext() == it2.hasNext();
@@ -2046,7 +2047,7 @@ public class GridFunc {
                 boolean found = false;
 
                 for (int i = p; i < size; i++) {
-                    if (eq(lst.get(i), o1)) {
+                    if (Objects.equals(lst.get(i), o1)) {
                         found = true;
 
                         if (i == p)
@@ -2123,7 +2124,7 @@ public class GridFunc {
                         return false;
                 }
                 else {
-                    if (!(v1.getClass().isArray() ? arrayEq(v1, v2) : eq(v1, v2)))
+                    if (!(v1.getClass().isArray() ? arrayEq(v1, v2) : Objects.equals(v1, v2)))
                         return false;
                 }
             }
