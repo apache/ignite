@@ -88,17 +88,16 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
             files.removeAll(filesBefore);
 
             filesBefore.addAll(files);
-
             rotateCollectStatistics();
 
             assertTrue(waitForCondition(lsnr::check, TIMEOUT));
 
-            checkFiles(files, NODES_CNT, NODES_CNT);
+            checkFiles(files, NODES_CNT * 2, NODES_CNT);
         }
 
         stopCollectStatistics();
 
-        checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
+        checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1) * 2, NODES_CNT * cnt);
     }
 
     /** Checks files and operations count. */
