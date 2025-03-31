@@ -107,12 +107,10 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     }
 
     /** @return Performance statistics file. */
-    File resolveStatisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
+    File resolveStatisticsFile(GridKernalContext ctx, String fileName) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
         File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
-
-        String fileName = fileName();
 
         File file = new File(fileDir, fileName + ".prf");
 
@@ -146,9 +144,6 @@ abstract class AbstractFilePerformanceStatisticsWriter {
 
     /**  */
     abstract String fileAbsolutePath();
-
-    /**  */
-    abstract String fileName();
 
     /** */
     abstract void start();

@@ -89,7 +89,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         File file;
         BufferedOutputStream outputStream;
         try {
-            file = resolveStatisticsFile(ctx);
+            file = resolveStatisticsFile(ctx, "node-" + nodeId + "-system-views");
             outputStream = new BufferedOutputStream(new FileOutputStream(file), flushSize);
         }
         catch (FileNotFoundException | IgniteCheckedException e) {
@@ -222,11 +222,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
     /** {@inheritDoc} */
     @Override String fileAbsolutePath() {
         return file.getAbsolutePath();
-    }
-
-    /** {@inheritDoc} */
-    @Override String fileName() {
-        return "node-" + nodeId + "-system-views";
     }
 
     /** Writes view row to file. */
