@@ -405,26 +405,20 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics writer. */
     private void rotateWriter() throws Exception {
         FilePerformanceStatisticsWriter oldWriter = null;
-        AbstractFilePerformanceStatisticsWriter oldSysViewWriter = null;
 
         synchronized (mux) {
             if (writer == null)
                 return;
 
             FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
-            AbstractFilePerformanceStatisticsWriter newSysViewWriter = new FilePerformanceStatisticsSystemViewWriter(ctx);
 
             newWriter.start();
-            newSysViewWriter.start();
 
             oldWriter = writer;
-            oldSysViewWriter = sysViewWriter;
 
             writer = newWriter;
-            sysViewWriter = newSysViewWriter;
 
             oldWriter.stop();
-            oldSysViewWriter.stop();
         }
 
         if (log.isInfoEnabled() && oldWriter != null)
