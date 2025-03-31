@@ -100,7 +100,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         this.file = file;
         this.outputStream = outputStream;
 
-        buf = ByteBuffer.allocate(bufSize);
+        buf = ByteBuffer.allocateDirect(bufSize);
         buf.order(ByteOrder.LITTLE_ENDIAN);
 
         // System views that won't be recorded. They may be large or copy another PerfStat values.
