@@ -115,7 +115,7 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
         log = ctx.log(getClass());
         nodeId = ctx.localNodeId();
 
-        file = resolveStatisticsFile(ctx);
+        file = resolveStatisticsFile(ctx, "node-" + nodeId);
 
         fileIo = fileIoFactory.create(file);
 
@@ -451,11 +451,6 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
     /** {@inheritDoc} */
     @Override String fileAbsolutePath() {
         return "";
-    }
-
-    /** {@inheritDoc} */
-    @Override String fileName() {
-        return "node-" + nodeId;
     }
 
     /** Worker to write to performance statistics file. */
