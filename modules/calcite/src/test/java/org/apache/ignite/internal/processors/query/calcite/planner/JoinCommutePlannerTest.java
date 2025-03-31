@@ -31,7 +31,6 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -42,14 +41,12 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMu
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
-/** Tests correctness applying of JOIN_COMMUTE* rules. */
+/** Tests correctness applying of JOIN_COMMUTE* and {@link IgniteMultiJoinOptimizeRule} rules. */
 public class JoinCommutePlannerTest extends AbstractPlannerTest {
     /** */
     private static IgniteSchema publicSchema;
@@ -58,47 +55,12 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        publicSchema = new IgniteSchema("PUBLIC");
+        IgniteDistribution distr = IgniteDistributions.affinity(0, "HUGE", "hash");
 
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        publicSchema.addTable(
-            "HUGE",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .build(), 1_000) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "HUGE", "hash");
-                }
-            }
-        );
-
-        publicSchema.addTable(
-            "AVERAGE",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .build(), 100) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "HUGE", "hash");
-                }
-            }
-        );
-
-        publicSchema.addTable(
-            "SMALL",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .build(), 10) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "SMALL", "hash");
-                }
-            }
+        publicSchema = createSchema(
+            createTable("SMALL", 10, distr, "ID", Integer.class),
+            createTable("AVERAGE", 100, distr, "ID", Integer.class),
+            createTable("HUGE", 1_000, distr, "ID", Integer.class)
         );
     }
 
@@ -194,7 +156,17 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         lsnr.attachTo(ctx.cluster().getPlanner());
 
+        // The join order optimization should not work. It disables the default join commute rules too.
+        // It works in a dedicated HEP planner. Let's check the logs.
+        LogListener logLsnr = LogListener.matches("Joins order optimization took").build();
+
+        lsnrLog.registerListener(logLsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
         physicalPlan(ctx);
+
+        assertFalse(logLsnr.check());
     }
 
     /** */
@@ -287,7 +259,9 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // Joins number is enough. But the optimization is disabled by the hint.
         sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id " +
             "JOIN AVERAGE a on a.id = h.id JOIN SMALL ss on ss.id = a.id";
+
         physicalPlan(sql, publicSchema);
+
         assertFalse(lsnr.check());
 
         // Joins number is enough. But the optimization is disabled by the hint for some joins.

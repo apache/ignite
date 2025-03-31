@@ -44,12 +44,8 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.rules.MultiJoin;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -67,7 +63,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -179,6 +174,26 @@ public class PlannerHelper {
     }
 
     /**
+     * To prevent long join order planning, disables {@link JoinCommuteRule} and/or {@link JoinPushThroughJoinRule} rules
+     * if the joins count reaches the thresholds.
+     *
+     * @return Original {@code rel}.
+     */
+    private static RelNode checkJoinsCommutes(IgnitePlanner planner, RelNode rel) {
+        int joinsCnt = RelOptUtil.countJoins(rel);
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE)
+            planner.addDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE_INPUTS) {
+            planner.addDisabledRules(Arrays.asList(JoinPushThroughJoinRule.LEFT.toString(),
+                JoinPushThroughJoinRule.RIGHT.toString()));
+        }
+
+        return rel;
+    }
+
+    /**
      * Tries to optimize joins order.
      *
      * @see JoinToMultiJoinRule
@@ -190,7 +205,7 @@ public class PlannerHelper {
         List<Join> joins = findNodes(root, Join.class, false);
 
         if (joins.isEmpty())
-            return root;
+            return checkJoinsCommutes(planner, root);
 
         int disabledCnt = 0;
 
@@ -206,7 +221,7 @@ public class PlannerHelper {
         }
 
         if (joins.size() - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
-            return root;
+            return checkJoinsCommutes(planner, root);
 
         long timing = System.nanoTime();
 
@@ -216,7 +231,7 @@ public class PlannerHelper {
 
         // Still has a MultiJoin, didn't manage to collect one flat join to optimize.
         if (!findNodes(res, MultiJoin.class, true).isEmpty())
-            return root;
+            return checkJoinsCommutes(planner, root);
 
         // If a new joins order was proposed, no need to launch another join order optimizations.
         planner.addDisabledRules(HintDefinition.ENFORCE_JOIN_ORDER.disabledRules().stream().map(RelOptRule::toString)
@@ -359,22 +374,6 @@ public class PlannerHelper {
         };
 
         root.accept(visitor);
-    }
-
-    /**
-     * To prevent long join order planning, disables {@link JoinCommuteRule} and/or {@link JoinPushThroughJoinRule} rules
-     * if the joins count reaches the thresholds.
-     */
-    private static void fastenJoinsOrder(IgnitePlanner planner, RelNode rel) {
-        int joinsCnt = RelOptUtil.countJoins(rel);
-
-        if (joinsCnt > MAX_JOINS_TO_COMMUTE)
-            planner.addDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
-
-        if (joinsCnt > MAX_JOINS_TO_COMMUTE_INPUTS) {
-            planner.addDisabledRules(Arrays.asList(JoinPushThroughJoinRule.LEFT.toString(),
-                JoinPushThroughJoinRule.RIGHT.toString()));
-        }
     }
 
     /**
