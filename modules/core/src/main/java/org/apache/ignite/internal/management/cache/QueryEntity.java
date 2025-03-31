@@ -25,16 +25,16 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link org.apache.ignite.cache.QueryEntity}.
  */
-public class QueryEntity extends VisorDataTransferObject {
+public class QueryEntity extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -195,7 +195,7 @@ public class QueryEntity extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         keyType = U.readString(in);
         valType = U.readString(in);
         keyFields = U.readList(in);
