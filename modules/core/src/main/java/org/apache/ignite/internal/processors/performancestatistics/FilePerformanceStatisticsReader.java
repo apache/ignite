@@ -118,7 +118,7 @@ public class FilePerformanceStatisticsReader {
     private ForwardRead forwardRead;
 
     /** Walkers for reading system view recors. */
-    Map<String, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
+    private final Map<String, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
