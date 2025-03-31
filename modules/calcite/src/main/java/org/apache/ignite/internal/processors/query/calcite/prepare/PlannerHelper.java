@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -40,10 +41,15 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.rules.MultiJoin;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -62,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -71,6 +78,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PlannerHelper {
+    /**
+     * Rule {@link JoinCommuteRule} takes too long when joins number grows. We disable this rule if query has joins
+     * count bigger than this value.
+     */
+    public static final int MAX_JOINS_TO_COMMUTE = 3;
+
+    /**
+     * Rules {@link JoinPushThroughJoinRule} (left and right) take too long when joins number grows. We disable this rule
+     * if query has joins count bigger than this value.
+     */
+    public static final int MAX_JOINS_TO_COMMUTE_INPUTS = 5;
+
     /**
      * Mininal joins number to launch {@link IgniteMultiJoinOptimizeRule}. Calcite's default join order optimization rules
      * like {@link JoinCommuteRule} or {@link JoinPushThroughJoinRule} take time but can give us better plans. They produce
@@ -340,6 +359,22 @@ public class PlannerHelper {
         };
 
         root.accept(visitor);
+    }
+
+    /**
+     * To prevent long join order planning, disables {@link JoinCommuteRule} and/or {@link JoinPushThroughJoinRule} rules
+     * if the joins count reaches the thresholds.
+     */
+    private static void fastenJoinsOrder(IgnitePlanner planner, RelNode rel) {
+        int joinsCnt = RelOptUtil.countJoins(rel);
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE)
+            planner.addDisabledRules(Collections.singletonList(CoreRules.JOIN_COMMUTE.toString()));
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE_INPUTS) {
+            planner.addDisabledRules(Arrays.asList(JoinPushThroughJoinRule.LEFT.toString(),
+                JoinPushThroughJoinRule.RIGHT.toString()));
+        }
     }
 
     /**

@@ -28,9 +28,9 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterab
 /**
  * Data transfer object for cache configuration properties.
  */
-public class CacheConfiguration extends VisorDataTransferObject {
+public class CacheConfiguration extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -539,11 +539,6 @@ public class CacheConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeString(out, grpName);
@@ -585,14 +580,12 @@ public class CacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
         U.writeIgniteUuid(out, dynamicDeploymentId);
-
-        // V2
         U.writeEnum(out, diskPageCompression);
         out.writeObject(diskPageCompressionLevel);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         grpName = U.readString(in);
         mode = CacheMode.fromCode(in.readByte());
@@ -633,11 +626,8 @@ public class CacheConfiguration extends VisorDataTransferObject {
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
         dynamicDeploymentId = U.readIgniteUuid(in);
-
-        if (protoVer > V1) {
-            diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
-            diskPageCompressionLevel = (Integer)in.readObject();
-        }
+        diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
+        diskPageCompressionLevel = (Integer)in.readObject();
     }
 
     /** {@inheritDoc} */
