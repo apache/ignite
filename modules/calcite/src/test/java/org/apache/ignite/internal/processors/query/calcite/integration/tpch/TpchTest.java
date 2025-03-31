@@ -17,68 +17,47 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
+import java.util.Collection;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-/**
- * Error in TPC-H Query #8 planning
- * <p>
- * Reproduced always.
- * <p>
- * If leave `calcite.volcano.dump.graphviz` = true and `calcite.volcano.dump.sets` = true, then this test
- * (if failed) would generate huge logs, allocate a lot of heap and hang the IDEA.
- */
-//@WithSystemProperty(key = "calcite.volcano.dump.graphviz", value = "false")
-//@WithSystemProperty(key = "calcite.volcano.dump.sets", value = "false")
+/** */
+@RunWith(Parameterized.class)
 public class TpchTest extends AbstractBasicIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
-
-//        cfg.setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true));
-
-        return cfg;
-    }
+    /** Query ID. */
+    @Parameterized.Parameter
+    public int qryId;
 
     /** */
-    @Test
-    public void test() throws Exception {
+    @Parameterized.Parameters(name = "queryId={0}")
+    public static Collection<Object> params() {
+        return F.asList(16, 20);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         TpchHelper.createTables(client);
 
-        // OK: 0.7
-        TpchHelper.fillTables(client, 0.85);
+        TpchHelper.fillTables(client, 0.1);
 
         TpchHelper.collectSqlStatistics(client);
-
-        System.gc(); System.gc(); System.gc();
-
-        System.err.println("TEST | sleeping"); Thread.sleep(3_000);
-
-        try (FieldsQueryCursor<List<?>> cur = exec(TpchHelper.getQuery(17))) {
-            for (List<?> next : cur)
-                System.err.println("TEST | next: " + next.stream().map(Object::toString).collect(Collectors.joining(", ")));
-        }
     }
 
-    /** */
-    protected FieldsQueryCursor<List<?>> exec(String sql) {
-        if (log.isInfoEnabled())
-            log.info("The test query:\n" + sql);
+    /** {@inheritDoc} */
+    @Override protected boolean destroyCachesAfterTest() {
+        return false;
+    }
 
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql.trim());
-
-        qry.setDistributedJoins(true);
-
-        return client.context().query().querySqlFields(qry, false);
+    /**
+     * Test the TPC-H query can be planned and executed.
+     */
+    @Test
+    public void test() {
+        sql(TpchHelper.getQuery(qryId));
     }
 }
