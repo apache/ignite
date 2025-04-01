@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -124,6 +125,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
 
             flush();
 
+
             log.info("Finished writing system views to performance statistics file: " + file + '.');
         }
 
@@ -167,8 +169,8 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 fileIo.write(buf.array(), 0, buf.position());
             }
             catch (IOException e) {
-                log.error("Failed to flush statistics file", e);
-                cancel();
+                log.error("Failed to flush statistics file: " + file, e);
+                throw new IgniteInterruptedException(e.getMessage());
             }
             buf.clear();
         }
