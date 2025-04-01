@@ -314,7 +314,7 @@ public class FilePerformanceStatisticsReader {
             });
 
             if (walker == null)
-                return false;
+                throw new IOException("Could not find walker: " + walkerName);
 
             AttributeReaderVisitor visitor = new AttributeReaderVisitor();
             walker.visitAll(visitor);
