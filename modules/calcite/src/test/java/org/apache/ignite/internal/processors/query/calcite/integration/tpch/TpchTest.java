@@ -34,7 +34,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Object> params() {
-        return F.asList(16, 20);
+        return F.asList(17);
     }
 
     /** {@inheritDoc} */
@@ -43,7 +43,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
 
         TpchHelper.createTables(client);
 
-        TpchHelper.fillTables(client, 0.1);
+        TpchHelper.fillTables(client, 0.75);
 
         TpchHelper.collectSqlStatistics(client);
     }
