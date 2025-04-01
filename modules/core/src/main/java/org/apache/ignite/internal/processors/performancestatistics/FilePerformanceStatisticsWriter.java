@@ -31,9 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntIterator;
@@ -77,20 +74,8 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
     /** File writer thread name. */
     static final String WRITER_THREAD_NAME = "performance-statistics-writer";
 
-    /** Factory to provide I/O interface. */
-    private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
-
-    /** Performance statistics file. */
-    private final File file;
-
-    /** Performance statistics file I/O. */
-    private final FileIO fileIo;
-
     /** Performance statistics file writer worker. */
     private final FileWriter fileWriter;
-
-    /** Node id. */
-    private final UUID nodeId;
 
     /** File writer thread started flag. */
     private boolean started;
@@ -112,14 +97,11 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
 
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+        super(ctx, "node-" + ctx.localNodeId());
+
         log = ctx.log(getClass());
-        nodeId = ctx.localNodeId();
 
-        file = resolveStatisticsFile(ctx, "node-" + nodeId);
-
-        fileIo = fileIoFactory.create(file);
-
-        log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
+        log.info("Performance statistics file created [file=" + fileAbsolutePath() + ']');
 
         ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
 
@@ -159,7 +141,7 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
             log.warning("Failed to fsync the performance statistics file.", e);
         }
 
-        U.closeQuiet(fileIo);
+        cleanup();
 
         started = false;
     }

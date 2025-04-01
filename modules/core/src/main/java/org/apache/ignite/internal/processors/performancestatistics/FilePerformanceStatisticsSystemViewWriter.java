@@ -17,17 +17,12 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -53,20 +48,11 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
     /** File writer thread name. */
     static final String WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
 
-    /** */
-    private final UUID nodeId;
-
-    /**  */
-    private final BufferedOutputStream outputStream;
-
     /** Logger. */
     private final IgniteLogger log;
 
     /** Buffer. */
     private final ByteBuffer buf;
-
-    /** File to write system views. */
-    private final File file;
 
     /** Writer. */
     private final FileWriter writer;
@@ -80,25 +66,12 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
     /**
      * @param ctx Kernal context.
      */
-    public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) {
+    public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+        super(ctx, "node-" + ctx.localNodeId() + "-system-views");
+
         log = ctx.log(getClass());
         sysViewMgr = ctx.systemView();
-        nodeId = ctx.localNodeId();
         writer = new FileWriter(ctx, log);
-
-        File file;
-        BufferedOutputStream outputStream;
-        try {
-            file = resolveStatisticsFile(ctx, "node-" + nodeId + "-system-views");
-            outputStream = new BufferedOutputStream(new FileOutputStream(file), flushSize);
-        }
-        catch (FileNotFoundException | IgniteCheckedException e) {
-            file = null;
-            outputStream = null;
-        }
-
-        this.file = file;
-        this.outputStream = outputStream;
 
         buf = ByteBuffer.allocateDirect(bufSize);
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -156,12 +129,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
 
         /** {@inheritDoc} */
         @Override protected void cleanup() {
-            try {
-                outputStream.close();
-            }
-            catch (IOException e) {
-                log.error("Failed to close statistics file", e);
-            }
+           FilePerformanceStatisticsSystemViewWriter.this.cleanup();
         }
 
         /**  */
@@ -196,7 +164,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         /**  */
         private void flush() {
             try {
-                outputStream.write(buf.array(), 0, buf.position());
+                fileIo.write(buf.array(), 0, buf.position());
             }
             catch (IOException e) {
                 log.error("Failed to flush statistics file", e);
