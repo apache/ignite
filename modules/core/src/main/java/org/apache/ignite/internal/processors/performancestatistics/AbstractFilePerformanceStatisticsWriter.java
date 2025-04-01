@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -66,6 +70,18 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     protected final int cachedStrsThreshold = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD,
         DFLT_CACHED_STRINGS_THRESHOLD);
 
+    /** Performance statistics file. */
+    protected final File file;
+
+    /** Factory to provide I/O interface. */
+    protected final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
+
+    /** Performance statistics file I/O. */
+    protected final FileIO fileIo;
+
+    /** Node id. */
+    protected final UUID nodeId;
+
     /** Count of cached strings. */
     protected volatile int knownStrsSz;
 
@@ -74,6 +90,12 @@ abstract class AbstractFilePerformanceStatisticsWriter {
 
     /**  */
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
+
+    protected AbstractFilePerformanceStatisticsWriter(GridKernalContext ctx, String fileName) throws IgniteCheckedException, IOException {
+        nodeId = ctx.localNodeId();
+        file = resolveStatisticsFile(ctx, fileName);
+        fileIo = fileIoFactory.create(file);
+    }
 
     /** Writes {@link UUID} to buffer. */
     static void writeUuid(ByteBuffer buf, UUID uuid) {
@@ -107,7 +129,7 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     }
 
     /** @return Performance statistics file. */
-    File resolveStatisticsFile(GridKernalContext ctx, String fileName) throws IgniteCheckedException {
+    private static File resolveStatisticsFile(GridKernalContext ctx, String fileName) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
         File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
@@ -142,8 +164,14 @@ abstract class AbstractFilePerformanceStatisticsWriter {
         return false;
     }
 
+    protected void cleanup() {
+        U.closeQuiet(fileIo);
+    }
+
     /**  */
-    abstract String fileAbsolutePath();
+    String fileAbsolutePath() {
+        return file.getAbsolutePath();
+    }
 
     /** */
     abstract void start();
