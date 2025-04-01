@@ -90,8 +90,7 @@ public class FilePerformanceStatisticsReader {
         "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /** File name pattern. */
-    private static final List<Pattern> FILE_PATTERNS = List.of(Pattern.compile("^node-(" + UUID_STR_PATTERN + ")(-\\d+)?.prf$"),
-        Pattern.compile("^node-(" + UUID_STR_PATTERN + ")-system-views(-\\d+)?.prf$"));
+    private static final Pattern FILE_NODE_ID_PATTERN = Pattern.compile("^node-(" + UUID_STR_PATTERN + ")[^.]*\\.prf$");
 
     /** No-op handler. */
     private static final PerformanceStatisticsHandler[] NOOP_HANDLER = {};
@@ -549,12 +548,12 @@ public class FilePerformanceStatisticsReader {
 
     /** @return UUID node of file. {@code Null} if this is not a statistics file. */
     @Nullable private static UUID nodeId(File file) {
-        return FILE_PATTERNS.stream()
-            .map(pattern -> pattern.matcher(file.getName()))
-            .filter(Matcher::matches)
-            .findFirst()
-            .map(matcher -> UUID.fromString(matcher.group(1)))
-            .orElse(null);
+        Matcher matcher = FILE_NODE_ID_PATTERN.matcher(file.getName());
+
+        if (matcher.matches())
+            return UUID.fromString(matcher.group(1));
+
+        return null;
     }
 
     /**
