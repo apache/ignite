@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -36,7 +37,8 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 
 /**
  * Performance statistics writer to record system views.
@@ -136,30 +138,56 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
 
         /**  */
         public void systemView(SystemView<?> view) {
-            try {
-                if (view.size() == 0)
-                    return;
-            }
-            catch (Exception e) {
-                return;
-            }
-
             SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
 
             AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
 
+            writeSchemaToBuf(walker, view.name());
+
+            view.forEach(row -> writeRowToBuf(row, valVisitor, walker));
+        }
+
+        /**
+         * @param walker Walker to visit view attributes.
+         * @param viewName View name.
+         */
+        private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) {
+            doWrite(buffer -> {
+                buffer.put(SYSTEM_VIEW_SCHEMA.id());
+                writeString(buf, viewName, cacheIfPossible(viewName));
+                writeString(buf, walker.getClass().getName(), cacheIfPossible(walker.getClass().getName()));
+            });
+        }
+
+        /**
+         * @param row        Row.
+         * @param valVisitor Value visitor.
+         * @param walker     Walker.
+         */
+        private void writeRowToBuf(Object row, AttributeWithValueWriterVisitor valVisitor,
+            SystemViewRowAttributeWalker<Object> walker) {
+            if (isCancelled())
+                return;
+
+            doWrite(buffer -> {
+                buf.put(SYSTEM_VIEW_ROW.id());
+                walker.visitAll(row, valVisitor);
+            });
+        }
+
+        /** */
+        private void doWrite(Consumer<ByteBuffer> consumer) {
+            if (isCancelled())
+                return;
+
             int beginPos = buf.position();
-            for (Object row : view) {
-                try {
-                    writeRowToBuf(row, valVisitor, walker, view.name());
-                }
-                catch (BufferOverflowException e) {
-                    buf.position(beginPos);
-                    flush();
-                    if (!isCancelled())
-                        writeRowToBuf(row, valVisitor, walker, view.name());
-                }
-                beginPos = buf.position();
+            try {
+                consumer.accept(buf);
+            }
+            catch (BufferOverflowException e) {
+                buf.position(beginPos);
+                flush();
+                consumer.accept(buf);
             }
         }
 
@@ -173,19 +201,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
                 throw new IgniteInterruptedException(e.getMessage());
             }
             buf.clear();
-        }
-
-        /**
-         * @param row        Row.
-         * @param valVisitor Value visitor.
-         * @param walker     Walker.
-         */
-        private void writeRowToBuf(Object row, AttributeWithValueWriterVisitor valVisitor,
-            SystemViewRowAttributeWalker<Object> walker, String viewName) {
-            buf.put(SYSTEM_VIEW.id());
-            writeString(buf, viewName, cacheIfPossible(viewName));
-            writeString(buf, walker.getClass().getName(), cacheIfPossible(walker.getClass().getName()));
-            walker.visitAll(row, valVisitor);
         }
     }
 
