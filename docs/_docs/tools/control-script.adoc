@@ -36,33 +36,129 @@ control.bat <connection parameters> <command> <arguments>
 
 == Connecting to Cluster
 
-When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:11211`).
+NOTE: Starting from Apache Ignite version 2.17, the utility by default uses a connection through the thin client protocol (configured on a node via `org.apache.ignite.configuration.ClientConnectorConfiguration`). See link:#migration-to-the-thin-client-protocol[Migration Notes] for more information.
+
+When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:10800`).
 If you want to connect to a node that is running on a remove machine, specify the connection parameters.
 
 [cols="2,3,1",opts="header"]
 |===
 |Parameter | Description | Default Value
-
 | --host HOST_OR_IP | The host name or IP address of the node. | `localhost`
-
-| --port PORT | The port to connect to. | `11211`
-
+| --port PORT | The port to connect to. | `10800`
 | --user USER | The user name. |
-| --password PASSWORD |The user password. |
-| --ping-interval PING_INTERVAL | The ping interval. | 5000
-| --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
+| --password | Force `control.sh` to prompt for a user password before connecting to a cluster. Although you can explicitly specify a value for this option like `--password PASSWORD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a user password if the server requires password authentication. However, `control.sh` will waste a connection attempt while determining whether the server needs a password. |
 | --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]. | `TLS`
 | --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names[Supported ciphers,window=_blank]. |
 | --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
 | --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
 | --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
-| --keystore-password KEYSTORE_PWD | The password to the keystore.  |
+| --keystore-password | Force `control.sh` to prompt for a keystore password before connecting to a cluster. Although you can explicitly specify a value for this option like `--keystore-password KEYSTORE_PWD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a keystore password before connecting to the cluster if `--keystore KEYSTORE_PATH` argument is specified. |
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
-| --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --truststore-password | Force `control.sh` to prompt for a truststore password before connecting to a cluster. Although you can explicitly specify a value for this option like `--truststore-password TRUSTSTORE_PWD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a truststore password before connecting to the cluster if `--truststore TRUSTSTORE_PATH` argument is specified. |
 | --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
+== Migration to the thin client protocol
+
+With the default configuration of Ignite, no migration actions will be required. Additional configuration of the connector is no longer necessary.
+
+If you connect to the wrong connector, you will receive an error and may see the message:
+
+`Make sure you are connecting to the client connector (configured on a node via 'org.apache.ignite.configuration.ClientConnectorConfiguration'). Connection to the REST connector was deprecated and will be removed for the control utility in future releases. Set up the 'IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION' system property to 'true' to forcefully connect to the REST connector (configured on a node via 'org.apache.ignite.configuration.ConnectorConfiguration').`
+
+To ensure backward compatibility, a system property has been added to provide the old behavior (note: it will be removed in version 2.18):
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+export IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION=true;
+control.sh --state --host x.x.x.x --port 11212
+----
+tab:Windows[]
+[source, shell]
+----
+SET IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION=true
+control.bat --state --host x.x.x.x --port 11212
+----
+--
+
+In some cases, the following actions may be required to migrate user scripts using the utility:
+
+=== 1. A custom port is specified:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --host x.x.x.x --port 11212
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --host x.x.x.x --port 11212
+----
+--
+
+To migrate, specify the port for the thin client connector:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --host x.x.x.x
+control.sh --state --host x.x.x.x --port 10801
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --host x.x.x.x
+control.bat --state --host x.x.x.x --port 10801
+----
+--
+
+=== 2. A custom SSL factory for the binary REST connector is specified, different from the SSL factory for the thin client connector:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --ssl-factory connector-ssl-factory.xml
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --ssl-factory connector-ssl-factory.xml
+----
+--
+
+To migrate, specify the SSL factory for the thin client connector:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --ssl-factory ignite-ssl-factory.xml
+control.sh --state --ssl-factory client-connector-ssl-factory.xml
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --ssl-factory ignite-ssl-factory.xml
+control.bat --state --ssl-factory client-connector-ssl-factory.xml
+----
+--
+
+=== 3. The client connector is disabled.
+
+Enable it in the configuration (`IgniteConfiguration#setClientConnectorConfiguration`).
 
 == Activation, Deactivation and Topology Management
 

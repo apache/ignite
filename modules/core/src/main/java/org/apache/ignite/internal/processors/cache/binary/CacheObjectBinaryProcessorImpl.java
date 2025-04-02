@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +49,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -91,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -112,7 +111,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -156,7 +154,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     private BinaryContext binaryCtx;
 
     /** */
-    private Marshaller marsh;
+    private final BinaryMarshaller marsh;
 
     /** */
     private GridBinaryMarshaller binaryMarsh;
@@ -216,159 +214,123 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     public CacheObjectBinaryProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.grid().configuration().getMarshaller();
+        marsh = ctx.grid().context().marshaller();
 
         ctx.systemView().registerView(BINARY_METADATA_VIEW, BINARY_METADATA_DESC, new BinaryMetadataViewWalker(),
             metadataLocCache.values(), val -> new BinaryMetadataView(val.metadata()));
     }
 
-    /**
-     * @param igniteWorkDir Basic ignite working directory.
-     * @param consId Node consistent id.
-     * @return Working directory.
-     */
-    public static File resolveBinaryWorkDir(String igniteWorkDir, String consId) {
-        File workDir = binaryWorkDir(igniteWorkDir, consId);
-
-        if (!U.mkdirs(workDir))
-            throw new IgniteException("Could not create directory for binary metadata: " + workDir);
-
-        return workDir;
-    }
-
-    /**
-     * @param igniteWorkDir Basic ignite working directory.
-     * @param consId Node consistent id.
-     * @return Working directory.
-     */
-    public static File binaryWorkDir(String igniteWorkDir, String consId) {
-        if (F.isEmpty(igniteWorkDir) || F.isEmpty(consId)) {
-            throw new IgniteException("Work directory or consistent id has not been set " +
-                "[igniteWorkDir=" + igniteWorkDir + ", consId=" + consId + ']');
-        }
-
-        return Paths.get(igniteWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, consId).toFile();
-    }
-
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (marsh instanceof BinaryMarshaller) {
-            if (!ctx.clientNode()) {
-                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache,
-                    ctx,
-                    log,
-                    CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null ?
-                        resolveBinaryWorkDir(ctx.config().getWorkDirectory(),
-                            ctx.pdsFolderResolver().resolveFolders().folderName()) :
-                        binaryMetadataFileStoreDir,
-                    false);
+        if (!ctx.clientNode()) {
+            if (BinaryMetadataFileStore.enabled(ctx.config()) && binaryMetadataFileStoreDir == null)
+                binaryMetadataFileStoreDir = ctx.pdsFolderResolver().fileTree().mkdirBinaryMeta();
 
-                metadataFileStore.start();
-            }
+            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir, false);
 
-            BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
-                @Override public void addMeta(
-                    int typeId,
-                    BinaryType newMeta,
-                    boolean failIfUnregistered) throws BinaryObjectException {
-                    assert newMeta != null;
-                    assert newMeta instanceof BinaryTypeImpl;
-
-                    if (!discoveryStarted) {
-                        BinaryMetadataHolder holder = metadataLocCache.get(typeId);
-
-                        BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
-
-                        BinaryMetadata mergedMeta = mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
-
-                        if (oldMeta != mergedMeta)
-                            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
-
-                        return;
-                    }
-
-                    BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
-
-                    CacheObjectBinaryProcessorImpl.this.addMeta(
-                        typeId,
-                        newMeta0.wrap(binaryCtx),
-                        failIfUnregistered
-                    );
-                }
-
-                @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
-                    throws BinaryObjectException {
-                    CacheObjectBinaryProcessorImpl.this.addMetaLocally(typeId, meta);
-                }
-
-                @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-                    return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
-                }
-
-                @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
-                    return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
-                }
-
-                @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-                    return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
-                }
-
-                @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
-                    return CacheObjectBinaryProcessorImpl.this.metadata();
-                }
-            };
-
-            BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
-
-            binaryCtx = useTestBinaryCtx ?
-                new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class)) :
-                new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
-
-            transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
-
-            bMarsh0.setBinaryContext(binaryCtx, ctx.config());
-
-            binaryMarsh = new GridBinaryMarshaller(binaryCtx);
-
-            binaries = new IgniteBinaryImpl(ctx, this);
-
-            if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-                BinaryConfiguration bCfg = ctx.config().getBinaryConfiguration();
-
-                if (bCfg != null) {
-                    Map<String, Object> map = new HashMap<>();
-
-                    map.put("globIdMapper", bCfg.getIdMapper() != null ? bCfg.getIdMapper().getClass().getName() : null);
-                    map.put("globSerializer", bCfg.getSerializer() != null ? bCfg.getSerializer().getClass() : null);
-                    map.put("compactFooter", bCfg.isCompactFooter());
-
-                    if (bCfg.getTypeConfigurations() != null) {
-                        Map<Object, Object> typeCfgsMap = new HashMap<>();
-
-                        for (BinaryTypeConfiguration c : bCfg.getTypeConfigurations()) {
-                            typeCfgsMap.put(
-                                c.getTypeName() != null,
-                                Arrays.asList(
-                                    c.getIdMapper() != null ? c.getIdMapper().getClass() : null,
-                                    c.getSerializer() != null ? c.getSerializer().getClass() : null,
-                                    c.isEnum()
-                                )
-                            );
-
-                            if (c.isEnum())
-                                BinaryUtils.validateEnumValues(c.getTypeName(), c.getEnumValues());
-                        }
-
-                        map.put("typeCfgs", typeCfgsMap);
-                    }
-
-                    ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
-                }
-            }
-
-            if (!ctx.clientNode())
-                metadataFileStore.restoreMetadata();
+            metadataFileStore.start();
         }
+
+        BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
+            @Override public void addMeta(
+                int typeId,
+                BinaryType newMeta,
+                boolean failIfUnregistered) throws BinaryObjectException {
+                assert newMeta != null;
+                assert newMeta instanceof BinaryTypeImpl;
+
+                if (!discoveryStarted) {
+                    BinaryMetadataHolder holder = metadataLocCache.get(typeId);
+
+                    BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
+
+                    BinaryMetadata mergedMeta = mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
+
+                    if (oldMeta != mergedMeta)
+                        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+
+                    return;
+                }
+
+                BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
+
+                CacheObjectBinaryProcessorImpl.this.addMeta(
+                    typeId,
+                    newMeta0.wrap(binaryCtx),
+                    failIfUnregistered
+                );
+            }
+
+            @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+                throws BinaryObjectException {
+                CacheObjectBinaryProcessorImpl.this.addMetaLocally(typeId, meta);
+            }
+
+            @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+                return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
+            }
+
+            @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+                return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
+            }
+
+            @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+                return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
+            }
+
+            @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+                return CacheObjectBinaryProcessorImpl.this.metadata();
+            }
+        };
+
+        binaryCtx = useTestBinaryCtx ?
+            new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class)) :
+            new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
+
+        transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
+
+        marsh.setBinaryContext(binaryCtx, ctx.config());
+
+        binaryMarsh = new GridBinaryMarshaller(binaryCtx);
+
+        binaries = new IgniteBinaryImpl(ctx, this);
+
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            BinaryConfiguration bCfg = ctx.config().getBinaryConfiguration();
+
+            if (bCfg != null) {
+                Map<String, Object> map = new HashMap<>();
+
+                map.put("globIdMapper", bCfg.getIdMapper() != null ? bCfg.getIdMapper().getClass().getName() : null);
+                map.put("globSerializer", bCfg.getSerializer() != null ? bCfg.getSerializer().getClass() : null);
+                map.put("compactFooter", bCfg.isCompactFooter());
+
+                if (bCfg.getTypeConfigurations() != null) {
+                    Map<Object, Object> typeCfgsMap = new HashMap<>();
+
+                    for (BinaryTypeConfiguration c : bCfg.getTypeConfigurations()) {
+                        typeCfgsMap.put(
+                            c.getTypeName() != null,
+                            Arrays.asList(
+                                c.getIdMapper() != null ? c.getIdMapper().getClass() : null,
+                                c.getSerializer() != null ? c.getSerializer().getClass() : null,
+                                c.isEnum()
+                            )
+                        );
+
+                        if (c.isEnum())
+                            BinaryUtils.validateEnumValues(c.getTypeName(), c.getEnumValues());
+                    }
+
+                    map.put("typeCfgs", typeCfgsMap);
+                }
+
+                ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
+            }
+        }
+
+        if (!ctx.clientNode())
+            metadataFileStore.restoreMetadata();
     }
 
     /** {@inheritDoc} */
@@ -1011,15 +973,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void saveMetadata(Collection<BinaryType> types, File dir) {
+    @Override public void saveMetadata(Collection<BinaryType> types, NodeFileTree ft) {
         try {
-            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
-                ctx,
-                log,
-                resolveBinaryWorkDir(dir.getAbsolutePath(),
-                    ctx.pdsFolderResolver().resolveFolders().folderName()),
-                true
-            );
+            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(), ctx, log, ft.mkdirBinaryMeta(), true);
 
             for (BinaryType type : types)
                 writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
@@ -1030,14 +986,14 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
-        if (!metadataDir.exists())
+    @Override public void updateMetadata(NodeFileTree ft, BooleanSupplier stopChecker) throws IgniteCheckedException {
+        if (!ft.binaryMeta().exists())
             return;
 
         try {
             ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false)
+            new BinaryMetadataFileStore(metaCache, ctx, log, ft.binaryMeta(), false)
                 .restoreMetadata();
 
             Collection<BinaryMetadata> metadata = F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
@@ -1067,13 +1023,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void cacheMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException {
-        if (!metadataDir.exists())
+    @Override public void cacheMetadataLocally(NodeFileTree ft, int typeId) throws IgniteCheckedException {
+        if (!ft.binaryMeta().exists())
             return;
 
         ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false).restoreMetadata(typeId);
+        new BinaryMetadataFileStore(metaCache, ctx, log, ft.binaryMeta(), false).restoreMetadata(typeId);
 
         addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()), false);
     }
@@ -1140,11 +1096,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return obj instanceof BinaryObject;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
-        return marsh instanceof BinaryMarshaller;
-    }
-
     /**
      * Get affinity key field.
      *
@@ -1208,14 +1159,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
 
-        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
-            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
+        boolean storeVal = !ccfg.isCopyOnRead();
 
-        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName());
+        boolean notSysCache = !GridCacheUtils.isSystemCache(ccfg.getName());
 
-        AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
-
-        AffinityKeyMapper dfltAffMapper = binaryEnabled ?
+        AffinityKeyMapper dfltAffMapper = notSysCache ?
             new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
             new GridCacheDefaultAffinityKeyMapper();
 
@@ -1227,8 +1175,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
-            ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),
-            binaryEnabled
+            false,
+            notSysCache
         );
     }
 
@@ -1498,7 +1446,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     ) {
         IgniteNodeValidationResult res;
 
-        if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) || !(marsh instanceof BinaryMarshaller))
+        if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK))
             return null;
 
         if ((res = validateBinaryConfiguration(rmtNode)) != null)

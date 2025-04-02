@@ -76,7 +76,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
@@ -2198,12 +2197,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         caches.put(cacheCtx.name(), cache);
 
-        // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
-        if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
-            && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
-            U.warn(log, "CacheConfiguration.isStoreKeepBinary() configuration property will be ignored because " +
-                "BinaryMarshaller is not used");
-
         // Start managers.
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
             mgr.start(cacheCtx);
@@ -3136,9 +3129,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if (!cachesInfo.isMergeConfigSupports(node))
-            return null;
-
         String validationRes = cachesInfo.validateJoiningNodeData(discoData, node.isClient());
 
         if (validationRes != null)
@@ -3548,11 +3538,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             };
 
         try {
-            if (ccfg != null && ccfg.isEncryptionEnabled()) {
-                ctx.encryption().checkEncryptedCacheSupported();
-
+            if (ccfg != null && ccfg.isEncryptionEnabled())
                 return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
-            }
 
             return startCacheClsr.apply(Collections.EMPTY_SET, null);
         }
@@ -4269,8 +4256,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return changeRequested;
         }
 
-        if (msg instanceof DynamicCacheChangeFailureMessage)
-            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);
+        if (msg instanceof ExchangeFailureMessage)
+            cachesInfo.onCacheChangeRequested((ExchangeFailureMessage)msg, topVer);
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);

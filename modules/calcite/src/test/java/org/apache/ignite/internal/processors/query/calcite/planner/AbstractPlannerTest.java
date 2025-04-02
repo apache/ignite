@@ -62,8 +62,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -123,7 +123,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected List<UUID> nodes;
 
     /** */
-    protected List<QueryTaskExecutorImpl> executors;
+    protected List<StripedQueryTaskExecutor> executors;
 
     /** */
     protected volatile Throwable lastE;
@@ -147,7 +147,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     @After
     public void tearDown() throws Throwable {
         if (!F.isEmpty(executors))
-            executors.forEach(QueryTaskExecutorImpl::tearDown);
+            executors.forEach(StripedQueryTaskExecutor::tearDown);
 
         if (lastE != null)
             throw lastE;
@@ -236,7 +236,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(planner);
 
-        planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
+        planner.addDisabledRules(ImmutableSet.copyOf(disabledRules));
 
         return ctx;
     }
@@ -682,7 +682,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         SchemaPlus dfltSchema = null;
 
         for (IgniteSchema igniteSchema : schemas) {
-            SchemaPlus schema = igniteSchema.register(rootSchema);
+            SchemaPlus schema = igniteSchema.register(rootSchema, null);
 
             if (dfltSchema == null || DEFAULT_SCHEMA.equals(schema.getName()))
                 dfltSchema = schema;

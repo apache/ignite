@@ -20,10 +20,8 @@ package org.apache.ignite.internal.management.api;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,38 +54,36 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     /**
      * @param printer Result printer.
      * @return {@code True} of command successfully prepared and can be invoked, {@code false} otherwise.
-     * @throws GridClientException If failed.
      */
     public boolean prepare(Consumer<String> printer) throws Exception {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
-        return ((PreparableCommand<A, ?>)cmd).prepare(client(), igniteClient(), ignite, arg, printer);
+        return ((PreparableCommand<A, ?>)cmd).prepare(igniteClient(), ignite, arg, printer);
     }
 
     /**
      * Actual command execution with verbose mode if required.
      *
      * @param printer Result printer.
-     * @param verbose Use verbose mode or not
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If failed.
      */
-    public <R> R invoke(Consumer<String> printer, boolean verbose) throws Exception {
+    public <R> R invoke(Consumer<String> printer) throws Exception {
         R res;
 
         if (cmd instanceof LocalCommand)
-            res = ((LocalCommand<A, R>)cmd).execute(client(), igniteClient(), ignite, arg, printer);
+            res = ((LocalCommand<A, R>)cmd).execute(igniteClient(), ignite, arg, printer);
         else if (cmd instanceof ComputeCommand) {
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-            Collection<GridClientNode> cmdNodes = cmd.nodes(CommandUtils.nodes(client(), igniteClient(), ignite), arg);
+            Collection<ClusterNode> cmdNodes = cmd.nodes(CommandUtils.nodes(igniteClient(), ignite), arg);
 
             if (cmdNodes == null)
                 cmdNodes = singletonList(defaultNode());
 
             try {
-                res = CommandUtils.execute(client(), igniteClient(), ignite, cmd.taskClass(), arg, cmdNodes);
+                res = CommandUtils.execute(igniteClient(), ignite, cmd.taskClass(), arg, cmdNodes);
             }
             catch (Exception e) {
                 res = cmd.handleException(e, printer);
@@ -102,16 +98,8 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     }
 
     /** @return Default node to execute commands. */
-    protected GridClientNode defaultNode() throws GridClientException {
-        return CommandUtils.clusterToClientNode(ignite.localNode());
-    }
-
-    /**
-     * @return Grid thin client instance which is already connected to cluster.
-     * @throws GridClientException If failed.
-     */
-    protected @Nullable GridClient client() throws GridClientException {
-        return null;
+    protected ClusterNode defaultNode() {
+        return ignite.localNode();
     }
 
     /** @return Ignite client instance. */

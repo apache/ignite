@@ -116,7 +116,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
             txChanges = ectx.transactionChanges(
                 cctx.cacheId(),
-                parts,
+                cctx.isReplicated() ? null : this.parts,
                 r -> new IndexRowImpl(rowHnd, r),
                 this::compare
             );
@@ -255,7 +255,9 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
             ? new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd)
             : null;
 
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
+        boolean checkExpired = !cctx.config().isEagerTtl();
+
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = checkExpired ? createNotExpiredRowFilter() : null;
 
         return new IndexQueryContext(filter, rowFilter, rowFactory);
     }

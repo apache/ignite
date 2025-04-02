@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -38,13 +37,11 @@ public class IgniteStandaloneWalIteratorInvalidCrcTest extends IgniteAbstractWal
     /** {@inheritDoc} */
     @Override protected WALIterator getWalIterator(
         IgniteWriteAheadLogManager walMgr,
+        NodeFileTree ft,
         boolean ignoreArchiveDir
     ) throws IgniteCheckedException {
-        File walArchiveDir = U.field(walMgr, "walArchiveDir");
-        File walDir = U.field(walMgr, "walWorkDir");
-
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        return ignoreArchiveDir ? iterFactory.iterator(walDir) : iterFactory.iterator(walArchiveDir, walDir);
+        return ignoreArchiveDir ? iterFactory.iterator(ft.wal()) : iterFactory.iterator(ft.walArchive(), ft.wal());
     }
 }

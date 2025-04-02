@@ -57,6 +57,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.configuration.SqlConfiguration.DFLT_SQL_PLAN_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_PLAN_HIST_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
@@ -101,6 +103,18 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         ), false
     );
 
+    /** Flag indicating whether SQL is configured by using {@link IgniteConfiguration#setSqlConfiguration(SqlConfiguration)}. */
+    private boolean isSqlConfigured = true;
+
+    /** Flag indicating whether the SQL engine is configured within {@link SqlConfiguration}. */
+    private boolean isSqlEngineConfigured = true;
+
+    /**
+     * Flag indicating whether a custom SQL plan history size is explicitly set within {@link SqlConfiguration}.
+     * If {@code false}, the default SQL plan history size will be used.
+     */
+    private boolean isPlanHistorySizeSet = true;
+
     /** SQL plan history size. */
     private int planHistorySize = 10;
 
@@ -120,19 +134,24 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public boolean isFullyFetched;
 
+    /** Flag indicating whether the collection of performance statistics is enabled. */
+    @Parameterized.Parameter(4)
+    public boolean isPerfStatsEnabled;
+
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}")
+    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}, isPerfStatsEnabled={4}")
     public static Collection<Object[]> params() {
         return Arrays.stream(new Object[][]{
             {CalciteQueryEngineConfiguration.ENGINE_NAME},
             {IndexingQueryEngineConfiguration.ENGINE_NAME}
         }).flatMap(sqlEngine -> Arrays.stream(sqlEngine[0].equals(IndexingQueryEngineConfiguration.ENGINE_NAME) ?
-                new Boolean[]{false} : new Boolean[]{true, false})
-                .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
-                    .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
-                        .map(isFullyFetched -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched})))
+            new Boolean[]{false} : new Boolean[]{true, false})
+            .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
+            .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
+            .flatMap(isFullyFetched -> Arrays.stream(new Boolean[]{true, false})
+            .map(isPerfStatsEnabled -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched, isPerfStatsEnabled}))))
         ).collect(Collectors.toList());
     }
 
@@ -140,10 +159,18 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setSqlConfiguration(new SqlConfiguration()
-            .setSqlPlanHistorySize(planHistorySize)
-            .setQueryEnginesConfiguration(configureSqlEngine())
-        );
+        if (isSqlConfigured) {
+            SqlConfiguration sqlCfg = new SqlConfiguration();
+
+            if (isSqlEngineConfigured) {
+                sqlCfg.setQueryEnginesConfiguration(configureSqlEngine());
+
+                if (isPlanHistorySizeSet)
+                    sqlCfg.setSqlPlanHistorySize(planHistorySize);
+            }
+
+            cfg.setSqlConfiguration(sqlCfg);
+        }
 
         return cfg.setCacheConfiguration(
             configureCache("A", Integer.class, String.class),
@@ -192,6 +219,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         if (isClient)
             startClientGrid(1);
+
+        if (isPerfStatsEnabled)
+            startCollectStatistics();
 
         IgniteCache<Integer, String> cacheA = queryNode().cache("A");
         IgniteCache<Integer, String> cacheB = queryNode().cache("B");
@@ -269,15 +299,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryWithReducePhase() throws Exception {
-        runQueryWithReducePhase(() -> {
-            try {
-                startGridsMultiThreaded(1, 2);
+        assumeTrue("Map/reduce queries are only applicable to H2 engine",
+            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
 
-                awaitPartitionMapExchange();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        assumeFalse("Only distributed queries have map and reduce phases", loc);
+
+        startTestGrid();
+
+        try {
+            startGridsMultiThreaded(1, 2);
+
+            awaitPartitionMapExchange();
 
             cacheQuery(new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE).setDistributedJoins(true), "pers");
 
@@ -286,11 +318,14 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             for (int i = 1; i <= 2; i++) {
                 List<SqlPlanHistoryView> sqlPlansOnMapNode = getSqlPlanHistory(grid(i));
 
-                assertNotNull(sqlPlansOnMapNode);
+                assertTrue(waitForCondition(() -> sqlPlansOnMapNode.size() == 2, 1000));
 
-                checkMetrics(2, sqlPlansOnMapNode);
+                checkMetrics(sqlPlansOnMapNode);
             }
-        });
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** Checks successful SqlQuery. */
@@ -303,6 +338,12 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void testSqlQueryFailed() throws Exception {
         runFailedQuery(new SqlQuery<>("String", "from String where fail()=1"));
+    }
+
+    /** Checks that EXPLAIN queries execute successfully and are not added to the SQL plan history. */
+    @Test
+    public void testExplainQuery() throws Exception {
+        runQueryWithoutPlan(new SqlFieldsQuery("explain plan for " + SQL));
     }
 
     /** Checks ScanQuery. */
@@ -344,6 +385,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks that older plan entries are evicted when maximum history size is reached. */
     @Test
     public void testPlanHistoryEviction() throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
         IgniteCache<Integer, String> cache = queryNode().cache("A");
@@ -356,7 +399,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             cacheQuery(qry, "A");
         }
 
-        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == planHistorySize, 1000));
+        assertTrue(waitForCondition(() -> getSqlPlanHistory().stream().map(SqlPlanHistoryView::sql).anyMatch(str ->
+            str.contains("STR" + String.format("%02d", planHistorySize + PLAN_HISTORY_EXCESS))), 1000));
 
         Set<String> qrys = getSqlPlanHistory().stream().map(SqlPlanHistoryView::sql).collect(Collectors.toSet());
 
@@ -375,25 +419,25 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEntryReplacement() throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
-        long[] timeStamps = new long[2];
+        long firstTs;
 
-        for (int i = 0; i < 2; i++) {
-            cacheQuery(new SqlFieldsQuery(SQL), "A");
+        cacheQuery(new SqlFieldsQuery(SQL), "A");
 
-            checkSqlPlanHistory(1);
+        assertTrue(waitForCondition(() -> !getSqlPlanHistory().isEmpty(), 1000));
 
-            timeStamps[i] = F.first(getSqlPlanHistory()).lastStartTime().getTime();
+        firstTs = F.first(getSqlPlanHistory()).lastStartTime().getTime();
 
-            if (i == 0) {
-                long ts0 = U.currentTimeMillis();
+        long curTs = U.currentTimeMillis();
 
-                assertTrue(waitForCondition(() -> (U.currentTimeMillis() != ts0), 1000));
-            }
-        }
+        assertTrue(waitForCondition(() -> (U.currentTimeMillis() != curTs), 1000));
 
-        assertTrue(timeStamps[1] > timeStamps[0]);
+        cacheQuery(new SqlFieldsQuery(SQL), "A");
+
+        assertTrue(waitForCondition(() -> F.first(getSqlPlanHistory()).lastStartTime().getTime() > firstTs, 1000));
     }
 
     /** Checks that SQL plan history stays empty if the grid is started with a zero history size. */
@@ -422,6 +466,45 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that the actual SQL plan history remains empty and its size in {@link SqlConfiguration} equals {@code -1}
+     * when SQL is not explicitly configured. In such cases, H2 is used as the default engine.
+     */
+    @Test
+    public void testNoSqlConfiguration() throws Exception {
+        isSqlConfigured = false;
+
+        checkDefaultHistorySize(true, -1, 0, 1);
+    }
+
+    /**
+     * Checks that the actual SQL plan history remains empty and its size in {@link SqlConfiguration} equals {@code -1}
+     * when the SQL engine is not configured. In such cases, H2 is used as the default engine.
+     */
+    @Test
+    public void testNoSqlEngineConfiguration() throws Exception {
+        isSqlEngineConfigured = false;
+
+        checkDefaultHistorySize(true, -1, 0, 1);
+    }
+
+    /**
+     * Checks that the actual SQL plan history size and its value in {@link SqlConfiguration} are correct for both
+     * Calcite and H2 engines when the history size is not explicitly set.
+     */
+    @Test
+    public void testDefaultHistorySize() throws Exception {
+        isPlanHistorySizeSet = false;
+
+        boolean isCalcite = sqlEngine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME);
+
+        int expConfHistSize = isCalcite ? DFLT_SQL_PLAN_HISTORY_SIZE : -1;
+        int expHistSize = isCalcite ? DFLT_SQL_PLAN_HISTORY_SIZE : 0;
+        int qrys = isCalcite ? DFLT_SQL_PLAN_HISTORY_SIZE : 1;
+
+        checkDefaultHistorySize(false, expConfHistSize, expHistSize, qrys);
+    }
+
+    /**
      * Checks that there is no 'scanCount' suffix in H2 local query plans even if identical queries are not
      * executed one after another (when there are other queries executed between them).
      */
@@ -429,6 +512,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void testNoScanCountSuffix() throws Exception {
         assumeTrue("ScanCount suffix can only be present in H2 local query plans",
             sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && loc);
+
+        assumeFalse(isPerfStatsEnabled);
 
         startTestGrid();
 
@@ -489,21 +574,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         cacheQuery(qry, "A");
 
-        checkSqlPlanHistory(0);
-    }
-
-    /**
-     * @param task Test task to execute.
-     */
-    public void runQueryWithReducePhase(Runnable task) throws Exception {
-        assumeTrue("Map/reduce queries are only applicable to H2 engine",
-            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
-
-        assumeFalse("Only distributed queries have map and reduce phases", loc);
-
-        startTestGrid();
-
-        task.run();
+        assertTrue(getSqlPlanHistory().isEmpty());
     }
 
     /**
@@ -619,12 +690,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      *
      * @param size Number of SQL plan entries expected to be in the history.
      */
-    public void checkSqlPlanHistory(int size) {
-        List<SqlPlanHistoryView> sqlPlans = getSqlPlanHistory();
+    public void checkSqlPlanHistory(int size) throws Exception {
+        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == size, 1000));
 
-        assertNotNull(sqlPlans);
-
-        checkMetrics(size, sqlPlans);
+        checkMetrics(getSqlPlanHistory());
     }
 
     /**
@@ -649,21 +718,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             sqlPlans = sqlPlans.stream().filter(e -> e.plan().contains(check)).collect(Collectors.toList());
         }
 
-        checkMetrics(size, sqlPlans);
+        assertTrue(sqlPlans.size() == size);
+
+        checkMetrics(sqlPlans);
     }
 
     /**
      * Checks metrics of provided SQL plan history entries.
      *
-     * @param size Number of SQL plan entries expected to be in the history.
      * @param sqlPlans Sql plans recorded in the history.
      */
-    public void checkMetrics(int size, List<SqlPlanHistoryView> sqlPlans) {
-        assertTrue(size == sqlPlans.size());
-
-        if (size == 0)
-            return;
-
+    public void checkMetrics(List<SqlPlanHistoryView> sqlPlans) {
         for (SqlPlanHistoryView plan : sqlPlans) {
             assertEquals(loc, plan.local());
             assertEquals(sqlEngine, plan.engine());
@@ -685,6 +750,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param reset Reset event.
      */
     public void checkReset(Runnable reset) throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         startTestGrid();
 
         IgniteCache<Integer, String> cache = queryNode().cache("A");
@@ -712,6 +779,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param startGridFirst Flag indicating whether to start the grid before the setup.
      */
     public void checkEmptyHistory(Runnable setup, boolean startGridFirst) throws Exception {
+        assumeFalse(isPerfStatsEnabled);
+
         if (startGridFirst)
             startTestGrid();
 
@@ -723,6 +792,38 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         cacheQuery(new SqlFieldsQuery(SQL), "A");
 
         assertTrue(getSqlPlanHistory().isEmpty());
+    }
+
+    /**
+     * @param isSingleEngineCheck Flag indicating whether the test should be run for one SQL engine or for both of them.
+     * @param expConfHistSize Expected SQL plan history size in {@link SqlConfiguration}.
+     * @param expHistSize Expected actual SQL plan history size.
+     * @param qrys Nubmer of queries to be run in the test.
+     */
+    public void checkDefaultHistorySize(
+        boolean isSingleEngineCheck,
+        int expConfHistSize,
+        int expHistSize,
+        int qrys
+    ) throws Exception {
+        if (isSingleEngineCheck)
+            assumeFalse(sqlEngine == CalciteQueryEngineConfiguration.ENGINE_NAME);
+
+        assumeFalse(isClient || loc || isFullyFetched || isPerfStatsEnabled);
+
+        startTestGrid();
+
+        int confHistSize = queryNode().configuration().getSqlConfiguration().getSqlPlanHistorySize();
+
+        assertEquals(expConfHistSize, confHistSize);
+
+        for (int i = 0; i < qrys; i++) {
+            String sql = "select * from A.String where _key <= " + i;
+
+            cacheQuery(new SqlFieldsQuery(sql), "A");
+        }
+
+        assertEquals(expHistSize, getSqlPlanHistory().size());
     }
 
     /** */

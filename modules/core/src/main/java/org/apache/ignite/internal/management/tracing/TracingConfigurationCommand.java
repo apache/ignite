@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -62,7 +62,7 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, TracingConfigurationCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);
     }
 
@@ -86,7 +86,7 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
             // No-op.
         }
     }

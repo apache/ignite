@@ -22,7 +22,6 @@ import java.nio.file.OpenOption;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -35,20 +34,17 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash
@@ -389,17 +385,16 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      * @param ignite Node.
      * @param exists If {@code true} method will check that partition file exists, in other case will check that file
      * doesn't exist.
-     * @throws IgniteCheckedException If failed.
      */
-    private void checkPartitionFiles(IgniteEx ignite, boolean exists) throws IgniteCheckedException {
+    private void checkPartitionFiles(IgniteEx ignite, boolean exists) {
         int evicted = 0;
 
-        GridDhtPartitionTopology top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
+        IgniteInternalCache<Object, Object> cachex = ignite.cachex(DEFAULT_CACHE_NAME);
 
         for (int p = 0; p < PARTS_CNT; p++) {
-            GridDhtLocalPartition part = top.localPartition(p);
+            GridDhtLocalPartition part = cachex.context().topology().localPartition(p);
 
-            File partFile = partitionFile(ignite, DEFAULT_CACHE_NAME, p);
+            File partFile = ignite.context().pdsFolderResolver().fileTree().partitionFile(cachex.configuration(), p);
 
             if (exists) {
                 if (part != null && part.state() == GridDhtPartitionState.EVICTED)
@@ -415,19 +410,6 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         if (exists)
             Assert.assertTrue("There should be at least 1 eviction", evicted > 0);
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param cacheName Cache name.
-     * @param partId Partition id.
-     */
-    private static File partitionFile(Ignite ignite, String cacheName, int partId) throws IgniteCheckedException {
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        String nodeName = ignite.name().replaceAll("\\.", "_");
-
-        return new File(dbDir, String.format("%s/cache-%s/part-%d.bin", nodeName, cacheName, partId));
     }
 
     /**

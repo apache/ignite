@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -93,11 +94,9 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -129,7 +128,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
@@ -149,6 +147,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.sqlWithoutConst;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
@@ -195,7 +194,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private UUID nodeId;
 
     /** */
-    private Marshaller marshaller;
+    private BinaryMarshaller marshaller;
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -426,18 +425,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     PreparedStatement stmt = conn.prepareStatement(qry, H2StatementCache.queryFlags(qryDesc));
 
                     // Convert parameters into BinaryObjects.
-                    Marshaller m = ctx.config().getMarshaller();
+                    BinaryMarshaller m = ctx.marshaller();
                     byte[] paramsBytes = U.marshal(m, qryParams.arguments());
                     final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-                    Object[] params;
-
-                    if (m instanceof BinaryMarshaller) {
-                        params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
-                            .unmarshal(paramsBytes, ldr));
-                    }
-                    else
-                        params = U.unmarshal(m, paramsBytes, ldr);
+                    Object[] params = BinaryUtils.rawArrayFromBinary(m.binaryMarshaller()
+                        .unmarshal(paramsBytes, ldr));
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
@@ -469,13 +462,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         qryInfo
                     );
 
-                    runningQueryManager().planHistoryTracker().addPlan(
-                        qryInfo.plan(),
-                        qry,
-                        qryDesc.schemaName(),
-                        true,
-                        IndexingQueryEngineConfiguration.ENGINE_NAME
-                    );
+                    if (runningQueryManager().planHistoryTracker().enabled()) {
+                        H2QueryInfo qryInfo0 = qryInfo;
+
+                        ctx.pools().getSystemExecutorService().submit(() ->
+                            runningQueryManager().planHistoryTracker().addPlan(
+                                qryInfo0.plan(),
+                                qryInfo0.sql(),
+                                qryInfo0.schema(),
+                                true,
+                                IndexingQueryEngineConfiguration.ENGINE_NAME));
+                    }
 
                     return new H2FieldsIterator(
                         rs,
@@ -1339,23 +1336,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param stmnt Statement to print.
-     * @return SQL query where constant replaced with '?' char.
-     * @see GridSqlConst#getSQL()
-     * @see QueryUtils#includeSensitive()
-     */
-    private String sqlWithoutConst(GridSqlStatement stmnt) {
-        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
-
-        try {
-            return stmnt.getSQL();
-        }
-        finally {
-            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
-        }
-    }
-
-    /**
      * Check security access for caches.
      *
      * @param cacheIds Cache IDs.
@@ -1565,7 +1545,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         this.ctx = ctx;
 
-        partReservationMgr = new PartitionReservationManager(ctx);
+        partReservationMgr = ctx.query().partitionReservationManager();
 
         connMgr = new ConnectionManager(ctx);
 
@@ -1577,7 +1557,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.start();
 
         nodeId = ctx.localNodeId();
-        marshaller = ctx.config().getMarshaller();
+        marshaller = ctx.marshaller();
 
         mapQryExec = new GridMapQueryExecutor();
         rdcQryExec = new GridReduceQueryExecutor();
@@ -1656,7 +1636,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             if (msg instanceof GridCacheQueryMarshallable)
-                ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+                ((GridCacheQueryMarshallable)msg).unmarshall(ctx);
 
             try {
                 boolean processed = true;
@@ -1839,10 +1819,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(GridCacheContextInfo<?, ?> cacheInfo) {
-        String cacheName = cacheInfo.name();
-
-        partReservationMgr.onCacheStop(cacheName);
-
         // Unregister connection.
         connMgr.onCacheDestroyed();
 
@@ -2304,13 +2280,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
         finally {
-            runningQueryManager().planHistoryTracker().addPlan(
-                dmlPlanInfo.toString(),
-                qryDesc.sql(),
-                qryDesc.schemaName(),
-                loc,
-                IndexingQueryEngineConfiguration.ENGINE_NAME
-            );
+            if (runningQueryManager().planHistoryTracker().enabled()) {
+                runningQueryManager().planHistoryTracker().addPlan(
+                    dmlPlanInfo.toString(),
+                    qryDesc.sql(),
+                    qryDesc.schemaName(),
+                    loc,
+                    IndexingQueryEngineConfiguration.ENGINE_NAME
+                );
+            }
         }
     }
 

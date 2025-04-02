@@ -31,8 +31,6 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.testframework.GridTestThread;
@@ -50,9 +48,6 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /** Communication spi for grid start. */
     private CommunicationSpi commSpi;
 
-    /** Marshaller used in test. */
-    private Marshaller marsh = new JdkMarshaller();
-
     /**
      *
      */
@@ -65,8 +60,6 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setMarshaller(marsh);
 
         assert commSpi != null;
 

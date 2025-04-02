@@ -40,11 +40,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.security.HashLoginService;
@@ -269,9 +268,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertNotNull(data);
 
-                final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                assertEquals(reqMarker, marshaller.<Profile>unmarshal(data, getClass().getClassLoader()).getMarker());
+                assertEquals(reqMarker, marshaller(G.ignite()).<Profile>unmarshal(data, getClass().getClassLoader()).getMarker());
             }
         }
         return sesId;
@@ -320,9 +317,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(data);
 
-                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+                    final String val = marshaller(G.ignite()).unmarshal(data, getClass().getClassLoader());
 
                     assertEquals("val1", val);
                 }
@@ -380,9 +375,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(data);
 
-                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+                    final String val = marshaller(G.ignite()).unmarshal(data, getClass().getClassLoader());
 
                     assertEquals("val1", val);
                 }
@@ -430,9 +423,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(data);
 
-                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+                    final String val = marshaller(G.ignite()).unmarshal(data, getClass().getClassLoader());
 
                     assertEquals("val1", val);
 
@@ -485,9 +476,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(data);
 
-                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+                    final String val = marshaller(G.ignite()).unmarshal(data, getClass().getClassLoader());
 
                     assertEquals("val1", val);
                 }
@@ -548,9 +537,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(data);
 
-                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+                    final String val = marshaller(G.ignite()).unmarshal(data, getClass().getClassLoader());
 
                     assertEquals("val1", val);
                 }
@@ -600,9 +587,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(data);
 
-                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
-
-                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+                    final String val = marshaller(G.ignite()).unmarshal(data, getClass().getClassLoader());
 
                     assertEquals("val1", val);
 
@@ -720,10 +705,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(entity);
 
-                    final Marshaller marshaller = ignite.configuration().getMarshaller();
-
                     assertEquals("val10",
-                        marshaller.unmarshal(entity.attributes().get("key10"), getClass().getClassLoader()));
+                        marshaller(ignite).unmarshal(entity.attributes().get("key10"), getClass().getClassLoader()));
                 }
             }
         }
@@ -797,10 +780,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                     assertNotNull(ses);
 
-                    final Marshaller marshaller = ignite.configuration().getMarshaller();
-
                     assertEquals("val1",
-                        marshaller.<String>unmarshal(ses.attributes().get("key1"), getClass().getClassLoader()));
+                        marshaller(ignite).unmarshal(ses.attributes().get("key1"), getClass().getClassLoader()));
                 }
             }
 

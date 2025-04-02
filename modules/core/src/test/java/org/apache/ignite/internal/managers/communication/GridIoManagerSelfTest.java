@@ -28,7 +28,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -72,7 +71,6 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
-        ctx.config().setMarshaller(new JdkMarshaller());
 
         // Turn off peer class loading to simplify mocking.
         ctx.config().setPeerClassLoadingEnabled(false);

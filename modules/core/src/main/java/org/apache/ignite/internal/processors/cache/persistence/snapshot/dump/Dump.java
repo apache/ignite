@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -46,35 +43,23 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 
 /**
  * This class provides the ability to work with saved cache dump.
@@ -83,11 +68,8 @@ public class Dump implements AutoCloseable {
     /** Snapshot meta. */
     private final List<SnapshotMetadata> metadata;
 
-    /** Dump directory. */
-    private final File dumpDir;
-
-    /** Specific consistent id. */
-    private final @Nullable String consistentId;
+    /** Dump directories. */
+    private final List<SnapshotFileTree> sfts;
 
     /** Kernal context for each node in dump. */
     private final GridKernalContext cctx;
@@ -113,70 +95,40 @@ public class Dump implements AutoCloseable {
     private final boolean comprParts;
 
     /**
-     * @param dumpDir Dump directory.
-     * @param keepBinary If {@code true} then keep read entries in binary form.
-     * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
-     * @param log Logger.
-     */
-    public Dump(File dumpDir, boolean keepBinary, boolean raw, IgniteLogger log) {
-        this(dumpDir, null, keepBinary, raw, null, log);
-    }
-
-    /**
-     * @param dumpDir Dump directory.
-     * @param consistentId If specified, read dump data only for specific node.
+     * @param cctx Kernal context.
+     * @param sfts File trees to read.
+     * @param metadata Dump metadata.
      * @param keepBinary If {@code true} then keep read entries in binary form.
      * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
      * @param encSpi Encryption SPI instance.
      * @param log Logger.
      */
     public Dump(
-        File dumpDir,
-        @Nullable String consistentId,
+        GridKernalContext cctx,
+        List<SnapshotFileTree> sfts,
+        List<SnapshotMetadata> metadata,
         boolean keepBinary,
         boolean raw,
         @Nullable EncryptionSpi encSpi,
         IgniteLogger log
     ) {
-        A.ensure(dumpDir != null, "dump directory is null");
-        A.ensure(dumpDir.exists(), "dump directory not exists");
+        A.ensure(!F.isEmpty(sfts), "dump files not found");
+        A.ensure(!F.isEmpty(metadata), "dump meta file not found");
+        A.ensure(F.first(sfts).root().exists(), "dump directory not exists");
+        A.ensure(sfts.size() == metadata.size(), "metafiles and trees size differs: " + sfts.size() + " != " + metadata.size());
 
-        this.dumpDir = dumpDir;
-        this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
-        this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(dumpDir, log);
+        this.cctx = cctx;
         this.raw = raw;
         this.encSpi = encSpi;
-        this.comprParts = metadata.get(0).compressPartitions();
+        this.sfts = sfts;
+        this.metadata = metadata;
 
-        for (SnapshotMetadata meta : metadata) {
+        this.comprParts = this.metadata.get(0).compressPartitions();
+
+        for (SnapshotMetadata meta : this.metadata) {
             if (meta.encryptionKey() != null && encSpi == null)
                 throw new IllegalArgumentException("Encryption SPI required to read encrypted dump");
-        }
-    }
-
-    /**
-     * @param dumpDir Dump directory.
-     * @param log Logger.
-     * @return Standalone kernal context.
-     */
-    private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
-        File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
-
-        A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
-        A.ensure(marshaller.exists(), "marshaller directory not exists");
-
-        try {
-            GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
-
-            startAllComponents(kctx);
-
-            return kctx;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
         }
     }
 
@@ -185,44 +137,9 @@ public class Dump implements AutoCloseable {
         return cctx.cacheObjects().metadata().iterator();
     }
 
-    /** @return List of node directories. */
-    public List<String> nodesDirectories() {
-        File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH))
-            && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
-
-        if (dirs == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(dirs).map(File::getName).collect(Collectors.toList());
-    }
-
-    /** @return List of snapshot metadata saved in {@link #dumpDir}. */
+    /** @return List of snapshot metadata saved in {@link #fileTrees()}. */
     public List<SnapshotMetadata> metadata() {
         return Collections.unmodifiableList(metadata);
-    }
-
-    /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
-        JdkMarshaller marsh = new JdkMarshaller();
-
-        ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
-
-        File[] files = dumpDir.listFiles(f ->
-            f.getName().endsWith(SNAPSHOT_METAFILE_EXT) && (consistentId == null || f.getName().startsWith(consistentId))
-        );
-
-        if (files == null)
-            return Collections.emptyList();
-
-        return Arrays.stream(files).map(meta -> {
-            try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
-                return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
-            }
-            catch (IOException | IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }).filter(SnapshotMetadata::dump).collect(Collectors.toList());
     }
 
     /**
@@ -233,7 +150,7 @@ public class Dump implements AutoCloseable {
     public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
+        return NodeFileTree.existingCacheConfigFiles(sft(node).existingCacheDirectory(grp)).stream().map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
@@ -249,16 +166,13 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int grp) {
-        String suffix = comprParts ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
-
-        File[] parts = dumpGroupDirectory(node, grp)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
+        List<File> parts = sft(node).existingCachePartitionFiles(sft(node).existingCacheDirectory(grp), true, comprParts);
 
         if (parts == null)
             return Collections.emptyList();
 
-        return Arrays.stream(parts)
-            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(suffix, "")))
+        return parts.stream()
+            .map(NodeFileTree::partId)
             .collect(Collectors.toList());
     }
 
@@ -275,13 +189,13 @@ public class Dump implements AutoCloseable {
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, grp), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(sft(node).existingCacheDirectory(grp), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        SnapshotMetadata meta = metadata.stream().filter(m -> Objects.equals(m.folderName(), node)).findFirst().orElseGet(null);
+        SnapshotMetadata meta = metadata.stream().filter(m -> Objects.equals(m.folderName(), node)).findFirst().orElseThrow();
 
         boolean encrypted = meta.encryptionKey() != null;
 
@@ -346,43 +260,14 @@ public class Dump implements AutoCloseable {
         };
     }
 
-    /**
-     * @param part Partition number.
-     * @param compressed If {@code true} then compressed partition file.
-     * @return Dump partition file name.
-     */
-    public static String dumpPartFileName(int part, boolean compressed) {
-        return PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compressed ? ZIP_SUFFIX : "");
+    /** @return Dump directories. */
+    public List<SnapshotFileTree> fileTrees() {
+        return sfts;
     }
 
-    /** @return Root dump directory. */
-    public File dumpDirectory() {
-        return dumpDir;
-    }
-
-    /** */
-    private File dumpGroupDirectory(String node, int grpId) {
-        File nodeDir = Paths.get(dumpDir.getAbsolutePath(), DFLT_STORE_DIR, node).toFile();
-
-        assert nodeDir.exists() && nodeDir.isDirectory();
-
-        File[] grpDirs = nodeDir.listFiles(f -> {
-            if (!f.isDirectory()
-                || (!f.getName().startsWith(CACHE_DIR_PREFIX)
-                    && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
-                return false;
-
-            String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
-                ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
-                : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
-
-            return grpId == CU.cacheId(grpName);
-        });
-
-        if (grpDirs.length != 1)
-            throw new IgniteException("Wrong number of group directories: " + grpDirs.length);
-
-        return grpDirs[0];
+    /** @return Snapshot file tree for specific folder name. */
+    private SnapshotFileTree sft(String folderName) {
+        return sfts.stream().filter(sft -> sft.folderName().equals(folderName)).findFirst().orElseThrow();
     }
 
     /** @return Kernal context. */
@@ -392,8 +277,6 @@ public class Dump implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        closeAllComponents(cctx);
-
         if (encSpi != null)
             encSpi.spiStop();
     }

@@ -67,7 +67,7 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         operation = U.readEnum(in, CacheMetricsOperation.class);
         caches = U.readArray(in, String.class);
         allCaches = in.readBoolean();

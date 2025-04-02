@@ -240,7 +240,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -256,9 +255,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
@@ -272,6 +269,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.mxbean.IgniteMXBean.ACTIVE_DESC;
@@ -1479,62 +1477,25 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /**
      * Checks whether physical RAM is not exceeded.
      */
-    @SuppressWarnings("ConstantConditions")
     private void checkPhysicalRam() {
-        long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
+        String validationResult = validateRamUsage(ctx);
 
-        if (ram != -1) {
-            String macs = ctx.discovery().localNode().attribute(ATTR_MACS);
-
-            long totalHeap = 0;
-            long totalOffheap = 0;
-
-            for (ClusterNode node : ctx.discovery().allNodes()) {
-                if (macs.equals(node.attribute(ATTR_MACS))) {
-                    long heap = node.metrics().getHeapMemoryMaximum();
-                    Long offheap = node.<Long>attribute(ATTR_OFFHEAP_SIZE);
-
-                    if (heap != -1)
-                        totalHeap += heap;
-
-                    if (offheap != null)
-                        totalOffheap += offheap;
-                }
-            }
-
-            long total = totalHeap + totalOffheap;
-
-            if (total < 0)
-                total = Long.MAX_VALUE;
-
-            // 4GB or 20% of available memory is expected to be used by OS and user applications
-            long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
-
-            if (total > safeToUse) {
-                U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
-                    "lead to significant slowdown due to swapping (please decrease JVM heap size, data region " +
-                    "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
-                    (ram >> 20) + "MB]");
-            }
-        }
+        if (validationResult != null)
+            U.quietAndWarn(log, validationResult);
     }
 
     /** */
     private void initializeMarshaller() {
-        Marshaller marsh = ctx.config().getMarshaller();
+        if (!BinaryMarshaller.available()) {
+            String msg = "Standard BinaryMarshaller can't be used on this JVM. " +
+                "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.";
 
-        if (marsh == null) {
-            if (!BinaryMarshaller.available()) {
-                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+            U.warn(log, msg);
 
-                marsh = ctx.marshallerContext().jdkMarshaller();
-            }
-            else
-                marsh = new BinaryMarshaller();
-
-            ctx.config().setMarshaller(marsh);
+            throw new IgniteException(msg);
         }
+
+        Marshaller marsh = ctx.marshaller();
 
         marsh.setContext(ctx.marshallerContext());
 
@@ -1558,9 +1519,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
-
-        if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
-            perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
     }
 
     /**
@@ -1649,20 +1607,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
-        add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
+        add(ATTR_MARSHALLER, ctx.marshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
-        if (cfg.getMarshaller() instanceof BinaryMarshaller) {
-            add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
-                BinaryConfiguration.DFLT_COMPACT_FOOTER :
-                cfg.getBinaryConfiguration().isCompactFooter());
+        add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
+            BinaryConfiguration.DFLT_COMPACT_FOOTER :
+            cfg.getBinaryConfiguration().isCompactFooter());
 
-            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
-                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
-                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
-        }
+        add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+            getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                BinaryUtils.USE_STR_SERIALIZATION_VER_2));
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_IGNITE_INSTANCE_NAME, igniteInstanceName);
@@ -1717,10 +1673,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
-
-        // Whether rollback of dynamic cache start is supported or not.
-        // This property is added because of backward compatibility.
-        add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Save data storage configuration.
         addDataStorageConfigurationAttributes();
@@ -2075,7 +2027,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             objs.add(cfg.getConnectorConfiguration().getSslFactory());
         }
 
-        objs.add(cfg.getMarshaller());
+        objs.add(ctx.marshaller());
         objs.add(cfg.getGridLogger());
         objs.add(cfg.getMBeanServer());
 

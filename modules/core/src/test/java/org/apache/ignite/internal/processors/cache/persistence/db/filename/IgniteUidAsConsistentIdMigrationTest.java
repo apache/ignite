@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,7 +32,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -101,16 +102,14 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         }
     }
 
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
+    /** */
+    private void deleteWorkFiles() {
         boolean ok = true;
 
         if (pstStoreCustomPath != null)
             ok &= U.delete(pstStoreCustomPath);
-        else
-            ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), FilePageStoreManager.DFLT_STORE_DIR, false));
+        else if (sharedFileTree().db().exists())
+            ok &= U.delete(sharedFileTree().db());
 
         if (pstWalArchCustomPath != null)
             ok &= U.delete(pstWalArchCustomPath);
@@ -118,7 +117,10 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (pstWalStoreCustomPath != null)
             ok &= U.delete(pstWalStoreCustomPath);
 
-        ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
+        File binaryMetaRoot = sharedFileTree().binaryMetaRoot();
+
+        if (binaryMetaRoot.exists())
+            ok &= U.delete(binaryMetaRoot);
 
         if (failIfDeleteNotCompleted)
             assertTrue(ok);
@@ -168,7 +170,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         //test UUID is parsable from consistent ID test
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite));
+        assertPdsDirsDefaultExist(ignite, genNewStyleSubfolderName(0, ignite));
         stopGrid(0);
     }
 
@@ -186,7 +188,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subfolderName);
+        NodeFileTree ft = nodeFileTree(subfolderName);
+
+        assertTrue(ft.binaryMeta().exists() && ft.binaryMeta().isDirectory());
 
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
@@ -205,7 +209,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         this.configuredConsistentId = "someConfiguredConsistentId";
         Ignite ignite = startActivateFillDataGrid(0);
 
-        assertPdsDirsDefaultExist(configuredConsistentId);
+        assertPdsDirsDefaultExist(ignite, configuredConsistentId);
         stopGrid(0);
     }
 
@@ -227,7 +231,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         igniteEx.getOrCreateCache(CACHE_NAME).put("hi", expVal);
 
-        assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId));
+        assertPdsDirsDefaultExist(igniteEx, U.maskForFileName(configuredConsistentId));
         stopGrid(0);
 
         this.configuredConsistentId = null; //now set up grid on existing folder
@@ -257,7 +261,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopGrid(0);
 
         Ignite igniteRestart = startActivateFillDataGrid(0);
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, igniteRestart));
+        assertPdsDirsDefaultExist(igniteRestart, genNewStyleSubfolderName(0, igniteRestart));
         stopGrid(0);
     }
 
@@ -272,7 +276,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         {
             final Ignite ignite = startActivateFillDataGrid(0);
 
-            assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite));
+            assertPdsDirsDefaultExist(ignite, genNewStyleSubfolderName(0, ignite));
 
             uuid = (UUID)ignite.cluster().localNode().consistentId();
             stopGrid(0);
@@ -285,7 +289,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
             final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
 
-            assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, igniteRestart));
+            assertPdsDirsDefaultExist(igniteRestart, genNewStyleSubfolderName(0, igniteRestart));
             stopGrid(0);
 
             assertEquals(uuid, consIdRestart);
@@ -304,7 +308,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         {
             final Ignite ignite = startActivateFillDataGrid(0);
 
-            assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite));
+            assertPdsDirsDefaultExist(ignite, genNewStyleSubfolderName(0, ignite));
 
             uuid = (UUID)ignite.cluster().localNode().consistentId();
             ignite.cluster().state(ClusterState.INACTIVE);
@@ -315,7 +319,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             grid(0).cluster().state(ClusterState.ACTIVE);
             final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
 
-            assertPdsDirsDefaultExist(genNewStyleSubfolderName(1, igniteRestart));
+            assertPdsDirsDefaultExist(igniteRestart, genNewStyleSubfolderName(1, igniteRestart));
 
             stopGrid(1);
             assertFalse(consIdRestart.equals(uuid));
@@ -384,8 +388,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
         ignite1.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
 
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite0));
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(1, ignite1));
+        assertPdsDirsDefaultExist(ignite0, genNewStyleSubfolderName(0, ignite0));
+        assertPdsDirsDefaultExist(ignite1, genNewStyleSubfolderName(1, ignite1));
 
         stopGrid(0);
         stopGrid(1);
@@ -409,17 +413,17 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
         ignite3.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
 
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite0));
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(1, ignite1));
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(2, ignite2));
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(3, ignite3));
+        assertPdsDirsDefaultExist(ignite0, genNewStyleSubfolderName(0, ignite0));
+        assertPdsDirsDefaultExist(ignite1, genNewStyleSubfolderName(1, ignite1));
+        assertPdsDirsDefaultExist(ignite2, genNewStyleSubfolderName(2, ignite2));
+        assertPdsDirsDefaultExist(ignite3, genNewStyleSubfolderName(3, ignite3));
 
         assertNodeIndexesInFolder(0, 1, 2, 3);
         stopAllGrids();
 
         //this grid should take folder with index 0 as unlocked
         final Ignite ignite4Restart = startActivateGrid(3);
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite4Restart));
+        assertPdsDirsDefaultExist(ignite4Restart, genNewStyleSubfolderName(0, ignite4Restart));
 
         assertNodeIndexesInFolder(0, 1, 2, 3);
         stopAllGrids();
@@ -439,14 +443,14 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
         ignite0.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
 
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite0));
+        assertPdsDirsDefaultExist(ignite0, genNewStyleSubfolderName(0, ignite0));
 
         assertNodeIndexesInFolder(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         stopAllGrids();
 
         //this grid should take folder with index 0 as unlocked
         final Ignite ignite4Restart = startActivateGrid(4);
-        assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite4Restart));
+        assertPdsDirsDefaultExist(ignite4Restart, genNewStyleSubfolderName(0, ignite4Restart));
         stopAllGrids();
 
         assertNodeIndexesInFolder(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -476,8 +480,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         ignite2.getOrCreateCache(CACHE_NAME).put("hi", expVal);
 
-        assertPdsDirsDefaultExist(U.maskForFileName(expDfltConsistentId1));
-        assertPdsDirsDefaultExist(U.maskForFileName(expDfltConsistentId2));
+        assertPdsDirsDefaultExist(ignite, U.maskForFileName(expDfltConsistentId1));
+        assertPdsDirsDefaultExist(ignite2, U.maskForFileName(expDfltConsistentId2));
         stopAllGrids();
 
         this.configuredConsistentId = null; //now set up grid on existing folder
@@ -526,10 +530,10 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         final Object consistentId1 = ignite1.cluster().localNode().consistentId();
 
-        assertPdsDirsDefaultExist(U.maskForFileName(consistentId1.toString()));
+        assertPdsDirsDefaultExist(ignite1, U.maskForFileName(consistentId1.toString()));
         final Object consistentId2 = ignite2.cluster().localNode().consistentId();
 
-        assertPdsDirsDefaultExist(U.maskForFileName(consistentId2.toString()));
+        assertPdsDirsDefaultExist(ignite2, U.maskForFileName(consistentId2.toString()));
         stopAllGrids();
 
         System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
@@ -569,7 +573,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         final Object consistentId1 = ignite1.cluster().localNode().consistentId();
 
-        assertPdsDirsDefaultExist(U.maskForFileName(consistentId1.toString()));
+        assertPdsDirsDefaultExist(ignite1, U.maskForFileName(consistentId1.toString()));
         stopAllGrids();
 
         System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
@@ -604,9 +608,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             second.put((int)(Math.random() * entries), getClass().getName());
 
         final String prevVerFolder = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
-        final String path = new File(new File(U.defaultWorkDirectory(), "db"), prevVerFolder).getCanonicalPath();
+        final String path = new File(sharedFileTree().db(), prevVerFolder).getCanonicalPath();
 
-        assertPdsDirsDefaultExist(prevVerFolder);
+        assertPdsDirsDefaultExist(ignite, prevVerFolder);
         stopAllGrids();
 
         this.configuredConsistentId = null;
@@ -645,18 +649,16 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     /**
      * @param indexes expected new style node indexes in folders
-     * @throws IgniteCheckedException if failed
      */
-    private void assertNodeIndexesInFolder(Integer... indexes) throws IgniteCheckedException {
+    private void assertNodeIndexesInFolder(Integer... indexes) {
         assertEquals(new TreeSet<>(Arrays.asList(indexes)), getAllNodeIndexesInFolder());
     }
 
     /**
      * @return set of all indexes of nodes found in work folder
-     * @throws IgniteCheckedException if failed.
      */
-    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory(), PdsFolderResolver.DB_DEFAULT_FOLDER);
+    @NotNull private Set<Integer> getAllNodeIndexesInFolder() {
+        final File curFolder = sharedFileTree().db();
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
@@ -674,25 +676,16 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * Checks existence of all storage-related directories
      *
      * @param subDirName sub directories name expected
-     * @throws IgniteCheckedException if IO error occur
      */
-    private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subDirName);
-        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
-        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsFolderResolver.DB_DEFAULT_FOLDER, subDirName);
-    }
+    private void assertPdsDirsDefaultExist(Ignite ign, String subDirName) {
+        NodeFileTree ft = new NodeFileTree(ign.configuration(), subDirName);
 
-    /**
-     * Checks one folder existence.
-     *
-     * @param subFolderNames sub folders chain array to touch.
-     * @throws IgniteCheckedException if IO error occur.
-     */
-    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory());
+        Consumer<File> check = dir -> assertTrue(dir.exists() && dir.isDirectory());
 
-        assertDirectoryExist(curFolder, subFolderNames);
+        check.accept(ft.binaryMeta());
+        check.accept(ft.wal());
+        check.accept(ft.walArchive());
+        check.accept(ft.nodeStorage());
     }
 
     /**

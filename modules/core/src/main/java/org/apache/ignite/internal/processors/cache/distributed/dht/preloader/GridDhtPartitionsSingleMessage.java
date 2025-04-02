@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -64,7 +63,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions update counters. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Object> partCntrs;
+    private Map<Integer, CachePartitionPartialCountersMap> partCntrs;
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
@@ -201,7 +200,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param grpId Cache group ID.
      * @param cntrMap Partition update counters.
      */
-    public void addPartitionUpdateCounters(int grpId, Object cntrMap) {
+    public void addPartitionUpdateCounters(int grpId, CachePartitionPartialCountersMap cntrMap) {
         if (partCntrs == null)
             partCntrs = new HashMap<>();
 
@@ -210,23 +209,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /**
      * @param grpId Cache group ID.
-     * @param partsCnt Total cache partitions.
      * @return Partition update counters.
      */
-    public CachePartitionPartialCountersMap partitionUpdateCounters(int grpId, int partsCnt) {
-        Object res = partCntrs == null ? null : partCntrs.get(grpId);
+    public CachePartitionPartialCountersMap partitionUpdateCounters(int grpId) {
+        CachePartitionPartialCountersMap res = partCntrs == null ? null : partCntrs.get(grpId);
 
-        if (res == null)
-            return CachePartitionPartialCountersMap.EMPTY;
-
-        if (res instanceof CachePartitionPartialCountersMap)
-            return (CachePartitionPartialCountersMap)res;
-
-        assert res instanceof Map : res;
-
-        Map<Integer, T2<Long, Long>> map = (Map<Integer, T2<Long, Long>>)res;
-
-        return CachePartitionPartialCountersMap.fromCountersMap(map, partsCnt);
+        return res == null ? CachePartitionPartialCountersMap.EMPTY : res;
     }
 
     /**

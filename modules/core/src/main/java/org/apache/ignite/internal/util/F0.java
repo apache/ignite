@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -82,7 +81,7 @@ public class F0 {
      *      contained in given collection.
      */
     public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
-        return F.isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
+        return F.isEmpty(c) ? F.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !c.contains(t);
             }
@@ -261,7 +260,7 @@ public class F0 {
      *      contained in given collection.
      */
     public static <T> IgnitePredicate<T> in(@Nullable final Collection<? extends T> c) {
-        return F.isEmpty(c) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
+        return F.isEmpty(c) ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return c.contains(t);
             }
@@ -278,7 +277,7 @@ public class F0 {
      *  that is contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> contains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new P1<T>() {
+        return c == null || c.isEmpty() ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return c.contains(t);
             }
@@ -295,7 +294,7 @@ public class F0 {
      *  that is not contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new P1<T>() {
+        return c == null || c.isEmpty() ? F.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !c.contains(t);
             }

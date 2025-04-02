@@ -44,7 +44,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -68,8 +66,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
-import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
-import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
@@ -102,9 +98,6 @@ public class ValidationOnNodeJoinUtils {
     /** Template of message of failed node join because encryption settings are different for the same cache. */
     private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
         "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
-
-    /** Supports non default precision and scale for DECIMAL and VARCHAR types. */
-    private static final IgniteProductVersion PRECISION_SCALE_SINCE_VER = IgniteProductVersion.fromString("2.7.0");
 
     /** Invalid region configuration message. */
     private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node (Incompatible data region configuration " +
@@ -287,14 +280,6 @@ public class ValidationOnNodeJoinUtils {
                     " 'true' [cacheName=" + U.maskName(cc.getName()) + ']');
         }
 
-        DeploymentMode depMode = c.getDeploymentMode();
-
-        if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
-            !CU.isSystemCache(cc.getName()) && !(c.getMarshaller() instanceof BinaryMarshaller))
-            throw new IgniteCheckedException("Cache can be started in PRIVATE or ISOLATED deployment mode only when" +
-                " BinaryMarshaller is used [depMode=" + ctx.config().getDeploymentMode() + ", marshaller=" +
-                c.getMarshaller().getClass().getName() + ']');
-
         if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
             throw new IgniteCheckedException("Affinity function must return at most " +
                 CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
@@ -402,22 +387,6 @@ public class ValidationOnNodeJoinUtils {
             if (cc.getDiskPageCompression() != DiskPageCompression.DISABLED)
                 throw new IgniteCheckedException("Encryption cannot be used with disk page compression " +
                     cacheSpec.toString());
-        }
-
-        Collection<QueryEntity> ents = cc.getQueryEntities();
-
-        if (ctx.discovery().discoCache() != null) {
-            boolean nonDfltPrecScaleExists = ents.stream().anyMatch(
-                e -> !F.isEmpty(e.getFieldsPrecision()) || !F.isEmpty(e.getFieldsScale()));
-
-            if (nonDfltPrecScaleExists) {
-                ClusterNode oldestNode = ctx.discovery().discoCache().oldestServerNode();
-
-                if (PRECISION_SCALE_SINCE_VER.compareTo(oldestNode.version()) > 0) {
-                    throw new IgniteCheckedException("Non default precision and scale is supported since version 2.7. " +
-                        "The node with oldest version [node=" + oldestNode + ']');
-                }
-            }
         }
     }
 

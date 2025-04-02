@@ -47,7 +47,7 @@ public final class PlanningContext implements Context {
     private final String qry;
 
     /** */
-    private final Object[] parameters;
+    @Nullable private final Object[] parameters;
 
     /**
      * If not {@code null}, notifies to validate passed parameters number against number of the query's dynamic parameters.
@@ -88,7 +88,7 @@ public final class PlanningContext implements Context {
     private PlanningContext(
         Context parentCtx,
         String qry,
-        Object[] parameters,
+        @Nullable Object[] parameters,
         @Nullable IgnitePair<Integer> validateParamsNumCfg,
         long plannerTimeout
     ) {
@@ -112,7 +112,7 @@ public final class PlanningContext implements Context {
      * @return Query parameters.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public Object[] parameters() {
+    @Nullable public Object[] parameters() {
         return parameters;
     }
 
@@ -237,10 +237,12 @@ public final class PlanningContext implements Context {
     }
 
     /**
+     * Sets a rule filter. If already exists, enqueues the new one after the current filter.
+     *
      * @param rulesFilter Rules filter.
      */
-    public void rulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
-        this.rulesFilter = rulesFilter;
+    public void addRulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
+        this.rulesFilter = this.rulesFilter == null ? rulesFilter : this.rulesFilter.andThen(rulesFilter);
     }
 
     /**

@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
@@ -61,7 +61,7 @@ public class BaselineCommand extends CommandRegistryImpl<BaselineTaskArg, Baseli
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, BaselineTaskArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, BaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 
@@ -90,7 +90,7 @@ public class BaselineCommand extends CommandRegistryImpl<BaselineTaskArg, Baseli
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
             verbose = in.readBoolean();
         }
 

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -67,9 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -335,13 +331,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = insertKey(row, ectx);
         Object val = insertVal(row, ectx);
 
-        if (cacheContext().binaryMarshaller()) {
-            if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder)key).build();
+        if (key instanceof BinaryObjectBuilder)
+            key = ((BinaryObjectBuilder)key).build();
 
-            if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder)val).build();
-        }
+        if (val instanceof BinaryObjectBuilder)
+            val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
 
@@ -368,7 +362,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             if (fieldVal != null) {
                 if (key == null)
-                    key = newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
+                    key = newVal(typeDesc.keyTypeName());
 
                 desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
@@ -387,7 +381,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object val = hnd.get(valField, row);
 
         if (val == null) {
-            val = newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
+            val = newVal(typeDesc.valueTypeName());
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
@@ -406,44 +400,13 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
+    private Object newVal(String typeName) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = cacheContext();
 
-        if (cctx.binaryMarshaller()) {
-            BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-            cctx.prepareAffinityField(builder);
+        BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
+        cctx.prepareAffinityField(builder);
 
-            return builder;
-        }
-
-        Class<?> cls = U.classForName(typeName, typeCls);
-
-        try {
-            Constructor<?> ctor = cls.getDeclaredConstructor();
-            ctor.setAccessible(true);
-
-            return ctor.newInstance();
-        }
-        catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw instantiationException(typeName, e);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
-            try {
-                return GridUnsafe.allocateInstance(cls);
-            }
-            catch (InstantiationException e0) {
-                e0.addSuppressed(e);
-
-                throw instantiationException(typeName, e0);
-            }
-        }
-    }
-
-    /** */
-    private IgniteCheckedException instantiationException(String typeName, ReflectiveOperationException e) {
-        return S.includeSensitive()
-            ? new IgniteCheckedException("Failed to instantiate key [type=" + typeName + ']', e)
-            : new IgniteCheckedException("Failed to instantiate key", e);
+        return builder;
     }
 
     /** */
@@ -469,7 +432,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
 
-        if (cacheContext().binaryMarshaller() && val instanceof BinaryObjectBuilder)
+        if (val instanceof BinaryObjectBuilder)
             val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
@@ -503,14 +466,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object clone(Object val) throws IgniteCheckedException {
+    private Object clone(Object val) {
         if (val == null || QueryUtils.isSqlType(val.getClass()))
             return val;
 
         GridCacheContext<?, ?> cctx = cacheContext();
-
-        if (!cctx.binaryMarshaller())
-            return cctx.marshaller().unmarshal(cctx.marshaller().marshal(val), U.resolveClassLoader(cctx.gridConfig()));
 
         BinaryObjectBuilder builder = cctx.grid().binary().builder(
             cctx.grid().binary().<BinaryObject>toBinary(val));
@@ -599,18 +559,25 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.groupId());
         List<UUID> nodes0;
 
-        if (!top.rebalanceFinished(topVer)) {
-            nodes0 = new ArrayList<>(nodes.size());
+        top.readLock();
 
-            int parts = top.partitions();
+        try {
+            if (!top.rebalanceFinished(topVer)) {
+                nodes0 = new ArrayList<>(nodes.size());
 
-            for (ClusterNode node : nodes) {
-                if (isOwner(node.id(), top, parts))
-                    nodes0.add(node.id());
+                int parts = top.partitions();
+
+                for (ClusterNode node : nodes) {
+                    if (isOwner(node.id(), top, parts))
+                        nodes0.add(node.id());
+                }
             }
+            else
+                nodes0 = Commons.transform(nodes, ClusterNode::id);
         }
-        else
-            nodes0 = Commons.transform(nodes, ClusterNode::id);
+        finally {
+            top.readUnlock();
+        }
 
         return ColocationGroup.forNodes(nodes0);
     }

@@ -30,6 +30,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -46,6 +48,11 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
     /** */
     private ThreadLocal<Integer> discoPort = new ThreadLocal<>();
+
+    /** */
+    private LogListener logLsnr = LogListener
+        .matches("Failed to remove injected resources from SPI")
+        .build();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -78,6 +85,12 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+        listeningLog.registerListener(logLsnr);
+
+        cfg.setGridLogger(listeningLog);
+
         return cfg;
     }
 
@@ -86,6 +99,8 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        assertFalse(logLsnr.check());
     }
 
     /**

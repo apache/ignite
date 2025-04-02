@@ -738,7 +738,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             return;
 
         try {
-            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.config().getMarshaller(), metricsBytes, null);
+            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.marshaller(), metricsBytes, null);
 
             assert node instanceof IgniteClusterNode : node;
 
@@ -775,7 +775,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
 
                 allNodesMetrics.put(ctx.localNodeId(), metricsBytes);
             }
@@ -809,7 +809,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(metricsProvider.metrics(), metricsProvider.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
 
                 ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsBytes);
 
@@ -852,16 +852,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Cluster name.
      * */
     public String clusterName() {
-        try {
-            ctx.cache().awaitStarted();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         return IgniteSystemProperties.getString(
             IGNITE_CLUSTER_NAME,
-            ctx.cache().utilityCache().context().dynamicDeploymentId().toString()
+            String.valueOf(ctx.grid().cluster().id())
         );
     }
 

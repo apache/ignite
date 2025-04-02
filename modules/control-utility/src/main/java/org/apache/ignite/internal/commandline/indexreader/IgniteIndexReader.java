@@ -64,9 +64,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -104,8 +103,8 @@ import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
-import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.mandatoryArg;
-import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.argument;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.optionalArgument;
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -116,8 +115,8 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2.VERSION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.GridUnsafe.freeBuffer;
@@ -199,7 +198,7 @@ public class IgniteIndexReader implements AutoCloseable {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Page store of {@link FilePageStoreManager#INDEX_FILE_NAME}. */
+    /** Page store of {@link NodeFileTree#INDEX_FILE_NAME}. */
     private final FilePageStore idxStore;
 
     /** Partitions page stores, may contains {@code null}. */
@@ -271,16 +270,16 @@ public class IgniteIndexReader implements AutoCloseable {
         idxStore = filePageStore(INDEX_PARTITION, FLAG_IDX, storeFactory);
 
         if (isNull(idxStore))
-            throw new IgniteCheckedException(INDEX_FILE_NAME + " file not found");
+            throw new IgniteCheckedException(partitionFileName(INDEX_PARTITION) + " file not found");
 
-        log.info("Analyzing file: " + INDEX_FILE_NAME);
+        log.info("Analyzing file: " + partitionFileName(INDEX_PARTITION));
 
         partStores = new FilePageStore[partCnt];
 
         for (int i = 0; i < partCnt; i++)
             partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
 
-        Arrays.stream(FilePageStoreManager.cacheDataFiles(root)).forEach(f -> {
+        NodeFileTree.existingCacheConfigFiles(root).forEach(f -> {
             try {
                 StoredCacheData data = GridLocalConfigManager.readCacheData(f, null, null);
 
@@ -300,20 +299,28 @@ public class IgniteIndexReader implements AutoCloseable {
     public static void main(String[] args) {
         System.out.println("THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRID!");
 
-        CLIArgumentParser p = new CLIArgumentParser(asList(
-            mandatoryArg(
-                DIR_ARG,
-                "partition directory, where " + INDEX_FILE_NAME + " and (optionally) partition files are located.",
-                String.class
+        CLIArgumentParser p = new CLIArgumentParser(
+            Collections.emptyList(),
+            asList(
+                argument(DIR_ARG, String.class)
+                    .withUsage("partition directory, where " + partitionFileName(INDEX_PARTITION) +
+                        " and (optionally) partition files are located.")
+                    .build(),
+                optionalArgument(PART_CNT_ARG, Integer.class).withUsage("full partitions count in cache group.").withDefault(0).build(),
+                optionalArgument(PAGE_SIZE_ARG, Integer.class).withUsage("page size.").withDefault(DFLT_PAGE_SIZE).build(),
+                optionalArgument(PAGE_STORE_VER_ARG, Integer.class).withUsage("page store version.").withDefault(VERSION).build(),
+                optionalArgument(INDEXES_ARG, String[].class)
+                    .withUsage("you can specify index tree names that will be processed, separated by comma without " +
+                        "spaces, other index trees will be skipped.")
+                    .withDefault(U.EMPTY_STRS)
+                    .build(),
+                optionalArgument(CHECK_PARTS_ARG, Boolean.class)
+                    .withUsage("check cache data tree in partition files and it's consistency with indexes.")
+                    .withDefault(false)
+                    .build()
             ),
-            optionalArg(PART_CNT_ARG, "full partitions count in cache group.", Integer.class, () -> 0),
-            optionalArg(PAGE_SIZE_ARG, "page size.", Integer.class, () -> DFLT_PAGE_SIZE),
-            optionalArg(PAGE_STORE_VER_ARG, "page store version.", Integer.class, () -> FilePageStoreV2.VERSION),
-            optionalArg(INDEXES_ARG, "you can specify index tree names that will be processed, separated by comma " +
-                "without spaces, other index trees will be skipped.", String[].class, () -> U.EMPTY_STRS),
-            optionalArg(CHECK_PARTS_ARG,
-                "check cache data tree in partition files and it's consistency with indexes.", Boolean.class, () -> false)
-        ));
+            null
+        );
 
         if (args.length == 0) {
             System.out.println(p.usage());
@@ -321,7 +328,7 @@ public class IgniteIndexReader implements AutoCloseable {
             return;
         }
 
-        p.parse(asList(args).iterator());
+        p.parse(asList(args).listIterator());
 
         Set<String> idxs = new HashSet<>(asList(p.get(INDEXES_ARG)));
 
@@ -337,7 +344,7 @@ public class IgniteIndexReader implements AutoCloseable {
             reader.readIndex();
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(INDEX_FILE_NAME + " scan problem", e);
+            throw new IgniteException(partitionFileName(INDEX_PARTITION) + " scan problem", e);
         }
     }
 
@@ -1186,7 +1193,7 @@ public class IgniteIndexReader implements AutoCloseable {
         byte type,
         FileVersionCheckingFactory storeFactory
     ) throws IgniteCheckedException {
-        File file = new File(root, partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId));
+        File file = new File(root, partitionFileName(partId));
 
         if (!file.exists())
             return null;

@@ -347,7 +347,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = (AffinityTopologyVersion)in.readObject();
 
         assignment = U.readList(in);

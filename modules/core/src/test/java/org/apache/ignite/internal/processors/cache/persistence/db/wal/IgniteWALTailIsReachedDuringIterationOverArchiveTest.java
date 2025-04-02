@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -38,11 +37,11 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -115,13 +114,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     public void testStandAloneIterator() throws Exception {
         IgniteEx ig = grid();
 
-        IgniteWriteAheadLogManager wal = ig.context().cache().context().wal();
-
-        File walArchiveDir = U.field(wal, "walArchiveDir");
-
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        doTest(wal, iterFactory.iterator(walArchiveDir));
+        doTest(ig.context().pdsFolderResolver().fileTree(), iterFactory.iterator(ig.context().pdsFolderResolver().fileTree().walArchive()));
     }
 
     /**
@@ -133,24 +128,22 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         IgniteWriteAheadLogManager wal = ig.context().cache().context().wal();
 
-        doTest(wal, wal.replay(null));
+        doTest(ig.context().pdsFolderResolver().fileTree(), wal.replay(null));
     }
 
     /**
      *
-     * @param walMgr WAL manager.
+     * @param ft Node file tree.
      * @param it WAL iterator.
      * @throws IOException If IO exception.
      * @throws IgniteCheckedException If WAL iterator failed.
      */
-    private void doTest(IgniteWriteAheadLogManager walMgr, WALIterator it) throws IOException, IgniteCheckedException {
-        File walArchiveDir = U.field(walMgr, "walArchiveDir");
-
+    private void doTest(NodeFileTree ft, WALIterator it) throws IOException, IgniteCheckedException {
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
         List<FileDescriptor> descs = iterFactory.resolveWalFiles(
             new IteratorParametersBuilder()
-                .filesOrDirs(walArchiveDir)
+                .filesOrDirs(ft.walArchive())
         );
 
         int maxIdx = descs.size() - 1;

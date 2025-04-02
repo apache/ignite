@@ -49,6 +49,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -492,13 +493,17 @@ public class GridMapQueryExecutor {
                             qryInfo
                         );
 
-                        h2.runningQueryManager().planHistoryTracker().addPlan(
-                            qryInfo.plan(),
-                            sql,
-                            schemaName,
-                            false,
-                            IndexingQueryEngineConfiguration.ENGINE_NAME
-                        );
+                        if (h2.runningQueryManager().planHistoryTracker().enabled()) {
+                            MapH2QueryInfo qryInfo0 = qryInfo;
+
+                            ctx.pools().getSystemExecutorService().submit(() ->
+                                h2.runningQueryManager().planHistoryTracker().addPlan(
+                                    qryInfo0.plan(),
+                                    qryInfo0.sql(),
+                                    qryInfo0.schema(),
+                                    false,
+                                    IndexingQueryEngineConfiguration.ENGINE_NAME));
+                        }
 
                         if (evt) {
                             ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -842,7 +847,7 @@ public class GridMapQueryExecutor {
             if (node.isLocal())
                 h2.reduceQueryExecutor().onDmlResponse(node, rsp);
             else {
-                rsp.marshall(ctx.config().getMarshaller());
+                rsp.marshall(ctx.marshaller());
 
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
             }

@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -308,6 +309,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Global schema SQL views manager. */
     private final SchemaSqlViewManager schemaSqlViewMgr;
 
+    /** Partition reservation manager. */
+    private final PartitionReservationManager partReservationMgr;
+
     /** @see TransactionConfiguration#isTxAwareQueriesEnabled()  */
     private final boolean txAwareQueriesEnabled;
 
@@ -330,6 +334,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         schemaMgr = new SchemaManager(ctx);
 
         schemaSqlViewMgr = new SchemaSqlViewManager(ctx);
+
+        partReservationMgr = new PartitionReservationManager(ctx);
 
         idxProc = ctx.indexProcessor();
 
@@ -1060,6 +1066,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return runningQryMgr;
     }
 
+    /** Partition reservation manager. */
+    public PartitionReservationManager partitionReservationManager() {
+        return partReservationMgr;
+    }
+
     /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
@@ -1327,6 +1338,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             if (schemaMgr.clearCacheContext(cacheInfo.cacheContext())) {
+                partReservationMgr.onCacheStop(cacheInfo.name());
+
                 if (idx != null)
                     idx.unregisterCache(cacheInfo);
             }
@@ -1357,7 +1370,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void registerMetadataForRegisteredCaches(boolean platformOnly) {
         for (DynamicCacheDescriptor cacheDescriptor : ctx.cache().cacheDescriptors().values())
-            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema(), platformOnly);
+            registerBinaryMetadata(cacheDescriptor.schema(), platformOnly);
     }
 
     /**
@@ -1371,7 +1384,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 continue;
 
             try {
-                registerBinaryMetadata(req.startCacheConfiguration(), req.schema(), false);
+                registerBinaryMetadata(req.schema(), false);
             }
             catch (BinaryObjectException e) {
                 ctx.cache().completeCacheStartFuture(req, false, e);
@@ -1382,23 +1395,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Register binary metadata locally.
      *
-     * @param ccfg Cache configuration.
      * @param schema Schema for which register metadata is required.
      * @param platformOnly Whether to register non-Java platformOnly types only.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema, boolean platformOnly) throws BinaryObjectException {
+    private void registerBinaryMetadata(QuerySchema schema, boolean platformOnly) throws BinaryObjectException {
         if (schema != null) {
             Collection<QueryEntity> qryEntities = schema.entities();
 
             if (!F.isEmpty(qryEntities)) {
-                boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
-                if (binaryEnabled) {
-                    for (QueryEntity qryEntity : qryEntities) {
-                        registerTypeLocally(qryEntity.findKeyType(), platformOnly);
-                        registerTypeLocally(qryEntity.findValueType(), platformOnly);
-                    }
+                for (QueryEntity qryEntity : qryEntities) {
+                    registerTypeLocally(qryEntity.findKeyType(), platformOnly);
+                    registerTypeLocally(qryEntity.findValueType(), platformOnly);
                 }
             }
         }
@@ -2447,6 +2455,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 ctx.indexProcessor().unregisterCache(cacheInfo);
 
                 schemaMgr.onCacheStopped(cacheName, destroy, clearIdx);
+
+                partReservationMgr.onCacheStop(cacheName);
 
                 // Notify indexing.
                 if (idx != null)
@@ -4425,5 +4435,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** @return Statistics manager. */
     public IgniteStatisticsManager statsManager() {
         return statsMgr;
+    }
+
+    /** @return Default query engine. */
+    public QueryEngine defaultQueryEngine() {
+        return dfltQryEngine;
     }
 }
