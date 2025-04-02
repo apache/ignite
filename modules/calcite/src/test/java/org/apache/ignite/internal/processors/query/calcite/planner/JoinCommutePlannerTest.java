@@ -31,6 +31,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.ignite.internal.processors.query.calcite.RuleApplyListener;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -41,9 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMu
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /** Tests correctness applying of JOIN_COMMUTE* and {@link IgniteMultiJoinOptimizeRule} rules. */
@@ -143,9 +141,12 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT " + select.substring(0, select.length() - 2) + "\nFROM " + joins;
 
-        PlanningContext ctx = plannerCtx(sql, publicSchema);
+        // The join order optimization should not work. It disables the default join commute rules too.
+        RuleApplyListener orderOptmzLsnr = new RuleApplyListener(IgniteMultiJoinOptimizeRule.INSTANCE);
 
-        RuleMatchVisualizer lsnr = new RuleMatchVisualizer() {
+        PlanningContext ctx = plannerCtx(sql, publicSchema, orderOptmzLsnr);
+
+        RuleMatchVisualizer commuteLsnr = new RuleMatchVisualizer() {
             @Override public void ruleAttempted(RuleAttemptedEvent evt) {
                 if (rules.contains(evt.getRuleCall().getRule()))
                     assertTrue(rulesExpected);
@@ -154,43 +155,22 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             }
         };
 
-        lsnr.attachTo(ctx.cluster().getPlanner());
-
-        // The join order optimization should not work. It disables the default join commute rules too.
-        // It works in a dedicated HEP planner. Let's check the logs.
-        LogListener logLsnr = LogListener.matches("Joins order optimization took").build();
-
-        lsnrLog.registerListener(logLsnr);
-
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+        commuteLsnr.attachTo(ctx.cluster().getPlanner());
+        ctx.cluster().getPlanner().addListener(commuteLsnr);
 
         physicalPlan(ctx);
 
-        assertFalse(logLsnr.check());
-    }
-
-    /** */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        lsnrLog.clearListeners();
-
-        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+        assertFalse(orderOptmzLsnr.check());
     }
 
     /** */
     @Test
     public void testOuterCommute() throws Exception {
-        LogListener lsnr = LogListener.matches("Joins order optimization took").times(0).build();
-
-        lsnrLog.registerListener(lsnr);
-
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+        RuleApplyListener planLsnr = new RuleApplyListener(IgniteMultiJoinOptimizeRule.INSTANCE);
 
         String sql = "SELECT COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
-        IgniteRel phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+        IgniteRel phys = physicalPlan(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin");
 
         assertNotNull(phys);
 
@@ -202,7 +182,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertEquals(JoinRelType.LEFT, join.getJoinType());
 
-        PlanningContext ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter",
+        PlanningContext ctx = plannerCtx(sql, publicSchema, planLsnr, "MergeJoinConverter",
             "CorrelatedNestedLoopJoin");
 
         RelOptPlanner pl = ctx.cluster().getPlanner();
@@ -213,8 +193,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        phys = physicalPlan(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
         join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
 
@@ -225,8 +204,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.RIGHT, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        ctx = plannerCtx(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
         pl = ctx.cluster().getPlanner();
 
@@ -236,7 +214,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertTrue(costWithCommute.isLt(costWithoutCommute));
 
-        assertTrue(lsnr.check());
+        assertFalse(planLsnr.check());
     }
 
     /** Tests that {@link IgniteMultiJoinOptimizeRule} is enabled if joins number reaches the threshold. */
@@ -246,66 +224,55 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id";
 
-        LogListener lsnr = LogListener.matches("Joins order optimization took").build();
+        RuleApplyListener planLsnr = new RuleApplyListener(IgniteMultiJoinOptimizeRule.INSTANCE);
 
-        lsnrLog.registerListener(lsnr);
+        physicalPlan(sql, publicSchema, planLsnr);
 
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
-
-        physicalPlan(sql, publicSchema);
-
-        assertFalse(lsnr.check());
+        assertFalse(planLsnr.check());
 
         // Joins number is enough. But the optimization is disabled by the hint.
         sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id " +
             "JOIN AVERAGE a on a.id = h.id JOIN SMALL ss on ss.id = a.id";
 
-        physicalPlan(sql, publicSchema);
+        physicalPlan(sql, publicSchema, planLsnr);
 
-        assertFalse(lsnr.check());
+        assertFalse(planLsnr.check());
 
         // Joins number is enough. But the optimization is disabled by the hint for some joins.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
             "(SELECT /*+ ENFORCE_JOIN_ORDER */ h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
             "JOIN SMALL s2 ON a.id=s2.id) j ON s.id=j.a";
 
-        physicalPlan(sql, publicSchema);
+        physicalPlan(sql, publicSchema, planLsnr);
 
-        assertFalse(lsnr.check());
+        assertFalse(planLsnr.check());
 
         // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
             "(SELECT h.id as a, a.id as b, s2.id as c FROM HUGE h JOIN AVERAGE a on h.id=a.id " +
             "JOIN SMALL s2 ON a.id=s2.id) j ON s.id=j.a";
 
-        physicalPlan(sql, publicSchema);
+        physicalPlan(sql, publicSchema, planLsnr);
 
-        assertTrue(lsnr.check());
+        assertTrue(planLsnr.checkAndReset());
 
         // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
             "JOIN SMALL ss on ss.id = a.id";
 
-        lsnr.reset();
+        physicalPlan(sql, publicSchema, planLsnr);
 
-        physicalPlan(sql, publicSchema);
-
-        assertTrue(lsnr.check());
+        assertTrue(planLsnr.check());
     }
 
     /** */
     @Test
     public void testInnerCommute() throws Exception {
-        LogListener lsnr = LogListener.matches("Joins order optimization took").times(0).build();
-
-        lsnrLog.registerListener(lsnr);
-
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+        RuleApplyListener planLsnr = new RuleApplyListener(IgniteMultiJoinOptimizeRule.INSTANCE);
 
         String sql = "SELECT COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
-        IgniteRel phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin");
+        IgniteRel phys = physicalPlan(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin");
 
         assertNotNull(phys);
 
@@ -332,8 +299,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        PlanningContext ctx = plannerCtx(sql, publicSchema, "MergeJoinConverter",
-            "CorrelatedNestedLoopJoin");
+        PlanningContext ctx = plannerCtx(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin");
 
         RelOptPlanner pl = ctx.cluster().getPlanner();
 
@@ -343,8 +309,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        phys = physicalPlan(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
         join = findFirstNode(phys, byClass(IgniteNestedLoopJoin.class));
         proj = findFirstNode(phys, byClass(IgniteProject.class));
@@ -370,8 +335,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema,
-            "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
+        ctx = plannerCtx(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");
 
         pl = ctx.cluster().getPlanner();
 
@@ -381,6 +345,6 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertTrue(costWithCommute.isLt(costWithoutCommute));
 
-        assertTrue(lsnr.check());
+        assertFalse(planLsnr.check());
     }
 }

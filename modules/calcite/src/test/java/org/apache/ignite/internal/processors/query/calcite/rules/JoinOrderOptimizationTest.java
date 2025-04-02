@@ -20,15 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.rules;
 import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.RuleApplyListener;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
-import org.apache.logging.log4j.Level;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -43,9 +39,6 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  */
 @RunWith(Parameterized.class)
 public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
-    /** Logger to watch. */
-    private static ListeningTestLogger LISTENING_TEST_LOG;
-
     /** Test query. */
     @Parameterized.Parameter
     public String qry;
@@ -58,8 +51,6 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        LISTENING_TEST_LOG = new ListeningTestLogger(log);
-
         super.beforeTestsStarted();
 
         initSchema();
@@ -68,24 +59,8 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        LISTENING_TEST_LOG.clearListeners();
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean destroyCachesAfterTest() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setGridLogger(LISTENING_TEST_LOG);
-
-        return cfg;
     }
 
     /** */
@@ -148,21 +123,17 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
 
         String qryFixedJoins = qry.replaceAll("SELECT", "SELECT /*+ " + ENFORCE_JOIN_ORDER + " */");
 
-        setLoggerLevel(CalciteQueryProcessor.class.getName(), Level.DEBUG);
+        RuleApplyListener planLsnr = new RuleApplyListener(IgniteMultiJoinOptimizeRule.INSTANCE);
 
         // First, call with fixed join order.
-        List<List<?>> expectedResult = sql(qryFixedJoins);
-
-        LogListener logLsnr = LogListener.matches("Joins order optimization took").build();
-
-        LISTENING_TEST_LOG.registerListener(logLsnr);
+        List<List<?>> expectedResult = assertQuery(qryFixedJoins).withPlannerListener(planLsnr).check();
 
         // Ensure that the optimization rule wasn't fired.
-        assertFalse(logLsnr.check());
+        assertFalse(planLsnr.check());
 
         assertFalse(expectedResult.isEmpty());
 
-        QueryChecker checker = assertQuery(qry);
+        QueryChecker checker = assertQuery(qry).withPlannerListener(planLsnr);
 
         // Make sure that the optimized query has the same results.
         expectedResult.forEach(row -> checker.returns(row.toArray()));
@@ -170,7 +141,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         checker.check();
 
         // Ensure that the optimization rule has worked.
-        assertTrue(logLsnr.check());
+        assertTrue(planLsnr.check());
     }
 
     /** */

@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PlannerHelper {
@@ -223,11 +222,7 @@ public class PlannerHelper {
         if (joins.size() - disabledCnt < JOINS_COUNT_FOR_HEURISTIC_ORDER)
             return checkJoinsCommutes(planner, root);
 
-        long timing = System.nanoTime();
-
         RelNode res = planner.transform(PlannerPhase.HEP_OPTIMIZE_JOIN_ORDER, root.getTraitSet(), root);
-
-        timing = System.nanoTime() - timing;
 
         // Still has a MultiJoin, didn't manage to collect one flat join to optimize.
         if (!findNodes(res, MultiJoin.class, true).isEmpty())
@@ -242,11 +237,6 @@ public class PlannerHelper {
 
             restoreJoinTypeHints(res);
         }
-
-        IgniteLogger log = Commons.context(root).logger();
-
-        if (log.isDebugEnabled())
-            log.debug("Joins order optimization took " + U.nanosToMillis(timing) + "ms.");
 
         return res;
     }

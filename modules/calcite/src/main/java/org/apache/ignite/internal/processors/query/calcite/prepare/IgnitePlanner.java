@@ -35,6 +35,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -395,6 +396,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             for (RelTraitDef<?> def : traitDefs)
                 this.planner.addRelTraitDef(def);
+
+            RelOptListener planLsnr = ctx.unwrap(RelOptListener.class);
+
+            if (planLsnr != null)
+                planner.addListener(planLsnr);
         }
 
         return planner;

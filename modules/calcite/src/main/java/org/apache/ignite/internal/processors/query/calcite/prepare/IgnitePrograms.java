@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.calcite.plan.RelOptLattice;
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -56,6 +57,11 @@ public class IgnitePrograms {
 
             final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
                 null, Commons.context(rel).config().getCostFactory());
+
+            RelOptListener relOptListener = planner.getContext().unwrap(RelOptListener.class);
+
+            if (relOptListener != null)
+                hepPlanner.addListener(relOptListener);
 
             hepPlanner.setExecutor(planner.getExecutor());
 
