@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,23 +73,23 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
 
             startCollectStatistics();
 
-            Set<String> expectedIndexes = Set.of("PERSON_ID_ASC_IDX", "PERSON_SALARY_DESC_IDX");
-            Set<String> actualIndexes = new HashSet<>();
+            Set<Object> expectedIndexes = Set.of("PERSON_ID_ASC_IDX", "PERSON_SALARY_DESC_IDX");
+            Set<Object> actualIndexes = new HashSet<>();
 
-            Set<String> expectedColumns = Set.of("SALARY", "AGE", "NAME");
-            Set<String> actualColumns = new HashSet<>();
+            Set<Object> expectedColumns = Set.of("SALARY", "AGE", "NAME");
+            Set<Object> actualColumns = new HashSet<>();
 
             AtomicInteger tablesCnt = new AtomicInteger(0);
 
             assertTrue("Performance statistics writer did not start.", waitForCondition(lsnr::check, TIMEOUT));
 
             stopCollectStatisticsAndRead(new TestHandler() {
-                @Override public void systemView(UUID id, String name, Map<String, Object> data) {
+                @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
                     if ("table.columns".equals(name))
-                        data.computeIfPresent("columnName", (k, v) -> actualColumns.add(v.toString()));
+                        actualColumns.add(getViewByName(schema, row, "columnName"));
 
                     if ("indexes".equals(name))
-                        data.computeIfPresent("indexName", (k, v) -> actualIndexes.add(v.toString()));
+                        actualIndexes.add(getViewByName(schema, row, "indexName"));
 
                     if ("tables".equals(name))
                         tablesCnt.incrementAndGet();
@@ -135,5 +134,10 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
         public float salary() {
             return salary;
         }
+    }
+
+    private Object getViewByName(List<String> schema, List<Object> row, String attr) {
+        int index = schema.indexOf(attr);
+        return row.get(index);
     }
 }

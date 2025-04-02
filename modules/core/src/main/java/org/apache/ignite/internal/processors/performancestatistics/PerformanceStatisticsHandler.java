@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
@@ -167,9 +167,10 @@ public interface PerformanceStatisticsHandler {
     void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
 
     /**
-     * @param id      Node id.
-     * @param name    Name of system view.
-     * @param data    Data from system view.
+     * @param id    Node id.
+     * @param name  Name of system view.
+     * @param schema Attributes of system view.
+     * @param row System view row.
      */
-    void systemView(UUID id, String name, Map<String, Object> data);
+    void systemView(UUID id, String name, List<String> schema, List<Object> row);
 }
