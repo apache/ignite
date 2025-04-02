@@ -248,6 +248,32 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected void gatherStatistics() throws Exception {
+        for (List<?> lst : sql("SELECT TABLE_NAME FROM SYS.TABLES")) {
+            assert lst.size() == 1 : "Single table name expected";
+
+            String tbl = lst.get(0).toString().toUpperCase();
+
+            sql("ANALYZE " + tbl);
+
+            waitForCondition(
+                () -> {
+                    for (Ignite node : G.allGrids()) {
+                        if (node.configuration().isClientMode())
+                            continue;
+
+                        if (F.isEmpty(sql((IgniteEx)node, "select * from sys.statistics_local_data where name = ?", tbl)))
+                            return false;
+                    }
+
+                    return true;
+                },
+                getTestTimeout()
+            );
+        }
+    }
+
+    /** */
     public static class DelegatingIgniteIndex implements IgniteIndex {
         /** */
         protected final IgniteIndex delegate;

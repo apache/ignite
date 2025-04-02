@@ -210,8 +210,8 @@ public class PlannerHelper {
         int disabledCnt = 0;
 
         // If all the joins have the forced order, no need to optimize the joins order at all.
-        for (RelNode joinOrCorr : joins) {
-            for (RelHint hint : ((Hintable)joinOrCorr).getHints()) {
+        for (RelNode join : joins) {
+            for (RelHint hint : ((Hintable)join).getHints()) {
                 if (HintDefinition.ENFORCE_JOIN_ORDER.name().equals(hint.hintName)) {
                     ++disabledCnt;
 
@@ -255,7 +255,9 @@ public class PlannerHelper {
     private static RelNode actualTopLevelJoinTypeHints(RelNode rel, List<RelHint> topLevelHints, Join filterNode) {
         assert rel instanceof Hintable;
 
-        List<RelHint> relHints = ((Hintable)rel).getHints();
+        // Ignore inheritance to compare hints type and options.
+        List<RelHint> relHints = ((Hintable)rel).getHints().stream()
+            .map(h -> h.inheritPath.isEmpty() ? h : h.copy(Collections.emptyList())).collect(Collectors.toList());
 
         List<RelHint> res = new ArrayList<>(topLevelHints.size());
 
@@ -265,8 +267,7 @@ public class PlannerHelper {
             boolean storeHint = true;
 
             for (RelHint curHint : relHints) {
-                // Ignore inheritance.
-                if (topHint.equals(curHint.inheritPath.isEmpty() ? curHint : curHint.copy(Collections.emptyList()))) {
+                if (topHint.equals(curHint)) {
                     storeHint = false;
 
                     break;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
@@ -26,10 +25,6 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
-import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
-import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
-import org.apache.ignite.internal.processors.query.stat.StatisticsProcessor;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -261,40 +256,5 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
                 "JOIN Products P on P.ProdId = O.ProdId " +
                 "JOIN Users U on O.UsrId = U.UsrId"
         );
-    }
-
-    /** */
-    private void gatherStatistics() throws Exception {
-        Level prevLogLvl = setLoggerLevel(StatisticsProcessor.class.getName(), Level.DEBUG);
-
-        IgniteStatisticsManager statMgr = grid(0).context().query().statsManager();
-
-        List<List<?>> tables = sql("SELECT TABLE_NAME FROM SYS.TABLES");
-
-        assert !tables.isEmpty();
-
-        Collection<LogListener> logLsnrs = new ArrayList<>(tables.size());
-
-        for (List<?> tbl : tables) {
-            assert tbl.size() == 1 && tbl.get(0) instanceof String;
-
-            String tblName = (String)tbl.get(0);
-
-            LogListener logLsnr = LogListener.matches("Local partitions statistics successfully gathered by key " +
-                "StatsKey{schema='PUBLIC', obj='" + tblName + "'}").times(nodeCount()).build();
-
-            logLsnrs.add(logLsnr);
-
-            LISTENING_TEST_LOG.registerListener(logLsnr);
-
-            statMgr.collectStatistics(new StatisticsObjectConfiguration(new StatisticsKey("PUBLIC", tblName)));
-        }
-
-        for (LogListener ll : logLsnrs)
-            assertTrue(ll.check(getTestTimeout()));
-
-        setLoggerLevel(StatisticsProcessor.class.getName(), prevLogLvl);
-
-        LISTENING_TEST_LOG.clearListeners();
     }
 }

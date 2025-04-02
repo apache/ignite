@@ -279,12 +279,11 @@ public class StatisticsProcessor {
             task.call();
 
             if (ctx.partitionDone(task.partition())) {
-                aggregateStatistics(ctx);
-
-                if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled())
                     log.debug("Local partitions statistics successfully gathered by key " +
                         ctx.configuration().key());
-                }
+
+                aggregateStatistics(ctx);
 
                 ctx.future().complete(null);
             }
