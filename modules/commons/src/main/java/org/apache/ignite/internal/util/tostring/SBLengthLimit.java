@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.IgniteSystemProperties;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 
 /**
  *
  */
 class SBLengthLimit {
+    /** @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
+    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
+
     /** */
     private static final int MAX_TO_STR_LEN =
-        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, DFLT_TO_STRING_MAX_LENGTH);
+        IgniteCommonsSystemProperties.getInteger(IgniteCommonsSystemProperties.IGNITE_TO_STRING_MAX_LENGTH, DFLT_TO_STRING_MAX_LENGTH);
 
     /** Length of tail part of message. */
     private static final int TAIL_LEN = MAX_TO_STR_LEN / 10 * 2;

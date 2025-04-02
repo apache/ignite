@@ -50,9 +50,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteCommonsSystemProperties.getBoolean;
 
 /**
  * Provides auto-generation framework for {@code toString()} output.
@@ -98,9 +98,6 @@ public class GridToStringBuilder {
 
     /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
-
-    /** @see IgniteSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
-    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
 
     /** @see IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
     public static final boolean DFLT_TO_STRING_INCLUDE_SENSITIVE = true;
