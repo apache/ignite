@@ -26,10 +26,10 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
@@ -117,7 +118,7 @@ public class FilePerformanceStatisticsReader {
     private ForwardRead forwardRead;
 
     /** Walkers for reading system view recors. */
-    private final Map<String, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
+    private final ViewObject viewObj;
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -132,6 +133,9 @@ public class FilePerformanceStatisticsReader {
         A.notEmpty(handlers, "At least one handler expected.");
 
         buf = allocateDirect(bufSize).order(nativeOrder());
+
+        viewObj = new ViewObject(buf);
+
         this.handlers = handlers;
         curHnd = handlers;
     }
@@ -294,33 +298,32 @@ public class FilePerformanceStatisticsReader {
 
             return true;
         }
-        else if (opType == SYSTEM_VIEW_ROW) {
+        else if (opType == SYSTEM_VIEW_SCHEMA) {
             ForwardableString viewName = readString(buf);
             if (viewName == null)
                 return false;
+
+            viewObj.viewName(viewName.str);
 
             ForwardableString walkerName = readString(buf);
             if (walkerName == null)
                 return false;
 
-            SystemViewRowAttributeWalker<?> walker = walkers.computeIfAbsent(walkerName.str, className -> {
-                try {
-                    return (SystemViewRowAttributeWalker<?>)Class.forName(className).getConstructor().newInstance();
-                }
-                catch (ClassNotFoundException | InvocationTargetException | InstantiationException |
-                       IllegalAccessException | NoSuchMethodException e) {
-                    return null;
-                }
-            });
-
-            if (walker == null)
+            try {
+                viewObj.walker(walkerName.str);
+            }
+            catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
+                   IllegalAccessException e) {
                 throw new IOException("Could not find walker: " + walkerName);
-
-            AttributeReaderVisitor visitor = new AttributeReaderVisitor();
-            walker.visitAll(visitor);
+            }
+            return true;
+        }
+        else if (opType == SYSTEM_VIEW_ROW) {
+            List<String> schema = viewObj.schema();
+            List<Object> row = viewObj.call();
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.systemView(nodeId, viewName.str, visitor.row());
+                hnd.systemView(nodeId, viewObj.viewName(), schema, row);
             return true;
         }
         else if (opType == QUERY_READS) {
@@ -658,87 +661,174 @@ public class FilePerformanceStatisticsReader {
         }
     }
 
-    /** Write schema of system view to file. */
-    private class AttributeReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
-        /** Row. */
-        private final Map<String, Object> row = new LinkedHashMap<>();
+    /** */
+    private class ViewObject {
+        /**  */
+        private SystemViewRowAttributeWalker<?> walker;
 
-        /** Not enough bytes. */
-        private boolean notEnoughBytes;
+        /**  */
+        private final ByteBuffer buf;
+
+        /**  */
+        private final RowReaderVisitor rowVisitor = new RowReaderVisitor();
 
         /** */
-        public Map<String, Object> row() {
-            if (notEnoughBytes)
-                return null;
-            return row;
+        private String viewName;
+
+        /** Schema visitor. */
+        private final ShemaReaderVisitor schemaVisitor = new ShemaReaderVisitor();
+
+        /**
+         * @param buf Buffer.
+         */
+        public ViewObject(ByteBuffer buf) {
+            this.buf = buf;
         }
 
-        /** {@inheritDoc} */
-        @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-            if (notEnoughBytes)
-                return;
+        /** */
+        public void walker(String walkerName) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+            walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
 
-            if (clazz == int.class) {
-                if (buf.remaining() < 4) {
-                    notEnoughBytes = true;
+            schemaVisitor.clear();
+
+            walker.visitAll(schemaVisitor);
+        }
+
+        /**
+         * @param viewName View name.
+         */
+        public void viewName(String viewName) {
+            this.viewName = viewName;
+        }
+
+        /** */
+        public String viewName() {
+            return viewName;
+        }
+
+        /** */
+        public List<String> schema() {
+            return Collections.unmodifiableList(schemaVisitor.schema());
+        }
+
+        /**
+         * @return System view row.
+         */
+        List<Object> call() {
+            rowVisitor.clear();
+            walker.visitAll(rowVisitor);
+            return rowVisitor.row();
+        }
+
+        /** */
+        private class ShemaReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
+            /** Row. */
+            private final List<String> schema = new ArrayList<>();
+
+            /**  */
+            public List<String> schema() {
+                return schema;
+            }
+
+            /** */
+            public void clear() {
+                schema.clear();
+            }
+
+            /** {@inheritDoc} */
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                schema.add(name);
+            }
+        }
+
+        /** Write schema of system view to file. */
+        private class RowReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
+            /** Row. */
+            private final List<Object> row = new ArrayList<>();
+
+            /** Not enough bytes. */
+            private boolean notEnoughBytes;
+
+            /**  */
+            public List<Object> row() {
+                if (notEnoughBytes)
+                    return null;
+                return row;
+            }
+
+            /** */
+            public void clear() {
+                row.clear();
+            }
+
+            /** {@inheritDoc} */
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                if (notEnoughBytes)
                     return;
+
+                if (clazz == int.class) {
+                    if (buf.remaining() < 4) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.getInt());
                 }
-                row.put(name, buf.getInt());
-            }
-            else if (clazz == byte.class) {
-                if (buf.remaining() < 1) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == byte.class) {
+                    if (buf.remaining() < 1) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.get());
                 }
-                row.put(name, buf.get());
-            }
-            else if (clazz == short.class) {
-                if (buf.remaining() < 2) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == short.class) {
+                    if (buf.remaining() < 2) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.getShort());
                 }
-                row.put(name, buf.getShort());
-            }
-            else if (clazz == long.class) {
-                if (buf.remaining() < 8) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == long.class) {
+                    if (buf.remaining() < 8) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.getLong());
                 }
-                row.put(name, buf.getLong());
-            }
-            else if (clazz == float.class) {
-                if (buf.remaining() < 4) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == float.class) {
+                    if (buf.remaining() < 4) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.getFloat());
                 }
-                row.put(name, buf.getFloat());
-            }
-            else if (clazz == double.class) {
-                if (buf.remaining() < 8) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == double.class) {
+                    if (buf.remaining() < 8) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.getDouble());
                 }
-                row.put(name, buf.getDouble());
-            }
-            else if (clazz == char.class) {
-                if (buf.remaining() < 2) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == char.class) {
+                    if (buf.remaining() < 2) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.getChar());
                 }
-                row.put(name, buf.getChar());
-            }
-            else if (clazz == boolean.class) {
-                if (buf.remaining() < 1) {
-                    notEnoughBytes = true;
-                    return;
+                else if (clazz == boolean.class) {
+                    if (buf.remaining() < 1) {
+                        notEnoughBytes = true;
+                        return;
+                    }
+                    row.add(buf.get() != 0);
                 }
-                row.put(name, buf.get() != 0);
+                else {
+                    ForwardableString str = readString(buf);
+                    if (str != null)
+                        row.add( str.str);
+                }
             }
-            else {
-                ForwardableString str = readString(buf);
-                if (str != null)
-                    row.put(name, str.str);
-            }
+
         }
     }
 }
