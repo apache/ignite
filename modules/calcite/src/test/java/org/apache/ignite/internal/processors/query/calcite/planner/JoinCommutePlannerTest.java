@@ -148,7 +148,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         RuleMatchVisualizer commuteLsnr = new RuleMatchVisualizer() {
             @Override public void ruleAttempted(RuleAttemptedEvent evt) {
-                if (rules.contains(evt.getRuleCall().getRule()))
+                if (rules.contains(evt.getRuleCall().getRule()) && !evt.isBefore())
                     assertTrue(rulesExpected);
 
                 super.ruleAttempted(evt);
