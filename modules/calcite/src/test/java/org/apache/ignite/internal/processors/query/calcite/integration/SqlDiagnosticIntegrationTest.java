@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
@@ -68,8 +69,10 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
@@ -82,6 +85,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Abstra
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
 import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.BIG_RESULT_SET_MSG;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_ERROR_MSG;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
@@ -102,6 +106,9 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     private static final int BIG_RESULT_SET_THRESHOLD = 10_000;
 
     /** */
+    private static final int POOL_SIZE = 2;
+
+    /** */
     private ListeningTestLogger log;
 
     /** */
@@ -112,6 +119,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         return super.getConfiguration(igniteInstanceName)
             .setGridLogger(log)
             .setAuthenticationEnabled(true)
+            .setQueryThreadPoolSize(POOL_SIZE)
             .setSqlConfiguration(new SqlConfiguration()
                 .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration())
                 .setLongQueryWarningTimeout(LONG_QRY_TIMEOUT))
@@ -791,6 +799,50 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(logLsnr0.check(1000L));
         assertTrue(logLsnr1.check(1000L));
         assertTrue(logLsnr2.check(1000L));
+    }
+
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "100")
+    public void testStarvationMessageStripedExecutor() throws Exception {
+        checkStarvation();
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "100")
+    @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
+    public void testStarvationMessageBlockingExecutor() throws Exception {
+        checkStarvation();
+    }
+
+    /** */
+    private void checkStarvation() throws Exception {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("func_cache")
+            .setSqlFunctionClasses(FunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+        );
+
+        LogListener logLsnr = LogListener.matches("Possible thread pool starvation detected " +
+            "(no task completed in last 100ms, is calcite thread pool size large enough?)").build();
+
+        log.registerListener(logLsnr);
+
+        FunctionsLibrary.latch = new CountDownLatch(1);
+
+        GridCompoundFuture<List<List<?>>, ?> fut = new GridCompoundFuture<>();
+
+        for (int i = 0; i < POOL_SIZE + 1; i++)
+            fut.add(GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(10000)")));
+
+        fut.markInitialized();
+
+        assertTrue(logLsnr.check(10_000L));
+
+        FunctionsLibrary.latch.countDown();
+
+        fut.get();
     }
 
     /** */

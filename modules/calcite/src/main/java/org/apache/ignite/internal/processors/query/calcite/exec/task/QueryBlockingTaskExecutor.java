@@ -79,6 +79,8 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
         executor.prestartAllCoreThreads();
 
         executor.registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, THREAD_POOL_NAME)));
+
+        ctx.pools().addExecutorForStarvationDetection("calcite", executor);
     }
 
     /** {@inheritDoc} */
