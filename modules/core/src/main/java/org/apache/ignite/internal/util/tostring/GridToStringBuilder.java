@@ -1839,7 +1839,7 @@ public class GridToStringBuilder {
                 }
 
                 if (add) {
-                    GridToStringFieldDescriptor fd = new GridToStringFieldDescriptor(f);
+                    GridToStringFieldDescriptor fd = new GridToStringFieldDescriptor(f, GridUnsafe::objectFieldOffset);
 
                     // Get order, if any.
                     final GridToStringOrder annOrder = f.getAnnotation(GridToStringOrder.class);

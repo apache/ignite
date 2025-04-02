@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.tostring;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import org.apache.ignite.internal.util.GridUnsafe;
+import java.util.function.ToLongFunction;
 import org.intellij.lang.annotations.MagicConstant;
 
 /**
@@ -59,7 +59,7 @@ class GridToStringFieldDescriptor {
     /** */
     private int order = Integer.MAX_VALUE;
 
-    /** Field offset as returned by {@link GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}. */
+    /** Field offset as returned by {@ignitelink GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}. */
     private final long off;
 
     /** Numeric constant for the field's type. One of {@code FIELD_TYPE_*} constants of current class. */
@@ -69,10 +69,10 @@ class GridToStringFieldDescriptor {
     private final Class<?> cls;
 
     /** */
-    GridToStringFieldDescriptor(Field field) {
+    GridToStringFieldDescriptor(Field field, ToLongFunction<Field> off) {
         assert (field.getModifiers() & Modifier.STATIC) == 0 : "Static fields are not allowed here: " + field;
 
-        off = GridUnsafe.objectFieldOffset(field);
+        this.off = off.applyAsLong(field);
 
         cls = field.getType();
 
@@ -117,7 +117,7 @@ class GridToStringFieldDescriptor {
     }
 
     /**
-     * @return Field offset as returned by {@link GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}.
+     * @return Field offset as returned by {@ignitelink GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}.
      */
     public long offset() {
         return off;
