@@ -16,12 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
@@ -106,19 +103,11 @@ public class SnapshotChecker {
         @Nullable Collection<String> groups,
         boolean check
     ) {
-        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
-
         // The handlers use or may use the same snapshot pool. If it configured with 1 thread, launching waiting task in
         // the same pool might block it.
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, groups, kctx.cluster().get().localNode(), sft, false, check));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to call custom snapshot validation handlers.", e);
-            }
-        });
+        return CompletableFuture.supplyAsync(() ->
+            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, groups, check).execute()
+        );
     }
 
     /** Launches local partitions checking. */
@@ -146,42 +135,14 @@ public class SnapshotChecker {
 
     /**
      * Checks results of all the snapshot validation handlres.
-     * @param snpName Snapshot name
+     * @param snpName Snapshot name.
      * @param results Results: checking node -> snapshot part's consistend id -> custom handler name -> handler result.
      * @see #invokeCustomHandlers(SnapshotMetadata, SnapshotFileTree, Collection, boolean)
      */
     public void checkCustomHandlersResults(
         String snpName,
         Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
-    ) throws Exception {
-        Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
-        Collection<UUID> execNodes = new ArrayList<>(results.size());
-
-        // Checking node -> Map by snapshot part's consistend id.
-        for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
-            // Consistent id -> Map by handler name.
-            for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> nodeConsIdRes : nodeRes.getValue().entrySet()) {
-                ClusterNode node = nodeRes.getKey();
-
-                // We can get several different results from one node.
-                execNodes.add(node.id());
-
-                assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
-
-                // Handler name -> handler result.
-                for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeConsIdRes.getValue().entrySet()) {
-                    String hndName = nodeHndRes.getKey();
-                    SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
-
-                    if (hndRes.error() != null)
-                        throw hndRes.error();
-
-                    clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
-                }
-            }
-        }
-
-        kctx.cache().context().snapshotMgr().handlers().completeAll(SnapshotHandlerType.RESTORE, snpName, clusterResults,
-            execNodes, wrns -> {});
+    ) {
+        new SnapshotHandlerRestoreTask(kctx.grid(), log, null, null, true).reduce(snpName, results);
     }
 }
