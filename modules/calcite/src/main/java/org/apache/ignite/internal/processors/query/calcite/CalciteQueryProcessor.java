@@ -417,7 +417,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
     }
 
     /** {@inheritDoc} */
@@ -426,7 +426,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -435,7 +435,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -511,7 +511,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
-        boolean validateParamsCnt,
         Object... params
     ) throws IgniteSQLException {
         ensureTransactionModeSupported(qryCtx);
@@ -543,10 +542,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
-        int qryIdx = 0;
 
         for (final SqlNode sqlNode: qryList) {
-            int qryIdx0 = qryIdx;
+            checkDynamicParamsCount(sqlNode, params);
 
             T singleRes = processQuery(qryCtx, qry -> {
                 QueryPlan plan0;
@@ -554,21 +552,40 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
                         new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
-                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateParamsCnt, 0, 1))
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }
                 else
-                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateParamsCnt, qryIdx0, qryList.size()));
+                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
                 return action.apply(qry, plan0);
             }, schema.getName(), removeSensitive(sqlNode), qrys, params);
-
-            ++qryIdx;
 
             res.add(singleRes);
         }
 
         return res;
+    }
+
+    /** */
+    private void checkDynamicParamsCount(SqlNode node, Object[] params) {
+        int[] maxDynParIdx = new int[] {-1};
+
+        node.accept(new SqlShuttle() {
+            @Override public SqlNode visit(SqlDynamicParam param) {
+                if (param.getIndex() > maxDynParIdx[0])
+                    maxDynParIdx[0] = param.getIndex();
+
+                return param;
+            }
+        });
+
+        int paramsCnt = params == null ? 0 : params.length;
+
+        if (paramsCnt != maxDynParIdx[0] + 1) {
+            throw new IgniteSQLException("Wrong number of query parameters. Expected: " + maxDynParIdx[0] + 1 + ". Passed: "
+                + paramsCnt + '.', IgniteQueryErrorCode.PARSING);
+        }
     }
 
     /** */

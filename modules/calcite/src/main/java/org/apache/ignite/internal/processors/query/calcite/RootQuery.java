@@ -304,27 +304,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         tryClose(queryCanceledException());
     }
 
-    /**
-     * Provides a planning context with disabled validation of the parameters number.
-     *
-     * @return Planning context.
-     */
+    /** */
     public PlanningContext planningContext() {
-        return planningContext(false, 0, 0);
-    }
-
-    /**
-     * Provides a planning context with optionally enabled validation of the parameters number.
-     *
-     * @param validateParamsCnt If {@code true}, enables validation of {@link #parameters()} number.
-     * @param curQryNum Current query number in the queries sharing {@link #parameters()}. Ignored if
-     *        {@code validateParamsCnt} is {@code false}.
-     * @param totalQueriesCnt Total count of th queries sharing {@link #parameters()}. Ignored if
-     *        {@code validateParamsCnt} is {@code false}.
-     * @return Planning context.
-     * @see PlanningContext#validateParamsNumber()
-     */
-    public PlanningContext planningContext(boolean validateParamsCnt, int curQryNum, int totalQueriesCnt) {
         synchronized (mux) {
             if (state == QueryState.CLOSED || state == QueryState.CLOSING)
                 throw queryCanceledException();
@@ -339,18 +320,12 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             if (pctx == null) {
                 state = QueryState.PLANNING;
 
-                PlanningContext.Builder builder = PlanningContext.builder()
+                pctx = PlanningContext.builder()
                     .parentContext(ctx)
                     .query(sql)
                     .parameters(params)
-                    .plannerTimeout(plannerTimeout);
-
-                if (validateParamsCnt) {
-                    builder.validateParametersQueryNumber(curQryNum);
-                    builder.validateParametersTotalQueries(totalQueriesCnt);
-                }
-
-                pctx = builder.build();
+                    .plannerTimeout(plannerTimeout)
+                    .build();
 
                 try {
                     cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());

@@ -45,8 +45,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.SqlOrderBy;
-import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
@@ -59,6 +57,7 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -103,23 +102,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
     }
 
-    /** Passed to the query dynamic parameters. */
-    private final Object[] parameters;
-
-    /** If {@code true}, enables validation of {@link #parameters}'s number against the query's dynamic parameters. */
-    private final boolean validateParamsNum;
-
-    /**
-     * Number of current query being validated with shared {@link #parameters}.
-     * Is not actual if {@link #validateParamsNum} is {@code false}.
-     */
-    private final int qryNum;
-
-    /** Total number of queries being validated one by one with shared {@link #parameters}. */
-    private final int qryCnt;
-
-    /** Maximal number of detected query's dynamic parameters. Is not actual if {@link #validateParamsNum} is {@code false}. */
-    private int dynParCnt;
+    /** Dynamic parameters. */
+    @Nullable private final Object[] parameters;
 
     /** */
     private final RelDataType nullType;
@@ -132,8 +116,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param typeFactory   Type factory
      * @param cfg           Config
      * @param parameters    Dynamic parameters
-     * @param config        Config
-     * @param planningCtx   Planning context
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
@@ -143,27 +125,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         @Nullable Object[] parameters
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
-    public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, Config config, PlanningContext planningCtx) {
-        super(opTab, catalogReader, typeFactory, config);
 
         this.parameters = parameters;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
-        parameters = planningCtx.parameters();
-
-        validateParamsNum = planningCtx.validateParamsNumber();
-
-        if (validateParamsNum) {
-            qryNum = planningCtx.currentQueryNumber();
-            qryCnt = planningCtx.queriesCnt();
-
-            assert qryNum >= 0 && qryCnt > qryNum : "Wrong query number or total queries number.";
-        }
-        else {
-            qryNum = 0;
-            qryCnt = 0;
-        }
     }
 
     /** {@inheritDoc} */
@@ -580,20 +545,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
     }
 
-        /** {@inheritDoc} */
-        @Override public SqlNode validate(SqlNode topNode) {
-            extractDynamicParameters(topNode);
-
-            SqlNode res = super.validate(topNode);
-
-            if (validateParamsNum && (parameters.length < dynParCnt || (parameters.length > dynParCnt && qryNum == qryCnt - 1))) {
-                throw newValidationError(res, IgniteResource.INSTANCE.unexpectedParameter(dynParCnt,
-                    parameters == null ? 0 : parameters.length));
-            }
-
-            return res;
-        }
-
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
         if (expr instanceof SqlDynamicParam) {
@@ -680,75 +631,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         else
             super.inferUnknownTypes(inferredType, scope, node);
     }
-
-        /** */
-        private void extractDynamicParameters(SqlNode node) {
-            if (!validateParamsNum)
-                return;
-
-            if (node instanceof SqlDynamicParam)
-                findMaximalDynamicParameterNumber((SqlDynamicParam)node);
-            if (node instanceof SqlOrderBy) {
-                SqlOrderBy orderBy = (SqlOrderBy)node;
-
-                if (orderBy.offset instanceof SqlDynamicParam)
-                    findMaximalDynamicParameterNumber((SqlDynamicParam)orderBy.offset);
-
-                if (orderBy.fetch instanceof SqlDynamicParam)
-                    findMaximalDynamicParameterNumber((SqlDynamicParam)orderBy.fetch);
-            }
-            else if (node instanceof SqlSelect) {
-                SqlSelect select = (SqlSelect)node;
-
-                if (select.getOffset() instanceof SqlDynamicParam)
-                    findMaximalDynamicParameterNumber((SqlDynamicParam)select.getOffset());
-
-                if (select.getFetch() instanceof SqlDynamicParam)
-                    findMaximalDynamicParameterNumber((SqlDynamicParam)select.getFetch());
-            }
-        }
-
-        /** */
-        private void findMaximalDynamicParameterNumber(SqlDynamicParam dynamicParam) {
-            if (dynamicParam.getIndex() >= dynParCnt)
-                dynParCnt = dynamicParam.getIndex() + 1;
-        }
-
-        /**
-         * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
-         * is actual to {@link #parameters}.
-         *
-         * @return {@code True} if a new type was set. {@code False} otherwise.
-         */
-        private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
-            extractDynamicParameters(node);
-
-            if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
-                return false;
-
-            Object val = parameters[((SqlDynamicParam)node).getIndex()];
-
-            if (val == null) {
-                if (inferredType.equals(unknownType)) {
-                    setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
-
-                    return true;
-                }
-
-                return false;
-            }
-
-            RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
-
-            assert !unknownType.equals(valType);
-
-            if (unknownType.equals(inferredType) || valType.getFamily().equals(inferredType.getFamily()))
-                setValidatedNodeType(node, valType);
-            else
-                setValidatedNodeType(node, inferredType);
-
-            return true;
-        }
 
     /** {@inheritDoc} */
     @Override public SqlLiteral resolveLiteral(SqlLiteral literal) {
