@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -77,7 +76,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
 
             Set<String> viewsActual = new HashSet<>();
             stopCollectStatisticsAndRead(new TestHandler() {
-                @Override public void systemView(UUID id, String name, Map<String, Object> data) {
+                @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
                     viewsActual.add(name);
                 }
             });
