@@ -417,7 +417,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
     }
 
     /** {@inheritDoc} */
@@ -426,7 +426,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -435,7 +435,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -511,6 +511,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
+        boolean validateParamsCnt,
         Object... params
     ) throws IgniteSQLException {
         ensureTransactionModeSupported(qryCtx);
@@ -540,7 +541,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        checkDynamicParamsCount(qryList, params);
+        if (validateParamsCnt)
+            checkDynamicParamsCount(qryList, params);
 
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
@@ -577,10 +579,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     maxDynParIdx[0] = param.getIndex();
 
                 return param;
-            }
-
-            @Override public @org.checkerframework.checker.nullness.qual.Nullable SqlNode visit(SqlCall call) {
-                return super.visit(call);
             }
         });
 
