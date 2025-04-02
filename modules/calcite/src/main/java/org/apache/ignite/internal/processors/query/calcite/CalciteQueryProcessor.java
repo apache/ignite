@@ -540,12 +540,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
+        checkDynamicParamsCount(qryList, params);
+
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
 
         for (final SqlNode sqlNode: qryList) {
-            checkDynamicParamsCount(sqlNode, params);
-
             T singleRes = processQuery(qryCtx, qry -> {
                 QueryPlan plan0;
                 if (qryList.size() == 1) {
@@ -578,12 +578,16 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 return param;
             }
+
+            @Override public @org.checkerframework.checker.nullness.qual.Nullable SqlNode visit(SqlCall call) {
+                return super.visit(call);
+            }
         });
 
         int paramsCnt = params == null ? 0 : params.length;
 
         if (paramsCnt != maxDynParIdx[0] + 1) {
-            throw new IgniteSQLException("Wrong number of query parameters. Expected: " + maxDynParIdx[0] + 1 + ". Passed: "
+            throw new IgniteSQLException("Wrong number of query parameters. Expected: " + (maxDynParIdx[0] + 1) + ", passed: "
                 + paramsCnt + '.', IgniteQueryErrorCode.PARSING);
         }
     }

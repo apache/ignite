@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
-import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -82,9 +81,9 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** */
     @Test
     public void testMissedValue() {
-        assertThrows("SELECT ?", IgniteSQLException.class, "Illegal use of dynamic parameter");
+        assertUnexpectedNumberOfParameters("SELECT ?");
 
-        assertThrows("SELECT ?, ?", IgniteSQLException.class, "Illegal use of dynamic parameter", "arg0");
+        assertUnexpectedNumberOfParameters("SELECT ?, ?", "arg0");
     }
 
     /** */
@@ -334,6 +333,6 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     private void assertUnexpectedNumberOfParameters(String qry, Object... params) {
-        assertThrows(qry, CalciteContextException.class, "Wrong number of query parameters", params);
+        assertThrows(qry, IgniteSQLException.class, "Wrong number of query parameters", params);
     }
 }
