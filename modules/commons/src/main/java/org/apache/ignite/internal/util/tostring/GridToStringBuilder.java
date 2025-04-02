@@ -41,8 +41,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -99,7 +99,10 @@ public class GridToStringBuilder {
     /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
-    /** @see IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
+    /** @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
+    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
+
+    /** @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
     public static final boolean DFLT_TO_STRING_INCLUDE_SENSITIVE = true;
 
     /** Supplier for {@link #includeSensitive} with default behavior. */
@@ -115,12 +118,12 @@ public class GridToStringBuilder {
             }
         });
 
-    /** @see IgniteSystemProperties#IGNITE_TO_STRING_COLLECTION_LIMIT */
+    /** @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_COLLECTION_LIMIT */
     public static final int DFLT_TO_STRING_COLLECTION_LIMIT = 100;
 
     /** */
     public static final int COLLECTION_LIMIT =
-        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
+        IgniteCommonsSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
     /** Every thread has its own string builder. */
     private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {
@@ -156,7 +159,7 @@ public class GridToStringBuilder {
     /**
      * Setting the logic of the {@link #includeSensitive} method. <br/>
      * By default, it take the value of
-     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
+     * {@link IgniteCommonsSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
      * IGNITE_TO_STRING_INCLUDE_SENSITIVE} system property. <br/>
      * <b>Important!</b> Changing the logic is possible only until the first
      * call of  {@link #includeSensitive} method. <br/>

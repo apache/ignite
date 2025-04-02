@@ -19,13 +19,12 @@ package org.apache.ignite.internal.util.tostring;
 
 import org.apache.ignite.IgniteCommonsSystemProperties;
 
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
+
 /**
  *
  */
 class SBLengthLimit {
-    /** @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
-    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
-
     /** */
     private static final int MAX_TO_STR_LEN =
         IgniteCommonsSystemProperties.getInteger(IgniteCommonsSystemProperties.IGNITE_TO_STRING_MAX_LENGTH, DFLT_TO_STRING_MAX_LENGTH);

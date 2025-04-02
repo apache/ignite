@@ -17,7 +17,11 @@
 
 package org.apache.ignite;
 
-import static org.apache.ignite.internal.util.tostring.SBLengthLimit.DFLT_TO_STRING_MAX_LENGTH;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
 
 /**
  * Contains constants for all common system properties and environmental variables in Ignite.
