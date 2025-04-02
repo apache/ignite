@@ -1,5 +1,3 @@
-
-
 include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
@@ -12,24 +10,37 @@ mixin td-ellipses-lbl(w, lbl)
     - tipOpts.container = '.modal-content'
     - tipOpts.placement = 'right'
     .modal-dialog
-        .modal-content(ignite-loading='importDomainFromCSV' ignite-loading-text='{{importDomain.loadingOptions.text}}')
+        .modal-content(ignite-loading='importDomainFromTemplate' ignite-loading-text='{{importDomain.loadingOptions.text}}')
             #errors-container.modal-header.header
                 button.close(type='button' ng-click='$hide()' aria-hidden='true')
                     svg(ignite-icon="cross")
                 h4.modal-title()
-                    span(ng-if='!importDomain.demo') Import domain models from csv file
-                    span(ng-if='importDomain.demo') Import domain models from demo csv file
+                    span(ng-if='!importDomain.demo') Import domain models from templates
+                    span(ng-if='importDomain.demo') Import domain models from demo templates
             .modal-body()
                 modal-import-models-step-indicator(
                     steps='$ctrl.actions'
                     current-step='importDomain.action'
                 )                
-                .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && !importDomain.demo')
-                    form.pc-form-grid-row(name=form novalidate)
-                        .pc-form-grid-col-60
-                            .file-upload-container
-                                input(type="file" on-change="$ctrl.onFileSelected($event)" accept=".csv,.zip")
-                                                    
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "connect"')
+                    form.pc-form-grid-row(name=form novalidate)                       
+                        .pc-form-grid-col-60                                         
+                            pc-items-table(
+                                table-title='::"Choose Data Source"'
+                                column-defs='::$ctrl.datasourcesColumnDefs'
+                                items='dataSourceList'
+                                hide-header='::true'
+                                one-way-selection='::true'
+                                max-rows-to-show='5'
+                                header-row-height='50'
+                                selected-row-id='$ctrl.selectedDatasourcesIDs'
+                                on-selection-change='$ctrl.onDatasourceSelectionChange($event)'
+                                row-identity-key='id'
+                            )
+                                footer-slot(ng-hide='dataSourceList.length' style='font-style: italic')
+                                    | You have no datasource configurations.
+                                    a.link-success(ui-sref='base.datasource.edit.basic({clusterID: "new"})') Create one? 
+                                
                         .pc-form-grid-col-60(ng-if='selectedPreset.samples')
                             +form-field__checkbox({
                                 label: 'Include sample schemas',
@@ -57,7 +68,7 @@ mixin td-ellipses-lbl(w, lbl)
                         on-selection-change='$ctrl.onSchemaSelectionChange($event)'
                         row-identity-key='name'
                     )
-                .import-domain-model-wizard-page(ng-if='importDomain.action == "tables"')
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "tables" || importDomain.action == "meta_tables"')
                     form.pc-form-grid-row(novalidate)
                         .pc-form-grid-col-30
                             +form-field__dropdown({
@@ -81,6 +92,16 @@ mixin td-ellipses-lbl(w, lbl)
                                 ng-click='applyDefaults()'
                                 style='margin-left: auto'
                             ) Apply
+                        .pc-form-grid-col-30(ng-if='!$ctrl.$scope.importDomain.tablesFromMetaCollectionHide')
+                            +form-field__checkbox({                                
+                                label: 'Generate tables from meta collection',
+                                model: 'importDomain.tablesFromMetaCollection',
+                                name: '"tablesFromMetaCollection"',
+                                tip: 'Meta collection must has fields: "TABLE_SCHEMA","TABLE_NAME","TABLE_COMMENT","COLUMN_NAME","COLUMN_COMMENT","DATA_TYPE"',
+                                tipOpts
+                            })(
+                                ng-change='$ctrl.onMetaTableSelectionChange($event)'                                
+                            )
                     pc-items-table(
                         column-defs='::$ctrl.tablesColumnDefs'
                         items='importDomain.tables'
@@ -160,7 +181,7 @@ mixin td-ellipses-lbl(w, lbl)
             .modal-footer()
                 button.btn-ignite.btn-ignite--success.modal-import-models__prev-button(
                     type='button'
-                    ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"'
+                    ng-disabled='importDomain.action == "connect"'
                     ng-click='importDomainPrev()'
                     b_s-tooltip=''
                     d_ata-title='{{prevTooltipText()}}'
@@ -186,5 +207,3 @@ mixin td-ellipses-lbl(w, lbl)
                 )
                     svg.icon-left(ignite-icon='checkmark' ng-show='importDomain.button === "Save"')
                     | {{importDomain.button}}
-
-                button.btn-ignite.btn-ignite--success.modal-import-models__next-button(ng-click='$ctrl.onHide()') Cancel

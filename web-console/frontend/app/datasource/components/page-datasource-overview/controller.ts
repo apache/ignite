@@ -22,10 +22,7 @@ const cellTemplate = (state) => `
 
 export default class PageDatasourceOverviewController {
     static $inject = [
-        '$uiRouter',
-        'ConfigureState',
-        'AgentManager',
-        'Datasource'        
+        '$uiRouter', 'ConfigureState', 'AgentManager', 'Datasource'    
     ];
     
 

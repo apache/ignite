@@ -22,7 +22,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import org.apache.ignite.console.dto.Account;
-
+import org.apache.ignite.console.dto.Cluster;
 import org.apache.ignite.console.services.ConfigurationsService;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +54,24 @@ public class ConfigurationsController {
     public ConfigurationsController(ConfigurationsService cfgsSrv) {
         this.cfgsSrv = cfgsSrv;
     }
+    
+    private UUID findClusterId(Account acc, boolean demo, String clusterId) {
+    	try {
+    		return UUID.fromString(clusterId);
+    	}
+    	catch(IllegalArgumentException e) {
+    		
+    		JsonArray list = cfgsSrv.loadClusters(new ConfigurationKey(acc.getId(), demo));
+    		for(Object row: list) {
+    			JsonObject cluster = (JsonObject)row;
+    			String name = cluster.getString("name");
+				if(clusterId.equals(name)) {
+					return Cluster.getUUID(cluster, "id");
+				}    			
+    		}
+    	}
+    	throw new IllegalArgumentException("Not find clusteId "+ clusterId);
+    }
 
     /**
      * @param acc Account.
@@ -64,9 +82,10 @@ public class ConfigurationsController {
     public ResponseEntity<JsonObject> loadConfiguration(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
-        @PathVariable("clusterId") UUID clusterId
+        @PathVariable("clusterId") String clusterId
     ) {
-        return ResponseEntity.ok(cfgsSrv.loadConfiguration(new ConfigurationKey(acc.getId(), demo), clusterId));
+    	UUID clusterGUID = findClusterId(acc, demo, clusterId);
+        return ResponseEntity.ok(cfgsSrv.loadConfiguration(new ConfigurationKey(acc.getId(), demo), clusterGUID));
     }
 
     /**
@@ -92,9 +111,10 @@ public class ConfigurationsController {
     public ResponseEntity<String> loadCluster(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
-        @PathVariable("clusterId") UUID clusterId
+        @PathVariable("clusterId") String clusterId
     ) {
-        return ResponseEntity.ok(cfgsSrv.loadCluster(new ConfigurationKey(acc.getId(), demo), clusterId));
+    	UUID clusterGUID = findClusterId(acc, demo, clusterId);
+        return ResponseEntity.ok(cfgsSrv.loadCluster(new ConfigurationKey(acc.getId(), demo), clusterGUID));
     }
 
     /**
@@ -109,9 +129,10 @@ public class ConfigurationsController {
     public ResponseEntity<JsonArray> loadCachesShortList(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
-        @PathVariable("clusterId") UUID clusterId
+        @PathVariable("clusterId") String clusterId
     ) {
-        return ResponseEntity.ok(cfgsSrv.loadShortCaches(new ConfigurationKey(acc.getId(), demo), clusterId));
+    	UUID clusterGUID = findClusterId(acc, demo, clusterId);
+        return ResponseEntity.ok(cfgsSrv.loadShortCaches(new ConfigurationKey(acc.getId(), demo), clusterGUID));
     }
 
     /**
@@ -126,9 +147,10 @@ public class ConfigurationsController {
     public ResponseEntity<JsonArray> loadModelsShortList(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
-        @PathVariable("clusterId") UUID clusterId
+        @PathVariable("clusterId") String clusterId
     ) {
-        return ResponseEntity.ok(cfgsSrv.loadShortModels(new ConfigurationKey(acc.getId(), demo), clusterId));
+    	UUID clusterGUID = findClusterId(acc, demo, clusterId);
+        return ResponseEntity.ok(cfgsSrv.loadShortModels(new ConfigurationKey(acc.getId(), demo), clusterGUID));
     }
 
     /**
@@ -141,7 +163,7 @@ public class ConfigurationsController {
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
         @PathVariable("cacheId") UUID cacheId
-    ) {
+    ) {    	
         return ResponseEntity.ok(cfgsSrv.loadCache(new ConfigurationKey(acc.getId(), demo), cacheId));
     }
 

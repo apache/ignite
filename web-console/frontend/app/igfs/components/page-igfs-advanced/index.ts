@@ -4,5 +4,5 @@ import component from './component';
 
 
 export default angular
-    .module('ignite-console.igfs.page-igfs-advanced', [])    
+    .module('ignite-console.page-igfs-advanced', [])    
     .component('pageIgfsAdvanced', component);

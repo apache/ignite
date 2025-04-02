@@ -1,21 +1,58 @@
 
 .pca-form-row
-    .pca-form-column-6.pc-form-grid-row            
+    .pca-form-column-6.pc-form-grid-row
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Mongo Admin URL:',
+                label: 'Storage Name:',
+                model: `${model}.id`,
+                name: '"id"',
+                placeholder: ''
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Display Name:',
+                model: `${model}.clusterName`,
+                name: '"clusterName"',
+                placeholder: ''
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Storage URL:',
                 model: `${model}.url`,
                 name: '"url"',                        
-                placeholder: 'http://'
+                placeholder: 's3://'
             })
-       
+         
+        .pc-form-grid-col-30
+            +form-field__dropdown({
+                label: 'Storage Access Mode:',
+                model: `${model}.accessMode`,
+                name: '"accessMode"',
+                placeholder: 's3-rest',
+                options: '[\
+                    {value: "s3-rest", label: "s3-rest"},\
+                    {value: "files", label: "ignite filesystem"},\
+                    {value: "logs", label: "ignite logs"},\
+                ]',
+                tip: 'Object storage access mode'
+            })
             
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Default database:',
-                model: `${model}.schemaName`,
-                name: '"schemaName"',
+                label: 'Default Bucket:',
+                model: `${model}.bucketName`,
+                name: '"bucketName"',
                 placeholder: 'public'
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Ping status:',
+                model: `${model}.status`,
+                name: '"status"',
+                placeholder: 'no ping'
             })
             
         .pc-form-grid-col-30

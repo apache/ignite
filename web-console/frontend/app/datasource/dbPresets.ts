@@ -59,5 +59,11 @@ export const dbPresets = [
             driverCls: 'org.apache.hive.jdbc.HiveDriver',
             jdbcUrl: 'jdbc:hive2://[host]:[port]/[database]',
             user: 'hiveuser'
+        },
+        {
+            db: 'MongoDB',
+            driverCls: 'com.mongodb.MongoClient',
+            jdbcUrl: 'mongodb://[host]:[port]/[database]',
+            user: ''
         }
     ];

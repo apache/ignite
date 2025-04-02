@@ -12,13 +12,17 @@ import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 import {dbPresets} from 'app/datasource/dbPresets';
+import _ from 'lodash';
 
-export default class PageDatasourceBasicController {
-    form: ng.IFormController;
+export default class PageDatasourceBasicController {    
 
     static $inject = [
         'Confirm', '$uiRouter', 'ConfigureState', 'Datasource',  '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
     ];
+
+    form: ng.IFormController;
+
+    onBeforeTransition: CallableFunction;
     
     constructor(
         private Confirm: Confirm,
@@ -43,8 +47,7 @@ export default class PageDatasourceBasicController {
 
     $onInit() {
         const $scope = this.$scope;
-        this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
-        this.available = (v) =>{ return true; }
+        this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));        
         
         let drivers = [];
         for(let engine of dbPresets){
@@ -64,7 +67,7 @@ export default class PageDatasourceBasicController {
         this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'), map((id) => id === 'new'));
         
         
-        this.originalCluster$ = clusterID$.pipe(
+        this.originalDatasource$ = clusterID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
                 return from(this.Datasource.selectDatasource(id));
@@ -74,9 +77,10 @@ export default class PageDatasourceBasicController {
             refCount()
         );  
         
-        this.originalCluster$.subscribe((c) =>{
-            this.clonedCluster = cloneDeep(c);
-            $scope.selectedPreset = this.clonedCluster
+        this.originalDatasource$.subscribe((c) =>{
+            this.originalDatasource = c;
+            this.clonedDatasource = cloneDeep(c);
+            $scope.selectedPreset = this.clonedDatasource
         })
        
         this.formActionsMenu = [
@@ -110,7 +114,7 @@ export default class PageDatasourceBasicController {
         $scope.$watch('selectedPreset.driverCls', (idx) => {
             const val = $scope.selectedPreset.driverCls;
 
-            if (val && !(this.clonedCluster.jndiName)) {
+            if (val && !(this.clonedDatasource.jndiName)) {
                 const foundPreset = this._findPreset(val);
                 const selectedPreset = $scope.selectedPreset;
                 selectedPreset.db = foundPreset.db;
@@ -186,7 +190,7 @@ export default class PageDatasourceBasicController {
     }
     
     pingDatasource() {
-      let datasource =  this.clonedCluster;
+      let datasource =  this.clonedDatasource;
       const foundPreset = this._findPreset(datasource.driverCls);
       datasource.db = foundPreset.db
       this.AgentManager.callClusterService(datasource,'datasourceTest',datasource).then((msg) => {
@@ -199,7 +203,7 @@ export default class PageDatasourceBasicController {
     }
     
     disconnectDatasource() {
-      let datasource =  this.clonedCluster;
+      let datasource =  this.clonedDatasource;
       this.AgentManager.callClusterService(datasource,'datasourceDisconnect').then((msg) => {
           if(msg.status){
              datasource.status = msg.status;
@@ -212,7 +216,7 @@ export default class PageDatasourceBasicController {
     save(redirect = false) {
         if (this.form.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
-        let datasource = this.clonedCluster
+        let datasource = this.clonedDatasource
         if(datasource) {
             this._savePreset(datasource);
             const foundPreset = this._findPreset(datasource.driverCls);
@@ -245,9 +249,9 @@ export default class PageDatasourceBasicController {
     }
 
     reset() {
-        this.clonedCluster = cloneDeep(this.originalCluster);
+        this.clonedDatasource = cloneDeep(this.originalDatasource);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
-    }    
+    }
 
     confirmAndDisconnect() {
         return this.Confirm.confirm('Are you sure you want to disconnect of current datasource?')
@@ -272,7 +276,7 @@ export default class PageDatasourceBasicController {
     
     confirmAndDelete() {
         return this.Confirm.confirm('Are you sure you want to delete current datasource?')
-            .then(() => this.delete(this.clonedCluster))
+            .then(() => this.delete(this.clonedDatasource))
             .catch(() => {});
     }    
 }

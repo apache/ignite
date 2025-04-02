@@ -11,12 +11,15 @@ import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
 
-export default class PageIgfsAdvancedController {
-    form: ng.IFormController;
+export default class PageIgfsAdvancedController {    
 
     static $inject = [
         'Confirm', '$uiRouter', 'ConfigureState', '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
     ];
+
+    form: ng.IFormController;
+
+    onBeforeTransition: CallableFunction;
     
     constructor(
         private Confirm: Confirm,
@@ -95,7 +98,7 @@ export default class PageIgfsAdvancedController {
 
     _loadMongoExpress(id: string) {
         try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
+            const mongoExpress = JSON.parse(localStorage.igfsStorages);
             if (mongoExpress && mongoExpress[id]) {            
                 return mongoExpress[id];
             }
@@ -103,24 +106,29 @@ export default class PageIgfsAdvancedController {
         catch (ignored) {
             
         }
-        return {id: id, clusterName: "Mongo Admin", url: "/webapps/mongoAdmin/queryDocuments#"+id}      
+        return {id: id, clusterName: "Ignite FileSystem", url: ""}
     }
 
     _saveMongoExpress(preset) {
-        try {
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress) {            
-                mongoExpress[preset.id] = preset;
-            }
-            localStorage.mongoExpress = JSON.stringify(mongoExpress);
+       
+        let mongoExpress = localStorage.igfsStorages;
+        if (!mongoExpress) {            
+            mongoExpress = {}
         }
-        catch (err) {
-            this.$scope.message = err.toString();
+        else{
+            mongoExpress = JSON.parse(localStorage.igfsStorages)
         }
+        mongoExpress[preset.id] = preset;
+        localStorage.igfsStorages = JSON.stringify(mongoExpress);
+        
     }
 
     _removeMongoExpress(id: string) {
-        localStorage.mongoExpress = '{}'
+        const mongoExpress = JSON.parse(localStorage.igfsStorages);
+        if (mongoExpress) {            
+            delete mongoExpress[id];
+        }
+        localStorage.igfsStorages = JSON.stringify(mongoExpress);
     }
 
     save(redirect = false) {
@@ -128,13 +136,18 @@ export default class PageIgfsAdvancedController {
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
         let datasource = this.clonedCluster;
         if(datasource) {
-            this._saveMongoExpress(datasource);                   
-            this.$scope.message = 'Save successful.';
-            if(redirect){                
-                setTimeout(() => {
-                    this.$uiRouter.stateService.go('base.igfs.overview');
-                },100)
-            }            
+            try {
+                this._saveMongoExpress(datasource);                   
+                this.$scope.message = 'Save successful.';
+                if(redirect){                
+                    setTimeout(() => {
+                        this.$uiRouter.stateService.go('base.igfs.overview');
+                    },100)
+                }
+            }
+            catch (err) {
+                this.$scope.message = err.toString();
+            }         
         }        
     }
 
@@ -148,7 +161,7 @@ export default class PageIgfsAdvancedController {
     }
     
     confirmAndDelete() {
-        return this.Confirm.confirm('Are you sure you want to delete current datasource?')
+        return this.Confirm.confirm('Are you sure you want to delete current storage?')
             .then(() => this.delete(this.clonedCluster))
             .catch(() => {});
     }

@@ -76,8 +76,8 @@ export default class ModelEditFormController {
         return this.ModalImportModels.open();
     }
 
-    importModelsFromCSV() {
-        return this.ModalImportModels.openCSV();
+    importModelsFromTemplate() {
+        return this.ModalImportModels.openTemplate();
     }
 
     checkQueryConfiguration(item: DomainModel) {

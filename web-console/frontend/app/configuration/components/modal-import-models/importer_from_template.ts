@@ -1,4 +1,4 @@
-import templateUrl from './csv_importer.tpl.pug';
+import templateUrl from './importer_from_template.tpl.pug';
 import './style.scss';
 
 import _ from 'lodash';
@@ -23,6 +23,7 @@ import {default as ConfigSelectors} from '../../store/selectors';
 import {default as ConfigEffects} from '../../store/effects';
 import {default as ConfigureState} from '../../services/ConfigureState';
 // eslint-disable-next-line
+import {default as AgentManager} from 'app/modules/agent/AgentManager.service'
 import {default as SqlTypes} from 'app/services/SqlTypes.service';
 import {default as JavaTypes} from 'app/services/JavaTypes.service';
 import IgniteLegacyUtils from 'app/services/LegacyUtils.service';
@@ -32,7 +33,7 @@ import IgniteFormUtils from 'app/services/FormUtils.service';
 // eslint-disable-next-line
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 import {UserService} from 'app/modules/user/User.service';
-
+import Datasource from 'app/datasource/services/Datasource';
 
 function _mapCaches(caches = []) {
     return caches.map((cache) => {
@@ -40,11 +41,11 @@ function _mapCaches(caches = []) {
     });
 }
 
-const INFO_CONNECT_TO_DB = 'Upload a data schema file for ignite database';
+const INFO_CONNECT_TO_DB = 'Configure connection to database';
 const INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
 const INFO_SELECT_TABLES = 'Select tables to import as domain model';
 const INFO_SELECT_OPTIONS = 'Select import domain model options';
-
+const LOADING_DATA_SOURCES = {text: 'Loading data sources...'};
 const LOADING_SCHEMAS = {text: 'Loading schemas...'};
 const LOADING_TABLES = {text: 'Loading tables...'};
 const SAVING_DOMAINS = {text: 'Saving domain model...'};
@@ -78,7 +79,7 @@ const DFLT_REPLICATED_CACHE = {
 
 const CACHE_TEMPLATES = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE];
 
-export class ModalImportModelsFromCsv {
+export class ModalImportModelsFromTemplate {
     /**
      * Cluster ID to import models into
      * @type {string}
@@ -90,10 +91,8 @@ export class ModalImportModelsFromCsv {
 
     loadedCaches: Map<string, any>;
 
-    selectedFile: File | null = null;
-
-    static $inject = ['$uiRouter','ConfigSelectors', 'ConfigEffects', 'ConfigureState', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', 
-    '$scope', 'Demo', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils', 'IgniteVersion', 'User'];
+    static $inject = ['$uiRouter','Datasource', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', 
+    '$scope', 'Demo', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils', 'IgniteVersion', 'User'];
 
     /**
      * @param {UIRouter} $uiRouter
@@ -104,10 +103,12 @@ export class ModalImportModelsFromCsv {
      * @param {SqlTypes} SqlTypes
      * @param {JavaTypes} JavaTypes
      * @param {ng.IScope} $scope
+     * @param {AgentManager} agentMgr
      * @param {ActivitiesData} ActivitiesData
      */
     constructor(
         private $uiRouter:UIRouter, 
+        private Datasource:Datasource, 
         private ConfigSelectors:ConfigSelectors, 
         private ConfigEffects:ConfigEffects, 
         private ConfigureState:ConfigureState, 
@@ -119,6 +120,7 @@ export class ModalImportModelsFromCsv {
         private Messages:ReturnType<typeof IgniteMessages>, 
         private $scope:ng.IScope, 
         private Demo: DemoService, 
+        private agentMgr:AgentManager, 
         private ActivitiesData:ActivitiesData, 
         private Loading:ReturnType<typeof IgniteLoading>, 
         private FormUtils:ReturnType<typeof IgniteFormUtils>, 
@@ -164,7 +166,7 @@ export class ModalImportModelsFromCsv {
             return;
 
         this.$scope.importDomain.loadingOptions = SAVING_DOMAINS;
-        this.Loading.start('importDomainFromCSV');
+        this.Loading.start('importDomainFromTemplate');
 
         this.ConfigureState.dispatchAction({
             type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION',
@@ -183,7 +185,7 @@ export class ModalImportModelsFromCsv {
         ).pipe(
             take(1),
             tap(() => {
-                this.Loading.finish('importDomainFromCSV');
+                this.Loading.finish('importDomainFromTemplate');
             })
         )
         .subscribe();
@@ -212,12 +214,52 @@ export class ModalImportModelsFromCsv {
         result.cluster.models = [...new Set(result.cluster.models)];
         result.cluster.caches = [...new Set(result.cluster.caches)];
         return result;
-    }    
+    }
+
+    onDatasourceSelectionChange(selected) {
+        this.$scope.$applyAsync(() => {
+            if(selected.length>0){
+                this.$scope.selectedPreset = selected[0]                
+            }         
+           
+            this.selectedDatasourcesIDs = selected.map((i) => i.id);
+        });
+    }
 
     onTableSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
             this.$scope.importDomain.tablesToUse = selected;
             this.selectedTablesIDs = selected.map((t) => t.id);
+        });
+    }
+
+    onMetaTableSelectionChange(selected) {
+        this.$scope.$applyAsync(() => {
+            if(this.$scope.importDomain.tablesFromMetaCollection){
+                const tables = this.$scope.importDomain.tables;
+                const meta_tables = tables.filter((t) => {
+                    let hasmeta = 0;
+                    t.columns.forEach((col) => {
+                        if(["TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME"].includes(col.name)){
+                            hasmeta+=1;
+                        }
+                    });
+                    return hasmeta >= 3;
+                });
+
+                this.$scope.importDomain.original_tables = tables;
+                this.$scope.importDomain.tables = meta_tables;
+                this.$scope.importDomain.tablesToUse = meta_tables;
+                this.selectedTablesIDs = [];
+                this.$scope.importDomain.action = 'meta_tables';
+            }
+            else{
+                this.$scope.importDomain.tables = this.$scope.importDomain.original_tables;
+                let tablesToUse = this.$scope.importDomain.tables.filter((t) => this.LegacyUtils.isDefined(t.idIndex));                    
+                this.selectedTablesIDs = tablesToUse.map((t) => t.name);
+                this.$scope.importDomain.action = 'tables';
+            }
+            
         });
     }
 
@@ -267,16 +309,9 @@ export class ModalImportModelsFromCsv {
         
     }
 
-    onFileSelected(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        if (input.files) {
-          this.selectedFile = input.files[0];
-        }
-      }
-
     async $onInit() {
         // Restores old behavior
-        const {Confirm, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, Demo, ActivitiesData, Loading, FormUtils, LegacyUtils} = this;
+        const {Confirm, Datasource, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, Demo, agentMgr, ActivitiesData, Loading, FormUtils, LegacyUtils} = this;
 
         /**
          * Convert some name to valid java package name.
@@ -329,7 +364,7 @@ export class ModalImportModelsFromCsv {
         };
 
         this.actions = [
-            {value: 'connect', label: this.Demo.enabled ? 'Description' : 'Upload File'},
+            {value: 'connect', label: this.Demo.enabled ? 'Description' : 'Connection'},
             {value: 'schemas', label: 'Schemas'},
             {value: 'tables', label: 'Tables'},
             {value: 'options', label: 'Options'}
@@ -346,41 +381,73 @@ export class ModalImportModelsFromCsv {
             label: 'Create new cache by template',
             shortLabel: 'Create',
             value: IMPORT_DM_NEW_CACHE
-        }];        
+        }];
+        
+        this.dataSourceList$ = from(Datasource.getDatasourceList()).pipe(            
+            switchMap(({data}) => of(
+                data
+            )),            
+            catchError((error) => of({
+                type: `DATASOURCE_ERR`,
+                error: {
+                    message: `Failed to load datasoure:  ${error.data.message}`
+                },
+                action: {}
+            }))           
+        ).subscribe((data)=> {
+            $scope.dataSourceList = data //.map((data)=> { return { id:data.id, jndiName:data.jndiName, jdbcUrl:data.jdbcUrl, schemaName:data.schemaName }; })
+        }); 
+        
+        this.selectedDatasourcesIDs = [];
+
+        $scope.selectedPreset = {
+            db: 'MaongoDB',
+            jdbcDriverJar: '',
+            jdbcDriverClass: '',
+            jdbcUrl: null,
+            jndiName: null,
+            user: 'sa',
+            password: '',
+            tablesOnly: true,
+            importSamples: false
+        };
+
+        $scope.demoConnection = {
+            db: 'MaongoDB',
+            jdbcDriverClass: '',
+            jdbcUrl: 'mongodb://localhost:2701/demo-db',
+            user: 'sa',
+            password: '',
+            tablesOnly: true,
+            importSamples: false
+        };
         
 
         /**
          * Load list of database schemas.
          */
         const _loadSchemas = () => {
-            agentMgr.awaitAgent()
-                .then(function() {
-                    $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
-                    Loading.start('importDomainFromDb');
-
-                    if (Demo.enabled)
-                        return agentMgr.schemas($scope.demoConnection);
-
-                    const preset = $scope.selectedPreset;
-
-                    //_savePreset(preset);
-
-                    return agentMgr.schemas(preset);
-                })
-                .then((schemaInfo) => {
+            this.Datasource.getDatabaseList($scope.selectedPreset.id).then(({data})=> {
+                $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
+                Loading.start('importDomainFromTemplate');
+                const schemaInfo = data;
+                const catelog = $scope.selectedPreset.jndiName
+                if(schemaInfo) {
                     $scope.importDomain.action = 'schemas';
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
-                    $scope.importDomain.catalog = JavaTypes.toJavaIdentifier(schemaInfo.catalog);
-                    $scope.importDomain.schemas = _.map(schemaInfo.schemas, (schema) => ({name: schema}));
+                    $scope.importDomain.catalog = JavaTypes.toJavaIdentifier(catelog);
+                    $scope.importDomain.schemas = schemaInfo;
                     $scope.importDomain.schemasToUse = $scope.importDomain.schemas;
                     this.selectedSchemasIDs = $scope.importDomain.schemas.map((s) => s.name);
 
                     if ($scope.importDomain.schemas.length === 0)
                         $scope.importDomainNext();
-                })
-                .catch(Messages.showError)
-                .then(() => Loading.finish('importDomainFromDb'));
-        };
+                }
+                
+            })
+            .catch(Messages.showError)
+            .then(() => Loading.finish('importDomainFromTemplate'));
+        }
 
 
         this._importCachesOrTemplates = [];
@@ -398,44 +465,102 @@ export class ModalImportModelsFromCsv {
          * Load list of database tables.
          */
         const _loadTables = () => {
-            agentMgr.awaitAgent()
-                .then(() => {
-                    $scope.importDomain.loadingOptions = LOADING_TABLES;
-                    Loading.start('importDomainFromDb');
+            $scope.importDomain.loadingOptions = LOADING_TABLES;
+            Loading.start('importDomainFromTemplate');
 
-                    $scope.importDomain.allTablesSelected = false;
-                    this.selectedTables = [];
+            $scope.importDomain.allTablesSelected = false;
+            $scope.importDomain.tablesFromMetaCollection = false;
+            $scope.importDomain.tablesFromMetaCollectionHide = false;
+            this.selectedTables = [];
 
-                    const preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
+            const preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-                    preset.schemas = $scope.importDomain.schemasToUse.map((s) => s.name);
-
-                    return agentMgr.tables(preset);
-                })
-                .then((tables) => {
+            preset.schemas = $scope.importDomain.schemasToUse.map((s) => s.name);
+            
+            const schema = preset.schemas[0];
+            this.Datasource.getCollectionList($scope.selectedPreset.id,schema)
+                .then(({data}) => {
                     this._importCachesOrTemplates = CACHE_TEMPLATES.concat($scope.caches);
 
                     this._fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
 
+                    const tables: Array<any> = data;
                     _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
-                        tbl.action = IMPORT_DM_NEW_CACHE;                       
-                        tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.table), this.caches);
+                        tbl.action = IMPORT_DM_NEW_CACHE;
+                        tbl.table = tbl.name;
+                        tbl.schema = schema;              
+                        tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.name), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
-                        tbl.label = tbl.schema + '.' + tbl.table;
+                        tbl.label = tbl.schema + '.' + tbl.name;
                         tbl.edit = false;
+                        
+                        if (tbl.idIndex) {
+                            tbl.keyType = 'String'
+                            tbl.keyFields = ['_id'];
+                        }
                     });
 
                     $scope.importDomain.action = 'tables';
                     $scope.importDomain.tables = tables;
-                    const tablesToUse = tables.filter((t) => LegacyUtils.isDefined(_.find(t.columns, (col) => col.key)));
-                    this.selectedTablesIDs = tablesToUse.map((t) => t.id);
-                    this.$scope.importDomain.tablesToUse = tablesToUse;
+                    let tablesToUse = tables.filter((t) => LegacyUtils.isDefined(t.idIndex));
+                    
+                    this.selectedTablesIDs = tablesToUse.map((t) => t.name);
+                    this.$scope.importDomain.tablesToUse = tablesToUse;                    
 
                     $scope.importDomain.info = INFO_SELECT_TABLES;
                 })
                 .catch(Messages.showError)
-                .then(() => Loading.finish('importDomainFromDb'));
+                .then(() => Loading.finish('importDomainFromTemplate'));
+        };        
+
+        const _loadTablesFromMetaCollection = () => {
+            $scope.importDomain.loadingOptions = LOADING_TABLES;
+            Loading.start('importDomainFromTemplate');
+
+            $scope.importDomain.allTablesSelected = false;
+            $scope.importDomain.tablesFromMetaCollection = false;
+            $scope.importDomain.tablesFromMetaCollectionHide = true;
+            this.selectedTables = [];
+
+            const preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
+
+            preset.schemas = $scope.importDomain.schemasToUse.map((s) => s.name);
+            const selectedTables = this.$scope.importDomain.tablesToUse.map((s) => s.name);
+            const schema = preset.schemas[0];
+            this.Datasource.getCollectionListFromMetaCollection($scope.selectedPreset.id,schema,selectedTables[0])
+                .then(({data}) => {
+                    this._importCachesOrTemplates = CACHE_TEMPLATES.concat($scope.caches);
+
+                    this._fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
+
+                    const tables: Array<any> = data;
+                    _.forEach(tables, (tbl, idx) => {
+                        tbl.id = idx;
+                        tbl.action = IMPORT_DM_NEW_CACHE;
+                        tbl.table = tbl.name;                                    
+                        tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.name), this.caches);
+                        tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
+                        tbl.label = tbl.schema + '.' + tbl.name;
+                        tbl.edit = false;
+                        
+                        if (tbl.idIndex) {
+                            tbl.keyType = 'String'
+                            tbl.keyFields = ['_id'];
+                        }
+                    });
+
+                    $scope.importDomain.action = 'tables';
+                    $scope.importDomain.tables = tables;
+                    let tablesToUse = tables; //.filter((t) => LegacyUtils.isDefined(t.idIndex));
+                    
+                    this.selectedTablesIDs = tablesToUse.map((t) => t.name);
+                    this.$scope.importDomain.tablesToUse = tablesToUse;                    
+
+                    $scope.importDomain.info = INFO_SELECT_TABLES;
+                })
+                .catch(Messages.showError)
+                .then(() => Loading.finish('importDomainFromTemplate'));
         };
 
         $scope.applyDefaults = () => {
@@ -551,7 +676,7 @@ export class ModalImportModelsFromCsv {
                         aliases.push({field: fld.javaFieldName, alias: dbName});
                     }                        
 
-                    if (col.key) {
+                    if (col.key || col.name==='_id' || col.name==='_key') {
                         keyFields.push(fld);
 
                         _containKey = true;
@@ -646,6 +771,31 @@ export class ModalImportModelsFromCsv {
                     // add@byron
                     newCache.sqlSchema = table.schema;
                     batchAction.newDomainModel.caches = [newCache.id];
+
+                    // POJO store factory is not defined in template.
+                    if (!newCache.cacheStoreFactory || newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
+                        const dialect = $scope.selectedPreset.db;
+
+                        const catalog = $scope.importDomain.catalog;
+
+                        const dsFactoryBean = {
+                            dataSourceBean: $scope.selectedPreset.jndiName,
+                            dialect,
+                            implementationVersion: $scope.selectedPreset.jdbcDriverImplementationVersion
+                        };
+
+                        newCache.cacheStoreFactory = {
+                            kind: dialect === 'MongoDB' ? 'DocumentLoadOnlyStoreFactory' : 'CacheJdbcPojoStoreFactory',
+                            DocumentLoadOnlyStoreFactory: dsFactoryBean,
+                            CacheJdbcPojoStoreFactory: dsFactoryBean,
+                            CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
+                        };
+                    }
+
+                    if (!newCache.readThrough && !newCache.writeThrough) {
+                        newCache.readThrough = true;
+                        newCache.writeThrough = true;
+                    }
                 }
                 else {
                     const newDomain = batchAction.newDomainModel;
@@ -654,7 +804,13 @@ export class ModalImportModelsFromCsv {
                     batchAction.newDomainModel.caches = [cacheId];
 
                     if (!_.includes(checkedCaches, cacheId)) {
-                        const cache = _.find($scope.caches, {value: cacheId}).cache;                        
+                        const cache = _.find($scope.caches, {value: cacheId}).cache;
+
+                        // TODO: move elsewhere, make sure it still works
+                        const change = LegacyUtils.autoCacheStoreConfiguration(cache, [newDomain], $scope.selectedPreset.jndiName,$scope.selectedPreset.db);
+
+                        if (change)
+                            batchAction.cacheStoreChanges = [{cacheId, change}];
 
                         checkedCaches.push(cacheId);
                     }
@@ -712,11 +868,13 @@ export class ModalImportModelsFromCsv {
                 return;
 
             const act = $scope.importDomain.action;
-           
+            
             if (act === 'connect')
                 _loadSchemas();
             else if (act === 'schemas')
                 _loadTables();
+            else if (act === 'meta_tables')
+                _loadTablesFromMetaCollection();
             else if (act === 'tables')
                 _selectOptions();
             else if (act === 'options')
@@ -728,14 +886,18 @@ export class ModalImportModelsFromCsv {
 
             const act = $scope.importDomain.action;
 
-            if (act === 'connect' && _.isNil(this.selectedFile))
-                return 'Not upload valid file';
 
-            if (act === 'connect')
+            if (act === 'connect' && _.isNil($scope.selectedPreset.jdbcUrl))
+                return 'Input valid JDBC URL';
+
+            if (act === 'connect' || act === 'drivers')
                 return 'Click to load list of schemas from database';
 
             if (act === 'schemas')
                 return importDomainNextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
+
+            if (act === 'meta_tables')
+                return importDomainNextAvailable ? 'Click to show import tables' : 'Select one meta table to continue';
 
             if (act === 'tables')
                 return importDomainNextAvailable ? 'Click to show import options' : 'Select tables to continue';
@@ -752,6 +914,9 @@ export class ModalImportModelsFromCsv {
             if (act === 'schemas')
                 return $scope.importDomain.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
 
+            if (act === 'meta_tables')
+                return 'Click to return on meta table selection step';
+
             if (act === 'tables')
                 return 'Click to return on schemas selection step';
 
@@ -762,12 +927,15 @@ export class ModalImportModelsFromCsv {
         $scope.importDomainNextAvailable = function() {
             switch ($scope.importDomain.action) {
                 case 'connect':
-                    return !_.isNil(this.selectedFile) && !_.isNil(this.selectedFile);
+                    return !_.isNil($scope.selectedPreset.jdbcUrl);
 
                 case 'schemas':
                     return _.isEmpty($scope.importDomain.schemas) || !!get('importDomain.schemasToUse.length')($scope);
 
                 case 'tables':
+                    return !_.isNil($scope.importDomain.tablesToUse) && !!$scope.importDomain.tablesToUse.length;
+
+                case 'meta_tables':
                     return !_.isNil($scope.importDomain.tablesToUse) && !!$scope.importDomain.tablesToUse.length;
 
                 default:
@@ -796,7 +964,8 @@ export class ModalImportModelsFromCsv {
 
         $scope.importDomain = {
             demo,
-            action: 'connect',            
+            action: 'connect',
+            jdbcDriversNotFound: false,
             schemas: [],
             allSchemasSelected: false,
             tables: [],
@@ -805,7 +974,7 @@ export class ModalImportModelsFromCsv {
             info: ''
         };
 
-        $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
+        $scope.importDomain.loadingOptions = LOADING_DATA_SOURCES;
 
         const fetchDomainData = () => {
             if (demo) {
@@ -816,22 +985,21 @@ export class ModalImportModelsFromCsv {
             }
 
             // Get available JDBC drivers via agent.
-            Loading.start('importDomainFromDb');
+            Loading.start('importDomainFromTemplate');
 
+            $scope.importDomain.action = 'connect';
+            $scope.importDomain.tables = [];
+            this.selectedTables = [];
 
             $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
-            Loading.finish('importDomainFromDb');
+            Loading.finish('importDomainFromTemplate');
         };
         
 
-        this.domainData$ = fetchDomainData();
+        fetchDomainData();
 
-        this.subscribers$ = merge(
-            this.subscription,
-            this.domainData$
-        ).subscribe();
-
+        this.subscribers$ = this.subscription.subscribe();
         
     }
 
@@ -856,7 +1024,48 @@ export class ModalImportModelsFromCsv {
             )
                 item.cacheOrTemplate = item.cachesOrTemplates[0].value;
         };
-    }    
+    }
+
+    datasourcesColumnDefs = [
+        {
+            name: 'id',
+            displayName: 'Id',
+            field: 'id',
+            enableHiding: true,            
+            visible: false,
+            enableFiltering: false,          
+            minWidth: 40
+        },
+        {
+            name: 'jndiName',
+            displayName: 'JNDI Name',
+            field: 'jndiName',
+            enableHiding: false,
+            sort: {direction: 'asc', priority: 0},            
+            visible: true,
+            sortingAlgorithm: naturalCompare,
+            enableFiltering: false,
+            minWidth: 100
+        },
+        {
+            name: 'jdbcUrl',
+            displayName: 'JDBC URL',
+            field: 'jdbcUrl',
+            enableHiding: false,            
+            visible: true,
+            enableFiltering: false,      
+            minWidth: 400
+        },
+        {
+            name: 'schemaName',
+            displayName: 'Schema Name',
+            field: 'schemaName',
+            enableHiding: false,            
+            visible: true,
+            enableFiltering: false,         
+            minWidth: 100
+        }
+    ];
 
     schemasColumnDefs = [
         {
@@ -880,7 +1089,10 @@ export class ModalImportModelsFromCsv {
             displayName: 'Schema',
             field: 'schema',
             enableHiding: false,
-            enableFiltering: false,
+            enableFiltering: true,
+            filter: {
+                placeholder: 'Filter by schema…'
+            },
             sort: {direction: 'asc', priority: 0},
             visible: true,
             sortingAlgorithm: naturalCompare,
@@ -898,6 +1110,18 @@ export class ModalImportModelsFromCsv {
             visible: true,
             sortingAlgorithm: naturalCompare,
             minWidth: 200
+        },
+        {
+            name: 'comment',
+            displayName: 'Table comment',
+            field: 'comment',
+            enableHiding: true,
+            enableFiltering: true,
+            filter: {
+                placeholder: 'Filter by Table…'
+            },
+            visible: true,            
+            minWidth: 250
         },
         {
             name: 'action',
@@ -921,8 +1145,8 @@ export class ModalImportModelsFromCsv {
 }
 
 export const component = {
-    name: 'modalImportModelsFromCsv',
-    controller: ModalImportModelsFromCsv,
+    name: 'modalImportModelsFromTemplate',
+    controller: ModalImportModelsFromTemplate,
     templateUrl,
     bindings: {
         onHide: '&',

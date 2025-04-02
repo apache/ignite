@@ -8,10 +8,12 @@ header.header-with-selector
 div.pc-content-container
     ul.tabs.tabs--blue
         li(role='presentation' ui-sref-active='active')
-            a(ui-sref='base.datasets.edit.basic') Basic Configuration        
+            a(ui-sref='base.datasets.edit.basic') Basic Query        
         li(role='presentation' ui-sref-active='{active: "base.datasets.edit.advanced"}')
             a(ui-sref='base.datasets.edit.advanced') Advanced
-        
+        li(role='presentation' ui-sref-active='{active: "base.datasets.edit.china-map"}')
+            a(ui-sref='base.datasets.edit.china-map') Data Map
+
 
     label.pc-tooltips-toggle.switcher--ignite
         svg.icon-left(

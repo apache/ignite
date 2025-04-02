@@ -1,44 +1,185 @@
-import { Component, OnInit } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import {Subject, Observable, from, of} from 'rxjs';
+import {map,switchMap, distinctUntilChanged, catchError} from 'rxjs/operators';
+import naturalCompare from 'natural-compare-lite';
 
-export default class IgfsHomeComponent implements OnInit {
-    static $inject = ['$sanitize','$sce'];
+import {UIRouter} from '@uirouter/angularjs';
+import {DatasourceDto} from 'app/configuration/types';
+import ConfigureState from 'app/configuration/services/ConfigureState';
+import Datasource from 'app/datasource/services/Datasource';
+import AgentManager from 'app/modules/agent/AgentManager.service';
+import {IColumnDefOf} from 'ui-grid';
 
-    url = 'http://localhost:3000/webapps/mongoAdmin/queryDocuments#admin';
+const cellTemplate = (state) => `
+    <div class="ui-grid-cell-contents">
+        <a
+            class="link-success"
+            ui-sref="base.igfs.edit.basic({storageID: row.entity.id})"
+            title='Click to Visit'
+        >{{ 'Visit' }}</a>
+    </div>
+`;
 
-    safeUrl: SafeResourceUrl;
+export default class PageIgfsOverviewController {
+    static $inject = [
+        '$uiRouter',
+        'ConfigureState',
+        'AgentManager',
+        'Datasource'        
+    ];
+    
 
-    safeStringUrl: SafeResourceUrl;
+    constructor(
+        private $uiRouter: UIRouter,
+        private ConfigureState: ConfigureState,
+        private AgentManager: AgentManager,
+        private Datasource: Datasource    
+    ) {}
 
-    constructor(private $sanitize,private $sce) {
-        try {            
-            const mongoExpress = this._loadMongoExpress('admin');
-            if (mongoExpress && mongoExpress.url) {            
-                this.url = mongoExpress.url;
+    shortClusters$: Observable<Array<DatasourceDto>>;    
+    selectedRows$: Subject<Array<DatasourceDto>>;
+    selectedRowsIDs$: Observable<Array<string>>;
+    
+    
+    datasourceColumnDefs: Array<any> = [
+        {
+            name: 'Id',
+            displayName: 'Storage Id',
+            field: 'id',
+            enableHiding: false,
+            enableFiltering: true,
+            sort: {direction: 'asc'},
+            sortingAlgorithm: naturalCompare,            
+            width: 150
+        },
+        {
+            name: 'clusterName',
+            displayName: 'Display Name',
+            field: 'clusterName',
+            enableHiding: false,
+            enableFiltering: true,
+            sort: {direction: 'asc'},
+            sortingAlgorithm: naturalCompare,            
+            width: 200
+        },
+        {
+            name: 'url',
+            displayName: 'Storage URL',
+            field: 'url',
+            filter: {
+                placeholder: 'Filter by keyword…'
+            },
+            sort: {direction: 'asc'},
+            sortingAlgorithm: naturalCompare,
+            minWidth: 300
+        },       
+        {
+            name: 'accessMode',
+            displayName: 'Storage Access Mode',
+            field: 'accessMode',                   
+            enableFiltering: false,           
+            width: 150
+        },
+        {
+            name: 'bucketName',
+            displayName: 'Bucket Name',
+            field: 'bucketName',                     
+            enableFiltering: false,            
+            width: 150
+        },
+        {
+            name: 'status',
+            displayName: 'Status',
+            field: 'status',
+            cellClass: 'ui-grid-number-cell',                
+            cellTemplate: `
+                <div class="ui-grid-cell-contents status-{{ row.entity.status }} ">{{ row.entity.status }}</div>
+            `,
+            enableFiltering: true,
+            type: 'string',
+            width: 85
+        },
+        {
+            name: 'id',
+            displayName: 'Action',
+            field: 'id',
+            cellClass: 'ui-grid-number-cell',                
+            cellTemplate: cellTemplate,
+            enableFiltering: false,
+            type: 'string',
+            width: 100
+        }
+    ];
+    
+    // 创建一个函数，用于从localStorage中读取JSON数组并返回Observable流
+    getLocalStorageJsonList(key) {
+        return new Observable((observer) => {
+            try {
+                // 尝试从localStorage中读取数据
+                const jsonString = localStorage.getItem(key);
+                if (jsonString === null) {
+                    observer.next([]); // 如果没有找到对应的key，发送空数组
+                    observer.complete();
+                } else {                    
+                    const obj = JSON.parse(jsonString);
+                    const list = Object.keys(obj).map((key) => obj[key]);
+                    if (!Array.isArray(list)) {
+                        observer.error(new Error('存储的值不是一个JSON数组'));
+                    } else {                       
+                        observer.next(list);
+                    }
+                }
+            } catch (error) {
+                observer.error(error); // 如果发生错误，发送错误通知
             }
-        }
-        catch (ignored) {
-            // No-op.
-        }
-        this.safeUrl = this.$sce.trustAsResourceUrl(this.url)
-        this.safeStringUrl = this.$sanitize(this.url);
+        });
     }
 
-    _loadMongoExpress(id: string) {
-        try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress && mongoExpress[id]) {            
-                return mongoExpress[id];
-            }
+
+    editDatasource(cluster) {
+        return this.$uiRouter.stateService.go('^.edit', {storageID: cluster.id});
+    }
+    
+    pingDatasource(clusters: Array<any>) {
+        for (let cluster of clusters) {
+            this.AgentManager.callClusterService(cluster, 'storageTest', cluster).then((msg) => {
+                if (msg.status) {
+                    cluster.status = msg.status;
+                }
+
+            });
         }
-        catch (ignored) {
-            
-        }    
     }
 
-    ngOnInit() {
-        console.log(this.safeUrl);
-        console.log(this.safeStringUrl);
+    $onInit() {       
+        this.dataSourceList$ = from(this.getLocalStorageJsonList('igfsStorages')).pipe(            
+            switchMap((data) => of(
+                data            
+            )),
+            catchError((error) => of({
+                type: `DATASOURCE_ERR`,
+                error: {
+                    message: `Failed to load datasoure:  ${error.data.message}`
+                },
+                action: {}
+            }))           
+        ).subscribe((data)=> {
+            this.dataSourceList = data
+        }); 
+        
+        this.selectedRows$ = new Subject();
+        
+        this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedDatasources) => selectedDatasources.map((cluster) => cluster.id)));
+        
+        this.actions$ = this.selectedRows$.pipe(map((selectedDatasource) => [
+            {
+                action: 'Ping',
+                click: () => this.pingDatasource(selectedDatasource),
+                available: selectedDatasource.length >= 1
+            }  
+        ]));
     }
-
+    
+    $onDestroy() {
+        this.selectedRows$.complete();
+    }
 }

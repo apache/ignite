@@ -91,8 +91,7 @@ export default class IgniteConfigurationGenerator {
        
 
         this.clusterMisc(cluster, available, cfg);
-        this.clusterMetrics(cluster, available, cfg);
-        this.clusterMvcc(cluster, available, cfg);
+        this.clusterMetrics(cluster, available, cfg);        
 
         this.clusterRebalance(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
@@ -1514,17 +1513,7 @@ export default class IgniteConfigurationGenerator {
             cfg.boolProperty('autoActivationEnabled');        
 
         return cfg;
-    }
-
-    // Generate MVCC configuration.
-    static clusterMvcc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (available('2.7.0')) {
-            cfg.intProperty('mvccVacuumThreadCount')
-                .intProperty('mvccVacuumFrequency');
-        }
-
-        return cfg;
-    }
+    }    
 
     // Generate marshaller group.
     static clusterMarshaller(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
@@ -2206,13 +2195,13 @@ export default class IgniteConfigurationGenerator {
             const storeFactory = cache.cacheStoreFactory[kind];
 
             switch (kind) {
-                case 'HiveCacheJdbcPojoStoreFactory':
+                case 'DocumentLoadOnlyStoreFactory':
                     if (targetVer.hiveVersion) {
-                        bean = new Bean('org.gridgain.cachestore.HiveCacheJdbcPojoStoreFactory', 'cacheStoreFactory',
-                            storeFactory, cacheDflts.cacheStoreFactory.HiveCacheJdbcPojoStoreFactory);
+                        bean = new Bean('org.apache.ignite.cache.store.bson.DocumentLoadOnlyStoreFactory', 'cacheStoreFactory',
+                            storeFactory, cacheDflts.cacheStoreFactory.DocumentLoadOnlyStoreFactory);
 
-                        this._baseJdbcPojoStoreFactory(storeFactory, bean, cache.name, domains, available, deps);
-
+                        bean.stringProperty('dataSrc').stringProperty('idField');
+                        bean.intProperty('batchSize').intProperty('parallelLoadCacheMinimumThreshold')
                         bean.boolProperty('streamerEnabled');
                     }
 

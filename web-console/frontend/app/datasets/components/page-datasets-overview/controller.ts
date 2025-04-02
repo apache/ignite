@@ -1,44 +1,158 @@
-import { Component, OnInit } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import {Subject, Observable, from, of} from 'rxjs';
+import {map,switchMap, distinctUntilChanged, catchError} from 'rxjs/operators';
+import naturalCompare from 'natural-compare-lite';
 
-export default class DatasetsHomeComponent implements OnInit {
-    static $inject = ['$sanitize','$sce'];
+import {UIRouter} from '@uirouter/angularjs';
+import {DatasourceDto} from 'app/configuration/types';
+import ConfigureState from 'app/configuration/services/ConfigureState';
+import Datasource from 'app/datasource/services/Datasource';
+import AgentManager from 'app/modules/agent/AgentManager.service';
+import {IColumnDefOf} from 'ui-grid';
 
-    url = 'http://localhost:3000/webapps/mongoAdmin/queryDocuments#admin';
+const cellTemplate = (state) => `
+    <div class="ui-grid-cell-contents">
+        <a
+            class="link-success"
+            ui-sref="base.datasets.edit.basic({datasetID: row.entity.id})"
+            title='Click to Visit'
+        >{{ 'Visit' }}</a>
+    </div>
+`;
 
-    safeUrl: SafeResourceUrl;
+export default class PageDatasourceOverviewController {
+    static $inject = [
+        '$uiRouter',
+        'ConfigureState',
+        'AgentManager',
+        'Datasource'        
+    ];
+    
 
-    safeStringUrl: SafeResourceUrl;
+    constructor(
+        private $uiRouter: UIRouter,
+        private ConfigureState: ConfigureState,
+        private AgentManager: AgentManager,
+        private Datasource: Datasource    
+    ) {}
 
-    constructor(private $sanitize,private $sce) {
-        try {            
-            const mongoExpress = this._loadMongoExpress('admin');
-            if (mongoExpress && mongoExpress.url) {            
-                this.url = mongoExpress.url;
-            }
+    shortClusters$: Observable<Array<DatasourceDto>>;    
+    selectedRows$: Subject<Array<DatasourceDto>>;
+    selectedRowsIDs$: Observable<Array<string>>;
+    
+    
+    datasourceColumnDefs: Array<any> = [
+        {
+            name: 'jndiName',
+            displayName: 'Datasets Name',
+            field: 'jndiName',
+            enableHiding: false,
+            enableFiltering: true,
+            sort: {direction: 'asc'},
+            sortingAlgorithm: naturalCompare,            
+            width: 150
+        },
+        {
+            name: 'jdbcUrl',
+            displayName: 'Datasets URL',
+            field: 'jdbcUrl',
+            filter: {
+                placeholder: 'Filter by keyword…'
+            },
+            sort: {direction: 'asc'},
+            sortingAlgorithm: naturalCompare,
+            minWidth: 300
+        },
+        {
+            name: 'driverCls',
+            displayName: 'driverClass',
+            field: 'driverCls',                     
+            enableFiltering: false,           
+            width: 300
+        },
+        {
+            name: 'db',
+            displayName: 'DB type',
+            field: 'db',                   
+            enableFiltering: false,           
+            width: 150
+        },
+        {
+            name: 'schemaName',
+            displayName: 'Schema',
+            field: 'schemaName',                     
+            enableFiltering: false,            
+            width: 150
+        },
+        {
+            name: 'status',
+            displayName: 'Status',
+            field: 'status',
+            cellClass: 'ui-grid-number-cell',                
+            cellTemplate: `
+                <div class="ui-grid-cell-contents status-{{ row.entity.status }} ">{{ row.entity.status }}</div>
+            `,
+            enableFiltering: false,
+            type: 'string',
+            width: 85
+        },
+        {
+            name: 'id',
+            displayName: 'Action',
+            field: 'id',
+            cellClass: 'ui-grid-number-cell',                
+            cellTemplate: cellTemplate,
+            enableFiltering: false,
+            type: 'string',
+            width: 85
         }
-        catch (ignored) {
-            // No-op.
-        }
-        this.safeUrl = this.$sce.trustAsResourceUrl(this.url)
-        this.safeStringUrl = this.$sanitize(this.url);
+    ];    
+
+
+    editDatasource(cluster) {
+        return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster.id});
+    }
+    
+    pingDatasource(clusters: Array<any>) {
+      for(let cluster of clusters){
+         this.AgentManager.callClusterService(cluster,'datasourceTest',cluster).then((msg) => {
+             if(msg.status){
+                cluster.status = msg.status;               
+             }      
+             
+         });         
+      }
     }
 
-    _loadMongoExpress(id: string) {
-        try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress && mongoExpress[id]) {            
-                return mongoExpress[id];
-            }
-        }
-        catch (ignored) {
-            
-        }          
+    $onInit() {       
+        this.dataSourceList$ = from(this.Datasource.getDatasourceList()).pipe(            
+            switchMap(({data}) => of(
+                data            
+            )),
+            catchError((error) => of({
+                type: `DATASOURCE_ERR`,
+                error: {
+                    message: `Failed to load datasoure:  ${error.data.message}`
+                },
+                action: {}
+            }))           
+        ).subscribe((data)=> {
+            this.dataSourceList = data
+        }); 
+        
+        this.selectedRows$ = new Subject();
+        
+        this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedDatasources) => selectedDatasources.map((cluster) => cluster.id)));
+        
+        this.actions$ = this.selectedRows$.pipe(map((selectedDatasource) => [
+            {
+                action: 'Ping',
+                click: () => this.pingDatasource(selectedDatasource),
+                available: selectedDatasource.length >= 1
+            }     
+        ]));
     }
-
-    ngOnInit() {
-        console.log(this.safeUrl);
-        console.log(this.safeStringUrl);
+    
+    $onDestroy() {
+        this.selectedRows$.complete();
     }
-
 }

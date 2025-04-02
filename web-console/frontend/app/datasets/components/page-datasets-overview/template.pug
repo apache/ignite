@@ -1,8 +1,35 @@
-.main-page
-  iframe.iframe(
-    scrolling-x="no",
-    ng-src="{{$ctrl.safeUrl}}",
-    allowfullscreen="true",
-    frameborder="0",
-    style="position: relative; width: 100%; height: 100%;"
+
+
+header.header-with-selector
+    div
+        h1 DataSets Source List
+    div
+        a.btn-ignite.btn-ignite--primary(
+            type='button'
+            ui-sref='base.datasource.edit({clusterID: "new"})'
+        )
+            svg.icon-left(ignite-icon='plus')
+            | Create DataSets Source Configuration
+        
+
+.pco-relative-root
+    pc-items-table(
+        table-title='::"Choose DataSets Source"'
+        column-defs='$ctrl.datasourceColumnDefs'
+        items='$ctrl.dataSourceList'
+        on-action='$ctrl.onDatasourceAction($event)'
+        max-rows-to-show='10'
+        one-way-selection='::true'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
+        on-selection-change='$ctrl.selectedRows$.next($event)'
+        actions-menu='$ctrl.actions$|async:this'
     )
+        footer-slot(ng-hide='$ctrl.dataSourceList.length' style='font-style: italic')
+            | You have no datasets source configurations.
+            a.link-success(ui-sref='base.datasource.edit.basic({clusterID: "new"})') Create one?
+    span 
+        | {{ message }}
+
+.pco-relative-root
+    div(id='amis_root')    
+    

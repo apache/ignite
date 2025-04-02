@@ -10,7 +10,7 @@ const versionService = new VersionService();
 
 const STORE_FACTORY = [
     'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory',
-    'org.gridgain.cachestore.HiveCacheJdbcPojoStoreFactory'
+    'org.apache.ignite.cache.store.bson.DocumentLoadOnlyStoreFactory'
 ];
 
 // Var name generator function.

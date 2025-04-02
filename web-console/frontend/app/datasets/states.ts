@@ -44,7 +44,7 @@ function registerStates($stateProvider) {
     })
     .state('base.datasets.edit.basic', {
         url: '/basic',
-        component: 'pageChinaMap',
+        component: 'pageDatasetsBasic',
         permission: 'query',
         resolve: {            
         },
@@ -66,6 +66,19 @@ function registerStates($stateProvider) {
         },
         tfMetaTags: {
             title: 'Advanced Configuration'
+        }
+    })
+    .state('base.datasets.edit.china-map', {
+        url: '/china-map',
+        component: 'pageChinaMap',
+        permission: 'query',
+        resolve: {            
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Data distribution'
         }
     })
 }

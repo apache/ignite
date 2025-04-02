@@ -709,10 +709,8 @@ export class ModalImportModels {
                         };
 
                         newCache.cacheStoreFactory = {
-                            kind: dialect === 'Hive' && this.IgniteVersion.currentSbj.getValue().hiveVersion
-                                ? 'HiveCacheJdbcPojoStoreFactory'
-                                : 'CacheJdbcPojoStoreFactory',
-                            HiveCacheJdbcPojoStoreFactory: dsFactoryBean,
+                            kind: dialect === 'MongoDB' ? 'DocumentLoadOnlyStoreFactory' : 'CacheJdbcPojoStoreFactory',
+                            DocumentLoadOnlyStoreFactory: dsFactoryBean,
                             CacheJdbcPojoStoreFactory: dsFactoryBean,
                             CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                         };
@@ -1091,6 +1089,18 @@ export class ModalImportModels {
             visible: true,
             sortingAlgorithm: naturalCompare,
             minWidth: 200
+        },
+        {
+            name: 'comment',
+            displayName: 'Table comment',
+            field: 'comment',
+            enableHiding: true,
+            enableFiltering: true,
+            filter: {
+                placeholder: 'Filter by Table…'
+            },
+            visible: true,
+            minWidth: 250
         },
         {
             name: 'action',

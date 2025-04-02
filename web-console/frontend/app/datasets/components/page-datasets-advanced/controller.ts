@@ -8,23 +8,28 @@ import {Confirm} from 'app/services/Confirm.service';
 import ConfigureState from 'app/configuration/services/ConfigureState';
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
-import AgentManager from 'app/modules/agent/AgentManager.service';
+import Datasource from 'app/datasource/services/Datasource';
+import {DatasourceDto} from 'app/configuration/types';
 
-
-export default class PageDatasetsAdvancedController {
-    form: ng.IFormController;
+export default class PageDatasetsAdvancedController {    
 
     static $inject = [
-        'Confirm', '$uiRouter', 'ConfigureState', '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
+        'Confirm', '$uiRouter', 'ConfigureState', '$element', 'IgniteFormUtils', 'Datasource', '$scope'
     ];
+
+    form: ng.IFormController;
     
+    onBeforeTransition: CallableFunction;
+
+    baseUrl = 'http://localhost:3000';
+
     constructor(
         private Confirm: Confirm,
         private $uiRouter: UIRouter,
         private ConfigureState: ConfigureState,        
         private $element: JQLite,        
         private IgniteFormUtils: ReturnType<typeof FormUtils>,
-        private AgentManager: AgentManager,      
+        private Datasource: Datasource, 
         private $scope: ng.IScope
     ) {}
     
@@ -42,29 +47,27 @@ export default class PageDatasetsAdvancedController {
         const $scope = this.$scope;
         this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
         
-        const clusterID$ = this.$uiRouter.globals.params$.pipe(
+        const datasetID$ = this.$uiRouter.globals.params$.pipe(
             take(1),
             pluck('datasetID'),
             filter((v) => v),
             take(1)
         );
-        this.clusterID$ = clusterID$;
-
-        this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('datasetID'), map((id) => id === 'new'));
         
-        
-        this.originalCluster$ = clusterID$.pipe(
+        this.originalDatasource$ = datasetID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return from(of(this._loadMongoExpress(id)));
+                return from(this.Datasource.selectDatasource(id));
             }),
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
         );  
         
-        this.originalCluster$.subscribe((c) =>{
-            this.clonedCluster = cloneDeep(c);            
+        this.originalDatasource$.subscribe((c) =>{
+            this.originalDatasource = this._loadMongoExpress(c);
+            this.clonedDatasource = this._loadMongoExpress(c);
+            
         })
        
         this.formActionsMenu = [
@@ -74,9 +77,9 @@ export default class PageDatasetsAdvancedController {
                icon: 'checkmark'
            },
            {
-               text: 'Delete',
-               click: () => this.confirmAndDelete(),
-               icon: 'download'
+               text: 'Reset',
+               click: () => this.reset(),
+               icon: 'refresh'
            }           
         ];        
        
@@ -87,78 +90,54 @@ export default class PageDatasetsAdvancedController {
 
         if (options.custom.justIDUpdate || options.redirectedFrom)
             return true;
-
-        $transition$.onSuccess({}, () => this.reset());
-
         return true;
     }
 
-    _loadMongoExpress(id: string) {
-        try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress && mongoExpress[id]) {            
-                return mongoExpress[id];
-            }
-        }
-        catch (ignored) {
-            
-        }
-        return {id: id, clusterName: "Mongo Admin", url: "/webapps/mongoAdmin/queryDocuments#"+id}      
+    _loadMongoExpress(dto: DatasourceDto) {
+        if(!dto.jdbcProp['web_url']){
+            dto.jdbcProp['web_url'] = this.baseUrl+"/webapps/mongoAdmin/queryDocuments#"+dto.jndiName
+        }   
+        return dto;
     }
 
-    _saveMongoExpress(preset) {
-        try {
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress) {            
-                mongoExpress[preset.id] = preset;
-            }
-            localStorage.mongoExpress = JSON.stringify(mongoExpress);
-        }
-        catch (err) {
-            this.$scope.message = err.toString();
-        }
-    }
-
-    _removeMongoExpress(id: string) {
-        try {
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            if (mongoExpress) {            
-                delete mongoExpress[id];
-            }
-            localStorage.mongoExpress = JSON.stringify(mongoExpress);
-        }
-        catch (err) {
-            this.$scope.message = err.toString();
-        }
-    }
+    _saveMongoExpress(datasource) {
+       
+        let stat = from(this.Datasource.saveAdvanced(datasource)).pipe(
+            switchMap(({data}) => of(
+                {type: 'SAVE_AND_EDIT_DATASOURCE_OK'}
+            )),
+            catchError((error) => of({
+                type: 'SAVE_AND_EDIT_DATASOURCE_ERR',
+                error: {
+                    message: `Failed to save datasource : ${error.data.message}.`
+                }
+            }))
+        );
+        return stat;        
+    }    
 
     save(redirect = false) {
         if (this.form.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
-        let datasource = this.clonedCluster;
+        let datasource = this.clonedDatasource;
         if(datasource) {
-            this._saveMongoExpress(datasource);                   
-            this.$scope.message = 'Save successful.';
-            if(redirect){                
-                setTimeout(() => {
-                    this.$uiRouter.stateService.go('base.datasets.overview');
-                },100)
-            }            
+            try{
+                this._saveMongoExpress(datasource);                   
+                this.$scope.message = 'Save successful.';
+                if(redirect){                
+                    setTimeout(() => {
+                        this.$uiRouter.stateService.go('base.datasets.overview');
+                    },100)
+                }
+            }
+            catch (err) {
+                this.$scope.message = err.toString();
+            }                  
         }        
     }
 
     reset() {
-        this.clonedCluster = cloneDeep(this.originalCluster);
+        this.clonedDatasource = cloneDeep(this.originalDatasource);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
-    }
-    
-    delete(datasource) {
-        this._removeMongoExpress(datasource.id)   
-    }
-    
-    confirmAndDelete() {
-        return this.Confirm.confirm('Are you sure you want to delete current datasource?')
-            .then(() => this.delete(this.clonedCluster))
-            .catch(() => {});
     }
 }

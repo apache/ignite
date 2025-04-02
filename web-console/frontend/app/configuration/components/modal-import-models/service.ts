@@ -1,5 +1,3 @@
-
-
 import {UIRouter, StateDeclaration, StateService} from '@uirouter/angularjs';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
@@ -47,12 +45,12 @@ export default class ModalImportModels {
     _open(component_name) {
         const self = this;
         let template;
-        if(component_name=='modal-import-models-from-csv'){
+        if(component_name=='modal-import-models-from-template'){
             template = `
-                <modal-import-models-from-csv
+                <modal-import-models-from-template
                     on-hide='$ctrl.onHide()'
                     cluster-id='$ctrl.$state.params.clusterID'
-                ></modal-import-models-from-csv>
+                ></modal-import-models-from-template>
             `
         }
         else{
@@ -90,7 +88,7 @@ export default class ModalImportModels {
         this._goToDynamicState('importModels','modal-import-models');
     }
 
-    openCSV() {
-        this._goToDynamicState('importModelsFromCSV','modal-import-models-from-csv');
+    openTemplate() {
+        this._goToDynamicState('importModelsFromTemplate','modal-import-models-from-template');
     }
 }

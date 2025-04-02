@@ -35,14 +35,14 @@ export default class PageIgfsController {
         const isNew$ = this.clusterID$.pipe(map((v) => v === 'new'));
 
         this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
-            return `${isNew ? 'Create' : 'Edit'} DataSets configuration 
+            return `${isNew ? 'Create' : 'Edit'} Object Storage configuration 
             ${isNew ? '' : `‘${get(cluster, 'clusterName','')}’`}`;
         });
     }
 
     _loadMongoExpress(id: string) {
         try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
+            const mongoExpress = JSON.parse(localStorage.igfsStorages);
             if (mongoExpress && mongoExpress[id]) {            
                 return mongoExpress[id];
             }
@@ -50,7 +50,7 @@ export default class PageIgfsController {
         catch (ignored) {
             
         }
-        return {id: id, clusterName: "Mongo Express", url: "/webapps/mongoAdmin/queryDocuments#"+id}      
+        return {id: id, clusterName: "Ignite FileSystem", url: ""}
     }
 
     $onDestroy() {}

@@ -1,5 +1,3 @@
-
-
 include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
@@ -203,7 +201,7 @@ mixin td-ellipses-lbl(w, lbl)
             .modal-footer(ng-if-end)
                 button.btn-ignite.btn-ignite--success.modal-import-models__prev-button(
                     type='button'
-                    ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"'
+                    ng-disabled='importDomain.action == "drivers" || importDomain.action == "connect"'
                     ng-click='importDomainPrev()'
                     b_s-tooltip=''
                     d_ata-title='{{prevTooltipText()}}'

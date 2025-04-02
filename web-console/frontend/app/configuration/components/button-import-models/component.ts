@@ -13,8 +13,8 @@ export class ButtonImportModels {
         return this.ModalImportModels.open();
     }
 
-    startImportCSV() {
-        return this.ModalImportModels.openCSV();
+    startImportFromTemplate() {
+        return this.ModalImportModels.openTemplate();
     }
 }
 export const component = {

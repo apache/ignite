@@ -4,5 +4,5 @@ import component from './component';
 
 
 export default angular
-    .module('ignite-console.datasets.page-datasets-advanced', [])    
+    .module('ignite-console.page-datasets-advanced', [])    
     .component('pageDatasetsAdvanced', component);

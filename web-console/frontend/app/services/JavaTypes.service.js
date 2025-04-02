@@ -135,6 +135,10 @@ export default class JavaTypes {
         return includes(JAVA_PRIMITIVES, clsName);
     }
 
+    isAllUpperCase(str) {
+        return /^[A-Z_]+$/.test(str);
+    }
+
     /**
      * Convert some name to valid java name.
      *
@@ -189,6 +193,8 @@ export default class JavaTypes {
     }
 
     toJavaClassName(name) {
+        if (this.isAllUpperCase(name))
+            return name;
         const clazzName = this.toJavaIdentifier(name);
 
         if (this.isValidJavaIdentifier(clazzName))
@@ -198,6 +204,8 @@ export default class JavaTypes {
     }
 
     toJavaFieldName(dbName) {
+        if (this.isAllUpperCase(dbName))
+            return dbName;
         const javaName = this.toJavaIdentifier(dbName);
 
         const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);

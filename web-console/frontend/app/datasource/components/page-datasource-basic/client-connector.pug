@@ -4,9 +4,9 @@
 -var sslEnabled = `${connectionEnabled} && ${connectionModel}.sslEnabled`
 -var sslFactoryEnabled = `${sslEnabled} && !${connectionModel}.useIgniteSslContextFactory`
 
-panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
+panel-collapsible(ng-form=form )
     panel-title Client connector configuration
-    panel-content.pca-form-row(ng-if=`$ctrl.available("2.3.0")`)
+    panel-content.pca-form-row()
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
                 +form-field__checkbox({
@@ -64,7 +64,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
                     name: '"ClientConnectorTcpNoDelay"',
                     disabled: `!${connectionEnabled}`
                 })
-            .pc-form-grid-col-30(ng-if='$ctrl.available("2.4.0")')
+            .pc-form-grid-col-30()
                 +form-field__number({
                     label: 'Idle timeout:',
                     model: `${connectionModel}.idleTimeout`,
@@ -75,7 +75,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
                     tip: 'Idle timeout for client connections<br/>\
                          Zero or negative means no timeout'
                 })
-            .pc-form-grid-col-30(ng-if='$ctrl.available("2.5.0")')
+            .pc-form-grid-col-30()
                 +form-field__number({
                     label: 'Handshake timeout:',
                     model: `${connectionModel}.handshakeTimeout`,
@@ -86,7 +86,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
                     tip: 'Handshake timeout for client connections<br/>\
                         Zero or negative means no timeout'
                 })
-            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.5.0")')
+            .pc-form-grid-col-60()
                 +form-field__checkbox({
                     label: 'Enable SSL',
                     model: `${connectionModel}.sslEnabled`,
@@ -110,7 +110,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
                     disabled: `!(${sslEnabled})`,
                     tip: 'Use SSL factory Ignite configuration'
                 })
-            .pc-form-grid-col-60(ng-if-end)
+            .pc-form-grid-col-60()
                 +form-field__java-class({
                     label:'SSL factory:',
                     model: `${connectionModel}.sslContextFactory`,

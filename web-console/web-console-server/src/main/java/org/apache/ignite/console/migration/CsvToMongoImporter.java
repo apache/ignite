@@ -45,7 +45,7 @@ public class CsvToMongoImporter {
         }
     }
 
-    private static void processZipFile(File zipFile, MongoDatabase database) throws IOException {
+    public static void processZipFile(File zipFile, MongoDatabase database) throws IOException {
         try (ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zipIn.getNextEntry()) != null) {
@@ -58,7 +58,7 @@ public class CsvToMongoImporter {
         }
     }
 
-    private static void processCsvFile(File csvFile, MongoDatabase database) throws IOException {
+    public static void processCsvFile(File csvFile, MongoDatabase database) throws IOException {
         String collectionName = getCollectionNameFromFile(csvFile);
         try (FileInputStream fis = new FileInputStream(csvFile)) {
             processCsvStream(fis, database, collectionName);
@@ -87,11 +87,12 @@ public class CsvToMongoImporter {
         collection.drop(); // Optional: Remove existing data
 
         try (Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            CSVParser parser = CSVFormat.DEFAULT
-                    .withFirstRecordAsHeader()
-                    .withIgnoreHeaderCase()
-                    .withTrim()
-                    .parse(reader);
+            CSVParser parser = CSVFormat.DEFAULT.builder()
+            		.setSkipHeaderRecord(true)
+                    .setIgnoreEmptyLines(true)
+                    .setIgnoreHeaderCase(true)
+                    .setTrim(true)
+                    .build().parse(reader);
 
             List<Document> batch = new ArrayList<>(BATCH_SIZE);
             for (CSVRecord record : parser) {

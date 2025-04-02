@@ -1,15 +1,15 @@
 
 .pca-form-row
-    .pca-form-column-6.pc-form-grid-row            
+    .pca-form-column-6.pc-form-grid-row        
+
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Mongo Admin URL:',
-                model: `${model}.url`,
-                name: '"url"',                        
-                placeholder: 'http://'
+                label: 'Jndi Name:',
+                model: `${model}.jndiName`,
+                name: '"jndiName"',
+                placeholder: ''
             })
-       
-            
+
         .pc-form-grid-col-30
             +form-field__text({
                 label: 'Default database:',
@@ -17,6 +17,22 @@
                 name: '"schemaName"',
                 placeholder: 'public'
             })
+        
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Mongo URL:',
+                model: `${model}.jdbcUrl`,
+                name: '"jdbcUrl"',                        
+                placeholder: 'mongodb://'
+            })    
+          
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Mongo Admin URL:',
+                model: `${model}.jdbcProp.web_url`,
+                name: '"jdbcProp.web_url"',                        
+                placeholder: 'http://'
+            })         
             
         .pc-form-grid-col-30
             +form-field__text({

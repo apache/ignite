@@ -6,6 +6,8 @@ import {UIRouter} from '@uirouter/angularjs';
 
 import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 
+
+import Datasource from 'app/datasource/services/Datasource';
 import ConfigureState from '../configuration/services/ConfigureState';
 import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';
 
@@ -17,6 +19,7 @@ import pcValidation from '../configuration/components/pcValidation';
 import pcSplitButton from '../configuration/components/pc-split-button';
 
 import pageDatasets from './components/page-datasets';
+import pageDatasetsBasic from './components/page-datasets-basic';
 import pageDatasetsOverview from './components/page-datasets-overview';
 import pageDatasetsAdvanced from './components/page-datasets-advanced';
 import pageChinaMap from './components/page-datasets-china-map';
@@ -33,6 +36,7 @@ export default angular
         'asyncFilter', 
         
         pageDatasets.name,
+        pageDatasetsBasic.name,
         pageDatasetsOverview.name,
         pageDatasetsAdvanced.name,
         pageChinaMap.name,
@@ -64,6 +68,7 @@ export default angular
        
     }])
     .factory('configSelectionManager', ConfigSelectionManager)
-    .service('ConfigureState', ConfigureState)           
+    .service('ConfigureState', ConfigureState)
+    .service('Datasource', Datasource)
 
     ;

@@ -7,20 +7,6 @@ page-igfs-china-map {
     div {
         height: 100%;
         width: 100%;
-    }
+    }    
     
-    .pco-relative-root {
-        position: relative;
-    }
-    .pco-table-context-buttons {
-        position: absolute;
-        right: 0;
-        top: -29px - 36px;
-        display: flex;
-        flex-direction: row;
-
-        &>* {
-            margin-left: 20px;
-        }
-    }
 }

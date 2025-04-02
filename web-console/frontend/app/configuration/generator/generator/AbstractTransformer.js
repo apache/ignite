@@ -118,11 +118,6 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterMisc(cluster, available));
     }
 
-    // Generate marshaller group.
-    static clusterMvcc(cluster, available) {
-        return this.toSection(this.generator.clusterMvcc(cluster, available));
-    }
-
     // Generate encryption group.
     static clusterEncryption(encryption, available) {
         return this.toSection(this.generator.clusterEncryption(encryption, available));

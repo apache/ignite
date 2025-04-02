@@ -162,7 +162,7 @@ const config = {
             template: path.join(basedir, './views/index.pug')
         }),
         new CopyWebpackPlugin([
-            { context: 'public', from: '**/*.{png,svg,ico}' }
+            { context: 'public', from: '**/*.{png,jpg,svg,ico,js,html,css}' }
         ]),
         new ProgressBarPlugin()
     ]

@@ -37,6 +37,8 @@ export default class Datasource {
             driverCls: 'org.postgresql.Driver',
             db: 'Generic',
             jdbcProp: {},
+            userName: '',
+            password: '',
             id: uuidv4()
         }
      }
@@ -98,5 +100,21 @@ export default class Datasource {
     
     saveAdvanced(datasource:DatasourceDto) {        
         return this.$http.put('/api/v1/datasource', datasource);
+    }
+    
+    getDatabaseList(id: string){
+        return this.$http.get(`/api/v1/datasource/${id}/databases`);
+    }
+
+    getCollectionList(id: string,database:string){
+        return this.$http.get(`/api/v1/datasource/${id}/${database}/collections?columns=true`);
+    }
+
+    getCollectionListFromMetaCollection(id: string,database:string,collection:string,){
+        return this.$http.get(`/api/v1/datasource/${id}/meta_collection/${database}/${collection}`);
+    }
+
+    getSamplesData(id: string, database:string, collection:string, limit:number){
+        return this.$http.get(`/api/v1/datasource/${id}/${database}/${collection}/samples?limit=${limit}`);
     }
 }

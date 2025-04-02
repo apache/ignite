@@ -47,7 +47,7 @@ function registerStates($stateProvider) {
     })
     .state('base.igfs.edit.basic', {
         url: '/basic',
-        component: 'pageIgfsChinaMap',
+        component: 'pageIgfsBasic',
         permission: 'query',
         resolve: {            
         },
@@ -69,6 +69,19 @@ function registerStates($stateProvider) {
         },
         tfMetaTags: {
             title: 'Advanced Configuration'
+        }
+    })
+    .state('base.igfs.edit.china-map', {
+        url: '/china-map',
+        component: 'pageIgfsChinaMap',
+        permission: 'query',
+        resolve: {            
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Data distribution'
         }
     })
 }

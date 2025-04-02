@@ -35,8 +35,7 @@ export default class CacheEditFormController {
                 {value: null, label: 'Default'}
             ];
             
-            if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
-                && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
+            if (_.get(this.clonedCache, 'cacheStoreFactory.kind') === 'DocumentLoadOnlyStoreFactory')
                 this.clonedCache.cacheStoreFactory.kind = null;
         };
 

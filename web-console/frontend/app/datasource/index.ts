@@ -6,7 +6,6 @@ import {UIRouter} from '@uirouter/angularjs';
 
 import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 
-
 import Datasource from 'app/datasource/services/Datasource';
 import ConfigureState from '../configuration/services/ConfigureState';
 import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';

@@ -16,9 +16,25 @@ export default class IgfsChinaMapComponent implements OnInit {
         this.safeStringUrl = this.$sanitize(this.url);
     }
 
+    $onInit(){
+        this.ngOnInit();
+    }
+
+    $postLink(){
+        this.ngAfterViewInit();
+    }
+
     ngOnInit() {
         console.log(this.safeUrl);
         console.log(this.safeStringUrl);
+    }
+
+    ngAfterViewInit() {            
+        // 或平滑滚动（推荐）
+        window.scrollBy({
+            top: 190,
+            behavior: 'smooth'
+        });
     }
 
 }
