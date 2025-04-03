@@ -149,7 +149,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * <p>
      * Value is {@code 30 sec}.
      */
-    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
 
     /** Executor service. */
     @GridToStringExclude
