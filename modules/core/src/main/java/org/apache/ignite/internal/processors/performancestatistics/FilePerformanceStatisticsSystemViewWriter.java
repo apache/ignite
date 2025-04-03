@@ -137,7 +137,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
 
         /** {@inheritDoc} */
         @Override protected void cleanup() {
-           FilePerformanceStatisticsSystemViewWriter.this.cleanup();
+            FilePerformanceStatisticsSystemViewWriter.this.cleanup();
         }
 
         /**  */
