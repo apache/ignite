@@ -91,6 +91,10 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     /**  */
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
+    /**
+     * @param ctx Context.
+     * @param fileName File name to write.
+     */
     protected AbstractFilePerformanceStatisticsWriter(GridKernalContext ctx, String fileName) throws IgniteCheckedException, IOException {
         nodeId = ctx.localNodeId();
         file = resolveStatisticsFile(ctx, fileName);
