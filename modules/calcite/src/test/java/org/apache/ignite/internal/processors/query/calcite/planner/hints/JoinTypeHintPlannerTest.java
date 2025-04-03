@@ -581,16 +581,16 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
 
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + "(TBL3) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
-                .and(hasNestedTableScan("TBL3")))))
+            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
+                .and(hasChildThat(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL3")))))
         );
 
         assertTrue(planLsnr.ruleSucceeded());
 
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
-                    .and(hasNestedTableScan("TBL1"))
+            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
+                .and(hasChildThat(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1"))
                     .and(hasNestedTableScan("TBL3")))))
         );
 
