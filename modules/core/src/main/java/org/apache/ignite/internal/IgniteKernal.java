@@ -175,7 +175,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -3395,7 +3394,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             return IgnitionEx.localIgnite();
         }
         catch (IllegalStateException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
     }
 

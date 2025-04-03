@@ -35,7 +35,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -251,7 +250,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
             return t.get1().dataStructures().atomicStamped(t.get2(), null, null, null, false);
         }
         catch (IgniteCheckedException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

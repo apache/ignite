@@ -25,7 +25,6 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collections;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -245,7 +244,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             return ctgrR != null ? log.getLogger(ctgrR) : log;
         }
         catch (IllegalStateException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -93,7 +92,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap<K, V> imple
             return IgnitionEx.localIgnite().cluster().nodeLocalMap();
         }
         catch (IllegalStateException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

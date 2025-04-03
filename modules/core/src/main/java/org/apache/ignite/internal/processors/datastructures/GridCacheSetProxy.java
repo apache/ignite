@@ -31,7 +31,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -500,7 +499,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
             return t.get1().dataStructures().set(t.get2(), t.get3(), null);
         }
         catch (IgniteCheckedException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

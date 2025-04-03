@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -965,7 +964,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             return IgnitionEx.localIgnite().context();
         }
         catch (IllegalStateException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

@@ -41,7 +41,7 @@ public abstract class CommonsUtils {
             OBJECT_CTOR = Object.class.getConstructor();
         }
         catch (NoSuchMethodException e) {
-            throw withCause(new AssertionError("Object class does not have empty constructor (is JDK corrupted?)."), e);
+            throw new AssertionError("Object class does not have empty constructor (is JDK corrupted?).", e);
         }
 
         // Constructor factory.
@@ -127,23 +127,6 @@ public abstract class CommonsUtils {
         }
 
         return ctor;
-    }
-
-    /**
-     * Utility method that sets cause into exception and returns it.
-     *
-     * @param e Exception to set cause to and return.
-     * @param cause Optional cause to set (if not {@code null}).
-     * @param <E> Type of the exception.
-     * @return Passed in exception with optionally set cause.
-     */
-    public static <E extends Throwable> E withCause(E e, @Nullable Throwable cause) {
-        assert e != null;
-
-        if (cause != null)
-            e.initCause(cause);
-
-        return e;
     }
 
     /**

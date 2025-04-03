@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
-import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -516,7 +515,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
             return t.get1().dataStructures().queue(t.get2(), t.get3(), 0, null);
         }
         catch (IgniteCheckedException e) {
-            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();
