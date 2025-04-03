@@ -52,10 +52,9 @@ public class IgniteSqlStatisticsTable extends SqlCall {
     ) {
         super(pos);
         this.name = name;
-        if (!F.isEmpty(columns))
-            this.columns = SqlNodeList.of(columns.getParserPosition(), columns.getList());
-        else
-            this.columns = null;
+        this.columns = F.isEmpty(columns)
+            ? SqlNodeList.EMPTY
+            : SqlNodeList.of(columns.getParserPosition(), columns.getList());
     }
 
     /** {@inheritDoc} */
