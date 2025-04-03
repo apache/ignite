@@ -251,7 +251,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Map.Entry<K, V>> entrySet() {
+    @Override public Set<Entry<K, V>> entrySet() {
         return new EntrySet();
     }
 
