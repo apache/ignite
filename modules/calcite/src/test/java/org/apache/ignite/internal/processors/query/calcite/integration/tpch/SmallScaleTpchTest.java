@@ -17,38 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class TpchTest extends AbstractBasicIntegrationTest {
+public class SmallScaleTpchTest extends AbstractBasicIntegrationTest {
     /** Query ID. */
     @Parameterized.Parameter
     public int qryId;
 
-    /** Query ID. */
-    @Parameterized.Parameter(1)
-    public float scale;
+    /** */
+    @Parameterized.Parameters(name = "queryId={0}")
+    public static Collection<Object> params() {
+        return F.asList(16, 20, 17003);
+    }
 
     /** */
-    @Parameterized.Parameters(name = "queryId={0},scale={1}")
-    public static Collection<?> params() {
-        ArrayList<Object[]> params = new ArrayList<>();
-
-        params.add(new Object[]{16, 0.1});
-
-//        return F.asList(
-//            F.asArray(16, 0.1),
-//            F.asArray(20, 0.1),
-//            F.asArray(17, 0.5)
-//        );
-
-        return params;
+    protected double scale() {
+        return 0.1;
     }
 
     /** {@inheritDoc} */
@@ -57,7 +48,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
 
         TpchHelper.createTables(client);
 
-        TpchHelper.fillTables(client, scale);
+        TpchHelper.fillTables(client, scale());
 
         TpchHelper.collectSqlStatistics(client);
     }
