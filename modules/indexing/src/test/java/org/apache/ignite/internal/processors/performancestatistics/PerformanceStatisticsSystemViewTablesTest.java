@@ -136,6 +136,7 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
         }
     }
 
+    /** */
     private Object getViewByName(List<String> schema, List<Object> row, String attr) {
         int index = schema.indexOf(attr);
         return row.get(index);
