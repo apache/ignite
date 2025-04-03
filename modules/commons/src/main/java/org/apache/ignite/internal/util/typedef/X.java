@@ -463,7 +463,7 @@ public final class X {
      *      {@code false} otherwise.
      */
     public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... types) {
-        if (t == null || types.length == 0)
+        if (t == null || types == null || types.length == 0)
             return false;
 
         Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
