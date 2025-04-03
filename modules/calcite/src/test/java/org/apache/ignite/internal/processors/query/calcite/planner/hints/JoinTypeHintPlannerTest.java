@@ -599,9 +599,9 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         // Produces unsupported left join.
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 not in (SELECT /*+ " + MERGE_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
-                .and(hasNestedTableScan("TBL1"))
-                .and(hasNestedTableScan("TBL3")))))
+            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
+                .and(hasChildThat(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1"))
+                    .and(hasNestedTableScan("TBL3")))))
         );
 
         assertFalse(planLsnr.ruleSucceeded());
@@ -609,16 +609,16 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         // Produces unsupported outer join.
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 FULL OUTER JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)
-                .and(hasNestedTableScan("TBL1"))
-                .and(hasNestedTableScan("TBL3")))))
+            schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
+                .and(hasChildThat(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1"))
+                    .and(hasNestedTableScan("TBL3")))))
         );
 
         assertFalse(planLsnr.ruleSucceeded());
 
         // Produces unsupported outer join.
-        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
-                "where t2.v1 in (SELECT /*+ " + NL_JOIN + "(TBL3) */ t3.v3 from TBL3 t3 FULL OUTER JOIN TBL1 t4 on t3.v2=t4.v2)",
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 where " +
+                "t2.v1 in (SELECT /*+ " + NL_JOIN + "(TBL3) */ t3.v3 from TBL3 t3 FULL OUTER JOIN TBL1 t4 on t3.v2=t4.v2)",
             schema, planLsnr, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
                 .and(hasChildThat(isInstanceOf(IgniteNestedLoopJoin.class).and(hasNestedTableScan("TBL3")))))
         );
