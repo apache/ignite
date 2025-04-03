@@ -562,8 +562,6 @@ cfg.setSqlConfiguration(new SqlConfiguration().setSqlPlanHistorySize(1000));
 ----
 --
 
-=== Default Behavior for Calcite
-
 When using the Calcite engine, collecting SQL plans does not impact performance. Therefore, it is enabled by default. The default history size is 1000 entries.
 
 == SCHEMAS
