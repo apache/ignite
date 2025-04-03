@@ -246,7 +246,7 @@ public class PlannerHelper {
         assert rel instanceof Hintable;
 
         // Ignore inheritance to compare hints type and options.
-        List<RelHint> relHints = ((Hintable)rel).getHints().stream()
+        List<RelHint> filteredRelHints = ((Hintable)rel).getHints().stream()
             .map(h -> h.inheritPath.isEmpty() ? h : h.copy(Collections.emptyList())).collect(Collectors.toList());
 
         List<RelHint> res = new ArrayList<>(topLevelHints.size());
@@ -256,7 +256,7 @@ public class PlannerHelper {
 
             boolean storeHint = true;
 
-            for (RelHint curHint : relHints) {
+            for (RelHint curHint : filteredRelHints) {
                 if (topHint.equals(curHint)) {
                     storeHint = false;
 
@@ -271,12 +271,8 @@ public class PlannerHelper {
         // Keep hints only for joins.
         res = Commons.context(filterNode).config().getSqlToRelConverterConfig().getHintStrategyTable().apply(res, filterNode);
 
-        if (!res.isEmpty()) {
-            rel = ((Hintable)rel).withHints(res);
-
-            if (!relHints.isEmpty())
-                rel = ((Hintable)rel).attachHints(relHints);
-        }
+        if (!res.isEmpty())
+            rel = ((Hintable)rel).attachHints(res);
 
         return rel;
     }

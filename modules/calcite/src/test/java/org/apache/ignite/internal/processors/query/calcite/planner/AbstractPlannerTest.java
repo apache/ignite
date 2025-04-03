@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -244,26 +244,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Nullable RelOptListener planLsnr,
         String... disabledRules
     ) {
-        final Context baseCtx0 = baseQueryContext(schemas);
-        final Context baseCtx;
-
-        if (planLsnr != null) {
-            baseCtx = new Context() {
-                @Override public <C> @org.checkerframework.checker.nullness.qual.Nullable C unwrap(Class<C> aCls) {
-                    C res = baseCtx0.unwrap(aCls);
-
-                    if (res == null && RelOptListener.class.isAssignableFrom(aCls) && planLsnr != null)
-                        return (C)planLsnr;
-
-                    return res;
-                }
-            };
-        }
-        else
-            baseCtx = baseCtx0;
-
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(baseCtx)
+            .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
             .query(sql)
             .build();
 

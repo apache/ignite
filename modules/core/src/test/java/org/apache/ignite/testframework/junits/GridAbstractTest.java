@@ -179,6 +179,7 @@ import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.
 import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.DEFAULT_PATTERN_LAYOUT;
 import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.FILE;
 import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.addRootLoggerAppender;
+import static org.apache.logging.log4j.Level.DEBUG;
 import static org.apache.logging.log4j.Level.WARN;
 import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYSTEM_ERR;
 
@@ -466,26 +467,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Sets debug log level for {@link #log}. The log level is resetted to the default in {@link #afterTest()}.
+     * Sets the log level for logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * default in {@link #afterTest()}.
      */
     protected final void setLoggerDebugLevel() {
-        setLoggerLevel("org.apache.ignite", Level.DEBUG);
-    }
+        String logName = "org.apache.ignite";
 
-    /**
-     * Sets the log level for logger ({@link #log}). The log level is resetted to the default in {@link #afterTest()}.
-     * @return Previous log level.
-     */
-    protected final Level setLoggerLevel(String logName, Level newLvl) {
         LoggerConfig logCfg = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(logName);
 
-        Level curLvl = logCfg.getLevel();
+        assertNull(logCfg + " level: " + Level.DEBUG, changedLevels.put(logName, logCfg.getLevel()));
 
-        changedLevels.putIfAbsent(logName, curLvl);
-
-        Configurator.setLevel(logName, newLvl);
-
-        return curLvl;
+        Configurator.setLevel(logName, DEBUG);
     }
 
     /**

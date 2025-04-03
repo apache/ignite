@@ -430,7 +430,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(checkJoinTypeAndInputScan(IgniteMergeJoin.class, "TBL1"))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         // TBL3 leads, gets top-level NL. TBL1 follows, gets MERGE. TBL5 is to keep joins order enough to launch the optimization.
         assertPlan("SELECT /*+ NL_JOIN */ A2.A, T3.V3, T1.V2, T5.V3 FROM (SELECT 1 AS A, 2 AS B) A2 JOIN TBL3 T3 ON A2.B=T3.V2 " +
@@ -439,7 +439,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(checkJoinTypeAndInputScan(IgniteMergeJoin.class, "TBL1"))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         // TBL1 leads, gets NL. TBL3 follows, gets MERGE. TBL5 is to keep joins order enough to launch the optimization.
         assertPlan("SELECT A2.A, T1.V3, T3.V2, T5.V3 FROM (SELECT 1 AS A, 2 AS B) A2 JOIN TBL1 /*+ NL_JOIN */ T1 ON A2.B=T1.V2 " +
@@ -448,7 +448,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(checkJoinTypeAndInputScan(IgniteMergeJoin.class, "TBL3"))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         // TBL1 leads, gets top-level NL. TBL3 follows, gets MERGE. TBL5 is to keep joins order enough to launch the optimization.
         assertPlan("SELECT /*+ NL_JOIN */ A2.A, T1.V3, T3.V2, T5.V1 FROM (SELECT 1 AS A, 2 AS B) A2 JOIN TBL1 T1 ON A2.B=T1.V2 " +
@@ -457,7 +457,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(checkJoinTypeAndInputScan(IgniteMergeJoin.class, "TBL3"))
         );
 
-        assertTrue(planLsnr.check());
+        assertTrue(planLsnr.ruleSucceeded());
     }
 
     /**
@@ -550,7 +550,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(hasChildThat(isInstanceOf(IgniteNestedLoopJoin.class).and(hasNestedTableScan("TBL1")))))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + NL_JOIN + "(TBL3) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
@@ -558,7 +558,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(hasChildThat(isInstanceOf(IgniteNestedLoopJoin.class).and(hasNestedTableScan("TBL3")))))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + NL_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
@@ -568,7 +568,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                     .and(hasNestedTableScan("TBL3")))))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + "(TBL1) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
@@ -577,7 +577,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                     .and(hasNestedTableScan("TBL1")))))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + "(TBL3) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
@@ -585,7 +585,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(hasNestedTableScan("TBL3")))))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + MERGE_JOIN + " */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
@@ -594,7 +594,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                     .and(hasNestedTableScan("TBL3")))))
         );
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         // Produces unsupported left join.
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
@@ -604,7 +604,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(hasNestedTableScan("TBL3")))))
         );
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
 
         // Produces unsupported outer join.
         assertPlan("SELECT /*+ " + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 FULL OUTER JOIN TBL2 t2 on t1.v3=t2.v3 " +
@@ -614,7 +614,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(hasNestedTableScan("TBL3")))))
         );
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
 
         // Produces unsupported outer join.
         assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
@@ -623,7 +623,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(hasChildThat(isInstanceOf(IgniteNestedLoopJoin.class).and(hasNestedTableScan("TBL3")))))
         );
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
     }
 
     /**

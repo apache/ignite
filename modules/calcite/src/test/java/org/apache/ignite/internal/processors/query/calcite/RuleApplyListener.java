@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -31,10 +30,10 @@ public class RuleApplyListener extends RuleEventLogger {
     private final RelOptRule rule;
 
     /** */
-    private final Set<RelOptRuleCall> products = new HashSet<>();
+    public final Collection<RelOptListener.RuleAttemptedEvent> tries = new ArrayList<>();
 
     /** */
-    public final Collection<RelOptListener.RuleAttemptedEvent> tries = new ArrayList<>();
+    private final Collection<RelOptRuleCall> products = new HashSet<>();
 
     /** */
     public RuleApplyListener(RelOptRule rule) {
@@ -61,17 +60,17 @@ public class RuleApplyListener extends RuleEventLogger {
         super.ruleProductionSucceeded(evt);
     }
 
-    /** */
-    public boolean checkAndReset() {
-        boolean res = check();
+    /**
+     * Checks wheter the rule was sucessfully applied. Resets the listener.
+     *
+     * @return {@code True} if rule has worked and realeased a product.
+     */
+    public boolean ruleSucceeded() {
+        boolean res = !tries.isEmpty() && tries.stream().allMatch(e -> products.contains(e.getRuleCall()));
 
         tries.clear();
+        products.clear();
 
         return res;
-    }
-
-    /** */
-    public boolean check() {
-        return !tries.isEmpty() && tries.stream().allMatch(e -> products.contains(e.getRuleCall()));
     }
 }

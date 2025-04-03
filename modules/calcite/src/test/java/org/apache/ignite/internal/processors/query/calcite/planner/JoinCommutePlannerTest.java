@@ -160,7 +160,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         physicalPlan(ctx);
 
-        assertFalse(orderOptmzLsnr.check());
+        assertFalse(orderOptmzLsnr.ruleSucceeded());
     }
 
     /** */
@@ -214,7 +214,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertTrue(costWithCommute.isLt(costWithoutCommute));
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
     }
 
     /** Tests that {@link IgniteMultiJoinOptimizeRule} is enabled if joins number reaches the threshold. */
@@ -228,7 +228,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         physicalPlan(sql, publicSchema, planLsnr);
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
 
         // Joins number is enough. But the optimization is disabled by the hint.
         sql = "SELECT /*+ ENFORCE_JOIN_ORDER */ s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id " +
@@ -236,7 +236,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         physicalPlan(sql, publicSchema, planLsnr);
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
 
         // Joins number is enough. But the optimization is disabled by the hint for some joins.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
@@ -245,7 +245,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         physicalPlan(sql, publicSchema, planLsnr);
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
 
         // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, j.b, j.c FROM SMALL s JOIN " +
@@ -254,7 +254,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         physicalPlan(sql, publicSchema, planLsnr);
 
-        assertTrue(planLsnr.checkAndReset());
+        assertTrue(planLsnr.ruleSucceeded());
 
         // Joins number is enough and nothing is disabled.
         sql = "SELECT s.id, h.id, a.id FROM SMALL s JOIN HUGE h on h.id = s.id JOIN AVERAGE a on a.id = h.id " +
@@ -262,7 +262,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         physicalPlan(sql, publicSchema, planLsnr);
 
-        assertTrue(planLsnr.check());
+        assertTrue(planLsnr.ruleSucceeded());
     }
 
     /** */
@@ -345,6 +345,6 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         assertTrue(costWithCommute.isLt(costWithoutCommute));
 
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
     }
 }

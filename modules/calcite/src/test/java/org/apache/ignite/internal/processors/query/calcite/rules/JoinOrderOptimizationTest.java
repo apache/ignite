@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
@@ -126,10 +127,12 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         RuleApplyListener planLsnr = new RuleApplyListener(IgniteMultiJoinOptimizeRule.INSTANCE);
 
         // First, call with fixed join order.
-        List<List<?>> expectedResult = assertQuery(qryFixedJoins).withPlannerListener(planLsnr).check();
+        List<List<?>> expectedResult = new ArrayList<>();
+
+        assertQuery(qryFixedJoins).withPlannerListener(planLsnr).withResultChecker(expectedResult::addAll).check();
 
         // Ensure that the optimization rule wasn't fired.
-        assertFalse(planLsnr.check());
+        assertFalse(planLsnr.ruleSucceeded());
 
         assertFalse(expectedResult.isEmpty());
 
@@ -141,7 +144,7 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
         checker.check();
 
         // Ensure that the optimization rule has worked.
-        assertTrue(planLsnr.check());
+        assertTrue(planLsnr.ruleSucceeded());
     }
 
     /** */

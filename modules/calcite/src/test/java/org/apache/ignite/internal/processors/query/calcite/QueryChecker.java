@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -313,6 +314,9 @@ public abstract class QueryChecker {
     private RelOptListener planLsnr;
 
     /** */
+    private Consumer<List<List<?>>> resultChecker;
+
+    /** */
     public QueryChecker(String qry) {
         this(qry, null, SqlTransactionMode.NONE);
     }
@@ -362,6 +366,13 @@ public abstract class QueryChecker {
     }
 
     /** */
+    public QueryChecker withResultChecker(Consumer<List<List<?>>> resultChecker) {
+        this.resultChecker = resultChecker;
+
+        return this;
+    }
+
+    /** */
     public QueryChecker returns(Object... res) {
         if (expectedResult == null)
             expectedResult = new ArrayList<>();
@@ -405,7 +416,7 @@ public abstract class QueryChecker {
     }
 
     /** */
-    public List<List<?>> check() {
+    public void check() {
         // Check plan.
         QueryEngine engine = getEngine();
 
@@ -467,7 +478,8 @@ public abstract class QueryChecker {
             assertEqualsCollections(expectedResult, res);
         }
 
-        return res;
+        if (resultChecker != null)
+            resultChecker.accept(res);
     }
 
     /** */
