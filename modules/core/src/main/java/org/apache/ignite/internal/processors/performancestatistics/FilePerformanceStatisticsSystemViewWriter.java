@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -115,20 +114,25 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            buf.put(OperationType.VERSION.id());
-            buf.putShort(FILE_FORMAT_VERSION);
+            try {
+                buf.put(OperationType.VERSION.id());
+                buf.putShort(FILE_FORMAT_VERSION);
 
-            for (SystemView<?> view : sysViewMgr) {
-                if (isCancelled())
-                    break;
-                if (sysViewPredicate.test(view))
-                    systemView(view);
+                for (SystemView<?> view : sysViewMgr) {
+                    if (isCancelled())
+                        break;
+                    if (sysViewPredicate.test(view))
+                        systemView(view);
+                }
+
+                flush();
+                fileIo.force();
+
+                log.info("Finished writing system views to performance statistics file: " + file + '.');
             }
-
-            flush();
-
-
-            log.info("Finished writing system views to performance statistics file: " + file + '.');
+            catch (IOException e) {
+                log.error("Unable to write to the performance statistics file.", e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -137,21 +141,22 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         }
 
         /**  */
-        public void systemView(SystemView<?> view) {
+        public void systemView(SystemView<?> view) throws IOException {
             SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
 
             AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
 
             writeSchemaToBuf(walker, view.name());
 
-            view.forEach(row -> writeRowToBuf(row, valVisitor, walker));
+            for (Object row : view)
+                writeRowToBuf(row, valVisitor, walker);
         }
 
         /**
          * @param walker Walker to visit view attributes.
          * @param viewName View name.
          */
-        private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) {
+        private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) throws IOException {
             doWrite(buffer -> {
                 buffer.put(SYSTEM_VIEW_SCHEMA.id());
                 writeString(buf, viewName, cacheIfPossible(viewName));
@@ -165,7 +170,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
          * @param walker     Walker.
          */
         private void writeRowToBuf(Object row, AttributeWithValueWriterVisitor valVisitor,
-            SystemViewRowAttributeWalker<Object> walker) {
+            SystemViewRowAttributeWalker<Object> walker) throws IOException {
             if (isCancelled())
                 return;
 
@@ -176,7 +181,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         }
 
         /** */
-        private void doWrite(Consumer<ByteBuffer> consumer) {
+        private void doWrite(Consumer<ByteBuffer> consumer) throws IOException {
             if (isCancelled())
                 return;
 
@@ -192,14 +197,11 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         }
 
         /**  */
-        private void flush() {
-            try {
-                fileIo.write(buf.array(), 0, buf.position());
-            }
-            catch (IOException e) {
-                log.error("Failed to flush statistics file: " + file, e);
-                throw new IgniteInterruptedException(e.getMessage());
-            }
+        private void flush() throws IOException {
+            buf.flip();
+            fileIo.writeFully(buf);
+            buf.limit(buf.capacity());
+            buf.flip();
             buf.clear();
         }
     }
