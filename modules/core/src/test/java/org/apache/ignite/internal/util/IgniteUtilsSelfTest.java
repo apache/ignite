@@ -238,23 +238,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testOs() throws Exception {
         System.out.println("OS string: " + U.osString());
         System.out.println("JDK string: " + U.jdkString());
-        System.out.println("OS/JDK string: " + U.osJdkString());
 
         System.out.println("Is Windows: " + U.isWindows());
-        System.out.println("Is Windows 95: " + U.isWindows95());
-        System.out.println("Is Windows 98: " + U.isWindows98());
-        System.out.println("Is Windows NT: " + U.isWindowsNt());
-        System.out.println("Is Windows 2000: " + U.isWindows2k());
-        System.out.println("Is Windows 2003: " + U.isWindows2003());
-        System.out.println("Is Windows XP: " + U.isWindowsXp());
-        System.out.println("Is Windows Vista: " + U.isWindowsVista());
         System.out.println("Is Linux: " + U.isLinux());
         System.out.println("Is Mac OS: " + U.isMacOs());
-        System.out.println("Is Netware: " + U.isNetWare());
         System.out.println("Is Solaris: " + U.isSolaris());
-        System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
-        System.out.println("Is Solaris x86: " + U.isSolarisX86());
-        System.out.println("Is Windows7: " + U.isWindows7());
     }
 
     /**
@@ -462,74 +450,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             assert n.shiftRight(Long.SIZE).longValue() == id.getMostSignificantBits();
             assert n.longValue() == id.getLeastSignificantBits();
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testReadByteArray() {
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
-
-        Random rnd = new Random();
-
-        byte[] bytes = new byte[13];
-
-        rnd.nextBytes(bytes);
-
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes), ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.wrap(bytes))));
-
-        for (int i = 0; i < 1000; i++) {
-            int n = rnd.nextInt(100);
-
-            bytes = new byte[n];
-
-            rnd.nextBytes(bytes);
-
-            ByteBuffer[] bufs = new ByteBuffer[1 + rnd.nextInt(10)];
-
-            int x = 0;
-
-            for (int j = 0; j < bufs.length - 1; j++) {
-                int size = x == n ? 0 : rnd.nextInt(n - x);
-
-                bufs[j] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(x += size);
-            }
-
-            bufs[bufs.length - 1] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(n);
-
-            assertTrue(Arrays.equals(bytes, U.readByteArray(bufs)));
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testHashCodeFromBuffers() {
-        assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0)));
-        assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0), ByteBuffer.allocate(0)));
-
-        Random rnd = new Random();
-
-        for (int i = 0; i < 1000; i++) {
-            ByteBuffer[] bufs = new ByteBuffer[1 + rnd.nextInt(15)];
-
-            for (int j = 0; j < bufs.length; j++) {
-                byte[] bytes = new byte[rnd.nextInt(25)];
-
-                rnd.nextBytes(bytes);
-
-                bufs[j] = ByteBuffer.wrap(bytes);
-            }
-
-            assertEquals(U.hashCode(bufs), Arrays.hashCode(U.readByteArray(bufs)));
         }
     }
 
@@ -1230,7 +1150,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * 3)Simple strings. <br/>
      *
      * 4)Various combinations of strings with one, two, and three-byte
-     * characters with size greater than {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * characters with size greater than <code>65535</code>. <br/>
      *
      * @throws Exception If failed.
      */
@@ -1247,60 +1167,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 String readBigUTF = U.readLongString(dIn);
 
                 assertEquals(readLine, readBigUTF);
-            });
-        }
-    }
-
-    /**
-     * Testing method {@link IgniteUtils#writeCutString} using resource files,
-     * where each line is needed to test different cases: <br/>
-     * 1){@code null}. <br/>
-     *
-     * 2)Empty line. <br/>
-     *
-     * 3)Simple strings. <br/>
-     *
-     * 4)String containing single-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 5)String containing single-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 6)String containing two-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 7)String containing two-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 8)String containing three-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 9)String containing three-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testWriteLimitUTF() throws Exception {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            readLines("org.apache.ignite.util/limitUtf.txt", readLine -> {
-                baos.reset();
-
-                DataOutput dOut = new DataOutputStream(baos);
-                U.writeCutString(dOut, readLine);
-
-                DataInputStream dIn = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-                String readUTF = U.readString(dIn);
-
-                if (nonNull(readLine)) {
-                    AtomicInteger utfBytes = new AtomicInteger();
-
-                    readLine = readLine.chars()
-                        .filter(c -> utfBytes.addAndGet(U.utfBytes((char)c)) <= U.UTF_BYTE_LIMIT)
-                        .mapToObj(c -> String.valueOf((char)c)).collect(joining());
-                }
-
-                assertEquals(readLine, readUTF);
             });
         }
     }

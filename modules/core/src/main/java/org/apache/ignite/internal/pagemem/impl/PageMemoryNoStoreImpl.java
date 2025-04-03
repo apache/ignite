@@ -157,7 +157,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Concurrency lvl. */
     private final int lockConcLvl = IgniteSystemProperties.getInteger(
         IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL,
-        IgniteUtils.nearestPow2(Runtime.getRuntime().availableProcessors() * 4)
+        IgniteUtils.nearestPow2(Runtime.getRuntime().availableProcessors() * 4, true)
     );
 
     /** */

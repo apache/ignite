@@ -81,7 +81,6 @@ import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
-import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -149,8 +148,6 @@ import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -289,12 +286,6 @@ public abstract class IgniteUtils {
     /** */
     public static final long GB = 1024L * 1024 * 1024;
 
-    /**
-     * String limit in bytes for {@link DataOutput#writeUTF} and
-     * {@link DataInput#readUTF()}, that use "Modified UTF-8".
-     */
-    public static final int UTF_BYTE_LIMIT = 65_535;
-
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
 
@@ -372,9 +363,6 @@ public abstract class IgniteUtils {
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
-    /** OS JDK string. */
-    private static final String osJdkStr;
-
     /** OS string. */
     private static final String osStr;
 
@@ -426,17 +414,8 @@ public abstract class IgniteUtils {
     /** Indicates whether current OS is Linux flavor. */
     private static boolean linux;
 
-    /** Indicates whether current OS is NetWare. */
-    private static boolean netware;
-
     /** Indicates whether current OS is Mac OS. */
     private static boolean mac;
-
-    /** Indicates whether current OS architecture is Sun Sparc. */
-    private static boolean sparc;
-
-    /** Indicates whether current OS architecture is Intel X86. */
-    private static boolean x86;
 
     /** Name of the JDK. */
     private static String jdkName;
@@ -660,8 +639,6 @@ public abstract class IgniteUtils {
             else
                 unknownWin = true;
         }
-        else if (osLow.contains("netware"))
-            netware = true;
         else if (osLow.contains("mac os"))
             mac = true;
         else {
@@ -682,14 +659,6 @@ public abstract class IgniteUtils {
 
         String osArch = System.getProperty("os.arch");
 
-        String archStr = osArch.toLowerCase();
-
-        // OS architecture detection.
-        if (archStr.contains("x86"))
-            x86 = true;
-        else if (archStr.contains("sparc"))
-            sparc = true;
-
         String javaRtName = System.getProperty("java.runtime.name");
         String javaRtVer = System.getProperty("java.runtime.version");
         String jdkName = System.getProperty("java.specification.name");
@@ -706,7 +675,6 @@ public abstract class IgniteUtils {
             jvmImplVer;
 
         osStr = osName + ' ' + osVer + ' ' + osArch;
-        osJdkStr = osLow + ", " + jdkStr;
 
         // Copy auto variables to static ones.
         IgniteUtils.jdkName = jdkName;
@@ -1129,22 +1097,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Return SUN specific constructor factory.
-     *
-     * @return SUN specific constructor factory.
-     */
-    @Nullable public static Method ctorFactory() {
-        return CTOR_FACTORY;
-    }
-
-    /**
-     * @return Empty constructor for object class.
-     */
-    public static Constructor objectConstructor() {
-        return OBJECT_CTOR;
-    }
-
-    /**
      * SUN JDK specific reflection factory for objects without public constructor.
      *
      * @return Reflection factory for objects without public constructor.
@@ -1505,12 +1457,12 @@ public abstract class IgniteUtils {
             return cls.getDeclaredConstructor();
         }
         catch (Exception ignore) {
-            Method ctorFac = ctorFactory();
+            Method ctorFac = CTOR_FACTORY;
             Object sunRefFac = sunReflectionFactory();
 
             if (ctorFac != null && sunRefFac != null)
                 try {
-                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, objectConstructor());
+                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, OBJECT_CTOR);
                 }
                 catch (IllegalAccessException | InvocationTargetException e) {
                     throw new IgniteCheckedException("Failed to get object constructor for class: " + cls, e);
@@ -1695,20 +1647,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
-     * @param len Number of characters to fill in.
-     * @param ch Character to fill with.
-     * @return String.
-     */
-    public static String filler(int len, char ch) {
-        char[] a = new char[len];
-
-        Arrays.fill(a, ch);
-
-        return new String(a);
-    }
-
-    /**
      * Writes array to output stream.
      *
      * @param out Output stream.
@@ -1821,17 +1759,6 @@ public abstract class IgniteUtils {
     @Nullable public static <E> Collection<E> readCollection(ObjectInput in)
         throws IOException, ClassNotFoundException {
         return readList(in);
-    }
-
-    /**
-     *
-     * @param m Map to copy.
-     * @param <K> Key type.
-     * @param <V> Value type
-     * @return Copied map.
-     */
-    public static <K, V> Map<K, V> copyMap(Map<K, V> m) {
-        return new HashMap<>(m);
     }
 
     /**
@@ -2265,29 +2192,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Construct array with one trust manager which don't reject input certificates.
-     *
-     * @return Array with one X509TrustManager implementation of trust manager.
-     */
-    private static TrustManager[] getTrustManagers() {
-        return new TrustManager[] {
-            new X509TrustManager() {
-                @Nullable @Override public X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-
-                @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                    /* No-op. */
-                }
-
-                @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                    /* No-op. */
-                }
-            }
-        };
-    }
-
-    /**
      * Replace password in URI string with a single '*' character.
      * <p>
      * Parses given URI by applying &quot;.*://(.*:.*)@.*&quot;
@@ -2435,39 +2339,6 @@ public abstract class IgniteUtils {
         byte[] res = new byte[len];
 
         in.readFully(res);
-
-        return res;
-    }
-
-    /**
-     * Reads byte array from given buffers (changing buffer positions).
-     *
-     * @param bufs Byte buffers.
-     * @return Byte array.
-     */
-    public static byte[] readByteArray(ByteBuffer... bufs) {
-        assert !F.isEmpty(bufs);
-
-        int size = 0;
-
-        for (ByteBuffer buf : bufs)
-            size += buf.remaining();
-
-        byte[] res = new byte[size];
-
-        int off = 0;
-
-        for (ByteBuffer buf : bufs) {
-            int len = buf.remaining();
-
-            if (len != 0) {
-                buf.get(res, off, len);
-
-                off += len;
-            }
-        }
-
-        assert off == res.length;
 
         return res;
     }
@@ -3128,17 +2999,6 @@ public abstract class IgniteUtils {
         }
 
         return cnt;
-    }
-
-    /**
-     * Writes string to file.
-     *
-     * @param file File.
-     * @param s String to write.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static void writeStringToFile(File file, String s) throws IOException {
-        writeStringToFile(file, s, Charset.defaultCharset().toString(), false);
     }
 
     /**
@@ -3853,22 +3713,6 @@ public abstract class IgniteUtils {
             }
             catch (IOException e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable Selector rsrc) {
-        if (rsrc != null)
-            try {
-                if (rsrc.isOpen())
-                    rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
             }
     }
 
@@ -4892,28 +4736,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Calculates hash code for the given byte buffers contents. Compatible with {@link Arrays#hashCode(byte[])}
-     * with the same content. Does not change buffers positions.
-     *
-     * @param bufs Byte buffers.
-     * @return Hash code.
-     */
-    public static int hashCode(ByteBuffer... bufs) {
-        int res = 1;
-
-        for (ByteBuffer buf : bufs) {
-            int pos = buf.position();
-
-            while (buf.hasRemaining())
-                res = 31 * res + buf.get();
-
-            buf.position(pos);
-        }
-
-        return res;
-    }
-
-    /**
      * @param out Output.
      * @param map Map to write.
      * @throws IOException If write failed.
@@ -5104,27 +4926,16 @@ public abstract class IgniteUtils {
     /**
      * Writes string to output stream accounting for {@code null} values.
      * <p>
-     * Limitation for max string lenght of {@link #UTF_BYTE_LIMIT} bytes is caused by {@link ObjectOutputStream#writeUTF}
+     * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
      * used under the hood to perform an actual write.
      * </p>
      * <p>
      * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
      * </p>
      * <p>
-     * To write longer strings use one of two options:
-     * <ul>
-     *     <li>
-     *         {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
-     *         encoded characters.
-     *         To read the value back {@link #readLongString(DataInput)} should be used.
-     *     </li>
-     *     <li>
-     *         {@link #writeCutString(DataOutput, String)} cuts passed string to {@link #UTF_BYTE_LIMIT} bytes
-     *         and then writes them without converting to byte array.
-     *         No exceptions will be thrown for string of any length; written string can be read back with regular
-     *         {@link #readString(DataInput)} method.
-     *     </li>
-     * </ul>
+     * To write longer strings use {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
+     * encoded characters.
+     * To read the value back {@link #readLongString(DataInput)} should be used.
      * </p>
      *
      * @param out Output stream to write to.
@@ -5142,10 +4953,9 @@ public abstract class IgniteUtils {
     /**
      * Reads string from input stream accounting for {@code null} values.
      *
-     * Method enables to read strings shorter than {@link #UTF_BYTE_LIMIT} bytes in UTF-8 otherwise an exception will be thrown.
+     * Method enables to read strings shorter than <code>65535</code> bytes in UTF-8 otherwise an exception will be thrown.
      *
-     * Strings written by {@link #writeString(DataOutput, String)} or {@link #writeCutString(DataOutput, String)}
-     * can be read by this method.
+     * Strings written by {@link #writeString(DataOutput, String)} can be read by this method.
      *
      * @see #writeString(DataOutput, String) for more information about writing strings.
      *
@@ -5986,15 +5796,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets OS JDK string.
-     *
-     * @return OS JDK string.
-     */
-    public static String osJdkString() {
-        return osJdkStr;
-    }
-
-    /**
      * Gets OS string.
      *
      * @return OS string.
@@ -6040,39 +5841,12 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Indicates whether current OS is Netware.
-     *
-     * @return {@code true} if current OS is Netware - {@code false} otherwise.
-     */
-    public static boolean isNetWare() {
-        return netware;
-    }
-
-    /**
      * Indicates whether current OS is Solaris.
      *
      * @return {@code true} if current OS is Solaris (SPARC or x86) - {@code false} otherwise.
      */
     public static boolean isSolaris() {
         return solaris;
-    }
-
-    /**
-     * Indicates whether current OS is Solaris on Spark box.
-     *
-     * @return {@code true} if current OS is Solaris SPARC - {@code false} otherwise.
-     */
-    public static boolean isSolarisSparc() {
-        return solaris && sparc;
-    }
-
-    /**
-     * Indicates whether current OS is Solaris on x86 box.
-     *
-     * @return {@code true} if current OS is Solaris x86 - {@code false} otherwise.
-     */
-    public static boolean isSolarisX86() {
-        return solaris && x86;
     }
 
     /**
@@ -6092,78 +5866,6 @@ public abstract class IgniteUtils {
     public static boolean isWindows() {
         return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
             win2003 || win2008 || winVista || unknownWin;
-    }
-
-    /**
-     * Indicates whether current OS is Windows Vista.
-     *
-     * @return {@code true} if current OS is Windows Vista - {@code false} otherwise.
-     */
-    public static boolean isWindowsVista() {
-        return winVista;
-    }
-
-    /**
-     * Indicates whether current OS is Windows 7.
-     *
-     * @return {@code true} if current OS is Windows 7 - {@code false} otherwise.
-     */
-    public static boolean isWindows7() {
-        return win7;
-    }
-
-    /**
-     * Indicates whether current OS is Windows 2000.
-     *
-     * @return {@code true} if current OS is Windows 2000 - {@code false} otherwise.
-     */
-    public static boolean isWindows2k() {
-        return win2k;
-    }
-
-    /**
-     * Indicates whether current OS is Windows Server 2003.
-     *
-     * @return {@code true} if current OS is Windows Server 2003 - {@code false} otherwise.
-     */
-    public static boolean isWindows2003() {
-        return win2003;
-    }
-
-    /**
-     * Indicates whether current OS is Windows 95.
-     *
-     * @return {@code true} if current OS is Windows 95 - {@code false} otherwise.
-     */
-    public static boolean isWindows95() {
-        return win95;
-    }
-
-    /**
-     * Indicates whether current OS is Windows 98.
-     *
-     * @return {@code true} if current OS is Windows 98 - {@code false} otherwise.
-     */
-    public static boolean isWindows98() {
-        return win98;
-    }
-
-    /**
-     * Indicates whether current OS is Windows NT.
-     *
-     * @return {@code true} if current OS is Windows NT - {@code false} otherwise.
-     */
-    public static boolean isWindowsNt() {
-        return winNt;
-    }
-
-    /**
-     * Indicates whether current OS is Windows XP.
-     *
-     * @return {@code true} if current OS is Windows XP- {@code false} otherwise.
-     */
-    public static boolean isWindowsXp() {
-        return winXp;
     }
 
     /**
@@ -6468,19 +6170,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Swaps two objects in array.
-     *
-     * @param arr Array.
-     * @param a Index of the first object.
-     * @param b Index of the second object.
-     */
-    public static void swap(Object[] arr, int a, int b) {
-        Object tmp = arr[a];
-        arr[a] = arr[b];
-        arr[b] = tmp;
-    }
-
-    /**
      * Returns array which is the union of two arrays
      * (array of elements contained in any of provided arrays).
      * <p/>
@@ -6618,20 +6307,6 @@ public abstract class IgniteUtils {
         assert 0 <= len && len <= arr.length;
 
         return len == arr.length ? arr : Arrays.copyOf(arr, len);
-    }
-
-    /**
-     * Adds values to collection and returns the same collection to allow chaining.
-     *
-     * @param c Collection to add values to.
-     * @param vals Values.
-     * @param <V> Value type.
-     * @return Passed in collection.
-     */
-    public static <V, C extends Collection<? super V>> C addAll(C c, V... vals) {
-        Collections.addAll(c, vals);
-
-        return c;
     }
 
     /**
@@ -6791,23 +6466,6 @@ public abstract class IgniteUtils {
         Class<?> cls = obj.getClass();
 
         return cls.isArray() && cls.getComponentType().isPrimitive();
-    }
-
-    /**
-     * Awaits for condition.
-     *
-     * @param cond Condition to await for.
-     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
-     */
-    public static void await(Condition cond) throws IgniteInterruptedCheckedException {
-        try {
-            cond.await();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
     }
 
     /**
@@ -8221,13 +7879,16 @@ public abstract class IgniteUtils {
                 File readme = new File(igniteDir, "README.txt");
 
                 if (!readme.exists()) {
-                    writeStringToFile(readme,
+                    writeStringToFile(
+                        readme,
                         "This is Apache Ignite working directory that contains information that \n" +
                         "    Ignite nodes need in order to function normally.\n" +
                         "Don't delete it unless you're sure you know what you're doing.\n\n" +
                         "You can change the location of working directory with \n" +
                         "    igniteConfiguration.setWorkDirectory(location) or \n" +
-                        "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                        "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n",
+                        Charset.defaultCharset().toString(),
+                        false);
                 }
             }
             catch (Exception ignore) {
@@ -8524,60 +8185,6 @@ public abstract class IgniteUtils {
             return new GridLeanMap<>(limit);
 
         return new HashMap<>(capacity(limit), 0.75f);
-    }
-
-    /**
-     * Create a map with single key-value pair.
-     *
-     * @param k Key.
-     * @param v Value.
-     * @return Map.
-     */
-    public static <K, V> Map<K, V> map(K k, V v) {
-        GridLeanMap<K, V> map = new GridLeanMap<>(1);
-
-        map.put(k, v);
-
-        return map;
-    }
-
-    /**
-     * Create a map with two key-value pairs.
-     *
-     * @param k1 Key 1.
-     * @param v1 Value 1.
-     * @param k2 Key 2.
-     * @param v2 Value 2.
-     * @return Map.
-     */
-    public static <K, V> Map<K, V> map(K k1, V v1, K k2, V v2) {
-        GridLeanMap<K, V> map = new GridLeanMap<>(2);
-
-        map.put(k1, v1);
-        map.put(k2, v2);
-
-        return map;
-    }
-
-    /**
-     * Create a map with three key-value pairs.
-     *
-     * @param k1 Key 1.
-     * @param v1 Value 1.
-     * @param k2 Key 2.
-     * @param v2 Value 2.
-     * @param k3 Key 3.
-     * @param v3 Value 3.
-     * @return Map.
-     */
-    public static <K, V> Map<K, V> map(K k1, V v1, K k2, V v2, K k3, V v3) {
-        GridLeanMap<K, V> map = new GridLeanMap<>(3);
-
-        map.put(k1, v1);
-        map.put(k2, v2);
-        map.put(k3, v3);
-
-        return map;
     }
 
     /**
@@ -9365,13 +8972,6 @@ public abstract class IgniteUtils {
 
     /**
      * @param x X.
-     */
-    public static int nearestPow2(int x) {
-        return nearestPow2(x, true);
-    }
-
-    /**
-     * @param x X.
      * @param less Less.
      */
     public static int nearestPow2(int x, boolean less) {
@@ -9943,18 +9543,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param stripes Number of stripes.
-     * @param grpId Group Id.
-     * @param partId Partition Id.
-     * @return Stripe idx.
-     */
-    public static int stripeIdx(int stripes, int grpId, int partId) {
-        assert partId >= 0;
-
-        return Math.abs((Math.abs(grpId) + partId)) % stripes;
-    }
-
-    /**
      * Notifies provided {@code lsnrs} with the value {@code t}.
      *
      * @param t Consumed object.
@@ -10004,7 +9592,7 @@ public abstract class IgniteUtils {
     /**
      * Writes string to output stream accounting for {@code null} values. <br/>
      *
-     * This method can write string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
+     * This method can write string of any length, limit of <code>65535</code> is not applied.
      *
      * @param out Output stream to write to.
      * @param s String to write, possibly {@code null}.
@@ -10044,7 +9632,7 @@ public abstract class IgniteUtils {
     /**
      * Reads string from input stream accounting for {@code null} values. <br/>
      *
-     * This method can read string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
+     * This method can read string of any length, limit of <code>65535</code> is not applied.
      *
      * @param in Stream to read from.
      * @return Read string, possibly {@code null}.
@@ -10102,42 +9690,6 @@ public abstract class IgniteUtils {
         }
 
         return strBuilder.toString();
-    }
-
-    /**
-     * Writes string to output stream accounting for {@code null} values. <br/>
-     *
-     * <p>
-     *     Uses {@link ObjectOutputStream#writeUTF(String)} to write the string under the hood
-     *     but cuts strings longer than {@link #UTF_BYTE_LIMIT} to the limit to avoid {@link UTFDataFormatException}.
-     * </p>
-     *
-     * <p>
-     *     Strings written by the method can be read by {@link #readString(DataInput)}.
-     * </p>
-     *
-     * @see #writeString(DataOutput, String) for more information.
-     *
-     * @param out Output stream to write to.
-     * @param s String to write, possibly {@code null}.
-     * @throws IOException If write failed.
-     */
-    public static void writeCutString(DataOutput out, @Nullable String s) throws IOException {
-        // Write null flag.
-        out.writeBoolean(isNull(s));
-
-        if (isNull(s))
-            return;
-
-        //Conversion of string to limit.
-        for (int i = 0, bs = 0; i < s.length(); i++) {
-            if ((bs += utfBytes(s.charAt(i))) > UTF_BYTE_LIMIT) {
-                s = s.substring(0, i);
-                break;
-            }
-        }
-
-        out.writeUTF(s);
     }
 
     /**
