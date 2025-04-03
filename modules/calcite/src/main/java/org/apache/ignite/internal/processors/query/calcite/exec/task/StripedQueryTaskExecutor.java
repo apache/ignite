@@ -59,7 +59,7 @@ public class StripedQueryTaskExecutor extends AbstractQueryTaskExecutor {
         IgniteStripedThreadPoolExecutor executor = new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
-            "calciteQry",
+            THREAD_PREFIX,
             this,
             false,
             0

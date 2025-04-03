@@ -58,7 +58,7 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
         super.onStart(ctx);
 
         executor = new IgniteThreadPoolExecutor(
-            "calciteQry",
+            THREAD_PREFIX,
             ctx.igniteInstanceName(),
             ctx.config().getQueryThreadPoolSize(),
             ctx.config().getQueryThreadPoolSize(),

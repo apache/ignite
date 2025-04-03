@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -50,6 +51,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -60,6 +62,9 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -806,6 +811,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     @Test
     @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "100")
     public void testStarvationMessageStripedExecutor() throws Exception {
+        assertTrue(queryProcessor(grid(0)).taskExecutor() instanceof StripedQueryTaskExecutor);
+
         checkStarvation();
     }
 
@@ -814,6 +821,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "100")
     @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
     public void testStarvationMessageBlockingExecutor() throws Exception {
+        assertTrue(queryProcessor(grid(0)).taskExecutor() instanceof QueryBlockingTaskExecutor);
+
         checkStarvation();
     }
 
@@ -846,6 +855,77 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testUdfQueryWarningStripedExecutor() throws Exception {
+        assertTrue(queryProcessor(grid(0)).taskExecutor() instanceof StripedQueryTaskExecutor);
+
+        checkUdfQueryWarning("-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true");
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
+    public void testUdfQueryWarningBlockingExecutor() throws Exception {
+        assertTrue(queryProcessor(grid(0)).taskExecutor() instanceof QueryBlockingTaskExecutor);
+
+        checkUdfQueryWarning("IgniteConfiguration.QueryThreadPoolSize");
+    }
+
+    /** */
+    private void checkUdfQueryWarning(String tipsMsg) throws Exception {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            .setSqlFunctionClasses(FunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+        );
+
+        LogListener logLsnr1 = LogListener.matches("Detected query initiated by user-defined function.").build();
+        LogListener logLsnr2 = LogListener.matches(tipsMsg).build();
+
+        log.registerListener(logLsnr1);
+        log.registerListener(logLsnr2);
+
+        // Check that message is not printed for regular query.
+        sql(grid(0), "SELECT ?", "Test");
+
+        assertFalse(logLsnr1.check());
+        assertFalse(logLsnr2.check());
+
+        // Check that message is printed for UDF initiated query.
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT innerSql(?, ?, ?)",
+            grid(0).name(), DEFAULT_CACHE_NAME, "Test"));
+
+        assertTrue(logLsnr1.check(1_000L));
+        assertTrue(logLsnr2.check());
+
+        cancelAllQueriesAndWaitForCompletion(grid(0), fut);
+
+        // Check that message is printed only once.
+        logLsnr1.reset();
+        logLsnr2.reset();
+
+        fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT innerSql(?, ?, ?)",
+            grid(0).name(), DEFAULT_CACHE_NAME, "Test"));
+
+        assertFalse(logLsnr1.check(1_000L));
+        assertFalse(logLsnr2.check());
+
+        cancelAllQueriesAndWaitForCompletion(grid(0), fut);
+    }
+
+    /** */
+    private void cancelAllQueriesAndWaitForCompletion(IgniteEx ignite, IgniteInternalFuture<?> qryFut) {
+        ignite.context().query().runningQueryManager().runningSqlQueries().forEach(GridRunningQueryInfo::cancel);
+
+        try {
+            // Wait for future completion, it can be successful or unsuccessful.
+            qryFut.get();
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+    }
+
+    /** */
     public static class FunctionsLibrary {
         /** */
         static volatile CountDownLatch latch;
@@ -862,6 +942,15 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             }
 
             return true;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String innerSql(String ignite, String cache, String val) {
+            return (String)Ignition.ignite(ignite)
+                .cache(cache)
+                .query(new SqlFieldsQuery("SELECT ?").setArgs(val))
+                .getAll().get(0).get(0);
         }
     }
 }
