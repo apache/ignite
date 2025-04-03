@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -62,7 +62,7 @@ class H2CachedStatementKey {
 
         H2CachedStatementKey other = (H2CachedStatementKey)o;
 
-        return F.eq(sql, other.sql) && F.eq(schemaName, other.schemaName) && flags == other.flags;
+        return Objects.equals(sql, other.sql) && Objects.equals(schemaName, other.schemaName) && flags == other.flags;
     }
 
     /** {@inheritDoc} */

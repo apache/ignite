@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -643,7 +644,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
             Object oldVal = attrsIntersect.putIfAbsent(name, val);
 
-            if (F.eq(val, oldVal))
+            if (Objects.equals(val, oldVal))
                 return this;
 
             return oldVal != null && val != null ? EMPTY_PROJECTION :

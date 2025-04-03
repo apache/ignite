@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
@@ -65,7 +66,7 @@ public class F0 {
     public static <T> IgnitePredicate<T> notEqualTo(@Nullable final T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
-                return !F.eq(t, target);
+                return !Objects.equals(t, target);
             }
         };
     }
@@ -100,7 +101,7 @@ public class F0 {
     public static <T> IgnitePredicate<T> equalTo(@Nullable final T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
-                return F.eq(t, target);
+                return Objects.equals(t, target);
             }
         };
     }

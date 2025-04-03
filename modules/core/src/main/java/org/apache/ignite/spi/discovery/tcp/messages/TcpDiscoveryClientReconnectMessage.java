@@ -18,9 +18,9 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -106,9 +106,9 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
 
         TcpDiscoveryClientReconnectMessage other = (TcpDiscoveryClientReconnectMessage)obj;
 
-        return F.eq(creatorNodeId(), other.creatorNodeId()) &&
-            F.eq(routerNodeId, other.routerNodeId) &&
-            F.eq(lastMsgId, other.lastMsgId);
+        return Objects.equals(creatorNodeId(), other.creatorNodeId()) &&
+            Objects.equals(routerNodeId, other.routerNodeId) &&
+            Objects.equals(lastMsgId, other.lastMsgId);
     }
 
     /** {@inheritDoc} */

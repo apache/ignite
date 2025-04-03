@@ -728,7 +728,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param root Root directory.
-     * @return Array of cache data files.
+     * @return List of cache data files.
      */
     public static List<File> existingCacheConfigFiles(File root) {
         if (cacheDir(root)) {
@@ -737,6 +737,14 @@ public class NodeFileTree extends SharedFileTree {
             return cfg.exists() ? Collections.singletonList(cfg) : Collections.emptyList();
         }
 
+        return allExisingConfigFiles(root);
+    }
+
+    /**
+     * @param root Root directory.
+     * @return List of cache data files regardless directory name.
+     */
+    public static List<File> allExisingConfigFiles(File root) {
         return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
     }
 

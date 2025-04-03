@@ -2342,7 +2342,7 @@ public abstract class PagesList extends DataStructure {
 
             Stripe stripe = (Stripe)o;
 
-            return F.eq(tailId, stripe.tailId) && F.eq(empty, stripe.empty);
+            return Objects.equals(tailId, stripe.tailId) && Objects.equals(empty, stripe.empty);
         }
 
         /** {@inheritDoc} */

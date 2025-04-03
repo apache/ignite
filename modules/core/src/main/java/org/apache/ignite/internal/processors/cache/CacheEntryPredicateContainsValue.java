@@ -22,7 +22,6 @@ import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -69,7 +68,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
         GridCacheContext cctx = e.context();
 
         if (this.val instanceof BinaryObject && val instanceof BinaryObject)
-            return F.eq(val, this.val);
+            return Objects.equals(val, this.val);
 
         Object thisVal = CU.value(this.val, cctx, false);
         Object cacheVal = CU.value(val, cctx, false);
@@ -77,7 +76,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
         if (thisVal.getClass().isArray())
             return Objects.deepEquals(thisVal, cacheVal);
 
-        return F.eq(thisVal, cacheVal);
+        return Objects.equals(thisVal, cacheVal);
     }
 
     /** {@inheritDoc} */
