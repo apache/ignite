@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -312,8 +311,7 @@ public class FilePerformanceStatisticsReader {
             try {
                 viewObj.walker(walkerName.str);
             }
-            catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
-                   IllegalAccessException e) {
+            catch (ReflectiveOperationException e) {
                 throw new IOException("Could not find walker: " + walkerName);
             }
             return true;
@@ -686,7 +684,7 @@ public class FilePerformanceStatisticsReader {
         }
 
         /** */
-        public void walker(String walkerName) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        public void walker(String walkerName) throws ReflectiveOperationException {
             walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
 
             schemaVisitor.clear();
