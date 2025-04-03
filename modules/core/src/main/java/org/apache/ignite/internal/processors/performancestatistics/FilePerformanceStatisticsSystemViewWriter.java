@@ -83,9 +83,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
             "metrics",
             "caches",
             "sql.queries",
-            "nodes",
-            "statisticsPartitionData",
-            "partitionStates");
+            "nodes");
         sysViewPredicate = view -> !ignoredViews.contains(view.name());
     }
 

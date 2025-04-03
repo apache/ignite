@@ -39,9 +39,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
         "metrics",
         "caches",
         "sql.queries",
-        "nodes",
-        "statisticsPartitionData",
-        "partitionStates");
+        "nodes");
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger();
