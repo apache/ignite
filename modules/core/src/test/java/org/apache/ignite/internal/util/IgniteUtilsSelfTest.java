@@ -239,7 +239,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param mins Minutes to test.
      */
     private void printFormatMins(long mins) {
-        System.out.println("For " + mins + " minutes: " + X.formatMins(mins));
+        System.out.println("For " + mins + " minutes: " + U.formatMins(mins));
     }
 
     /**

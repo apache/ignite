@@ -77,7 +77,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         else if (size == 5)
             map = new Map5<>();
         else
-            map = new LeanHashMap<>(IgniteUtils.capacity(size), 0.75f);
+            map = new LeanHashMap<>(CommonsUtils.capacity(size), 0.75f);
     }
 
     /**
@@ -251,7 +251,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, V>> entrySet() {
+    @Override public Set<Map.Entry<K, V>> entrySet() {
         return new EntrySet();
     }
 

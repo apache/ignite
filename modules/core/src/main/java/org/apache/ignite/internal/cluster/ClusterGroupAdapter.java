@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -733,7 +734,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 new ClusterGroupAdapter(g.context(), p);
         }
         catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
         }
     }
 

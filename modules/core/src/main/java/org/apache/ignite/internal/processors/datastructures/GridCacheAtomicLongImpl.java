@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -277,7 +278,7 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
             return t.get1().dataStructures().atomicLong(t.get2(), null, 0L, false);
         }
         catch (IgniteCheckedException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

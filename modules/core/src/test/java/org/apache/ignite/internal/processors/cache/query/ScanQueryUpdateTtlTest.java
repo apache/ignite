@@ -32,7 +32,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -94,7 +94,7 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
         private static int maxKeyBatchCnt = 0;
 
         /** */
-        private static final Map<KeyCacheObject, Integer> keyCnt = new ConcurrentHashMap<>(U.capacity(KEYS));
+        private static final Map<KeyCacheObject, Integer> keyCnt = new ConcurrentHashMap<>(CommonsUtils.capacity(KEYS));
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)

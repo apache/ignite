@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1484,7 +1485,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             return lock;
         }
         catch (IgniteCheckedException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

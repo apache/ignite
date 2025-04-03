@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -2403,7 +2404,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             return cache.context();
         }
         catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

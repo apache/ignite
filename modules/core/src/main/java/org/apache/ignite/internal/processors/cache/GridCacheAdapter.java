@@ -117,6 +117,7 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.transactions.TransactionCheckedException;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -4009,7 +4010,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return IgnitionEx.localIgnite().cachex(t.get2());
         }
         catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+            throw CommonsUtils.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
             stash.remove();

@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -326,7 +327,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         addrSnds = new ArrayList<>(locAddrs.size());
 
-        reqItfs = new HashSet<>(U.capacity(locAddrs.size())); // Interfaces used to send requests.
+        reqItfs = new HashSet<>(CommonsUtils.capacity(locAddrs.size())); // Interfaces used to send requests.
 
         for (InetAddress addr : locAddrs) {
             try {
