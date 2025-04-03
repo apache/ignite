@@ -712,7 +712,7 @@ public class FilePerformanceStatisticsReader {
         /**
          * @return System view row.
          */
-        List<Object> call() {
+        public List<Object> call() {
             rowVisitor.clear();
             walker.visitAll(rowVisitor);
             return rowVisitor.row();
