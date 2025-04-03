@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -938,7 +939,7 @@ public class GridCacheUtils {
         assert attrName != null;
         assert attrMsg != null;
 
-        if (!F.eq(locVal, rmtVal))
+        if (!Objects.equals(locVal, rmtVal))
             throwIgniteCheckedException(log, fail,
                 attrMsg + " mismatch [" +
                     "cacheName=" + cfgName + ", " +
@@ -965,7 +966,7 @@ public class GridCacheUtils {
         Object val1,
         Object val2,
         boolean fail) throws IgniteCheckedException {
-        if (F.eq(val1, val2))
+        if (Objects.equals(val1, val2))
             return;
 
         if (fail) {

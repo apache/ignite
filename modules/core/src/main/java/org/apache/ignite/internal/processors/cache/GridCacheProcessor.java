@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -3362,7 +3363,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cfg != null;
 
-            if (F.eq(cacheName, cfg.getName())) {
+            if (Objects.equals(cacheName, cfg.getName())) {
                 cfgTemplate = desc;
 
                 break;

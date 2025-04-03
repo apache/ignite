@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -695,7 +696,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
                 row -> {
                     Object id = row.get("ID");
 
-                    return F.eq(id, 1L) || F.eq(id, 256L) || F.eq(id, 42L);
+                    return Objects.equals(id, 1L) || Objects.equals(id, 256L) || Objects.equals(id, 42L);
                 },
                 "AGE");
 

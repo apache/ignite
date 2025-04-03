@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import org.apache.ignite.internal.util.lang.GridFunc;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -43,7 +43,7 @@ public class NotEqualPredicate<T> implements IgnitePredicate<T> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(T t) {
-        return !GridFunc.eq(t, target);
+        return !Objects.equals(t, target);
     }
 
     /** {@inheritDoc} */

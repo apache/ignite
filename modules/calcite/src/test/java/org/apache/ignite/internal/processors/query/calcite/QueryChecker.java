@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -489,7 +490,7 @@ public abstract class QueryChecker {
             Object item1 = it1.next();
             Object item2 = it2.next();
 
-            if (!F.eq(item1, item2))
+            if (!Objects.equals(item1, item2))
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
@@ -515,7 +516,7 @@ public abstract class QueryChecker {
                 Object item1 = it1.next();
                 Object item2 = it2.next();
 
-                if (F.eq(item1, item2))
+                if (Objects.equals(item1, item2))
                     continue;
 
                 if (item1 == null)

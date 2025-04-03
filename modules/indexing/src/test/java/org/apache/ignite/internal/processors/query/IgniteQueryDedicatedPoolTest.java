@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CyclicBarrier;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -152,7 +152,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
             QueryCursor<Cache.Entry<Object, Object>> cursor = cache.query(
                 new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
                     @Override public boolean apply(Object o, Object o2) {
-                        return F.eq(GridIoManager.currentPolicy(), GridIoPolicy.QUERY_POOL);
+                        return Objects.equals(GridIoManager.currentPolicy(), GridIoPolicy.QUERY_POOL);
                     }
                 }));
 
