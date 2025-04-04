@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -588,7 +589,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             Collection<GridCacheVersionedFuture<?>> old = verFuts.get(fut.version());
 
             if (old == null) {
-                Collection<GridCacheVersionedFuture<?>> col = new HashSet<GridCacheVersionedFuture<?>>(U.capacity(1), 0.75f) {
+                Collection<GridCacheVersionedFuture<?>> col = new HashSet<GridCacheVersionedFuture<?>>(CommonsUtils.capacity(1), 0.75f) {
                     {
                         // Make sure that we add future to queue before
                         // adding queue to the map of futures.

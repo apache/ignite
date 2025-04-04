@@ -220,6 +220,7 @@ import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUt
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
+import static org.apache.ignite.internal.util.CommonsUtils.capacity;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -5207,7 +5208,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void enableStatistics(Collection<String> cacheNames, boolean enabled) throws IgniteCheckedException {
         Collection<IgniteInternalCache> caches = manageStatisticsCaches(cacheNames);
 
-        Collection<String> globalCaches = new HashSet<>(U.capacity(caches.size()));
+        Collection<String> globalCaches = new HashSet<>(capacity(caches.size()));
 
         for (IgniteInternalCache cache : caches) {
             cache.context().statisticsEnabled(enabled);
@@ -5237,7 +5238,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void clearStatistics(Collection<String> cacheNames) throws IgniteCheckedException {
         Collection<IgniteInternalCache> caches = manageStatisticsCaches(cacheNames);
 
-        Collection<String> globalCaches = new HashSet<>(U.capacity(caches.size()));
+        Collection<String> globalCaches = new HashSet<>(capacity(caches.size()));
 
         for (IgniteInternalCache cache : caches)
             globalCaches.add(cache.name());

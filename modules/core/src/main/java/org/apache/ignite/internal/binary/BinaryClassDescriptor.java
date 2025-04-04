@@ -46,6 +46,7 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1106,7 +1107,7 @@ public class BinaryClassDescriptor {
         assert cls != null;
 
         try {
-            Constructor<?> ctor = U.forceEmptyConstructor(cls);
+            Constructor<?> ctor = CommonsUtils.forceEmptyConstructor(cls);
 
             if (ctor == null)
                 throw new BinaryObjectException("Failed to find empty constructor for class: " + cls.getName());

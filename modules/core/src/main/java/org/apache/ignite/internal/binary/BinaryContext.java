@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryP
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -276,7 +277,7 @@ public class BinaryContext {
 
         // IDs range [200..1000] is used by Ignite internal APIs.
 
-        if (U.sunReflectionFactory() == null) {
+        if (CommonsUtils.sunReflectionFactory() == null) {
             U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
                 "default constructor is not possible");
         }

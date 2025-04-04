@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,7 +106,7 @@ public class IdealAffinityAssignment {
                 ClusterNode primary = affNodes.get(0);
 
                 primaryPartitions.computeIfAbsent(primary.consistentId(),
-                    id -> new HashSet<>(U.capacity(size / nodesSize * 2))).add(p);
+                    id -> new HashSet<>(CommonsUtils.capacity(size / nodesSize * 2))).add(p);
             }
         }
 

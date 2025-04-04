@@ -38,13 +38,13 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSt
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.util.CommonsUtils.capacity;
 
 /**
  * Transaction created by system implicitly on remote nodes.
@@ -127,7 +127,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         txState = single ? new IgniteTxRemoteSingleStateImpl() :
             new IgniteTxRemoteStateImpl(
                 Collections.emptyMap(),
-                new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1));
+                new ConcurrentLinkedHashMap<>(capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
@@ -197,7 +197,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         txState = new IgniteTxRemoteStateImpl(
             Collections.emptyMap(),
-            new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1));
+            new ConcurrentLinkedHashMap<>(capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
