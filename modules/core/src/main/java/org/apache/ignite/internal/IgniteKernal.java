@@ -864,6 +864,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         Thread.UncaughtExceptionHandler hnd,
         TimeBag startTimer
     ) throws IgniteCheckedException {
+        initializeToStringBuilder();
+
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -948,8 +950,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             mBeansMgr = new IgniteMBeansManager(this);
 
             initializeMarshaller();
-
-            initializeToStringBuilder();
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
@@ -1511,7 +1511,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (!BinaryMarshaller.available())
             return;
 
-        GridToStringBuilder.fieldDescFactory = UnsafeToStringFieldDescriptor::new;
+        GridToStringBuilder.fldDescFactory = UnsafeToStringFieldDescriptor::new;
     }
 
     /**
