@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -140,7 +141,7 @@ public class CdcIndexRebuildTest extends AbstractCdcTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistry mreg, Path cdcDir) {
             // No-op.
         }
 
