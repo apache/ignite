@@ -20,6 +20,7 @@ package org.apache.ignite.spi.indexing.noop;
 import java.util.Collection;
 import java.util.Iterator;
 import javax.cache.Cache;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
@@ -64,5 +65,10 @@ public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         super.setName(name);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NoopIndexingSpi.class, this);
     }
 }

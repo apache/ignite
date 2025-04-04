@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 
@@ -44,5 +45,11 @@ public class WriteOnlyZipFileIOFactory extends BufferedFileIOFactory {
         String entryName = file.getName().substring(0, file.getName().length() - ZIP_SUFFIX.length());
 
         return new WriteOnlyZipFileIO(factory.create(file, modes), entryName);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(WriteOnlyZipFileIOFactory.class, this);
     }
 }
