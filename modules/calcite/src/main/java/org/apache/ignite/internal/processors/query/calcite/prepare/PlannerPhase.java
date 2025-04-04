@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.hep.HepMatchOrder;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -64,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRu
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
 
@@ -137,6 +141,24 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public Program getProgram(PlanningContext ctx) {
             return hep(getRules(ctx));
+        }
+    },
+
+    /** */
+    HEP_OPTIMIZE_JOIN_ORDER("Heuristic phase to optimize joins order") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return ctx.rules(RuleSets.ofList(IgniteMultiJoinOptimizeRule.INSTANCE));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            HepProgram sub = new HepProgramBuilder()
+                .addMatchOrder(HepMatchOrder.BOTTOM_UP)
+                .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
+                .build();
+
+            return hep(getRules(ctx), sub);
         }
     },
 
