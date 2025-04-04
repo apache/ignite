@@ -189,7 +189,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -223,7 +222,6 @@ import static java.util.Optional.ofNullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
@@ -360,14 +358,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Description of the configuration system view. */
     public static final String CFG_VIEW_DESC = "Node configuration";
 
-    /**
-     * Default interval of checking thread pool state for the starvation. Will be used only if the
-     * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.
-     * <p>
-     * Value is {@code 30 sec}.
-     */
-    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
-
     /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();
 
@@ -418,13 +408,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** Spring context, potentially {@code null}. */
     private GridSpringResourceContext rsrcCtx;
-
-    /**
-     * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
-     * disabled by the value of {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
-     */
-    @GridToStringExclude
-    private GridTimeoutProcessor.CancelableTask starveTask;
 
     /**
      * The instance of scheduled metrics logger. {@code null} means that the metrics loggin have been disabled
@@ -1291,74 +1274,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Mark start timestamp.
         startTime = U.currentTimeMillis();
 
-        String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
-
-        // Start starvation checker if enabled.
-        boolean starveCheck = !"0".equals(intervalStr);
-
-        if (starveCheck) {
-            final long interval = F.isEmpty(intervalStr) ? DFLT_PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
-
-            starveTask = ctx.timeout().schedule(new Runnable() {
-                /** Last completed task count. */
-                private long lastCompletedCntPub;
-
-                /** Last completed task count. */
-                private long lastCompletedCntSys;
-
-                /** Last completed task count. */
-                private long lastCompletedCntQry;
-
-                @Override public void run() {
-                    if (ctx.pools().getExecutorService() instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getExecutorService();
-
-                        lastCompletedCntPub = checkPoolStarvation(exec, lastCompletedCntPub, "public");
-                    }
-
-                    if (ctx.pools().getSystemExecutorService() instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getSystemExecutorService();
-
-                        lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
-                    }
-
-                    if (ctx.pools().getQueryExecutorService() instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getQueryExecutorService();
-
-                        lastCompletedCntQry = checkPoolStarvation(exec, lastCompletedCntQry, "query");
-                    }
-
-                    if (ctx.pools().getStripedExecutorService() != null)
-                        ctx.pools().getStripedExecutorService().detectStarvation();
-                }
-
-                /**
-                 * @param exec Thread pool executor to check.
-                 * @param lastCompletedCnt Last completed tasks count.
-                 * @param pool Pool name for message.
-                 * @return Current completed tasks count.
-                 */
-                private long checkPoolStarvation(
-                    ThreadPoolExecutor exec,
-                    long lastCompletedCnt,
-                    String pool
-                ) {
-                    long completedCnt = exec.getCompletedTaskCount();
-
-                    // If all threads are active and no task has completed since last time and there is
-                    // at least one waiting request, then it is possible starvation.
-                    if (exec.getPoolSize() == exec.getActiveCount() && completedCnt == lastCompletedCnt &&
-                        !exec.getQueue().isEmpty())
-                        LT.warn(
-                            log,
-                            "Possible thread pool starvation detected (no task completed in last " +
-                                interval + "ms, is " + pool + " thread pool size large enough?)");
-
-                    return completedCnt;
-                }
-            }, interval, interval);
-        }
-
         Ignite g = this;
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
@@ -1848,9 +1763,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                         throw e;
                 }
             }
-
-            if (starveTask != null)
-                starveTask.close();
 
             if (metricsLogTask != null)
                 metricsLogTask.close();

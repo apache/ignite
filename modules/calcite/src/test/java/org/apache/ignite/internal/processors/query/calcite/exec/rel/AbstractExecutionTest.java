@@ -39,6 +39,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -186,6 +187,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             kernal.add(new GridTimeoutProcessor(kernal));
             kernal.add(new NoOpIgniteSecurityProcessor(kernal));
             kernal.add(new GridCacheProcessor(kernal));
+            kernal.add(new PoolProcessor(kernal));
 
             AbstractQueryTaskExecutor taskExecutor;
 
@@ -196,7 +198,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                     execStgy,
                     kernal.config().getQueryThreadPoolSize(),
                     kernal.igniteInstanceName(),
-                    "calciteQry",
+                    AbstractQueryTaskExecutor.THREAD_PREFIX,
                     this::handle,
                     true,
                     DFLT_THREAD_KEEP_ALIVE_TIME
