@@ -23,11 +23,11 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /**
  * Simple field descriptor containing field name and its order in the class descriptor.
  */
-class UnsafeToStringFieldDescriptor extends GridToStringFieldDescriptor{
+public class UnsafeToStringFieldDescriptor extends GridToStringFieldDescriptor {
     /**
      * @param field Field;
      */
-    UnsafeToStringFieldDescriptor(Field field) {
+    public UnsafeToStringFieldDescriptor(Field field) {
         super(field);
     }
 

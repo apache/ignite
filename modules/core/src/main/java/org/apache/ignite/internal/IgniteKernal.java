@@ -182,7 +182,9 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.UnsafeToStringFieldDescriptor;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -947,6 +949,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             initializeMarshaller();
 
+            initializeToStringBuilder();
+
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
@@ -1500,6 +1504,14 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         marsh.setContext(ctx.marshallerContext());
 
         MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
+    }
+
+    /** */
+    private void initializeToStringBuilder() {
+        if (!BinaryMarshaller.available())
+            return;
+
+        GridToStringBuilder.fieldDescFactory = UnsafeToStringFieldDescriptor::new;
     }
 
     /**

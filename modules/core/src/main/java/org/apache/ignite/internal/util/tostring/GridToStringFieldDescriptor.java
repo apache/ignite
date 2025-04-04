@@ -25,7 +25,7 @@ import org.intellij.lang.annotations.MagicConstant;
 /**
  * Simple field descriptor containing field name and its order in the class descriptor.
  */
-abstract class GridToStringFieldDescriptor {
+public abstract class GridToStringFieldDescriptor {
     /** */
     public static final int FIELD_TYPE_OBJECT = 0;
 

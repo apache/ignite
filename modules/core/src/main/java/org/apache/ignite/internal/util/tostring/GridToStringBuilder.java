@@ -99,7 +99,7 @@ public class GridToStringBuilder {
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
     /** */
-    public static Function<Field, GridToStringFieldDescriptor> FD_DESC_FACTORY = UnsafeToStringFieldDescriptor::new;
+    public static volatile Function<Field, GridToStringFieldDescriptor> fieldDescFactory = ReflectionToStringFieldDescriptor::new;
 
     /** @see IgniteSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
     public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
@@ -1841,7 +1841,7 @@ public class GridToStringBuilder {
                 }
 
                 if (add) {
-                    GridToStringFieldDescriptor fd = FD_DESC_FACTORY.apply(f);
+                    GridToStringFieldDescriptor fd = fieldDescFactory.apply(f);
 
                     // Get order, if any.
                     final GridToStringOrder annOrder = f.getAnnotation(GridToStringOrder.class);
