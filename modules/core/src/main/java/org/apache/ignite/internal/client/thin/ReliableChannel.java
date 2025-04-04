@@ -244,7 +244,7 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         try {
             applyOnDefaultChannel(
-                channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
+                channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures, false),
                 null,
                 failures
             );
@@ -254,14 +254,17 @@ final class ReliableChannel implements AutoCloseable {
         }
     }
 
-    /** */
+    /**
+     * Executes an async operation on a client channel with retry logic and failure handling.
+     */
     private <T> Object applyOnClientChannelAsync(
         final CompletableFuture<T> fut,
         ClientChannel ch,
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
-        List<ClientConnectionException> failures
+        List<ClientConnectionException> failures,
+        boolean isRetryAttempt
     ) {
         return ch
             .serviceAsync(op, payloadWriter, payloadReader)
@@ -274,19 +277,48 @@ final class ReliableChannel implements AutoCloseable {
 
                 if (err instanceof ClientConnectionException) {
                     ClientConnectionException failure0 = (ClientConnectionException)err;
-
                     failures.add(failure0);
 
-                    try {
-                        // Will try to reinit channels if topology changed.
-                        onChannelFailure(ch, err, failures);
-                    }
-                    catch (Throwable ex) {
-                        fut.completeExceptionally(ex);
+                    ClientChannelHolder hld = null;
 
-                        return null;
+                    for (ClientChannelHolder holder : channels) {
+                        if (holder.ch == ch) {
+                            hld = holder;
+
+                            break;
+                        }
                     }
 
+                    ClientChannelHolder finalHld = hld;
+
+                    onChannelFailure(finalHld, ch, err, failures);
+
+                    // Try to reconnect to the same channel first if this is
+                    // the first failure and retry policy allows it
+                    if (hld != null && !isRetryAttempt && shouldRetry(op, F.size(failures) - 1, failure0)) {
+                        try {
+                            // In case of stale channel try to reconnect to the same channel and repeat the operation.
+                            ClientChannel newChannel = finalHld.getOrCreateChannel();
+
+                            // Recurse with the new channel
+                            return applyOnClientChannelAsync(
+                                fut,
+                                newChannel,
+                                op,
+                                payloadWriter,
+                                payloadReader,
+                                failures,
+                                true
+                            );
+                        }
+                        catch (ClientConnectionException reconnectEx) {
+                            failures.add(reconnectEx);
+
+                            onChannelFailure(finalHld, null, reconnectEx, failures);
+                        }
+                    }
+
+                    // Try other channels if we have attempts left
                     if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
                         handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
 
@@ -397,7 +429,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 Object result = applyOnNodeChannel(
                     affNodeId,
-                    channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
+                    channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures, false),
                     failures
                 );
 
