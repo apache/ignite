@@ -38,15 +38,12 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -81,7 +78,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -209,15 +205,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testByteArray2String() throws Exception {
-        assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
-            U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testFormatMins() throws Exception {
         printFormatMins(0);
         printFormatMins(1);
@@ -246,88 +233,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDownloadUrlFromHttp() throws Exception {
-        GridEmbeddedHttpServer srv = null;
-        try {
-            String urlPath = "/testDownloadUrl/";
-            srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveIgnitePath("/modules/core/src/test/config/tests.properties"));
-
-            File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-            file = U.downloadUrl(new URL(srv.getBaseUrl() + urlPath), file);
-
-            assert file.exists();
-            assert file.delete();
-        }
-        finally {
-            if (srv != null)
-                srv.stop(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromHttps() throws Exception {
-        GridEmbeddedHttpServer srv = null;
-        try {
-            String urlPath = "/testDownloadUrl/";
-            srv = GridEmbeddedHttpServer.startHttpsServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties"));
-
-            File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-            file = U.downloadUrl(new URL(srv.getBaseUrl() + urlPath), file);
-
-            assert file.exists();
-            assert file.delete();
-        }
-        finally {
-            if (srv != null)
-                srv.stop(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromLocalFile() throws Exception {
-        File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-        file = U.downloadUrl(
-            GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties").toURI().toURL(), file);
-
-        assert file.exists();
-        assert file.delete();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testOs() throws Exception {
         System.out.println("OS string: " + U.osString());
         System.out.println("JDK string: " + U.jdkString());
-        System.out.println("OS/JDK string: " + U.osJdkString());
 
         System.out.println("Is Windows: " + U.isWindows());
-        System.out.println("Is Windows 95: " + U.isWindows95());
-        System.out.println("Is Windows 98: " + U.isWindows98());
-        System.out.println("Is Windows NT: " + U.isWindowsNt());
-        System.out.println("Is Windows 2000: " + U.isWindows2k());
-        System.out.println("Is Windows 2003: " + U.isWindows2003());
-        System.out.println("Is Windows XP: " + U.isWindowsXp());
-        System.out.println("Is Windows Vista: " + U.isWindowsVista());
         System.out.println("Is Linux: " + U.isLinux());
         System.out.println("Is Mac OS: " + U.isMacOs());
-        System.out.println("Is Netware: " + U.isNetWare());
         System.out.println("Is Solaris: " + U.isSolaris());
-        System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
-        System.out.println("Is Solaris x86: " + U.isSolarisX86());
-        System.out.println("Is Windows7: " + U.isWindows7());
     }
 
     /**
@@ -539,74 +452,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testReadByteArray() {
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
-
-        Random rnd = new Random();
-
-        byte[] bytes = new byte[13];
-
-        rnd.nextBytes(bytes);
-
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes), ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.wrap(bytes))));
-
-        for (int i = 0; i < 1000; i++) {
-            int n = rnd.nextInt(100);
-
-            bytes = new byte[n];
-
-            rnd.nextBytes(bytes);
-
-            ByteBuffer[] bufs = new ByteBuffer[1 + rnd.nextInt(10)];
-
-            int x = 0;
-
-            for (int j = 0; j < bufs.length - 1; j++) {
-                int size = x == n ? 0 : rnd.nextInt(n - x);
-
-                bufs[j] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(x += size);
-            }
-
-            bufs[bufs.length - 1] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(n);
-
-            assertTrue(Arrays.equals(bytes, U.readByteArray(bufs)));
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testHashCodeFromBuffers() {
-        assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0)));
-        assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0), ByteBuffer.allocate(0)));
-
-        Random rnd = new Random();
-
-        for (int i = 0; i < 1000; i++) {
-            ByteBuffer[] bufs = new ByteBuffer[1 + rnd.nextInt(15)];
-
-            for (int j = 0; j < bufs.length; j++) {
-                byte[] bytes = new byte[rnd.nextInt(25)];
-
-                rnd.nextBytes(bytes);
-
-                bufs[j] = ByteBuffer.wrap(bytes);
-            }
-
-            assertEquals(U.hashCode(bufs), Arrays.hashCode(U.readByteArray(bufs)));
-        }
-    }
-
-    /**
      * Test annotation look up.
      */
     @Test
@@ -753,14 +598,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(ips.get(ips.size() - 2).getAddress().isLoopbackAddress());
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
-    }
-
-    /** */
-    @Test
-    public void testMD5Calculation() throws Exception {
-        String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
-
-        assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
     }
 
     /**
@@ -1311,7 +1148,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * 3)Simple strings. <br/>
      *
      * 4)Various combinations of strings with one, two, and three-byte
-     * characters with size greater than {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * characters with size greater than <code>65535</code>. <br/>
      *
      * @throws Exception If failed.
      */
@@ -1328,60 +1165,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 String readBigUTF = U.readLongString(dIn);
 
                 assertEquals(readLine, readBigUTF);
-            });
-        }
-    }
-
-    /**
-     * Testing method {@link IgniteUtils#writeCutString} using resource files,
-     * where each line is needed to test different cases: <br/>
-     * 1){@code null}. <br/>
-     *
-     * 2)Empty line. <br/>
-     *
-     * 3)Simple strings. <br/>
-     *
-     * 4)String containing single-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 5)String containing single-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 6)String containing two-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 7)String containing two-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 8)String containing three-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 9)String containing three-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testWriteLimitUTF() throws Exception {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            readLines("org.apache.ignite.util/limitUtf.txt", readLine -> {
-                baos.reset();
-
-                DataOutput dOut = new DataOutputStream(baos);
-                U.writeCutString(dOut, readLine);
-
-                DataInputStream dIn = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-                String readUTF = U.readString(dIn);
-
-                if (nonNull(readLine)) {
-                    AtomicInteger utfBytes = new AtomicInteger();
-
-                    readLine = readLine.chars()
-                        .filter(c -> utfBytes.addAndGet(U.utfBytes((char)c)) <= U.UTF_BYTE_LIMIT)
-                        .mapToObj(c -> String.valueOf((char)c)).collect(joining());
-                }
-
-                assertEquals(readLine, readUTF);
             });
         }
     }

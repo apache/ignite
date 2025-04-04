@@ -34,12 +34,13 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static java.util.Map.of;
 
 /**
  * Tests scenarios for tx reordering, missed updates and recovery for 2PC.
@@ -273,8 +274,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite primary = map.get(PARTITION_ID).get1();
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, assignOrder),
-                    U.map((IgniteEx)primary, prepOrder),
+                    of((IgniteEx)primary, assignOrder),
+                    of((IgniteEx)primary, prepOrder),
                     new HashMap<>(),
                     sizes.length) {
 
@@ -398,7 +399,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup1 = map.get(PARTITION_ID).get2().get(delayBackupIdx);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, assignOrder),
+                    of((IgniteEx)primary, assignOrder),
                     new HashMap<>(),
                     new HashMap<>(),
                     sizes.length) {
@@ -472,8 +473,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                     Ignite primary = map.get(PARTITION_ID).get1();
                     Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
 
-                    return new TwoPhaseCommitTxCallbackAdapter(U.map((IgniteEx)primary, PREPARE_ORDER),
-                        U.map((IgniteEx)primary, PRIMARY_COMMIT_ORDER, (IgniteEx)backup1, BACKUP_COMMIT_ORDER),
+                    return new TwoPhaseCommitTxCallbackAdapter(of((IgniteEx)primary, PREPARE_ORDER),
+                        of((IgniteEx)primary, PRIMARY_COMMIT_ORDER, (IgniteEx)backup1, BACKUP_COMMIT_ORDER),
                         SIZES.length) {
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
                             super.onBackupCommitted(backup, idx);
@@ -605,8 +606,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, assignOrder),
-                    U.map((IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
+                    of((IgniteEx)primary, assignOrder),
+                    of((IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
                     new HashMap<>(),
                     SIZES.length) {
                     @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
@@ -712,8 +713,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, assignOrder),
-                    U.map((IgniteEx)backup1, backup1PrepOrder, (IgniteEx)backup2, backup2PrepOrder),
+                    of((IgniteEx)primary, assignOrder),
+                    of((IgniteEx)backup1, backup1PrepOrder, (IgniteEx)backup2, backup2PrepOrder),
                     new HashMap<>(),
                     sizes.length) {
                     @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
@@ -800,8 +801,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, assignOrder),
-                    U.map((IgniteEx)backup1, new int[] {1, 0}, (IgniteEx)backup2, new int[] {1, 0}),
+                    of((IgniteEx)primary, assignOrder),
+                    of((IgniteEx)backup1, new int[] {1, 0}, (IgniteEx)backup2, new int[] {1, 0}),
                     new HashMap<>(),
                     sizes.length) {
                     @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup,
@@ -871,8 +872,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
             final Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
             return new TwoPhaseCommitTxCallbackAdapter(
-                U.map((IgniteEx)primary, new int[] {0, 1, 2}),
-                U.map(
+                of((IgniteEx)primary, new int[] {0, 1, 2}),
+                of(
                     (IgniteEx)primary, new int[] {0, 1, 2},
                     (IgniteEx)backup1, new int[] {0, 1, 2},
                     (IgniteEx)backup2, new int[] {0, 1, 2}),
