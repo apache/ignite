@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.tostring;
+package org.apache.ignite;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.ignite.IgniteSystemProperties;
 
-/**
- * Attach this annotation to a field or a class to indicate that this field or fields of this
- * class <b>should</b> be included in {@code toString()} output. This annotation allows
- * to override the default exclusion policy.
- */
+/** Ignite system property info. */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.TYPE})
-public @interface GridToStringInclude {
-    /**
-     * A flag indicating a sensitive information stored in the field or fields of the class.<br/>
-     * Such information will be included in {@code toString()} output ONLY when the system property
-     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE IGNITE_TO_STRING_INCLUDE_SENSITIVE}
-     * is set to {@code true}.
-     *
-     * @return Attribute value.
-     */
-    boolean sensitive() default false;
+@Target({ElementType.FIELD})
+public @interface SystemProperty {
+    /** @return Description. */
+    String value();
+
+    /** @return Type. */
+    Class<?> type() default Boolean.class;
+
+    /** @return Default value. */
+    String defaults() default "";
 }
