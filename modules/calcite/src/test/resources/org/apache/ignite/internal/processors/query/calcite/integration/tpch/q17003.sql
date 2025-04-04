@@ -7,7 +7,7 @@
 -- IGNITE: adoption of q17 with an outer-join.
 
 
-select /*+ ENFORCE_JOIN_ORDER */
+select
     sum(l_extendedprice) / 7.0 as avg_yearly
 from
     lineitem
