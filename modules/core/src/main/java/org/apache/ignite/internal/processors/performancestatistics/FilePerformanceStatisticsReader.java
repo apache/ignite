@@ -793,7 +793,6 @@ public class FilePerformanceStatisticsReader {
                         row.add( str.str);
                 }
             }
-
         }
     }
 }
