@@ -200,7 +200,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         private void flush() throws IOException {
             buf.flip();
             fileIo.writeFully(buf);
-            buf.limit(buf.capacity());
             buf.flip();
             buf.clear();
         }
