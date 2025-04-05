@@ -101,7 +101,7 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
 
         log = ctx.log(getClass());
 
-        log.info("Performance statistics file created [file=" + fileAbsolutePath() + ']');
+        log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
 
         ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
 
@@ -431,7 +431,7 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
     }
 
     /** {@inheritDoc} */
-    @Override String fileAbsolutePath() {
+    String fileAbsolutePath() {
         return "";
     }
 

@@ -204,11 +204,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
         }
     }
 
-    /** {@inheritDoc} */
-    @Override String fileAbsolutePath() {
-        return file.getAbsolutePath();
-    }
-
     /** Writes view row to file. */
     private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
         /** {@inheritDoc} */
