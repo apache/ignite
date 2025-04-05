@@ -77,9 +77,6 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
     /** Performance statistics file writer worker. */
     private final FileWriter fileWriter;
 
-    /** File writer thread started flag. */
-    private boolean started;
-
     /** File write buffer. */
     private final SegmentedRingByteBuffer ringByteBuf;
 
@@ -112,17 +109,11 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
 
     /** Starts collecting performance statistics. */
     @Override public synchronized void start() {
-        assert !started;
-
         new IgniteThread(fileWriter).start();
-
-        started = true;
     }
 
     /** Stops collecting performance statistics. */
     @Override public synchronized void stop() {
-        assert started;
-
         // Stop accepting new records.
         ringByteBuf.close();
 
@@ -143,7 +134,6 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
 
         cleanup();
 
-        started = false;
     }
 
     /**
