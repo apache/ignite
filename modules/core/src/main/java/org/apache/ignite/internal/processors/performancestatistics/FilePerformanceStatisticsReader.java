@@ -316,7 +316,7 @@ public class FilePerformanceStatisticsReader {
             return true;
         }
         else if (opType == SYSTEM_VIEW_ROW) {
-            List<String> schema = viewObj.schema();
+            List<String> schema = viewObj.schema;
             List<Object> row = viewObj.nextRow();
 
             if (row == null)
@@ -675,7 +675,7 @@ public class FilePerformanceStatisticsReader {
         /**
          * Attribute names of system view.
          */
-        private final List<String> schema;
+        final List<String> schema;
 
         /**
          * @param viewName System view name.
@@ -695,11 +695,6 @@ public class FilePerformanceStatisticsReader {
             });
 
             schema = Collections.unmodifiableList(schemaList);
-        }
-
-        /** */
-        public List<String> schema() {
-            return schema;
         }
 
         /**
