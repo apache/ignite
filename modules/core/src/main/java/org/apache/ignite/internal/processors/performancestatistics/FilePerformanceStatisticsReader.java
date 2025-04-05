@@ -308,6 +308,9 @@ public class FilePerformanceStatisticsReader {
             if (walkerName == null)
                 return false;
 
+            assert viewName.str != null : "Views are written by single thread, no string cache misses are possible";
+            assert walkerName.str != null : "Views are written by single thread, no string cache misses are possible";
+
             try {
                 viewObj.walker(walkerName.str);
             }
