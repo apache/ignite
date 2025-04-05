@@ -317,7 +317,7 @@ public class FilePerformanceStatisticsReader {
         }
         else if (opType == SYSTEM_VIEW_ROW) {
             List<String> schema = viewObj.schema();
-            List<Object> row = viewObj.call();
+            List<Object> row = viewObj.nextRow();
 
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.systemView(nodeId, viewObj.viewName(), schema, row);
@@ -707,7 +707,7 @@ public class FilePerformanceStatisticsReader {
         /**
          * @return System view row.
          */
-        public List<Object> call() {
+        public List<Object> nextRow() {
             rowVisitor.clear();
             walker.visitAll(rowVisitor);
             return rowVisitor.row();
