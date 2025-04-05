@@ -663,19 +663,19 @@ public class FilePerformanceStatisticsReader {
 
     /** */
     private class View {
-        /**  */
-        private final SystemViewRowAttributeWalker<?> walker;
-
-        /**  */
-        private final RowReaderVisitor rowVisitor = new RowReaderVisitor();
-
         /** */
-        private final String viewName;
+        final String viewName;
 
         /**
          * Attribute names of system view.
          */
         final List<String> schema;
+
+        /**  */
+        private final SystemViewRowAttributeWalker<?> walker;
+
+        /**  */
+        private final RowReaderVisitor rowVisitor = new RowReaderVisitor();
 
         /**
          * @param viewName System view name.
