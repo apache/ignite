@@ -319,6 +319,9 @@ public class FilePerformanceStatisticsReader {
             List<String> schema = viewObj.schema();
             List<Object> row = viewObj.nextRow();
 
+            if (row == null)
+                return false;
+
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.systemView(nodeId, viewObj.viewName(), schema, row);
             return true;
