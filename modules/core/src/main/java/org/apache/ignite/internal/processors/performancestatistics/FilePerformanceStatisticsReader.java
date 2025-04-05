@@ -323,7 +323,7 @@ public class FilePerformanceStatisticsReader {
                 return false;
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.systemView(nodeId, viewObj.viewName(), schema, row);
+                hnd.systemView(nodeId, viewObj.viewName, schema, row);
             return true;
         }
         else if (opType == QUERY_READS) {
@@ -695,11 +695,6 @@ public class FilePerformanceStatisticsReader {
             });
 
             schema = Collections.unmodifiableList(schemaList);
-        }
-
-        /** */
-        public String viewName() {
-            return viewName;
         }
 
         /** */
