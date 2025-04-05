@@ -79,9 +79,6 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     /** Performance statistics file I/O. */
     protected final FileIO fileIo;
 
-    /** Node id. */
-    protected final UUID nodeId;
-
     /** Count of cached strings. */
     protected volatile int knownStrsSz;
 
@@ -96,7 +93,6 @@ abstract class AbstractFilePerformanceStatisticsWriter {
      * @param fileName File name to write.
      */
     protected AbstractFilePerformanceStatisticsWriter(GridKernalContext ctx, String fileName) throws IgniteCheckedException, IOException {
-        nodeId = ctx.localNodeId();
         file = resolveStatisticsFile(ctx, fileName);
         fileIo = fileIoFactory.create(file);
     }
