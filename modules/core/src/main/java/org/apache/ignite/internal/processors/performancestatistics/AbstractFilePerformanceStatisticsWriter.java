@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,9 +72,6 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     /** Performance statistics file. */
     protected final File file;
 
-    /** Factory to provide I/O interface. */
-    protected final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
-
     /** Performance statistics file I/O. */
     protected final FileIO fileIo;
 
@@ -94,7 +90,7 @@ abstract class AbstractFilePerformanceStatisticsWriter {
      */
     protected AbstractFilePerformanceStatisticsWriter(GridKernalContext ctx, String fileName) throws IgniteCheckedException, IOException {
         file = resolveStatisticsFile(ctx, fileName);
-        fileIo = fileIoFactory.create(file);
+        fileIo = new RandomAccessFileIOFactory().create(file);
     }
 
     /** Writes {@link UUID} to buffer. */
