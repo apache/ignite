@@ -168,11 +168,6 @@ abstract class AbstractFilePerformanceStatisticsWriter {
         U.closeQuiet(fileIo);
     }
 
-    /**  */
-    String fileAbsolutePath() {
-        return file.getAbsolutePath();
-    }
-
     /** */
     abstract void start();
 
