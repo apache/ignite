@@ -59,15 +59,8 @@ abstract class AbstractFilePerformanceStatisticsWriter {
      */
     public static final short FILE_FORMAT_VERSION = 1;
 
-    /** Hashcodes of cached strings. */
-    protected final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
-
     /** Minimal batch size to flush in bytes. */
     protected final int flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
-
-    /** Maximum cached strings threshold. String caching will stop on threshold excess. */
-    protected final int cachedStrsThreshold = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD,
-        DFLT_CACHED_STRINGS_THRESHOLD);
 
     /** Performance statistics file. */
     protected final File file;
@@ -75,14 +68,21 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     /** Performance statistics file I/O. */
     protected final FileIO fileIo;
 
-    /** Count of cached strings. */
-    private volatile int knownStrsSz;
-
     /**  */
     protected long fileMaxSize = IgniteSystemProperties.getLong(IGNITE_PERF_STAT_FILE_MAX_SIZE, DFLT_FILE_MAX_SIZE);
 
     /**  */
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
+
+    /** Hashcodes of cached strings. */
+    private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
+
+    /** Count of cached strings. */
+    private volatile int knownStrsSz;
+
+    /** Maximum cached strings threshold. String caching will stop on threshold excess. */
+    private final int cachedStrsThreshold = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD,
+        DFLT_CACHED_STRINGS_THRESHOLD);
 
     /**
      * @param ctx Context.
