@@ -117,7 +117,7 @@ public class FilePerformanceStatisticsReader {
     private ForwardRead forwardRead;
 
     /** Walkers for reading system view recors. */
-    private final ViewObject viewObj;
+    private ViewObject viewObj;
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -132,8 +132,6 @@ public class FilePerformanceStatisticsReader {
         A.notEmpty(handlers, "At least one handler expected.");
 
         buf = allocateDirect(bufSize).order(nativeOrder());
-
-        viewObj = new ViewObject(buf);
 
         this.handlers = handlers;
         curHnd = handlers;
@@ -302,8 +300,6 @@ public class FilePerformanceStatisticsReader {
             if (viewName == null)
                 return false;
 
-            viewObj.viewName(viewName.str);
-
             ForwardableString walkerName = readString(buf);
             if (walkerName == null)
                 return false;
@@ -312,7 +308,7 @@ public class FilePerformanceStatisticsReader {
             assert walkerName.str != null : "Views are written by single thread, no string cache misses are possible";
 
             try {
-                viewObj.walker(walkerName.str);
+                viewObj = new ViewObject(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
                 throw new IOException("Could not find walker: " + walkerName);
@@ -665,41 +661,29 @@ public class FilePerformanceStatisticsReader {
     /** */
     private class ViewObject {
         /**  */
-        private SystemViewRowAttributeWalker<?> walker;
-
-        /**  */
-        private final ByteBuffer buf;
+        private final SystemViewRowAttributeWalker<?> walker;
 
         /**  */
         private final RowReaderVisitor rowVisitor = new RowReaderVisitor();
 
         /** */
-        private String viewName;
+        private final String viewName;
 
         /** Schema visitor. */
         private final ShemaReaderVisitor schemaVisitor = new ShemaReaderVisitor();
 
         /**
-         * @param buf Buffer.
+         * @param viewName System view name.
+         * @param walkerName Name of walker to visist system view attributes.
          */
-        public ViewObject(ByteBuffer buf) {
-            this.buf = buf;
-        }
-
-        /** */
-        public void walker(String walkerName) throws ReflectiveOperationException {
+        public ViewObject(String viewName, String walkerName) throws ReflectiveOperationException {
             walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
+
+            this.viewName = viewName;
 
             schemaVisitor.clear();
 
             walker.visitAll(schemaVisitor);
-        }
-
-        /**
-         * @param viewName View name.
-         */
-        public void viewName(String viewName) {
-            this.viewName = viewName;
         }
 
         /** */
