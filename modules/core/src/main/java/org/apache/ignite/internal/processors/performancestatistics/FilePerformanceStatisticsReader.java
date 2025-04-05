@@ -117,7 +117,7 @@ public class FilePerformanceStatisticsReader {
     private ForwardRead forwardRead;
 
     /** Walkers for reading system view recors. */
-    private ViewObject viewObj;
+    private View viewObj;
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -308,7 +308,7 @@ public class FilePerformanceStatisticsReader {
             assert walkerName.str != null : "Views are written by single thread, no string cache misses are possible";
 
             try {
-                viewObj = new ViewObject(viewName.str, walkerName.str);
+                viewObj = new View(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
                 throw new IOException("Could not find walker: " + walkerName);
@@ -659,7 +659,7 @@ public class FilePerformanceStatisticsReader {
     }
 
     /** */
-    private class ViewObject {
+    private class View {
         /**  */
         private final SystemViewRowAttributeWalker<?> walker;
 
@@ -678,7 +678,7 @@ public class FilePerformanceStatisticsReader {
          * @param viewName System view name.
          * @param walkerName Name of walker to visist system view attributes.
          */
-        public ViewObject(String viewName, String walkerName) throws ReflectiveOperationException {
+        public View(String viewName, String walkerName) throws ReflectiveOperationException {
             walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
 
             this.viewName = viewName;
