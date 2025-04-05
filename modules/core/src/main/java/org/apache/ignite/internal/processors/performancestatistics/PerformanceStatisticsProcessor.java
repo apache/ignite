@@ -62,7 +62,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
 
     /** System view writer. {@code Null} if collecting statistics disabled. */
-    @Nullable private AbstractFilePerformanceStatisticsWriter sysViewWriter;
+    @Nullable private FilePerformanceStatisticsSystemViewWriter sysViewWriter;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
