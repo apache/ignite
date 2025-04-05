@@ -80,7 +80,7 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     protected final FileIO fileIo;
 
     /** Count of cached strings. */
-    protected volatile int knownStrsSz;
+    private volatile int knownStrsSz;
 
     /**  */
     protected long fileMaxSize = IgniteSystemProperties.getLong(IGNITE_PERF_STAT_FILE_MAX_SIZE, DFLT_FILE_MAX_SIZE);
