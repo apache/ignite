@@ -669,8 +669,10 @@ public class FilePerformanceStatisticsReader {
         /** */
         private final String viewName;
 
-        /** Schema visitor. */
-        private final ShemaReaderVisitor schemaVisitor = new ShemaReaderVisitor();
+        /**
+         * Attribute names of system view.
+         */
+        private final List<String> schema;
 
         /**
          * @param viewName System view name.
@@ -681,9 +683,15 @@ public class FilePerformanceStatisticsReader {
 
             this.viewName = viewName;
 
-            schemaVisitor.clear();
+            List<String> schemaList = new ArrayList<>();
 
-            walker.visitAll(schemaVisitor);
+            walker.visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
+                @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                    schemaList.add(name);
+                }
+            });
+
+            schema = Collections.unmodifiableList(schemaList);
         }
 
         /** */
@@ -693,7 +701,7 @@ public class FilePerformanceStatisticsReader {
 
         /** */
         public List<String> schema() {
-            return Collections.unmodifiableList(schemaVisitor.schema());
+            return schema;
         }
 
         /**
@@ -703,27 +711,6 @@ public class FilePerformanceStatisticsReader {
             rowVisitor.clear();
             walker.visitAll(rowVisitor);
             return rowVisitor.row();
-        }
-
-        /** */
-        private class ShemaReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
-            /** Row. */
-            private final List<String> schema = new ArrayList<>();
-
-            /**  */
-            public List<String> schema() {
-                return schema;
-            }
-
-            /** */
-            public void clear() {
-                schema.clear();
-            }
-
-            /** {@inheritDoc} */
-            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                schema.add(name);
-            }
         }
 
         /** Write schema of system view to file. */
