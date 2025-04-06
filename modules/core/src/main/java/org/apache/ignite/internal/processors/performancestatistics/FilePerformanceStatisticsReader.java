@@ -724,6 +724,8 @@ public class FilePerformanceStatisticsReader {
             /** */
             public void clear() {
                 row.clear();
+
+                notEnoughBytes = false;
             }
 
             /** {@inheritDoc} */
@@ -790,7 +792,7 @@ public class FilePerformanceStatisticsReader {
                 else {
                     ForwardableString str = readString(buf);
                     if (str != null)
-                        row.add( str.str);
+                        row.add(str.str);
                 }
             }
         }
