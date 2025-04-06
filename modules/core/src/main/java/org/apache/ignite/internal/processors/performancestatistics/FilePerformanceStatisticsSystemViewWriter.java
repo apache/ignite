@@ -171,9 +171,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
          */
         private void writeRowToBuf(Object row, AttributeWithValueWriterVisitor valVisitor,
             SystemViewRowAttributeWalker<Object> walker) throws IOException {
-            if (isCancelled())
-                return;
-
             doWrite(buffer -> {
                 buf.put(SYSTEM_VIEW_ROW.id());
                 walker.visitAll(row, valVisitor);
