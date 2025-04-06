@@ -180,7 +180,7 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
             });
         }
 
-        /** */
+        /** Write to {@link  FilePerformanceStatisticsSystemViewWriter#buf} and handle overflow if necessary. */
         private void doWrite(Consumer<ByteBuffer> consumer) throws IOException {
             if (isCancelled())
                 return;
