@@ -35,10 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.CommonsUtils;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -398,7 +396,7 @@ public final class X {
             return clone;
         }
 
-        clone = U.forceNewInstance(cls);
+        clone = CommonsUtils.forceNewInstance(cls);
 
         if (clone == null)
             throw new IgniteException("Failed to clone object (empty constructor could not be assigned): " + obj);
@@ -465,7 +463,7 @@ public final class X {
      *      {@code false} otherwise.
      */
     public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... types) {
-        if (t == null || F.isEmpty(types))
+        if (t == null || types == null || types.length == 0)
             return false;
 
         Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -870,53 +868,6 @@ public final class X {
         }
 
         return sw.getBuffer().toString();
-    }
-
-    /**
-     * Synchronously waits for all futures in the collection.
-     *
-     * @param futs Futures to wait for.
-     */
-    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) {
-        if (F.isEmpty(futs))
-            return;
-
-        for (IgniteFuture fut : futs)
-            fut.get();
-    }
-
-    /**
-     * Pretty-formatting for minutes.
-     *
-     * @param mins Minutes to format.
-     * @return Formatted presentation of minutes.
-     */
-    public static String formatMins(long mins) {
-        assert mins >= 0;
-
-        if (mins == 0)
-            return "< 1 min";
-
-        SB sb = new SB();
-
-        long dd = mins / 1440; // 1440 mins = 60 mins * 24 hours
-
-        if (dd > 0)
-            sb.a(dd).a(dd == 1 ? " day " : " days ");
-
-        mins %= 1440;
-
-        long hh = mins / 60;
-
-        if (hh > 0)
-            sb.a(hh).a(hh == 1 ? " hour " : " hours ");
-
-        mins %= 60;
-
-        if (mins > 0)
-            sb.a(mins).a(mins == 1 ? " min " : " mins ");
-
-        return sb.toString().trim();
     }
 
     /**
