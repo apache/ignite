@@ -86,10 +86,10 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
             stopCollectStatisticsAndRead(new TestHandler() {
                 @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
                     if ("table.columns".equals(name))
-                        actualColumns.add(getViewByName(schema, row, "columnName"));
+                        actualColumns.add(getAttrValByName(schema, row, "columnName"));
 
                     if ("indexes".equals(name))
-                        actualIndexes.add(getViewByName(schema, row, "indexName"));
+                        actualIndexes.add(getAttrValByName(schema, row, "indexName"));
 
                     if ("tables".equals(name))
                         tablesCnt.incrementAndGet();
@@ -137,7 +137,7 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
     }
 
     /** */
-    private Object getViewByName(List<String> schema, List<Object> row, String attr) {
+    private Object getAttrValByName(List<String> schema, List<Object> row, String attr) {
         int index = schema.indexOf(attr);
         return row.get(index);
     }
