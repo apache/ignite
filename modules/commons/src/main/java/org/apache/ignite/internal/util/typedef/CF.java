@@ -15,29 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.internal.util.typedef;
 
-import java.util.Collection;
-import java.util.List;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.GridCommonFunc;
 
 /**
- *
+ * Defines {@code alias} for {@link GridCommonFunc} by extending it. Since Java doesn't provide type aliases
+ * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
+ * concise code in cases when readability won't be sacrificed. For more information see {@link GridCommonFunc}.
+ * @see GridCommonFunc
  */
-interface GridNioWorker {
-    /**
-     * @param req Change request.
-     */
-    public void offer(GridNioServer.SessionChangeRequest req);
-
-    /**
-     * @param reqs Change requests.
-     */
-    public void offer(Collection<GridNioServer.SessionChangeRequest> reqs);
-
-    /**
-     * @param ses Session.
-     * @return Session state change requests.
-     */
-    @Nullable public List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
-}
+public class CF extends GridCommonFunc { /* No-op. */ }
