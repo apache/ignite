@@ -703,95 +703,95 @@ public class FilePerformanceStatisticsReader {
             walker.visitAll(rowVisitor);
             return rowVisitor.row();
         }
+    }
 
-        /** Write schema of system view to file. */
-        private class RowReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
-            /** Row. */
-            private final List<Object> row = new ArrayList<>();
+    /** Write schema of system view to file. */
+    private class RowReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
+        /** Row. */
+        private final List<Object> row = new ArrayList<>();
 
-            /** Not enough bytes. */
-            private boolean notEnoughBytes;
+        /** Not enough bytes. */
+        private boolean notEnoughBytes;
 
-            /**  */
-            public List<Object> row() {
-                if (notEnoughBytes)
-                    return null;
-                return row;
-            }
+        /**  */
+        public List<Object> row() {
+            if (notEnoughBytes)
+                return null;
+            return row;
+        }
 
-            /** */
-            public void clear() {
-                row.clear();
+        /** */
+        public void clear() {
+            row.clear();
 
-                notEnoughBytes = false;
-            }
+            notEnoughBytes = false;
+        }
 
-            /** {@inheritDoc} */
-            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                if (notEnoughBytes)
+        /** {@inheritDoc} */
+        @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+            if (notEnoughBytes)
+                return;
+
+            if (clazz == int.class) {
+                if (buf.remaining() < 4) {
+                    notEnoughBytes = true;
                     return;
-
-                if (clazz == int.class) {
-                    if (buf.remaining() < 4) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.getInt());
                 }
-                else if (clazz == byte.class) {
-                    if (buf.remaining() < 1) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.get());
+                row.add(buf.getInt());
+            }
+            else if (clazz == byte.class) {
+                if (buf.remaining() < 1) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else if (clazz == short.class) {
-                    if (buf.remaining() < 2) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.getShort());
+                row.add(buf.get());
+            }
+            else if (clazz == short.class) {
+                if (buf.remaining() < 2) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else if (clazz == long.class) {
-                    if (buf.remaining() < 8) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.getLong());
+                row.add(buf.getShort());
+            }
+            else if (clazz == long.class) {
+                if (buf.remaining() < 8) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else if (clazz == float.class) {
-                    if (buf.remaining() < 4) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.getFloat());
+                row.add(buf.getLong());
+            }
+            else if (clazz == float.class) {
+                if (buf.remaining() < 4) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else if (clazz == double.class) {
-                    if (buf.remaining() < 8) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.getDouble());
+                row.add(buf.getFloat());
+            }
+            else if (clazz == double.class) {
+                if (buf.remaining() < 8) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else if (clazz == char.class) {
-                    if (buf.remaining() < 2) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.getChar());
+                row.add(buf.getDouble());
+            }
+            else if (clazz == char.class) {
+                if (buf.remaining() < 2) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else if (clazz == boolean.class) {
-                    if (buf.remaining() < 1) {
-                        notEnoughBytes = true;
-                        return;
-                    }
-                    row.add(buf.get() != 0);
+                row.add(buf.getChar());
+            }
+            else if (clazz == boolean.class) {
+                if (buf.remaining() < 1) {
+                    notEnoughBytes = true;
+                    return;
                 }
-                else {
-                    ForwardableString str = readString(buf);
-                    if (str != null)
-                        row.add(str.str);
-                }
+                row.add(buf.get() != 0);
+            }
+            else {
+                ForwardableString str = readString(buf);
+                if (str != null)
+                    row.add(str.str);
             }
         }
     }
