@@ -77,7 +77,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         else if (size == 5)
             map = new Map5<>();
         else
-            map = new LeanHashMap<>(CommonsUtils.capacity(size), 0.75f);
+            map = new LeanHashMap<>(CommonUtils.capacity(size), 0.75f);
     }
 
     /**

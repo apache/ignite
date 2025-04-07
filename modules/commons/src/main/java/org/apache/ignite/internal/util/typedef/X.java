@@ -35,8 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.CommonsUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.typedef.internal.CF;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -396,7 +397,7 @@ public final class X {
             return clone;
         }
 
-        clone = CommonsUtils.forceNewInstance(cls);
+        clone = CommonUtils.forceNewInstance(cls);
 
         if (clone == null)
             throw new IgniteException("Failed to clone object (empty constructor could not be assigned): " + obj);
@@ -463,7 +464,7 @@ public final class X {
      *      {@code false} otherwise.
      */
     public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... types) {
-        if (t == null || types == null || types.length == 0)
+        if (t == null || CF.isEmpty(types))
             return false;
 
         Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());

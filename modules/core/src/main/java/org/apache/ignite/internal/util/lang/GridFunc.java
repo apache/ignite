@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridCommonFunc;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -106,7 +107,7 @@ import org.jetbrains.annotations.Nullable;
  * the empty predicate array.
  */
 @SuppressWarnings("unchecked")
-public class GridFunc {
+public class GridFunc extends GridCommonFunc {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
@@ -810,113 +811,6 @@ public class GridFunc {
             return Collections.emptyMap();
 
         return new PredicateSetView<>(c, mapClo, p);
-    }
-
-    /**
-     * Tests if given string is {@code null} or empty.
-     *
-     * @param s String to test.
-     * @return Whether or not the given string is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable String s) {
-        return s == null || s.isEmpty();
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static <T> boolean isEmpty(@Nullable T[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is {@code null}, empty or contains only {@code null} values.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null}, empty or contains only {@code null} values.
-     */
-    public static <T> boolean isEmptyOrNulls(@Nullable T[] c) {
-        if (isEmpty(c))
-            return true;
-
-        for (T element : c)
-            if (element != null)
-                return false;
-
-        return true;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable int[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable byte[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable long[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable char[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given collection is either {@code null} or empty.
-     *
-     * @param c Collection to test.
-     * @return Whether or not the given collection is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable Iterable<?> c) {
-        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
-    }
-
-    /**
-     * Tests if the given collection is either {@code null} or empty.
-     *
-     * @param c Collection to test.
-     * @return Whether or not the given collection is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable Collection<?> c) {
-        return c == null || c.isEmpty();
-    }
-
-    /**
-     * Tests if the given map is either {@code null} or empty.
-     *
-     * @param m Map to test.
-     * @return Whether or not the given collection is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable Map<?, ?> m) {
-        return m == null || m.isEmpty();
     }
 
     /**

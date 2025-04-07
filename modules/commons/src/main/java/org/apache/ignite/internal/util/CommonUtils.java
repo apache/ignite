@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
-public abstract class CommonsUtils {
+public abstract class CommonUtils {
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;
 

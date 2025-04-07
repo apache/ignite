@@ -316,7 +316,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  * Collection of utility methods used throughout the system.
  */
 @SuppressWarnings({"UnusedReturnValue"})
-public abstract class IgniteUtils extends CommonsUtils {
+public abstract class IgniteUtils extends CommonUtils {
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 
