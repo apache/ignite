@@ -315,14 +315,13 @@ public class FilePerformanceStatisticsReader {
             return true;
         }
         else if (opType == SYSTEM_VIEW_ROW) {
-            List<String> schema = viewObj.schema;
             List<Object> row = viewObj.nextRow();
 
             if (row == null)
                 return false;
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.systemView(nodeId, viewObj.viewName, schema, row);
+                hnd.systemView(nodeId, viewObj.viewName, viewObj.schema, row);
             return true;
         }
         else if (opType == QUERY_READS) {
