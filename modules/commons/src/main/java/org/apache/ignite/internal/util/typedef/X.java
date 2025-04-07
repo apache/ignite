@@ -37,7 +37,6 @@ import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.typedef.internal.CF;
 import org.jetbrains.annotations.Nullable;
 
 /**

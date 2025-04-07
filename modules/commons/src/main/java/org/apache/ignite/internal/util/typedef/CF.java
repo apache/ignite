@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.typedef.internal;
+package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.internal.util.GridCommonFunc;
 
