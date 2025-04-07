@@ -1684,7 +1684,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     @Test(expected = IgniteCheckedException.class)
-    public void testStaticField() throws Exception {
+    public void testReadUnknownStaticFieldFailed() throws Exception {
         U.staticField(String.class, "unknown_field");
     }
 }
