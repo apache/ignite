@@ -644,6 +644,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                         for (RexNode andOpOther : conjunctionOperands(orOps.get(i))) {
                             if (andOpFirst.equals(andOpOther)) {
                                 found = true;
+
                                 break;
                             }
                         }

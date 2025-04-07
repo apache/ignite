@@ -138,6 +138,14 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
             isIndexScan("T1", "IDX1")
                 .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
 
+        // Commutes and duplicates.
+        assertPlan("SELECT * FROM t1 WHERE " +
+                "(c1 = 0 and c2 = 0 and c3 = 0) or " +
+                "(0 = c2 and c3 = 1 and c1 = 0 and c2 = 0) or " +
+                "(c2 = 0 and c3 = 2 and c1 = 0 and c2 = 0)", schema,
+            isIndexScan("T1", "IDX1")
+                .and(s -> "AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))".equals(s.condition().toString())));
+
         // Simple join.
         assertPlan("SELECT * FROM t1 JOIN t2 ON (" +
                 "(t1.c1 = t2.c1 and t1.c2 = 0) or " +
