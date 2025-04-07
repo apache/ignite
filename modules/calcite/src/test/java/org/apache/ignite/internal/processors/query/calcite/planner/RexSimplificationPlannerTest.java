@@ -70,6 +70,13 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
             isIndexScan("T1", "IDX1")
                 .and(s -> "AND(>($t0, 0), OR(=($t1, 1), =($t2, 2)))".equals(s.condition().toString())));
 
+        // Conjunction left inside disjunction.
+        assertPlan("SELECT * FROM t1 WHERE " +
+                "(c1 = 0 and c2 = 1 and c3 = 0) or " +
+                "(c1 = 0 and c2 = c3)", schema,
+            isIndexScan("T1", "IDX1")
+                .and(s -> "AND(=($t0, 0), OR(AND(=($t1, 1), =($t2, 0)), =($t1, $t2)))".equals(s.condition().toString())));
+
         // Three operands disjunction.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0 and c2 = 1) or " +
