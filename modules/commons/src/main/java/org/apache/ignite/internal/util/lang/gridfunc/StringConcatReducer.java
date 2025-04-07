@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import org.apache.ignite.internal.util.typedef.internal.CF;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteReducer;
