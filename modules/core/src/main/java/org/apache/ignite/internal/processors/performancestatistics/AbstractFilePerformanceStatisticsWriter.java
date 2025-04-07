@@ -160,6 +160,7 @@ abstract class AbstractFilePerformanceStatisticsWriter {
         return false;
     }
 
+    /** */
     protected void cleanup() {
         U.closeQuiet(fileIo);
     }
