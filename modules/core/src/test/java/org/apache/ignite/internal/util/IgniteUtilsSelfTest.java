@@ -1683,4 +1683,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(3, U.hashToIndex(-15, 4));
     }
 
+    @Test(expected = IgniteCheckedException.class)
+    public void testStaticField() throws Exception {
+        U.staticField(String.class, "unknown_field");
+    }
 }
