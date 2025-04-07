@@ -18,6 +18,12 @@ const UNKNOWN_JDBC_TYPE = {
     unsigned: {javaType: 'Unknown', primitiveType: 'Unknown'}
 };
 
+const JDBC_TYPE_ALIASES = {
+    "DATETIME": "DATE",
+    "UUID":     "VARCHAR",
+    "JSON":     "LONGVARCHAR"    
+};
+
 /**
  * Utility service for various check on SQL types.
  */
@@ -50,8 +56,8 @@ export default class SqlTypes {
      */
     findJdbcType(dbType,dbTypeName) {
         let jdbcType = undefined;
-        if(dbType==1111 && dbTypeName){
-            jdbcType = this.findJdbcTypeName(dbTypeName);
+        if(dbType==1111 || dbType==0 || dbType==undefined){
+            jdbcType = _.find(JDBC_TYPES, (item) => item.dbName === dbTypeName);
         }
         if(!jdbcType){
             jdbcType = _.find(JDBC_TYPES, (item) => item.dbType === dbType);
@@ -61,8 +67,8 @@ export default class SqlTypes {
 
     findJdbcTypeName(typeName) {
         typeName = typeName.toUpperCase();
-        const jdbcType = _.find(JDBC_TYPES, (item) => item.dbName === typeName);
-        return jdbcType ? jdbcType : undefined;
+        const jdbcType = JDBC_TYPE_ALIASES.get(typeName);
+        return jdbcType ? jdbcType : typeName;
     }
 
     toJdbcIdentifier(name) { 

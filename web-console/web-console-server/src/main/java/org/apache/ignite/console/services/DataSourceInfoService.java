@@ -7,14 +7,17 @@ import io.vertx.core.json.JsonObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.ignite.binary.BinaryObject;
+import org.bson.types.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -58,9 +61,20 @@ public class DataSourceInfoService {
 		            		log.warn("BinaryObject deserialize(): {} ",e.getMessage());
 		            	}
 		            	
-		            } 
+		            }
 		            
-		            if (value instanceof JsonObject) {
+		            if(value instanceof org.bson.types.Binary) {
+		            	Binary bin = (Binary)(value);
+		            	if(bin.length()==16) {
+		            		result.put("typeName", "UUID");
+		            		result.put("type", 1111);
+		            	}
+		            	else {
+		            		result.put("typeName", "BINARY");
+			            	result.put("type", -2);
+		            	}
+		            }		            
+		            else if (value instanceof JsonObject) {
 		            	result.put("typeName", "STRUCT");
 		            	result.put("type", 1111);
 		            } 

@@ -13,9 +13,9 @@ pc-items-table(
 )
     footer-slot
         div(style='font-style: italic' ng-hide='($ctrl.shortItems$|async:this).length')
-            | You have no models. #[a.link-success(ui-sref='base.console.edit.advanced.models.model({modelID: "new"})') Create one?]
+            | You have no models. #[a.link-success(ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})') Create one?]
         a.link-success(
-            ui-sref='base.console.edit.advanced.models.model({modelID: "new"})'
+            ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})'
             ng-show='($ctrl.shortItems$|async:this).length'
         ) + Add new model
 

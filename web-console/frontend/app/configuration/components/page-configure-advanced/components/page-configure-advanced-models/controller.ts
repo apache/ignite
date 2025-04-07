@@ -20,6 +20,7 @@ import {ShortDomainModel, DomainModel, ShortCache} from '../../../../types';
 import {IColumnDefOf} from 'ui-grid';
 import ConfigSelectionManager from '../../../../services/ConfigSelectionManager';
 
+
 export default class PageConfigureAdvancedModels {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];
 
@@ -95,7 +96,7 @@ export default class PageConfigureAdvancedModels {
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
                 minWidth: 165
-            }
+            }           
         ];
 
         this.itemID$ = this.$uiRouter.globals.params$.pipe(pluck('modelID'));

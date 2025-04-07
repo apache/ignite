@@ -70,7 +70,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
      */
-    public static final String DFLT_PATH = "disco/tcp";
+    public static final String DFLT_NAME = "default";
 
     /** Delimiter to use between address and port tokens in file names. */
     public static final String DELIM = "#";
@@ -88,7 +88,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** File-system path. */
     private String path = null;
     
-    private String masterUrl = null;
+    private String masterUrl = "http://127.0.0.1:3000";
     
     private String accountToken = null;
     
@@ -173,8 +173,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 		if(masterUrl!=null) {
 			if(masterUrl.toLowerCase().startsWith("file://")) {
 				return masterUrl.substring("file://".length());
-			}
-			//- return masterUrl;	
+			}			
 		}
 		String root = this.ignite.configuration().getWorkDirectory();
 		return root;
@@ -190,22 +189,17 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         if (initGuard.compareAndSet(false, true)) {
         	String root = getFolderRoot();
         	String instanceName = this.ignite.name();
+        	if (instanceName == null || instanceName.isEmpty())
+        		instanceName = DFLT_NAME;
+        	
         	if (path == null)
         		path = "disco/"+instanceName;
-            
-        	if (instanceName == null)
-        		path = DFLT_PATH;
-
-            if (path.equals(DFLT_PATH) && warnGuard.compareAndSet(false, true))
-                U.warn(log, "Default local computer-only share is used by IP finder.");
-            
             
             if(masterUrl!=null && accountToken==null) {
             	if(!masterUrl.toLowerCase().startsWith("file://")) {
 	            	throw new IgniteSpiException("Failed to initialize web console server disco system " +
 	                        "(accountToken must set to masterUrl: " + masterUrl + ")");
-            	}
-            	
+            	}            	
             }
             
             if(this.masterUrl!=null && !masterUrl.toLowerCase().startsWith("file://")) {            	
@@ -266,25 +260,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
         Collection<InetSocketAddress> addrs = new HashSet<>();
         
-        for (String fileName : folder.list()) {
-            StringTokenizer st = new StringTokenizer(fileName, DELIM);
-
-            if (st.countTokens() != 2)
-                continue;
-
-            String addrStr = st.nextToken();
-            String portStr = st.nextToken();
-
-            try {
-                int port = Integer.parseInt(portStr);
-
-                addrs.add(new InetSocketAddress(denormalizeAddress(addrStr), port));
-            }
-            catch (IllegalArgumentException e) {
-                U.error(log, "Failed to parse file entry: " + fileName, e);
-            }
-        }
-        
         if(this.httpClient!=null) {
         	String url = this.masterUrl+ "/api/v1/"+path;
         	
@@ -316,7 +291,27 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 			} catch (IOException | InterruptedException e) {
 				U.error(log, "Failed to get addresses entry: " + url, e);
 			}
-        }        
+        } 
+        else {
+        	for (String fileName : folder.list()) {
+                StringTokenizer st = new StringTokenizer(fileName, DELIM);
+
+                if (st.countTokens() != 2)
+                    continue;
+
+                String addrStr = st.nextToken();
+                String portStr = st.nextToken();
+
+                try {
+                    int port = Integer.parseInt(portStr);
+
+                    addrs.add(new InetSocketAddress(denormalizeAddress(addrStr), port));
+                }
+                catch (IllegalArgumentException e) {
+                    U.error(log, "Failed to parse file entry: " + fileName, e);
+                }
+            }
+        }
 
         return Collections.unmodifiableCollection(addrs);
     }
@@ -366,6 +361,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         initFolder();
 
         try {
+        	
         	String addresses = "";
             for (String name : distinctNames(addrs)) {
                 File file = new File(folder, name);
@@ -377,8 +373,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
                 	addresses += ",";
                 addresses += name;
             }
-            
-            if(this.httpClient!=null) {
+        	
+        	if(this.httpClient!=null) {
             	UUID nodeId = this.ignite.cluster().localNode().id();
             	
             	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId;
@@ -389,7 +385,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             			         .DELETE()
             			         .build();
             	httpClient.send(request,BodyHandlers.discarding());
-            }
+            }    
+            
         }
         catch (SecurityException e) {
             throw new IgniteSpiException("Failed to delete file.", e);

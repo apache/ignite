@@ -4,7 +4,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import {tap} from 'rxjs/operators';
 import {Menu} from 'app/types';
-
+import {StateService} from '@uirouter/angularjs';
 import LegacyConfirmFactory from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
 import Caches from '../../../../services/Caches';
@@ -15,9 +15,14 @@ export default class CacheEditFormController {
 
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils'];
+    cache: any;
+
+    clonedCache: any;
+
+    static $inject = ['$state','IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils'];
 
     constructor(
+        private $state: StateService,
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
         private IgniteVersion: Version,
         private $scope: ng.IScope,
@@ -33,10 +38,7 @@ export default class CacheEditFormController {
                 {value: 'Rendezvous', label: 'Rendezvous'},
                 {value: 'Custom', label: 'Custom'},
                 {value: null, label: 'Default'}
-            ];
-            
-            if (_.get(this.clonedCache, 'cacheStoreFactory.kind') === 'DocumentLoadOnlyStoreFactory')
-                this.clonedCache.cacheStoreFactory.kind = null;
+            ];            
         };
 
         rebuildDropdowns();
@@ -57,7 +59,7 @@ export default class CacheEditFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save', icon: 'checkmark', click: () => this.save(false)},
             {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
         ];
     }
@@ -82,6 +84,10 @@ export default class CacheEditFormController {
 
     getValuesToCompare() {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
+    }
+
+    goDomainEdit() {
+        this.$state.go('base.configuration.edit.advanced.models.model', {modelID:this.cache.domains[0]});
     }
 
     save(download) {

@@ -9,8 +9,8 @@ include /app/configuration/mixins
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
     panel-description
-        | Common cache configuration.
-        a.link-success(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info
+        | Common cache configuration.         
+        a.link-success(href="#model" ng-click='$ctrl.goDomainEdit()') More info about domain model configuration.
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60

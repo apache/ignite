@@ -155,6 +155,7 @@ export default class PageConfigureAdvancedModels {
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.advanced.models', null, options)))
         ).subscribe();
+        
     }
 
     edit(modelID) {

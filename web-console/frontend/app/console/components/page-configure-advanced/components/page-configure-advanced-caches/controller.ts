@@ -1,5 +1,5 @@
-
-
+import cloneDeep from 'lodash/cloneDeep';
+import uuidv4 from 'uuid/v4';
 import {Subject, from, merge, combineLatest} from 'rxjs';
 import {tap, map, filter, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
@@ -144,21 +144,35 @@ export default class Controller {
        
         this.isBlocked$ = cacheID$;
 
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems:Array<string>) => [
             {
                 action: 'Clone',
                 click: () => this.clone(selectedItems),
-                available: false
+                available: selectedItems.length==1
             },
             {
                 action: 'Delete',
                 click: () => {
                     this.remove(selectedItems);
                 },
-                available: true
+                available: false
             }
         ]));        
         
+    }
+
+    clone(itemIDs: Array<string>) {
+        this.originalCache$.pipe(            
+            switchMap((cache) => {
+                let clonedCache = cloneDeep(cache);
+                clonedCache.id = uuidv4();
+                clonedCache.name = cache.name+'_cloned';
+                this.ConfigureState.dispatchAction(
+                    advancedSaveCache(clonedCache, false)
+                );
+                return clonedCache;
+            })
+        )
     }
 
     remove(itemIDs: Array<string>) {
@@ -166,8 +180,7 @@ export default class Controller {
             //removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
        // );
     }
-
-
+    
     $onDestroy() {
         this.subscription.unsubscribe();
         this.visibleRows$.complete();
@@ -179,6 +192,6 @@ export default class Controller {
     }
 
     save({cache, download}) {
-        // this.ConfigureState.dispatchAction(advancedSaveCache(cache, download));
+        this.ConfigureState.dispatchAction(advancedSaveCache(cache, download));
     }
 }

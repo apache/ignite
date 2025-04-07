@@ -10,9 +10,9 @@ include /app/configuration/mixins
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
     panel-description
-        | Domain model properties common for Query and Store.
-        a.link-success(href="https://apacheignite.readme.io/docs/cache-queries" target="_blank") More info about query configuration.
-        a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info about store.
+        | Domain model properties common for Query and Store. 
+        a.link-success(href="#cache" ng-click='$ctrl.goCacheEdit()') More info about cache configuration.
+        
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60

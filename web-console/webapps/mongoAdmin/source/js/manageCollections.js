@@ -7,10 +7,11 @@
 MPG.eventListeners.addCreateColl = function() {
 
     document.querySelector('#mpg-create-coll-button').addEventListener('click', function(_event) {
-
-        var databaseName = window.prompt('Database name to create or use');
+		
+        var databaseName = MPG.databaseName;
         if ( databaseName === null ) {
-            return;
+            window.alert('Database name to select and use');
+			return ;
         }
         
         var collectionName = window.prompt('Collection name to create');

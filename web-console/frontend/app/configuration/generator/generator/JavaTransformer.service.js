@@ -10,7 +10,7 @@ const versionService = new VersionService();
 
 const STORE_FACTORY = [
     'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory',
-    'org.apache.ignite.cache.store.bson.DocumentLoadOnlyStoreFactory'
+    'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory'
 ];
 
 // Var name generator function.

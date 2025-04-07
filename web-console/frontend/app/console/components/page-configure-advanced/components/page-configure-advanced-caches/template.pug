@@ -18,7 +18,11 @@ pc-items-table(
                 ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
                 ui-sref-opts='{location: "replace"}'
             ) Create one?           
-        
+        a.link-success(
+            ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
+            ui-sref-opts='{location: "replace"}'
+            ng-show='($ctrl.shortCaches$|async:this).length'
+        ) + Add new cache
 
 h2.pc-page-header.ng-animate-disabled(ng-hide='($ctrl.isBlocked$|async:this)')
     | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} caches selected

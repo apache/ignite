@@ -177,7 +177,9 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         if(cfg.getBinaryConfiguration().getTypeConfigurations()==null) {
         	cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
         }
-        cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
+        
+        // not ad@byron
+        //- cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
         
         // Configure discovery SPI.
         if(cfg.getDiscoverySpi()==null) {

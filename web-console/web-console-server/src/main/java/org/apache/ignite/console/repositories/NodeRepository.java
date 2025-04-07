@@ -108,6 +108,17 @@ public class NodeRepository {
         });
     }
     
+    /**
+     * clear activity.
+     *
+     * @param accId Account ID.     
+     *
+     * @return Activity.
+     */
+    public void clear() {
+    	activitiesIdx.cache().clear();
+        activitiesTbl.cache().clear();
+    }
     
     /**
      * delete activity.

@@ -22,6 +22,7 @@ MPG.eventListeners.addImport = function() {
         document.querySelector('input[name="collection_name"]').value = MPG.collectionName;
 
         document.querySelector('#mpg-import-form').submit();
+		document.querySelector('#mpg-import-form').disabled = true;
 
     });
 

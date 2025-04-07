@@ -40,7 +40,5 @@
     {"dbName": "NVARCHAR", "dbType": -9, "signed": {"javaType": "String"}},
     {"dbName": "LONGNVARCHAR", "dbType": -16, "signed": {"javaType": "String"}},
     {"dbName": "NCLOB", "dbType": 2011, "signed": {"javaType": "String"}},
-    {"dbName": "SQLXML", "dbType": 2009, "signed": {"javaType": "SQLXML"}},
-    {"dbName": "UUID", "dbType": 1111, "signed": {"javaType": "UUID"}},
-    {"dbName": "JSON", "dbType": 1111, "signed": {"javaType": "String"}}
+    {"dbName": "SQLXML", "dbType": 2009, "signed": {"javaType": "SQLXML"}}    
 ]

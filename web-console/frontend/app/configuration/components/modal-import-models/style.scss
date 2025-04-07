@@ -1,6 +1,6 @@
 
 
-modal-import-models {
+modal-import-models,modal-import-models-from-template {
     .modal-content {
         min-height: 493px;
         display: flex;
@@ -29,56 +29,11 @@ modal-import-models {
         margin-top: 15px;
         margin-bottom: 30px;
     }
-    .#{&}__prev-button {
+
+    .modal-import-models__prev-button {
         margin-right: auto !important;
     }
-    .#{&}__next-button {
-        margin-left: auto !important;
-    }
-
-    no-data {
-        margin: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 300px;
-    }
-}
-
-
-modal-import-models-from-template {
-    .modal-content {
-        min-height: 493px;
-        display: flex;
-        flex-direction: column;
-
-        .modal-body {
-            flex: 1 1 auto;
-            overflow-y: auto;
-        }
-        .modal-footer {
-            display: flex;
-            align-items: baseline;
-
-            selected-items-amount-indicator {
-                margin-left: auto;
-                margin-right: auto;
-            }
-        }
-    }
-
-    pc-items-table {
-        width: 100%;
-    }
-
-    modal-import-models-step-indicator {
-        margin-top: 15px;
-        margin-bottom: 30px;
-    }
-    .#{&}__prev-button {
-        margin-right: auto !important;
-    }
-    .#{&}__next-button {
+    .modal-import-models__next-button {
         margin-left: auto !important;
     }
 

@@ -18,19 +18,24 @@ export default class CacheEditFormController {
 
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$uiRouter', '$scope', 'Caches', 'TaskFlows','IgniteFormUtils'];
+    cache: any;    
+
+    clonedCache: any;
+
+    clusterId: string;
+
+    static $inject = ['$state','IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'TaskFlows','IgniteFormUtils'];
 
     constructor(
+        private $state: StateService,
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
-        private IgniteVersion: Version,
-        private $uiRouter: UIRouter,
+        private IgniteVersion: Version,       
         private $scope: ng.IScope,
         private Caches: Caches,
         private TaskFlows: TaskFlows,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>
     ) {}
-
-    clusterId: string;
+    
     
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
@@ -104,6 +109,10 @@ export default class CacheEditFormController {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
     }
 
+    goDomainEdit() {
+        this.$state.go('base.console.edit.advanced.models.model', {modelID:this.cache.domains[0]});
+    }
+
     save(start) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
@@ -153,8 +162,7 @@ export default class CacheEditFormController {
 
     clearImplementationVersion(storeFactory) {
         delete storeFactory.implementationVersion;
-    }
-    
+    }    
     
     addCache() {
         const newFlow = this.TaskFlows.getBlankTaskFlow()

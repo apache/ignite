@@ -71,7 +71,8 @@
 		<property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryWebConsoleServerIpFinder">			
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryWebConsoleServerIpFinder">
+                    	<property name="masterUrl" value="file://disco/admin" />
                     </bean>
                 </property>
             </bean>

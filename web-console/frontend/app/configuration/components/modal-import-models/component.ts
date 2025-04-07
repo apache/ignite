@@ -707,10 +707,14 @@ export class ModalImportModels {
                             dialect,
                             implementationVersion: $scope.selectedPreset.jdbcDriverImplementationVersion
                         };
+                        const mongoFactoryBean = {
+                            dataSrc: $scope.selectedPreset.jdbcUrl,
+                            idField: '_id',                            
+                        };
 
                         newCache.cacheStoreFactory = {
                             kind: dialect === 'MongoDB' ? 'DocumentLoadOnlyStoreFactory' : 'CacheJdbcPojoStoreFactory',
-                            DocumentLoadOnlyStoreFactory: dsFactoryBean,
+                            DocumentLoadOnlyStoreFactory: mongoFactoryBean,
                             CacheJdbcPojoStoreFactory: dsFactoryBean,
                             CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                         };
@@ -1118,7 +1122,7 @@ export class ModalImportModels {
                 ></tables-action-cell>
             `,
             visible: true,
-            minWidth: 450
+            minWidth: 350
         }
     ];
 }

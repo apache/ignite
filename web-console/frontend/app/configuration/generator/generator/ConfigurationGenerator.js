@@ -2185,6 +2185,39 @@ export default class IgniteConfigurationGenerator {
         bean.varArgProperty('types', 'types', types, 'org.apache.ignite.cache.store.jdbc.JdbcType');
     }
 
+    static _baseDocumentStoreFactory(storeFactory, bean, cacheName, domains, available, deps) {        
+
+        bean.stringProperty('dataSrc').stringProperty('idField');
+        bean.intProperty('batchSize').intProperty('parallelLoadCacheMinimumThreshold');
+        bean.boolProperty('streamerEnabled');
+
+        const setType = (typeBean, propName) => {
+            if (javaTypes.nonBuiltInClass(typeBean.valueOf(propName)))
+                typeBean.stringProperty(propName);
+            else
+                typeBean.classProperty(propName);
+        };
+
+        const types = _.reduce(domains, (acc, domain) => {
+            if (isNil(domain.databaseTable))
+                return acc;
+
+            const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName}))
+                .stringProperty('cacheName');
+
+            setType(typeBean, 'keyType');
+            setType(typeBean, 'valueType');
+
+            this.domainStore(domain, typeBean);
+
+            acc.push(typeBean);
+
+            return acc;
+        }, []);
+
+        bean.varArgProperty('types', 'types', types, 'org.apache.ignite.cache.store.jdbc.JdbcType');
+    }
+
     // Generate cache store group.
     static cacheStore(cache, domains, available, targetVer, deps, ccfg = this.cacheConfigurationBean(cache)) {
         const kind = _.get(cache, 'cacheStoreFactory.kind');
@@ -2196,14 +2229,10 @@ export default class IgniteConfigurationGenerator {
 
             switch (kind) {
                 case 'DocumentLoadOnlyStoreFactory':
-                    if (targetVer.hiveVersion) {
-                        bean = new Bean('org.apache.ignite.cache.store.bson.DocumentLoadOnlyStoreFactory', 'cacheStoreFactory',
-                            storeFactory, cacheDflts.cacheStoreFactory.DocumentLoadOnlyStoreFactory);
-
-                        bean.stringProperty('dataSrc').stringProperty('idField');
-                        bean.intProperty('batchSize').intProperty('parallelLoadCacheMinimumThreshold')
-                        bean.boolProperty('streamerEnabled');
-                    }
+                    bean = new Bean('org.apache.ignite.cache.store.bson.DocumentLoadOnlyStoreFactory', 'cacheStoreFactory',
+                        storeFactory, cacheDflts.cacheStoreFactory.DocumentLoadOnlyStoreFactory);
+                    
+                    this._baseDocumentStoreFactory(storeFactory, bean, cache.name, domains, available, deps);
 
                     break;
                 case 'CacheJdbcPojoStoreFactory':

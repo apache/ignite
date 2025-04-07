@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -242,10 +243,19 @@ public class DBInfoController {
             	column.put("comment", row.getString("COLUMN_COMMENT"));
             	column.put("type", 1111);
             	column.put("unsigned", false);
-            	column.put("nullable", row.getBoolean("NULL_ABLE",true));
-            	String cname = column.getString("name").toLowerCase();
-            	if(cname.equals("id") || cname.equals("_id") || cname.equals("_key")) {
+            	column.put("nullable", row.getBoolean("IS_NULLABLE",true));
+            	String isKey = row.getString("COLUMN_KEY",""); // 
+            	String is_generated = row.getString("is_generated","NO");
+            	if(!isKey.isEmpty() || !is_generated.equals("NO")) {
             		column.put("key", true);
+            		column.put("nullable", false);
+            	}
+            	else {
+	            	String cname = column.getString("name").toLowerCase();
+	            	if(cname.equals("id") || cname.equals("_id") || cname.equals("_key") || cname.equalsIgnoreCase(name+"_id")) {
+	            		column.put("key", true);
+	            		column.put("nullable", false);
+	            	}
             	}
             	columns.add(column);
             	

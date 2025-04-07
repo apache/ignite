@@ -24,7 +24,7 @@ pc-items-table(
             ng-show='($ctrl.shortCaches$|async:this).length'
         ) + Add new cache
 
-h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
+h2.pc-page-header.ng-animate-disabled(ng-hide='($ctrl.isBlocked$|async:this)')
     | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} caches selected
     span.pc-page-header-sub Select only one cache to see settings and edit it
 

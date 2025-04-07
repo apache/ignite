@@ -193,7 +193,7 @@ mixin td-ellipses-lbl(w, lbl)
                     total-amount='$ctrl.$scope.importDomain.schemas.length'
                 )
                 selected-items-amount-indicator(
-                    ng-if='$ctrl.$scope.importDomain.action === "tables"'
+                    ng-if='$ctrl.$scope.importDomain.action === "tables" || $ctrl.$scope.importDomain.action === "meta-tables"'
                     selected-amount='$ctrl.selectedTablesIDs.length'
                     total-amount='$ctrl.$scope.importDomain.tables.length'
                 )

@@ -60,8 +60,8 @@ const DFLT_PARTITIONED_CACHE = {
         name: 'PARTITIONED',
         cacheMode: 'PARTITIONED',
         atomicityMode: 'ATOMIC',
-        readThrough: true,
-        writeThrough: true
+        readThrough: false,
+        writeThrough: false
     }
 };
 
@@ -72,8 +72,8 @@ const DFLT_REPLICATED_CACHE = {
         name: 'REPLICATED',
         cacheMode: 'REPLICATED',
         atomicityMode: 'ATOMIC',
-        readThrough: true,
-        writeThrough: true
+        readThrough: false,
+        writeThrough: false
     }
 };
 
@@ -240,11 +240,11 @@ export class ModalImportModelsFromTemplate {
                 const meta_tables = tables.filter((t) => {
                     let hasmeta = 0;
                     t.columns.forEach((col) => {
-                        if(["TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME"].includes(col.name)){
+                        if(["TABLE_NAME","COLUMN_NAME"].includes(col.name)){
                             hasmeta+=1;
                         }
                     });
-                    return hasmeta >= 3;
+                    return hasmeta >= 2;
                 });
 
                 this.$scope.importDomain.original_tables = tables;
@@ -538,7 +538,8 @@ export class ModalImportModelsFromTemplate {
                     _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
-                        tbl.table = tbl.name;                                    
+                        tbl.table = tbl.name;
+                        tbl.schema = tbl.schema || schema;                                
                         tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.name), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.name;
@@ -662,6 +663,7 @@ export class ModalImportModelsFromTemplate {
                 let _containKey = false;
 
                 _.forEach(table.columns, function(col) {
+                    col.typeName = SqlTypes.findJdbcTypeName(col.typeName);
                     const fld = dbField(col.name, SqlTypes.findJdbcType(col.type,col.typeName), col.nullable, col.unsigned);
 
                     qryFields.push({name: fld.javaFieldName, className: fld.javaType, comment: col.comment});
@@ -699,6 +701,12 @@ export class ModalImportModelsFromTemplate {
                             fields: idxFields
                         });
                     });
+                }
+
+                if(!containKey){
+                    const fld = dbField("_id", SqlTypes.findJdbcType(1111,"UUID"), false, false);
+                    qryFields.push({name: fld.javaFieldName, className: fld.javaType, comment: ''});
+                    keyFields.push(fld); 
                 }
 
                 const domainFound = _.find($scope.domains, (domain) => domain.valueType === valType);
@@ -784,18 +792,27 @@ export class ModalImportModelsFromTemplate {
                             implementationVersion: $scope.selectedPreset.jdbcDriverImplementationVersion
                         };
 
+                        const mongoFactoryBean = {
+                            dataSrc: $scope.selectedPreset.jdbcUrl,
+                            idField: '_id',                            
+                        };
+
                         newCache.cacheStoreFactory = {
                             kind: dialect === 'MongoDB' ? 'DocumentLoadOnlyStoreFactory' : 'CacheJdbcPojoStoreFactory',
-                            DocumentLoadOnlyStoreFactory: dsFactoryBean,
+                            DocumentLoadOnlyStoreFactory: mongoFactoryBean,
                             CacheJdbcPojoStoreFactory: dsFactoryBean,
                             CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                         };
                     }
 
+                    /** disable@byron
                     if (!newCache.readThrough && !newCache.writeThrough) {
                         newCache.readThrough = true;
                         newCache.writeThrough = true;
                     }
+                    */
+                    newCache.readThrough = false;
+                    newCache.writeThrough = false;
                 }
                 else {
                     const newDomain = batchAction.newDomainModel;
@@ -951,6 +968,10 @@ export class ModalImportModelsFromTemplate {
                 $scope.importDomain.info = INFO_SELECT_TABLES;
             }
             else if ($scope.importDomain.action === 'tables' && $scope.importDomain.schemas.length > 0) {
+                $scope.importDomain.action = 'schemas';
+                $scope.importDomain.info = INFO_SELECT_SCHEMAS;
+            }
+            else if ($scope.importDomain.action === 'meta_tables' && $scope.importDomain.schemas.length > 0) {
                 $scope.importDomain.action = 'schemas';
                 $scope.importDomain.info = INFO_SELECT_SCHEMAS;
             }
@@ -1139,7 +1160,7 @@ export class ModalImportModelsFromTemplate {
                 ></tables-action-cell>
             `,
             visible: true,
-            minWidth: 450
+            minWidth: 350
         }
     ];
 }

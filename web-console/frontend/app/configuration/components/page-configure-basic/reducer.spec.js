@@ -36,7 +36,7 @@ suite('page-configure-basic component reducer', () => {
                 kind: 'Multicast',
                 Vm: {addresses: ['127.0.0.1:47500..47510']},
                 Multicast: {addresses: ['127.0.0.1:47500..47510']},
-                Jdbc: {initSchema: true},
+                WebConsoleServer: {masterUrl: "", accountToken: ""},
                 Cloud: {regions: [], zones: []}
             },
             space: null,

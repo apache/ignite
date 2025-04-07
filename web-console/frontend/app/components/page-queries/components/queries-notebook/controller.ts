@@ -23,15 +23,7 @@ import {DemoService} from 'app/modules/demo/Demo.module';
 import {Paragraph,TIME_LINE,ROW_IDX} from './Paragraph';
 
 
-const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
-
 const COLLOCATED_QUERY_SINCE = ['2.7.0'];
-
-const ENFORCE_JOIN_SINCE = ['1.9.1'];
-
-const LAZY_QUERY_SINCE = ['2.2.1'];
-
-const DDL_SINCE = ['2.3.0'];
 
 const _fullColName = (col) => {
     const res = [];
@@ -1467,23 +1459,23 @@ export class NotebookCtrl {
         };
 
         $scope.nonCollocatedJoinsAvailable = () => {
-            return Version.since(this.agentMgr.clusterVersion, NON_COLLOCATED_JOINS_SINCE);
+            return true;
         };
 
         $scope.collocatedJoinsAvailable = () => {
-            return Version.since(this.agentMgr.clusterVersion, ...COLLOCATED_QUERY_SINCE);
+            return true;
         };
 
         $scope.enforceJoinOrderAvailable = () => {
-            return Version.since(this.agentMgr.clusterVersion, ...ENFORCE_JOIN_SINCE);
+            return true;
         };
 
         $scope.lazyQueryAvailable = () => {
-            return Version.since(this.agentMgr.clusterVersion, ...LAZY_QUERY_SINCE);
+            return true;
         };
 
         $scope.ddlAvailable = () => {
-            return Version.since(this.agentMgr.clusterVersion, ...DDL_SINCE);
+            return true;
         };
 
         $scope.cacheNameForSql = (paragraph) => {

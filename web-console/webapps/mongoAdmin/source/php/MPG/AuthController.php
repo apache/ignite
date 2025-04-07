@@ -5,6 +5,14 @@ namespace MPG;
 class AuthController extends Controller {
 
     public static function ensureUserIsLogged() {
+		if ( !empty($_COOKIE['currentDatasetUrl'])){
+			$uri = $_COOKIE['currentDatasetUrl'];
+			if ( preg_match(MongoDBHelper::URI_REGEX, $uri) ) {
+				$_SESSION['mpg'] = [];
+                $_SESSION['mpg']['mongodb_uri'] = $uri;
+				$_SESSION['mpg']['user_is_logged'] = true;                
+            }
+		}
 
         if ( !isset($_SESSION['mpg']['user_is_logged']) ) {
 
@@ -87,6 +95,7 @@ class AuthController extends Controller {
     public function logout() {
 
         $_SESSION['mpg'] = [];
+		unset($_COOKIE['currentDatasetUrl']);
 
         Routes::redirectTo('/login');
 

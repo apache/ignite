@@ -1,6 +1,7 @@
 <?php
 
 namespace MPG;
+import com.mongodb.client.model.InsertManyOptions;
 
 class DocumentsController extends Controller {    
     
@@ -155,8 +156,9 @@ class DocumentsController extends Controller {
         $collection = MongoDBHelper::getCollection(
             $databaseName, $collectionName
         );
-
-        $insertManyResult = $collection->insertMany(to_document_list($documents));
+		$insert_opt = new \InsertManyOptions();
+		$insert_opt->ordered(False);
+        $insertManyResult = $collection->insertMany(to_document_list($documents),$insert_opt);
 
         return $insertManyResult->getInsertedIds()->size();
 

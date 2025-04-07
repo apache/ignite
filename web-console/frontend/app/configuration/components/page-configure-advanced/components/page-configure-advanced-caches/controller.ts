@@ -144,8 +144,7 @@ export default class Controller {
         )
     }
 
-    remove(itemIDs: Array<string>) {
-        this.selectedRows$.pipe
+    remove(itemIDs: Array<string>) {        
         this.ConfigureState.dispatchAction(
             removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
         );

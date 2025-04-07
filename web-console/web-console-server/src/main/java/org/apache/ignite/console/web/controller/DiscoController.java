@@ -62,7 +62,9 @@ public class DiscoController {
     public DiscoController(Ignite ignite, AccountsService accountsSrv, NodeRepository activitiesSrv) {
         this.accountsSrv = accountsSrv;
         this.activitiesSrv = activitiesSrv;
-        this.ignite = ignite;        
+        this.ignite = ignite;
+        
+        activitiesSrv.clear();
     }
 
     /**

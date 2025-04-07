@@ -3,6 +3,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import _ from 'lodash';
 import get from 'lodash/get';
+import {StateService} from '@uirouter/angularjs';
 
 import {default as Models} from 'app/configuration/services/Models';
 import {default as IgniteVersion} from 'app/services/Version.service';
@@ -18,9 +19,10 @@ export default class ModelEditFormController {
     model: DomainModel;
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['IgniteErrorPopover', 'IgniteLegacyUtils', 'JavaTypes', 'SqlTypes', 'Confirm', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
+    static $inject = ['$state','IgniteErrorPopover', 'IgniteLegacyUtils', 'JavaTypes', 'SqlTypes', 'Confirm', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
 
     constructor(        
+        private $state: StateService,
         private ErrorPopover: ErrorPopover,
         private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
         private JavaTypes: JavaTypes,
@@ -151,6 +153,10 @@ export default class ModelEditFormController {
 
     getValuesToCompare() {
         return [this.model, this.$scope.backupItem].map(this.Models.normalize);
+    }
+
+    goCacheEdit() {
+        this.$state.go('base.console.edit.advanced.caches.cache', {cacheID:this.model.caches[0]});
     }
 
     save(download) {
