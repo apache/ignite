@@ -29,9 +29,6 @@ public class GridStringBuilder implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** System line separator. */
-    private static final String NL = System.getProperty("line.separator");
-
     /** */
     private StringBuilder impl;
 
@@ -282,7 +279,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder nl() {
-        impl.append(NL);
+        impl.append(CommonUtils.nl());
 
         return this;
     }
