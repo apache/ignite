@@ -132,7 +132,6 @@ public class FilePerformanceStatisticsReader {
         A.notEmpty(handlers, "At least one handler expected.");
 
         buf = allocateDirect(bufSize).order(nativeOrder());
-
         this.handlers = handlers;
         curHnd = handlers;
     }
