@@ -116,7 +116,7 @@ public class FilePerformanceStatisticsReader {
     /** Forward read mode. */
     private ForwardRead forwardRead;
 
-    /** Walkers for reading system view recors. */
+    /** Object for reading system view recors. */
     private View viewObj;
 
     /** @param handlers Handlers to process deserialized operations. */
