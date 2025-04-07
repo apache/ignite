@@ -168,6 +168,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
 
+    /** Local partitions number for topology sequence id. */
+    private volatile IgniteBiTuple<Long, Integer> locPartsNum;
+
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
         // No-op. Per-partition PendingTree should be used.
@@ -1110,7 +1113,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = 0;
 
             // Use random shift to reduce contention.
-            int shift = ThreadLocalRandom.current().nextInt(F.size(cacheDataStores().iterator()));
+            long seq = cctx.group().topology().updateSequence();
+
+            IgniteBiTuple<Long, Integer> partsNum = locPartsNum;
+
+            if (partsNum == null || partsNum.getKey() < seq)
+                locPartsNum = partsNum = new IgniteBiTuple<>(seq, cctx.group().topology().localPartitionsNumber());
+
+            int shift = ThreadLocalRandom.current().nextInt(partsNum.getValue());
 
             int cnt = 0;
             for (CacheDataStore store : cacheDataStores()) {

@@ -150,8 +150,8 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
             assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getNumMetric("endTime", mReg) > 0, TIMEOUT));
 
-            int expParts = ((IgniteEx)grid).cachex(ccfg1.getName()).context().topology().localPartitions().size() +
-                ((IgniteEx)grid).cachex(ccfg2.getName()).context().topology().localPartitions().size();
+            int expParts = ((IgniteEx)grid).cachex(ccfg1.getName()).context().topology().localPartitionsNumber() +
+                ((IgniteEx)grid).cachex(ccfg2.getName()).context().topology().localPartitionsNumber();
 
             // Cache2 is replicated - the index partition is being copied (on snapshot data nodes).
             if (!emptyNode.name().equals(grid.name()))

@@ -379,7 +379,7 @@ public class CheckpointWorkflow {
                 continue;
 
             Runnable r = () -> {
-                ArrayList<GridDhtLocalPartition> parts = new ArrayList<>(grp.topology().localPartitions().size());
+                ArrayList<GridDhtLocalPartition> parts = new ArrayList<>(grp.topology().localPartitionsNumber());
 
                 for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
                     parts.add(part);

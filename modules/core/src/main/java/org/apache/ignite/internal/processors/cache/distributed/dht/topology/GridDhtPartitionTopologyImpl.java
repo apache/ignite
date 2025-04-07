@@ -1080,6 +1080,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public int localPartitionsNumber() {
+        int num = 0;
+
+        for (int i = 0; i < locParts.length(); i++) {
+            GridDhtLocalPartition part = locParts.get(i);
+
+            if (part != null && part.state().active())
+                num++;
+        }
+
+        return num;
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
         return new Iterable<GridDhtLocalPartition>() {
             @Override public Iterator<GridDhtLocalPartition> iterator() {
