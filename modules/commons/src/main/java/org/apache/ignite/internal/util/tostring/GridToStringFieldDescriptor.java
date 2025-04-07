@@ -58,7 +58,7 @@ public abstract class GridToStringFieldDescriptor {
     /** */
     private int order = Integer.MAX_VALUE;
 
-    /** Field offset as returned by {@ignitelink GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}. */
+    /** Field offset as returned by {@link GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}. */
     private final long off;
 
     /** Numeric constant for the field's type. One of {@code FIELD_TYPE_*} constants of current class. */
@@ -116,7 +116,7 @@ public abstract class GridToStringFieldDescriptor {
     }
 
     /**
-     * @return Field offset as returned by {@ignitelink GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}.
+     * @return Field offset as returned by {@link GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}.
      */
     public long offset() {
         return off;
