@@ -710,6 +710,9 @@ public class FilePerformanceStatisticsReader {
         /** Row. */
         private final List<Object> row = new ArrayList<>();
 
+        /** User row. */
+        private final List<Object> userRow = Collections.unmodifiableList(row);
+
         /** Not enough bytes. */
         private boolean notEnoughBytes;
 
@@ -717,7 +720,8 @@ public class FilePerformanceStatisticsReader {
         public List<Object> row() {
             if (notEnoughBytes)
                 return null;
-            return row;
+
+            return userRow;
         }
 
         /** */
