@@ -420,11 +420,6 @@ public class FilePerformanceStatisticsWriter extends AbstractFilePerformanceStat
         }
     }
 
-    /** {@inheritDoc} */
-    String fileAbsolutePath() {
-        return "";
-    }
-
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
         /**
