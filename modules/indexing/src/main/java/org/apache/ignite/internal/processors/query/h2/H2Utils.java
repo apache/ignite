@@ -63,6 +63,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
@@ -209,7 +211,7 @@ public class H2Utils {
      * @return Statement string.
      */
     public static String indexCreateSql(String fullTblName, Index h2Idx, boolean ifNotExists) {
-        boolean spatial = F.eq(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
+        boolean spatial = Objects.equals(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
 
         GridStringBuilder sb = new SB("CREATE ")
             .a(spatial ? "SPATIAL " : "")
@@ -657,7 +659,7 @@ public class H2Utils {
             if (star == 0)
                 qry = qry.substring(1).trim();
             else if (star > 0) {
-                if (F.eq('.', qry.charAt(star - 1))) {
+                if (Objects.equals('.', qry.charAt(star - 1))) {
                     t = qry.substring(0, star - 1);
 
                     qry = qry.substring(star + 1).trim();
@@ -873,6 +875,23 @@ public class H2Utils {
      */
     public static String queryEngine() {
         return IndexingQueryEngineConfiguration.ENGINE_NAME;
+    }
+
+    /**
+     * @param stmnt Statement to print.
+     * @return SQL query where constant replaced with '?' char.
+     * @see GridSqlConst#getSQL()
+     * @see QueryUtils#includeSensitive()
+     */
+    public static String sqlWithoutConst(GridSqlStatement stmnt) {
+        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
+
+        try {
+            return stmnt.getSQL();
+        }
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
+        }
     }
 
     /**

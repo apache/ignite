@@ -511,7 +511,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Writes {@link UUID} to buffer. */
-    private static void writeUuid(ByteBuffer buf, UUID uuid) {
+    static void writeUuid(ByteBuffer buf, UUID uuid) {
         buf.putLong(uuid.getMostSignificantBits());
         buf.putLong(uuid.getLeastSignificantBits());
     }

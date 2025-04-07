@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvat
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.CheckpointTest;
+import org.apache.ignite.internal.processors.performancestatistics.ForwardReadQueryPropertyTest;
 import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
@@ -103,6 +104,7 @@ import org.junit.runners.Suite;
     PerformanceStatisticsPropertiesTest.class,
     PerformanceStatisticsMultipleStartTest.class,
     ForwardReadTest.class,
+    ForwardReadQueryPropertyTest.class,
     CacheStartTest.class,
     CheckpointTest.class
 })

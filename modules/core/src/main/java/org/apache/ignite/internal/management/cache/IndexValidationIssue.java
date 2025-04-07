@@ -20,15 +20,15 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *
  */
-public class IndexValidationIssue extends VisorDataTransferObject {
+public class IndexValidationIssue extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -74,7 +74,7 @@ public class IndexValidationIssue extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         key = U.readString(in);
         cacheName = U.readString(in);
         idxName = U.readString(in);

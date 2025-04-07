@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -382,7 +383,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         locNodeId = ctx.localNodeId();
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
@@ -1866,7 +1867,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         Byte oldPlc = CUR_PLC.get();
 
-        boolean change = !F.eq(oldPlc, plc);
+        boolean change = !Objects.equals(oldPlc, plc);
 
         if (change)
             CUR_PLC.set(plc);
@@ -3620,7 +3621,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
                     }
 
-                    if (!F.eq(topic, msgTopic))
+                    if (!Objects.equals(topic, msgTopic))
                         return;
 
                     if (msgBody == null) {
@@ -3663,7 +3664,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             GridUserMessageListener l = (GridUserMessageListener)o;
 
-            return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
+            return Objects.equals(predLsnr, l.predLsnr) && Objects.equals(topic, l.topic);
         }
 
         /** {@inheritDoc} */

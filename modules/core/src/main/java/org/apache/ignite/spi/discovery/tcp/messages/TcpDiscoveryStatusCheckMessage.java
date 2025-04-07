@@ -19,8 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -125,8 +125,8 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
 
         TcpDiscoveryStatusCheckMessage other = (TcpDiscoveryStatusCheckMessage)obj;
 
-        return F.eq(other.creatorNodeId(), creatorNodeId()) &&
-            F.eq(other.failedNodeId, failedNodeId) &&
+        return Objects.equals(other.creatorNodeId(), creatorNodeId()) &&
+            Objects.equals(other.failedNodeId, failedNodeId) &&
             status == other.status;
     }
 
