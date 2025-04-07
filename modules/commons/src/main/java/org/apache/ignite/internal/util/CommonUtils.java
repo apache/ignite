@@ -37,7 +37,7 @@ public abstract class CommonUtils {
     private static final Constructor OBJECT_CTOR;
 
     /** System line separator. */
-    private static final String NL = System.getProperty("line.separator");
+    static final String NL = System.getProperty("line.separator");
 
     static {
         try {
