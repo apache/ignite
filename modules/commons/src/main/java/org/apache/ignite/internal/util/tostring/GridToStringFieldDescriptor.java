@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.tostring;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.intellij.lang.annotations.MagicConstant;
 
 /**

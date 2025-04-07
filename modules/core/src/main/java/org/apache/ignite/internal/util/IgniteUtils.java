@@ -375,9 +375,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static final UUID[] EMPTY_UUIDS = new UUID[0];
 
-    /** System line separator. */
-    private static final String NL = System.getProperty("line.separator");
-
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
 
@@ -8493,13 +8490,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return false;
-    }
-
-    /**
-     * @return {@code line.separator} system property.
-     */
-    public static String nl() {
-        return NL;
     }
 
     /**

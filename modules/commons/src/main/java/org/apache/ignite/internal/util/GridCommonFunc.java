@@ -19,6 +19,9 @@ package org.apache.ignite.internal.util;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,6 +45,25 @@ import org.jetbrains.annotations.Nullable;
  * <b>Remove when GridFunc migrated</b>
  */
 public class GridCommonFunc {
+    /**
+     * Concatenates strings using provided delimiter.
+     *
+     * @param c Input collection.
+     * @param delim Delimiter (optional).
+     * @return Concatenated string.
+     */
+    public static String concat(Iterable<?> c, @Nullable String delim) {
+        A.notNull(c, "c");
+
+        IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
+
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
+                break;
+
+        return f.reduce();
+    }
+
     /**
      * Tests if given string is {@code null} or empty.
      *
