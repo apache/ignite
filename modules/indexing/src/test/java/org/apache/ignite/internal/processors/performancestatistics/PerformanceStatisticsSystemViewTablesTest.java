@@ -138,7 +138,7 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
 
     /** */
     private Object getAttrValByName(List<String> schema, List<Object> row, String attr) {
-        int index = schema.indexOf(attr);
-        return row.get(index);
+        int idx = schema.indexOf(attr);
+        return row.get(idx);
     }
 }
