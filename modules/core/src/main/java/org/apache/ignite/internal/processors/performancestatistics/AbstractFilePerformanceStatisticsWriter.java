@@ -75,7 +75,7 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
     /** Hashcodes of cached strings. */
-    private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
+    private Set<Integer> knownStrs = new GridConcurrentHashSet<>();
 
     /** Count of cached strings. */
     private volatile int knownStrsSz;
@@ -163,6 +163,7 @@ abstract class AbstractFilePerformanceStatisticsWriter {
     /** */
     protected void cleanup() {
         U.closeQuiet(fileIo);
+        knownStrs = null;
     }
 
     /** */
