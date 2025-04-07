@@ -417,7 +417,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
     }
 
     /** {@inheritDoc} */
@@ -426,7 +426,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -435,7 +435,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -511,6 +511,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
+        boolean validateParamsCnt,
         Object... params
     ) throws IgniteSQLException {
         ensureTransactionModeSupported(qryCtx);
@@ -540,6 +541,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
+        if (validateParamsCnt)
+            checkDynamicParamsCount(qryList, params);
+
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
 
@@ -563,6 +567,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
 
         return res;
+    }
+
+    /** */
+    private void checkDynamicParamsCount(SqlNode node, Object[] params) {
+        int[] maxDynParIdx = new int[] {-1};
+
+        node.accept(new SqlShuttle() {
+            @Override public SqlNode visit(SqlDynamicParam param) {
+                if (param.getIndex() > maxDynParIdx[0])
+                    maxDynParIdx[0] = param.getIndex();
+
+                return param;
+            }
+        });
+
+        int paramsCnt = params == null ? 0 : params.length;
+
+        if (paramsCnt != maxDynParIdx[0] + 1) {
+            throw new IgniteSQLException("Wrong number of query parameters. Expected: " + (maxDynParIdx[0] + 1) + ", passed: "
+                + paramsCnt + '.', IgniteQueryErrorCode.PARSING);
+        }
     }
 
     /** */

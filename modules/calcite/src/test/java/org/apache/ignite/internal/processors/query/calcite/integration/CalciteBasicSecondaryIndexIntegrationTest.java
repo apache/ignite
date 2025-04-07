@@ -572,8 +572,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     /** */
     @Test
     public void testIndexedFieldGreaterThanFilter() {
-        assertQuery("SELECT * FROM Developer WHERE depId>21")
-            .withParams(3)
+        assertQuery("SELECT * FROM Developer WHERE depId>?")
+            .withParams(21)
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(23, "Musorgskii", 22, "", -1)
             .check();

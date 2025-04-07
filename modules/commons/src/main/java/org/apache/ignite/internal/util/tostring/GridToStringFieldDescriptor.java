@@ -25,7 +25,7 @@ import org.intellij.lang.annotations.MagicConstant;
 /**
  * Simple field descriptor containing field name and its order in the class descriptor.
  */
-class GridToStringFieldDescriptor {
+public abstract class GridToStringFieldDescriptor {
     /** */
     public static final int FIELD_TYPE_OBJECT = 0;
 
@@ -69,10 +69,10 @@ class GridToStringFieldDescriptor {
     private final Class<?> cls;
 
     /** */
-    GridToStringFieldDescriptor(Field field, ToLongFunction<Field> off) {
+    GridToStringFieldDescriptor(Field field) {
         assert (field.getModifiers() & Modifier.STATIC) == 0 : "Static fields are not allowed here: " + field;
 
-        this.off = off.applyAsLong(field);
+        off = offset(field);
 
         cls = field.getType();
 
@@ -142,4 +142,63 @@ class GridToStringFieldDescriptor {
     String getName() {
         return name;
     }
+
+    /**
+     * @return Field offset in bytes.
+     */
+    abstract long offset(Field field);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract Object objectValue(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract byte byteValue(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract boolean booleanValue(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract char charValue(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract short shortValue(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract int intField(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract float floatField(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract long longField(Object obj);
+
+    /**
+     * @param obj Object.
+     * @return field value.
+     */
+    public abstract double doubleField(Object obj);
 }

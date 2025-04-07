@@ -534,6 +534,36 @@ This view displays a list of plans of previously executed SQL queries.
 |LAST_START_TIME | date |  Last execution date
 |===
 
+=== Performance Considerations
+
+When using the H2 engine, collecting SQL plans may introduce a performance overhead under high SQL query load, impacting both latency and throughput. For this reason, SQL plan collection is disabled by default for H2.
+
+To enable it, you need to configure the SQL plan history size:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+<bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="sqlConfiguration">
+        <bean class="org.apache.ignite.configuration.SqlConfiguration">
+            <property name="sqlPlanHistorySize" value="1000"/>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source, java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+cfg.setSqlConfiguration(new SqlConfiguration().setSqlPlanHistorySize(1000));
+----
+--
+
+When using the Calcite engine, collecting SQL plans does not impact performance. Therefore, it is enabled by default. The default history size is 1000 entries.
+
 == SCHEMAS
 
 This view exposes information about SQL schemas.
