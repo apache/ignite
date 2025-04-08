@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.MergeJoinPlan
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTimeoutTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.ProjectFilterScanMergePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.RexSimplificationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SerializationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
@@ -81,6 +82,7 @@ import org.junit.runners.Suite;
     IndexSearchBoundsPlannerTest.class,
     InlineIndexScanPlannerTest.class,
     UserDefinedViewsPlannerTest.class,
+    RexSimplificationPlannerTest.class,
 
     HintsTestSuite.class,
     SerializationPlannerTest.class,
