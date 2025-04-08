@@ -240,7 +240,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Windows: " + U.isWindows());
         System.out.println("Is Linux: " + U.isLinux());
         System.out.println("Is Mac OS: " + U.isMacOs());
-        System.out.println("Is Solaris: " + U.isSolaris());
     }
 
     /**

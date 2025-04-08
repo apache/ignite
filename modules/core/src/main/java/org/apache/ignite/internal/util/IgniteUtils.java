@@ -357,47 +357,11 @@ public abstract class IgniteUtils extends CommonUtils {
     /** JDK string. */
     private static String jdkStr;
 
-    /** Indicates whether current OS is Windows 95. */
-    private static boolean win95;
-
-    /** Indicates whether current OS is Windows 98. */
-    private static boolean win98;
-
-    /** Indicates whether current OS is Windows NT. */
-    private static boolean winNt;
-
-    /** Indicates whether current OS is Windows Vista. */
-    private static boolean winVista;
-
-    /** Indicates whether current OS is Windows 7. */
-    private static boolean win7;
-
-    /** Indicates whether current OS is Windows 8. */
-    private static boolean win8;
-
-    /** Indicates whether current OS is Windows 8.1. */
-    private static boolean win81;
-
     /** Indicates whether current OS is some version of Windows. */
-    private static boolean unknownWin;
-
-    /** Indicates whether current OS is Windows 2000. */
-    private static boolean win2k;
-
-    /** Indicates whether current OS is Windows XP. */
-    private static boolean winXp;
-
-    /** Indicates whether current OS is Windows Server 2003. */
-    private static boolean win2003;
-
-    /** Indicates whether current OS is Windows Server 2008. */
-    private static boolean win2008;
+    private static boolean win;
 
     /** Indicates whether current OS is UNIX flavor. */
     private static boolean unix;
-
-    /** Indicates whether current OS is Solaris. */
-    private static boolean solaris;
 
     /** Indicates whether current OS is Linux flavor. */
     private static boolean linux;
@@ -601,32 +565,8 @@ public abstract class IgniteUtils extends CommonUtils {
         String osLow = osName.toLowerCase();
 
         // OS type detection.
-        if (osLow.contains("win")) {
-            if (osLow.contains("95"))
-                win95 = true;
-            else if (osLow.contains("98"))
-                win98 = true;
-            else if (osLow.contains("nt"))
-                winNt = true;
-            else if (osLow.contains("2000"))
-                win2k = true;
-            else if (osLow.contains("vista"))
-                winVista = true;
-            else if (osLow.contains("xp"))
-                winXp = true;
-            else if (osLow.contains("2003"))
-                win2003 = true;
-            else if (osLow.contains("2008"))
-                win2008 = true;
-            else if (osLow.contains("7"))
-                win7 = true;
-            else if (osLow.contains("8.1"))
-                win81 = true;
-            else if (osLow.contains("8"))
-                win8 = true;
-            else
-                unknownWin = true;
-        }
+        if (osLow.contains("win"))
+            win = true;
         else if (osLow.contains("mac os"))
             mac = true;
         else {
@@ -638,10 +578,7 @@ public abstract class IgniteUtils extends CommonUtils {
                     break;
                 }
 
-            // UNIX name detection.
-            if (osLow.contains("olaris") || osLow.contains("sunos"))
-                solaris = true;
-            else if (osLow.contains("inux"))
+            if (osLow.contains("inux"))
                 linux = true;
         }
 
@@ -5763,15 +5700,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Indicates whether current OS is Solaris.
-     *
-     * @return {@code true} if current OS is Solaris (SPARC or x86) - {@code false} otherwise.
-     */
-    public static boolean isSolaris() {
-        return solaris;
-    }
-
-    /**
      * Indicates whether current OS is UNIX flavor.
      *
      * @return {@code true} if current OS is UNIX - {@code false} otherwise.
@@ -5786,8 +5714,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
      */
     public static boolean isWindows() {
-        return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
-            win2003 || win2008 || winVista || unknownWin;
+        return win;
     }
 
     /**
