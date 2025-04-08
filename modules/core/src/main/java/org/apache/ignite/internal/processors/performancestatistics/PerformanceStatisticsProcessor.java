@@ -390,7 +390,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return;
 
             FilePerformanceStatisticsWriter writer = this.writer;
-            AbstractFilePerformanceStatisticsWriter sysViewWriter = this.sysViewWriter;
+            FilePerformanceStatisticsSystemViewWriter sysViewWriter = this.sysViewWriter;
 
             this.writer = null;
             this.sysViewWriter = null;
