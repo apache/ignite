@@ -52,12 +52,6 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-binary-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
         </dependency>
 
