@@ -17,14 +17,12 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.configuration.BinaryConfiguration;
-
 /**
  * Maps type and field names to different names. Prepares class/type names
  * and field names before pass them to {@link BinaryIdMapper}.
  * <p>
  * Binary name mapper can be configured for all binary objects via
- * {@link BinaryConfiguration#getNameMapper()} method,
+ * {@link org.apache.ignite.configuration.BinaryConfiguration#getNameMapper()} method,
  * or for a specific binary type via {@link BinaryTypeConfiguration#getNameMapper()} method.
  * @see BinaryIdMapper
  */
