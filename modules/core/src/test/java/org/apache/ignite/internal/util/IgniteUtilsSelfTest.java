@@ -239,7 +239,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param mins Minutes to test.
      */
     private void printFormatMins(long mins) {
-        System.out.println("For " + mins + " minutes: " + X.formatMins(mins));
+        System.out.println("For " + mins + " minutes: " + U.formatMins(mins));
     }
 
     /**
@@ -1683,4 +1683,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(3, U.hashToIndex(-15, 4));
     }
 
+    /** Test {@link U#staticField(Class, String)} throws on unknown field. */
+    @Test(expected = IgniteCheckedException.class)
+    public void testReadUnknownStaticFieldFailed() throws Exception {
+        U.staticField(String.class, "unknown_field");
+    }
 }

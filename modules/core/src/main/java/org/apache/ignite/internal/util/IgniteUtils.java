@@ -316,7 +316,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  * Collection of utility methods used throughout the system.
  */
 @SuppressWarnings({"UnusedReturnValue"})
-public abstract class IgniteUtils {
+public abstract class IgniteUtils extends CommonUtils {
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 
@@ -354,15 +354,6 @@ public abstract class IgniteUtils {
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
-    /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
-    private static final Method CTOR_FACTORY;
-
-    /** Sun JDK reflection factory. */
-    private static final Object SUN_REFLECT_FACTORY;
-
-    /** Public {@code java.lang.Object} no-argument constructor. */
-    private static final Constructor OBJECT_CTOR;
-
     /** All grid event names. */
     private static final Map<Integer, String> GRID_EVT_NAMES = new HashMap<>();
 
@@ -383,9 +374,6 @@ public abstract class IgniteUtils {
 
     /** */
     public static final UUID[] EMPTY_UUIDS = new UUID[0];
-
-    /** System line separator. */
-    private static final String NL = System.getProperty("line.separator");
 
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
@@ -822,32 +810,6 @@ public abstract class IgniteUtils {
         boxedClsMap.put(boolean.class, Boolean.class);
         boxedClsMap.put(void.class, Void.class);
 
-        try {
-            OBJECT_CTOR = Object.class.getConstructor();
-        }
-        catch (NoSuchMethodException e) {
-            throw withCause(new AssertionError("Object class does not have empty constructor (is JDK corrupted?)."), e);
-        }
-
-        // Constructor factory.
-        Method ctorFac = null;
-        Object refFac = null;
-
-        try {
-            Class<?> refFactoryCls = Class.forName("sun.reflect.ReflectionFactory");
-
-            refFac = refFactoryCls.getMethod("getReflectionFactory").invoke(null);
-
-            ctorFac = refFac.getClass().getMethod("newConstructorForSerialization", Class.class,
-                Constructor.class);
-        }
-        catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InvocationTargetException ignored) {
-            // No-op.
-        }
-
-        CTOR_FACTORY = ctorFac;
-        SUN_REFLECT_FACTORY = refFac;
-
         // Disable hostname SSL verification for development and testing with self-signed certificates.
         if (Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_HOSTNAME_VERIFIER))) {
             HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -1212,31 +1174,6 @@ public abstract class IgniteUtils {
      */
     public static boolean isPow2(int i) {
         return i > 0 && (i & (i - 1)) == 0;
-    }
-
-    /**
-     * Return SUN specific constructor factory.
-     *
-     * @return SUN specific constructor factory.
-     */
-    @Nullable public static Method ctorFactory() {
-        return CTOR_FACTORY;
-    }
-
-    /**
-     * @return Empty constructor for object class.
-     */
-    public static Constructor objectConstructor() {
-        return OBJECT_CTOR;
-    }
-
-    /**
-     * SUN JDK specific reflection factory for objects without public constructor.
-     *
-     * @return Reflection factory for objects without public constructor.
-     */
-    @Nullable public static Object sunReflectionFactory() {
-        return SUN_REFLECT_FACTORY;
     }
 
     /**
@@ -1675,37 +1612,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets empty constructor for class even if the class does not have empty constructor
-     * declared. This method is guaranteed to work with SUN JDK and other JDKs still need
-     * to be tested.
-     *
-     * @param cls Class to get empty constructor for.
-     * @return Empty constructor if one could be found or {@code null} otherwise.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public static Constructor<?> forceEmptyConstructor(Class<?> cls) throws IgniteCheckedException {
-        Constructor<?> ctor = null;
-
-        try {
-            return cls.getDeclaredConstructor();
-        }
-        catch (Exception ignore) {
-            Method ctorFac = U.ctorFactory();
-            Object sunRefFac = U.sunReflectionFactory();
-
-            if (ctorFac != null && sunRefFac != null)
-                try {
-                    ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, U.objectConstructor());
-                }
-                catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IgniteCheckedException("Failed to get object constructor for class: " + cls, e);
-                }
-        }
-
-        return ctor;
-    }
-
-    /**
      * Gets class for the given name if it can be loaded or default given class.
      *
      * @param cls Class.
@@ -1815,40 +1721,6 @@ public abstract class IgniteUtils {
         }
         catch (ClassNotFoundException ignore) {
             return false;
-        }
-    }
-
-    /**
-     * Creates new instance of a class even if it does not have public constructor.
-     *
-     * @param cls Class to instantiate.
-     * @return New instance of the class or {@code null} if empty constructor could not be assigned.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public static <T> T forceNewInstance(Class<?> cls) throws IgniteCheckedException {
-        Constructor ctor = forceEmptyConstructor(cls);
-
-        if (ctor == null)
-            return null;
-
-        boolean set = false;
-
-        try {
-
-            if (!ctor.isAccessible()) {
-                ctor.setAccessible(true);
-
-                set = true;
-            }
-
-            return (T)ctor.newInstance();
-        }
-        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        }
-        finally {
-            if (set)
-                ctor.setAccessible(false);
         }
     }
 
@@ -8621,13 +8493,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return {@code line.separator} system property.
-     */
-    public static String nl() {
-        return NL;
-    }
-
-    /**
      * Initializes logger into/from log reference passed in.
      *
      * @param ctx Context.
@@ -9038,20 +8903,28 @@ public abstract class IgniteUtils {
         assert fieldName != null;
 
         try {
-            for (Field field : cls.getDeclaredFields())
-                if (field.getName().equals(fieldName)) {
-                    boolean accessible = field.isAccessible();
+            do {
+                for (Field field : cls.getDeclaredFields())
+                    if (field.getName().equals(fieldName)) {
+                        boolean accessible = field.isAccessible();
 
-                    if (!accessible)
-                        field.setAccessible(true);
+                        if (!accessible)
+                            field.setAccessible(true);
 
-                    T val = (T)field.get(null);
+                        T val = (T)field.get(null);
 
-                    if (!accessible)
-                        field.setAccessible(false);
+                        if (!accessible)
+                            field.setAccessible(false);
 
-                    return val;
-                }
+                        return val;
+                    }
+
+                if (cls == Object.class)
+                    break;
+
+                cls = cls.getSuperclass();
+            }
+            while (true);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']', e);
@@ -10178,26 +10051,6 @@ public abstract class IgniteUtils {
         GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
 
         return res;
-    }
-
-    /**
-     * Returns a capacity that is sufficient to keep the map from being resized as
-     * long as it grows no larger than expSize and the load factor is >= its
-     * default (0.75).
-     *
-     * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)
-     *
-     * @param expSize Expected size of created map.
-     * @return Capacity.
-     */
-    public static int capacity(int expSize) {
-        if (expSize < 3)
-            return expSize + 1;
-
-        if (expSize < (1 << 30))
-            return expSize + expSize / 3;
-
-        return Integer.MAX_VALUE; // any large value
     }
 
     /**
