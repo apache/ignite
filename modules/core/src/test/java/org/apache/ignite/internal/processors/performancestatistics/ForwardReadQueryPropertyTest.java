@@ -31,9 +31,9 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsSystemViewWriter.writeString;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsSystemViewWriter.writeUuid;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeUuid;
 
 /**
  * Tests forward read mode for {@link OperationType#QUERY_PROPERTY} records.
