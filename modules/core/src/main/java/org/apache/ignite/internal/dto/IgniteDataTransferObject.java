@@ -38,33 +38,6 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     /** Magic number to detect correct transfer objects. */
     private static final int MAGIC = 0x42BEEF00;
 
-    /** Version 1. */
-    protected static final byte V1 = 1;
-
-    /** Version 2. */
-    protected static final byte V2 = 2;
-
-    /** Version 3. */
-    protected static final byte V3 = 3;
-
-    /** Version 4. */
-    protected static final byte V4 = 4;
-
-    /** Version 5. */
-    protected static final byte V5 = 5;
-
-    /** Version 6. */
-    protected static final byte V6 = 6;
-
-    /** Version 7. */
-    protected static final byte V7 = 7;
-
-    /** Version 8. */
-    protected static final byte V8 = 8;
-
-    /** Version 9. */
-    protected static final byte V9 = 9;
-
     /**
      * @param col Source collection.
      * @param <T> Collection type.
@@ -90,13 +63,6 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     }
 
     /**
-     * @return Transfer object version.
-     */
-    public byte getProtocolVersion() {
-        return V1;
-    }
-
-    /**
      * Save object's specific data content.
      *
      * @param out Output object to write data content.
@@ -106,9 +72,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        int hdr = MAGIC + getProtocolVersion();
-
-        out.writeInt(hdr);
+        out.writeInt(MAGIC);
 
         try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
             writeExternalData(dtout);
@@ -118,12 +82,11 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     /**
      * Load object's specific data content.
      *
-     * @param protoVer Input object version.
      * @param in Input object to load data content.
      * @throws IOException If I/O errors occur.
      * @throws ClassNotFoundException If the class for an object being restored cannot be found.
      */
-    protected abstract void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException;
+    protected abstract void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException;
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -133,10 +96,8 @@ public abstract class IgniteDataTransferObject implements Externalizable {
             throw new IOException("Unexpected IgniteDataTransferObject header " +
                 "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
-        byte ver = (byte)(hdr & 0xFF);
-
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
-            readExternalData(ver, dtin);
+            readExternalData(dtin);
         }
     }
 }

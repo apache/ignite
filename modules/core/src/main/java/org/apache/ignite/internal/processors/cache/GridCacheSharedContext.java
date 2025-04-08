@@ -800,7 +800,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Marshaller.
      */
     public Marshaller marshaller() {
-        return kernalCtx.config().getMarshaller();
+        return kernalCtx.marshaller();
     }
 
     /**

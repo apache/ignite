@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -519,7 +518,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshall(Marshaller m) {
+    @Override public void marshall(BinaryMarshaller m) {
         if (paramsBytes != null)
             return;
 
@@ -535,29 +534,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
+    @Override public void unmarshall(GridKernalContext ctx) {
         assert paramsBytes != null;
 
-        try {
-            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller)
-                // To avoid deserializing of enum types.
-                params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
-            else
-                params = U.unmarshal(m, paramsBytes, ldr);
-            
-            // add@byron
+        // To avoid deserializing of enum types.
+        params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
+		try{
+
+			// add@byron
             for(int i=0;i<params.length;i++) {
             	if(params[i] instanceof BinaryObject) {
             		params[i] = ((BinaryObject)params[i]).deserialize();
             	}
             }
             // end@
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        }        
         catch (BinaryObjectException e) {
            // ignore
         }

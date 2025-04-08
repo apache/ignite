@@ -262,7 +262,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
      */
     @SuppressWarnings("fallthrough")
     private void processFragmentizerRequest(IgfsFragmentizerRequest req) throws IgniteCheckedException {
-        req.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
+        req.finishUnmarshal(igfsCtx.kernalContext().marshaller(), null);
 
         Collection<IgfsFileAffinityRange> ranges = req.fragmentRanges();
         IgniteUuid fileId = req.fileId();

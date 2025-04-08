@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -3129,7 +3130,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         TestValue oldVal = cache.get("key1");
 
-        assert oldVal != null && F.eq(val1, oldVal);
+        assert oldVal != null && Objects.equals(val1, oldVal);
 
         assert cache.remove("key1");
 
@@ -3137,7 +3138,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         TestValue oldVal2 = cache.getAndRemove("key2");
 
-        assert F.eq(val2, oldVal2);
+        assert Objects.equals(val2, oldVal2);
 
         assert cache.get("key2") == null;
         assert cache.getAndRemove("key2") == null;

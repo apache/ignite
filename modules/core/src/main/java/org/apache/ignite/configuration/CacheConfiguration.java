@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -1973,7 +1974,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.findValueType(), newEntity.findValueType())) {
+                if (Objects.equals(entity.findValueType(), newEntity.findValueType())) {
                     dup = true;
 
                     break;
@@ -1995,7 +1996,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     boolean keyCfgDup = false;
 
                     for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
-                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                        if (Objects.equals(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
                             keyCfgDup = true;
 
                             break;
@@ -2101,7 +2102,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.findValueType(), existing.findValueType())) {
+                if (Objects.equals(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;

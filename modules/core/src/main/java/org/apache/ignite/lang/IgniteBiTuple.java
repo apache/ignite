@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,7 +37,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Convenience class representing mutable tuple of two values.
  */
-public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>, Iterable<Object>, Externalizable, Cloneable, Map<V1,V2> {
+public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
+    Iterable<Object>, Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -184,13 +186,13 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>, Iterable<Object
     }
 
     /** {@inheritDoc} */
-    public boolean containsKey(Object key) {
-        return F.eq(val1, key);
+    @Override public boolean containsKey(Object key) {
+        return Objects.equals(val1, key);
     }
 
     /** {@inheritDoc} */
-    public boolean containsValue(Object val) {
-        return F.eq(val2, val);
+    @Override public boolean containsValue(Object val) {
+        return Objects.equals(val2, val);
     }
 
     /** {@inheritDoc} */
@@ -291,7 +293,7 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>, Iterable<Object
         IgniteBiTuple<?, ?> t = (IgniteBiTuple<?, ?>)o;
 
         // Both nulls or equals.
-        return F.eq(val1, t.val1) && F.eq(val2, t.val2);
+        return Objects.equals(val1, t.val1) && Objects.equals(val2, t.val2);
     }
 
     /** {@inheritDoc} */

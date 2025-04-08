@@ -168,7 +168,7 @@ public class IgfsContext {
     public void send(UUID nodeId, Object topic, IgfsCommunicationMessage msg, byte plc)
         throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(nodeId))
-            msg.prepareMarshal(kernalContext().config().getMarshaller());
+            msg.prepareMarshal(kernalContext().marshaller());
 
         if (topic instanceof GridTopic)
             kernalContext().io().sendToGridTopic(nodeId, (GridTopic)topic, msg, plc);

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -766,7 +767,7 @@ public class GridH2Table extends TableBase {
         Index registredIdx = null;
 
         for (Index idx : idxs) {
-            if (F.eq(curIdx.getName(), idx.getName()))
+            if (Objects.equals(curIdx.getName(), idx.getName()))
                 throw new IgniteCheckedException("Index already exists: " + idx.getName());
 
             if (!(curIdx instanceof H2TreeIndex) || !(idx instanceof H2TreeIndex))
@@ -1185,7 +1186,7 @@ public class GridH2Table extends TableBase {
                 Column column = safeColumns0[i];
 
                 for (String name : cols) {
-                    if (F.eq(name, column.getName())) {
+                    if (Objects.equals(name, column.getName())) {
                         column = null;
 
                         break;
@@ -1230,7 +1231,7 @@ public class GridH2Table extends TableBase {
 
             StackTraceElement elem = elems[2];
 
-            if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
+            if (Objects.equals(elem.getClassName(), Insert.class.getName()) && Objects.equals(elem.getMethodName(), "prepare")) {
                 Column[] columns0 = new Column[safeColumns0.length - QueryUtils.DEFAULT_COLUMNS_COUNT];
 
                 System.arraycopy(safeColumns0, QueryUtils.DEFAULT_COLUMNS_COUNT, columns0, 0, columns0.length);

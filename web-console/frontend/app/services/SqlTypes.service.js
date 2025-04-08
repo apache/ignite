@@ -67,7 +67,7 @@ export default class SqlTypes {
 
     findJdbcTypeName(typeName) {
         typeName = typeName.toUpperCase();
-        const jdbcType = JDBC_TYPE_ALIASES.get(typeName);
+        const jdbcType = JDBC_TYPE_ALIASES[typeName];
         return jdbcType ? jdbcType : typeName;
     }
 

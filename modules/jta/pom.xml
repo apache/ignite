@@ -44,13 +44,7 @@
             <groupId>javax.transaction</groupId>
             <artifactId>jta</artifactId>
             <version>1.1</version>
-        </dependency>
-        
-        <dependency>
-			  <groupId>org.ow2.spec.ee</groupId>
-			  <artifactId>ow2-jta-1.1-spec</artifactId>
-			  <version>1.0.13</version>
-        </dependency>
+        </dependency>       
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -63,6 +57,12 @@
             <artifactId>jotm-core</artifactId>
             <version>${jotm.version}</version>
             <scope>test</scope>
+            <exclusions>
+            	<exclusion>
+            		<groupId>org.ow2.spec.ee</groupId>
+            		<artifactId>ow2-jta-1.1-spec</artifactId>
+            	</exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

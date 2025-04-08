@@ -121,6 +121,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.ServiceLoader;
@@ -4249,12 +4250,12 @@ public abstract class IgniteUtils {
             return false;
 
         for (Object o : arr) {
-            if (F.eq(o, val))
+            if (Objects.equals(o, val))
                 return true;
 
             if (vals != null && vals.length > 0)
                 for (Object v : vals)
-                    if (F.eq(o, v))
+                    if (Objects.equals(o, v))
                         return true;
         }
 
@@ -8509,7 +8510,7 @@ public abstract class IgniteUtils {
 
         if (caches != null)
             for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
+                if (Objects.equals(cacheName, attrs.cacheName()))
                     return attrs.nearCacheEnabled();
 
         return false;
@@ -10812,7 +10813,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -10913,7 +10914,7 @@ public abstract class IgniteUtils {
     public static byte[] marshal(GridKernalContext ctx, Object obj) throws IgniteCheckedException {
         assert ctx != null;
 
-        return marshal(ctx.config().getMarshaller(), obj);
+        return marshal(ctx.marshaller(), obj);
     }
 
     /**
@@ -11716,7 +11717,7 @@ public abstract class IgniteUtils {
 
         return spi instanceof TcpDiscoverySpi
             ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
+            : Objects.equals(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
     }
 
     /**

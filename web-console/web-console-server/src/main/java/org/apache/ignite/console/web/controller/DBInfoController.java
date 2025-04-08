@@ -245,7 +245,7 @@ public class DBInfoController {
             	column.put("unsigned", false);
             	column.put("nullable", row.getBoolean("IS_NULLABLE",true));
             	String isKey = row.getString("COLUMN_KEY",""); // 
-            	String is_generated = row.getString("is_generated","NO");
+            	String is_generated = row.getString("IS_KEY","NO");
             	if(!isKey.isEmpty() || !is_generated.equals("NO")) {
             		column.put("key", true);
             		column.put("nullable", false);

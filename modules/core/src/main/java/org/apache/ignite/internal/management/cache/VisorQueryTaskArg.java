@@ -20,14 +20,16 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
+
 
 /**
  * Arguments for {@link VisorQueryTask}.
  */
-public class VisorQueryTaskArg extends VisorDataTransferObject {
+public class VisorQueryTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -209,11 +211,7 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
         return collocated;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V3;
-    }
-
+   
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cacheName);
@@ -227,19 +225,15 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
         qryTxt = U.readString(in);
         distributedJoins = in.readBoolean();
         enforceJoinOrder = in.readBoolean();
         loc = in.readBoolean();
-        pageSize = in.readInt();
-
-        if (protoVer > V1)
-            lazy = in.readBoolean();
-
-        if (protoVer > V2)
-            collocated = in.readBoolean();
+        pageSize = in.readInt();        
+        lazy = in.readBoolean();        
+        collocated = in.readBoolean();
     }
 
     /** {@inheritDoc} */

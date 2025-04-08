@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1813,7 +1814,7 @@ public class IgnitionEx {
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
-            assert F.eq(name, cfg.getIgniteInstanceName());
+            assert Objects.equals(name, cfg.getIgniteInstanceName());
 
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 

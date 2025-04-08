@@ -862,24 +862,20 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param qry Query.
      */
     private void convertToBinary(final Query qry) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        if (qry instanceof SqlQuery) {
+            final SqlQuery sqlQry = (SqlQuery)qry;
 
-        if (ctx.binaryMarshaller()) {
-            if (qry instanceof SqlQuery) {
-                final SqlQuery sqlQry = (SqlQuery)qry;
+            convertToBinary(sqlQry.getArgs());
+        }
+        else if (qry instanceof SpiQuery) {
+            final SpiQuery spiQry = (SpiQuery)qry;
 
-                convertToBinary(sqlQry.getArgs());
-            }
-            else if (qry instanceof SpiQuery) {
-                final SpiQuery spiQry = (SpiQuery)qry;
+            convertToBinary(spiQry.getArgs());
+        }
+        else if (qry instanceof SqlFieldsQuery) {
+            final SqlFieldsQuery fieldsQry = (SqlFieldsQuery)qry;
 
-                convertToBinary(spiQry.getArgs());
-            }
-            else if (qry instanceof SqlFieldsQuery) {
-                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery)qry;
-
-                convertToBinary(fieldsQry.getArgs());
-            }
+            convertToBinary(fieldsQry.getArgs());
         }
     }
 

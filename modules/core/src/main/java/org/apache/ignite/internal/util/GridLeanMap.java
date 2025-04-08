@@ -24,8 +24,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -402,7 +402,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         @Nullable @Override public V remove(Object key) {
             V res = null;
 
-            if (F.eq(key, k1)) {
+            if (Objects.equals(key, k1)) {
                 res = v1;
 
                 v1 = null;
@@ -424,17 +424,17 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Override public boolean containsKey(Object key) {
-            return k1 != null && F.eq(key, k1);
+            return k1 != null && Objects.equals(key, k1);
         }
 
         /** {@inheritDoc} */
         @Override public boolean containsValue(Object val) {
-            return k1 != null && F.eq(val, v1);
+            return k1 != null && Objects.equals(val, v1);
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public V get(Object key) {
-            return k1 != null && F.eq(key, k1) ? v1 : null;
+            return k1 != null && Objects.equals(key, k1) ? v1 : null;
         }
 
         /**
@@ -450,7 +450,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         @Nullable @Override public V put(K key, V val) {
             V oldVal = get(key);
 
-            if (k1 == null || F.eq(k1, key)) {
+            if (k1 == null || Objects.equals(k1, key)) {
                 k1 = key;
                 v1 = val;
             }
@@ -542,7 +542,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Nullable @Override public V remove(Object key) {
-            if (F.eq(key, k2)) {
+            if (Objects.equals(key, k2)) {
                 V res = v2;
 
                 v2 = null;
@@ -561,19 +561,19 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Override public boolean containsKey(Object k) {
-            return super.containsKey(k) || (k2 != null && F.eq(k, k2));
+            return super.containsKey(k) || (k2 != null && Objects.equals(k, k2));
         }
 
         /** {@inheritDoc} */
         @Override public boolean containsValue(Object v) {
-            return super.containsValue(v) || (k2 != null && F.eq(v, v2));
+            return super.containsValue(v) || (k2 != null && Objects.equals(v, v2));
         }
 
         /** {@inheritDoc} */
         @Override public V get(Object k) {
             V v = super.get(k);
 
-            return v != null ? v : (k2 != null && F.eq(k, k2)) ? v2 : null;
+            return v != null ? v : (k2 != null && Objects.equals(k, k2)) ? v2 : null;
         }
 
         /**
@@ -589,11 +589,11 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         @Nullable @Override public V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
-            if (k1 == null || F.eq(k1, key)) {
+            if (k1 == null || Objects.equals(k1, key)) {
                 k1 = key;
                 v1 = val;
             }
-            else if (k2 == null || F.eq(k2, key)) {
+            else if (k2 == null || Objects.equals(k2, key)) {
                 k2 = key;
                 v2 = val;
             }
@@ -698,7 +698,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Nullable @Override public V remove(Object key) {
-            if (F.eq(key, k3)) {
+            if (Objects.equals(key, k3)) {
                 V res = v3;
 
                 v3 = null;
@@ -717,19 +717,19 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Override public boolean containsKey(Object k) {
-            return super.containsKey(k) || (k3 != null && F.eq(k, k3));
+            return super.containsKey(k) || (k3 != null && Objects.equals(k, k3));
         }
 
         /** {@inheritDoc} */
         @Override public boolean containsValue(Object v) {
-            return super.containsValue(v) || (k3 != null && F.eq(v, v3));
+            return super.containsValue(v) || (k3 != null && Objects.equals(v, v3));
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public V get(Object k) {
             V v = super.get(k);
 
-            return v != null ? v : (k3 != null && F.eq(k, k3)) ? v3 : null;
+            return v != null ? v : (k3 != null && Objects.equals(k, k3)) ? v3 : null;
         }
 
         /**
@@ -745,15 +745,15 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         @Nullable @Override public V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
-            if (k1 == null || F.eq(k1, key)) {
+            if (k1 == null || Objects.equals(k1, key)) {
                 k1 = key;
                 v1 = val;
             }
-            else if (k2 == null || F.eq(k2, key)) {
+            else if (k2 == null || Objects.equals(k2, key)) {
                 k2 = key;
                 v2 = val;
             }
-            else if (k3 == null || F.eq(k3, key)) {
+            else if (k3 == null || Objects.equals(k3, key)) {
                 k3 = key;
                 v3 = val;
             }
@@ -878,7 +878,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Nullable @Override public V remove(Object key) {
-            if (F.eq(key, k4)) {
+            if (Objects.equals(key, k4)) {
                 V res = v4;
 
                 v4 = null;
@@ -897,19 +897,19 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Override public boolean containsKey(Object k) {
-            return super.containsKey(k) || (k4 != null && F.eq(k, k4));
+            return super.containsKey(k) || (k4 != null && Objects.equals(k, k4));
         }
 
         /** {@inheritDoc} */
         @Override public boolean containsValue(Object v) {
-            return super.containsValue(v) || (k4 != null && F.eq(v, v4));
+            return super.containsValue(v) || (k4 != null && Objects.equals(v, v4));
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public V get(Object k) {
             V v = super.get(k);
 
-            return v != null ? v : (k4 != null && F.eq(k, k4)) ? v4 : null;
+            return v != null ? v : (k4 != null && Objects.equals(k, k4)) ? v4 : null;
         }
 
         /**
@@ -925,19 +925,19 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         @Nullable @Override public V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
-            if (k1 == null || F.eq(k1, key)) {
+            if (k1 == null || Objects.equals(k1, key)) {
                 k1 = key;
                 v1 = val;
             }
-            else if (k2 == null || F.eq(k2, key)) {
+            else if (k2 == null || Objects.equals(k2, key)) {
                 k2 = key;
                 v2 = val;
             }
-            else if (k3 == null || F.eq(k3, key)) {
+            else if (k3 == null || Objects.equals(k3, key)) {
                 k3 = key;
                 v3 = val;
             }
-            else if (k4 == null || F.eq(k4, key)) {
+            else if (k4 == null || Objects.equals(k4, key)) {
                 k4 = key;
                 v4 = val;
             }
@@ -1076,7 +1076,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Nullable @Override public V remove(Object key) {
-            if (F.eq(key, k5)) {
+            if (Objects.equals(key, k5)) {
                 V res = v5;
 
                 v5 = null;
@@ -1095,19 +1095,19 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
 
         /** {@inheritDoc} */
         @Override public boolean containsKey(Object k) {
-            return super.containsKey(k) || (k5 != null && F.eq(k, k5));
+            return super.containsKey(k) || (k5 != null && Objects.equals(k, k5));
         }
 
         /** {@inheritDoc} */
         @Override public boolean containsValue(Object v) {
-            return super.containsValue(v) || (k5 != null && F.eq(v, v5));
+            return super.containsValue(v) || (k5 != null && Objects.equals(v, v5));
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public V get(Object k) {
             V v = super.get(k);
 
-            return v != null ? v : (k5 != null && F.eq(k, k5)) ? v5 : null;
+            return v != null ? v : (k5 != null && Objects.equals(k, k5)) ? v5 : null;
         }
 
         /**
@@ -1123,23 +1123,23 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         @Nullable @Override public V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
-            if (k1 == null || F.eq(k1, key)) {
+            if (k1 == null || Objects.equals(k1, key)) {
                 k1 = key;
                 v1 = val;
             }
-            else if (k2 == null || F.eq(k2, key)) {
+            else if (k2 == null || Objects.equals(k2, key)) {
                 k2 = key;
                 v2 = val;
             }
-            else if (k3 == null || F.eq(k3, key)) {
+            else if (k3 == null || Objects.equals(k3, key)) {
                 k3 = key;
                 v3 = val;
             }
-            else if (k4 == null || F.eq(k4, key)) {
+            else if (k4 == null || Objects.equals(k4, key)) {
                 k4 = key;
                 v4 = val;
             }
-            else if (k5 == null || F.eq(k5, key)) {
+            else if (k5 == null || Objects.equals(k5, key)) {
                 k5 = key;
                 v5 = val;
             }

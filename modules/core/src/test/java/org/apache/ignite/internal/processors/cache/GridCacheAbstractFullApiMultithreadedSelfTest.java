@@ -25,18 +25,18 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -154,11 +154,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @return Range of keys.
      */
     private Set<String> rangeKeys(int fromIncl, int toExcl) {
-        return new TreeSet<>(F.transform(F.range(fromIncl, toExcl), new C1<Integer, String>() {
-            @Override public String apply(Integer i) {
-                return "key" + i;
-            }
-        }));
+        return IntStream.range(fromIncl, toExcl).mapToObj(i -> "key" + i).collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**

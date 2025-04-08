@@ -56,8 +56,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
-
 /**
  *
  */
@@ -176,29 +174,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      */
     @Test
     public void testPartitionsExchange() throws Exception {
-        partitionsExchange(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionsExchangeCompatibilityMode() throws Exception {
-        System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
-
-        try {
-            partitionsExchange(true);
-        }
-        finally {
-            System.clearProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1);
-        }
-    }
-
-    /**
-     * @param compatibilityMode {@code True} to test old exchange protocol.
-     * @throws Exception If failed.
-     */
-    private void partitionsExchange(boolean compatibilityMode) throws Exception {
         Ignite ignite0 = startGrid(0);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
@@ -296,41 +271,19 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         ignite4.close();
 
-        if (compatibilityMode) {
-            // With late affinity old protocol exchange on server leave is completed by discovery message.
-            // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
-            boolean exchangeAfterRebalance = false;
+        waitForTopologyUpdate(4, 6);
 
-            waitForTopologyUpdate(4,
-                exchangeAfterRebalance ? new AffinityTopologyVersion(6, 1) : new AffinityTopologyVersion(6, 0));
+        assertEquals(0, spi0.partitionsSingleMessages());
+        assertEquals(3, spi0.partitionsFullMessages());
 
-            assertEquals(0, spi0.partitionsSingleMessages());
-            assertEquals(exchangeAfterRebalance ? 3 : 0, spi0.partitionsFullMessages());
+        assertEquals(1, spi1.partitionsSingleMessages());
+        assertEquals(0, spi1.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 2 : 1, spi1.partitionsSingleMessages());
-            assertEquals(0, spi1.partitionsFullMessages());
+        assertEquals(1, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 1 : 0, spi2.partitionsSingleMessages());
-            assertEquals(0, spi2.partitionsFullMessages());
-
-            assertEquals(exchangeAfterRebalance ? 1 : 0, spi3.partitionsSingleMessages());
-            assertEquals(0, spi3.partitionsFullMessages());
-        }
-        else {
-            waitForTopologyUpdate(4, 6);
-
-            assertEquals(0, spi0.partitionsSingleMessages());
-            assertEquals(3, spi0.partitionsFullMessages());
-
-            assertEquals(1, spi1.partitionsSingleMessages());
-            assertEquals(0, spi1.partitionsFullMessages());
-
-            assertEquals(1, spi2.partitionsSingleMessages());
-            assertEquals(0, spi2.partitionsFullMessages());
-
-            assertEquals(1, spi3.partitionsSingleMessages());
-            assertEquals(0, spi3.partitionsFullMessages());
-        }
+        assertEquals(1, spi3.partitionsSingleMessages());
+        assertEquals(0, spi3.partitionsFullMessages());
 
         spi0.reset();
         spi1.reset();

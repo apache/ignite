@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -61,11 +62,11 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableModel;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Partition tree extractor.
@@ -784,9 +785,9 @@ public class PartitionExtractor {
             return null;
 
         // Check that both left and right AST use same column.
-        if (!F.eq(leftCol.schema(), rightCol.schema()) ||
-            !F.eq(leftCol.columnName(), rightCol.columnName()) ||
-            !F.eq(leftCol.tableAlias(), rightCol.tableAlias()))
+        if (!Objects.equals(leftCol.schema(), rightCol.schema()) ||
+            !Objects.equals(leftCol.columnName(), rightCol.columnName()) ||
+            !Objects.equals(leftCol.tableAlias(), rightCol.tableAlias()))
             return null;
 
         // Check columns type
