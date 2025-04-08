@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -167,9 +166,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
-
-    /** Local partitions number for topology sequence id. */
-    private volatile IgniteBiTuple<Long, Integer> locPartsNum;
 
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
@@ -1112,35 +1108,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             int cleared = 0;
 
-            // Use random shift to reduce contention.
-            long seq = cctx.group().topology().updateSequence();
-
-            IgniteBiTuple<Long, Integer> partsNum = locPartsNum;
-
-            if (partsNum == null || partsNum.getKey() < seq)
-                locPartsNum = partsNum = new IgniteBiTuple<>(seq, cctx.group().topology().localPartitionsNumber());
-
-            int shift = ThreadLocalRandom.current().nextInt(partsNum.getValue());
-
-            int cnt = 0;
             for (CacheDataStore store : cacheDataStores()) {
-                if (cnt++ < shift) // On the first iteration skip entries before <shift>.
-                    continue;
-
-                cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, unwindThrottlingTimeout, amount - cleared);
-
-                if (amount != -1 && cleared >= amount)
-                    return true;
-            }
-
-            if (shift == 0)
-                return false;
-
-            cnt = 0;
-            for (CacheDataStore store : cacheDataStores()) {
-                if (cnt++ >= shift) // On the second iteration skip entries after <shift>.
-                    break;
-
                 cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, unwindThrottlingTimeout, amount - cleared);
 
                 if (amount != -1 && cleared >= amount)

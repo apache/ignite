@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -3293,6 +3294,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Iterator over current local partitions.
      */
     private class CurrentPartitionsIterator implements Iterator<GridDhtLocalPartition> {
+        /** Shift start index for {@link #locParts} to reduce partitions contention. */
+        private final int shift;
+
         /** Next index. */
         private int nextIdx;
 
@@ -3303,6 +3307,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
          * Constructor
          */
         private CurrentPartitionsIterator() {
+            shift = ThreadLocalRandom.current().nextInt(locParts.length());
+
             advance();
         }
 
@@ -3310,8 +3316,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
          * Try to advance to next partition.
          */
         private void advance() {
-            while (nextIdx < locParts.length()) {
-                GridDhtLocalPartition part = locParts.get(nextIdx);
+            int len = locParts.length();
+
+            while (nextIdx < len) {
+                GridDhtLocalPartition part = locParts.get((shift + nextIdx) % len);
 
                 if (part != null && part.state().active()) {
                     nextPart = part;
