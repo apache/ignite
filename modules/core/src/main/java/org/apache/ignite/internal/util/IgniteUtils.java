@@ -8919,7 +8919,6 @@ public abstract class IgniteUtils extends CommonUtils {
                         return val;
                     }
 
-
                 if (cls == Object.class)
                     break;
 
