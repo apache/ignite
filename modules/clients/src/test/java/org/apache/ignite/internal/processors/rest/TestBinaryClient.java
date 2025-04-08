@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage;
-import org.apache.ignite.internal.util.GridClientByteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
@@ -189,9 +188,9 @@ final class TestBinaryClient {
 
                                     GridClientResponse msg = marsh.unmarshal(msgBytes);
 
-                                    long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
-                                    UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
-                                    UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
+                                    long reqId = U.bytesToLong(hdrBytes, 0);
+                                    UUID clientId = U.bytesToUuid(hdrBytes, 8);
+                                    UUID destId = U.bytesToUuid(hdrBytes, 24);
 
                                     msg.requestId(reqId);
                                     msg.clientId(clientId);

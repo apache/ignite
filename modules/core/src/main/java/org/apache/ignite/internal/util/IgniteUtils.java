@@ -2330,174 +2330,70 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Converts primitive {@code long} type to byte array.
+     * Converts primitive double to byte array.
      *
-     * @param l Long value.
+     * @param d Double to convert.
+     * @return Byte array.
+     */
+    public static byte[] doubleToBytes(double d) {
+        return longToBytes(Double.doubleToLongBits(d));
+    }
+
+    /**
+     * Converts primitive {@code double} type to byte array and stores
+     * it in the specified byte array.
+     *
+     * @param d Double to convert.
+     * @param bytes Array of bytes.
+     * @param off Offset.
+     * @return New offset.
+     */
+    public static int doubleToBytes(double d, byte[] bytes, int off) {
+        return longToBytes(Double.doubleToLongBits(d), bytes, off);
+    }
+
+    /**
+     * Converts primitive float to byte array.
+     *
+     * @param f Float to convert.
      * @return Array of bytes.
      */
-    public static byte[] longToBytes(long l) {
-        return GridClientByteUtils.longToBytes(l);
+    public static byte[] floatToBytes(float f) {
+        return intToBytes(Float.floatToIntBits(f));
     }
 
     /**
-     * Converts primitive {@code long} type to byte array and stores it in specified
-     * byte array.
+     * Converts primitive float to byte array.
      *
-     * @param l Long value.
+     * @param f Float to convert.
      * @param bytes Array of bytes.
+     * @param off Offset.
+     * @return New offset.
+     */
+    public static int floatToBytes(float f, byte[] bytes, int off) {
+        return intToBytes(Float.floatToIntBits(f), bytes, off);
+    }
+
+    /**
+     * Constructs double from byte array.
+     *
+     * @param bytes Byte array.
      * @param off Offset in {@code bytes} array.
-     * @return Number of bytes overwritten in {@code bytes} array.
+     * @return Double value.
      */
-    public static int longToBytes(long l, byte[] bytes, int off) {
-        return off + GridClientByteUtils.longToBytes(l, bytes, off);
+    public static double bytesToDouble(byte[] bytes, int off) {
+        return Double.longBitsToDouble(bytesToLong(bytes, off));
     }
 
     /**
-     * Converts primitive {@code int} type to byte array.
+     * Constructs float from byte array.
      *
-     * @param i Integer value.
-     * @return Array of bytes.
-     */
-    public static byte[] intToBytes(int i) {
-        return GridClientByteUtils.intToBytes(i);
-    }
-
-    /**
-     * Converts primitive {@code int} type to byte array and stores it in specified
-     * byte array.
-     *
-     * @param i Integer value.
-     * @param bytes Array of bytes.
+     * @param bytes Byte array.
      * @param off Offset in {@code bytes} array.
-     * @return Number of bytes overwritten in {@code bytes} array.
+     * @return Float value.
      */
-    public static int intToBytes(int i, byte[] bytes, int off) {
-        return off + GridClientByteUtils.intToBytes(i, bytes, off);
-    }
-
-    /**
-     * Converts primitive {@code short} type to byte array.
-     *
-     * @param s Short value.
-     * @return Array of bytes.
-     */
-    public static byte[] shortToBytes(short s) {
-        return GridClientByteUtils.shortToBytes(s);
-    }
-
-    /**
-     * Converts primitive {@code short} type to byte array and stores it in specified
-     * byte array.
-     *
-     * @param s Short value.
-     * @param bytes Array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return Number of bytes overwritten in {@code bytes} array.
-     */
-    public static int shortToBytes(short s, byte[] bytes, int off) {
-        return off + GridClientByteUtils.shortToBytes(s, bytes, off);
-    }
-
-    /**
-     * Converts an UUID to byte array.
-     *
-     * @param uuid UUID value.
-     * @return Encoded into byte array {@link java.util.UUID}.
-     */
-    public static byte[] uuidToBytes(@Nullable UUID uuid) {
-        return GridClientByteUtils.uuidToBytes(uuid);
-    }
-
-    /**
-     * Constructs {@code short} from byte array.
-     *
-     * @param bytes Array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return Short value.
-     */
-    public static short bytesToShort(byte[] bytes, int off) {
-        assert bytes != null;
-
-        int bytesCnt = Short.SIZE >> 3;
-
-        if (off + bytesCnt > bytes.length)
-            // Just use the remainder.
-            bytesCnt = bytes.length - off;
-
-        short res = 0;
-
-        for (int i = 0; i < bytesCnt; i++) {
-            int shift = bytesCnt - i - 1 << 3;
-
-            res |= (0xffL & bytes[off++]) << shift;
-        }
-
-        return res;
-    }
-
-    /**
-     * Constructs {@code int} from byte array.
-     *
-     * @param bytes Array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return Integer value.
-     */
-    public static int bytesToInt(byte[] bytes, int off) {
-        assert bytes != null;
-
-        int bytesCnt = Integer.SIZE >> 3;
-
-        if (off + bytesCnt > bytes.length)
-            // Just use the remainder.
-            bytesCnt = bytes.length - off;
-
-        int res = 0;
-
-        for (int i = 0; i < bytesCnt; i++) {
-            int shift = bytesCnt - i - 1 << 3;
-
-            res |= (0xffL & bytes[off++]) << shift;
-        }
-
-        return res;
-    }
-
-    /**
-     * Constructs {@code long} from byte array.
-     *
-     * @param bytes Array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return Long value.
-     */
-    public static long bytesToLong(byte[] bytes, int off) {
-        assert bytes != null;
-
-        int bytesCnt = Long.SIZE >> 3;
-
-        if (off + bytesCnt > bytes.length)
-            bytesCnt = bytes.length - off;
-
-        long res = 0;
-
-        for (int i = 0; i < bytesCnt; i++) {
-            int shift = bytesCnt - i - 1 << 3;
-
-            res |= (0xffL & bytes[off++]) << shift;
-        }
-
-        return res;
-    }
-
-    /**
-     * Reads an {@link java.util.UUID} form byte array.
-     * If given array contains all 0s then {@code null} will be returned.
-     *
-     * @param bytes array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return UUID value or {@code null}.
-     */
-    public static UUID bytesToUuid(byte[] bytes, int off) {
-        return GridClientByteUtils.bytesToUuid(bytes, off);
+    public static float bytesToFloat(byte[] bytes, int off) {
+        return Float.intBitsToFloat(bytesToInt(bytes, off));
     }
 
     /**
