@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -55,9 +56,7 @@ public class CacheStripedExecutor {
     public void submit(Runnable task, int grpId, int partId) {
         int stripes = exec.stripesCount();
 
-        assert partId >= 0;
-
-        int stripe = Math.abs((Math.abs(grpId) + partId)) % stripes;
+        int stripe = U.stripeIdx(stripes, grpId, partId);
 
         assert stripe >= 0 && stripe <= stripes : "idx=" + stripe + ", stripes=" + stripes;
 

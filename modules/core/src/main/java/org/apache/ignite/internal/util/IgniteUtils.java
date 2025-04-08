@@ -9446,6 +9446,18 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * @param stripes Number of stripes.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @return Stripe idx.
+     */
+    public static int stripeIdx(int stripes, int grpId, int partId) {
+        assert partId >= 0;
+
+        return Math.abs((Math.abs(grpId) + partId)) % stripes;
+    }
+
+    /**
      * Notifies provided {@code lsnrs} with the value {@code t}.
      *
      * @param t Consumed object.
