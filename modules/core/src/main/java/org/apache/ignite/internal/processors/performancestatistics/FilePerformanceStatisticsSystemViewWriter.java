@@ -91,9 +91,6 @@ public class FilePerformanceStatisticsSystemViewWriter extends AbstractFilePerfo
 
     /** {@inheritDoc} */
     @Override public void start() {
-        if (file == null)
-            return;
-
         new IgniteThread(writer).start();
     }
 
