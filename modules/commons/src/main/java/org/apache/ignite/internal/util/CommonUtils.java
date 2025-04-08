@@ -36,6 +36,9 @@ public abstract class CommonUtils {
     /** Public {@code java.lang.Object} no-argument constructor. */
     private static final Constructor OBJECT_CTOR;
 
+    /** System line separator. */
+    static final String NL = System.getProperty("line.separator");
+
     static {
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -156,5 +159,12 @@ public abstract class CommonUtils {
             return expSize + expSize / 3;
 
         return Integer.MAX_VALUE; // any large value
+    }
+
+    /**
+     * @return {@code line.separator} system property.
+     */
+    public static String nl() {
+        return NL;
     }
 }

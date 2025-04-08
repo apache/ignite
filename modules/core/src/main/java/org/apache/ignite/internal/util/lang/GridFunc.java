@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.PredicateSetView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.lang.gridfunc.SetFactoryCallable;
-import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
@@ -196,25 +195,6 @@ public class GridFunc extends GridCommonFunc {
      */
     public static <T> IgniteReducer<T, T> identityReducer(final T elem) {
         return new AlwaysTrueReducer<>(elem);
-    }
-
-    /**
-     * Concatenates strings using provided delimiter.
-     *
-     * @param c Input collection.
-     * @param delim Delimiter (optional).
-     * @return Concatenated string.
-     */
-    public static String concat(Iterable<?> c, @Nullable String delim) {
-        A.notNull(c, "c");
-
-        IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
-
-        for (Object x : c)
-            if (!f.collect(x == null ? null : x.toString()))
-                break;
-
-        return f.reduce();
     }
 
     /**

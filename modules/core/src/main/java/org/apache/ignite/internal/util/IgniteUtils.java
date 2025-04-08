@@ -375,9 +375,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static final UUID[] EMPTY_UUIDS = new UUID[0];
 
-    /** System line separator. */
-    private static final String NL = System.getProperty("line.separator");
-
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
 
@@ -8496,13 +8493,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @return {@code line.separator} system property.
-     */
-    public static String nl() {
-        return NL;
-    }
-
-    /**
      * Initializes logger into/from log reference passed in.
      *
      * @param ctx Context.
@@ -8913,20 +8903,28 @@ public abstract class IgniteUtils extends CommonUtils {
         assert fieldName != null;
 
         try {
-            for (Field field : cls.getDeclaredFields())
-                if (field.getName().equals(fieldName)) {
-                    boolean accessible = field.isAccessible();
+            do {
+                for (Field field : cls.getDeclaredFields())
+                    if (field.getName().equals(fieldName)) {
+                        boolean accessible = field.isAccessible();
 
-                    if (!accessible)
-                        field.setAccessible(true);
+                        if (!accessible)
+                            field.setAccessible(true);
 
-                    T val = (T)field.get(null);
+                        T val = (T)field.get(null);
 
-                    if (!accessible)
-                        field.setAccessible(false);
+                        if (!accessible)
+                            field.setAccessible(false);
 
-                    return val;
-                }
+                        return val;
+                    }
+
+                if (cls == Object.class)
+                    break;
+
+                cls = cls.getSuperclass();
+            }
+            while (true);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']', e);
