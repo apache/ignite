@@ -26,9 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,6 +52,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
@@ -83,52 +82,49 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
 
     /** */
-    private static final String CONSISTENT_ID = UUID.randomUUID().toString();
-
-    /** */
-    @Parameterized.Parameter
+    @Parameter
     public boolean incSnp;
 
     /** */
-    @Parameterized.Parameter(1)
-    @Nullable public String consId;
+    @Parameter(1)
+    public boolean customConsId;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public int oldNodesCnt;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public boolean cacheDump;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean customSnpPath;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public boolean testCacheGrp;
 
     /** */
     private CacheGroupInfo cacheGrpInfo;
 
     /**
-     * The test is parameterized by whether an incremental snapshot is taken and by consistentId.
-     * Restore incremental snapshot if consistentId is null is fixed in 2.17.0, see here https://issues.apache.org/jira/browse/IGNITE-23222.
-     * Also restoring cache dump and any kind of snapshot is pointless.
+     * Restore incremental snapshot if consistent ID is null is fixed in 2.17.0, see here
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>. Restore of an incremental snapshot doesn't work for different
+     * topology. Also restoring cache dump and any kind of snapshot is pointless.
      */
-    @Parameters(name = "incrementalSnp={0}, consistentID={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
+    @Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
 
         for (boolean incSnp : Arrays.asList(true, false))
-            for (String consId : Arrays.asList(CONSISTENT_ID, null))
+            for (boolean customConsId: Arrays.asList(true, false))
                 for (int oldNodesCnt : Arrays.asList(1, 3))
                     for (boolean cacheDump : Arrays.asList(true, false))
                         for (boolean customSnpPath : Arrays.asList(true, false))
                             for (boolean testCacheGrp : Arrays.asList(true, false))
-                                if ((!incSnp || !cacheDump) && (!incSnp || consId != null))
-                                    data.add(new Object[]{incSnp, consId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+                                if (!incSnp || (!cacheDump && customConsId && oldNodesCnt == 1))
+                                    data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
 
         return data;
     }
@@ -143,18 +139,31 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
+            for (int i = 1; i < oldNodesCnt; ++i) {
+                startGrid(
+                        i,
+                        OLD_IGNITE_VERSION,
+                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo),
+                        new IgniteInClosure<>() {
+                            @Override public void apply(Ignite ignite) {
+                                // No-op.
+                            }
+                        }
+                );
+            }
+
             startGrid(
-                oldNodesCnt,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId, customSnpPath, true, cacheGrpInfo),
-                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+                    oldNodesCnt,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
+                    new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
             );
 
             stopAllGrids();
 
             cleanPersistenceDir(true);
 
-            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId, customSnpPath));
+            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId(customConsId, 1), customSnpPath));
 
             node.cluster().state(ClusterState.ACTIVE);
 
@@ -284,15 +293,20 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         return cacheName + "-organization-" + key;
     }
 
+    /** */
+    private static String consId(boolean custom, int nodeIdx) {
+        return custom ? "node-" + nodeIdx : null;
+    }
+
     /**
      * Configuration closure both for old and current Ignite version.
      */
     private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
-        private final String consId;
+        private final boolean incSnp;
 
         /** */
-        private final boolean incSnp;
+        private final String consId;
 
         /** */
         private final boolean customSnpPath;
@@ -311,8 +325,8 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             boolean delIfExist,
             CacheGroupInfo cacheGrpInfo
         ) {
-            this.consId = consId;
             this.incSnp = incSnp;
+            this.consId = consId;
             this.customSnpPath = customSnpPath;
             this.delIfExist = delIfExist;
             this.cacheGrpInfo = cacheGrpInfo;
