@@ -17,19 +17,20 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
@@ -37,31 +38,64 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  *
  */
 public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAbstractTest {
     /** */
+    @Parameter(5)
+    public int oldNodesCnt;
+
+    /**
+     * Restore incremental snapshot if consistent ID is null is fixed in 2.17.0, see here
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>. Restore of an incremental snapshot doesn't work for different
+     * topology. Also restoring cache dump and any kind of snapshot is pointless.
+     */
+    @Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
+    public static Collection<Object[]> data() {
+        List<Object[]> data = new ArrayList<>();
+
+        for (boolean incSnp : Arrays.asList(true, false))
+            for (boolean customConsId: Arrays.asList(true, false))
+                for (int oldNodesCnt : Arrays.asList(1, 3))
+                    for (boolean cacheDump : Arrays.asList(true, false))
+                        for (boolean customSnpPath : Arrays.asList(true, false))
+                            for (boolean testCacheGrp : Arrays.asList(true, false))
+                                if (!incSnp || (!cacheDump && customConsId && oldNodesCnt == 1))
+                                    data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+
+        return data;
+    }
+
+    /** */
     @Test
     public void testSnapshotRestore() throws Exception {
         try {
+            for (int i = 1; i < oldNodesCnt; ++i) {
+                startGrid(
+                        i,
+                        OLD_IGNITE_VERSION,
+                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
+                );
+            }
+
             startGrid(
-                oldNodesCnt,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId, customSnpPath, true, cacheGrpInfo),
-                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+                    oldNodesCnt,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
+                    new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
             );
 
             stopAllGrids();
 
             cleanPersistenceDir(true);
 
-            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId, customSnpPath));
+            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId(customConsId, 1), customSnpPath));
 
             node.cluster().state(ClusterState.ACTIVE);
 
@@ -168,128 +202,12 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
     }
 
     /** */
-    private @NotNull IgniteConfiguration currentIgniteConfiguration(
-        boolean incSnp,
-        String consId,
-        boolean customSnpPath
-    ) throws Exception {
+    private @NotNull IgniteConfiguration currentIgniteConfiguration(boolean incSnp, String consId, boolean customSnpPath) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
         new ConfigurationClosure(incSnp, consId, customSnpPath, false, cacheGrpInfo).apply(cfg);
 
         return cfg;
-    }
-
-    /** */
-    private static String customSnapshotPath(String relativePath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, delIfExist).getAbsolutePath();
-    }
-
-    /**
-     * Configuration closure both for old and current Ignite version.
-     */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /** */
-        private final String consId;
-
-        /** */
-        private final boolean incSnp;
-
-        /** */
-        private final boolean customSnpPath;
-
-        /** */
-        private final boolean delIfExist;
-
-        /** */
-        private final CacheGroupInfo cacheGrpInfo;
-
-        /** */
-        public ConfigurationClosure(
-            boolean incSnp,
-            String consId,
-            boolean customSnpPath,
-            boolean delIfExist,
-            CacheGroupInfo cacheGrpInfo
-        ) {
-            this.consId = consId;
-            this.incSnp = incSnp;
-            this.customSnpPath = customSnpPath;
-            this.delIfExist = delIfExist;
-            this.cacheGrpInfo = cacheGrpInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteConfiguration cfg) {
-            DataStorageConfiguration storageCfg = new DataStorageConfiguration();
-
-            storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-
-            cfg.setDataStorageConfiguration(storageCfg);
-
-            cfg.setConsistentId(consId);
-
-            storageCfg.setWalCompactionEnabled(incSnp);
-
-            if (delIfExist) {
-                cfg.setCacheConfiguration(
-                    cacheGrpInfo.cacheNamesList().stream()
-                        .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
-                            .setGroupName(cacheGrpInfo.name())
-                            .setAffinity(new RendezvousAffinityFunction(false, 10))
-                        )
-                        .toArray(CacheConfiguration[]::new)
-                );
-            }
-
-            if (customSnpPath) {
-                try {
-                    cfg.setSnapshotPath(customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, delIfExist));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    /**
-     * Snapshot creating closure for old Ignite version.
-     */
-    private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
-        /** */
-        private final boolean incSnp;
-
-        /** */
-        private final boolean cacheDump;
-
-        /** */
-        private final CacheGroupInfo cacheGrpInfo;
-
-        /** */
-        public CreateSnapshotClosure(boolean incSnp, boolean cacheDump, CacheGroupInfo cacheGrpInfo) {
-            this.incSnp = incSnp;
-            this.cacheDump = cacheDump;
-            this.cacheGrpInfo = cacheGrpInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Ignite ign) {
-            ign.cluster().state(ClusterState.ACTIVE);
-
-            cacheGrpInfo.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE);
-
-            if (cacheDump)
-                ign.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(cacheGrpInfo.name())).get();
-            else
-                ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-            if (incSnp) {
-                cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
-
-                ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
-            }
-        }
     }
 }
