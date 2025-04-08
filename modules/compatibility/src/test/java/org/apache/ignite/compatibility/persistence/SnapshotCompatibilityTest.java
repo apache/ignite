@@ -143,12 +143,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
                 startGrid(
                         i,
                         OLD_IGNITE_VERSION,
-                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo),
-                        new IgniteInClosure<>() {
-                            @Override public void apply(Ignite ignite) {
-                                // No-op.
-                            }
-                        }
+                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
                 );
             }
 
