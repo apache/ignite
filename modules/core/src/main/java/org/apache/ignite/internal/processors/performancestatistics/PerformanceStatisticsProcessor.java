@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
@@ -41,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -76,13 +80,39 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Rotate performance statistics process. */
     private DistributedProcess<Serializable, Serializable> rotateProc;
 
+    /** */
+    private final Predicate<SystemView<?>> sysViewPredicate;
+
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        // System views that won't be recorded. They may be large or copy another PerfStat values.
+        Set<String> ignoredViews = Set.of("baseline.node.attributes",
+            "metrics",
+            "caches",
+            "sql.queries",
+            "nodes",
+            "partitionStates",
+            "statisticsPartitionData");
+
+        sysViewPredicate = view -> !ignoredViews.contains(view.name());
+
         registerStateListener(() -> {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
+
+            for (SystemView<?> view : ctx.systemView()) {
+                if (sysViewPredicate.test(view)) {
+                    try {
+                        sysViewWriter.systemView(view);
+                    }
+                    catch (IOException e) {
+                        log.error("Failed to write system view: " + view, e);
+                        break;
+                    }
+                }
+            }
         });
     }
 
