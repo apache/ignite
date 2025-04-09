@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.List;
@@ -28,11 +30,13 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
@@ -43,7 +47,10 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
@@ -57,6 +64,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -110,6 +119,9 @@ public class FilePerformanceStatisticsWriter {
     /** Performance statistics file writer worker. */
     private final FileWriter fileWriter;
 
+    /** Performance statistics system view file writer worker. */
+    private final SystemViewFileWriter sysViewFileWriter;
+
     /** Count of written to buffer bytes. */
     private final AtomicInteger writtenToBuf = new AtomicInteger();
 
@@ -135,13 +147,32 @@ public class FilePerformanceStatisticsWriter {
     /** Count of cached strings. */
     private volatile int knownStrsSz;
 
+    /** System view predicate to filter recorded views. */
+    private final Predicate<SystemView<?>> sysViewPredicate;
+
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
 
         fileWriter = new FileWriter(ctx, log);
+        sysViewFileWriter = new SystemViewFileWriter(ctx);
+
+        // System views that won't be recorded. They may be large or copy another PerfStat values.
+        Set<String> ignoredViews = Set.of("baseline.node.attributes",
+            "metrics",
+            "caches",
+            "sql.queries",
+            "nodes",
+            "partitionStates",
+            "statisticsPartitionData");
+        sysViewPredicate = view -> !ignoredViews.contains(view.name());
 
         fileWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
+
+        sysViewFileWriter.doWrite(buf -> {
+            buf.put(OperationType.VERSION.id());
+            buf.putShort(FILE_FORMAT_VERSION);
+        });
     }
 
     /** Writes {@link UUID} to buffer. */
@@ -626,6 +657,176 @@ public class FilePerformanceStatisticsWriter {
                     notify();
                 }
             }
+        }
+    }
+
+    /** Worker to write to performance statistics file. */
+    private class SystemViewFileWriter extends GridWorker {
+        /** Performance statistics system view file. */
+        private final File file;
+
+        /** Performance statistics file I/O. */
+        private final FileIO fileIo;
+
+        /** Buffer. */
+        private final ByteBuffer buf;
+
+        /** */
+        private final GridSystemViewManager sysViewMgr;
+
+        /**
+         * @param ctx Kernal context.
+         */
+        SystemViewFileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, ctx.log(SystemViewFileWriter.class));
+
+            sysViewMgr = ctx.systemView();
+
+            file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
+            fileIo = new RandomAccessFileIOFactory().create(file);
+
+            buf = ByteBuffer.allocateDirect(bufSize);
+            buf.order(ByteOrder.LITTLE_ENDIAN);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            try {
+                for (SystemView<?> view : sysViewMgr) {
+                    if (isCancelled())
+                        break;
+                    if (sysViewPredicate.test(view))
+                        systemView(view);
+                }
+
+                flush();
+                fileIo.force();
+
+                log.info("Finished writing system views to performance statistics file: " + file + '.');
+            }
+            catch (IOException e) {
+                log.error("Unable to write to the performance statistics file.", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void cleanup() {
+            U.closeQuiet(fileIo);
+        }
+
+        /**  */
+        public void systemView(SystemView<?> view) throws IOException {
+            SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
+
+            writeSchemaToBuf(walker, view.name());
+
+            for (Object row : view)
+                writeRowToBuf(row, walker);
+        }
+
+        /**
+         * @param walker Walker to visit view attributes.
+         * @param viewName View name.
+         */
+        private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) throws IOException {
+            doWrite(buf -> {
+                buf.put(SYSTEM_VIEW_SCHEMA.id());
+                writeString(buf, viewName, cacheIfPossible(viewName));
+                writeString(buf, walker.getClass().getName(), cacheIfPossible(walker.getClass().getName()));
+            });
+        }
+
+        /**
+         * @param row        Row.
+         * @param walker     Walker.
+         */
+        private void writeRowToBuf(Object row, SystemViewRowAttributeWalker<Object> walker) throws IOException {
+            doWrite(buf -> {
+                buf.put(SYSTEM_VIEW_ROW.id());
+                walker.visitAll(row, new AttributeWithValueWriterVisitor(buf));
+            });
+        }
+
+        /** Write to {@link  #buf} and handle overflow if necessary. */
+        private void doWrite(Consumer<ByteBuffer> consumer) throws IOException {
+            if (isCancelled())
+                return;
+
+            int beginPos = buf.position();
+            try {
+                consumer.accept(buf);
+            }
+            catch (BufferOverflowException e) {
+                buf.position(beginPos);
+                flush();
+                consumer.accept(buf);
+            }
+        }
+
+        /**  */
+        private void flush() throws IOException {
+            buf.flip();
+            fileIo.writeFully(buf);
+            buf.flip();
+            buf.clear();
+        }
+    }
+
+    /** Writes view row to file. */
+    private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
+        /** */
+        private final ByteBuffer buf;
+
+        /**
+         * @param buf Buffer to write.
+         */
+        private AttributeWithValueWriterVisitor(ByteBuffer buf) {
+            this.buf = buf;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
+            writeString(buf, String.valueOf(val), cacheIfPossible(String.valueOf(val)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptBoolean(int idx, String name, boolean val) {
+            buf.put(val ? (byte)1 : 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptChar(int idx, String name, char val) {
+            buf.putChar(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptByte(int idx, String name, byte val) {
+            buf.put(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptShort(int idx, String name, short val) {
+            buf.putShort(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptInt(int idx, String name, int val) {
+            buf.putInt(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptLong(int idx, String name, long val) {
+            buf.putLong(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptFloat(int idx, String name, float val) {
+            buf.putFloat(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptDouble(int idx, String name, double val) {
+            buf.putDouble(val);
         }
     }
 }
