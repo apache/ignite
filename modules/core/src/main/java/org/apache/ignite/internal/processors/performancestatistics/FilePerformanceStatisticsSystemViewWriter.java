@@ -74,20 +74,11 @@ public class FilePerformanceStatisticsSystemViewWriter {
     /** File writer thread name. */
     static final String WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
 
-    /** Performance statistics file. */
-    protected final File file;
-
-    /** Performance statistics file I/O. */
-    protected final FileIO fileIo;
-
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Buffer. */
-    private final ByteBuffer buf;
-
     /** Writer. */
-    private final FileWriter writer;
+    private final FileWriter fileWriter;
 
     /**  */
     private final GridSystemViewManager sysViewMgr;
@@ -112,15 +103,9 @@ public class FilePerformanceStatisticsSystemViewWriter {
      * @param ctx Kernal context.
      */
     public FilePerformanceStatisticsSystemViewWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
-        file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
-        fileIo = new RandomAccessFileIOFactory().create(file);
-
         log = ctx.log(getClass());
         sysViewMgr = ctx.systemView();
-        writer = new FileWriter(ctx, log);
-
-        buf = ByteBuffer.allocateDirect(bufSize);
-        buf.order(ByteOrder.LITTLE_ENDIAN);
+        fileWriter = new FileWriter(ctx);
 
         // System views that won't be recorded. They may be large or copy another PerfStat values.
         Set<String> ignoredViews = Set.of("baseline.node.attributes",
@@ -131,6 +116,11 @@ public class FilePerformanceStatisticsSystemViewWriter {
             "partitionStates",
             "statisticsPartitionData");
         sysViewPredicate = view -> !ignoredViews.contains(view.name());
+
+        fileWriter.doWrite(buf -> {
+            buf.put(OperationType.VERSION.id());
+            buf.putShort(FILE_FORMAT_VERSION);
+        });
     }
 
     /** Writes {@link UUID} to buffer. */
@@ -185,12 +175,12 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
     /** */
     public void start() {
-        new IgniteThread(writer).start();
+        new IgniteThread(fileWriter).start();
     }
 
     /** */
     public void stop() {
-        U.awaitForWorkersStop(Collections.singleton(writer), true, log);
+        U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
     }
 
     /** @return {@code True} if string was cached and can be written as hashcode. */
@@ -212,26 +202,69 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
     /** */
     protected void cleanup() {
-        U.closeQuiet(fileIo);
         knownStrs = null;
+    }
+
+    /**  */
+    public void systemView(SystemView<?> view) throws IOException {
+        SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
+
+        writeSchemaToBuf(walker, view.name());
+
+        for (Object row : view)
+            writeRowToBuf(row, walker);
+    }
+
+    /**
+     * @param walker Walker to visit view attributes.
+     * @param viewName View name.
+     */
+    private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) throws IOException {
+        fileWriter.doWrite(buf -> {
+            buf.put(SYSTEM_VIEW_SCHEMA.id());
+            writeString(buf, viewName, cacheIfPossible(viewName));
+            writeString(buf, walker.getClass().getName(), cacheIfPossible(walker.getClass().getName()));
+        });
+    }
+
+    /**
+     * @param row        Row.
+     * @param walker     Walker.
+     */
+    private void writeRowToBuf(Object row, SystemViewRowAttributeWalker<Object> walker) throws IOException {
+        fileWriter.doWrite(buf -> {
+            buf.put(SYSTEM_VIEW_ROW.id());
+            walker.visitAll(row, new AttributeWithValueWriterVisitor(buf));
+        });
     }
 
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
+        /** Performance statistics file. */
+        private final File file;
+
+        /** Performance statistics file I/O. */
+        private final FileIO fileIo;
+
+        /** Buffer. */
+        private final ByteBuffer buf;
+
         /**
          * @param ctx Kernal context.
-         * @param log Logger.
          */
-        FileWriter(GridKernalContext ctx, IgniteLogger log) {
-            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log);
+        FileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, ctx.log(FileWriter.class));
+
+            file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
+            fileIo = new RandomAccessFileIOFactory().create(file);
+
+            buf = ByteBuffer.allocateDirect(bufSize);
+            buf.order(ByteOrder.LITTLE_ENDIAN);
         }
 
         /** {@inheritDoc} */
         @Override protected void body() {
             try {
-                buf.put(OperationType.VERSION.id());
-                buf.putShort(FILE_FORMAT_VERSION);
-
                 for (SystemView<?> view : sysViewMgr) {
                     if (isCancelled())
                         break;
@@ -251,47 +284,10 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
         /** {@inheritDoc} */
         @Override protected void cleanup() {
-            FilePerformanceStatisticsSystemViewWriter.this.cleanup();
+            U.closeQuiet(fileIo);
         }
 
-        /**  */
-        public void systemView(SystemView<?> view) throws IOException {
-            SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
-
-            AttributeWithValueWriterVisitor valVisitor = new AttributeWithValueWriterVisitor();
-
-            writeSchemaToBuf(walker, view.name());
-
-            for (Object row : view)
-                writeRowToBuf(row, valVisitor, walker);
-        }
-
-        /**
-         * @param walker Walker to visit view attributes.
-         * @param viewName View name.
-         */
-        private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) throws IOException {
-            doWrite(buffer -> {
-                buffer.put(SYSTEM_VIEW_SCHEMA.id());
-                writeString(buf, viewName, cacheIfPossible(viewName));
-                writeString(buf, walker.getClass().getName(), cacheIfPossible(walker.getClass().getName()));
-            });
-        }
-
-        /**
-         * @param row        Row.
-         * @param valVisitor Value visitor.
-         * @param walker     Walker.
-         */
-        private void writeRowToBuf(Object row, AttributeWithValueWriterVisitor valVisitor,
-            SystemViewRowAttributeWalker<Object> walker) throws IOException {
-            doWrite(buffer -> {
-                buf.put(SYSTEM_VIEW_ROW.id());
-                walker.visitAll(row, valVisitor);
-            });
-        }
-
-        /** Write to {@link  FilePerformanceStatisticsSystemViewWriter#buf} and handle overflow if necessary. */
+        /** Write to {@link  FileWriter#buf} and handle overflow if necessary. */
         private void doWrite(Consumer<ByteBuffer> consumer) throws IOException {
             if (isCancelled())
                 return;
@@ -318,6 +314,16 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
     /** Writes view row to file. */
     private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
+        /** */
+        private ByteBuffer buf;
+
+        /**
+         * @param buf Buffer to write.
+         */
+        private AttributeWithValueWriterVisitor(ByteBuffer buf) {
+            this.buf = buf;
+        }
+
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
             writeString(buf, String.valueOf(val), cacheIfPossible(String.valueOf(val)));
