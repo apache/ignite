@@ -504,59 +504,32 @@ public class FilePerformanceStatisticsWriter {
 
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
+        /** Performance statistics file I/O. */
+        private final FileIO fileIo;
+
+        /** */
+        private final File file;
+
+        /** File write buffer. */
+        private final SegmentedRingByteBuffer ringByteBuf;
+
         /**
          * @param ctx Kernal context.
          * @param log Logger.
          */
-        FileWriter(GridKernalContext ctx, IgniteLogger log) {
+        FileWriter(GridKernalContext ctx, IgniteLogger log) throws IgniteCheckedException, IOException {
             super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log, ctx.workersRegistry());
-        }
 
-        /**
-         * @param op Operation type.
-         * @param recSize Record size.
-         * @param writer Record writer.
-         */
-        public void doWrite(OperationType op, int recSize, Consumer<ByteBuffer> writer) {
-            int size = recSize + /*type*/ 1;
+            file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId());
 
-            SegmentedRingByteBuffer.WriteSegment seg = ringByteBuf.offer(size);
+            fileIo = new RandomAccessFileIOFactory().create(file);
 
-            if (seg == null) {
-                if (smallBufLogged.compareAndSet(false, true)) {
-                    log.warning("The performance statistics in-memory buffer size is too small. Some operations " +
-                        "will not be logged.");
-                }
+            log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
 
-                return;
-            }
+            long fileMaxSize = IgniteSystemProperties.getLong(IGNITE_PERF_STAT_FILE_MAX_SIZE, DFLT_FILE_MAX_SIZE);
+            int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
-            // Ring buffer closed (writer stopping) or maximum size reached.
-            if (seg.buffer() == null) {
-                seg.release();
-
-                if (!fileWriter.isCancelled() && stopByMaxSize.compareAndSet(false, true))
-                    log.warning("The performance statistics file maximum size is reached.");
-
-                return;
-            }
-
-            ByteBuffer buf = seg.buffer();
-
-            buf.put(op.id());
-
-            writer.accept(buf);
-
-            seg.release();
-
-            int bufCnt = writtenToBuf.get() / flushSize;
-
-            if (writtenToBuf.addAndGet(size) / flushSize > bufCnt) {
-                // Wake up worker to start writing data to the file.
-                synchronized (fileWriter) {
-                    fileWriter.notify();
-                }
-            }
+            ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
         }
 
         /** {@inheritDoc} */
@@ -598,6 +571,27 @@ public class FilePerformanceStatisticsWriter {
             }
         }
 
+        /** {@inheritDoc} */
+        @Override protected void cleanup() {
+            // Stop accepting new records.
+            ringByteBuf.close();
+
+            // Make sure that all producers released their buffers to safe deallocate memory (in case of worker
+            // stopped abnormally).
+            ringByteBuf.poll();
+
+            ringByteBuf.free();
+
+            try {
+                fileIo.force();
+            }
+            catch (IOException e) {
+                log.warning("Failed to fsync the performance statistics file.", e);
+            }
+
+            U.closeQuiet(fileIo);
+        }
+
         /**
          * Flushes to disk available bytes from the ring buffer.
          *
@@ -623,6 +617,53 @@ public class FilePerformanceStatisticsWriter {
             }
 
             return written;
+        }
+
+        /**
+         * @param op Operation type.
+         * @param recSize Record size.
+         * @param writer Record writer.
+         */
+        private void doWrite(OperationType op, int recSize, Consumer<ByteBuffer> writer) {
+            int size = recSize + /*type*/ 1;
+
+            SegmentedRingByteBuffer.WriteSegment seg = ringByteBuf.offer(size);
+
+            if (seg == null) {
+                if (smallBufLogged.compareAndSet(false, true)) {
+                    log.warning("The performance statistics in-memory buffer size is too small. Some operations " +
+                        "will not be logged.");
+                }
+
+                return;
+            }
+
+            // Ring buffer closed (writer stopping) or maximum size reached.
+            if (seg.buffer() == null) {
+                seg.release();
+
+                if (!isCancelled() && stopByMaxSize.compareAndSet(false, true))
+                    log.warning("The performance statistics file maximum size is reached.");
+
+                return;
+            }
+
+            ByteBuffer buf = seg.buffer();
+
+            buf.put(op.id());
+
+            writer.accept(buf);
+
+            seg.release();
+
+            int bufCnt = writtenToBuf.get() / flushSize;
+
+            if (writtenToBuf.addAndGet(size) / flushSize > bufCnt) {
+                // Wake up worker to start writing data to the file.
+                synchronized (this) {
+                    notify();
+                }
+            }
         }
     }
 }
