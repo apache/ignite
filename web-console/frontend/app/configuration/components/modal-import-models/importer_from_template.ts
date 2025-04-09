@@ -489,16 +489,12 @@ export class ModalImportModelsFromTemplate {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
                         tbl.table = tbl.name;
-                        tbl.schema = schema;              
+                        tbl.schema = tbl.schema || schema;              
                         tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.name), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.name;
-                        tbl.edit = false;
+                        tbl.edit = false;                                             
                         
-                        if (tbl.idIndex) {
-                            tbl.keyType = 'String'
-                            tbl.keyFields = ['_id'];
-                        }
                     });
 
                     $scope.importDomain.action = 'tables';
@@ -543,12 +539,8 @@ export class ModalImportModelsFromTemplate {
                         tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.name), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.name;
-                        tbl.edit = false;
+                        tbl.edit = false;                        
                         
-                        if (tbl.idIndex) {
-                            tbl.keyType = 'String'
-                            tbl.keyFields = ['_id'];
-                        }
                     });
 
                     $scope.importDomain.action = 'tables';
@@ -663,7 +655,7 @@ export class ModalImportModelsFromTemplate {
                 let _containKey = false;
 
                 _.forEach(table.columns, function(col) {
-                    col.typeName = SqlTypes.findJdbcTypeName(col.typeName);
+                    
                     const fld = dbField(col.name, SqlTypes.findJdbcType(col.type,col.typeName), col.nullable, col.unsigned);
 
                     qryFields.push({name: fld.javaFieldName, className: fld.javaType, comment: col.comment});
@@ -677,8 +669,8 @@ export class ModalImportModelsFromTemplate {
                             
                         aliases.push({field: fld.javaFieldName, alias: dbName});
                     }                        
-
-                    if (col.key || col.name==='_id' || col.name==='_key') {
+                    const columu_name = col.name.toLowerCase();
+                    if (col.key || columu_name==='id' || columu_name==='_id' || columu_name==='_key') {
                         keyFields.push(fld);
 
                         _containKey = true;
@@ -703,7 +695,7 @@ export class ModalImportModelsFromTemplate {
                     });
                 }
 
-                if(!containKey){
+                if(keyFields.length==0){
                     const fld = dbField("_id", SqlTypes.findJdbcType(1111,"UUID"), false, false);
                     qryFields.push({name: fld.javaFieldName, className: fld.javaType, comment: ''});
                     keyFields.push(fld); 

@@ -345,6 +345,7 @@ public class QueryUtils {
             normalTblName = normalizeObjectName(normalTblName, false);
 
         normalEntity.setTableName(normalTblName);
+        normalEntity.setTableComment(entity.getTableComment());
 
         // Normalize field names through aliases.
         Map<String, String> normalAliases = new HashMap<>(normalEntity.getAliases());

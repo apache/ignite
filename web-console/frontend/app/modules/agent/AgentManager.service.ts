@@ -659,6 +659,29 @@ export default class AgentManager {
             });
     }
 
+    publicCaches() {
+        return this.collectCacheNames(null)
+            .then((data) => {
+                let caches = _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
+                let cacheNames= _.filter(caches,(cache:string)=>{ 
+                    return !cache.startsWith('INDEXES.') && !cache.startsWith('igfs-internal-')
+                });
+                let cachesInfo = _.map(cacheNames, (cacheName) => {
+                    const schema = data.sqlSchemas && data.sqlSchemas[cacheName] || '';
+                    let comment = data.cachesComment && data.cachesComment[cacheName] || '';
+                    if (comment) {
+                        comment = ' (' + comment.slice(0, 24) + ')';
+                    }
+                    return {
+                        value: cacheName,
+                        label: cacheName + comment,
+                        key: schema+'.'+ cacheName,         
+                    }                
+                });
+                return cachesInfo;
+            });
+    }
+
     cacheNodes(cacheName: string) {
         return this.visorTask<AgentTypes.CacheNodesTaskResponse>('cacheNodesTaskX2', null, [cacheName]);
     }
@@ -676,7 +699,7 @@ export default class AgentManager {
                 };
 
                 const _typeMapper = (meta, typeName) => {
-                    const maskedName = _.isEmpty(meta.cacheName) ? '<default>' : meta.cacheName;
+                    const maskedName = meta.sqlSchema || '[schema]'; //meta.cacheName;
 
                     let fields = meta.fields[typeName];
 

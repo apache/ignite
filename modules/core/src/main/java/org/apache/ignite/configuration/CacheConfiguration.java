@@ -549,6 +549,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public String getName() {
         return name;
     }
+    
+    /**
+     * Cache name. The cache will be accessed via {@link Ignite#cache(String)} method.
+     *
+     * @return Cache name.
+     */
+    public String getComment() {
+    	if(this.qryEntities!=null && this.qryEntities.size()>0) {
+    		String comment="";
+    		for(QueryEntity entity: this.qryEntities) {
+    			if(entity.getTableComment()!=null) {
+    				if(!comment.isEmpty()) {
+    					comment+=',';
+    				}
+    				comment+=entity.getTableComment();
+    			}
+    		}
+    		return comment.isBlank() ? null : comment;
+    	}
+        return null;
+    }
 
     /**
      * Sets cache name.

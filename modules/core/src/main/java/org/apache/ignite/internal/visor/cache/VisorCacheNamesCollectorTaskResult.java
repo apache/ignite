@@ -37,7 +37,13 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
 
     /** Cache names and deployment IDs. */
     private Map<String, IgniteUuid> caches;
-
+    
+    /** Cache names and Comments. */
+    private Map<String, String> cachesComment;
+    
+    /** Cache sqlSchemas. */
+    private Map<String, String> sqlSchemas;
+    
     /** Cache groups. */
     private Set<String> groups;
 
@@ -51,8 +57,10 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
     /**
      * @param caches Cache names and deployment IDs.
      */
-    public VisorCacheNamesCollectorTaskResult(Map<String, IgniteUuid> caches, Set<String> groups) {
+    public VisorCacheNamesCollectorTaskResult(Map<String, IgniteUuid> caches, Map<String, String> cachesComment, Map<String, String> sqlSchemas, Set<String> groups) {
         this.caches = caches;
+        this.cachesComment = cachesComment;
+        this.sqlSchemas = sqlSchemas;
         this.groups = groups;
     }
 
@@ -62,7 +70,21 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
     public Map<String, IgniteUuid> getCaches() {
         return caches;
     }
+    
+    /**
+     * @return Value for specified key or number of modified rows..
+     */
+    public Map<String, String> getCachesComment() {
+        return cachesComment;
+    }
 
+    /**
+     * @return Value for specified key or number of modified rows..
+     */
+    public Map<String, String> getSqlSchemas() {
+        return sqlSchemas;
+    }
+    
     /**
      * @return Value for specified key or number of modified rows..
      */
@@ -70,15 +92,20 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
         return groups;
     }
 
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, caches);
+        U.writeMap(out, cachesComment);
+        U.writeMap(out, sqlSchemas);
         U.writeCollection(out, groups);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readMap(in);
+        cachesComment = U.readMap(in);
+        sqlSchemas = U.readMap(in);
         groups = U.readSet(in);
     }
 

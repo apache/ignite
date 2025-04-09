@@ -713,6 +713,34 @@ export class NotebookCtrl {
                 .catch((err) => Messages.showError(err));
         };
 
+        /**
+         * Update cache list.
+         */
+        const _refreshCaches2 = () => {
+            return agentMgr.publicCaches()
+                .then((caches) => {
+                    const cacheNames = _.map(caches, (cache) => cache.value);
+                    $scope.caches = _.sortBy(caches, (cache) => cache.key.toLowerCase());
+
+                    _.forEach($scope.notebook.paragraphs, (paragraph) => {
+                        if (!_.includes(cacheNames, paragraph.cacheName))
+                            paragraph.cacheName = _.head(cacheNames);
+                    });
+
+                    // Await for demo caches.
+                    if (!$ctrl.demoStarted && this.Demo.enabled && nonEmpty(cacheNames)) {
+                        $ctrl.demoStarted = true;
+
+                        Loading.finish('sqlLoading');
+
+                        _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
+                    }
+
+                    $scope.$applyAsync();
+                })
+                .catch((err) => Messages.showError(err));
+        };
+
         const _startWatch = () => {
             const finishLoading$ = defer(() => {
                 if (!this.Demo.enabled)
@@ -720,7 +748,7 @@ export class NotebookCtrl {
             }).pipe(take(1));
 
             const refreshCaches = (period) => {
-                return merge(timer(0, period).pipe(exhaustMap(() => _refreshCaches())), finishLoading$);
+                return merge(timer(0, period).pipe(exhaustMap(() => _refreshCaches2())), finishLoading$);
             };
 
             const cluster$ = agentMgr.connectionSbj.pipe(
@@ -749,7 +777,7 @@ export class NotebookCtrl {
                             _.forEach($scope.notebook.paragraphs, (paragraph) => {
                                 //to modify@byron
                                 paragraph.reset($interval);
-                                // paragraph.cancelRefresh($interval);
+                                paragraph.cancelRefresh($interval);
                             });
                         }),
                         switchMap(() => refreshCaches(60000))

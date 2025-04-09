@@ -66,12 +66,21 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
             GridCacheProcessor cacheProc = ignite.context().cache();
 
             Map<String, IgniteUuid> caches = new HashMap<>();
+            Map<String, String> cachesComment = new HashMap<>();
+            Map<String, String> sqlSchemas = new HashMap<>();
             Set<String> groups = new HashSet<>();
 
             for (Map.Entry<String, DynamicCacheDescriptor> item : cacheProc.cacheDescriptors().entrySet()) {
                 DynamicCacheDescriptor cd = item.getValue();
 
                 caches.put(item.getKey(), cd.deploymentId());
+                String comment = cd.cacheConfiguration().getComment();
+                if(comment!=null) {
+                	cachesComment.put(item.getKey(), comment);
+                }
+                String sqlSchema = cd.cacheConfiguration().getSqlSchema();
+                if (!F.isEmpty(sqlSchema))
+                	sqlSchemas.put(item.getKey(),sqlSchema);
 
                 String grp = cd.groupDescriptor().groupName();
 
@@ -79,7 +88,7 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
                     groups.add(grp);
             }
 
-            return new VisorCacheNamesCollectorTaskResult(caches, groups);
+            return new VisorCacheNamesCollectorTaskResult(caches, cachesComment, sqlSchemas, groups);
         }
 
         /** {@inheritDoc} */

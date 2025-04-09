@@ -104,6 +104,11 @@ public class VertxClusterHandler implements ClusterHandler{
     	if (clusterNameOpt.isPresent()) {
     		String clusterName = clusterNameOpt.get();
     		
+    		if("text2gremlin".equals(cmd)) {
+    			String text = "// g.V() " + params.getString("text");
+    			return RestResult.success(text, params.getString("sessionToken"));
+    		}
+    		
     		if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd)) {
     			
     			if(code.indexOf("vertx.")<0) {

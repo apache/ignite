@@ -97,7 +97,7 @@ mixin td-ellipses-lbl(w, lbl)
                                 label: 'Generate tables from meta collection',
                                 model: 'importDomain.tablesFromMetaCollection',
                                 name: '"tablesFromMetaCollection"',
-                                tip: 'Meta collection must has fields: "TABLE_SCHEMA","TABLE_NAME","TABLE_COMMENT","COLUMN_NAME","COLUMN_COMMENT","DATA_TYPE"',
+                                tip: 'Meta collection must has fields: TABLE_SCHEMA,TABLE_NAME,TABLE_COMMENT,COLUMN_NAME,COLUMN_COMMENT,DATA_TYPE',
                                 tipOpts
                             })(
                                 ng-change='$ctrl.onMetaTableSelectionChange($event)'                                

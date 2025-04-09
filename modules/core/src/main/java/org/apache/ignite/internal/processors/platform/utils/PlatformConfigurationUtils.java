@@ -208,7 +208,7 @@ public class PlatformConfigurationUtils {
 
         if (dataRegionName != null)
             //noinspection deprecation
-            ccfg.setMemoryPolicyName(dataRegionName);
+            ccfg.setDataRegionName(dataRegionName);
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
         ccfg.setGroupName(in.readString());
@@ -1121,7 +1121,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
         //noinspection deprecation
-        writer.writeString(ccfg.getMemoryPolicyName());
+        writer.writeString(ccfg.getDataRegionName());
         writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
         writer.writeString(ccfg.getGroupName());
 

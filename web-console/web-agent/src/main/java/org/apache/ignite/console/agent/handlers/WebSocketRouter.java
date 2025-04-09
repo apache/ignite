@@ -822,7 +822,12 @@ public class WebSocketRouter implements AutoCloseable {
                     		}
                 		}
                     	
-                    	if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd)) {
+                    	if("text2sql".equals(cmd)) {
+                    		// Text Query
+                    		String text = "-- //" + params.getString("text");
+                    		res = RestResult.success(text, params.getString("sessionToken"));
+                		}
+                    	else if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd) || "text2gremlin".equals(cmd)) {
                     		// Gremlin Query or Execute groovy code
                     		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);
                 		}                    	

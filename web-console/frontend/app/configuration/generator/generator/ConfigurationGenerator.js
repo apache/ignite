@@ -1802,7 +1802,7 @@ export default class IgniteConfigurationGenerator {
             const notNullAvailable = available('2.3.0');
             const defaultAvailable = available('2.4.0');
             const precisionAvailable = available('2.7.0');
-
+            const tableCommentAvailable = available('2.16.999');
             const fields = _.filter(_.map(domain.fields,
                 (e) => {
                     if (notNullAvailable && e.notNull)
@@ -1846,6 +1846,9 @@ export default class IgniteConfigurationGenerator {
             });
 
             cfg.stringProperty('tableName');
+            
+            if (tableCommentAvailable)
+                cfg.stringProperty('tableComment');
 
             if (available('2.0.0')) {
                 cfg.stringProperty('keyFieldName')
@@ -1935,41 +1938,22 @@ export default class IgniteConfigurationGenerator {
         let propName;
         let beanProps;
 
-        if (available('2.4.0')) {
-            switch (_.get(src, 'kind')) {
-                case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory', src: src.LRU };
-                    break;
+        switch (_.get(src, 'kind')) {
+            case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory', src: src.LRU };
+                break;
 
-                case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory', src: src.FIFO };
-                    break;
+            case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory', src: src.FIFO };
+                break;
 
-                case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory', src: src.SORTED };
-                    break;
+            case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory', src: src.SORTED };
+                break;
 
-                default:
-                    return ccfg;
-            }
-
-            propName = (near ? 'nearEviction' : 'eviction') + 'PolicyFactory';
-        }
-        else {
-            switch (_.get(src, 'kind')) {
-                case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicy', src: src.LRU };
-                    break;
-
-                case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy', src: src.FIFO };
-                    break;
-
-                case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy', src: src.SORTED };
-                    break;
-
-                default:
-                    return ccfg;
-            }
-
-            propName = (near ? 'nearEviction' : 'eviction') + 'Policy';
+            default:
+                return ccfg;
         }
 
+        propName = (near ? 'nearEviction' : 'eviction') + 'PolicyFactory';
+       
         const bean = new Bean(beanProps.cls, propName, beanProps.src, dflt);
 
         bean.intProperty('batchSize')
@@ -1984,9 +1968,8 @@ export default class IgniteConfigurationGenerator {
     // Generate cache general group.
     static cacheGeneral(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.stringProperty('name');
-
-        if (available('2.1.0'))
-            ccfg.stringProperty('groupName');
+        
+        ccfg.stringProperty('groupName');
 
         ccfg.enumProperty('cacheMode')
             .enumProperty('atomicityMode');
@@ -1996,9 +1979,8 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('readFromBackup');
         }
 
-        // Since ignite 2.0
-        if (available('2.0.0'))
-            ccfg.enumProperty('partitionLossPolicy');
+        // Since ignite 2.0        
+        ccfg.enumProperty('partitionLossPolicy');
 
         ccfg.intProperty('copyOnRead');
 

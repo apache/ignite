@@ -374,7 +374,11 @@ public class BrowsersService extends AbstractSocketHandler {
 		// scanf
 		registerVisorTask("queryScanX2", igniteCmd("qryscanexe"), Map.class.getName());		
 		// gremlin
-		registerVisorTask("queryGremlin", igniteCmd("qrygremlinexe"), Map.class.getName());
+		registerVisorTask("queryGremlin", igniteCmd("qrygremlinexe"), Map.class.getName());		
+		// text2sql
+		registerVisorTask("text2sql", igniteCmd("text2sql"), Map.class.getName());		
+		// text2gremlin
+		registerVisorTask("text2gremlin", igniteCmd("text2gremlin"), Map.class.getName());
 
 		registerVisorTask("queryFetch", igniteCmd("qryfetch"), Map.class.getName());
 

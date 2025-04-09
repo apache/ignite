@@ -155,6 +155,7 @@ public class JdbcExecutor implements AutoCloseable {
                     	caches.put(schema,schema);
                     }
                     result.put("caches", caches);
+                    result.put("cachesComment", caches);                  
                     result.put("groups", Lists.newArrayList());
                     result.put("protocolVersion", 1);
                     res.put("result", result);
@@ -210,6 +211,7 @@ public class JdbcExecutor implements AutoCloseable {
                     	ObjectNode caches = cachesMap.withObject("/"+table.getSchema());
                     	if(caches.isEmpty()) {
                     		caches.put("cacheName",table.getSchema());
+                    		caches.put("sqlSchema",table.getSchema());
                     		arr.add(caches);
                     	}
                     	

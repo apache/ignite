@@ -90,8 +90,12 @@ public class QueryEntity implements Serializable {
 
     /** Table name. */
     private String tableName;
+    
+    /** Table comment. */
+    private String tableComment;
+    
 
-    /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
+	/** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
     private Set<String> _notNullFields;
 
     /** Fields default values. */
@@ -129,6 +133,8 @@ public class QueryEntity implements Serializable {
         idxs = other.idxs != null ? new ArrayList<>(other.idxs) : null;
 
         tableName = other.tableName;
+        
+        tableComment = other.tableComment;
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
 
@@ -591,6 +597,10 @@ public class QueryEntity implements Serializable {
     public String getTableName() {
         return tableName;
     }
+    
+    public String getTableComment() {
+		return tableComment;
+	}
 
     /**
      * Sets table name for this query entity.
@@ -602,7 +612,11 @@ public class QueryEntity implements Serializable {
         this.tableName = tableName;
 
         return this;
-    }
+    }    
+
+	public void setTableComment(String tableComment) {
+		this.tableComment = tableComment;
+	}
 
     /**
      * Gets names of fields that must be checked for null.

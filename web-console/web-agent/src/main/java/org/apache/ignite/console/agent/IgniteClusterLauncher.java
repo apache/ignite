@@ -62,6 +62,7 @@ import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
 import org.apache.ignite.console.json.JsonBinarySerializer;
 import org.apache.ignite.console.utils.BeanMerger;
 import org.apache.ignite.console.utils.Utils;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
@@ -178,8 +179,8 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         	cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
         }
         
-        // not ad@byron
-        //- cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
+        // add@byron
+        cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
         
         // Configure discovery SPI.
         if(cfg.getDiscoverySpi()==null) {
@@ -187,6 +188,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	        cfg.setDiscoverySpi(discoSpi);
         }
         
+        cfg.setFailureHandler(new StopNodeFailureHandler());
         cfg.setMetricsLogFrequency(0);
         return cfg;
     }

@@ -55,6 +55,9 @@ public class QueryEntity extends IgniteDataTransferObject {
 
     /** Table name. */
     private String tblName;
+    
+    /** Table comment. */
+    private String tblComment;
 
     /** Key name. Can be used in field list to denote the key as a whole. */
     private String keyFieldName;
@@ -114,6 +117,7 @@ public class QueryEntity extends IgniteDataTransferObject {
             grps.add(new QueryIndex(qryIdx));
 
         tblName = q.getTableName();
+        tblComment = q.getTableComment();
         keyFieldName = q.getKeyFieldName();
         valFieldName = q.getValueFieldName();
     }
@@ -159,6 +163,13 @@ public class QueryEntity extends IgniteDataTransferObject {
     public String getTableName() {
         return tblName;
     }
+    
+    /**
+     * @return Table name.
+     */
+    public String getTableComment() {
+        return tblComment;
+    }
 
     /**
      * @return Key name. Can be used in field list to denote the key as a whole.
@@ -190,6 +201,7 @@ public class QueryEntity extends IgniteDataTransferObject {
         U.writeMap(out, aliases);
         U.writeCollection(out, grps);
         U.writeString(out, tblName);
+        U.writeString(out, tblComment);
         U.writeString(out, keyFieldName);
         U.writeString(out, valFieldName);
     }
@@ -203,6 +215,7 @@ public class QueryEntity extends IgniteDataTransferObject {
         aliases = U.readMap(in);
         grps = U.readList(in);
         tblName = U.readString(in);
+        tblComment = U.readString(in);
         keyFieldName = U.readString(in);
         valFieldName = U.readString(in);
     }

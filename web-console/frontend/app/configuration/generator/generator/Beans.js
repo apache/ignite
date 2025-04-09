@@ -362,7 +362,7 @@ export class Bean extends EmptyBean {
 
     /**
      * @param {String} id
-     * @param {String} model
+     * @param {Object} model
      * @param {String} [name]
      * @param {Boolean} [ordered]
      * @returns {Bean}

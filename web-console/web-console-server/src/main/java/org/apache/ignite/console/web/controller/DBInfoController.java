@@ -107,6 +107,7 @@ public class DBInfoController {
             collections.forEach((row)->{
             	list.add(new JsonObject(row));
             });
+            mongoClient.close();
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -146,8 +147,12 @@ public class DBInfoController {
             MongoDatabase database = mongoClient.getDatabase(databaseName);
             ListCollectionsIterable<Document> collections = database.listCollections();            
             collections.forEach((row)->{
-            	JsonObject table = new JsonObject(row);            	
-            	list.add(table);
+            	String collectionName = row.getString("name");
+            	if(!collectionName.startsWith("wc_")) {
+            		JsonObject table = new JsonObject(row);            	
+                	list.add(table);
+            	}
+            	
             });
             
             if(columns) {
@@ -165,7 +170,7 @@ public class DBInfoController {
     	            samples.clear();
                 }
         	}
-            
+            mongoClient.close();
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -262,6 +267,7 @@ public class DBInfoController {
             	lastTablename = name;
             }            
             
+            mongoClient.close();
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -306,6 +312,8 @@ public class DBInfoController {
             collection.find().limit(limit).forEach((row)->{
             	list.add(new JsonObject(row));
             });
+            
+            mongoClient.close();
             
         } catch (Exception e) {
             e.printStackTrace();

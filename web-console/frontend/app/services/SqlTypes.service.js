@@ -19,9 +19,11 @@ const UNKNOWN_JDBC_TYPE = {
 };
 
 const JDBC_TYPE_ALIASES = {
-    "DATETIME": "DATE",
-    "UUID":     "VARCHAR",
-    "JSON":     "LONGVARCHAR"    
+    "DATETIME":{"dbName": "DATE", "dbType": 91, "signed": {"javaType": "Date"}},
+    "UUID": {"dbName": "VARCHAR", "dbType": 12, "signed": {"javaType": "UUID"}},
+    "JSON": {"dbName": "LONGVARCHAR", "dbType": -16, "signed": {"javaType": "String"}},
+    "STRING": {"dbName": "VARCHAR", "dbType": 12, "signed": {"javaType": "String"}},
+    "VARCHAR2": {"dbName": "VARCHAR", "dbType": 12, "signed": {"javaType": "String"}},
 };
 
 /**
@@ -45,7 +47,7 @@ export default class SqlTypes {
     }
 
     isValidSqlIdentifier(s) {
-        return this.validIdentifier(s) && !this.isKeyword(s) && !this.findJdbcTypeName(s);
+        return this.validIdentifier(s) && !this.isKeyword(s);
     }
 
     /**
@@ -57,6 +59,10 @@ export default class SqlTypes {
     findJdbcType(dbType,dbTypeName) {
         let jdbcType = undefined;
         if(dbType==1111 || dbType==0 || dbType==undefined){
+            jdbcType = JDBC_TYPE_ALIASES[dbTypeName.toUpperCase()]
+            if (jdbcType){
+                return jdbcType;
+            }
             jdbcType = _.find(JDBC_TYPES, (item) => item.dbName === dbTypeName);
         }
         if(!jdbcType){
@@ -65,11 +71,6 @@ export default class SqlTypes {
         return jdbcType ? jdbcType : UNKNOWN_JDBC_TYPE;
     }
 
-    findJdbcTypeName(typeName) {
-        typeName = typeName.toUpperCase();
-        const jdbcType = JDBC_TYPE_ALIASES[typeName];
-        return jdbcType ? jdbcType : typeName;
-    }
 
     toJdbcIdentifier(name) { 
         const len = name.length;
