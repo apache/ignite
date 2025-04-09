@@ -54,12 +54,6 @@ import static org.apache.ignite.internal.processors.performancestatistics.Utils.
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
 public class FilePerformanceStatisticsSystemViewWriter {
-    /** Directory to store performance statistics files. Placed under Ignite work directory. */
-    public static final String PERF_STAT_DIR = "perf_stat";
-
-    /** Default off heap buffer size in bytes. */
-    public static final int DFLT_BUFFER_SIZE = (int)(32 * U.MB);
-
     /**
      * File format version. This version should be incremented each time when format of existing events are
      * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
@@ -80,9 +74,6 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
     /** System view predicate to filter recorded views. */
     private final Predicate<SystemView<?>> sysViewPredicate;
-
-    /**  */
-    protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
     /** */
     private StringCache strCache = new StringCache();
@@ -157,6 +148,9 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
+        /** Default off heap buffer size in bytes. */
+        public static final int DFLT_BUFFER_SIZE = (int)(32 * U.MB);
+
         /** Performance statistics file. */
         private final File file;
 
@@ -175,7 +169,7 @@ public class FilePerformanceStatisticsSystemViewWriter {
             file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
             fileIo = new RandomAccessFileIOFactory().create(file);
 
-            buf = ByteBuffer.allocateDirect(bufSize);
+            buf = ByteBuffer.allocateDirect(IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE));
             buf.order(ByteOrder.LITTLE_ENDIAN);
         }
 
@@ -232,7 +226,7 @@ public class FilePerformanceStatisticsSystemViewWriter {
     /** Writes view row to file. */
     private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
         /** */
-        private ByteBuffer buf;
+        private final ByteBuffer buf;
 
         /**
          * @param buf Buffer to write.
