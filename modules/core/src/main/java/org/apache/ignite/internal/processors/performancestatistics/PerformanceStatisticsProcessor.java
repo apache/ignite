@@ -61,9 +61,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
 
-    /** System view writer. {@code Null} if collecting statistics disabled. */
-    @Nullable private FilePerformanceStatisticsSystemViewWriter sysViewWriter;
-
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
@@ -368,10 +365,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
-                sysViewWriter = new FilePerformanceStatisticsSystemViewWriter(ctx);
 
                 writer.start();
-                sysViewWriter.start();
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -390,13 +385,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return;
 
             FilePerformanceStatisticsWriter writer = this.writer;
-            FilePerformanceStatisticsSystemViewWriter sysViewWriter = this.sysViewWriter;
 
             this.writer = null;
-            this.sysViewWriter = null;
 
             writer.stop();
-            sysViewWriter.stop();
         }
 
         log.info("Performance statistics writer stopped.");
@@ -410,15 +402,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             if (writer == null)
                 return;
 
-            FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);
-
-            newWriter.start();
-
-            oldWriter = writer;
-
-            writer = newWriter;
-
-            oldWriter.stop();
+            writer.rotate();
         }
 
         if (log.isInfoEnabled() && oldWriter != null)
