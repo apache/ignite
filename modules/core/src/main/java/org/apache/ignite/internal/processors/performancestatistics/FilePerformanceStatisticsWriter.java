@@ -68,6 +68,10 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRowsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.Utils.resolveStatisticsFile;
+import static org.apache.ignite.internal.processors.performancestatistics.Utils.writeIgniteUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.Utils.writeString;
+import static org.apache.ignite.internal.processors.performancestatistics.Utils.writeUuid;
 
 /**
  * Performance statistics writer based on logging to a file.
@@ -128,56 +132,6 @@ public class FilePerformanceStatisticsWriter {
         fileWriter = new FileWriter(ctx, log);
 
         fileWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
-    }
-
-    /** Writes {@link UUID} to buffer. */
-    static void writeUuid(ByteBuffer buf, UUID uuid) {
-        buf.putLong(uuid.getMostSignificantBits());
-        buf.putLong(uuid.getLeastSignificantBits());
-    }
-
-    /** Writes {@link IgniteUuid} to buffer. */
-    static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
-        buf.putLong(uuid.globalId().getMostSignificantBits());
-        buf.putLong(uuid.globalId().getLeastSignificantBits());
-        buf.putLong(uuid.localId());
-    }
-
-    /**
-     * @param buf    Buffer to write to.
-     * @param str    String to write.
-     * @param cached {@code True} if string cached.
-     */
-    static void writeString(ByteBuffer buf, String str, boolean cached) {
-        buf.put(cached ? (byte)1 : 0);
-
-        if (cached)
-            buf.putInt(str.hashCode());
-        else {
-            byte[] bytes = str.getBytes();
-
-            buf.putInt(bytes.length);
-            buf.put(bytes);
-        }
-    }
-
-    /** @return Performance statistics file. */
-    private static File resolveStatisticsFile(GridKernalContext ctx, String fileName) throws IgniteCheckedException {
-        String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
-
-        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
-
-        File file = new File(fileDir, fileName + ".prf");
-
-        int idx = 0;
-
-        while (file.exists()) {
-            idx++;
-
-            file = new File(fileDir, fileName + '-' + idx + ".prf");
-        }
-
-        return file;
     }
 
     /** */

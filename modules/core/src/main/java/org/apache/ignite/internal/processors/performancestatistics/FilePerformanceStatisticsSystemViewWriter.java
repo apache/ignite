@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
@@ -45,6 +43,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
+import static org.apache.ignite.internal.processors.performancestatistics.Utils.resolveStatisticsFile;
+import static org.apache.ignite.internal.processors.performancestatistics.Utils.writeString;
 
 /**
  * Performance statistics writer to record system views.
@@ -109,56 +109,6 @@ public class FilePerformanceStatisticsSystemViewWriter {
             buf.put(OperationType.VERSION.id());
             buf.putShort(FILE_FORMAT_VERSION);
         });
-    }
-
-    /** Writes {@link UUID} to buffer. */
-    static void writeUuid(ByteBuffer buf, UUID uuid) {
-        buf.putLong(uuid.getMostSignificantBits());
-        buf.putLong(uuid.getLeastSignificantBits());
-    }
-
-    /** Writes {@link IgniteUuid} to buffer. */
-    static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
-        buf.putLong(uuid.globalId().getMostSignificantBits());
-        buf.putLong(uuid.globalId().getLeastSignificantBits());
-        buf.putLong(uuid.localId());
-    }
-
-    /**
-     * @param buf    Buffer to write to.
-     * @param str    String to write.
-     * @param cached {@code True} if string cached.
-     */
-    static void writeString(ByteBuffer buf, String str, boolean cached) {
-        buf.put(cached ? (byte)1 : 0);
-
-        if (cached)
-            buf.putInt(str.hashCode());
-        else {
-            byte[] bytes = str.getBytes();
-
-            buf.putInt(bytes.length);
-            buf.put(bytes);
-        }
-    }
-
-    /** @return Performance statistics file. */
-    private static File resolveStatisticsFile(GridKernalContext ctx, String fileName) throws IgniteCheckedException {
-        String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
-
-        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT_DIR, false);
-
-        File file = new File(fileDir, fileName + ".prf");
-
-        int idx = 0;
-
-        while (file.exists()) {
-            idx++;
-
-            file = new File(fileDir, fileName + '-' + idx + ".prf");
-        }
-
-        return file;
     }
 
     /** */
