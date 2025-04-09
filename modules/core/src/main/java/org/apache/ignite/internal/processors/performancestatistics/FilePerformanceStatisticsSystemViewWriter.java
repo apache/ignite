@@ -34,7 +34,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,7 +43,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 
@@ -61,9 +59,6 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
     /** Default off heap buffer size in bytes. */
     public static final int DFLT_BUFFER_SIZE = (int)(32 * U.MB);
-
-    /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
-    public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
 
     /**
      * File format version. This version should be incremented each time when format of existing events are
@@ -86,18 +81,11 @@ public class FilePerformanceStatisticsSystemViewWriter {
     /** System view predicate to filter recorded views. */
     private final Predicate<SystemView<?>> sysViewPredicate;
 
-    /** Maximum cached strings threshold. String caching will stop on threshold excess. */
-    private final int cachedStrsThreshold = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD,
-        DFLT_CACHED_STRINGS_THRESHOLD);
-
     /**  */
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
-    /** Hashcodes of cached strings. */
-    private Set<Integer> knownStrs = new GridConcurrentHashSet<>();
-
-    /** Count of cached strings. */
-    private volatile int knownStrsSz;
+    /** */
+    private StringCache strCache = new StringCache();
 
     /**
      * @param ctx Kernal context.
@@ -181,28 +169,7 @@ public class FilePerformanceStatisticsSystemViewWriter {
     /** */
     public void stop() {
         U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
-    }
-
-    /** @return {@code True} if string was cached and can be written as hashcode. */
-    protected boolean cacheIfPossible(String str) {
-        if (knownStrsSz >= cachedStrsThreshold)
-            return false;
-
-        int hash = str.hashCode();
-
-        // We can cache slightly more strings then threshold value.
-        // Don't implement solution with synchronization here, because our primary goal is avoid any contention.
-        if (knownStrs.contains(hash) || !knownStrs.add(hash))
-            return true;
-
-        knownStrsSz = knownStrs.size();
-
-        return false;
-    }
-
-    /** */
-    protected void cleanup() {
-        knownStrs = null;
+        strCache = null;
     }
 
     /**  */
@@ -222,8 +189,8 @@ public class FilePerformanceStatisticsSystemViewWriter {
     private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) throws IOException {
         fileWriter.doWrite(buf -> {
             buf.put(SYSTEM_VIEW_SCHEMA.id());
-            writeString(buf, viewName, cacheIfPossible(viewName));
-            writeString(buf, walker.getClass().getName(), cacheIfPossible(walker.getClass().getName()));
+            writeString(buf, viewName, strCache.cacheIfPossible(viewName));
+            writeString(buf, walker.getClass().getName(), strCache.cacheIfPossible(walker.getClass().getName()));
         });
     }
 
@@ -326,7 +293,7 @@ public class FilePerformanceStatisticsSystemViewWriter {
 
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
-            writeString(buf, String.valueOf(val), cacheIfPossible(String.valueOf(val)));
+            writeString(buf, String.valueOf(val), strCache.cacheIfPossible(String.valueOf(val)));
         }
 
         /** {@inheritDoc} */
