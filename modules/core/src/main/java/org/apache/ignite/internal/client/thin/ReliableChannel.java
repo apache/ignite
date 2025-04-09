@@ -276,62 +276,63 @@ final class ReliableChannel implements AutoCloseable {
                 }
 
                 if (err instanceof ClientConnectionException) {
-                    ClientConnectionException failure0 = (ClientConnectionException)err;
-                    failures.add(failure0);
+                        ClientConnectionException failure0 = (ClientConnectionException)err;
+                        failures.add(failure0);
 
-                    ClientChannelHolder hld = null;
+                        ClientChannelHolder hld = null;
 
-                    for (ClientChannelHolder holder : channels) {
-                        if (holder.ch == ch) {
-                            hld = holder;
+                        for (ClientChannelHolder holder : channels) {
+                            if (holder.ch == ch) {
+                                hld = holder;
 
-                            break;
+                                break;
+                            }
                         }
-                    }
 
-                    ClientChannelHolder finalHld = hld;
+                        ClientChannelHolder finalHld = hld;
 
-                    try {
-                        onChannelFailure(finalHld, ch, err, failures);
-                    }
-                    catch (ClientConnectionException ex) {
-                        fut.completeExceptionally(ex);
-                    }
-
-                    // Try to reconnect to the same channel first if this is
-                    // the first failure and retry policy allows it
-                    if (hld != null && !isRetryAttempt && shouldRetry(op, F.size(failures) - 1, failure0)) {
                         try {
-                            // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                            ClientChannel newChannel = finalHld.getOrCreateChannel();
+                            onChannelFailure(finalHld, ch, err, failures);
 
-                            // Recurse with the new channel
-                            return applyOnClientChannelAsync(
-                                fut,
-                                newChannel,
-                                op,
-                                payloadWriter,
-                                payloadReader,
-                                failures,
-                                true
-                            );
+                            // Try to reconnect to the same channel first if this is
+                            // the first failure and retry policy allows it
+                            if (hld != null && !isRetryAttempt && shouldRetry(op, F.size(failures) - 1, failure0)) {
+                                try {
+                                    // In case of stale channel try to reconnect to the same channel and repeat the operation.
+                                    ClientChannel newChannel = finalHld.getOrCreateChannel();
+
+                                    // Recurse with the new channel
+                                    return applyOnClientChannelAsync(
+                                        fut,
+                                        newChannel,
+                                        op,
+                                        payloadWriter,
+                                        payloadReader,
+                                        failures,
+                                        true
+                                    );
+                                }
+                                catch (ClientConnectionException reconnectEx) {
+                                    failures.add(reconnectEx);
+
+                                    onChannelFailure(finalHld, null, reconnectEx, failures);
+                                }
+                            }
+
+                            // Try other channels if we have attempts left
+                            if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
+                                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+
+                                return null;
+                            }
+
+                            fut.completeExceptionally(composeException(failures));
                         }
-                        catch (ClientConnectionException reconnectEx) {
-                            failures.add(reconnectEx);
-
-                            onChannelFailure(finalHld, null, reconnectEx, failures);
+                        catch (ClientConnectionException ex) {
+                            fut.completeExceptionally(ex);
                         }
                     }
 
-                    // Try other channels if we have attempts left
-                    if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
-                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-
-                        return null;
-                    }
-
-                    fut.completeExceptionally(composeException(failures));
-                }
                 else
                     fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
 
