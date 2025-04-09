@@ -107,17 +107,8 @@ public class FilePerformanceStatisticsWriter {
     /** Minimal batch size to flush in bytes. */
     protected final int flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
-    /** Performance statistics file. */
-    protected final File file;
-
-    /** Performance statistics file I/O. */
-    protected final FileIO fileIo;
-
     /** Performance statistics file writer worker. */
     private final FileWriter fileWriter;
-
-    /** File write buffer. */
-    private final SegmentedRingByteBuffer ringByteBuf;
 
     /** Count of written to buffer bytes. */
     private final AtomicInteger writtenToBuf = new AtomicInteger();
@@ -136,9 +127,6 @@ public class FilePerformanceStatisticsWriter {
         DFLT_CACHED_STRINGS_THRESHOLD);
 
     /**  */
-    protected long fileMaxSize = IgniteSystemProperties.getLong(IGNITE_PERF_STAT_FILE_MAX_SIZE, DFLT_FILE_MAX_SIZE);
-
-    /**  */
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
     /** Hashcodes of cached strings. */
@@ -149,14 +137,7 @@ public class FilePerformanceStatisticsWriter {
 
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
-        file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId());
-        fileIo = new RandomAccessFileIOFactory().create(file);
-
         log = ctx.log(getClass());
-
-        log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
-
-        ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
 
         fileWriter = new FileWriter(ctx, log);
 
@@ -220,26 +201,8 @@ public class FilePerformanceStatisticsWriter {
 
     /** */
     public synchronized void stop() {
-        // Stop accepting new records.
-        ringByteBuf.close();
-
         U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
-
-        // Make sure that all producers released their buffers to safe deallocate memory (in case of worker
-        // stopped abnormally).
-        ringByteBuf.poll();
-
-        ringByteBuf.free();
-
-        try {
-            fileIo.force();
-        }
-        catch (IOException e) {
-            log.warning("Failed to fsync the performance statistics file.", e);
-        }
-
         cleanup();
-
     }
 
     /**
@@ -409,7 +372,7 @@ public class FilePerformanceStatisticsWriter {
 
     /** @return Performance statistics file. */
     File file() {
-        return file;
+        return fileWriter.file;
     }
 
     /**
@@ -498,7 +461,6 @@ public class FilePerformanceStatisticsWriter {
 
     /** */
     protected void cleanup() {
-        U.closeQuiet(fileIo);
         knownStrs = null;
     }
 
