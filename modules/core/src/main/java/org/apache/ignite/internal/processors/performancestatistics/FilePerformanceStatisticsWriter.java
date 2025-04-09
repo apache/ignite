@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,7 +44,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
@@ -92,9 +89,6 @@ public class FilePerformanceStatisticsWriter {
     /** Default minimal batch size to flush in bytes. */
     public static final int DFLT_FLUSH_SIZE = (int)(8 * U.MB);
 
-    /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
-    public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
-
     /**
      * File format version. This version should be incremented each time when format of existing events are
      * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
@@ -122,18 +116,10 @@ public class FilePerformanceStatisticsWriter {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Maximum cached strings threshold. String caching will stop on threshold excess. */
-    private final int cachedStrsThreshold = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD,
-        DFLT_CACHED_STRINGS_THRESHOLD);
-
     /**  */
     protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
-    /** Hashcodes of cached strings. */
-    private Set<Integer> knownStrs = new GridConcurrentHashSet<>();
-
-    /** Count of cached strings. */
-    private volatile int knownStrsSz;
+    private StringCache strCache = new StringCache();
 
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
@@ -202,7 +188,7 @@ public class FilePerformanceStatisticsWriter {
     /** */
     public synchronized void stop() {
         U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
-        cleanup();
+        strCache = null;
     }
 
     /**
@@ -210,7 +196,7 @@ public class FilePerformanceStatisticsWriter {
      * @param name Cache name.
      */
     public void cacheStart(int cacheId, String name) {
-        boolean cached = cacheIfPossible(name);
+        boolean cached = strCache.cacheIfPossible(name);
 
         fileWriter.doWrite(CACHE_START, cacheStartRecordSize(cached ? 0 : name.getBytes().length, cached), buf -> {
             writeString(buf, name, cached);
@@ -261,7 +247,7 @@ public class FilePerformanceStatisticsWriter {
      * @param success Success flag.
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
-        boolean cached = cacheIfPossible(text);
+        boolean cached = strCache.cacheIfPossible(text);
 
         fileWriter.doWrite(QUERY, queryRecordSize(cached ? 0 : text.getBytes().length, cached), buf -> {
             writeString(buf, text, cached);
@@ -298,7 +284,7 @@ public class FilePerformanceStatisticsWriter {
      * @param rows Number of rows.
      */
     public void queryRows(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
-        boolean cached = cacheIfPossible(action);
+        boolean cached = strCache.cacheIfPossible(action);
 
         fileWriter.doWrite(QUERY_ROWS, queryRowsRecordSize(cached ? 0 : action.getBytes().length, cached), buf -> {
             writeString(buf, action, cached);
@@ -320,8 +306,8 @@ public class FilePerformanceStatisticsWriter {
         if (val == null)
             return;
 
-        boolean cachedName = cacheIfPossible(name);
-        boolean cachedVal = cacheIfPossible(val);
+        boolean cachedName = strCache.cacheIfPossible(name);
+        boolean cachedVal = strCache.cacheIfPossible(val);
 
         fileWriter.doWrite(QUERY_PROPERTY,
             queryPropertyRecordSize(cachedName ? 0 : name.getBytes().length, cachedName, cachedVal ? 0 : val.getBytes().length, cachedVal),
@@ -342,7 +328,7 @@ public class FilePerformanceStatisticsWriter {
      * @param affPartId Affinity partition id.
      */
     public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        boolean cached = cacheIfPossible(taskName);
+        boolean cached = strCache.cacheIfPossible(taskName);
 
         fileWriter.doWrite(TASK, taskRecordSize(cached ? 0 : taskName.getBytes().length, cached), buf -> {
             writeString(buf, taskName, cached);
@@ -440,28 +426,6 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(endTime);
             buf.putLong(duration);
         });
-    }
-
-    /** @return {@code True} if string was cached and can be written as hashcode. */
-    protected boolean cacheIfPossible(String str) {
-        if (knownStrsSz >= cachedStrsThreshold)
-            return false;
-
-        int hash = str.hashCode();
-
-        // We can cache slightly more strings then threshold value.
-        // Don't implement solution with synchronization here, because our primary goal is avoid any contention.
-        if (knownStrs.contains(hash) || !knownStrs.add(hash))
-            return true;
-
-        knownStrsSz = knownStrs.size();
-
-        return false;
-    }
-
-    /** */
-    protected void cleanup() {
-        knownStrs = null;
     }
 
     /** Worker to write to performance statistics file. */
