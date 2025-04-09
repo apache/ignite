@@ -39,9 +39,9 @@ import static com.google.common.collect.Collections2.permutations;
 import static com.google.common.collect.Lists.cartesianProduct;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsSystemViewWriter.writeIgniteUuid;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsSystemViewWriter.writeString;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeIgniteUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
 
 /**
  * Tests strings caching.
