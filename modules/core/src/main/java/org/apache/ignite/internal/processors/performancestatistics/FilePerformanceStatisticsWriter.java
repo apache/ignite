@@ -87,12 +87,6 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
 public class FilePerformanceStatisticsWriter {
-    /** File writer thread name. */
-    static final String WRITER_THREAD_NAME = "performance-statistics-writer";
-
-    /** File writer thread name. */
-    static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
-
     /** Directory to store performance statistics files. Placed under Ignite work directory. */
     public static final String PERF_STAT_DIR = "perf_stat";
 
@@ -110,6 +104,12 @@ public class FilePerformanceStatisticsWriter {
      * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
      */
     public static final short FILE_FORMAT_VERSION = 1;
+
+    /** File writer thread name. */
+    static final String WRITER_THREAD_NAME = "performance-statistics-writer";
+
+    /** File writer thread name. */
+    static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
 
     /** Performance statistics file writer worker. */
     private FileWriter fileWriter;
@@ -163,19 +163,6 @@ public class FilePerformanceStatisticsWriter {
         U.awaitForWorkersStop(List.of(fileWriter, sysViewFileWriter), true, log);
     }
 
-    /** Writes {@link UUID} to buffer. */
-    static void writeUuid(ByteBuffer buf, UUID uuid) {
-        buf.putLong(uuid.getMostSignificantBits());
-        buf.putLong(uuid.getLeastSignificantBits());
-    }
-
-    /** Writes {@link IgniteUuid} to buffer. */
-    static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
-        buf.putLong(uuid.globalId().getMostSignificantBits());
-        buf.putLong(uuid.globalId().getLeastSignificantBits());
-        buf.putLong(uuid.localId());
-    }
-
     /** */
     public void rotate() throws IgniteCheckedException, IOException {
         FileWriter newWriter = new FileWriter(ctx);
@@ -191,6 +178,19 @@ public class FilePerformanceStatisticsWriter {
 
         if (log.isInfoEnabled())
             log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file + "].");
+    }
+
+    /** Writes {@link UUID} to buffer. */
+    static void writeUuid(ByteBuffer buf, UUID uuid) {
+        buf.putLong(uuid.getMostSignificantBits());
+        buf.putLong(uuid.getLeastSignificantBits());
+    }
+
+    /** Writes {@link IgniteUuid} to buffer. */
+    static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
+        buf.putLong(uuid.globalId().getMostSignificantBits());
+        buf.putLong(uuid.globalId().getLeastSignificantBits());
+        buf.putLong(uuid.localId());
     }
 
     /**
