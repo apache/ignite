@@ -699,7 +699,7 @@ export default class AgentManager {
                 };
 
                 const _typeMapper = (meta, typeName) => {
-                    const maskedName = meta.sqlSchema || '[schema]'; //meta.cacheName;
+                    const maskedName = meta.cacheName;
 
                     let fields = meta.fields[typeName];
 

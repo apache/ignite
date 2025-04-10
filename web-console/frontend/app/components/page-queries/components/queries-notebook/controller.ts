@@ -57,7 +57,7 @@ export class NotebookCtrl {
     /**
      * @param {CSV} CSV
      */
-    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo, private $translate: ng.translate.ITranslateService, stacktraceViewerDialog) {
+    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV:CSV, errorParser, DemoInfo, private $translate: ng.translate.ITranslateService, stacktraceViewerDialog) {
         const $ctrl = this;
 
         this.CSV = CSV;
@@ -118,7 +118,7 @@ export class NotebookCtrl {
             {value: 60000, label: $translate.instant('scale.time.minute.long'), short: $translate.instant('scale.time.minute.short')},
             {value: 3600000, label: $translate.instant('scale.time.hour.long'), short: $translate.instant('scale.time.hour.short')}
         ];
-
+        $scope.all_metadatas = {};
         $scope.metadata = [];
 
         $scope.metaFilter = '';
@@ -224,7 +224,7 @@ export class NotebookCtrl {
             return dflt;
         }
 
-        function _chartDatum(paragraph) {
+        function _chartDatum(paragraph:Paragraph) {
             let datum = [];
 
             if (paragraph.chartColumnsConfigured()) {
@@ -314,7 +314,7 @@ export class NotebookCtrl {
             return _.includes(_intClasses, cls);
         }
 
-        const _xAxisWithLabelFormat = function(paragraph) {
+        const _xAxisWithLabelFormat = function(paragraph:Paragraph) {
             return function(d) {
                 const values = paragraph.charts[0].data[0].values;
 
@@ -415,7 +415,7 @@ export class NotebookCtrl {
                 _updateChartsWithData(paragraph, datum);
         }
 
-        function _pieChartDatum(paragraph) {
+        function _pieChartDatum(paragraph:Paragraph) {
             const datum = [];
 
             if (paragraph.chartColumnsConfigured() && !paragraph.chartTimeLineEnabled()) {
@@ -663,7 +663,76 @@ export class NotebookCtrl {
             $anchorScroll();
         };        
 
+        
         $scope.aceInit = function(paragraph) {
+            const databaseMetadata = {
+                "users": ["id", "name", "email", "created_at"],
+                "products": ["id", "name", "price", "stock"],
+                "orders": ["id", "user_id", "product_id", "quantity", "order_date"]
+            };
+            
+
+            const metaDataCompleter = {
+                getCompletions: (editor, session, pos, prefix, callback) => {
+                               
+                    if (prefix === ''){
+                        callback(null, []);
+                        return
+                    }
+                    const databaseMetadata = $scope.all_metadatas;                    
+                    
+                    var line = session.getLine(pos.row).substring(0, pos.column);
+    
+                    // 检测表名补全上下文（FROM或JOIN后）
+                    var isTableContext = /(\bFROM\b|\bJOIN\b)\s+[\w_]*$/i.test(line);
+                    // 检测字段名补全上下文（SELECT、WHERE、HAVING或ON后）
+                    var isFieldContext = /(\bSELECT\b|\bWHERE\b|\bHAVING\b|\bON\b)\s+[\w_]*$/i.test(line);
+                    
+                    var suggestions = [];
+                    
+                    if (isTableContext) {
+                        // 补全表名
+                        Object.keys(databaseMetadata).forEach(function(table) {
+                            if (prefix === '' || table.startsWith(prefix)) {
+                                suggestions.push({ name: table, value: table, meta: 'table' });
+                            }
+                        });
+                    } else if (isFieldContext) {
+                        // 获取FROM子句中的表名
+                        var tables = [];
+                        var fromMatch = line.match(/(\bFROM\b|\bJOIN\b)\s+([\w_, ]+)/i);
+                        if (fromMatch) {
+                            tables = fromMatch[2].split(/,\s*/).map(function(t) { return t.trim().split(/\s+/)[0]; });
+                        }
+                        // 收集所有相关字段
+                        var fields = [];
+                        tables.forEach(function(table) {
+                            if (databaseMetadata[table]) {
+                                databaseMetadata[table]['children'].forEach(function(field) {
+                                    if (prefix === '' || field.name.startsWith(prefix)) {
+                                        suggestions.push({ name: field.name, value: field.name, meta: 'field' });
+                                    }
+                                });                                
+                            }
+                        });                       
+                        
+                    }
+                    
+                    callback(null, suggestions);
+                }
+            }
+
+            const aiCompleter = {
+                getCompletions: (editor, session, pos, prefix, callback) => {                 
+
+                    var line = session.getLine(pos.row).substring(0, pos.column);
+                    var suggestions = [];
+                    
+                    suggestions.push({ name: 'select *', value: 'select * '+line, meta: 'sql' });
+                    callback(null, suggestions);
+                }
+            }
+
             return function(editor) {
                 editor.setAutoScrollEditorIntoView(true);
                 editor.$blockScrolling = Infinity;
@@ -678,6 +747,34 @@ export class NotebookCtrl {
                 renderer.setOption('maxLines', '50');
 
                 editor.setTheme('ace/theme/chrome');
+
+                // 初始启用默认补全（Live）
+                editor.completers = [metaDataCompleter];
+
+                // 监听手动补全快捷键（Ctrl+Space）
+                editor.commands.on("afterExec", function(e) {
+                    if (e.command.name === "startAutocomplete") {                        
+                        editor.completers = [metaDataCompleter];
+                    }
+                });
+                
+                // add@byron
+                editor.setOptions({
+                    enableLiveAutocompletion: true,
+                    enableBasicAutocompletion: true,
+                    enableSnippets: false,             
+                });
+
+                editor.commands.addCommand({
+                    name: "showAutocomplete",
+                    bindKey: {win: "Tab", mac: "Tab"},
+                    exec: function(editor) {
+                        // 手动触发时切换到自定义补全
+                        editor.completers = [aiCompleter];
+                        editor.execCommand("startAutocomplete");
+                    }
+                });
+                // end@
 
                 Object.defineProperty(paragraph, 'ace', { value: editor });
             };
@@ -1042,7 +1139,7 @@ export class NotebookCtrl {
             return retainedCols;
         }
 
-        const _rebuildColumns = function(paragraph) {
+        const _rebuildColumns = function(paragraph:Paragraph) {
             _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function(colsByName, fieldName) {
                 const colsByTypes = _.groupBy(colsByName, 'typeName');
 
@@ -1215,7 +1312,7 @@ export class NotebookCtrl {
          * @param {{columns: Array, rows: Array, responseNodeId: String, queryId: int, hasMore: Boolean}} res Query results.
          * @private
          */
-        const _processQueryResult = (paragraph, clearChart, res) => {
+        const _processQueryResult = (paragraph:Paragraph, clearChart, res) => {
             const prevKeyCols = paragraph.chartKeyCols;
             const prevValCols = paragraph.chartValCols;
 
@@ -1529,7 +1626,7 @@ export class NotebookCtrl {
             paragraph.exportId = res.queryId;
         };
 
-        $scope.execute = (paragraph, local = false) => {
+        $scope.execute = (paragraph:Paragraph, local = false) => {
             if (!$scope.queryAvailable(paragraph))
                 return;
 
@@ -1993,11 +2090,11 @@ export class NotebookCtrl {
             agentMgr.metadata(cacheName)
                 .then((metadata) => {
                     $scope.metadata = _.sortBy(_.filter(metadata, (meta) => {
-                        const cache = _.find($scope.caches, { value: meta.cacheName });
+                        const cache:any = _.find($scope.caches, { value: meta.cacheName });
 
                         if (cache) {
                             meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
-                            meta.displayName = (cache.sqlSchema || meta.maskedName) + '.' + meta.typeName;
+                            meta.displayName = meta.typeName;
 
                             if (cache.sqlSchema)
                                 meta.children.unshift({type: 'plain', name: 'cacheName: ' + meta.maskedName, maskedName: meta.maskedName});
@@ -2009,6 +2106,13 @@ export class NotebookCtrl {
                     }), 'name');
 
                     $scope.$apply(); // 手动刷新
+
+                    if($scope.metadata){
+                        for(let table of $scope.metadata){
+                            $scope.all_metadatas[table.name] = table;
+                            $scope.all_metadatas[table.typeName] = table;
+                        }
+                    }  
 
                 })
                 .catch(Messages.showError)
@@ -2131,7 +2235,7 @@ export class NotebookCtrl {
 
         if (_hasRunningQueries(paragraphs)) {
             try {
-                await this.Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'));
+                await this.Confirm.confirm(this.$translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'));
                 this._closeOpenedQueries(paragraphs);
 
                 return true;

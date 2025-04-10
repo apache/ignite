@@ -44,6 +44,9 @@ export class Paragraph {
     meta: Array<any>;
     result: string;
     rows: Array<any>=[];
+    chartColumns: Array<any> = [];
+    chartKeyCols: Array<any> = [];
+    chartValCols: Array<any> = [];
     columnFilter: (col) => boolean;
 
     constructor($animate, $timeout, JavaTypes, errorParser, paragraph, private $translate: ng.translate.ITranslateService) {

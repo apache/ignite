@@ -6,7 +6,7 @@ import _ from 'lodash';
 previewPanelDirective.$inject = ['$interval', '$timeout'];
 
 export default function previewPanelDirective($interval: ng.IIntervalService, $timeout: ng.ITimeoutService) {
-    let animation = {editor: null, stage: 0, start: 0, stop: 0};
+    let animation = {editor: null, stage: 0, start: 0, stop: 0, step:1, selections: [], finalStage: -1, clearOnFinal: false};
     let prevContent = [];
 
     const Range = ace.acequire('ace/range').Range;

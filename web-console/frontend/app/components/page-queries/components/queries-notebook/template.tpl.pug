@@ -442,8 +442,8 @@ mixin paragraph-query
     panel-content
         .col-sm-12
             .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
-                .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
-                'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
+                .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools","ace/snippets/sql"],' +
+                'advanced: {}}'
                 ng-model='paragraph.query' on-selection-change='paragraph.partialQuery = $event')
             .col-xs-4.col-sm-3
                 div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
@@ -534,8 +534,8 @@ mixin paragraph-gremlin
     panel-content
         .col-sm-12
             .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
-                .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "groovy", require: ["ace/ext/language_tools"],' +
-                'advanced: {enableSnippets: false, enableBasicAutocompletion: false, enableLiveAutocompletion: false}}'
+                .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "groovy", require: ["ace/ext/language_tools","ace/snippets/groovy"],' +
+                'advanced: {}}'
                 ng-model='paragraph.query' on-selection-change='paragraph.partialQuery = $event')
             .col-xs-4.col-sm-3
                 div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
@@ -688,11 +688,9 @@ div
                         onLoad: aceInit({}),\
                         theme: "chrome",\
                         mode: "sql",\
-                        require: ["ace/ext/language_tools"],\
+                        require: ["ace/ext/language_tools","ace/snippets/sql"],\
                         showGutter: false,\
                         advanced: {\
-                           enableSnippets: false,\
-                           enableBasicAutocompletion: true,\
                            enableLiveAutocompletion: true\
                         }}'
                         ng-model='example'

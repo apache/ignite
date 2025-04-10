@@ -38,13 +38,13 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-        </dependency>
-
+        </dependency>       
+        
         <dependency>
             <groupId>javax.transaction</groupId>
             <artifactId>jta</artifactId>
             <version>1.1</version>
-        </dependency>       
+        </dependency>  
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -97,14 +97,7 @@
             <artifactId>spring-context</artifactId>
             <version>${spring.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.tomcat</groupId>
-            <artifactId>catalina</artifactId>
-            <version>6.0.43</version>
-            <scope>test</scope>
-        </dependency>
+        </dependency>       
 
         <!-- JDK9+ -->
 
@@ -120,7 +113,7 @@
     <build>
         <plugins>
             <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
-            <!-- This is a fragment because it's a processor module. 
+            <!-- This is a fragment because it's a processor module. -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -130,7 +123,7 @@
                     </instructions>
                 </configuration>
             </plugin>
-			-->
+			
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>                
