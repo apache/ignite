@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.Set;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /** Class to cache strings for performance statistics writing. */
 public class StringCache {
@@ -27,8 +29,7 @@ public class StringCache {
     public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
 
     /** Maximum cached strings threshold. String caching will stop on threshold excess. */
-    private final int cachedStrsThreshold = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD,
-        DFLT_CACHED_STRINGS_THRESHOLD);
+    private final int cachedStrsThreshold = getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD, DFLT_CACHED_STRINGS_THRESHOLD);
 
     /** Hashcodes of cached strings. */
     private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
