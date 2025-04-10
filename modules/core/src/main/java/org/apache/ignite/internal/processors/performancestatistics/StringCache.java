@@ -4,7 +4,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
-/** Class to cache strings for performance statistics writing */
+/** Class to cache strings for performance statistics writing. */
 public class StringCache {
     /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
     public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
