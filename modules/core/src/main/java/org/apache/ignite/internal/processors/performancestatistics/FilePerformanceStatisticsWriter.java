@@ -134,7 +134,7 @@ public class FilePerformanceStatisticsWriter {
         this.ctx = ctx;
         log = ctx.log(getClass());
 
-        fileWriter = new FileWriter(ctx, log);
+        fileWriter = new FileWriter(ctx);
         sysViewFileWriter = new SystemViewFileWriter(ctx);
 
         // System views that won't be recorded. They may be large or copy another PerfStat values.
@@ -181,7 +181,7 @@ public class FilePerformanceStatisticsWriter {
 
     /** */
     public void rotate() throws IgniteCheckedException, IOException {
-        FileWriter newWriter = new FileWriter(ctx, log);
+        FileWriter newWriter = new FileWriter(ctx);
         newWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
 
         new IgniteThread(newWriter).start();
@@ -498,10 +498,9 @@ public class FilePerformanceStatisticsWriter {
 
         /**
          * @param ctx Kernal context.
-         * @param log Logger.
          */
-        FileWriter(GridKernalContext ctx, IgniteLogger log) throws IgniteCheckedException, IOException {
-            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log, ctx.workersRegistry());
+        FileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, ctx.log(FileWriter.class), ctx.workersRegistry());
 
             file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId());
 
