@@ -105,9 +105,6 @@ public class FilePerformanceStatisticsWriter {
      */
     public static final short FILE_FORMAT_VERSION = 1;
 
-    /** File writer thread name. */
-    static final String WRITER_THREAD_NAME = "performance-statistics-writer";
-
     /** Minimal batch size to flush in bytes. */
     protected final int flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
@@ -116,15 +113,6 @@ public class FilePerformanceStatisticsWriter {
 
     /** Performance statistics system view file writer worker. */
     private final SystemViewFileWriter sysViewFileWriter;
-
-    /** Count of written to buffer bytes. */
-    private final AtomicInteger writtenToBuf = new AtomicInteger();
-
-    /** {@code True} if the small buffer warning message logged. */
-    private final AtomicBoolean smallBufLogged = new AtomicBoolean();
-
-    /** {@code True} if worker stopped due to maximum file size reached. */
-    private final AtomicBoolean stopByMaxSize = new AtomicBoolean();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -481,6 +469,9 @@ public class FilePerformanceStatisticsWriter {
 
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
+        /** File writer thread name. */
+        static final String WRITER_THREAD_NAME = "performance-statistics-writer";
+
         /** */
         private StringCache strCache = new StringCache();
 
@@ -489,6 +480,15 @@ public class FilePerformanceStatisticsWriter {
 
         /** */
         private final File file;
+
+        /** Count of written to buffer bytes. */
+        private final AtomicInteger writtenToBuf = new AtomicInteger();
+
+        /** {@code True} if the small buffer warning message logged. */
+        private final AtomicBoolean smallBufLogged = new AtomicBoolean();
+
+        /** {@code True} if worker stopped due to maximum file size reached. */
+        private final AtomicBoolean stopByMaxSize = new AtomicBoolean();
 
         /** File write buffer. */
         private final SegmentedRingByteBuffer ringByteBuf;
