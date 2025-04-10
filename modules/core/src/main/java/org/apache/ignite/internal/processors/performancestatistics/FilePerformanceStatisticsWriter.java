@@ -224,6 +224,7 @@ public class FilePerformanceStatisticsWriter {
         U.awaitForWorkersStop(List.of(fileWriter, sysViewFileWriter), true, log);
     }
 
+    /** */
     public void rotate() throws IgniteCheckedException, IOException {
         FileWriter newWriter = new FileWriter(ctx, log);
         newWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
@@ -245,7 +246,7 @@ public class FilePerformanceStatisticsWriter {
      * @param name Cache name.
      */
     public void cacheStart(int cacheId, String name) {
-        boolean cached = fileWriter.strCache.cacheIfPossible(name);
+        boolean cached = fileWriter.cacheIfPossible(name);
 
         fileWriter.doWrite(CACHE_START, cacheStartRecordSize(cached ? 0 : name.getBytes().length, cached), buf -> {
             writeString(buf, name, cached);
@@ -296,7 +297,7 @@ public class FilePerformanceStatisticsWriter {
      * @param success Success flag.
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
-        boolean cached = fileWriter.strCache.cacheIfPossible(text);
+        boolean cached = fileWriter.cacheIfPossible(text);
 
         fileWriter.doWrite(QUERY, queryRecordSize(cached ? 0 : text.getBytes().length, cached), buf -> {
             writeString(buf, text, cached);
@@ -333,7 +334,7 @@ public class FilePerformanceStatisticsWriter {
      * @param rows Number of rows.
      */
     public void queryRows(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
-        boolean cached = fileWriter.strCache.cacheIfPossible(action);
+        boolean cached = fileWriter.cacheIfPossible(action);
 
         fileWriter.doWrite(QUERY_ROWS, queryRowsRecordSize(cached ? 0 : action.getBytes().length, cached), buf -> {
             writeString(buf, action, cached);
@@ -355,8 +356,8 @@ public class FilePerformanceStatisticsWriter {
         if (val == null)
             return;
 
-        boolean cachedName = fileWriter.strCache.cacheIfPossible(name);
-        boolean cachedVal = fileWriter.strCache.cacheIfPossible(val);
+        boolean cachedName = fileWriter.cacheIfPossible(name);
+        boolean cachedVal = fileWriter.cacheIfPossible(val);
 
         fileWriter.doWrite(QUERY_PROPERTY,
             queryPropertyRecordSize(cachedName ? 0 : name.getBytes().length, cachedName, cachedVal ? 0 : val.getBytes().length, cachedVal),
@@ -377,7 +378,7 @@ public class FilePerformanceStatisticsWriter {
      * @param affPartId Affinity partition id.
      */
     public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        boolean cached = fileWriter.strCache.cacheIfPossible(taskName);
+        boolean cached = fileWriter.cacheIfPossible(taskName);
 
         fileWriter.doWrite(TASK, taskRecordSize(cached ? 0 : taskName.getBytes().length, cached), buf -> {
             writeString(buf, taskName, cached);
@@ -480,7 +481,7 @@ public class FilePerformanceStatisticsWriter {
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
         /** */
-        public StringCache strCache = new StringCache();
+        private StringCache strCache = new StringCache();
 
         /** Performance statistics file I/O. */
         private final FileIO fileIo;
@@ -508,6 +509,13 @@ public class FilePerformanceStatisticsWriter {
             int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
 
             ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
+        }
+
+        /**
+         * @param str String to cache.
+         */
+        public boolean cacheIfPossible(String str) {
+            return strCache.cacheIfPossible(str);
         }
 
         /** {@inheritDoc} */
