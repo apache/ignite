@@ -120,9 +120,6 @@ public class FilePerformanceStatisticsWriter {
     /** Logger. */
     private final IgniteLogger log;
 
-    /**  */
-    protected int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
-
     /** System view predicate to filter recorded views. */
     private final Predicate<SystemView<?>> sysViewPredicate;
 
@@ -686,6 +683,7 @@ public class FilePerformanceStatisticsWriter {
             file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
             fileIo = new RandomAccessFileIOFactory().create(file);
 
+            int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
             buf = ByteBuffer.allocateDirect(bufSize);
             buf.order(ByteOrder.LITTLE_ENDIAN);
         }
