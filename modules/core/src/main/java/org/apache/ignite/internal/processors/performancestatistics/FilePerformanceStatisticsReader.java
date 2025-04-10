@@ -659,7 +659,7 @@ public class FilePerformanceStatisticsReader {
         }
     }
 
-    /** */
+    /** Reads views from buf. */
     private class View {
         /** */
         final String viewName;
