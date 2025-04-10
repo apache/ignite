@@ -105,9 +105,6 @@ public class FilePerformanceStatisticsWriter {
      */
     public static final short FILE_FORMAT_VERSION = 1;
 
-    /** Minimal batch size to flush in bytes. */
-    protected final int flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
-
     /** Performance statistics file writer worker. */
     private FileWriter fileWriter;
 
@@ -468,7 +465,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Worker to write to performance statistics file. */
-    private class FileWriter extends GridWorker {
+    private static class FileWriter extends GridWorker {
         /** File writer thread name. */
         static final String WRITER_THREAD_NAME = "performance-statistics-writer";
 
@@ -480,6 +477,9 @@ public class FilePerformanceStatisticsWriter {
 
         /** */
         private final File file;
+
+        /** Minimal batch size to flush in bytes. */
+        private final int flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
         /** Count of written to buffer bytes. */
         private final AtomicInteger writtenToBuf = new AtomicInteger();
