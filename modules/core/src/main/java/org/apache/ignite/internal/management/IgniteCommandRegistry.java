@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.management;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
@@ -37,6 +42,7 @@ import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Ignite command registry containing all commands known by Ignite node.
@@ -46,7 +52,7 @@ import org.apache.ignite.internal.management.wal.WalCommand;
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     /** */
     public IgniteCommandRegistry() {
-        super(
+        List<Command> cmds = Arrays.asList(
             new ActivateCommand(),
             new DeactivateCommand(),
             new StateCommand(),
@@ -73,6 +79,11 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new CdcCommand(),
             new ConsistencyCommand()
         );
+
+        cmds.addAll(StreamSupport.stream(U.loadService(CommandsProvider.class).spliterator(),
+            false).flatMap(provider -> provider.commands().stream()).collect(Collectors.toList()));
+
+        cmds.forEach(this::register);
     }
 
     /** {@inheritDoc} */

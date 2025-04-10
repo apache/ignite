@@ -36,10 +36,8 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
-import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandMBean;
-import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
@@ -238,10 +236,7 @@ public class IgniteMBeansManager {
 
     /** Registers all management API beans. */
     private void registerManagementBeans() {
-        IgniteCommandRegistry registry = ctx.grid().commandsRegistry();
-        registerExternalPluggedCommands(registry);
-
-        registry.commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+        ctx.grid().commandsRegistry().commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
     }
 
     /** Recursively register management commands. */
@@ -312,19 +307,5 @@ public class IgniteMBeansManager {
 
             return false;
         }
-    }
-
-    /**
-     * Register external commands plugged by SPI
-     *
-     * @param registry registry for registration
-     */
-    private void registerExternalPluggedCommands(IgniteCommandRegistry registry) {
-        List<Command<?, ?>> cmds = CommandUtils.loadExternalCommands();
-
-        if (log.isDebugEnabled())
-            log.debug("Load external plugged commands: " + cmds);
-
-        cmds.forEach(registry::register);
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
@@ -41,6 +42,12 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
             register(cmd);
     }
 
+    /** */
+    protected CommandRegistryImpl(List<Command<?, ?>> subcommands) {
+        for (Command<?, ?> cmd : subcommands)
+            register(cmd);
+    }
+
     /**
      * Register new command.
      * @param cmd Command to register.
@@ -54,8 +61,12 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
             hasParent ? (Class<? extends CommandsRegistry<?, ?>>)getClass() : null
         );
 
-        if (commands.containsKey(key))
-            throw new IllegalArgumentException("Command already registered");
+        if (commands.containsKey(key)) {
+            String k = CommandUtils.cmdText(cmd);
+
+            throw new IllegalArgumentException("Found conflict for command " + k + ". Tries to register command " +
+                cmd + ", but this command has already been " + "registered " + command(k));
+        }
 
         commands.put(key, cmd);
     }
