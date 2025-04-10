@@ -215,16 +215,16 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** */
-    public synchronized void start() {
+    public void start() {
         U.startThreads(List.of(new IgniteThread(fileWriter), new IgniteThread(sysViewFileWriter)));
     }
 
     /** */
-    public synchronized void stop() {
+    public void stop() {
         U.awaitForWorkersStop(List.of(fileWriter, sysViewFileWriter), true, log);
     }
 
-    public synchronized void rotate() throws IgniteCheckedException, IOException {
+    public void rotate() throws IgniteCheckedException, IOException {
         FileWriter newWriter = new FileWriter(ctx, log);
         newWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
 
