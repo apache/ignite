@@ -396,17 +396,12 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Rotate performance statistics writer. */
     private void rotateWriter() throws Exception {
-        FilePerformanceStatisticsWriter oldWriter = null;
-
         synchronized (mux) {
             if (writer == null)
                 return;
 
             writer.rotate();
         }
-
-        if (log.isInfoEnabled() && oldWriter != null)
-            log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file() + "].");
     }
 
     /** Writes statistics through passed writer. */

@@ -225,9 +225,19 @@ public class FilePerformanceStatisticsWriter {
     }
 
     public synchronized void rotate() throws IgniteCheckedException, IOException {
-        U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
-        fileWriter = new FileWriter(ctx, log);
-        new IgniteThread(fileWriter).start();
+        FileWriter newWriter = new FileWriter(ctx, log);
+        newWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
+
+        new IgniteThread(newWriter).start();
+
+        FileWriter oldWriter = fileWriter;
+
+        fileWriter = newWriter;
+
+        U.awaitForWorkersStop(Collections.singleton(oldWriter), true, log);
+
+        if (log.isInfoEnabled())
+            log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file + "].");
     }
 
     /**
