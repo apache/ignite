@@ -20,8 +20,6 @@ package org.apache.ignite.binary;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +27,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
  * configuration is optional, as it is generally enough, and also optional, to provide global binary
- * configuration using {@link IgniteConfiguration#setBinaryConfiguration(BinaryConfiguration)}.
+ * configuration using
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#setBinaryConfiguration(org.apache.ignite.configuration.BinaryConfiguration)}.
  * However, this class allows you to change configuration properties for a specific
  * binary type without affecting configuration for other binary types.
  */

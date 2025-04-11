@@ -150,7 +150,10 @@ public class Dump implements AutoCloseable {
     public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
-        return NodeFileTree.existingCacheConfigFiles(sft(node).existingCacheDirectory(grp)).stream().map(f -> {
+        // Searching for ALL config files regardless directory name.
+        // Initial version of Cache dump contains a bug:
+        // For a group with one cache cache-xxx directory created, but cacheGroup-xxx expected.
+        return NodeFileTree.allExisingConfigFiles(sft(node).existingCacheDirectory(grp)).stream().map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }

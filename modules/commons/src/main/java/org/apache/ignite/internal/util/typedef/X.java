@@ -34,16 +34,10 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 
 /**
  * Defines global scope.
@@ -402,7 +396,7 @@ public final class X {
             return clone;
         }
 
-        clone = U.forceNewInstance(cls);
+        clone = CommonUtils.forceNewInstance(cls);
 
         if (clone == null)
             throw new IgniteException("Failed to clone object (empty constructor could not be assigned): " + obj);
@@ -469,7 +463,7 @@ public final class X {
      *      {@code false} otherwise.
      */
     public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... types) {
-        if (t == null || F.isEmpty(types))
+        if (t == null || CF.isEmpty(types))
             return false;
 
         Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -877,53 +871,6 @@ public final class X {
     }
 
     /**
-     * Synchronously waits for all futures in the collection.
-     *
-     * @param futs Futures to wait for.
-     */
-    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) {
-        if (F.isEmpty(futs))
-            return;
-
-        for (IgniteFuture fut : futs)
-            fut.get();
-    }
-
-    /**
-     * Pretty-formatting for minutes.
-     *
-     * @param mins Minutes to format.
-     * @return Formatted presentation of minutes.
-     */
-    public static String formatMins(long mins) {
-        assert mins >= 0;
-
-        if (mins == 0)
-            return "< 1 min";
-
-        SB sb = new SB();
-
-        long dd = mins / 1440; // 1440 mins = 60 mins * 24 hours
-
-        if (dd > 0)
-            sb.a(dd).a(dd == 1 ? " day " : " days ");
-
-        mins %= 1440;
-
-        long hh = mins / 60;
-
-        if (hh > 0)
-            sb.a(hh).a(hh == 1 ? " hour " : " hours ");
-
-        mins %= 60;
-
-        if (mins > 0)
-            sb.a(mins).a(mins == 1 ? " min " : " mins ");
-
-        return sb.toString().trim();
-    }
-
-    /**
      * Exits with code {@code -1} if maximum memory is below 90% of minimally allowed threshold.
      *
      * @param min Minimum memory threshold.
@@ -960,22 +907,6 @@ public final class X {
         }
 
         return cnt;
-    }
-
-    /**
-     * Tries to resolve Ignite installation home folder.
-     *
-     * @return Installation home folder.
-     * @throws IgniteCheckedException If Ignite home folder was not set.
-     */
-    public static String resolveIgniteHome() throws IgniteCheckedException {
-        String var = IgniteSystemProperties.getString(IGNITE_HOME);
-
-        if (var != null)
-            return var;
-        else
-            throw new IgniteCheckedException("Failed to resolve Ignite home folder " +
-                "(please set 'IGNITE_HOME' environment or system variable)");
     }
 
     /**

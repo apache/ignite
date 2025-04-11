@@ -15,24 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
+package org.apache.ignite.binary;
 
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
-import org.junit.Test;
-
-/** */
-public class TpchQ20Test extends AbstractBasicIntegrationTest {
+/**
+ * Maps type and field names to different names. Prepares class/type names
+ * and field names before pass them to {@link BinaryIdMapper}.
+ * <p>
+ * Binary name mapper can be configured for all binary objects via
+ * {@link org.apache.ignite.configuration.BinaryConfiguration#getNameMapper()} method,
+ * or for a specific binary type via {@link BinaryTypeConfiguration#getNameMapper()} method.
+ * @see BinaryIdMapper
+ */
+public interface BinaryNameMapper {
     /**
-     * Test the Q20 TPC-H query can be planned and executed.
+     * Gets type clsName.
+     *
+     * @param clsName Class came
+     * @return Type name.
      */
-    @Test
-    public void testQ20() throws Exception {
-        TpchHelper.createTables(client);
+    String typeName(String clsName);
 
-        TpchHelper.fillTables(client, 0.01);
-
-        TpchHelper.collectSqlStatistics(client);
-
-        sql(TpchHelper.getQuery(20));
-    }
+    /**
+     * Gets field name.
+     *
+     * @param fieldName Field name.
+     * @return Field name.
+     */
+    String fieldName(String fieldName);
 }

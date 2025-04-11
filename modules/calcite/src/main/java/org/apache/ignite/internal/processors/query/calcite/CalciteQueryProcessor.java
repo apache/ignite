@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
@@ -251,6 +252,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final InjectResourcesService injectSvc;
 
     /** */
+    private final AtomicBoolean udfQryWarned = new AtomicBoolean();
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -417,7 +421,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
     }
 
     /** {@inheritDoc} */
@@ -426,7 +430,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -435,7 +439,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -511,9 +515,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
+        boolean validateParamsCnt,
         Object... params
     ) throws IgniteSQLException {
         ensureTransactionModeSupported(qryCtx);
+
+        checkUdfQuery();
 
         SchemaPlus schema = schemaHolder.schema(schemaName);
 
@@ -540,6 +547,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
+        if (validateParamsCnt)
+            checkDynamicParamsCount(qryList, params);
+
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
 
@@ -563,6 +573,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
 
         return res;
+    }
+
+    /** */
+    private void checkDynamicParamsCount(SqlNode node, Object[] params) {
+        int[] maxDynParIdx = new int[] {-1};
+
+        node.accept(new SqlShuttle() {
+            @Override public SqlNode visit(SqlDynamicParam param) {
+                if (param.getIndex() > maxDynParIdx[0])
+                    maxDynParIdx[0] = param.getIndex();
+
+                return param;
+            }
+        });
+
+        int paramsCnt = params == null ? 0 : params.length;
+
+        if (paramsCnt != maxDynParIdx[0] + 1) {
+            throw new IgniteSQLException("Wrong number of query parameters. Expected: " + (maxDynParIdx[0] + 1) + ", passed: "
+                + paramsCnt + '.', IgniteQueryErrorCode.PARSING);
+        }
     }
 
     /** */
@@ -646,6 +677,29 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             return;
 
         IgniteTxManager.ensureTransactionModeSupported(ctx.cache().context().tm().tx(ver).isolation());
+    }
+
+    /** Checks that query is initiated by UDF and print message to log if needed. */
+    private void checkUdfQuery() {
+        if (udfQryWarned.get())
+            return;
+
+        if (Thread.currentThread().getName().startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)
+            && udfQryWarned.compareAndSet(false, true)) {
+            if (taskExecutor instanceof QueryBlockingTaskExecutor) {
+                log.info("Detected query initiated by user-defined function. " +
+                    "In some circumstances, this can lead to thread pool starvation and deadlock. Ensure that " +
+                    "the pool size is properly configured (property IgniteConfiguration.QueryThreadPoolSize). " +
+                    "The pool size should be greater than the maximum number of concurrent queries initiated by UDFs.");
+            }
+            else {
+                log.warning("Detected query initiated by user-defined function. " +
+                    "When a striped query task executor (the default configuration) is used, tasks for such queries " +
+                    "can be assigned to the same thread as that held by the initial query, which can lead to a " +
+                    "deadlock. To switch to a blocking tasks executor, set the following parameter: " +
+                    "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true.");
+            }
+        }
     }
 
     /** */

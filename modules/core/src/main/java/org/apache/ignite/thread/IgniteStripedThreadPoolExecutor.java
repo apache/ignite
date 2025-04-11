@@ -274,6 +274,18 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
     }
 
     /**
+     * @return {@code True} if task queue is empty..
+     */
+    public boolean queueEmpty() {
+        for (IgniteThreadPoolExecutor exec : execs) {
+            if (!exec.getQueue().isEmpty())
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @return Approximate total number of tasks that have ever been scheduled for execution. Because the states of
      * tasks and threads may change dynamically during computation, the returned value is only an approximation.
      */
@@ -291,7 +303,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
      * may change dynamically during computation, the returned value is only an approximation, but one that does not
      * ever decrease across successive calls.
      */
-    private long completedTaskCount() {
+    public long completedTaskCount() {
         long completedTaskCnt = 0;
 
         for (IgniteThreadPoolExecutor exec : execs)
@@ -303,7 +315,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
     /**
      * @return Approximate number of threads that are actively executing tasks.
      */
-    private int activeCount() {
+    public int activeCount() {
         int activeCnt = 0;
 
         for (IgniteThreadPoolExecutor exec : execs)
@@ -315,7 +327,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
     /**
      * @return current number of threads in the pool.
      */
-    private int poolSize() {
+    public int poolSize() {
         int poolSize = 0;
 
         for (IgniteThreadPoolExecutor exec : execs)

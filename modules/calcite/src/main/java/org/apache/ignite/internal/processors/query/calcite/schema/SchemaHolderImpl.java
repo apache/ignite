@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -392,7 +392,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** */
     private boolean checkNewUserDefinedFunction(String schName, String funName) {
-        if (F.eq(schName, QueryUtils.DFLT_SCHEMA)) {
+        if (Objects.equals(schName, QueryUtils.DFLT_SCHEMA)) {
             List<SqlOperator> operators = new ArrayList<>();
 
             frameworkCfg.getOperatorTable().lookupOperatorOverloads(

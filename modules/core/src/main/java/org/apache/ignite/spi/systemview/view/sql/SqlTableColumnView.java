@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view.sql;
 
+import java.util.Objects;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
@@ -87,7 +88,7 @@ public class SqlTableColumnView {
 
     /** @return {@code True} if primary key. */
     public boolean pk() {
-        return F.eq(prop.name(), tbl.type().keyFieldName()) || prop.key();
+        return Objects.equals(prop.name(), tbl.type().keyFieldName()) || prop.key();
     }
 
     /** @return {@code True} if autoincremented field. */
@@ -98,6 +99,6 @@ public class SqlTableColumnView {
     /** @return {@code True} if affinity column. */
     public boolean affinityColumn() {
         return !tbl.type().customAffinityKeyMapper() &&
-            (F.eq(prop.name(), tbl.type().affinityKey()) || (F.isEmpty(tbl.type().affinityKey()) && pk()));
+            (Objects.equals(prop.name(), tbl.type().affinityKey()) || (F.isEmpty(tbl.type().affinityKey()) && pk()));
     }
 }

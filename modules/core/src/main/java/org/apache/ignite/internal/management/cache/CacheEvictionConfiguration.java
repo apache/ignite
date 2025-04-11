@@ -22,9 +22,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.evictionPolic
 /**
  * Data transfer object for eviction configuration properties.
  */
-public class CacheEvictionConfiguration extends VisorDataTransferObject {
+public class CacheEvictionConfiguration extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -94,7 +94,7 @@ public class CacheEvictionConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         plc = U.readString(in);
         plcMaxSize = (Integer)in.readObject();
         filter = U.readString(in);

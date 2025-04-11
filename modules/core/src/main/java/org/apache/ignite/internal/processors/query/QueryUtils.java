@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -472,8 +473,6 @@ public class QueryUtils {
         throws IgniteCheckedException {
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
-        boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
@@ -507,7 +506,7 @@ public class QueryUtils {
 
         desc.tableName(qryEntity.getTableName());
 
-        if (binaryEnabled && !keyOrValMustDeserialize) {
+        if (!keyOrValMustDeserialize) {
             // Safe to check null.
             if (SQL_TYPES.contains(valCls))
                 desc.valueClass(valCls);
@@ -534,7 +533,7 @@ public class QueryUtils {
         desc.keyFieldName(qryEntity.getKeyFieldName());
         desc.valueFieldName(qryEntity.getValueFieldName());
 
-        if (binaryEnabled && keyOrValMustDeserialize) {
+        if (keyOrValMustDeserialize) {
             if (keyMustDeserialize)
                 mustDeserializeClss.add(keyCls);
 
@@ -547,7 +546,7 @@ public class QueryUtils {
 
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
 
-        if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+        if (valCls == null || !keyOrValMustDeserialize) {
             processBinaryMeta(ctx, qryEntity, desc);
 
             typeId = new QueryTypeIdKey(cacheName, valTypeId);
@@ -1289,13 +1288,13 @@ public class QueryUtils {
         Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
-            if (F.eq(ccfg.getName(), desc.cacheName()))
+            if (Objects.equals(ccfg.getName(), desc.cacheName()))
                 continue;
 
             String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
-            if (!F.eq(schema, descSchema))
+            if (!Objects.equals(schema, descSchema))
                 continue;
 
             for (QueryEntity e : desc.schema().entities()) {
@@ -1503,11 +1502,11 @@ public class QueryUtils {
      * @return {@code null} if it's OK to remove the column and exception otherwise.
      */
     public static SchemaOperationException validateDropColumn(QueryEntity entity, String fieldName, String colName) {
-        if (F.eq(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
+        if (Objects.equals(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache key");
 
-        if (F.eq(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
+        if (Objects.equals(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache value");
 
@@ -1538,11 +1537,11 @@ public class QueryUtils {
      * @return {@code null} if it's OK to remove the column and exception otherwise.
      */
     public static SchemaOperationException validateDropColumn(GridQueryTypeDescriptor type, String colName) {
-        if (F.eq(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
+        if (Objects.equals(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache key");
 
-        if (F.eq(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
+        if (Objects.equals(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache value");
 
@@ -1637,7 +1636,7 @@ public class QueryUtils {
     public static String fieldNameByAlias(QueryEntity entity, String alias) {
         if (!F.isEmpty(entity.getAliases())) {
             for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
-                if (F.eq(aliasEntry.getValue(), alias))
+                if (Objects.equals(aliasEntry.getValue(), alias))
                     return aliasEntry.getKey();
             }
         }
@@ -1715,7 +1714,7 @@ public class QueryUtils {
      * @param schemaName Schema name.
      */
     public static void isDdlOnSchemaSupported(String schemaName) {
-        if (F.eq(SCHEMA_SYS, schemaName))
+        if (Objects.equals(SCHEMA_SYS, schemaName))
             throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }

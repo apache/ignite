@@ -87,7 +87,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     public void testQueue() throws Exception {
         final String queueName = "qq";
 
-        System.out.println(U.filler(20, '\n'));
+        System.out.println(U.nl().repeat(20));
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -127,7 +127,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
 
         startAdditionalNodes(BACKUP_CNT + 2, queueName);
 
-        System.out.println(U.filler(20, '\n'));
+        System.out.println(U.nl().repeat(20));
 
         latch2.countDown();
 

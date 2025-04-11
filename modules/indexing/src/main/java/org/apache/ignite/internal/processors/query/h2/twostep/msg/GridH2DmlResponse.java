@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -111,7 +110,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshall(Marshaller m) {
+    @Override public void marshall(BinaryMarshaller m) {
         if (errKeysBytes != null || errKeys == null)
             return;
 
@@ -125,22 +124,14 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
+    @Override public void unmarshall(GridKernalContext ctx) {
         if (errKeys != null || errKeysBytes == null)
             return;
 
-        try {
-            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller)
-                // To avoid deserializing of enum types.
-                errKeys = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr));
-            else
-                errKeys = U.unmarshal(m, errKeysBytes, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        // To avoid deserializing of enum types.
+        errKeys = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(errKeysBytes, ldr));
     }
 
     /** {@inheritDoc} */
