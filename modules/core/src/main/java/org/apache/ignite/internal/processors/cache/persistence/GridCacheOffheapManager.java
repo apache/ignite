@@ -1108,8 +1108,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             int cleared = 0;
 
-            for (CacheDataStore store : cacheDataStores()) {
-                cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, unwindThrottlingTimeout, amount - cleared);
+            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions(true)) {
+                GridCacheDataStore store = (GridCacheDataStore)part.dataStore();
+
+                if (store.destroyed())
+                    continue;
+
+                cleared += store.purgeExpired(cctx, c, unwindThrottlingTimeout, amount - cleared);
 
                 if (amount != -1 && cleared >= amount)
                     return true;

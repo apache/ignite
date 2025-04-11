@@ -494,7 +494,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
+    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions(boolean shift) {
         return Collections.emptyList();
     }
 

@@ -1096,9 +1096,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
+        return currentLocalPartitions(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions(boolean shift) {
         return new Iterable<GridDhtLocalPartition>() {
             @Override public Iterator<GridDhtLocalPartition> iterator() {
-                return new CurrentPartitionsIterator();
+                return new CurrentPartitionsIterator(shift);
             }
         };
     }
@@ -2781,7 +2786,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
+                for (GridDhtLocalPartition locPart : currentLocalPartitions(false)) {
                     if (locPart.state() == MOVING) {
                         boolean reserved = locPart.reserve();
 
@@ -3294,8 +3299,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Iterator over current local partitions.
      */
     private class CurrentPartitionsIterator implements Iterator<GridDhtLocalPartition> {
-        /** Shift start index for {@link #locParts} to reduce partitions contention. */
-        private final int shift;
+        /** Shift index. */
+        private final int shiftIdx;
 
         /** Next index. */
         private int nextIdx;
@@ -3304,10 +3309,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         private GridDhtLocalPartition nextPart;
 
         /**
-         * Constructor
+         * @param shift If {@code true} then shift start index for {@link #locParts} to reduce partitions contention.
          */
-        private CurrentPartitionsIterator() {
-            shift = ThreadLocalRandom.current().nextInt(locParts.length());
+        private CurrentPartitionsIterator(boolean shift) {
+            shiftIdx = shift ? ThreadLocalRandom.current().nextInt(locParts.length()) : 0;
 
             advance();
         }
@@ -3319,7 +3324,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             int len = locParts.length();
 
             while (nextIdx < len) {
-                GridDhtLocalPartition part = locParts.get((shift + nextIdx) % len);
+                GridDhtLocalPartition part = locParts.get((shiftIdx + nextIdx) % len);
 
                 if (part != null && part.state().active()) {
                     nextPart = part;
