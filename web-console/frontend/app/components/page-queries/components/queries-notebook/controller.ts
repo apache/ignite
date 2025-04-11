@@ -17,36 +17,12 @@ import {default as Notebook} from '../../notebook.service';
 import {default as MessagesServiceFactory} from 'app/services/Messages.service';
 import {default as LegacyConfirmServiceFactory} from 'app/services/Confirm.service';
 import {default as InputDialog} from 'app/components/input-dialog/input-dialog.service';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 import {QueryActions} from './components/query-actions-button/controller';
 import {CancellationError} from 'app/errors/CancellationError';
 import {DemoService} from 'app/modules/demo/Demo.module';
-import {Paragraph,TIME_LINE,ROW_IDX} from './Paragraph';
-
-
-const COLLOCATED_QUERY_SINCE = ['2.7.0'];
-
-const _fullColName = (col) => {
-    const res = [];
-
-    if (col.schemaName)
-        res.push(col.schemaName);
-
-    if (col.typeName)
-        res.push(col.typeName);
-
-    res.push(col.fieldName);
-
-    return res.join('.');
-};
-
-const _hideColumn = (col) => col.fieldName !== '_KEY' && col.fieldName !== '_VAL';
-
-const _allColumn = (col) => true;
-
-function _hasRunningQueries(paragraphs) {
-    return !!_.find(paragraphs,
-        (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
-}
+import {Paragraph,TIME_LINE,ROW_IDX,_numberType,_fullColName,_hideColumn,_allColumn,_hasRunningQueries} from './Paragraph';
+import { cache } from 'webpack/webpack.common';
 
 
 
@@ -57,7 +33,7 @@ export class NotebookCtrl {
     /**
      * @param {CSV} CSV
      */
-    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV:CSV, errorParser, DemoInfo, private $translate: ng.translate.ITranslateService, stacktraceViewerDialog) {
+    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr:AgentManager, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV:CSV, errorParser, DemoInfo, private $translate: ng.translate.ITranslateService, stacktraceViewerDialog) {
         const $ctrl = this;
 
         this.CSV = CSV;
@@ -70,6 +46,9 @@ export class NotebookCtrl {
         $ctrl.demoStarted = false;
 
         this.isDemo = this.Demo.enabled;
+
+        this.allLoadedMetadatas = {};   // schema.typeName -> {children: [...], ...}
+        this.cacheSqlSchemas = {};  // cacheName -> schema
 
         const _tryStopRefresh = function(paragraph) {
             paragraph.cancelRefresh($interval);
@@ -118,7 +97,7 @@ export class NotebookCtrl {
             {value: 60000, label: $translate.instant('scale.time.minute.long'), short: $translate.instant('scale.time.minute.short')},
             {value: 3600000, label: $translate.instant('scale.time.hour.long'), short: $translate.instant('scale.time.hour.short')}
         ];
-        $scope.all_metadatas = {};
+        
         $scope.metadata = [];
 
         $scope.metaFilter = '';
@@ -611,13 +590,7 @@ export class NotebookCtrl {
 
             return false;
         };
-
-        const _numberClasses = ['java.math.BigDecimal', 'java.lang.Byte', 'java.lang.Double',
-            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
-
-        const _numberType = function(cls) {
-            return _.includes(_numberClasses, cls);
-        };
+        
 
         $scope.chartAcceptValColumn = function(paragraph, item) {
             const valCols = paragraph.chartValCols;
@@ -663,14 +636,9 @@ export class NotebookCtrl {
             $anchorScroll();
         };        
 
+        const databaseMetadata = this.allLoadedMetadatas;
         
         $scope.aceInit = function(paragraph) {
-            const databaseMetadata = {
-                "users": ["id", "name", "email", "created_at"],
-                "products": ["id", "name", "price", "stock"],
-                "orders": ["id", "user_id", "product_id", "quantity", "order_date"]
-            };
-            
 
             const metaDataCompleter = {
                 getCompletions: (editor, session, pos, prefix, callback) => {
@@ -678,15 +646,14 @@ export class NotebookCtrl {
                     if (prefix === ''){
                         callback(null, []);
                         return
-                    }
-                    const databaseMetadata = $scope.all_metadatas;                    
+                    }           
                     
                     var line = session.getLine(pos.row).substring(0, pos.column);
     
                     // 检测表名补全上下文（FROM或JOIN后）
-                    var isTableContext = /(\bFROM\b|\bJOIN\b)\s+[\w_]*$/i.test(line);
+                    var isTableContext = /(\bFROM\b|\bJOIN\b)\s+[\w_\"\.]*$/i.test(line);
                     // 检测字段名补全上下文（SELECT、WHERE、HAVING或ON后）
-                    var isFieldContext = /(\bSELECT\b|\bWHERE\b|\bHAVING\b|\bON\b)\s+[\w_]*$/i.test(line);
+                    var isFieldContext = /(\bSELECT\b|\bWHERE\b|\bHAVING\b|\bON\b)\s+[\w_\"\.]*$/i.test(line);
                     
                     var suggestions = [];
                     
@@ -700,17 +667,18 @@ export class NotebookCtrl {
                     } else if (isFieldContext) {
                         // 获取FROM子句中的表名
                         var tables = [];
-                        var fromMatch = line.match(/(\bFROM\b|\bJOIN\b)\s+([\w_, ]+)/i);
+                        var fromMatch = line.match(/(\bFROM\b|\bJOIN\b)\s+([\w_, \"\.]+)/i);
                         if (fromMatch) {
                             tables = fromMatch[2].split(/,\s*/).map(function(t) { return t.trim().split(/\s+/)[0]; });
                         }
                         // 收集所有相关字段
                         var fields = [];
                         tables.forEach(function(table) {
+                            table = table.toLowerCase();
                             if (databaseMetadata[table]) {
                                 databaseMetadata[table]['children'].forEach(function(field) {
                                     if (prefix === '' || field.name.startsWith(prefix)) {
-                                        suggestions.push({ name: field.name, value: field.name, meta: 'field' });
+                                        suggestions.push({ name: field.name+':'+field.type, value: field.name, meta: 'field' });
                                     }
                                 });                                
                             }
@@ -725,11 +693,33 @@ export class NotebookCtrl {
             const aiCompleter = {
                 getCompletions: (editor, session, pos, prefix, callback) => {                 
 
-                    var line = session.getLine(pos.row).substring(0, pos.column);
-                    var suggestions = [];
+                    let line = session.getLine(pos.row).substring(0, pos.column);
+                    let mode:string = session.$mode.$id;
                     
-                    suggestions.push({ name: 'select *', value: 'select * '+line, meta: 'sql' });
-                    callback(null, suggestions);
+                    if(mode.endsWith('groovy')){
+                        agentMgr.text2gremlin(line,null)
+                            .then((stements) => {
+                                let suggestions = [];
+                                _.forEach(stements, (name) => {
+                                    suggestions.push({ name: name, value: name, meta: 'gremlin' });
+                                });
+
+                                callback(null, suggestions);
+                                
+                            });
+                    }
+                    else{ // sql
+                        agentMgr.text2sql(line,null)
+                            .then((stements) => {
+                                let suggestions = [];
+                                _.forEach(stements, (name) => {
+                                    suggestions.push({ name: name, value: name, meta: 'sql' });
+                                });                                
+                                callback(null, suggestions);
+
+                            });
+                    }                   
+                    
                 }
             }
 
@@ -832,6 +822,9 @@ export class NotebookCtrl {
 
                         _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
                     }
+                    for(let cache of caches){
+                        this.cacheSqlSchemas[cache.value] = cache.schema;
+                    }                    
 
                     $scope.$applyAsync();
                 })
@@ -1206,8 +1199,10 @@ export class NotebookCtrl {
             else if (queryType === 'GREMLIN'){
                 query = agentMgr.queryGremlin(qryArg);
             }                
-            else
+            else{
                 query = agentMgr.querySql(qryArg);
+            }
+            
             return from(query).pipe(
                 tap((res) => {
                     onQueryStarted(res);
@@ -1766,7 +1761,7 @@ export class NotebookCtrl {
             ).toPromise();
         };
 
-        $scope.scan = (paragraph, local = false) => {
+        $scope.scan = (paragraph:Paragraph, local = false) => {
             if (!$scope.scanAvailable(paragraph))
                 return;
 
@@ -1945,13 +1940,16 @@ export class NotebookCtrl {
         };
 
         $scope.exportCsv = function(paragraph) {
+            // self implementation
             _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
 
-            // paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
+            // ui implementation
+            //-paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
 
         $scope.exportPdf = function(paragraph) {
-            paragraph.gridOptions.api.exporter.pdfExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
+            paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
+            //-paragraph.gridOptions.api.exporter.pdfExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
 
         $scope.exportCsvAll = (paragraph) => {
@@ -1975,13 +1973,13 @@ export class NotebookCtrl {
             ).toPromise();
         };
 
-        // $scope.exportPdfAll = function(paragraph) {
-        //    $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
-        //    .then(({data}) {
-        //        _export(paragraph.name + '-all.csv', data.meta, data.rows);
-        //    })
-        //    .catch(Messages.showError);
-        // };
+        $scope.exportJsonlAll = function(paragraph) {
+            $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+            .then(({data}) =>{                
+                LegacyUtils.download('text/json', paragraph.name + '-all.jsonl', data.content);
+            })
+            .catch(Messages.showError);
+        };
 
         $scope.clearResult = (paragraph) => {
             Confirm.confirm($translate.instant('queries.notebook.clearQueryResultConfirmationMessage'))
@@ -2082,6 +2080,9 @@ export class NotebookCtrl {
             setTimeout(() => paragraph.ace.focus(), 100);
         };
 
+        const cacheSqlSchemas = this.cacheSqlSchemas;
+        const allLoadedMetadatas = this.allLoadedMetadatas;
+
         $scope.importMetadata = function(cacheName) {
             Loading.start('loadingCacheMetadata');
 
@@ -2109,8 +2110,11 @@ export class NotebookCtrl {
 
                     if($scope.metadata){
                         for(let table of $scope.metadata){
-                            $scope.all_metadatas[table.name] = table;
-                            $scope.all_metadatas[table.typeName] = table;
+                            let schema = cacheSqlSchemas[table.cacheName];
+                            if(schema){
+                                allLoadedMetadatas[schema+'.'+table.typeName] = table;
+                            }
+                            allLoadedMetadatas[table.typeName] = table;
                         }
                     }  
 
@@ -2309,6 +2313,10 @@ export class NotebookCtrl {
         }, {
             divider: true
         }, {
+            text: this.$translate.instant('queries.notebook.export.exportButtonLabel')+' By UI',
+            click: 'exportPdf(paragraph)'
+        },
+        {
             text: this.$translate.instant('queries.notebook.export.copyToClipboardButtonLabel'),
             click: 'exportCsvToClipBoard(paragraph)'
         }

@@ -327,7 +327,7 @@ public class DatabaseHandler  implements ClusterHandler {
 	}
 	
 	public RestResult restCommand(String clusterId, JsonObject params) throws Throwable  {		
-		 RestResult res = jdbcExecutor.sendRequest(clusterId, params, params);
+		 RestResult res = jdbcExecutor.sendRequest(clusterId, params);
          return res;
 	}
 	

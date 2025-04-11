@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 
@@ -121,7 +122,16 @@ public class RestExecutor implements AutoCloseable {
         		fields.append("=");
         		fields.append(URLEncoder.encode(String.valueOf(v),StandardCharsets.UTF_8));
         	}        	
-        });     
+        });
+        
+        String cmd = params.getString("cmd");
+        if("text2sql".equals(cmd)) {
+    		// Text Query
+        	JsonArray list = new JsonArray();
+    		String text = "SELECT * from //" + params.getString("text");
+			list.add(text);                    		
+    		return RestResult.success(list.encode(), params.getString("sessionToken"));
+		} 
         
         URL urlO = new URL(url);         
         if(urlO.getPath().isEmpty()) {

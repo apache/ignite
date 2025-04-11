@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyComma
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.util.typedef.F;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;

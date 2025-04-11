@@ -8,7 +8,7 @@ import {IgniteChartController} from '../../controller';
 
 const BLANK_STATUS = new Set([WellKnownOperationStatus.ERROR, WellKnownOperationStatus.WAITING]);
 
-export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestroy {
+export default class IgniteChartNoDataCtrl {
     static $inject = ['AgentManager'];
 
     constructor(private AgentManager) {}

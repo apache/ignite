@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.ignite.IgniteClusterManager;
@@ -105,8 +106,11 @@ public class VertxClusterHandler implements ClusterHandler{
     		String clusterName = clusterNameOpt.get();
     		
     		if("text2gremlin".equals(cmd)) {
+    			
+    			JsonArray list = new JsonArray();
     			String text = "// g.V() " + params.getString("text");
-    			return RestResult.success(text, params.getString("sessionToken"));
+    			list.add(text);
+    			return RestResult.success(list.encode(), params.getString("sessionToken"));
     		}
     		
     		if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd)) {

@@ -114,7 +114,7 @@ public class JdbcExecutor implements AutoCloseable {
      * @return Response from cluster.
      * @throws IOException If failed to send request to cluster.
      */
-    public RestResult sendRequest(String clusterId, JsonObject args, JsonObject params) throws IOException {
+    public RestResult sendRequest(String clusterId, JsonObject params) throws IOException {
     	 
     	DBInfo dbInfo = dbListener.getDBClusterInfo(clusterId);
     	if(dbInfo==null || dbInfo.jdbcUrl==null) {
@@ -128,7 +128,7 @@ public class JdbcExecutor implements AutoCloseable {
     	String cmd = params.getString("cmd");
     	String p2 = params.getString("p2");
     	
-    	boolean importSamples = args.getBoolean("importSamples", false);
+    	boolean importSamples = params.getBoolean("importSamples", false);
         	
     	
     	int  urlsCnt = 1;
@@ -144,7 +144,14 @@ public class JdbcExecutor implements AutoCloseable {
             	JsonObject res = new JsonObject();
             	res.put("error",(String)null);
             	
-            	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
+            	if("text2sql".equals(cmd)) {
+            		// Text Query
+            		JsonArray list = new JsonArray();
+            		String text = "SELECT * from //" + params.getString("text");
+        			list.add(text);                    		
+            		return RestResult.success(list.encode(), params.getString("sessionToken"));
+        		}            	
+            	else if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
             		
             		Collection<String> schemas = metadataReader.schemas(conn,importSamples);
             		
@@ -189,7 +196,7 @@ public class JdbcExecutor implements AutoCloseable {
             		}
             		
                     result.add(node);
-                    return RestResult.success(result.toString(), args.getString("sessionToken"));
+                    return RestResult.success(result.toString(), params.getString("sessionToken"));
                     
             	}
             	else if("metadata".equals(cmd)) {
@@ -259,7 +266,7 @@ public class JdbcExecutor implements AutoCloseable {
                     	
                     }
                     
-                    return RestResult.success(arr.toString(), args.getString("token"));
+                    return RestResult.success(arr.toString(), params.getString("sessionToken"));
             	}
             	else if("qryfldexe".equals(cmd)){
             		
@@ -286,7 +293,7 @@ public class JdbcExecutor implements AutoCloseable {
 
                 LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");                
                
-                return RestResult.success(res.toString(), args.getString("sessionToken"));
+                return RestResult.success(res.toString(), params.getString("sessionToken"));
            
             } catch (SQLException e) {			
             	

@@ -402,12 +402,12 @@
                     </configuration>
                 </plugin>
 
-                <plugin>
+                <!-- <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
                     <version>${maven.bundle.plugin.version}</version>
                     <extensions>true</extensions>
-                    <configuration>
+                    <configuration>                    	
                         <archive>
                             <addMavenDescriptor>true</addMavenDescriptor>
                         </archive>
@@ -446,7 +446,7 @@
                             </goals>
                         </execution>
                     </executions>
-                </plugin>
+                </plugin> -->
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -718,174 +718,6 @@
                                 <version>${revision}</version>
                             </dependency>
                         </dependencies>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>check-licenses</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.rat</groupId>
-                        <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.12</version>
-                        <configuration>
-                            <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
-                            <licenses>
-                                <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
-                                    <licenseFamilyCategory>IAL20</licenseFamilyCategory>
-                                    <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
-                                    <fullText>
-                                        Licensed to the Apache Software Foundation (ASF) under one or more
-                                        contributor license agreements.  See the NOTICE file distributed with
-                                        this work for additional information regarding copyright ownership.
-                                        The ASF licenses this file to You under the Apache License, Version 2.0
-                                        (the "License"); you may not use this file except in compliance with
-                                        the License.  You may obtain a copy of the License at
-
-                                        http://www.apache.org/licenses/LICENSE-2.0
-
-                                        Unless required by applicable law or agreed to in writing, software
-                                        distributed under the License is distributed on an "AS IS" BASIS,
-                                        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-                                        See the License for the specific language governing permissions and
-                                        limitations under the License.
-                                    </fullText>
-                                </license>
-                            </licenses>
-                            <licenseFamilies>
-                                <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
-                                    <familyName>Ignite Apache License 2.0</familyName>
-                                </licenseFamily>
-                            </licenseFamilies>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>check-licenses</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <configuration>
-                                    <excludes>
-                                        <exclude>work/**</exclude>
-                                        <exclude>**/target/**</exclude>
-                                        <exclude>**/*.log</exclude>
-                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
-                                        <exclude>**/*.dylib</exclude><!--bin-files-->
-                                        <exclude>**/*.gar</exclude><!--bin-files-->
-                                        <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
-                                        <exclude>**/*readme*.txt</exclude><!--readme files-->
-                                        <exclude>**/*.sql</exclude><!--sql files-->
-                                        <exclude>**/*README*.txt</exclude><!--readme files-->
-                                        <exclude>**/*README*.md</exclude><!--readme files-->
-                                        <exclude>**/*CONTRIBUTING*.md</exclude><!--readme files-->
-                                        <exclude>**/*DEVNOTES*.md</exclude><!--readme files-->
-                                        <exclude>**/*index*.md</exclude><!--readme files-->
-                                        <exclude>**/*.timestamp</exclude><!--tmp-files-->
-                                        <exclude>**/*.iml</exclude><!--IDEA files-->
-                                        <exclude>**/*.csv</exclude><!--CSV files-->
-                                        <exclude>**/*.jks</exclude><!--bin-files-->
-                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
-                                        <exclude>**/keystore</exclude><!--bin-files-->
-                                        <exclude>**/keystore/*.jks</exclude><!--bin-files-->
-                                        <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
-                                        <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
-                                        <exclude>**/keystore/ca/*.jks</exclude><!--bin-files-->
-                                        <exclude>**/keystore/ca/*.key</exclude><!--bin-files-->
-                                        <exclude>**/keystore/ca/*.txt</exclude><!--auto generated files-->
-                                        <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
-                                        <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
-                                        <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
-                                        <exclude>**/id_rsa**</exclude>  <!--SSH-->
-                                        <!--special excludes-->
-                                        <exclude>.travis.yml</exclude>
-                                        <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>
-                                        <exclude>idea/ignite_codeStyle.xml</exclude>
-                                        <exclude>**/DEVNOTES*.txt</exclude>
-                                        <exclude>**/NOTICE*</exclude>
-                                        <exclude>**/LICENSE*</exclude>
-                                        <exclude>**/MIGRATION_GUIDE*</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</exclude><!-- Apache 2.0 license -->
-                                        <exclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</exclude><!--auto generated files-->
-                                        <exclude>src/main/java/org/jsr166/*.java</exclude>
-                                        <exclude>src/main/java/org/mindrot/*.java</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/org.apache.ignite.util/*.output</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>**/books/*.txt</exclude><!--books examples-->
-                                        <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
-                                        <exclude>dev-tools/IGNITE-*.patch</exclude>
-                                        <exclude>dev-tools/.gradle/**/*</exclude>
-                                        <exclude>dev-tools/gradle/wrapper/**/*</exclude>
-                                        <exclude>dev-tools/gradlew</exclude>
-                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.pom</exclude>
-                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/maven-metadata-local.xml</exclude>
-                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
-                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
-                                        <exclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</exclude>
-                                    <!--platforms-->
-                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
-                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
-                                        <exclude>**/*.cmake</exclude>
-                                        <exclude>**/CMakeLists.txt</exclude>
-                                        <exclude>**/CMakeSettings.json.in</exclude>
-                                        <exclude>**/cmake-build-*/</exclude>
-                                        <exclude>**/.idea/**</exclude>
-                                        <exclude>**/*.pc.in</exclude>
-                                        <exclude>**/*.sln</exclude>
-                                        <exclude>**/*.snk</exclude>
-                                        <exclude>**/*.slnrel</exclude>
-                                        <exclude>**/*.ini</exclude>
-                                        <exclude>**/*.DotSettings</exclude>
-                                        <exclude>**/*.FxCop</exclude>
-                                        <exclude>**/*.ruleset</exclude>
-                                        <exclude>**/*.csproj</exclude>
-                                        <exclude>**/*.ndproj</exclude>
-                                        <exclude>**/*.csprojrel</exclude>
-                                        <exclude>**/mkbuild.cmd</exclude>
-                                        <exclude>**/module.def</exclude>
-                                        <exclude>**/*.fxcop</exclude>
-                                        <exclude>**/*.ruleset</exclude>
-                                        <exclude>**/*.metaproj</exclude>
-                                        <exclude>**/*.metaproj.tmp</exclude>
-                                        <exclude>**/*.nunit</exclude>
-                                        <exclude>**/teamcity_boost.cpp</exclude>
-                                        <exclude>**/teamcity_messages.h</exclude>
-                                        <exclude>**/teamcity_messages.cpp</exclude>
-                                        <exclude>**/obj/x64/**</exclude>
-                                        <exclude>**/obj/x86/**</exclude>
-                                        <exclude>**/bin/x64/**</exclude>
-                                        <exclude>**/bin/x86/**</exclude>
-                                        <exclude>**/*.dxg</exclude>
-                                        <exclude>**/*.cmd</exclude>
-                                        <exclude>**/*.ps1</exclude>
-                                        <exclude>**/*.json</exclude>
-                                        <exclude>**/.dockerignore</exclude>
-                                        <exclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</exclude>
-                                        <!--Packaging -->
-                                        <exclude>packaging/**</exclude>
-                                        <!-- Calcite test scripts -->
-                                        <exclude>src/test/sql/**</exclude>
-                                        <!-- Ignite Documentation-->
-                                        <exclude>docs/_site/**</exclude>
-                                        <exclude>docs/assets/images/**</exclude>
-                                        <exclude>docs/Gemfile.lock</exclude>
-                                        <exclude>docs/.jekyll-cache/**</exclude>
-                                        <exclude>docs/_docs/images/**</exclude>
-                                        <exclude>docs/Gemfile</exclude>
-                                        <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
-                                    </excludes>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

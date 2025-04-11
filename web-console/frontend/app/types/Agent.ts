@@ -37,8 +37,7 @@ export type AgentsStatResponse = {
 export type CacheNamesCollectorTaskResponse = {
 	caches: {[cacheName: string]: string},
 	cachesComment: {[cacheName: string]: string},
-	sqlSchemas: string[],
-	groups: string[]
+	sqlSchemas: {[cacheName: string]: string}
 }
 
 export type CacheNodesTaskResponse = string[]

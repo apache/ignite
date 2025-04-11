@@ -37,6 +37,7 @@ enum State {
 const IGNITE_2_0 = '2.0.0';
 
 const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
+const AI_SUPPORT_SINCE = '2.16.99';
 
 const EVENT_REST = 'node:rest';
 const EVENT_VISOR = 'node:visor';
@@ -639,6 +640,20 @@ export default class AgentManager {
         return Promise.resolve({cacheGroupsNotAvailable: true});
     }
 
+    text2sql(text:string,nid: string) {
+        if (this.available(AI_SUPPORT_SINCE))
+            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('text2sql', nid,{text});
+
+        return Promise.resolve({cacheGroupsNotAvailable: true});
+    }
+
+    text2gremlin(text:string,nid: string) {
+        if (this.available(AI_SUPPORT_SINCE))
+            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('text2gremlin', nid,{text});
+
+        return Promise.resolve({cacheGroupsNotAvailable: true});
+    }
+
     publicCacheNames() {
         return this.collectCacheNames(null)
             .then((data) => {
@@ -667,7 +682,7 @@ export default class AgentManager {
                     return !cache.startsWith('INDEXES.') && !cache.startsWith('igfs-internal-')
                 });
                 let cachesInfo = _.map(cacheNames, (cacheName) => {
-                    const schema = data.sqlSchemas && data.sqlSchemas[cacheName] || '';
+                    const schema = data.sqlSchemas && data.sqlSchemas[cacheName] || cacheName;
                     let comment = data.cachesComment && data.cachesComment[cacheName] || '';
                     if (comment) {
                         comment = ' (' + comment.slice(0, 24) + ')';
@@ -675,7 +690,8 @@ export default class AgentManager {
                     return {
                         value: cacheName,
                         label: cacheName + comment,
-                        key: schema+'.'+ cacheName,         
+                        key: schema+'.'+ cacheName,
+                        schema: schema       
                     }                
                 });
                 return cachesInfo;

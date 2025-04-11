@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.HttpResponseException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -105,7 +106,8 @@ public class RestClusterHandler extends AbstractClusterHandler {
 
         Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
-        int urlsCnt = nodeURIs.size();
+        int urlsCnt = nodeURIs.size();       
+        
 
         for (int i = 0;  i < urlsCnt; i++) {
             int currIdx = (startIdx + i) % urlsCnt;

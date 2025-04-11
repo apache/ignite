@@ -78,7 +78,7 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
                 if(comment!=null) {
                 	cachesComment.put(item.getKey(), comment);
                 }
-                String sqlSchema = cd.cacheConfiguration().getSqlSchema();
+                String sqlSchema = cd.cacheConfiguration().getSqlSchema();                
                 if (!F.isEmpty(sqlSchema))
                 	sqlSchemas.put(item.getKey(),sqlSchema);
 

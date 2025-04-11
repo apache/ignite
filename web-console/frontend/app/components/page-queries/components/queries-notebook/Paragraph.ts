@@ -4,15 +4,6 @@ import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import {Subject, defer, from, of, merge, timer, EMPTY, combineLatest} from 'rxjs';
-import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, ignoreElements, map, pluck, switchMap, takeUntil, takeWhile, take, tap} from 'rxjs/operators';
-
-import {default as Notebook} from '../../notebook.service';
-import {default as MessagesServiceFactory} from 'app/services/Messages.service';
-import {default as LegacyConfirmServiceFactory} from 'app/services/Confirm.service';
-import {default as InputDialog} from 'app/components/input-dialog/input-dialog.service';
-import {QueryActions} from './components/query-actions-button/controller';
-import {CancellationError} from 'app/errors/CancellationError';
-import {DemoService} from 'app/modules/demo/Demo.module';
 
 // Time line X axis descriptor.
 export const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
@@ -21,7 +12,7 @@ export const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 export const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 
-const _fullColName = (col) => {
+export const _fullColName = function(col) {
     const res = [];
 
     if (col.schemaName)
@@ -35,12 +26,29 @@ const _fullColName = (col) => {
     return res.join('.');
 }
 
+export const _hideColumn = (col) => col.fieldName !== '_KEY' && col.fieldName !== '_VAL';
+
+export const _allColumn = (col) => true;
+
+export function _hasRunningQueries(paragraphs) {
+    return !!_.find(paragraphs,
+        (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
+}
+
+const _numberClasses = ['java.math.BigDecimal', 'java.math.BigInteger', 'java.lang.Byte', 
+    'java.lang.Double', 'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
+
+export const _numberType = function(cls) {
+    return _.includes(_numberClasses, cls);
+};
+
 let paragraphId = 0;
 
 export class Paragraph {
     id: string;
     name: string;
     queryType: 'SCAN' | 'SQL_FIELDS' | 'GREMLIN';
+    queryArgs: any;
     meta: Array<any>;
     result: string;
     rows: Array<any>=[];
@@ -48,6 +56,10 @@ export class Paragraph {
     chartKeyCols: Array<any> = [];
     chartValCols: Array<any> = [];
     columnFilter: (col) => boolean;
+
+    error: any;
+    setError: (err) => void;
+    showLoading: (enable) => void;
 
     constructor($animate, $timeout, JavaTypes, errorParser, paragraph, private $translate: ng.translate.ITranslateService) {
         const self = this;
@@ -145,7 +157,7 @@ export class Paragraph {
 
             let cause = err;
 
-            while (nonNil(cause)) {
+            while (cause!=null) {
                 if (nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
                     const parsedCause = errorParser.parse(cause.message || cause.className);
