@@ -99,7 +99,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0) or " +
                 "(c1 = 0 and c2 = 1)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), SEARCH($t1, Sarg[0, 1]))".equals(s.condition().toString())));
+                .and(s -> "=($t0, 0)".equals(s.condition().toString())));
 
         // Disjunction equality last operand removal.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -107,38 +107,38 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 1) or " +
                 "(c1 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), SEARCH($t1, Sarg[0, 1]))".equals(s.condition().toString())));
+                .and(s -> "=($t0, 0)".equals(s.condition().toString())));
 
-        // Disjunction conjunction operand removal.
+        // Disjunction complex conjunction operand removal.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0 and c2 = 0 and c3 = 0) or " +
                 "(c1 = 0 and c2 = 0 and c3 = 1) or " +
                 "(c1 = 0 and c2 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1]))".equals(s.condition().toString())));
+                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
 
-        // Disjunction removal.
+        // Disjunction all operands removal.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0) or " +
                 "(c1 = 0)", schema,
             isIndexScan("T1", "IDX1")
                 .and(s -> "=($t0, 0)".equals(s.condition().toString())));
 
-        // Disjunction removal.
+        // Disjunction all except last operand removal.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0) or " +
                 "(c1 = 0 and c2 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
+                .and(s -> "=($t0, 0)".equals(s.condition().toString())));
 
-        // Disjunction removal.
+        // Disjunction all except first operand removal.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0 and c2 = 0) or " +
                 "(c1 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
+                .and(s -> "=($t0, 0)".equals(s.condition().toString())));
 
-        // Disjunction removal.
+        // Disjunction all complex operands removal.
         assertPlan("SELECT * FROM t1 WHERE " +
                 "(c1 = 0 and c2 = 0) or " +
                 "(c2 = 0 and c1 = 0)", schema,

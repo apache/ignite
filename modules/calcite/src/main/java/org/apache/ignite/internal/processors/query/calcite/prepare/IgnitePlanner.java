@@ -681,6 +681,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                         newOrOps.add(newAnd);
                     }
+                    else {
+                        newOrOps.clear();
+
+                        break;
+                    }
                 }
 
                 if (newOrOps.isEmpty())

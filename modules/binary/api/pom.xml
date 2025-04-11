@@ -27,14 +27,20 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../../parent-internal/pom.xml</relativePath>
+        <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-commons</artifactId>
+    <artifactId>ignite-binary-api</artifactId>
 
     <url>http://ignite.apache.org</url>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
