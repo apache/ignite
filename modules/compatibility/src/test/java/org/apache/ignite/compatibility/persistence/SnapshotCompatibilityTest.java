@@ -123,7 +123,8 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
                     for (boolean cacheDump : Arrays.asList(true, false))
                         for (boolean customSnpPath : Arrays.asList(true, false))
                             for (boolean testCacheGrp : Arrays.asList(true, false))
-                                if (!incSnp || (!cacheDump && customConsId && oldNodesCnt == 1))
+                                // see <a href="https://issues.apache.org/jira/browse/IGNITE-25096">...</a>
+                                if (!incSnp || (!cacheDump && customConsId /* && oldNodesCnt == 1*/))
                                     data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
 
         return data;
