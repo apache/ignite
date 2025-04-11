@@ -21,7 +21,6 @@ import java.util.Objects;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -91,26 +90,12 @@ public class DmlStatementsProcessor {
     }
 
     /** Remove updater. */
-    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
+    public static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
         new IgniteInClosure<>() {
             @Override public void apply(MutableEntry<Object, Object> e) {
                 e.remove();
             }
         };
-
-    /**
-     * Returns the remove closure based on the version of the primary node.
-     *
-     * @param node Primary node.
-     * @param key Key.
-     * @return Remove closure.
-     */
-    public static IgniteInClosure<MutableEntry<Object, Object>> getRemoveClosure(ClusterNode node, Object key) {
-        assert node != null;
-        assert key != null;
-
-        return RMV;
-    }
 
     /**
      * Entry value updater.
