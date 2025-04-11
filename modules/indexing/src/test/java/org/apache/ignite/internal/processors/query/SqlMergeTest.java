@@ -28,16 +28,22 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
+
 /**
  * Tests for SQL MERGE.
  */
 public class SqlMergeTest extends AbstractIndexingCommonTest {
     /** Node. */
-    private static IgniteEx srv;
+    private IgniteEx srv;
 
-    /** Node. */
-    protected IgniteEx node;
+    /** */
+    private final LogListener logLsnr = LogListener
+        .matches("The search row by explicit KEY isn't supported. The primary key is always used to search row")
+        .build();
 
+    /** */
+    private ListeningTestLogger listeningTestLog;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -48,6 +54,8 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        QueryUtils.INCLUDE_SENSITIVE = DFLT_TO_STRING_INCLUDE_SENSITIVE;
+
         for (String cache : srv.cacheNames())
             srv.cache(cache).destroy();
 
@@ -58,7 +66,14 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        node = srv;
+        listeningTestLog = testLog();
+
+        listeningTestLog.registerListener(logLsnr);
+    }
+
+    /** @return Node to execute queries. */
+    protected IgniteEx node() {
+        return grid(0);
     }
 
     /**
@@ -71,21 +86,49 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         checkMergeQuery("MERGE INTO test1 (id, id2, name) VALUES (1, 2, 'Kyle')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1",
             Arrays.asList(1, 2, "Kyle"));
+        assertFalse(logLsnr.check());
 
         checkMergeQuery("MERGE INTO test1 (id2, id, name) VALUES (3, 2, 'Santa Claus')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 2",
             Arrays.asList(2, 3, "Santa Claus"));
+        assertFalse(logLsnr.check());
 
         checkMergeQuery("MERGE INTO test1 (name, id, id2) VALUES ('Holy Jesus', 1, 2), ('Kartman', 3, 4)", 2L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1",
             Arrays.asList(1, 2, "Holy Jesus"));
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 3",
             Arrays.asList(3, 4, "Kartman"));
+        assertFalse(logLsnr.check());
 
         checkMergeQuery("MERGE INTO test1 (id, id2, name) " +
             "SELECT id, id2 * 1000, UPPER(name) FROM test1 WHERE id < 2", 1L);
         checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 1 AND id2 = 2000",
             Arrays.asList(1, 2000, "HOLY JESUS"));
+        assertFalse(logLsnr.check());
+
+        checkMergeQuery("MERGE INTO test1 (id, id2, name) KEY(_key) VALUES (100, 1, 'Bob')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 100",
+            Arrays.asList(100, 1, "Bob"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
+
+        checkMergeQuery("MERGE INTO test1 (id2, id, name) KEY(id, id2) VALUES (2, 100, 'Alice')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 100 AND id2 = 2",
+            Arrays.asList(100, 2, "Alice"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
+
+        checkMergeQuery("MERGE INTO test1 (id, id2, name) KEY(id, id2) VALUES (6, 5, 'Stan')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 6",
+            Arrays.asList(6, 5, "Stan"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
+
+        checkMergeQuery("MERGE INTO test1 (id, id2, name) KEY(id2, id) VALUES (10, 100, 'Satan')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test1 WHERE id = 10",
+            Arrays.asList(10, 100, "Satan"));
+        assertFalse(logLsnr.check());
+        logLsnr.reset();
     }
 
     /**
@@ -93,39 +136,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testCheckKeysWarning() throws Exception {
-        LogListener logLsnr = LogListener
-            .matches("The search row by explicit KEY isn't supported. The primary key is always used to search row")
-            .build();
-
-        ListeningTestLogger listeningTestLog = testLog();
-
-        listeningTestLog.registerListener(logLsnr);
-
         sql("CREATE TABLE test2 (id INT, id2 INT, name VARCHAR, PRIMARY KEY (id, id2))");
-
-        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(_key) VALUES (100, 1, 'Bob')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 100",
-            Arrays.asList(100, 1, "Bob"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
-
-        checkMergeQuery("MERGE INTO test2 (id2, id, name) KEY(_key) VALUES (2, 100, 'Alice')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 100 AND id2 = 2",
-            Arrays.asList(100, 2, "Alice"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
-
-        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(id, id2) VALUES (3, 5, 'Stan')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 3",
-            Arrays.asList(3, 5, "Stan"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
-
-        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(id2, id) VALUES (1, 100, 'Satan')", 1L);
-        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 1",
-            Arrays.asList(1, 100, "Satan"));
-        assertTrue(logLsnr.check());
-        logLsnr.reset();
 
         checkMergeQuery("MERGE INTO test2 (id2, id, name) KEY(id) VALUES (15, 32, 'Kyle')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 32",
@@ -145,12 +156,26 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
         assertTrue(logLsnr.check());
         logLsnr.reset();
 
+        LogListener sensitiveLsnr = LogListener.matches("Sherlock").build();
+
+        listeningTestLog.registerListener(sensitiveLsnr);
+
+        // Check sensitive log output.
         checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(name) VALUES (10, -11, 'Sherlock')", 1L);
         checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 10 and id2=-11",
             Arrays.asList(10, -11, "Sherlock"));
         assertTrue(logLsnr.check());
+        assertTrue(sensitiveLsnr.check());
         logLsnr.reset();
+        sensitiveLsnr.reset();
 
+        QueryUtils.INCLUDE_SENSITIVE = false;
+
+        checkMergeQuery("MERGE INTO test2 (id, id2, name) KEY(name) VALUES (10, -12, 'Sherlock')", 1L);
+        checkSqlResults("SELECT id, id2, name FROM test2 WHERE id = 10 and id2=-12",
+            Arrays.asList(10, -12, "Sherlock"));
+        assertTrue(logLsnr.check());
+        assertFalse(sensitiveLsnr.check());
     }
 
     /**
@@ -179,7 +204,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
      * @return Results.
      */
     protected List<List<?>> sql(String sql) throws Exception {
-        GridQueryProcessor qryProc = node.context().query();
+        GridQueryProcessor qryProc = node().context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC");
 
@@ -194,7 +219,7 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
     private ListeningTestLogger testLog() {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        GridTestUtils.setFieldValue(((IgniteH2Indexing)node.context().query().getIndexing()).parser(), "log", testLog);
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)node().context().query().getIndexing()).parser(), "log", testLog);
 
         return testLog;
     }

@@ -24,9 +24,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -308,6 +311,12 @@ public abstract class QueryChecker {
     private FrameworkConfig frameworkCfg;
 
     /** */
+    private RelOptListener planLsnr;
+
+    /** */
+    private Consumer<List<List<?>>> resultChecker;
+
+    /** */
     public QueryChecker(String qry) {
         this(qry, null, SqlTransactionMode.NONE);
     }
@@ -345,6 +354,20 @@ public abstract class QueryChecker {
     /** */
     public QueryChecker withFrameworkConfig(FrameworkConfig frameworkCfg) {
         this.frameworkCfg = frameworkCfg;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withPlannerListener(RelOptListener lsnr) {
+        this.planLsnr = lsnr;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withResultChecker(Consumer<List<List<?>>> resultChecker) {
+        this.resultChecker = resultChecker;
 
         return this;
     }
@@ -401,7 +424,9 @@ public abstract class QueryChecker {
             ? ((TransactionProxyImpl)tx).tx().xidVersion()
             : null;
 
-        QueryContext ctx = (frameworkCfg != null || txVer != null) ? QueryContext.of(frameworkCfg, txVer) : null;
+        QueryContext ctx = (frameworkCfg != null || txVer != null || planLsnr != null)
+            ? QueryContext.of(frameworkCfg, txVer, planLsnr)
+            : null;
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
             engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
@@ -420,8 +445,7 @@ public abstract class QueryChecker {
             assertEquals(exactPlan, actualPlan);
 
         // Check result.
-        List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(ctx, "PUBLIC", qry, params);
+        List<FieldsQueryCursor<List<?>>> cursors = engine.query(ctx, "PUBLIC", qry, params);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
@@ -453,6 +477,9 @@ public abstract class QueryChecker {
 
             assertEqualsCollections(expectedResult, res);
         }
+
+        if (resultChecker != null)
+            resultChecker.accept(res);
     }
 
     /** */
@@ -475,7 +502,7 @@ public abstract class QueryChecker {
             Object item1 = it1.next();
             Object item2 = it2.next();
 
-            if (!F.eq(item1, item2))
+            if (!Objects.equals(item1, item2))
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
@@ -501,7 +528,7 @@ public abstract class QueryChecker {
                 Object item1 = it1.next();
                 Object item2 = it2.next();
 
-                if (F.eq(item1, item2))
+                if (Objects.equals(item1, item2))
                     continue;
 
                 if (item1 == null)

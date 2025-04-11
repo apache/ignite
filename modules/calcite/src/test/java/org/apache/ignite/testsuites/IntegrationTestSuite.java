@@ -76,10 +76,11 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIn
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchQ20Test;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
@@ -125,6 +126,7 @@ import org.junit.runners.Suite;
     UnstableTopologyIntegrationTest.class,
     PartitionsReservationIntegrationTest.class,
     JoinCommuteRulesTest.class,
+    JoinOrderOptimizationTest.class,
     ServerStatisticsIntegrationTest.class,
     JoinIntegrationTest.class,
     IntervalTest.class,
@@ -156,7 +158,7 @@ import org.junit.runners.Suite;
     SqlPlanHistoryIntegrationTest.class,
     QueryBlockingTaskExecutorIntegrationTest.class,
     ScalarInIntegrationTest.class,
-    TpchQ20Test.class,
+    TpchTest.class,
 })
 public class IntegrationTestSuite {
 }

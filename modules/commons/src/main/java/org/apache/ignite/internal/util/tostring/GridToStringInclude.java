@@ -22,7 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 
 /**
  * Attach this annotation to a field or a class to indicate that this field or fields of this
@@ -36,7 +36,7 @@ public @interface GridToStringInclude {
     /**
      * A flag indicating a sensitive information stored in the field or fields of the class.<br/>
      * Such information will be included in {@code toString()} output ONLY when the system property
-     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE IGNITE_TO_STRING_INCLUDE_SENSITIVE}
+     * {@link IgniteCommonsSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE IGNITE_TO_STRING_INCLUDE_SENSITIVE}
      * is set to {@code true}.
      *
      * @return Attribute value.

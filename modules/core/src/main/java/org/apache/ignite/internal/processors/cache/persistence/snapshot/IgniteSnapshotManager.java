@@ -1072,7 +1072,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental()) {
+        if (snpReq != null && Objects.equals(id, snpReq.requestId()) && snpReq.incremental()) {
             cctx.tm().txMessageTransformer(null);
 
             GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
@@ -1224,7 +1224,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
+        if (snpReq == null || !Objects.equals(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
         IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
@@ -1322,7 +1322,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(id, snpReq.requestId()))
+        if (snpReq == null || !Objects.equals(id, snpReq.requestId()))
             return;
 
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());

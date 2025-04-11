@@ -15,33 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.binary;
+package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.util.GridCommonFunc;
 
 /**
- * Maps type and field names to different names. Prepares class/type names
- * and field names before pass them to {@link BinaryIdMapper}.
- * <p>
- * Binary name mapper can be configured for all binary objects via
- * {@link BinaryConfiguration#getNameMapper()} method,
- * or for a specific binary type via {@link BinaryTypeConfiguration#getNameMapper()} method.
- * @see BinaryIdMapper
+ * Defines {@code alias} for {@link GridCommonFunc} by extending it. Since Java doesn't provide type aliases
+ * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
+ * concise code in cases when readability won't be sacrificed. For more information see {@link GridCommonFunc}.
+ * @see GridCommonFunc
  */
-public interface BinaryNameMapper {
-    /**
-     * Gets type clsName.
-     *
-     * @param clsName Class came
-     * @return Type name.
-     */
-    String typeName(String clsName);
-
-    /**
-     * Gets field name.
-     *
-     * @param fieldName Field name.
-     * @return Field name.
-     */
-    String fieldName(String fieldName);
-}
+public class CF extends GridCommonFunc { /* No-op. */ }

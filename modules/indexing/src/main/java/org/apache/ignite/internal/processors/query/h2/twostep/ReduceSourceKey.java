@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Reduce source key for a specific remote data source (remote node + specific segment).
@@ -49,7 +49,7 @@ public class ReduceSourceKey {
 
         ReduceSourceKey other = (ReduceSourceKey)o;
 
-        return F.eq(segment, other.segment) && F.eq(nodeId, other.nodeId);
+        return Objects.equals(segment, other.segment) && Objects.equals(nodeId, other.nodeId);
     }
 
     /** {@inheritDoc} */

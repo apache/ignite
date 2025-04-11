@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -854,7 +855,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (existingName == null)
             existingName = tasksMetaCache.getAndPutIfAbsent(key, taskName);
 
-        if (existingName != null && !F.eq(existingName, taskName))
+        if (existingName != null && !Objects.equals(existingName, taskName))
             throw new IgniteCheckedException("Task name hash collision for security-enabled node " +
                 "[taskName=" + taskName +
                 ", existing taskName=" + existingName + ']');

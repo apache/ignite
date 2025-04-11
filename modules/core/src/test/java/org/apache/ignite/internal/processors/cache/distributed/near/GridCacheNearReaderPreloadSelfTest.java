@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -163,7 +164,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode primaryNode = F.first(affNodes);
 
-            if (F.eq(primaryNode, cache1.unwrap(Ignite.class).cluster().localNode()) &&
+            if (Objects.equals(primaryNode, cache1.unwrap(Ignite.class).cluster().localNode()) &&
                 affNodes.contains(cache3.unwrap(Ignite.class).cluster().localNode()))
                 break;
 
@@ -197,7 +198,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private void checkCache(IgniteCache<Integer, Integer> cache, int key, int expVal) throws Exception {
         Integer val = cache.get(key);
 
-        assert F.eq(expVal, val) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
+        assert Objects.equals(expVal, val) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
             ", actual=" + val + ']';
     }
 }

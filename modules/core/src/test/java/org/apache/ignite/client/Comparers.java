@@ -19,10 +19,8 @@ package org.apache.ignite.client;
 
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public final class Comparers {
@@ -102,8 +100,8 @@ public final class Comparers {
             CacheKeyConfiguration cfg1 = cfgs1[i];
             CacheKeyConfiguration cfg2 = cfgs2[i];
 
-            if (!F.eq(cfg1.getTypeName(), cfg2.getTypeName()) ||
-                !F.eq(cfg1.getAffinityKeyFieldName(), cfg2.getAffinityKeyFieldName()))
+            if (!Objects.equals(cfg1.getTypeName(), cfg2.getTypeName()) ||
+                !Objects.equals(cfg1.getAffinityKeyFieldName(), cfg2.getAffinityKeyFieldName()))
                 return false;
         }
 
