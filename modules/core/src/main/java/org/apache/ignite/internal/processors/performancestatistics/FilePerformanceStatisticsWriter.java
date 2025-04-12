@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -256,15 +255,15 @@ public class FilePerformanceStatisticsWriter {
 
     /**
      * @param type Cache query type.
-     * @param queryNodeId Originating node id.
+     * @param qryNodeId Originating node id.
      * @param id Query id.
      * @param logicalReads Number of logical reads.
      * @param physicalReads Number of physical reads.
      */
-    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
+    public void queryReads(GridCacheQueryType type, UUID qryNodeId, long id, long logicalReads, long physicalReads) {
         fileWriter.doWrite(QUERY_READS, queryReadsRecordSize(), buf -> {
             buf.put((byte)type.ordinal());
-            writeUuid(buf, queryNodeId);
+            writeUuid(buf, qryNodeId);
             buf.putLong(id);
             buf.putLong(logicalReads);
             buf.putLong(physicalReads);
@@ -520,7 +519,7 @@ public class FilePerformanceStatisticsWriter {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        @Override protected void body() {
             try {
                 long writtenToFile = 0;
 
