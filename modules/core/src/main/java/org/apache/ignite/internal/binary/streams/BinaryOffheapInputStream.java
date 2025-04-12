@@ -32,7 +32,7 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     private final int cap;
 
     /** */
-    private boolean forceHeap;
+    private final boolean forceHeap;
 
     /**
      * Constructor.

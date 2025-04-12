@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -81,7 +82,7 @@ public class BinaryAbstractOutputStreamTest extends GridCommonAbstractTest {
 
         assertEquals(1073741824, BinaryAbstractOutputStream.capacity(536870912, 536870913));
 
-        final int MAX_SIZE = BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+        final int MAX_SIZE = U.MAX_ARRAY_SIZE;
 
         assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, 1073741825));
 

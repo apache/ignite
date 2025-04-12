@@ -25,7 +25,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary abstract input stream.
  */
-public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
+abstract class BinaryAbstractInputStream extends BinaryAbstractStream
     implements BinaryInputStream {
     /** Length of data inside array. */
     protected int len;
