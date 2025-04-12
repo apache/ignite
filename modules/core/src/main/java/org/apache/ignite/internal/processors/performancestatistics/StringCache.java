@@ -34,25 +34,13 @@ public class StringCache {
     /** Hashcodes of cached strings. */
     private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
 
-    /** Count of cached strings. */
-    private volatile int knownStrsSz;
-
     /** @return {@code True} if string was cached and can be written as hashcode. */
     public boolean cacheIfPossible(String str) {
-        // We can cache slightly more strings then threshold value.
-        // Don't implement solution with synchronization here, because our primary goal is avoid any contention.
-        if (knownStrsSz >= cachedStrsThreshold)
+        if (knownStrs.size() >= cachedStrsThreshold)
             return false;
 
-        int hash = str.hashCode();
-
-        // We can cache slightly more strings then threshold value.
+        // We can cache slightly more strings than threshold value.
         // Don't implement solution with synchronization here, because our primary goal is avoid any contention.
-        if (knownStrs.contains(hash) || !knownStrs.add(hash))
-            return true;
-
-        knownStrsSz = knownStrs.size();
-
-        return false;
+        return !knownStrs.add(str.hashCode());
     }
 }
