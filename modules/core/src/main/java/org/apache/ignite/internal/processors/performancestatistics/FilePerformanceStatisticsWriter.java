@@ -763,7 +763,6 @@ public class FilePerformanceStatisticsWriter {
         private void flush() throws IOException {
             buf.flip();
             fileIo.writeFully(buf);
-            buf.flip();
             buf.clear();
         }
 
