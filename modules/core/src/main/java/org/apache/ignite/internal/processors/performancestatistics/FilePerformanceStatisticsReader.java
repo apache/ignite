@@ -116,8 +116,8 @@ public class FilePerformanceStatisticsReader {
     /** Forward read mode. */
     private ForwardRead forwardRead;
 
-    /** Object for reading system view recors. */
-    private View viewObj;
+    /** Reads system view recors. */
+    private View viewReader;
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -307,7 +307,7 @@ public class FilePerformanceStatisticsReader {
             assert walkerName.str != null : "Views are written by single thread, no string cache misses are possible";
 
             try {
-                viewObj = new View(viewName.str, walkerName.str);
+                viewReader = new View(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
                 throw new IOException("Could not find walker: " + walkerName);
@@ -315,13 +315,13 @@ public class FilePerformanceStatisticsReader {
             return true;
         }
         else if (opType == SYSTEM_VIEW_ROW) {
-            List<Object> row = viewObj.nextRow();
+            List<Object> row = viewReader.nextRow();
 
             if (row == null)
                 return false;
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.systemView(nodeId, viewObj.viewName, viewObj.schema, row);
+                hnd.systemView(nodeId, viewReader.viewName, viewReader.schema, row);
             return true;
         }
         else if (opType == QUERY_READS) {
