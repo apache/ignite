@@ -164,6 +164,17 @@ public class FilePerformanceStatisticsWriter {
         });
     }
 
+    /** */
+    public void start() {
+        new IgniteThread(fileWriter).start();
+        new IgniteThread(sysViewFileWriter).start();
+    }
+
+    /** */
+    public void stop() {
+        U.awaitForWorkersStop(List.of(fileWriter, sysViewFileWriter), true, log);
+    }
+
     /** Writes {@link UUID} to buffer. */
     static void writeUuid(ByteBuffer buf, UUID uuid) {
         buf.putLong(uuid.getMostSignificantBits());
@@ -175,6 +186,23 @@ public class FilePerformanceStatisticsWriter {
         buf.putLong(uuid.globalId().getMostSignificantBits());
         buf.putLong(uuid.globalId().getLeastSignificantBits());
         buf.putLong(uuid.localId());
+    }
+
+    /** */
+    public void rotate() throws IgniteCheckedException, IOException {
+        FileWriter newWriter = new FileWriter(ctx, log);
+        newWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
+
+        new IgniteThread(newWriter).start();
+
+        FileWriter oldWriter = fileWriter;
+
+        fileWriter = newWriter;
+
+        U.awaitForWorkersStop(Collections.singleton(oldWriter), true, log);
+
+        if (log.isInfoEnabled())
+            log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file + "].");
     }
 
     /**
@@ -212,33 +240,6 @@ public class FilePerformanceStatisticsWriter {
         }
 
         return file;
-    }
-
-    /** */
-    public void start() {
-        U.startThreads(List.of(new IgniteThread(fileWriter), new IgniteThread(sysViewFileWriter)));
-    }
-
-    /** */
-    public void stop() {
-        U.awaitForWorkersStop(List.of(fileWriter, sysViewFileWriter), true, log);
-    }
-
-    /** */
-    public void rotate() throws IgniteCheckedException, IOException {
-        FileWriter newWriter = new FileWriter(ctx, log);
-        newWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
-
-        new IgniteThread(newWriter).start();
-
-        FileWriter oldWriter = fileWriter;
-
-        fileWriter = newWriter;
-
-        U.awaitForWorkersStop(Collections.singleton(oldWriter), true, log);
-
-        if (log.isInfoEnabled())
-            log.info("Performance statistics writer rotated[writtenFile=" + oldWriter.file + "].");
     }
 
     /**
