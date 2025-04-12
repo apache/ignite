@@ -667,6 +667,9 @@ public class FilePerformanceStatisticsWriter {
         /** */
         private final GridSystemViewManager sysViewMgr;
 
+        /** Writes system view attributes to {@link SystemViewFileWriter#buf} */
+        private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor;
+
         /**
          * @param ctx Kernal context.
          */
@@ -681,6 +684,8 @@ public class FilePerformanceStatisticsWriter {
             int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
             buf = ByteBuffer.allocateDirect(bufSize);
             buf.order(ByteOrder.LITTLE_ENDIAN);
+
+            valWriterVisitor = new AttributeWithValueWriterVisitor(buf);
         }
 
         /** {@inheritDoc} */
@@ -739,7 +744,7 @@ public class FilePerformanceStatisticsWriter {
         private void writeRowToBuf(Object row, SystemViewRowAttributeWalker<Object> walker) throws IOException {
             doWrite(buf -> {
                 buf.put(SYSTEM_VIEW_ROW.id());
-                walker.visitAll(row, new AttributeWithValueWriterVisitor(buf));
+                walker.visitAll(row, valWriterVisitor);
             });
         }
 
