@@ -212,10 +212,9 @@ public interface GridDhtPartitionTopology {
     public Iterable<GridDhtLocalPartition> currentLocalPartitions();
 
     /**
-     * @param shift Shift start index of partitions to reduce contention, in case of multiple concurrent calls.
-     * @return All current active local partitions.
+     * @return All current active local partitions shifted by random index to reduce contention.
      */
-    public Iterable<GridDhtLocalPartition> currentLocalPartitions(boolean shift);
+    public Iterable<GridDhtLocalPartition> shiftedCurrentLocalPartitions();
 
     /**
      * @return Local IDs.

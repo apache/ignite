@@ -1096,14 +1096,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
-        return currentLocalPartitions(false);
+        return new Iterable<>() {
+            @Override public Iterator<GridDhtLocalPartition> iterator() {
+                return new CurrentPartitionsIterator(0);
+            }
+        };
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions(boolean shift) {
-        return new Iterable<GridDhtLocalPartition>() {
+    @Override public Iterable<GridDhtLocalPartition> shiftedCurrentLocalPartitions() {
+        return new Iterable<>() {
             @Override public Iterator<GridDhtLocalPartition> iterator() {
-                return new CurrentPartitionsIterator(shift);
+                return new CurrentPartitionsIterator(ThreadLocalRandom.current().nextInt(locParts.length()));
             }
         };
     }
@@ -2786,7 +2790,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                for (GridDhtLocalPartition locPart : currentLocalPartitions(false)) {
+                for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
                     if (locPart.state() == MOVING) {
                         boolean reserved = locPart.reserve();
 
@@ -2846,11 +2850,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 part.clearDeferredDeletes();
 
-                List<GridDhtLocalPartition> parts = localPartitions();
-
                 boolean renting = false;
 
-                for (GridDhtLocalPartition part0 : parts) {
+                for (GridDhtLocalPartition part0 : currentLocalPartitions()) {
                     if (part0.state() == RENTING) {
                         renting = true;
 
@@ -3309,10 +3311,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         private GridDhtLocalPartition nextPart;
 
         /**
-         * @param shift If {@code true} then shift start index for {@link #locParts} to reduce partitions contention.
+         * @param shiftIdx Shift start index for {@link #locParts} to reduce partitions contention.
          */
-        private CurrentPartitionsIterator(boolean shift) {
-            shiftIdx = shift ? ThreadLocalRandom.current().nextInt(locParts.length()) : 0;
+        private CurrentPartitionsIterator(int shiftIdx) {
+            this.shiftIdx = shiftIdx;
 
             advance();
         }

@@ -452,11 +452,9 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public List<Integer> getPartitionIds() {
-        List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
+        List<Integer> partsRes = new ArrayList<>();
 
-        List<Integer> partsRes = new ArrayList<>(parts.size());
-
-        for (GridDhtLocalPartition part : parts)
+        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
             partsRes.add(part.id());
 
         return partsRes;

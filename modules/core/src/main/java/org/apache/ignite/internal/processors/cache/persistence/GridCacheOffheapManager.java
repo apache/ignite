@@ -1108,7 +1108,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             int cleared = 0;
 
-            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions(true)) {
+            for (GridDhtLocalPartition part : grp.topology().shiftedCurrentLocalPartitions()) {
                 GridCacheDataStore store = (GridCacheDataStore)part.dataStore();
 
                 if (store.destroyed())
