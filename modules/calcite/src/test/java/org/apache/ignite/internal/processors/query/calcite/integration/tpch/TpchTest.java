@@ -18,16 +18,30 @@
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
 import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
+@WithSystemProperty(key = "IGNITE_CALCITE_PLANNER_TIMEOUT", value = "300000")
 public class TpchTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final int CNT = 15;
+
+    /** */
+    private static final int WARM = 3;
+
     /** Query ID. */
     @Parameterized.Parameter
     public int qryId;
@@ -59,18 +73,70 @@ public class TpchTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void test() {
-        String q = TpchHelper.getQuery(qryId);
+        if (qryId == 15) {
+            sql("create OR REPLACE view revenue0 as\n" +
+                "    select\n" +
+                "        l_suppkey as supplier_no,\n" +
+                "        sum(l_extendedprice * (1 - l_discount)) as total_revenue\n" +
+                "    from\n" +
+                "        lineitem\n" +
+                "    where\n" +
+                "        l_shipdate >= date '1996-01-01'\n" +
+                "        and l_shipdate < TIMESTAMPADD(MONTH, 3, date '1996-01-01')\n" +
+                "    group by\n" +
+                "        l_suppkey;");
+        }
 
-        long t1 = System.nanoTime();
+        long avg = 0;
+        long avgCached = 0;
+        long plannning = 0;
 
-        sql(q);
+        for (int i = 0; i < CNT; ++i) {
+            if (i == 0)
+                plannning = System.nanoTime();
 
-        log.error("TEST | first: " + U.nanosToMillis(System.nanoTime() - t1));
+            long tt = sqlTiming(TpchHelper.getQuery(qryId));
 
-        t1 = System.nanoTime();
+            if (i == 0)
+                plannning = U.nanosToMillis(System.nanoTime() - plannning);
 
-        sql(q);
+            avg += tt;
 
-        log.error("TEST | second: " + U.nanosToMillis(System.nanoTime() - t1));
+            if (i >= WARM - 1)
+                avgCached += tt;
+        }
+
+        avg /= CNT;
+        avgCached /= (CNT - WARM);
+
+        if (log.isInfoEnabled())
+            log.info("TEST | avg: " + avg + ", planning: " + plannning + ", avgCached: " + avgCached);
+    }
+
+    /** */
+    protected long sqlTiming(String sql, Object... params) {
+        return sqlTiming(client, sql, params);
+    }
+
+    /** */
+    protected long sqlTiming(IgniteEx ignite, String sql, Object... params) {
+        CalciteQueryProcessor qProc = queryProcessor(ignite);
+        QueryContext qCtx = queryContext();
+
+        long t = System.nanoTime();
+
+        List<FieldsQueryCursor<List<?>>> cur = qProc.query(qCtx, "PUBLIC", sql, params);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            srvCursor.getAll();
+        }
+        finally {
+            t = U.nanosToMillis(System.nanoTime() - t);
+        }
+
+        if (log.isInfoEnabled())
+            log.info("TEST | Query millis: " + t);
+
+        return t;
     }
 }
