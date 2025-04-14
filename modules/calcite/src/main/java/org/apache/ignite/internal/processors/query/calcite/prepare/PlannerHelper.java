@@ -127,7 +127,7 @@ public class PlannerHelper {
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
-            rel = planner.extractConjunctionOverDisjunctionCommonPart(rel);
+            // rel = planner.extractConjunctionOverDisjunctionCommonPart(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
@@ -141,7 +141,7 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
-            rel = optimizeJoinsOrder(planner, rel, topHints);
+            //rel = optimizeJoinsOrder(planner, rel, topHints);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)

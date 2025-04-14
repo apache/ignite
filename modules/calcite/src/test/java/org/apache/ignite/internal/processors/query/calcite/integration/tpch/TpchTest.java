@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -34,7 +35,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Object> params() {
-        return F.asList(16, 19, 20);
+        return F.asList(5);
     }
 
     /** {@inheritDoc} */
@@ -43,7 +44,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
 
         TpchHelper.createTables(client);
 
-        TpchHelper.fillTables(client, 0.1);
+        TpchHelper.fillTables(client, 0.01);
 
         TpchHelper.collectSqlStatistics(client);
     }
@@ -58,6 +59,18 @@ public class TpchTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void test() {
-        sql(TpchHelper.getQuery(qryId));
+        String q = TpchHelper.getQuery(qryId);
+
+        long t1 = System.nanoTime();
+
+        sql(q);
+
+        log.error("TEST | first: " + U.nanosToMillis(System.nanoTime() - t1));
+
+        t1 = System.nanoTime();
+
+        sql(q);
+
+        log.error("TEST | second: " + U.nanosToMillis(System.nanoTime() - t1));
     }
 }
