@@ -3910,7 +3910,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
 
-        int locPartsCnt = ig.cachex(DEFAULT_CACHE_NAME).context().topology().localPartitions().size();
+        int locPartsCnt = ig.cachex(DEFAULT_CACHE_NAME).context().topology().localPartitionsNumber();
 
         ig.destroyCache(DEFAULT_CACHE_NAME);
         awaitPartitionMapExchange();
