@@ -80,7 +80,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1477,105 +1476,6 @@ public class GridFunc extends GridCommonFunc {
             }
 
         return b;
-    }
-
-    /**
-     * Factory method returning new tuple with given parameter.
-     *
-     * @param v Parameter for tuple.
-     * @param <V> Type of the tuple.
-     * @return Newly created tuple.
-     */
-    public static <V> GridTuple<V> t(@Nullable V v) {
-        return new GridTuple<>(v);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2> IgniteBiTuple<V1, V2> t(@Nullable V1 v1, @Nullable V2 v2) {
-        return new IgniteBiTuple<>(v1, v2);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3> GridTuple3<V1, V2, V3> t(@Nullable V1 v1, @Nullable V2 v2, @Nullable V3 v3) {
-        return new GridTuple3<>(v1, v2, v3);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param v4 4th parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3, V4> GridTuple4<V1, V2, V3, V4> t(@Nullable V1 v1, @Nullable V2 v2, @Nullable V3 v3,
-        @Nullable V4 v4) {
-        return new GridTuple4<>(v1, v2, v3, v4);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param v4 4th parameter for tuple.
-     * @param v5 5th parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @param <V5> Type of the 5th tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3, V4, V5> GridTuple5<V1, V2, V3, V4, V5> t(@Nullable V1 v1, @Nullable V2 v2,
-        @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5) {
-        return new GridTuple5<>(v1, v2, v3, v4, v5);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param v4 4th parameter for tuple.
-     * @param v5 5th parameter for tuple.
-     * @param v6 5th parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @param <V5> Type of the 5th tuple parameter.
-     * @param <V6> Type of the 6th tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t(@Nullable V1 v1, @Nullable V2 v2,
-        @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5, @Nullable V6 v6) {
-        return new GridTuple6<>(v1, v2, v3, v4, v5, v6);
     }
 
     /**
