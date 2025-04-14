@@ -670,6 +670,9 @@ public class FilePerformanceStatisticsWriter {
         private final ByteBuffer buf;
 
         /** */
+        private final int flushSize;
+
+        /** */
         private final GridSystemViewManager sysViewMgr;
 
         /** Writes system view attributes to {@link SystemViewFileWriter#buf} */
@@ -689,6 +692,8 @@ public class FilePerformanceStatisticsWriter {
             int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
             buf = ByteBuffer.allocateDirect(bufSize);
             buf.order(ByteOrder.LITTLE_ENDIAN);
+
+            flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
             valWriterVisitor = new AttributeWithValueWriterVisitor(buf);
         }
@@ -761,6 +766,9 @@ public class FilePerformanceStatisticsWriter {
             int beginPos = buf.position();
             try {
                 consumer.accept(buf);
+
+                if (buf.position() > flushSize)
+                    flush();
             }
             catch (BufferOverflowException e) {
                 buf.position(beginPos);
