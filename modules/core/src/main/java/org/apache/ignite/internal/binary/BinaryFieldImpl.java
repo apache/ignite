@@ -103,13 +103,6 @@ public class BinaryFieldImpl implements BinaryField {
     }
 
     /**
-     * @return Type ID this field relates to.
-     */
-    public int typeId() {
-        return typeId;
-    }
-
-    /**
      * Get relative field offset.
      *
      * @param obj Object.
