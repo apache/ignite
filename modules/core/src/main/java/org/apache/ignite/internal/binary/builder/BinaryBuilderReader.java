@@ -41,7 +41,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  *
  */
-public class BinaryBuilderReader implements BinaryPositionReadable {
+class BinaryBuilderReader implements BinaryPositionReadable {
     /** */
     private final BinaryContext ctx;
 

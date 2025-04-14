@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 /**
  *
  */
-public class BinaryModifiableLazyValue extends BinaryAbstractLazyValue {
+class BinaryModifiableLazyValue extends BinaryAbstractLazyValue {
     /** */
     protected final int len;
 
