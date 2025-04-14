@@ -20,55 +20,46 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Light-weight view on given collection with provided predicate.
+ * Wrapper which iterable over the elements of the inner collections.
  *
- * @param <T1> Element type after transformation.
- * @param <T2> Element type.
+ * @param <T> Type of the inner collections.
  */
-public class TransformCollectionView<T1, T2> extends GridSerializableCollection<T1> {
+public class FlatCollectionWrapper<T> extends GridSerializableCollection<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Collection<? extends T2> col;
-
-    /** */
-    private final IgniteClosure<? super T2, T1> clos;
-
-    /** */
-    private final IgnitePredicate<? super T2>[] preds;
+    private final Collection<? extends Collection<T>> cols;
 
     /**
-     * @param col Input collection that serves as a base for the view.
-     * @param clos Transformation closure.
-     * @param preds Optional predicated. If predicates are not provided - all elements will be in the view.
+     * @param cols Input collection of collections.
      */
-    @SafeVarargs
-    public TransformCollectionView(Collection<? extends T2> col,
-        IgniteClosure<? super T2, T1> clos, IgnitePredicate<? super T2>... preds) {
-        this.col = col;
-        this.clos = clos;
-        this.preds = preds;
+    public FlatCollectionWrapper(Collection<? extends Collection<T>> cols) {
+        this.cols = cols;
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T1> iterator() {
-        return F.<T2, T1>iterator(col, clos, true, preds);
+    @NotNull @Override public Iterator<T> iterator() {
+        return CF.flat((Iterable<? extends Iterable<T>>)cols);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return F.isEmpty(preds) ? col.size() : F.size(iterator());
+        return CF.size(iterator());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return F.isEmpty(preds) ? col.isEmpty() : !iterator().hasNext();
+        return !iterator().hasNext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(FlatCollectionWrapper.class, this);
     }
 }

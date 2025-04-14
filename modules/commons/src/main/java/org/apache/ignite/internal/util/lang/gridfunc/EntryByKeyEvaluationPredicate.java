@@ -17,36 +17,37 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import org.apache.ignite.internal.util.lang.GridFunc;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Predicate that evaluates to {@code true} if each of its component preds evaluates to {@code true}.
- *
- * @param <T> Type of the free variable, i.e. the element the predicate is called on.
+ * Predicate evaluates to true for given value.
+ * Note that evaluation will be short-circuit when first predicate evaluated to false is found.
  */
-public class IsAllPredicate<T> implements IgnitePredicate<T> {
+public class EntryByKeyEvaluationPredicate<K, V> implements IgnitePredicate<Map.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgnitePredicate<? super T>[] preds;
+    private final IgnitePredicate<? super K>[] preds;
 
     /**
-     * @param preds Passed in predicate. If none provided - always-{@code false} predicate is returned.
+     * @param preds Optional set of predicates to use for filtration. If none provided - original map (or its copy) will be
+     * returned.
      */
-    public IsAllPredicate(IgnitePredicate<? super T>... preds) {
+    public EntryByKeyEvaluationPredicate(IgnitePredicate<? super K>... preds) {
         this.preds = preds;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(T t) {
-        return GridFunc.isAll(t, preds);
+    @Override public boolean apply(Map.Entry<K, V> e) {
+        return CF.isAll(e.getKey(), preds);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IsAllPredicate.class, this);
+        return S.toString(EntryByKeyEvaluationPredicate.class, this);
     }
 }

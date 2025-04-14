@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PX2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -38,7 +37,7 @@ public abstract class IgnitePredicate2X<E1, E2> implements IgniteBiPredicate<E1,
             return applyx(e1, e2);
         }
         catch (IgniteCheckedException ex) {
-            throw F.wrap(ex);
+            throw new GridClosureException(ex);
         }
     }
 

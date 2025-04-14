@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -59,7 +59,7 @@ public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
      */
     @Deprecated
     public GridLeanSet(Collection<E> c) {
-        super(new GridLeanMap<>(F.zip(c, VAL)));
+        super(new GridLeanMap<>(CF.zip(c, VAL)));
     }
 
     /** {@inheritDoc} */

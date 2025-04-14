@@ -17,37 +17,36 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import java.util.Map;
-import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Predicate evaluates to true for given value.
- * Note that evaluation will be short-circuit when first predicate evaluated to false is found.
+ * Negated predicate.
+ *
+ * @param <T> Type of the free variable, i.e. the element the predicate is called on.
  */
-public class EntryByKeyEvaluationPredicate<K, V> implements IgnitePredicate<Map.Entry<K, V>> {
+public class IsNotAllPredicate<T> implements IgnitePredicate<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgnitePredicate<? super K>[] preds;
+    private final IgnitePredicate<? super T>[] preds;
 
     /**
-     * @param preds Optional set of predicates to use for filtration. If none provided - original map (or its copy) will be
-     * returned.
+     * @param preds Predicate to negate.
      */
-    public EntryByKeyEvaluationPredicate(IgnitePredicate<? super K>... preds) {
+    public IsNotAllPredicate(IgnitePredicate<? super T>... preds) {
         this.preds = preds;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Map.Entry<K, V> e) {
-        return GridFunc.isAll(e.getKey(), preds);
+    @Override public boolean apply(T t) {
+        return !CF.isAll(t, preds);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(EntryByKeyEvaluationPredicate.class, this);
+        return S.toString(IsNotAllPredicate.class, this);
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.lang;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -288,7 +287,7 @@ public class GridMetadataAwareAdapter {
                     addMeta(key, v = c.call());
                 }
                 catch (Exception e) {
-                    throw F.wrap(e);
+                    throw new GridClosureException(e);
                 }
 
             return v;

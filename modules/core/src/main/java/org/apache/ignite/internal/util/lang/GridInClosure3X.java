@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.CIX3;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Convenient in-closure subclass that allows for thrown grid exception. This class
@@ -35,7 +34,7 @@ public abstract class GridInClosure3X<E1, E2, E3> implements GridInClosure3<E1, 
             applyx(e1, e2, e3);
         }
         catch (IgniteCheckedException e) {
-            throw F.wrap(e);
+            throw new GridClosureException(e);
         }
     }
 

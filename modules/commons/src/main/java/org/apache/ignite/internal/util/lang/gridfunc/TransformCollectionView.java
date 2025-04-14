@@ -20,54 +20,55 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
-import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Light-weight view on given col with provided predicate.
+ * Light-weight view on given collection with provided predicate.
  *
- * @param <T> Type of the col.
+ * @param <T1> Element type after transformation.
+ * @param <T2> Element type.
  */
-public class PredicateCollectionView<T> extends GridSerializableCollection<T> {
+public class TransformCollectionView<T1, T2> extends GridSerializableCollection<T1> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Collection<T> col;
+    private final Collection<? extends T2> col;
 
     /** */
-    private final IgnitePredicate<? super T>[] preds;
+    private final IgniteClosure<? super T2, T1> clos;
+
+    /** */
+    private final IgnitePredicate<? super T2>[] preds;
 
     /**
-     * @param col Input col that serves as a base for the view.
-     * @param preds Optional preds. If preds are not provided - all elements will be in the view.
+     * @param col Input collection that serves as a base for the view.
+     * @param clos Transformation closure.
+     * @param preds Optional predicated. If predicates are not provided - all elements will be in the view.
      */
     @SafeVarargs
-    public PredicateCollectionView(Collection<T> col, IgnitePredicate<? super T>... preds) {
+    public TransformCollectionView(Collection<? extends T2> col,
+        IgniteClosure<? super T2, T1> clos, IgnitePredicate<? super T2>... preds) {
         this.col = col;
+        this.clos = clos;
         this.preds = preds;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean add(T e) {
-        // Pass through (will fail for readonly).
-        return GridFunc.isAll(e, preds) && col.add(e);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
-        return F.iterator0(col, false, preds);
+    @NotNull @Override public Iterator<T1> iterator() {
+        return CF.<T2, T1>iterator(col, clos, true, preds);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return F.size(col, preds);
+        return CF.isEmpty(preds) ? col.size() : CF.size(iterator());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return F.isEmpty(preds) ? col.isEmpty() : !iterator().hasNext();
+        return CF.isEmpty(preds) ? col.isEmpty() : !iterator().hasNext();
     }
 }

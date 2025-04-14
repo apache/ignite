@@ -17,50 +17,36 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import java.util.Collection;
-import java.util.Iterator;
-import org.apache.ignite.internal.util.GridSerializableCollection;
-import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Wrapper which iterable over the elements of the inner collections.
+ * Predicate that evaluates to {@code true} if each of its component preds evaluates to {@code true}.
  *
- * @param <T> Type of the inner collections.
+ * @param <T> Type of the free variable, i.e. the element the predicate is called on.
  */
-public class FlatCollectionWrapper<T> extends GridSerializableCollection<T> {
+public class IsAllPredicate<T> implements IgnitePredicate<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Collection<? extends Collection<T>> cols;
+    private final IgnitePredicate<? super T>[] preds;
 
     /**
-     * @param cols Input collection of collections.
+     * @param preds Passed in predicate. If none provided - always-{@code false} predicate is returned.
      */
-    public FlatCollectionWrapper(Collection<? extends Collection<T>> cols) {
-        this.cols = cols;
+    public IsAllPredicate(IgnitePredicate<? super T>... preds) {
+        this.preds = preds;
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
-        return GridFunc.flat((Iterable<? extends Iterable<T>>)cols);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() {
-        return F.size(iterator());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        return !iterator().hasNext();
+    @Override public boolean apply(T t) {
+        return CF.isAll(t, preds);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(FlatCollectionWrapper.class, this);
+        return S.toString(IsAllPredicate.class, this);
     }
 }

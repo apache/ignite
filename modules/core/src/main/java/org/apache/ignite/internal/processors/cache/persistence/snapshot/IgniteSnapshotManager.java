@@ -894,7 +894,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             markWalFut
         )).chain(fut -> {
             if (fut.error() != null)
-                throw F.wrap(fut.error());
+                throw new GridClosureException(fut.error());
 
             assert ift.root().exists() : "Incremental snapshot directory must exists";
 
@@ -1014,7 +1014,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         return task0.chain(() -> {
             if (task0.error() != null)
-                throw F.wrap(task0.error());
+                throw new GridClosureException(task0.error());
 
             try {
                 Set<String> blts = req.nodes().stream()
@@ -1059,7 +1059,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IgniteCheckedException e) {
-                throw F.wrap(e);
+                throw new GridClosureException(e);
             }
         }, snapshotExecutorService());
     }
@@ -1267,7 +1267,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
             }
             catch (Exception e) {
-                throw F.wrap(e);
+                throw new GridClosureException(e);
             }
 
             return new SnapshotOperationResponse();

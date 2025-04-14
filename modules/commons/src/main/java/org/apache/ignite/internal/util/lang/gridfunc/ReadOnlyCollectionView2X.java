@@ -21,54 +21,54 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.GridSerializableIterator;
-import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Collection wrapper.
+ * Collections wrapper.
  * A read-only view will be created over the element and given
- * col and no copying will happen.
+ * collections and no copying will happen.
  *
  * @param <T> Element type.
  */
-public class ReadOnlyCollectionView<T> extends GridSerializableCollection<T> {
+public class ReadOnlyCollectionView2X<T> extends GridSerializableCollection<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Collection. */
-    private final Collection<T> col;
+    /** First collection. */
+    private final Collection<? extends T> c1;
 
-    /** First element in the col. */
-    private final T elem;
+    /** SecondCollection. */
+    private final Collection<? extends T> c2;
 
     /**
-     * @param col Collection to wrap.
-     * @param elem First element.
+     * @param c1 First collection.
+     * @param c2 SecondCollection.
      */
-    public ReadOnlyCollectionView(@NotNull Collection<T> col, @NotNull T elem) {
-        this.col = col;
-        this.elem = elem;
+    public ReadOnlyCollectionView2X(Collection<? extends T> c1, Collection<? extends T> c2) {
+        this.c1 = c1;
+        this.c2 = c2;
     }
 
     /** {@inheritDoc} */
     @NotNull
     @Override public Iterator<T> iterator() {
         return new GridSerializableIterator<T>() {
-            private Iterator<T> it;
+            private Iterator<? extends T> it1 = c1.iterator();
+            private Iterator<? extends T> it2 = c2.iterator();
 
             @Override public boolean hasNext() {
-                return it == null || it.hasNext();
+                if (it1 != null)
+                    if (!it1.hasNext())
+                        it1 = null;
+                    else
+                        return true;
+
+                return it2.hasNext();
             }
 
-            @Nullable @Override public T next() {
-                if (it == null) {
-                    it = col.iterator();
-
-                    return elem;
-                }
-
-                return it.next();
+            @Override public T next() {
+                return it1 != null ? it1.next() : it2.next();
             }
 
             @Override public void remove() {
@@ -78,12 +78,17 @@ public class ReadOnlyCollectionView<T> extends GridSerializableCollection<T> {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean contains(Object o) {
+        return c1.contains(o) || c2.contains(o);
+    }
+
+    /** {@inheritDoc} */
     @Override public int size() {
-        return col.size() + 1;
+        return c1.size() + c2.size();
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj instanceof Collection && GridFunc.eqNotOrdered(this, (Collection)obj);
+        return obj instanceof Collection && CF.eqNotOrdered(this, (Collection<?>)obj);
     }
 }

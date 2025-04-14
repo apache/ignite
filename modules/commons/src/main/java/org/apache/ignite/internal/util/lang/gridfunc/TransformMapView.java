@@ -22,8 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
-import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.CF;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +75,7 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
             @NotNull
             @Override public Iterator<Entry<K, V1>> iterator() {
                 return new Iterator<Entry<K, V1>>() {
-                    private Iterator<Entry<K, V>> iter = GridFunc.iterator0(map.entrySet(), true, entryPred);
+                    private Iterator<Entry<K, V>> iter = CF.iterator0(map.entrySet(), true, entryPred);
 
                     @Override public boolean hasNext() {
                         return iter.hasNext();
@@ -107,7 +106,7 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
             }
 
             @Override public int size() {
-                return hasPred ? F.size(map.keySet(), preds) : map.size();
+                return hasPred ? CF.size(map.keySet(), preds) : map.size();
             }
 
             @Override public boolean remove(Object o) {
@@ -115,7 +114,7 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
             }
 
             @Override public boolean contains(Object o) {
-                return F.isAll((Entry<K, V>)o, entryPred) && map.entrySet().contains(o);
+                return CF.isAll((Entry<K, V>)o, entryPred) && map.entrySet().contains(o);
             }
 
             @Override public boolean isEmpty() {
@@ -131,7 +130,7 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
 
     /** {@inheritDoc} */
     @Nullable @Override public V1 get(Object key) {
-        if (GridFunc.isAll((K)key, preds)) {
+        if (CF.isAll((K)key, preds)) {
             V v = map.get(key);
 
             if (v != null)
@@ -153,6 +152,6 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(Object key) {
-        return GridFunc.isAll((K)key, preds) && map.containsKey(key);
+        return CF.isAll((K)key, preds) && map.containsKey(key);
     }
 }

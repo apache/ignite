@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.CIX2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
@@ -38,7 +37,7 @@ public abstract class IgniteInClosure2X<E1, E2> implements IgniteBiInClosure<E1,
             applyx(e1, e2);
         }
         catch (IgniteCheckedException e) {
-            throw F.wrap(e);
+            throw new GridClosureException(e);
         }
     }
 

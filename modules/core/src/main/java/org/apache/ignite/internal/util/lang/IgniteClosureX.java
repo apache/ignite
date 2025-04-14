@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.CX1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 
 /**
@@ -38,7 +37,7 @@ public abstract class IgniteClosureX<E, R> implements IgniteClosure<E, R> {
             return applyx(e);
         }
         catch (IgniteCheckedException ex) {
-            throw F.wrap(ex);
+            throw new GridClosureException(ex);
         }
     }
 
