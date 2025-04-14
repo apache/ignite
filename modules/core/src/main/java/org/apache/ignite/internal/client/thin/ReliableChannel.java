@@ -314,18 +314,14 @@ final class ReliableChannel implements AutoCloseable {
         return ch.serviceAsync(op, payloadWriter, payloadReader);
     }
 
-
-    /**
-     * Executes an async operation on a client channel with retry logic and failure handling.
-     */
+    /** */
     private <T> Object applyOnClientChannelAsync(
         final CompletableFuture<T> fut,
         ClientChannel ch,
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
-        List<ClientConnectionException> failures,
-        boolean isRetryAttempt
+        List<ClientConnectionException> failures
     ) {
         return ch
             .serviceAsync(op, payloadWriter, payloadReader)
@@ -338,47 +334,26 @@ final class ReliableChannel implements AutoCloseable {
 
                 if (err instanceof ClientConnectionException) {
                     ClientConnectionException failure0 = (ClientConnectionException)err;
+
                     failures.add(failure0);
 
-                    ClientChannelHolder hld = null;
-
-                    for (ClientChannelHolder holder : channels) {
-                        if (holder.ch == ch) {
-                            hld = holder;
-                            break;
-                        }
-                    }
-
                     try {
-                        onChannelFailure(hld, ch, err, failures);
-
-                        // Try to reconnect to the same channel first if this is
-                        // the first failure and retry policy allows it
-                        if (hld != null && !isRetryAttempt && shouldRetry(op, F.size(failures) - 1, failure0)) {
-                            try {
-                                ClientChannel newChannel = hld.getOrCreateChannel();
-                                return applyOnClientChannelAsync(
-                                    fut,
-                                    newChannel,
-                                    op,
-                                    payloadWriter,
-                                    payloadReader,
-                                    failures,
-                                    true
-                                );
-                            }
-                            catch (ClientConnectionException reconnectEx) {
-                                failures.add(reconnectEx);
-                                onChannelFailure(hld, null, reconnectEx, failures);
-                            }
-                        }
-
-                        // Try other channels
-                        tryOtherChannels(fut, op, payloadWriter, payloadReader, failures, failure0);
+                        // Will try to reinit channels if topology changed.
+                        onChannelFailure(ch, err, failures);
                     }
-                    catch (ClientConnectionException ex) {
+                    catch (Throwable ex) {
                         fut.completeExceptionally(ex);
+
+                        return null;
                     }
+
+                    if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
+                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+
+                        return null;
+                    }
+
+                    fut.completeExceptionally(composeException(failures));
                 }
                 else
                     fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
@@ -482,7 +457,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 Object result = applyOnNodeChannel(
                     affNodeId,
-                    channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader),
+                    channel -> applyOnClientChannelAsync(channel, op, payloadWriter, payloadReader),
                     failures
                 );
 
