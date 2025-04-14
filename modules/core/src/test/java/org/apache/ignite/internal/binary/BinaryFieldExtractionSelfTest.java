@@ -19,9 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.sql.Time;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,70 +61,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPrimitiveMarshalling() throws Exception {
-        BinaryMarshaller marsh = createMarshaller();
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        TestObject obj = new TestObject(0);
-
-        BinaryObjectImpl binObj = toBinary(obj, marsh);
-
-        BinaryFieldEx[] fields = new BinaryFieldEx[] {
-            (BinaryFieldEx)binObj.type().field("bVal"),
-            (BinaryFieldEx)binObj.type().field("cVal"),
-            (BinaryFieldEx)binObj.type().field("sVal"),
-            (BinaryFieldEx)binObj.type().field("iVal"),
-            (BinaryFieldEx)binObj.type().field("lVal"),
-            (BinaryFieldEx)binObj.type().field("fVal"),
-            (BinaryFieldEx)binObj.type().field("dVal")
-        };
-
-        ByteBuffer buf = ByteBuffer.allocate(1024 * 1024);
-
-        for (int i = 0; i < 100; i++) {
-            TestObject to = new TestObject(rnd.nextLong());
-
-            BinaryObjectImpl bObj = toBinary(to, marsh);
-
-            for (BinaryFieldEx field : fields)
-                field.writeField(bObj, buf);
-
-            buf.flip();
-
-            for (BinaryFieldEx field : fields)
-                assertEquals((Object)field.value(bObj), field.readField(buf));
-
-            buf.flip();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTimeMarshalling() throws Exception {
-        BinaryMarshaller marsh = createMarshaller();
-
-        TimeValue obj = new TimeValue(11111L);
-
-        BinaryObjectImpl binObj = toBinary(obj, marsh);
-
-        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("time");
-
-        ByteBuffer buf = ByteBuffer.allocate(16);
-
-        field.writeField(binObj, buf);
-
-        buf.flip();
-
-        assertEquals(field.value(binObj), field.<Time>readField(buf));
-    }
-
-    /**
      * Checking the exception and its text when changing the typeId of a
      * BinaryField.
      *
@@ -142,7 +76,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
         BinaryObjectImpl decimalValBinObj = toBinary(decimalVal, marsh);
 
-        BinaryFieldEx timeBinField = (BinaryFieldEx)timeValBinObj.type().field("time");
+        BinaryFieldImpl timeBinField = (BinaryFieldImpl)timeValBinObj.type().field("time");
 
         Field typeIdField = U.findField(timeBinField.getClass(), "typeId");
         typeIdField.set(timeBinField, decimalValBinObj.typeId());
@@ -174,7 +108,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
 
-        BinaryFieldEx timeBinField = (BinaryFieldEx)timeValBinObj.type().field("time");
+        BinaryFieldImpl timeBinField = (BinaryFieldImpl)timeValBinObj.type().field("time");
 
         int newTypeId = timeValBinObj.typeId() + 1;
 
@@ -209,7 +143,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
 
-        BinaryFieldEx timeBinField = (BinaryFieldEx)timeValBinObj.type().field("time");
+        BinaryFieldImpl timeBinField = (BinaryFieldImpl)timeValBinObj.type().field("time");
 
         int beforeTypeId = timeValBinObj.typeId();
 
@@ -233,41 +167,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         );
 
         assertThrows(log, () -> timeBinField.value(timeValBinObj), BinaryObjectException.class, expMsg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDecimalFieldMarshalling() throws Exception {
-        BinaryMarshaller marsh = createMarshaller();
-
-        BigDecimal values[] = new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.TEN,
-            new BigDecimal("-100.5"), BigDecimal.valueOf(Long.MAX_VALUE, 0),
-            BigDecimal.valueOf(Long.MIN_VALUE, 0), BigDecimal.valueOf(Long.MAX_VALUE, 8),
-            BigDecimal.valueOf(Long.MIN_VALUE, 8)};
-
-        DecimalValue decVal = new DecimalValue(values[0]);
-
-        BinaryObjectImpl binObj = toBinary(decVal, marsh);
-
-        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("decVal");
-
-        ByteBuffer buf = ByteBuffer.allocate(64);
-
-        for (BigDecimal val : values) {
-            decVal = new DecimalValue(val);
-
-            binObj = toBinary(decVal, marsh);
-
-            field.writeField(binObj, buf);
-
-            buf.flip();
-
-            assertEquals((Object)field.value(binObj), field.readField(buf));
-
-            buf.clear();
-        }
     }
 
     /**
