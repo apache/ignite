@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
@@ -1275,7 +1276,7 @@ public class BinaryContext {
      * @param fieldName Field name.
      * @return Binary field.
      */
-    public BinaryFieldImpl createField(int typeId, String fieldName) {
+    public BinaryField createField(int typeId, String fieldName) {
         BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
         BinaryInternalMapper mapper = userTypeMapper(typeId);

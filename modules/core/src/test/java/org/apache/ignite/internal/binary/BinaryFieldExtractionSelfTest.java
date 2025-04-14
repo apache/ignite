@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Time;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -76,7 +77,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
         BinaryObjectImpl decimalValBinObj = toBinary(decimalVal, marsh);
 
-        BinaryFieldImpl timeBinField = (BinaryFieldImpl)timeValBinObj.type().field("time");
+        BinaryField timeBinField = timeValBinObj.type().field("time");
 
         Field typeIdField = U.findField(timeBinField.getClass(), "typeId");
         typeIdField.set(timeBinField, decimalValBinObj.typeId());
@@ -108,7 +109,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
 
-        BinaryFieldImpl timeBinField = (BinaryFieldImpl)timeValBinObj.type().field("time");
+        BinaryField timeBinField = timeValBinObj.type().field("time");
 
         int newTypeId = timeValBinObj.typeId() + 1;
 
@@ -143,7 +144,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
 
-        BinaryFieldImpl timeBinField = (BinaryFieldImpl)timeValBinObj.type().field("time");
+        BinaryField timeBinField = timeValBinObj.type().field("time");
 
         int beforeTypeId = timeValBinObj.typeId();
 
