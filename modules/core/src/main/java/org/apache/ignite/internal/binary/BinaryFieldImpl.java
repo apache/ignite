@@ -17,29 +17,19 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.UUID;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.nonNull;
 
 /**
  * Implementation of binary field descriptor.
  */
-class BinaryFieldImpl implements BinaryFieldEx {
+class BinaryFieldImpl implements BinaryField {
     /** Binary context that created this field. */
     private final BinaryContext ctx;
 
@@ -110,169 +100,6 @@ class BinaryFieldImpl implements BinaryFieldEx {
         int order = fieldOrder(obj0);
 
         return order != BinarySchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int typeId() {
-        return typeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeField(BinaryObject obj, ByteBuffer buf) {
-        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
-
-        int order = fieldOrder(obj0);
-
-        return obj0.writeFieldByOrder(order, buf);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <F> F readField(ByteBuffer buf) {
-        ByteOrder oldOrder = buf.order();
-
-        try {
-            buf.order(ByteOrder.LITTLE_ENDIAN);
-
-            int pos = buf.position();
-
-            byte hdr = buf.get();
-
-            Object val;
-
-            switch (hdr) {
-                case GridBinaryMarshaller.INT:
-                    val = buf.getInt();
-
-                    break;
-
-                case GridBinaryMarshaller.LONG:
-                    val = buf.getLong();
-
-                    break;
-
-                case GridBinaryMarshaller.BOOLEAN:
-                    val = buf.get() != 0;
-
-                    break;
-
-                case GridBinaryMarshaller.SHORT:
-                    val = buf.getShort();
-
-                    break;
-
-                case GridBinaryMarshaller.BYTE:
-                    val = buf.get();
-
-                    break;
-
-                case GridBinaryMarshaller.CHAR:
-                    val = buf.getChar();
-
-                    break;
-
-                case GridBinaryMarshaller.FLOAT:
-                    val = buf.getFloat();
-
-                    break;
-
-                case GridBinaryMarshaller.DOUBLE:
-                    val = buf.getDouble();
-
-                    break;
-
-                case GridBinaryMarshaller.STRING: {
-                    int dataLen = buf.getInt();
-
-                    byte[] data = new byte[dataLen];
-
-                    buf.get(data);
-
-                    val = new String(data, 0, dataLen, UTF_8);
-
-                    break;
-                }
-
-                case GridBinaryMarshaller.DATE: {
-                    long time = buf.getLong();
-
-                    val = new Date(time);
-
-                    break;
-                }
-
-                case GridBinaryMarshaller.TIMESTAMP: {
-                    long time = buf.getLong();
-                    int nanos = buf.getInt();
-
-                    Timestamp ts = new Timestamp(time);
-
-                    ts.setNanos(ts.getNanos() + nanos);
-
-                    val = ts;
-
-                    break;
-                }
-
-                case GridBinaryMarshaller.TIME: {
-                    long time = buf.getLong();
-
-                    val = new Time(time);
-
-                    break;
-                }
-
-                case GridBinaryMarshaller.UUID: {
-                    long most = buf.getLong();
-                    long least = buf.getLong();
-
-                    val = new UUID(most, least);
-
-                    break;
-                }
-
-                case GridBinaryMarshaller.DECIMAL: {
-                    int scale = buf.getInt();
-
-                    int dataLen = buf.getInt();
-
-                    byte[] data = new byte[dataLen];
-
-                    buf.get(data);
-
-                    boolean negative = data[0] < 0;
-
-                    if (negative)
-                        data[0] &= 0x7F;
-
-                    BigInteger intVal = new BigInteger(data);
-
-                    if (negative)
-                        intVal = intVal.negate();
-
-                    val = new BigDecimal(intVal, scale);
-
-                    break;
-                }
-
-                case GridBinaryMarshaller.NULL:
-                    val = null;
-
-                    break;
-
-                default:
-                    // Restore buffer position.
-                    buf.position(pos);
-
-                    val = BinaryUtils.unmarshal(BinaryByteBufferInputStream.create(buf), ctx, null);
-
-                    break;
-            }
-
-            return (F)val;
-        }
-        finally {
-            buf.order(oldOrder);
-        }
     }
 
     /**
