@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Field accessor to speedup access.
  */
-public abstract class BinaryFieldAccessor {
+abstract class BinaryFieldAccessor {
     /** Field ID. */
     protected final int id;
 

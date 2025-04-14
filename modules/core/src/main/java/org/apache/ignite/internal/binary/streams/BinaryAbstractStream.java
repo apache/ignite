@@ -20,12 +20,12 @@ package org.apache.ignite.internal.binary.streams;
 /**
  * Binary abstract stream.
  */
-public abstract class BinaryAbstractStream implements BinaryStream {
+abstract class BinaryAbstractStream implements BinaryStream {
     /** Byte: zero. */
-    protected static final byte BYTE_ZERO = 0;
+    static final byte BYTE_ZERO = 0;
 
     /** Byte: one. */
-    protected static final byte BYTE_ONE = 1;
+    static final byte BYTE_ONE = 1;
 
     /** Position. */
     protected int pos;

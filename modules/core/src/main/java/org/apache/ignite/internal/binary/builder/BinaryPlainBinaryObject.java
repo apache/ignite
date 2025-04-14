@@ -25,7 +25,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 /**
  *
  */
-public class BinaryPlainBinaryObject implements BinaryLazyValue {
+class BinaryPlainBinaryObject implements BinaryLazyValue {
     /** */
     private final BinaryObject binaryObj;
 
