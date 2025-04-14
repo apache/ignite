@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
@@ -38,12 +37,6 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
 
     /** */
     protected CommandRegistryImpl(Command<?, ?>... subcommands) {
-        for (Command<?, ?> cmd : subcommands)
-            register(cmd);
-    }
-
-    /** */
-    protected CommandRegistryImpl(List<Command<?, ?>> subcommands) {
         for (Command<?, ?> cmd : subcommands)
             register(cmd);
     }

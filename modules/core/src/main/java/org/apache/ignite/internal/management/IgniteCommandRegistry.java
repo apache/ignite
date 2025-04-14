@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.management;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.CommandsProvider;
@@ -52,8 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     /** */
     public IgniteCommandRegistry() {
-        List<Command> cmds = Arrays.asList(
-            new ActivateCommand(),
+        super(new ActivateCommand(),
             new DeactivateCommand(),
             new StateCommand(),
             new SetStateCommand(),
@@ -80,10 +75,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new ConsistencyCommand()
         );
 
-        cmds.addAll(StreamSupport.stream(U.loadService(CommandsProvider.class).spliterator(),
-            false).flatMap(provider -> provider.commands().stream()).collect(Collectors.toList()));
-
-        cmds.forEach(this::register);
+        U.loadService(CommandsProvider.class).forEach(p -> p.commands().forEach(this::register));
     }
 
     /** {@inheritDoc} */
