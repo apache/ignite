@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary.streams;
 
-import java.util.Arrays;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -55,17 +54,6 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
         this.data = data;
 
         len = data.length;
-    }
-
-    /**
-     * @return Copy of this stream.
-     */
-    public BinaryHeapInputStream copy() {
-        BinaryHeapInputStream in = new BinaryHeapInputStream(Arrays.copyOf(data, data.length));
-
-        in.position(pos);
-
-        return in;
     }
 
     /**
