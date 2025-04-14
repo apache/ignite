@@ -39,7 +39,7 @@ import static java.util.Objects.nonNull;
 /**
  * Implementation of binary field descriptor.
  */
-public class BinaryFieldImpl implements BinaryFieldEx {
+class BinaryFieldImpl implements BinaryFieldEx {
     /** Binary context that created this field. */
     private final BinaryContext ctx;
 

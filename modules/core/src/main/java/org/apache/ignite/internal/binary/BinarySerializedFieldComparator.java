@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Compares fiels in serialized form when possible.
  */
-public class BinarySerializedFieldComparator {
+class BinarySerializedFieldComparator {
     /** Position: not found. */
     private static final int POS_NOT_FOUND = -1;
 
