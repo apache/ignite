@@ -500,7 +500,8 @@ public class FilePerformanceStatisticsWriter {
 
             fileIo = new RandomAccessFileIOFactory().create(file);
 
-            log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
+            if (log.isInfoEnabled())
+                log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
 
             long fileMaxSize = IgniteSystemProperties.getLong(IGNITE_PERF_STAT_FILE_MAX_SIZE, DFLT_FILE_MAX_SIZE);
             int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
@@ -711,7 +712,8 @@ public class FilePerformanceStatisticsWriter {
                 flush();
                 fileIo.force();
 
-                log.info("Finished writing system views to performance statistics file: " + file + '.');
+                if (log.isInfoEnabled())
+                    log.info("Finished writing system views to performance statistics file: " + file + '.');
             }
             catch (IOException e) {
                 log.error("Unable to write to the performance statistics file.", e);
