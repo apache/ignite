@@ -662,12 +662,12 @@ public class FilePerformanceStatisticsReader {
     /** Reads views from buf. */
     private class View {
         /** */
-        final String viewName;
+        private final String viewName;
 
         /**
          * Attribute names of system view.
          */
-        final List<String> schema;
+        private final List<String> schema;
 
         /**  */
         private final SystemViewRowAttributeWalker<?> walker;
