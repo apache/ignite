@@ -138,9 +138,9 @@ public class FilePerformanceStatisticsWriter {
             "metrics",
             "caches",
             "sql.queries",
-            "nodes",
-            "partitionStates",
-            "statisticsPartitionData");
+            "partitionStates", // TODO: IGNITE-25151
+            "statisticsPartitionData", // TODO: IGNITE-25152
+            "nodes");
         sysViewPredicate = view -> !ignoredViews.contains(view.name());
 
         fileWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
