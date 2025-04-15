@@ -127,9 +127,9 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.DFLT_JO
 import static org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor.DFLT_JOBS_METRICS_CONCURRENCY_LEVEL;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DFLT_MAX_HISTORY_BYTES;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FILE_MAX_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.internal.processors.platform.client.ClientRequestHandler.DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_PERIODIC_STARVATION_CHECK_FREQ;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
