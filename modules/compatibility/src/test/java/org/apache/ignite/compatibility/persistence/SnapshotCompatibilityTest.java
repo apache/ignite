@@ -135,13 +135,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
-        assumeFalse("User must not restore both snapshots and cache dumps simultaneously", incSnp && cacheDump);
+        assumeFalse("Incremental snapshots for cache dump not supported", incSnp && cacheDump);
 
-        // See <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>
-        assumeFalse("Restoring incremental snapshots if consistent ID is null is fixed in 2.17.0", incSnp && !customConsId);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-23222", incSnp && !customConsId);
 
-        // See <a href="https://issues.apache.org/jira/browse/IGNITE-25096">...</a>
-        assumeFalse("Restoring incremental snapshots on different topology is unsopported", incSnp && oldNodesCnt == 3);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-25096", incSnp && oldNodesCnt == 3);
 
         try {
             for (int i = 1; i < oldNodesCnt; ++i) {
