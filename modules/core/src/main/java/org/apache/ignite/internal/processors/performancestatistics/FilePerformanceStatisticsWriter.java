@@ -480,7 +480,7 @@ public class FilePerformanceStatisticsWriter {
         /**
          * @param ctx Kernal context.
          */
-        FileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+        public FileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
             super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, ctx.log(FileWriter.class), ctx.workersRegistry());
 
             file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId());
@@ -672,7 +672,7 @@ public class FilePerformanceStatisticsWriter {
         /**
          * @param ctx Kernal context.
          */
-        SystemViewFileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
+        public SystemViewFileWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
             super(ctx.igniteInstanceName(), SYSTEM_VIEW_WRITER_THREAD_NAME, ctx.log(SystemViewFileWriter.class));
 
             sysViewMgr = ctx.systemView();
