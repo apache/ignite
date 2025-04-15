@@ -2723,6 +2723,13 @@ public class BinaryUtils {
     }
 
     /**
+     * Clears binary caches.
+     */
+    public static void clearCache() {
+        BinaryEnumCache.clear();
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {
