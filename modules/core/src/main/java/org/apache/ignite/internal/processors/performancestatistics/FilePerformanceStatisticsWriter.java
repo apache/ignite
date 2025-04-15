@@ -676,7 +676,7 @@ public class FilePerformanceStatisticsWriter {
         /** */
         private final GridSystemViewManager sysViewMgr;
 
-        /** Writes system view attributes to {@link SystemViewFileWriter#buf} */
+        /** Writes system view attributes to {@link SystemViewFileWriter#buf}. */
         private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor;
 
         /**
