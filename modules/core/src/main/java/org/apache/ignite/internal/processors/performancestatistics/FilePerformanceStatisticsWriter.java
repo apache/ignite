@@ -643,7 +643,7 @@ public class FilePerformanceStatisticsWriter {
     /** Worker to write to performance statistics file. */
     private static class SystemViewFileWriter extends GridWorker {
         /** File writer thread name. */
-        static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
+        private static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
 
         /** */
         private StringCache strCache = new StringCache();
