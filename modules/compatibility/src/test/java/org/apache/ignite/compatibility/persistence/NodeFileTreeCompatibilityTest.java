@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -59,32 +61,36 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
         assumeTrue(nodesCnt == 3);
 
         try {
-            IgniteEx[] oldNodes = new IgniteEx[nodesCnt + 1];
-            IgniteEx[] curNodes = new IgniteEx[nodesCnt + 1];
+            ArrayList<IgniteEx> oldNodes = new ArrayList<>(nodesCnt);
+            ArrayList<IgniteEx> curNodes = new ArrayList<>(nodesCnt);
 
             for (int i = 1; i < nodesCnt; ++i) {
-                oldNodes[i] = startGrid(
-                    i,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo, OLD_WORK_DIR)
+                oldNodes.add(
+                    startGrid(
+                        i,
+                        OLD_IGNITE_VERSION,
+                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo, OLD_WORK_DIR)
+                    )
                 );
             }
 
-            oldNodes[nodesCnt] = startGrid(
-                nodesCnt,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(customConsId, nodesCnt), customSnpPath, true, cacheGrpInfo, OLD_WORK_DIR),
-                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+            oldNodes.add(
+                startGrid(
+                    nodesCnt,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(customConsId, nodesCnt), customSnpPath, true, cacheGrpInfo, OLD_WORK_DIR),
+                    new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+                )
             );
 
             stopAllGrids();
 
             cleanPersistenceDir();
 
-            for (int i = 1; i < nodesCnt; ++i)
-                curNodes[i] = startCurIgniteNode(i, false);
+            for (int i = 0; i < nodesCnt - 1; ++i)
+                curNodes.add(startCurIgniteNode(i, false));
 
-            curNodes[nodesCnt] = startCurIgniteNode(nodesCnt, true);
+            curNodes.add(startCurIgniteNode(nodesCnt - 1, true));
 
             compareFileTrees(OLD_WORK_DIR, U.defaultWorkDirectory());
         }
@@ -96,13 +102,16 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
     }
 
     private IgniteEx startCurIgniteNode(int nodeIdx, boolean createSnapshot) throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        new ConfigurationClosure(incSnp, consId(customConsId, nodeIdx), customSnpPath, true, cacheGrpInfo).apply(cfg);
-
-        cfg.setIgniteInstanceName("node-" + nodeIdx);
-
-        IgniteEx node = startGrid(cfg);
+        IgniteEx node = startGrid(
+            nodeIdx,
+            cfg -> {
+                try {
+                    new ConfigurationClosure(incSnp, consId(customConsId, nodeIdx), customSnpPath, true, cacheGrpInfo).apply(cfg);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        );
 
         if (createSnapshot)
             new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(node);
@@ -114,5 +123,6 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
         File oldWorkDir = new File(oldWorkDirPath);
         File curWorkDir = new File(curWorkDirPath);
 
+        // ...
     }
 }
