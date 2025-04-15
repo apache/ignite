@@ -185,6 +185,14 @@ public class BinaryContext {
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
+     * @param igniteCfg Ignite configuration.
+     * @param log Logger.
+     */
+    public BinaryContext(IgniteConfiguration igniteCfg, IgniteLogger log) {
+        this(BinaryNoopMetadataHandler.instance(), igniteCfg, log);
+    }
+
+    /**
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      * @param log Logger.

@@ -50,7 +50,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -889,7 +888,7 @@ public class PlatformUtils {
      */
     public static GridBinaryMarshaller marshaller() {
         BinaryContext ctx =
-            new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+            new BinaryContext(new IgniteConfiguration(), new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
