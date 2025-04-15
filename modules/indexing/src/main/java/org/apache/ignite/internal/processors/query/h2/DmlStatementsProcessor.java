@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteInClosure;
  * Contains entry processors for DML. Should be modified very carefully to maintain binary compatibility due to
  * serializable anonymous classes.
  */
-@SuppressWarnings({"Anonymous2MethodRef", "PublicInnerClass", "unused"})
+@SuppressWarnings({"PublicInnerClass", "unused"})
 public class DmlStatementsProcessor {
     /** */
     public static final class InsertEntryProcessor implements EntryProcessor<Object, Object, Boolean> {
@@ -90,12 +90,12 @@ public class DmlStatementsProcessor {
     }
 
     /** Remove updater. */
-    public static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
-        new IgniteInClosure<>() {
-            @Override public void apply(MutableEntry<Object, Object> e) {
-                e.remove();
-            }
-        };
+    public static final class RemoveClosure implements IgniteInClosure<MutableEntry<Object, Object>> {
+        /** {@inheritDoc} */
+        @Override public void apply(MutableEntry<Object, Object> e) {
+            e.remove();
+        }
+    }
 
     /**
      * Entry value updater.

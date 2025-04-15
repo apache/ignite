@@ -370,7 +370,7 @@ public class DmlUtils {
 
             Object key = row.get(0);
 
-            IgniteInClosure<MutableEntry<Object, Object>> rmvC = DmlStatementsProcessor.RMV;
+            IgniteInClosure<MutableEntry<Object, Object>> rmvC = new DmlStatementsProcessor.RemoveClosure();
 
             snd.add(
                 key,
