@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
- * Defines {@code alias} for <tt>GridPredicate2&lt;K, V&gt;</tt> by extending
- * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
- * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate}.
- * @see org.apache.ignite.lang.IgniteBiPredicate
+ * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteBiInClosure} by extending it. Since Java doesn't provide type aliases
+ * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.lang.IgniteBiInClosure}.
+ * @param <E1> Type of the first parameter.
+ * @param <E2> Type of hte second parameter.
  * @see GridFunc
+ * @see org.apache.ignite.lang.IgniteBiInClosure
  */
-public interface PKV<K, V> extends IgniteBiPredicate<K, V> { /* No-op. */ }
+public interface CI2<E1, E2> extends IgniteBiInClosure<E1, E2> { /* No-op. */ }

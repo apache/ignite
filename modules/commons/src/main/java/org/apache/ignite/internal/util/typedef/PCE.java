@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.lang.IgniteClosure;
+import javax.cache.Cache;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteClosure} by extending it. Since Java doesn't provide type aliases
- * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.lang.IgniteClosure}.
- * @param <E1> Type of the free variable, i.e. the element the closure is called or closed on.
- * @param <R> Type of the closure's return value.
+ * Defines {@code alias} for <tt>GridPredicate&lt;Entry&lt;K, V&gt;&gt;</tt> by extending
+ * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
+ * to these types of measures. This is intended to provide for more concise code without sacrificing
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link javax.cache.Cache.Entry}.
+ * @see org.apache.ignite.lang.IgnitePredicate
  * @see GridFunc
- * @see org.apache.ignite.lang.IgniteClosure
  */
-public interface C1<E1, R> extends IgniteClosure<E1, R> { /* No-op. */ }
+public interface PCE<K, V> extends IgnitePredicate<Cache.Entry<K, V>> { /* No-op. */ }

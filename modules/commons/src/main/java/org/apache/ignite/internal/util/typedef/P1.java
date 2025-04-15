@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteOutClosure} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link org.apache.ignite.lang.IgnitePredicate} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.lang.IgniteOutClosure}.
- * @param <T> Type of the factory closure.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.lang.IgnitePredicate}.
+ * @param <E1> Type of the free variable, i.e. the element the predicate is called on.
  * @see GridFunc
- * @see org.apache.ignite.lang.IgniteOutClosure
+ * @see org.apache.ignite.lang.IgnitePredicate
  */
-public interface CO<T> extends IgniteOutClosure<T> { /* No-op. */ }
+public interface P1<E1> extends IgnitePredicate<E1> { /* No-op. */ }
