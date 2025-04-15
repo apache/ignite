@@ -55,6 +55,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assume.assumeFalse;
+
 /**
  *
  */
@@ -108,11 +110,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     private CacheGroupInfo cacheGrpInfo;
 
-    /**
-     * Restore incremental snapshot if consistent ID is null is fixed in 2.17.0, see here
-     * <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>. Restore of an incremental snapshot doesn't work for different
-     * topology. Also restoring cache dump and any kind of snapshot is pointless.
-     */
+    /** */
     @Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
@@ -123,9 +121,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
                     for (boolean cacheDump : Arrays.asList(true, false))
                         for (boolean customSnpPath : Arrays.asList(true, false))
                             for (boolean testCacheGrp : Arrays.asList(true, false))
-                                // see <a href="https://issues.apache.org/jira/browse/IGNITE-25096">...</a>
-                                if (!incSnp || (!cacheDump && customConsId && oldNodesCnt == 1))
-                                    data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+                                data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
 
         return data;
     }
@@ -139,20 +135,28 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
+        assumeFalse("User must not restore both snapshots and cache dumps simultaneously", incSnp && cacheDump);
+
+        // See <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>
+        assumeFalse("Restoring incremental snapshots if consistent ID is null is fixed in 2.17.0", incSnp && !customConsId);
+
+        // See <a href="https://issues.apache.org/jira/browse/IGNITE-25096">...</a>
+        assumeFalse("Restoring incremental snapshots on different topology is unsopported", incSnp && oldNodesCnt == 3);
+
         try {
             for (int i = 1; i < oldNodesCnt; ++i) {
                 startGrid(
-                        i,
-                        OLD_IGNITE_VERSION,
-                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
+                    i,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
                 );
             }
 
             startGrid(
-                    oldNodesCnt,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
-                    new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+                oldNodesCnt,
+                OLD_IGNITE_VERSION,
+                new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
+                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
             );
 
             stopAllGrids();
