@@ -56,18 +56,18 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
      * <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>. Restore of an incremental snapshot doesn't work for different
      * topology. Also restoring cache dump and any kind of snapshot is pointless.
      */
-    @Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
+    @Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, oldNodesCnt={5}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
 
         for (boolean incSnp : Arrays.asList(true, false))
             for (boolean customConsId: Arrays.asList(true, false))
-                for (int oldNodesCnt : Arrays.asList(1, 3))
-                    for (boolean cacheDump : Arrays.asList(true, false))
-                        for (boolean customSnpPath : Arrays.asList(true, false))
-                            for (boolean testCacheGrp : Arrays.asList(true, false))
+                for (boolean cacheDump : Arrays.asList(true, false))
+                    for (boolean customSnpPath : Arrays.asList(true, false))
+                        for (boolean testCacheGrp : Arrays.asList(true, false))
+                            for (int oldNodesCnt : Arrays.asList(1, 3))
                                 if (!incSnp || (!cacheDump && customConsId && oldNodesCnt == 1))
-                                    data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+                                    data.add(new Object[]{incSnp, customConsId, cacheDump, customSnpPath, testCacheGrp, oldNodesCnt});
 
         return data;
     }
