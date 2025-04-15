@@ -314,54 +314,6 @@ final class ReliableChannel implements AutoCloseable {
         return ch.serviceAsync(op, payloadWriter, payloadReader);
     }
 
-    /** */
-    private <T> Object applyOnClientChannelAsync(
-        final CompletableFuture<T> fut,
-        ClientChannel ch,
-        ClientOperation op,
-        Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader,
-        List<ClientConnectionException> failures
-    ) {
-        return ch
-            .serviceAsync(op, payloadWriter, payloadReader)
-            .handle((res, err) -> {
-                if (err == null) {
-                    fut.complete(res);
-
-                    return null;
-                }
-
-                if (err instanceof ClientConnectionException) {
-                    ClientConnectionException failure0 = (ClientConnectionException)err;
-
-                    failures.add(failure0);
-
-                    try {
-                        // Will try to reinit channels if topology changed.
-                        onChannelFailure(ch, err, failures);
-                    }
-                    catch (Throwable ex) {
-                        fut.completeExceptionally(ex);
-
-                        return null;
-                    }
-
-                    if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
-                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-
-                        return null;
-                    }
-
-                    fut.completeExceptionally(composeException(failures));
-                }
-                else
-                    fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
-
-                return null;
-            });
-    }
-
     /**
      * Send request without payload and handle response.
      */
@@ -455,16 +407,47 @@ final class ReliableChannel implements AutoCloseable {
                 CompletableFuture<T> fut = new CompletableFuture<>();
                 List<ClientConnectionException> failures = new ArrayList<>();
 
-                Object result = applyOnNodeChannel(
-                    affNodeId,
-                    channel -> applyOnClientChannelAsync(channel, op, payloadWriter, payloadReader),
-                    failures
-                );
+                try {
+                    ClientChannelHolder hld = nodeChannels.get(affNodeId);
+                    if (hld != null) {
+                        ClientChannel channel = hld.getOrCreateChannel();
 
-                // TODO: retry the channel.
-                
-                if (result != null)
-                    return new IgniteClientFutureImpl<>(fut);
+                        channel.serviceAsync(op, payloadWriter, payloadReader)
+                            .whenComplete((res, err) -> {
+                                if (err == null) {
+                                    fut.complete(res);
+
+                                    return;
+                                }
+
+                                failures.add((ClientConnectionException)err);
+
+                                onChannelFailure(hld, channel, err, failures);
+
+                                if (shouldRetry(op, 0, (ClientConnectionException)err)) {
+                                    // Retry with the same channel after reconnection
+                                    try {
+                                        ClientChannel newChannel = hld.getOrCreateChannel();
+
+                                        newChannel.serviceAsync(op, payloadWriter, payloadReader)
+                                            .whenComplete((retryRes, retryErr) -> {
+                                                if (retryErr == null)
+                                                    fut.complete(retryRes);
+                                                else
+                                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                                            });
+                                    } catch (Throwable t) {
+                                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                                    }
+                                } else
+                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                            });
+
+                        return new IgniteClientFutureImpl<>(fut);
+                    }
+                } catch (ClientConnectionException e) {
+                    failures.add(e);
+                }
             }
         }
 
