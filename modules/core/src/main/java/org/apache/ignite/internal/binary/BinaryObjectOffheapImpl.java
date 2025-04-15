@@ -49,7 +49,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  *  Binary object implementation over offheap memory
  */
-public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
+class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 

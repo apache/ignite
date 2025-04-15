@@ -57,7 +57,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImplUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -660,7 +660,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 BinaryObject val = kbCache.get(i);
 
-                assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key=" + i, BinaryObjectOffheapImplUtils.isInstance(val));
 
                 assertEquals(i, (int)val.field("val"));
 
@@ -716,7 +716,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 BinaryObject val = kbCache.getAsync(i).get();
 
-                assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key=" + i, BinaryObjectOffheapImplUtils.isInstance(val));
 
                 assertEquals(i, (int)val.field("val"));
 
@@ -911,7 +911,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     kpc.put(e.getKey(), val);
 
-                    assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                    assertFalse("Key=" + i, BinaryObjectOffheapImplUtils.isInstance(val));
                 }
 
                 tx.commit();
@@ -984,7 +984,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     assertEquals(new Integer(e.getKey().intValue()), val.field("val"));
 
-                    assertFalse("Key=" + e.getKey(), val instanceof BinaryObjectOffheapImpl);
+                    assertFalse("Key=" + e.getKey(), BinaryObjectOffheapImplUtils.isInstance(val));
                 }
 
                 tx.commit();

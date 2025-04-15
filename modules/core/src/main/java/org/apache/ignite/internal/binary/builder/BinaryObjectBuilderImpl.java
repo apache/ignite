@@ -37,7 +37,6 @@ import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -620,14 +619,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @return New builder.
      */
     public static BinaryObjectBuilderImpl wrap(BinaryObject obj) {
-        BinaryObjectImpl heapObj;
-
-        if (obj instanceof BinaryObjectOffheapImpl)
-            heapObj = (BinaryObjectImpl)((BinaryObjectOffheapImpl)obj).heapCopy();
-        else
-            heapObj = (BinaryObjectImpl)obj;
-
-        return new BinaryObjectBuilderImpl(heapObj);
+        return new BinaryObjectBuilderImpl((BinaryObjectImpl)BinaryUtils.unwrapTemporary(obj));
     }
 
     /**
