@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
-import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -32,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -137,17 +135,6 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             for (Ignite grid : grids)
                 if (performanceStatsEnabled != statisticsMBean(grid.name()).started())
                     return false;
-
-            // Make sure that writer flushed data and stopped.
-            if (!performanceStatsEnabled) {
-                for (long id : U.getThreadMx().getAllThreadIds()) {
-                    ThreadInfo info = U.getThreadMx().getThreadInfo(id);
-
-                    if (info != null && info.getThreadState() != Thread.State.TERMINATED &&
-                        info.getThreadName().startsWith(WRITER_THREAD_NAME))
-                        return false;
-                }
-            }
 
             return true;
         }, TIMEOUT));

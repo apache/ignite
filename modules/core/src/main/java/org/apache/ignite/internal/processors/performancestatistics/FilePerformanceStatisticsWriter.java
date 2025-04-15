@@ -110,12 +110,6 @@ public class FilePerformanceStatisticsWriter {
     /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
     public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
 
-    /** File writer thread name. */
-    static final String WRITER_THREAD_NAME = "performance-statistics-writer";
-
-    /** File writer thread name. */
-    static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
-
     /** Performance statistics file writer worker. */
     private FileWriter fileWriter;
 
@@ -469,6 +463,9 @@ public class FilePerformanceStatisticsWriter {
 
     /** Worker to write to performance statistics file. */
     private static class FileWriter extends GridWorker {
+        /** File writer thread name. */
+        private static final String WRITER_THREAD_NAME = "performance-statistics-writer";
+
         /** */
         private StringCache strCache = new StringCache();
 
@@ -657,6 +654,9 @@ public class FilePerformanceStatisticsWriter {
 
     /** Worker to write to performance statistics file. */
     private class SystemViewFileWriter extends GridWorker {
+        /** File writer thread name. */
+        static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
+
         /** */
         private StringCache strCache = new StringCache();
 
