@@ -34,10 +34,8 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -46,8 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  *
@@ -342,34 +338,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             writer.postWrite(true, registeredType);
 
-            // Update metadata if needed.
-            int schemaId = writer.schemaId();
-
-            BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
-
-            if (schemaReg.schema(schemaId) == null) {
-                String typeName = this.typeName;
-
-                if (typeName == null) {
-                    assert meta != null;
-
-                    typeName = meta.typeName();
-                }
-
-                BinarySchema curSchema = writer.currentSchema();
-
-                String affFieldName0 = affFieldName;
-
-                if (affFieldName0 == null)
-                    affFieldName0 = ctx.affinityKeyFieldName(typeId);
-
-                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
-
-                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
-                    Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
-
-                schemaReg.addSchema(curSchema.schemaId(), curSchema);
-            }
+            ctx.updateMetaIfNeeded(writer, meta, typeId, typeName, affFieldName, fieldsMeta);
 
             // Update hash code after schema is written.
             writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
