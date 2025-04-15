@@ -643,7 +643,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testPutJsonArray() throws Exception {
-        Map<String, int[]> map = U.map("1", new int[] {1, 2, 3});
+        Map<String, int[]> map = Map.of("1", new int[] {1, 2, 3});
         putObject(DEFAULT_CACHE_NAME, "1", map, Map.class.getName());
         assertTrue(Map.class.isAssignableFrom(jcache().get(1).getClass()));
 

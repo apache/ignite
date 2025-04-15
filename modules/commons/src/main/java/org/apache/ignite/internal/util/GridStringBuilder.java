@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Optimized string builder with better API.
@@ -280,7 +279,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder nl() {
-        impl.append(U.nl());
+        impl.append(CommonUtils.nl());
 
         return this;
     }

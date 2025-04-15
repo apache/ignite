@@ -169,12 +169,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 		this.responseWaitTime = responseWaitTime;
 	}
 
-	private String getFolderRoot() {		
-		if(masterUrl!=null) {
-			if(masterUrl.toLowerCase().startsWith("file://")) {
-				return masterUrl.substring("file://".length());
-			}			
-		}
+	private String getFolderRoot() {
 		String root = this.ignite.configuration().getWorkDirectory();
 		return root;
 	}
@@ -191,6 +186,12 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         	String instanceName = this.ignite.name();
         	if (instanceName == null || instanceName.isEmpty())
         		instanceName = DFLT_NAME;
+        	
+        	if(masterUrl!=null) {
+    			if(masterUrl.toLowerCase().startsWith("file://")) {
+    				path = masterUrl.substring("file://".length());
+    			}			
+    		}
         	
         	if (path == null)
         		path = "disco/"+instanceName;

@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -47,10 +48,12 @@ import org.apache.ignite.internal.processors.security.thread.SecurityAwareIoPool
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareThreadPoolExecutor;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -63,6 +66,7 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.SameThreadExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
@@ -138,6 +142,14 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Histogram buckets for the task execution time metric (in milliseconds). */
     public static final long[] TASK_EXEC_TIME_HISTOGRAM_BUCKETS = new long[] {10, 50, 100, 500, 1000};
+
+    /**
+     * Default interval of checking thread pool state for the starvation. Will be used only if the
+     * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.
+     * <p>
+     * Value is {@code 30 sec}.
+     */
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
 
     /** Executor service. */
     @GridToStringExclude
@@ -224,6 +236,16 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** Custom named pools. */
     private Map<String, ThreadPoolExecutor> customExecs;
 
+    /** Pools to check for starvation. */
+    private Map<String, ExecutorService> starvationExecs = new HashMap<>();
+
+    /**
+     * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
+     * disabled by the value of {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
+     */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask starveTask;
+
     /**
      * Constructor.
      *
@@ -292,6 +314,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         execSvc.allowCoreThreadTimeOut(true);
 
+        addExecutorForStarvationDetection("public", execSvc);
+
         validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
 
         svcExecSvc = createExecutorService(
@@ -320,6 +344,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         sysExecSvc.allowCoreThreadTimeOut(true);
 
+        addExecutorForStarvationDetection("system", sysExecSvc);
+
         validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
         WorkersRegistry workerRegistry = ctx.workersRegistry();
@@ -337,6 +363,8 @@ public class PoolProcessor extends GridProcessorAdapter {
             false,
             workerRegistry,
             cfg.getFailureDetectionTimeout());
+
+        addExecutorForStarvationDetection("striped", stripedExecSvc);
 
         // Note that since we use 'LinkedBlockingQueue', number of
         // maximum threads has no effect.
@@ -490,6 +518,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         qryExecSvc.allowCoreThreadTimeOut(true);
 
+        addExecutorForStarvationDetection("query", qryExecSvc);
+
         schemaExecSvc = createExecutorService(
             "schema",
             cfg.getIgniteInstanceName(),
@@ -639,6 +669,81 @@ public class PoolProcessor extends GridProcessorAdapter {
             Arrays.asList(dataStreamerExecSvc.stripes()),
             StripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
+
+        // Start starvation checker if enabled.
+        if ("0".equals(intervalStr))
+            return;
+
+        final long interval = F.isEmpty(intervalStr) ? DFLT_PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
+
+        starveTask = ctx.timeout().schedule(new Runnable() {
+            /** Last completed task count by pool name. */
+            private final Map<String, Long> lastCompleted = new HashMap<>();
+
+            @Override public void run() {
+                Map<String, ExecutorService> execs = starvationExecs;
+
+                if (execs == null)
+                    return;
+
+                for (Map.Entry<String, ExecutorService> entry : execs.entrySet()) {
+                    String name = entry.getKey();
+                    ExecutorService exec = entry.getValue();
+
+                    if (exec instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec0 = (ThreadPoolExecutor)exec;
+
+                        checkPoolStarvation(name, exec0.getCompletedTaskCount(), exec0.getPoolSize(),
+                            exec0.getActiveCount(), exec0.getQueue().isEmpty());
+                    }
+                    if (exec instanceof IgniteStripedThreadPoolExecutor) {
+                        IgniteStripedThreadPoolExecutor exec0 = (IgniteStripedThreadPoolExecutor)exec;
+
+                        checkPoolStarvation(name, exec0.completedTaskCount(), exec0.poolSize(),
+                            exec0.activeCount(), exec0.queueEmpty());
+                    }
+                    else if (exec instanceof StripedExecutor)
+                        ((StripedExecutor)exec).detectStarvation();
+                }
+            }
+
+            /** */
+            private void checkPoolStarvation(
+                String pool,
+                long completedCnt,
+                int poolSize,
+                int activeCnt,
+                boolean queueEmpty
+            ) {
+                long lastCompletedCnt = lastCompleted.getOrDefault(pool, 0L);
+
+                // If all threads are active and no task has completed since last time and there is
+                // at least one waiting request, then it is possible starvation.
+                if (poolSize == activeCnt && completedCnt == lastCompletedCnt && !queueEmpty) {
+                    LT.warn(log, "Possible thread pool starvation detected (no task completed in last " +
+                        interval + "ms, is " + pool + " thread pool size large enough?)");
+                }
+
+                if (completedCnt != lastCompletedCnt)
+                    lastCompleted.put(pool, completedCnt);
+            }
+        }, interval, interval);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        super.onKernalStop(cancel);
+
+        if (starveTask != null)
+            starveTask.close();
     }
 
     /**
@@ -925,6 +1030,16 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Add pool to check for starvation.
+     *
+     * @param name Executor name.
+     * @param execSvc Executor service.
+     */
+    public void addExecutorForStarvationDetection(String name, ExecutorService execSvc) {
+        starvationExecs.put(name, execSvc);
+    }
+
+    /**
      * Creates a {@link MetricRegistry} for an executor.
      *
      * @param name Name of the metric to register.
@@ -1051,6 +1166,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
             customExecs = null;
         }
+
+        starvationExecs = null;
     }
 
     /**
