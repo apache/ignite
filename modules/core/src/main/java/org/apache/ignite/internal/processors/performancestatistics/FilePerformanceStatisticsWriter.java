@@ -750,8 +750,8 @@ public class FilePerformanceStatisticsWriter {
         }
 
         /**
-         * @param row        Row.
-         * @param walker     Walker.
+         * @param row    Row.
+         * @param walker Walker.
          */
         private void writeRowToBuf(Object row, SystemViewRowAttributeWalker<Object> walker) throws IOException {
             doWrite(buf -> {
