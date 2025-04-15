@@ -48,7 +48,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     /** */
     public IgniteCommandRegistry() {
-        super(new ActivateCommand(),
+        super(
+            new ActivateCommand(),
             new DeactivateCommand(),
             new StateCommand(),
             new SetStateCommand(),

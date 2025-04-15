@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -115,5 +116,12 @@ public class GridMBeansTest extends GridCommonAbstractTest {
             "org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi$RoundRobinLoadBalancingSpiMBeanImpl"};
 
         validateMbeans(G.allGrids().get(0), clsNames);
+    }
+
+    /** Check that external commands beans available. */
+    @Test
+    public void testExternalManagementBeans() throws MalformedObjectNameException {
+        ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), "management", "ExternalTest");
+        assertTrue(grid().configuration().getMBeanServer().isRegistered(mBeanName));
     }
 }
