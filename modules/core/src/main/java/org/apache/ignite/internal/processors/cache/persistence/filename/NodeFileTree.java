@@ -879,6 +879,25 @@ public class NodeFileTree extends SharedFileTree {
         return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
     }
 
+    /**
+     * @param typeId Type id.
+     * @return Binary metadata file name.
+     */
+    public static String binaryMetaFileName(int typeId) {
+        return typeId + FILE_SUFFIX;
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Type id
+     * @see #binaryMetaFileName(int)
+     * @see NodeFileTree#FILE_SUFFIX
+     */
+    public static int typeId(String fileName) {
+        return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
+    }
+
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NodeFileTree.class, this);

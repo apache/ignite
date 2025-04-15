@@ -2556,14 +2556,6 @@ public class BinaryUtils {
         return ctx.metadata(obj.typeId());
     }
 
-    /**
-     * @param typeId Type id.
-     * @return Binary metadata file name.
-     */
-    public static String binaryMetaFileName(int typeId) {
-        return typeId + FILE_SUFFIX;
-    }
-
     /** @param fileName Name of file with marshaller mapping information. */
     public static int mappedTypeId(String fileName) {
         try {
@@ -2610,16 +2602,6 @@ public class BinaryUtils {
      */
     public static String mappingFileName(byte platformId, int typeId) {
         return typeId + MAPPING_FILE_EXTENSION + platformId;
-    }
-
-    /**
-     * @param fileName File name.
-     * @return Type id
-     * @see #binaryMetaFileName(int)
-     * @see NodeFileTree#FILE_SUFFIX
-     */
-    public static int typeId(String fileName) {
-        return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
     /**
