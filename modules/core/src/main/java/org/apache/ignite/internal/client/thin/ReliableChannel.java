@@ -434,6 +434,69 @@ final class ReliableChannel implements AutoCloseable {
         return serviceAsync(op, payloadWriter, payloadReader);
     }
 
+    /*
+    public <T> IgniteClientFuture<T> affinityServiceAsync(
+        int cacheId,
+        Object key,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientError {
+        if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
+            UUID affNodeId = affinityCtx.affinityNode(cacheId, key);
+
+            if (affNodeId != null) {
+                CompletableFuture<T> fut = new CompletableFuture<>();
+                List<ClientConnectionException> failures = new ArrayList<>();
+
+                try {
+                    ClientChannelHolder hld = nodeChannels.get(affNodeId);
+                    if (hld != null) {
+                        ClientChannel channel = hld.getOrCreateChannel();
+
+                        channel.serviceAsync(op, payloadWriter, payloadReader)
+                            .whenComplete((res, err) -> {
+                                if (err == null) {
+                                    fut.complete(res);
+
+                                    return;
+                                }
+
+                                failures.add((ClientConnectionException)err);
+
+                                onChannelFailure(hld, channel, err, failures);
+
+                                if (shouldRetry(op, 0, (ClientConnectionException)err)) {
+                                    // Retry with the same channel after reconnection
+                                    try {
+                                        ClientChannel newChannel = hld.getOrCreateChannel();
+
+                                        newChannel.serviceAsync(op, payloadWriter, payloadReader)
+                                            .whenComplete((retryRes, retryErr) -> {
+                                                if (retryErr == null)
+                                                    fut.complete(retryRes);
+                                                else
+                                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                                            });
+                                    } catch (Throwable t) {
+                                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                                    }
+                                } else
+                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+                            });
+
+                        return new IgniteClientFutureImpl<>(fut);
+                    }
+                } catch (ClientConnectionException e) {
+                    failures.add(e);
+                }
+            }
+        }
+
+        return serviceAsync(op, payloadWriter, payloadReader);
+    }
+    */
+     
     /**
      * @param cacheName Cache name.
      */
