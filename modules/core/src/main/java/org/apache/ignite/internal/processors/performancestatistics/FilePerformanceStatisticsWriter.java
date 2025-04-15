@@ -119,9 +119,6 @@ public class FilePerformanceStatisticsWriter {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** System view predicate to filter recorded views. */
-    private final Predicate<SystemView<?>> sysViewPredicate;
-
     /** */
     private final GridKernalContext ctx;
 
@@ -132,16 +129,6 @@ public class FilePerformanceStatisticsWriter {
 
         fileWriter = new FileWriter(ctx);
         sysViewFileWriter = new SystemViewFileWriter(ctx);
-
-        // System views that won't be recorded. They may be large or copy another PerfStat values.
-        Set<String> ignoredViews = Set.of("baseline.node.attributes",
-            "metrics",
-            "caches",
-            "sql.queries",
-            "partitionStates", // TODO: IGNITE-25151
-            "statisticsPartitionData", // TODO: IGNITE-25152
-            "nodes");
-        sysViewPredicate = view -> !ignoredViews.contains(view.name());
 
         fileWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
 
@@ -654,7 +641,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Worker to write to performance statistics file. */
-    private class SystemViewFileWriter extends GridWorker {
+    private static class SystemViewFileWriter extends GridWorker {
         /** File writer thread name. */
         static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
 
@@ -679,6 +666,9 @@ public class FilePerformanceStatisticsWriter {
         /** Writes system view attributes to {@link SystemViewFileWriter#buf}. */
         private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor;
 
+        /** System view predicate to filter recorded views. */
+        private final Predicate<SystemView<?>> sysViewPredicate;
+
         /**
          * @param ctx Kernal context.
          */
@@ -697,6 +687,16 @@ public class FilePerformanceStatisticsWriter {
             flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
             valWriterVisitor = new AttributeWithValueWriterVisitor(buf);
+
+            // System views that won't be recorded. They may be large or copy another PerfStat values.
+            Set<String> ignoredViews = Set.of("baseline.node.attributes",
+                "metrics",
+                "caches",
+                "sql.queries",
+                "partitionStates", // TODO: IGNITE-25151
+                "statisticsPartitionData", // TODO: IGNITE-25152
+                "nodes");
+            sysViewPredicate = view -> !ignoredViews.contains(view.name());
         }
 
         /** {@inheritDoc} */
