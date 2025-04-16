@@ -543,7 +543,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap)
         throws BinaryObjectException {
-        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum,
+        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, isEnum,
             enumMap);
 
         binaryCtx.updateMetadata(typeId, meta, false);

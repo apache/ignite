@@ -33,7 +33,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -205,8 +204,6 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
             if (reader != null && BinaryUtils.hasSchema(flags)) {
-                BinarySchema schema = reader.schema();
-
                 Map<Integer, Object> assignedFldsById;
 
                 if (assignedVals != null) {
@@ -247,7 +244,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 int idx = 0;
 
                 while (reader.position() < rawPos) {
-                    int fieldId = schema.fieldId(idx++);
+                    int fieldId = reader.reader().fieldId(idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
@@ -461,8 +458,6 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int fieldIdLen = BinaryUtils.fieldIdLength(flags);
             int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
 
-            BinarySchema schema = reader.schema();
-
             Map<Integer, Object> readCache = new HashMap<>();
 
             IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
@@ -475,7 +470,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int idx = 0;
 
             while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = schema.fieldId(idx++);
+                int fieldId = reader.reader().fieldId(idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);

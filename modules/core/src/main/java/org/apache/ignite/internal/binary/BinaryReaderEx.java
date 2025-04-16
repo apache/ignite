@@ -47,13 +47,6 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
     public BinaryInputStream in();
 
     /**
-     * Get or create object schema.
-     *
-     * @return Schema.
-     */
-    public BinarySchema getOrCreateSchema();
-
-    /**
      * @param offset Offset in the array.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
@@ -92,4 +85,11 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
      * @return Offset.
      */
     public boolean findFieldByName(String name);
+
+    /**
+     * Gets field by its order.
+     *
+     * @param order Order.
+     */
+    public int fieldId(int order);
 }

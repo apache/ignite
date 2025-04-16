@@ -1484,8 +1484,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return schemaId;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinarySchema currentSchema() {
+    /**
+     * @return Current writer's schema.
+     */
+    BinarySchema currentSchema() {
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)

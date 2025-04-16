@@ -18,18 +18,12 @@
 package org.apache.ignite.internal.processors.platform.utils;
 
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -40,18 +34,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -86,7 +77,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-public class PlatformUtils {
+public class PlatformUtils extends BinaryUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX + ".platform";
 
@@ -383,34 +374,6 @@ public class PlatformUtils {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newHashMap(cnt);
-
-        if (readClo == null) {
-            for (int i = 0; i < cnt; i++)
-                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
-        }
-        else {
-            for (int i = 0; i < cnt; i++) {
-                IgniteBiTuple<K, V> entry = readClo.read(reader);
-
-                map.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return map;
-    }
-
-    /**
-     * Read linked map.
-     *
-     * @param reader Reader.
-     * @param readClo Reader closure.
-     * @return Map.
-     */
-    public static <K, V> Map<K, V> readLinkedMap(BinaryReaderEx reader,
-        @Nullable PlatformReaderBiClosure<K, V> readClo) {
-        int cnt = reader.readInt();
-
-        Map<K, V> map = U.newLinkedHashMap(cnt);
 
         if (readClo == null) {
             for (int i = 0; i < cnt; i++)
@@ -919,9 +882,9 @@ public class PlatformUtils {
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
-        else if (BinaryUtils.knownCollection(o))
+        else if (knownCollection(o))
             return unwrapKnownCollection((Collection<Object>)o);
-        else if (BinaryUtils.knownMap(o))
+        else if (knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
         else if (o instanceof Object[])
             return unwrapBinariesInArray((Object[])o);
@@ -932,51 +895,12 @@ public class PlatformUtils {
     }
 
     /**
-     * @param obj Obj.
-     * @return True is obj is a known simple type array.
-     */
-    private static boolean knownArray(Object obj) {
-        return obj instanceof String[] ||
-            obj instanceof boolean[] ||
-            obj instanceof byte[] ||
-            obj instanceof char[] ||
-            obj instanceof int[] ||
-            obj instanceof long[] ||
-            obj instanceof short[] ||
-            obj instanceof Timestamp[] ||
-            obj instanceof double[] ||
-            obj instanceof float[] ||
-            obj instanceof UUID[] ||
-            obj instanceof BigDecimal[];
-    }
-
-    /**
-     * @param o Object to test.
-     * @return True if collection should be recursively unwrapped.
-     */
-    private static boolean knownCollection(Object o) {
-        Class<?> cls = o == null ? null : o.getClass();
-
-        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
-    }
-
-    /**
-     * @param o Object to test.
-     * @return True if map should be recursively unwrapped.
-     */
-    private static boolean knownMap(Object o) {
-        Class<?> cls = o == null ? null : o.getClass();
-
-        return cls == HashMap.class || cls == LinkedHashMap.class;
-    }
-
-    /**
      * @param col Collection to unwrap.
      * @return Unwrapped collection.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private static Collection<Object> unwrapKnownCollection(Collection<Object> col) {
-        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
+        Collection<Object> col0 = newKnownCollection(col);
 
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
@@ -1009,7 +933,7 @@ public class PlatformUtils {
      * @return Unwrapped collection.
      */
     private static Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map) {
-        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+        Map<Object, Object> map0 = newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
@@ -1070,7 +994,7 @@ public class PlatformUtils {
                 try {
                     field.set(
                         obj,
-                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
+                        isObjectArray(field.getType()) ? rawArrayFromBinary(val) : val
                     );
                 }
                 catch (Exception e) {
@@ -1101,67 +1025,6 @@ public class PlatformUtils {
     }
 
     /**
-     * Writes the binary metadata to a writer.
-     *
-     * @param writer Writer.
-     * @param meta Meta.
-     */
-    public static void writeBinaryMetadata(BinaryRawWriter writer, BinaryMetadata meta, boolean includeSchemas) {
-        assert meta != null;
-
-        Map<String, BinaryFieldMetadata> fields = meta.fieldsMap();
-
-        writer.writeInt(meta.typeId());
-        writer.writeString(meta.typeName());
-        writer.writeString(meta.affinityKeyFieldName());
-
-        writer.writeInt(fields.size());
-
-        for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
-            writer.writeString(e.getKey());
-
-            writer.writeInt(e.getValue().typeId());
-            writer.writeInt(e.getValue().fieldId());
-        }
-
-        if (meta.isEnum()) {
-            writer.writeBoolean(true);
-
-            Map<String, Integer> enumMap = meta.enumMap();
-
-            writer.writeInt(enumMap.size());
-
-            for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
-                writer.writeString(e.getKey());
-                writer.writeInt(e.getValue());
-            }
-        }
-        else {
-            writer.writeBoolean(false);
-        }
-
-        if (!includeSchemas) {
-            return;
-        }
-
-        // Schemas.
-        Collection<BinarySchema> schemas = meta.schemas();
-
-        writer.writeInt(schemas.size());
-
-        for (BinarySchema schema : schemas) {
-            writer.writeInt(schema.schemaId());
-
-            int[] ids = schema.fieldIds();
-            writer.writeInt(ids.length);
-
-            for (int id : ids) {
-                writer.writeInt(id);
-            }
-        }
-    }
-
-    /**
      * Reads the binary metadata.
      *
      * @param reader Reader.
@@ -1175,65 +1038,6 @@ public class PlatformUtils {
                     }
                 }
         );
-    }
-
-    /**
-     * Reads the binary metadata.
-     *
-     * @param reader Reader.
-     * @return Binary type metadata.
-     */
-    public static BinaryMetadata readBinaryMetadata(BinaryReaderEx reader) {
-        int typeId = reader.readInt();
-        String typeName = reader.readString();
-        String affKey = reader.readString();
-
-        Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
-                new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryReaderEx reader) {
-                        String name = reader.readString();
-                        int typeId = reader.readInt();
-                        int fieldId = reader.readInt();
-
-                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
-                                new BinaryFieldMetadata(typeId, fieldId));
-                    }
-                });
-
-        Map<String, Integer> enumMap = null;
-
-        boolean isEnum = reader.readBoolean();
-
-        if (isEnum) {
-            int size = reader.readInt();
-
-            enumMap = new LinkedHashMap<>(size);
-
-            for (int idx = 0; idx < size; idx++)
-                enumMap.put(reader.readString(), reader.readInt());
-        }
-
-        // Read schemas
-        int schemaCnt = reader.readInt();
-
-        List<BinarySchema> schemas = null;
-
-        if (schemaCnt > 0) {
-            schemas = new ArrayList<>(schemaCnt);
-
-            for (int i = 0; i < schemaCnt; i++) {
-                int id = reader.readInt();
-                int fieldCnt = reader.readInt();
-                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
-
-                for (int j = 0; j < fieldCnt; j++)
-                    fieldIds.add(reader.readInt());
-
-                schemas.add(new BinarySchema(id, fieldIds));
-            }
-        }
-
-        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
     }
 
     /**
