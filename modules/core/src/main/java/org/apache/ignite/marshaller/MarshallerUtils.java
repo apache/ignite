@@ -141,6 +141,9 @@ public class MarshallerUtils {
         synchronized (MUX) {
             ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
 
+            System.out.println("--> 1=" + IgniteObjectInputFilter.class.getProtectionDomain().getCodeSource().getLocation());
+            System.out.println("--> 1=" + IgniteObjectInputFilter.class.getClassLoader());
+
             if (objFilter == null)
                 ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter(clsFilter));
             else if (objFilter instanceof IgniteObjectInputFilter) {
@@ -153,6 +156,9 @@ public class MarshallerUtils {
                 }
             }
             else {
+                System.out.println("--> 2=" + objFilter.getClass().getProtectionDomain().getCodeSource().getLocation());
+                System.out.println("--> 2=" + objFilter.getClass().getClassLoader());
+
                 throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
                     " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
                     " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
