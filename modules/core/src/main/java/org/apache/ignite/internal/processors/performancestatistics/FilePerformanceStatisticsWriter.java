@@ -863,8 +863,6 @@ public class FilePerformanceStatisticsWriter {
             if (knownStrs.size() >= cachedStrsThreshold)
                 return false;
 
-            // We can cache slightly more strings than threshold value.
-            // Don't implement solution with synchronization here, because our primary goal is avoiding any contention.
             return !knownStrs.add(str.hashCode());
         }
     }
