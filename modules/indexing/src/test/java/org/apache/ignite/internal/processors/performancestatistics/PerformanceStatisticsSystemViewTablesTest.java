@@ -94,6 +94,11 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
                     if ("tables".equals(name))
                         tablesCnt.incrementAndGet();
                 }
+
+                /** */
+                private Object getAttrValByName(List<String> schema, List<Object> row, String attr) {
+                    return row.get(schema.indexOf(attr));
+                }
             });
 
             assertTrue(actualColumns.containsAll(expectedColumns));
@@ -134,11 +139,5 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
         public float salary() {
             return salary;
         }
-    }
-
-    /** */
-    private Object getAttrValByName(List<String> schema, List<Object> row, String attr) {
-        int idx = schema.indexOf(attr);
-        return row.get(idx);
     }
 }
