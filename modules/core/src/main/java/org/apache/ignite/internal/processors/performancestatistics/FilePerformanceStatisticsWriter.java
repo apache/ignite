@@ -111,7 +111,7 @@ public class FilePerformanceStatisticsWriter {
     public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
 
     /** Performance statistics file writer worker. */
-    private FileWriter fileWriter;
+    private volatile FileWriter fileWriter;
 
     /** Performance statistics system view file writer worker. */
     private final SystemViewFileWriter sysViewFileWriter;
