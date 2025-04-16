@@ -38,6 +38,7 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameter;
@@ -188,7 +189,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
 
         new DumpReader(new DumpReaderConfiguration(
             CACHE_DUMP_NAME,
-            customSnpPath ? customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
+            customSnpPath ? customSnapshotPath(U.defaultWorkDirectory(), CUSTOM_SNP_RELATIVE_PATH, false) : null,
             node.configuration(),
             consumer
         ), log).run();

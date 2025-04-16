@@ -87,10 +87,30 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
 
             cleanPersistenceDir();
 
-            for (int i = 0; i < nodesCnt - 1; ++i)
-                curNodes.add(startCurIgniteNode(i, false));
+            for (int i = 0; i < nodesCnt; ++i) {
+                int finalI = i;
 
-            curNodes.add(startCurIgniteNode(nodesCnt - 1, true));
+                curNodes.add(
+                    startGrid(
+                        i,
+                        cfg -> {
+                            try {
+                                new ConfigurationClosure(
+                                    incSnp,
+                                    consId(customConsId, finalI),
+                                    customSnpPath,
+                                    true,
+                                    cacheGrpInfo
+                                ).apply(cfg);
+                            } catch (IgniteCheckedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    )
+                );
+            }
+
+            new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(curNodes.get(0));
 
             compareFileTrees(OLD_WORK_DIR, U.defaultWorkDirectory());
         }
@@ -101,28 +121,8 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
         }
     }
 
-    private IgniteEx startCurIgniteNode(int nodeIdx, boolean createSnapshot) throws Exception {
-        IgniteEx node = startGrid(
-            nodeIdx,
-            cfg -> {
-                try {
-                    new ConfigurationClosure(incSnp, consId(customConsId, nodeIdx), customSnpPath, true, cacheGrpInfo).apply(cfg);
-                } catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        );
-
-        if (createSnapshot)
-            new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(node);
-
-        return node;
-    }
-
     private void compareFileTrees(String oldWorkDirPath, String curWorkDirPath) {
         File oldWorkDir = new File(oldWorkDirPath);
         File curWorkDir = new File(curWorkDirPath);
-
-        // ...
     }
 }

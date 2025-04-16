@@ -88,8 +88,8 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
     }
 
     /** */
-    protected static String customSnapshotPath(String relativePath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, delIfExist).getAbsolutePath();
+    protected static String customSnapshotPath(String workDirPath, String snpPath, boolean delIfExist) throws IgniteCheckedException {
+        return U.resolveWorkDirectory(workDirPath, snpPath, delIfExist).getAbsolutePath();
     }
 
     /**
@@ -171,7 +171,7 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
 
             if (customSnpPath) {
                 try {
-                    cfg.setSnapshotPath(customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, delIfExist));
+                    cfg.setSnapshotPath(customSnapshotPath(workDirectory, CUSTOM_SNP_RELATIVE_PATH, delIfExist));
                 }
                 catch (IgniteCheckedException e) {
                     throw new RuntimeException(e);
