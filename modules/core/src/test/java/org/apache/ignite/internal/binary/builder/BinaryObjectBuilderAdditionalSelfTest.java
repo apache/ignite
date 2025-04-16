@@ -59,9 +59,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
+import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
@@ -941,7 +941,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         BinaryObject bo = mutableObj.build();
 
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
+        assertEquals(BinaryObjectTestUtils.binaryArrayIdentityResolverHashCode(bo), bo.hashCode());
     }
 
     /**

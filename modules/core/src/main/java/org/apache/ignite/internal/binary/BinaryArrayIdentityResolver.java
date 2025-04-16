@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import java.util.Arrays;
-
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <p>
  * Hash code is calculated in the same way as {@link Arrays#hashCode(byte[])} does.
  */
-public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
+class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Singleton instance */
     private static final BinaryArrayIdentityResolver INSTANCE = new BinaryArrayIdentityResolver();
 
@@ -44,7 +43,7 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
     /**
      * Default constructor.
      */
-    public BinaryArrayIdentityResolver() {
+    private BinaryArrayIdentityResolver() {
         // No-op.
     }
 
