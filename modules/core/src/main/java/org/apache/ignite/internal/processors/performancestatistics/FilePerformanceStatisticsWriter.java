@@ -702,12 +702,9 @@ public class FilePerformanceStatisticsWriter {
         /** {@inheritDoc} */
         @Override protected void body() {
             try {
-                for (SystemView<?> view : sysViewMgr) {
-                    if (isCancelled())
-                        break;
+                for (SystemView<?> view : sysViewMgr)
                     if (sysViewPredicate.test(view))
                         systemView(view);
-                }
 
                 flush();
                 fileIo.force();
