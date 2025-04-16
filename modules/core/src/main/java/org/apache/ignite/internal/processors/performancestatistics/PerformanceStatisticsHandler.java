@@ -170,7 +170,7 @@ public interface PerformanceStatisticsHandler {
      * @param id    Node id.
      * @param name  Name of system view.
      * @param schema Attributes of system view.
-     * @param row Reusable system view row.
+     * @param row System view row.
      */
     void systemView(UUID id, String name, List<String> schema, List<Object> row);
 }

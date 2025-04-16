@@ -673,7 +673,7 @@ public class FilePerformanceStatisticsReader {
         private final SystemViewRowAttributeWalker<?> walker;
 
         /**  */
-        private final RowReaderVisitor rowVisitor = new RowReaderVisitor();
+        private final RowReaderVisitor rowVisitor;
 
         /**
          * @param viewName System view name.
@@ -693,6 +693,8 @@ public class FilePerformanceStatisticsReader {
             });
 
             schema = Collections.unmodifiableList(schemaList);
+
+            rowVisitor = new RowReaderVisitor(schema.size());
         }
 
         /**
@@ -707,26 +709,32 @@ public class FilePerformanceStatisticsReader {
 
     /** Write schema of system view to file. */
     private class RowReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
-        /** Row. */
-        private final List<Object> row = new ArrayList<>();
+        /** Number of system view attributes. */
+        private final int size;
 
-        /** User row. */
-        private final List<Object> userRow = Collections.unmodifiableList(row);
+        /** Row. */
+        private List<Object> row;
 
         /** Not enough bytes. */
         private boolean notEnoughBytes;
+
+        public RowReaderVisitor(int size) {
+            this.size = size;
+
+            row = new ArrayList<>(size);
+        }
 
         /**  */
         public List<Object> row() {
             if (notEnoughBytes)
                 return null;
 
-            return userRow;
+            return Collections.unmodifiableList(row);
         }
 
         /** */
         public void clear() {
-            row.clear();
+            row = new ArrayList<>(size);
 
             notEnoughBytes = false;
         }
