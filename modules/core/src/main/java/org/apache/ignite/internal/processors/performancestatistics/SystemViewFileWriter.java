@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.*;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 
@@ -79,14 +80,14 @@ class SystemViewFileWriter extends GridWorker {
 
         sysViewMgr = ctx.systemView();
 
-        file = FilePerformanceStatisticsWriter.resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
+        file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
         fileIo = new RandomAccessFileIOFactory().create(file);
 
-        int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, FilePerformanceStatisticsWriter.DFLT_BUFFER_SIZE);
+        int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
         buf = ByteBuffer.allocateDirect(bufSize);
         buf.order(ByteOrder.LITTLE_ENDIAN);
 
-        flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE);
+        flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
         valWriterVisitor = new AttributeWithValueWriterVisitor(buf);
 
@@ -102,7 +103,7 @@ class SystemViewFileWriter extends GridWorker {
 
         doWrite(buf -> {
             buf.put(OperationType.VERSION.id());
-            buf.putShort(FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION);
+            buf.putShort(FILE_FORMAT_VERSION);
         });
     }
 
@@ -156,8 +157,8 @@ class SystemViewFileWriter extends GridWorker {
     private void writeSchemaToBuf(SystemViewRowAttributeWalker<Object> walker, String viewName) throws IOException {
         doWrite(buf -> {
             buf.put(SYSTEM_VIEW_SCHEMA.id());
-            FilePerformanceStatisticsWriter.writeString(buf, viewName, strCache.cacheIfPossible(viewName));
-            FilePerformanceStatisticsWriter.writeString(buf, walker.getClass().getName(), strCache.cacheIfPossible(walker.getClass().getName()));
+            writeString(buf, viewName, strCache.cacheIfPossible(viewName));
+            writeString(buf, walker.getClass().getName(), strCache.cacheIfPossible(walker.getClass().getName()));
         });
     }
 
@@ -212,7 +213,7 @@ class SystemViewFileWriter extends GridWorker {
 
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
-            FilePerformanceStatisticsWriter.writeString(buf, String.valueOf(val), strCache.cacheIfPossible(String.valueOf(val)));
+            writeString(buf, String.valueOf(val), strCache.cacheIfPossible(String.valueOf(val)));
         }
 
         /** {@inheritDoc} */
