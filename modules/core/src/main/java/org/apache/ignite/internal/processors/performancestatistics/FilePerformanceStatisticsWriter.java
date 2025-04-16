@@ -707,7 +707,6 @@ public class FilePerformanceStatisticsWriter {
                         systemView(view);
 
                 flush();
-                fileIo.force();
 
                 if (log.isInfoEnabled())
                     log.info("Finished writing system views to performance statistics file: " + file + '.');
@@ -719,6 +718,13 @@ public class FilePerformanceStatisticsWriter {
 
         /** {@inheritDoc} */
         @Override protected void cleanup() {
+            try {
+                fileIo.force();
+            }
+            catch (IOException e) {
+                log.warning("Failed to fsync the performance statistics system view file.", e);
+            }
+
             U.closeQuiet(fileIo);
 
             strCache = null;
