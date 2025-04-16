@@ -176,7 +176,7 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Schemas.
      */
-    public Collection<BinarySchema> schemas() {
+    Collection<BinarySchema> schemas() {
         return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
     }
 

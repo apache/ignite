@@ -40,6 +40,7 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
@@ -537,7 +539,7 @@ final class BinaryMetadataTransport {
                     ", typeName=" + msg.metadata().typeName() +
                     ", pendingVer=" + msg.pendingVersion() +
                     ", acceptedVer=" + msg.acceptedVersion() +
-                    ", schemasCnt=" + msg.metadata().schemas().size() + ']');
+                    ", schemasCnt=" + BinaryUtils.schemasAndFieldsIds(msg.metadata()).size() + ']');
 
             int typeId = msg.typeId();
 

@@ -19,13 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -66,7 +63,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Shared serialization/deserialization utils.
  */
-public final class ClientUtils {
+public final class ClientUtils extends BinaryUtils {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -84,57 +81,6 @@ public final class ClientUtils {
         Objects.requireNonNull(name, "name");
 
         return name.hashCode();
-    }
-
-    /**
-     * @param col Collection to serialize.
-     * @param out Output stream.
-     * @param elemWriter Collection element serializer
-     */
-    public static <E> void collection(
-        Collection<E> col, BinaryOutputStream out,
-        BiConsumer<BinaryOutputStream, E> elemWriter
-    ) {
-        if (col == null || col.isEmpty())
-            out.writeInt(0);
-        else {
-            out.writeInt(col.size());
-
-            for (E e : col)
-                elemWriter.accept(out, e);
-        }
-    }
-
-    /**
-     * @param col Collection to serialize.
-     * @param out Output stream.
-     * @param elemWriter Collection element serializer
-     */
-    static <E> void collection(E[] col, BinaryOutputStream out, BiConsumer<BinaryOutputStream, E> elemWriter) {
-        if (col == null || col.length == 0)
-            out.writeInt(0);
-        else {
-            out.writeInt(col.length);
-
-            for (E e : col)
-                elemWriter.accept(out, e);
-        }
-    }
-
-    /**
-     * @param in Input stream.
-     * @param elemReader Collection element deserializer.
-     * @return Deserialized collection.
-     */
-    static <E> Collection<E> collection(BinaryInputStream in, Function<BinaryInputStream, E> elemReader) {
-        Collection<E> col = new LinkedList<>(); // needs to be ordered for some use cases
-
-        int cnt = in.readInt();
-
-        for (int i = 0; i < cnt; i++)
-            col.add(elemReader.apply(in));
-
-        return col;
     }
 
     /**
@@ -162,7 +108,7 @@ public final class ClientUtils {
             String typeName = reader.readString();
             String affKeyFieldName = reader.readString();
 
-            Map<String, BinaryFieldMetadata> fields = ClientUtils.map(
+            Map<String, BinaryFieldMetadata> fields = map(
                 in,
                 unused -> reader.readString(),
                 unused2 -> new BinaryFieldMetadata(reader.readInt(), reader.readInt())
@@ -170,22 +116,14 @@ public final class ClientUtils {
 
             boolean isEnum = reader.readBoolean();
 
-            Map<String, Integer> enumValues = isEnum ? ClientUtils.map(in, unsed -> reader.readString(), unsed2 -> reader.readInt()) : null;
-
-            Collection<BinarySchema> schemas = ClientUtils.collection(
-                in,
-                unused -> new BinarySchema(
-                    reader.readInt(),
-                    new ArrayList<>(ClientUtils.collection(in, unused2 -> reader.readInt()))
-                )
-            );
+            Map<String, Integer> enumValues = isEnum ? map(in, unsed -> reader.readString(), unsed2 -> reader.readInt()) : null;
 
             return new BinaryMetadata(
                 typeId,
                 typeName,
                 fields,
                 affKeyFieldName,
-                schemas,
+                readSchemas(reader, in),
                 isEnum,
                 enumValues
             );
@@ -221,19 +159,7 @@ public final class ClientUtils {
                     }
                 );
 
-            collection(
-                meta.schemas(),
-                out,
-                (unused, s) -> {
-                    w.writeInt(s.schemaId());
-
-                    collection(
-                        Arrays.stream(s.fieldIds()).boxed().collect(Collectors.toList()),
-                        out,
-                        (unused2, i) -> w.writeInt(i)
-                    );
-                }
-            );
+            writeSchemas(meta, w, out);
         }
     }
 
@@ -285,7 +211,7 @@ public final class ClientUtils {
             itemWriter.accept(CfgItem.SQL_SCHEMA, w -> w.writeString(cfg.getSqlSchema()));
             itemWriter.accept(
                 CfgItem.KEY_CONFIGS,
-                w -> ClientUtils.collection(
+                w -> collection(
                     cfg.getKeyConfiguration(),
                     out,
                     (unused, i) -> {
@@ -297,7 +223,7 @@ public final class ClientUtils {
 
             itemWriter.accept(
                 CfgItem.QUERY_ENTITIES,
-                w -> ClientUtils.collection(
+                w -> collection(
                     cfg.getQueryEntities(),
                     out, (unused, e) -> {
                         w.writeString(e.getKeyType());
@@ -305,7 +231,7 @@ public final class ClientUtils {
                         w.writeString(e.getTableName());
                         w.writeString(e.getKeyFieldName());
                         w.writeString(e.getValueFieldName());
-                        ClientUtils.collection(
+                        collection(
                             e.getFields().entrySet(),
                             out,
                             (unused2, f) -> {
@@ -323,21 +249,21 @@ public final class ClientUtils {
                                 }
                             }
                         );
-                        ClientUtils.collection(
+                        collection(
                             e.getAliases().entrySet(),
                             out, (unused3, a) -> {
                                 w.writeString(a.getKey());
                                 w.writeString(a.getValue());
                             }
                         );
-                        ClientUtils.collection(
+                        collection(
                             e.getIndexes(),
                             out,
                             (unused4, i) -> {
                                 w.writeString(i.getName());
                                 w.writeByte((byte)i.getIndexType().ordinal());
                                 w.writeInt(i.getInlineSize());
-                                ClientUtils.collection(i.getFields().entrySet(), out, (unused5, f) -> {
+                                collection(i.getFields().entrySet(), out, (unused5, f) -> {
                                         w.writeString(f.getKey());
                                         w.writeBoolean(f.getValue());
                                     }
@@ -406,9 +332,9 @@ public final class ClientUtils {
                 .setSqlSchema(reader.readString())
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(reader.readInt()))
                 .setKeyConfiguration(
-                    ClientUtils.collection(in, unused -> new CacheKeyConfiguration(reader.readString(), reader.readString()))
+                    collection(in, unused -> new CacheKeyConfiguration(reader.readString(), reader.readString()))
                         .toArray(new CacheKeyConfiguration[0])
-                ).setQueryEntities(ClientUtils.collection(
+                ).setQueryEntities(collection(
                     in,
                     unused -> {
                         QueryEntity qryEntity = new QueryEntity(reader.readString(), reader.readString())
@@ -419,7 +345,7 @@ public final class ClientUtils {
                         boolean isPrecisionAndScaleSupported =
                             protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE);
 
-                        Collection<QueryField> qryFields = ClientUtils.collection(
+                        Collection<QueryField> qryFields = collection(
                             in,
                             unused2 -> {
                                 String name = reader.readString();
@@ -466,18 +392,18 @@ public final class ClientUtils {
                                 .filter(f -> f.getScale() != -1)
                                 .collect(Collectors.toMap(QueryField::getName, QueryField::getScale))
                             )
-                            .setAliases(ClientUtils.collection(
+                            .setAliases(collection(
                                 in,
                                 unused3 -> new SimpleEntry<>(reader.readString(), reader.readString())
                             ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)))
-                            .setIndexes(ClientUtils.collection(
+                            .setIndexes(collection(
                                 in,
                                 unused4 -> {
                                     String name = reader.readString();
                                     QueryIndexType type = QueryIndexType.fromOrdinal(reader.readByte());
                                     int inlineSize = reader.readInt();
 
-                                    LinkedHashMap<String, Boolean> fields = ClientUtils.collection(
+                                    LinkedHashMap<String, Boolean> fields = collection(
                                         in,
                                         unused5 -> new SimpleEntry<>(reader.readString(), reader.readBoolean())
                                     ).stream().collect(Collectors.toMap(
@@ -505,7 +431,7 @@ public final class ClientUtils {
         out.writeInt(qry.getPageSize());
         out.writeInt(-1); // do not limit
         writeObject(out, qry.getSql());
-        ClientUtils.collection(qry.getArgs() == null ? null : Arrays.asList(qry.getArgs()), out, this::writeObject);
+        collection(qry.getArgs() == null ? null : Arrays.asList(qry.getArgs()), out, this::writeObject);
         out.writeByte((byte)0); // statement type ANY
         out.writeBoolean(qry.isDistributedJoins());
         out.writeBoolean(qry.isLocal());

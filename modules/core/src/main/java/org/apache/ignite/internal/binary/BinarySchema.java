@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * for quick comparisons performed within already fetched L1 cache line.
  * - When there are more fields, we store them inside a hash map.
  */
-public class BinarySchema implements Externalizable {
+class BinarySchema implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -470,7 +470,7 @@ public class BinarySchema implements Externalizable {
          *
          * @return Schema.
          */
-        public BinarySchema build() {
+        BinarySchema build() {
             return new BinarySchema(schemaId, fields);
         }
     }
