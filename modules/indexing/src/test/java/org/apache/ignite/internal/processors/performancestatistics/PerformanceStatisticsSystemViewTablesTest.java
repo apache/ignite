@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -72,6 +74,16 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
             cache.put(0L, new Person(1, "Alex", 3));
 
             startCollectStatistics();
+
+            cache.put(0L, new Person(2, "Bob", 1));
+
+            SqlFieldsQuery sql = new SqlFieldsQuery(
+                "select * from Person");
+
+            try (QueryCursor<List<?>> cursor = cache.query(sql)) {
+                for (List<?> row : cursor)
+                    System.out.println("personName=" + row.get(0));
+            }
 
             Set<Object> expectedIndexes = Set.of("PERSON_ID_ASC_IDX", "PERSON_SALARY_DESC_IDX");
             Set<Object> actualIndexes = new HashSet<>();
