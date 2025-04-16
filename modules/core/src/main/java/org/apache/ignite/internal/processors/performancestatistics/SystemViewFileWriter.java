@@ -39,7 +39,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.*;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.resolveStatisticsFile;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 
