@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,9 +50,7 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteCommonsSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
@@ -847,23 +844,6 @@ public class FilePerformanceStatisticsWriter {
             @Override public void acceptDouble(int idx, String name, double val) {
                 buf.putDouble(val);
             }
-        }
-    }
-
-    /** Caches strings for performance statistics writing. */
-    private static class StringCache {
-        /** Maximum cached strings threshold. String caching will stop on threshold excess. */
-        private final int cachedStrsThreshold = getInteger(IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD, DFLT_CACHED_STRINGS_THRESHOLD);
-
-        /** Hashcodes of cached strings. */
-        private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
-
-        /** @return {@code True} if string was cached and can be written as hashcode. */
-        public boolean cacheIfPossible(String str) {
-            if (knownStrs.size() >= cachedStrsThreshold)
-                return false;
-
-            return !knownStrs.add(str.hashCode());
         }
     }
 }
