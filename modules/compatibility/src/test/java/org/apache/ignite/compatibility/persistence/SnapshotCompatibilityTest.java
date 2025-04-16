@@ -137,7 +137,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     public void testSnapshotRestore() throws Exception {
         assumeFalse("Incremental snapshots for cache dump not supported", incSnp && cacheDump);
 
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-23222", incSnp && !customConsId);
+        assumeFalse("Incremental snapshots require same consistentID", incSnp && !customConsId);
 
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-25096", incSnp && oldNodesCnt == 3);
 
