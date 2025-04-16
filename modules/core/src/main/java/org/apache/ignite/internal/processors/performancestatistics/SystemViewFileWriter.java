@@ -85,6 +85,7 @@ class SystemViewFileWriter extends GridWorker {
         sysViewMgr = ctx.systemView();
 
         File file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
+
         fileIo = new RandomAccessFileIOFactory().create(file);
 
         filePath = file.getPath();
@@ -146,7 +147,7 @@ class SystemViewFileWriter extends GridWorker {
         buf = null;
     }
 
-    /**  */
+    /** */
     private void systemView(SystemView<?> view) throws IOException {
         SystemViewRowAttributeWalker<Object> walker = ((SystemView<Object>)view).walker();
 
