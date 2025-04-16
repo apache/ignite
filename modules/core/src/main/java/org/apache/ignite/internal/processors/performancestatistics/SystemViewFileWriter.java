@@ -53,7 +53,7 @@ class SystemViewFileWriter extends GridWorker {
     private static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
 
     /** Performance statistics system view file. */
-    private final File file;
+    private final String filePath;
 
     /** Performance statistics file I/O. */
     private final FileIO fileIo;
@@ -84,8 +84,10 @@ class SystemViewFileWriter extends GridWorker {
 
         sysViewMgr = ctx.systemView();
 
-        file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
+        File file = resolveStatisticsFile(ctx, "node-" + ctx.localNodeId() + "-system-views");
         fileIo = new RandomAccessFileIOFactory().create(file);
+
+        filePath = file.getPath();
 
         int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
         buf = ByteBuffer.allocateDirect(bufSize);
@@ -121,10 +123,10 @@ class SystemViewFileWriter extends GridWorker {
             flush();
 
             if (log.isInfoEnabled())
-                log.info("Finished writing system views to performance statistics file: " + file + '.');
+                log.info("Finished writing system views to performance statistics file: " + filePath + '.');
         }
         catch (IOException e) {
-            log.error("Unable to write to the performance statistics file: " + file + '.', e);
+            log.error("Unable to write to the performance statistics file: " + filePath + '.', e);
         }
     }
 
