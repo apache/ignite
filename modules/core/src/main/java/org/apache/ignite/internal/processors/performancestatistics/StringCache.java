@@ -33,7 +33,7 @@ class StringCache {
     private final Set<Integer> knownStrs = new GridConcurrentHashSet<>();
 
     /** @return {@code True} if string was cached and can be written as hashcode. */
-    boolean cacheIfPossible(String str) {
+    public boolean cacheIfPossible(String str) {
         if (knownStrs.size() >= cachedStrsThreshold)
             return false;
 
