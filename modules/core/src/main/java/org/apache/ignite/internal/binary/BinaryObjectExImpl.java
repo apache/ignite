@@ -133,7 +133,7 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
      *
      * @return Schema.
      */
-    public abstract BinarySchema createSchema();
+    abstract BinarySchema createSchema();
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
