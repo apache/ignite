@@ -90,7 +90,10 @@ public class DmlStatementsProcessor {
     }
 
     /** Remove updater. */
-    public static final class RemoveClosure implements IgniteInClosure<MutableEntry<Object, Object>> {
+    public static final IgniteInClosure<MutableEntry<Object, Object>> RMV = new RemoveClosure();
+
+    /** Remove updater class. */
+    private static final class RemoveClosure implements IgniteInClosure<MutableEntry<Object, Object>> {
         /** {@inheritDoc} */
         @Override public void apply(MutableEntry<Object, Object> e) {
             e.remove();
