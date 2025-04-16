@@ -132,11 +132,6 @@ public class FilePerformanceStatisticsWriter {
     public void start() throws IOException {
         fileWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
 
-        sysViewFileWriter.doWrite(buf -> {
-            buf.put(OperationType.VERSION.id());
-            buf.putShort(FILE_FORMAT_VERSION);
-        });
-
         new IgniteThread(fileWriter).start();
         new IgniteThread(sysViewFileWriter).start();
     }
@@ -694,6 +689,11 @@ public class FilePerformanceStatisticsWriter {
                 "statisticsPartitionData", // TODO: IGNITE-25152
                 "nodes");
             sysViewPredicate = view -> !ignoredViews.contains(view.name());
+
+            doWrite(buf -> {
+                buf.put(OperationType.VERSION.id());
+                buf.putShort(FILE_FORMAT_VERSION);
+            });
         }
 
         /** {@inheritDoc} */
