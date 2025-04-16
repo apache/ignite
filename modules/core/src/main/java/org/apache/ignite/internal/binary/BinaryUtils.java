@@ -2772,6 +2772,14 @@ public class BinaryUtils {
     }
 
     /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryEnumArray}.
+     */
+    public static boolean isBinaryEnumArray(Object val) {
+        return val instanceof BinaryEnumArray;
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {
