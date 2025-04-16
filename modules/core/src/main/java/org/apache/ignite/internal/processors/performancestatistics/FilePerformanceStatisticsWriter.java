@@ -713,7 +713,7 @@ public class FilePerformanceStatisticsWriter {
                     log.info("Finished writing system views to performance statistics file: " + file + '.');
             }
             catch (IOException e) {
-                log.error("Unable to write to the performance statistics file.", e);
+                log.error("Unable to write to the performance statistics file: " + file + '.', e);
             }
         }
 
