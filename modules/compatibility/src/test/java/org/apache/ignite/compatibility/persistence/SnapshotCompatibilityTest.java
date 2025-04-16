@@ -252,12 +252,15 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(
-            CACHE_DUMP_NAME,
-            customSnpPath ? customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
-            node.configuration(),
-            consumer
-        ), log).run();
+        new DumpReader(
+            new DumpReaderConfiguration(
+                CACHE_DUMP_NAME,
+                customSnpPath ? customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
+                node.configuration(),
+                consumer
+            ),
+            log
+        ).run();
 
         cacheGrpInfo.cacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
