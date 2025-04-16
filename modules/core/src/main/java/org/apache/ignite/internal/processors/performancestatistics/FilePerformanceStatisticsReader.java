@@ -116,8 +116,8 @@ public class FilePerformanceStatisticsReader {
     /** Forward read mode. */
     private ForwardRead forwardRead;
 
-    /** Reads system view recors. */
     private View viewReader;
+    /** Reads system view records. */
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
