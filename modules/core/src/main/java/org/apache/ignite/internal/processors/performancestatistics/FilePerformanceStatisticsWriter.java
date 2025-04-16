@@ -129,17 +129,17 @@ public class FilePerformanceStatisticsWriter {
 
         fileWriter = new FileWriter(ctx);
         sysViewFileWriter = new SystemViewFileWriter(ctx);
+    }
 
+    /** Starts collecting performance statistics. */
+    public void start() throws IOException {
         fileWriter.doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
 
         sysViewFileWriter.doWrite(buf -> {
             buf.put(OperationType.VERSION.id());
             buf.putShort(FILE_FORMAT_VERSION);
         });
-    }
 
-    /** Starts collecting performance statistics. */
-    public void start() {
         new IgniteThread(fileWriter).start();
         new IgniteThread(sysViewFileWriter).start();
     }
