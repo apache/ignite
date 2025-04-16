@@ -116,8 +116,8 @@ public class FilePerformanceStatisticsReader {
     /** Forward read mode. */
     private ForwardRead forwardRead;
 
-    private View viewReader;
     /** Reads system view records. */
+    private SystemViewEntry sysViewEntry;
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -307,7 +307,7 @@ public class FilePerformanceStatisticsReader {
             assert walkerName.str != null : "Views are written by single thread, no string cache misses are possible";
 
             try {
-                viewReader = new View(viewName.str, walkerName.str);
+                sysViewEntry = new SystemViewEntry(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
                 throw new IOException("Could not find walker: " + walkerName);
@@ -315,13 +315,13 @@ public class FilePerformanceStatisticsReader {
             return true;
         }
         else if (opType == SYSTEM_VIEW_ROW) {
-            List<Object> row = viewReader.nextRow();
+            List<Object> row = sysViewEntry.nextRow();
 
             if (row == null)
                 return false;
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.systemView(nodeId, viewReader.viewName, viewReader.schema, row);
+                hnd.systemView(nodeId, sysViewEntry.viewName, sysViewEntry.schema, row);
             return true;
         }
         else if (opType == QUERY_READS) {
@@ -660,7 +660,7 @@ public class FilePerformanceStatisticsReader {
     }
 
     /** Reads views from buf. */
-    private class View {
+    private class SystemViewEntry {
         /** */
         private final String viewName;
 
@@ -679,7 +679,7 @@ public class FilePerformanceStatisticsReader {
          * @param viewName System view name.
          * @param walkerName Name of walker to visist system view attributes.
          */
-        public View(String viewName, String walkerName) throws ReflectiveOperationException {
+        public SystemViewEntry(String viewName, String walkerName) throws ReflectiveOperationException {
             walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
 
             this.viewName = viewName;
