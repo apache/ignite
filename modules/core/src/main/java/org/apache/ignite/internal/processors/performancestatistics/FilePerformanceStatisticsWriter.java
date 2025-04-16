@@ -655,7 +655,7 @@ public class FilePerformanceStatisticsWriter {
         private final FileIO fileIo;
 
         /** Buffer. */
-        private final ByteBuffer buf;
+        private ByteBuffer buf;
 
         /** */
         private final int flushSize;
@@ -728,6 +728,8 @@ public class FilePerformanceStatisticsWriter {
             U.closeQuiet(fileIo);
 
             strCache = null;
+
+            buf = null;
         }
 
         /**  */
