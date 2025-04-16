@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.api;
 import java.util.Collection;
 
 /**
- * Pluggable Ignite component that is responsible for providing list of commands for control utility.
+ * Pluggable Ignite component that is responsible for providing list of commands for management API.
  */
 public interface CommandsProvider {
     /** Gets all supported by this provider commands. */
