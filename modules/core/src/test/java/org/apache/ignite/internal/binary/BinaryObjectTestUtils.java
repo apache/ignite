@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.binary.BinaryObject;
+
 /**
  * Simple utility class to check package-private class in some tests.
  */
-public class BinaryObjectOffheapImplUtils {
+public class BinaryObjectTestUtils {
     /**
      * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryObjectOffheapImpl}, {@code false} otherwise.
      */
-    public static boolean isInstance(Object val) {
+    public static boolean isBinaryObjectOffheapImplInstance(Object val) {
         return val instanceof BinaryObjectOffheapImpl;
+    }
+
+    /**
+     * @param obj
+     * @return Value of {@link BinaryAbstractIdentityResolver#hashCode(BinaryObject)}
+     */
+    public static int binaryArrayIdentityResolverHashCode(BinaryObject obj) {
+        return BinaryArrayIdentityResolver.instance().hashCode(obj);
     }
 }
