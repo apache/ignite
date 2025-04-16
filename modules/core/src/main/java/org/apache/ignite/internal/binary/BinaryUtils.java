@@ -54,6 +54,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,6 +84,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
+import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
  * Binary utils.
@@ -563,6 +567,17 @@ public class BinaryUtils {
     public static Object unwrapLazy(@Nullable Object obj) {
         if (obj instanceof BinaryLazyValue)
             return ((BinaryLazyValue)obj).value();
+
+        return obj;
+    }
+
+    /**
+     * @param obj Value to unwrap.
+     * @return Unwrapped value.
+     */
+    public static Object unwrapTemporary(Object obj) {
+        if (obj instanceof BinaryObjectOffheapImpl)
+            return ((BinaryObjectOffheapImpl)obj).heapCopy();
 
         return obj;
     }
@@ -2727,6 +2742,33 @@ public class BinaryUtils {
      */
     public static void clearCache() {
         BinaryEnumCache.clear();
+    }
+
+    /**
+     * @return Unwrap function for object size calculation.
+     */
+    public static Map<Class<?>, Function<Object, Object>> unwrapFuncForSizeCalc() {
+        return Map.of(
+            BinaryArray.class, bo -> ((BinaryArray)bo).array(),
+            BinaryEnumArray.class, bo -> ((BinaryArray)bo).array()
+        );
+    }
+
+    /**
+     * @return Map of function returning size of the object.
+     */
+    public static Map<Class<?>, ToIntFunction<Object>> sizeProviders() {
+        return Map.of(
+            BinaryObjectOffheapImpl.class, obj -> 0, // No extra heap memory.
+            BinaryObjectImpl.class, new ToIntFunction<>() {
+                private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
+
+                @Override public int applyAsInt(Object bo) {
+                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).array().length);
+                }
+            },
+            BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
+        );
     }
 
     /**

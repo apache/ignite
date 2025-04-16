@@ -69,7 +69,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -1417,13 +1416,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
-        if (!ctx.cacheObjectContext().binaryEnabled())
-            return obj;
-
-        if (obj instanceof BinaryObjectOffheapImpl)
-            return ((BinaryObjectOffheapImpl)obj).heapCopy();
-
-        return obj;
+        return ctx.cacheObjectContext().binaryEnabled()
+            ? BinaryUtils.unwrapTemporary(obj)
+            : obj;
     }
 
     /**
