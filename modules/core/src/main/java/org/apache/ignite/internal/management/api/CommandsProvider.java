@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline;
+package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
-import org.apache.ignite.internal.management.api.Command;
 
 /**
- * Pluggable Ignite component that is responsible for providing list of commands for control utility.
+ * Pluggable Ignite component that is responsible for providing list of commands for management API.
  */
 public interface CommandsProvider {
     /** Gets all supported by this provider commands. */
-    public Collection<Command<?, ?>> commands();
+    Collection<Command<?, ?>> commands();
 }
