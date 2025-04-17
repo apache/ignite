@@ -897,7 +897,6 @@ public class NodeFileTree extends SharedFileTree {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NodeFileTree.class, this);
