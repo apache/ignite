@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk;
 /**
  * Contains thread-local data for binary marshalling.
  */
-public class BinaryThreadLocalContext {
+class BinaryThreadLocalContext {
     /** Thread-local instance. */
     private static final ThreadLocal<BinaryThreadLocalContext> CTX = new ThreadLocal<BinaryThreadLocalContext>() {
         @Override protected BinaryThreadLocalContext initialValue() {

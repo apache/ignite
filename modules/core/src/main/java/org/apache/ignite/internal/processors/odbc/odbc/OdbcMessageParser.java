@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -258,8 +257,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         OdbcResponse msg = (OdbcResponse)msg0;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(INIT_CAP),
-            BinaryThreadLocalContext.get().schemaHolder(), null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(INIT_CAP), null);
 
         // Writing status.
         if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
