@@ -111,8 +111,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param out Output stream.
      * @param handles Handles.
      */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
-        BinaryWriterHandles handles) {
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterHandles handles) {
+        this(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), handles);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @param handles Handles.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema, BinaryWriterHandles handles) {
         this.ctx = ctx;
         this.out = out;
         this.schema = schema;
