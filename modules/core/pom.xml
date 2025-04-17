@@ -61,8 +61,7 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-binary-api</artifactId>
-            <scope>provided</scope>
+            <artifactId>ignite-binary-api</artifactId>            
         </dependency>
 
         <dependency>

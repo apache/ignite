@@ -71,6 +71,7 @@ form(novalidate name=form)
                         div {{ $item.cacheMode }}
                         div {{ $item.atomicityMode }}
                         div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
+                        div {{ $ctrl.getCacheMetrics($item) }}
                     list-editable-item-edit
                         div
                             +form-field__text({
@@ -106,6 +107,15 @@ form(novalidate name=form)
                                 label: 'Backups:',
                                 model: '$item.backups',
                                 name: '"backups"',
+                                placeholder: '0',
+                                disabled: false,
+                                min: 0
+                            })
+                        div
+                            +form-field__number({
+                                label: 'Rows:',
+                                model: '$item.rows',
+                                name: '"rows"',
                                 placeholder: '0',
                                 disabled: true,
                                 min: 0

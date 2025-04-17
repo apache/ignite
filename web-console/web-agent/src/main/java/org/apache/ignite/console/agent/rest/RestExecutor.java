@@ -31,6 +31,8 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.agent.service.LangflowApiClient;
+import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -56,6 +58,8 @@ public class RestExecutor implements AutoCloseable {
     
     /** */
     private final HttpClient httpClient;
+    
+    private final LangflowApiClient langflowClient;
 
     /**
      * @param sslCtxFactory Ssl context factory.
@@ -65,6 +69,8 @@ public class RestExecutor implements AutoCloseable {
         		.connectTimeout(Duration.ofSeconds(60))
         		.followRedirects(Redirect.NEVER)
         		.build();
+        
+        langflowClient = new LangflowApiClient();
        
     }
 
@@ -128,8 +134,21 @@ public class RestExecutor implements AutoCloseable {
         if("text2sql".equals(cmd)) {
     		// Text Query
         	JsonArray list = new JsonArray();
-    		String text = "SELECT * from //" + params.getString("text");
-			list.add(text);                    		
+        	params.put("input_value", params.getString("text"));
+        	String endpoint = params.getString("endpoint","text2sql");
+        	ServiceResult r = langflowClient.call(endpoint,params);
+        	if(r.getStatus().equals("200")) {
+        		try {
+		    		JsonArray outputs = r.getResult().getJsonArray("outputs").getJsonObject(0).getJsonArray("outputs");
+		    		for(int i=0;i<outputs.size();i++) {
+			    		String sql = outputs.getJsonObject(i).getJsonObject("results").getJsonObject("message").getString("text");
+						list.add(sql);
+		    		}
+        		}
+        		catch(Exception e) {
+        			
+        		}
+			} 		
     		return RestResult.success(list.encode(), params.getString("sessionToken"));
 		} 
         

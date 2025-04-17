@@ -37,7 +37,7 @@ export default class AuthService {
     ) {}
 
     signup(userInfo: SignupUserInfo, loginAfterSignup: boolean = true) {
-        return this._auth('signup', userInfo, loginAfterSignup);
+        return this._auth('signup', userInfo);
     }
 
     signin(signinInfo: SigninUserInfo) {

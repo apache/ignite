@@ -28,9 +28,8 @@ h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.itemID$|async:this')
 
 model-edit-form(
     model='$ctrl.originalItem$|async:this'
-    models='$ctrl.shortItems$|async:this'
-    caches='$ctrl.shortCaches$|async:this'
     on-save='$ctrl.save($event)'
+    caches='$ctrl.shortCaches$|async:this'
     ng-class='{"pca-form-blocked": !($ctrl.itemID$|async:this)}'
     fake-ui-can-exit='base.configuration.edit.advanced.models.model'
     form-ui-can-exit-guard

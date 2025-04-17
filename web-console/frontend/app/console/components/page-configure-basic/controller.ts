@@ -44,16 +44,37 @@ export default class PageConfigureBasicController {
         private AgentManager: AgentManager,      
         private $scope: ng.IScope
     ) {
-        this.formActionsMenu = []
+
         this.formActionsMenu.push({
             text: 'Ctl Cluster',
-            click: () => this.callService('serviceList'),
+            click: () => this.callService('CacheMetricsService'),
             icon: 'checkmark'
         })
         
         this.$scope.formActionsMenu = this.formActionsMenu;
     }
     
+    formActionsMenu:Array<any> = [];
+    cachesColDefs = [
+        {name: 'Name:', cellClass: 'pc-form-grid-col-20'},
+        {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
+        {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
+            Atomicity:
+            <ul>
+                <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
+                <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>                    
+            </ul>
+        `},
+        {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
+            Number of nodes used to back up single partition for partitioned cache
+        `},
+        {name: 'Rows/Size:', cellClass: 'pc-form-grid-col-10', tip: `
+            Number of rows and AllocatedSize for partitioned cache
+        `}
+    ]; 
+
+    cacheMetrics = {};
+
     $onDestroy() {
         this.subscription.unsubscribe();        
         this.$element = null;
@@ -63,11 +84,7 @@ export default class PageConfigureBasicController {
         this.$element.addClass('panel--ignite');
     }
 
-    $onInit() {        
-
-        this.memorySizeInputVisible$ = this.IgniteVersion.currentSbj.pipe(
-            map((version) => this.IgniteVersion.since(version.ignite, '2.0.0'))
-        );
+    $onInit() {
 
         const clusterID$ = this.$uiRouter.globals.params$.pipe(
             take(1),
@@ -89,9 +106,7 @@ export default class PageConfigureBasicController {
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
-        );       
-        
-        this.serviceList = {'status':{ name:'status',description:'get cluster last status'}};
+        );        
         
         this.subscription = merge(
             this.shortCaches$.pipe(
@@ -108,32 +123,28 @@ export default class PageConfigureBasicController {
                 // clonedCluster every time, then data rollback on server errors would undo all changes
                 // made by user and we don't want that. Advanced configuration forms do the same too.
                 if (get(v, 'id') !== get(this.clonedCluster, 'id')) this.clonedCluster = cloneDeep(v);
-                                
-                this.serviceList = Object.assign({},this.callService('serviceList'));  
                 
                 this.clonedCluster.demo = this.AgentManager.isDemoMode();
                 
                 this.originalCluster.status =  this.clonedCluster.status;
                 
+                this.callService('CacheMetricsService').then((m)=>{
+                    if(m) this.cacheMetrics = m;
+                });
                 
             }))
-        ).subscribe();  
-
-        this.cachesColDefs = [
-            {name: 'Name:', cellClass: 'pc-form-grid-col-20'},
-            {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
-            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
-                Atomicity:
-                <ul>
-                    <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
-                    <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>                    
-                </ul>
-            `},
-            {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
-                Number of nodes used to back up single partition for partitioned cache
-            `}
-        ]; 
+        ).subscribe();
         
+    }
+
+    getCacheMetrics(cache) {
+        const m = cache && this.cacheMetrics[cache.name];
+        if(m){
+            return ''+m.cacheSize+'/'+ m.offHeapAllocatedSize;
+        }             
+        else{
+            return '';
+        }
     }
 
     changeCache(cache) {
@@ -155,7 +166,7 @@ export default class PageConfigureBasicController {
     buildFormActionsMenu(){
         let formActionsMenu = [];
        
-        if(this.$scope.status && this.$scope.status!="started"){
+        if(this.$scope.status && this.$scope.status=="stoped"){
             formActionsMenu.push({
                 text: 'Start Cluster',
                 click: () => this.confirmAndStart(),
@@ -211,8 +222,8 @@ export default class PageConfigureBasicController {
         });        
     }
     
-    callService(serviceName,args) {
-        this.AgentManager.callClusterService(this.clonedCluster,serviceName,args).then((data) => {  
+    callService(serviceName,args={}) {
+        return this.AgentManager.callCacheService(this.clonedCluster,serviceName,args).then((data) => {  
             this.$scope.status = data.status;
             this.buildFormActionsMenu();
             this.clonedCluster.status = data.status;            
@@ -227,7 +238,7 @@ export default class PageConfigureBasicController {
        .catch((e) => {
            this.$scope.status = 'stoped'
            this.buildFormActionsMenu();
-           this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+           this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e.message);           
         });
     }
 

@@ -244,8 +244,7 @@ public class JdbcQueryExecutor implements Callable<JsonObject> {
             JsonArray metaDataArray = new JsonArray();
             int columnCount = resultSetMetaData.getColumnCount();
 
-            //Adding metadata of the result. This is a fix for SQLite. Earlier the method was
-            // called late.
+            //Adding metadata of the result. This is a fix for SQLite. Earlier the method was called late.
             addMetadata(resultSetMetaData, metaDataArray, columnCount);
 
             JsonArray dataArray = new JsonArray();
@@ -275,9 +274,8 @@ public class JdbcQueryExecutor implements Callable<JsonObject> {
 			JsonObject object = new JsonObject();
 			object.put("fieldName", resultSetMetaData.getColumnLabel(counter));
 			object.put("typeName", resultSetMetaData.getTableName(counter));
-			object.put("schemaName", resultSetMetaData.getSchemaName(counter));	
-			final String aClass = resultSetMetaData.getColumnClassName(counter);			
-			object.put("fieldTypeName", aClass);
+			object.put("schemaName", resultSetMetaData.getSchemaName(counter));			
+			object.put("fieldTypeName", resultSetMetaData.getColumnTypeName(counter));
 			metaDataArray.add(object);
 		}		
 	}
@@ -290,11 +288,11 @@ public class JdbcQueryExecutor implements Callable<JsonObject> {
         for (int counter = 1; counter <= columnCount; counter++) {
             JsonObject object = new JsonObject();
             object.put("name", resultSetMetaData.getColumnLabel(counter));
+            object.put("type", resultSetMetaData.getColumnTypeName(counter));
 
-            int columnType = resultSetMetaData.getColumnType(counter);
-            final String aClass = resultSetMetaData.getColumnClassName(counter);
-            int pos = aClass.lastIndexOf(".");
-            object.put("type", aClass.substring(pos+1));
+            //int columnType = resultSetMetaData.getColumnType(counter);
+            //final String aClass = resultSetMetaData.getColumnTypeName(counter);
+            //int pos = aClass.lastIndexOf(".");
 
             columnNameAndType.put(Integer.toString(counter), object);
         }

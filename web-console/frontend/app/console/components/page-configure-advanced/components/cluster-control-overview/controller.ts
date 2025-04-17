@@ -57,7 +57,7 @@ export default class ClusterControlController {
                 placeholder: 'Filter by name…'
             },
             sortingAlgorithm: naturalCompare,
-            width: 200
+            width: 150
         },
         {
             name: 'text',
@@ -65,7 +65,7 @@ export default class ClusterControlController {
             field: 'text',
             enableHiding: false,
             sortingAlgorithm: naturalCompare,
-            width: 250
+            width: 350
         },
         {
             name: 'usage',

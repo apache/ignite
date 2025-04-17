@@ -15,7 +15,7 @@ import org.apache.ignite.services.ServiceContext;
 import io.swagger.annotations.ApiOperation;
 import io.vertx.core.json.JsonObject;
 
-@ApiOperation("load dbstore data to cache")
+@ApiOperation("Load dbstore data to cache")
 public class CacheLoadDataService implements CacheAgentService {
    
 	 /** Ignite instance. */
@@ -28,7 +28,7 @@ public class CacheLoadDataService implements CacheAgentService {
 		int count = 0;
 		JsonObject args = new JsonObject(payload);	
 		List<String> message = result.getMessages();
-		List<String> caches = ClusterAgentServiceUtil.cacheNameSelectList(ignite,args);
+		List<String> caches = cacheNameSelectList(ignite,args);
 		for(String cache: caches) {
 			try {
 				IgniteCache<?,?> igcache = ignite.cache(cache);
@@ -47,7 +47,7 @@ public class CacheLoadDataService implements CacheAgentService {
 			message.add("Finish load data successfull!");
 		}
 		
-		result.put("caches", ignite.cacheNames());
+		result.put("caches", caches);
 		result.put("count", count);
 		return result;
 	}

@@ -79,7 +79,6 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.CacheAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
-import org.apache.ignite.console.agent.service.ClusterAgentServiceUtil;
 import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.utils.Utils;
@@ -426,6 +425,7 @@ public class WebSocketRouter implements AutoCloseable {
     	    	catch(IgniteIllegalStateException e) {	
     	    		stat.put("message", e.getMessage());
     	    		stat.put("status", "stoped");
+    	    		stat.put("error", e.getClass().getSimpleName());
     	    	}
     		}        
         }
@@ -437,7 +437,8 @@ public class WebSocketRouter implements AutoCloseable {
     		}
 	    	catch(IgniteIllegalStateException e) {	
 	    		stat.put("message", e.getMessage());
-	    		stat.put("status", "stoped");	    		
+	    		stat.put("status", "stoped");
+	    		stat.put("error", e.getClass().getSimpleName());
 	    	}
     	}
         else {
@@ -493,6 +494,7 @@ public class WebSocketRouter implements AutoCloseable {
 				    	catch(IgniteIllegalStateException e) {	
 				    		stat.put("message", e.getMessage());
 				    		stat.put("status", "stoped");
+				    		stat.put("error", e.getClass().getSimpleName());
 				    		return stat;
 				    	}
 					}
@@ -570,6 +572,7 @@ public class WebSocketRouter implements AutoCloseable {
 			e.printStackTrace();
 			stat.put("message", e.getMessage());
 			stat.put("status", "stoped");
+			stat.put("error", e.getClass().getSimpleName());
 		}
         
         return stat;
@@ -600,6 +603,7 @@ public class WebSocketRouter implements AutoCloseable {
 		    	catch(IgniteIllegalStateException e) {	
 		    		stat.put("message", e.getMessage());
 		    		stat.put("status", "stoped");
+		    		stat.put("error", e.getClass().getSimpleName());
 		    		return stat;
 		    	}				
 			}
@@ -633,6 +637,7 @@ public class WebSocketRouter implements AutoCloseable {
         	catch(SQLException e) {	
 	    		stat.put("message", e.getMessage());
 	    		stat.put("status", "fail");
+	    		stat.put("error", e.getClass().getSimpleName());
 	    		return stat;
 	    	}
         	
@@ -714,10 +719,14 @@ public class WebSocketRouter implements AutoCloseable {
             	}	        	
 	        }
 			catch(Exception e) {
+				stat.put("status", "fail");
 				stat.put("message", e.getMessage());
-				stat.put("errorType", e.getClass().getSimpleName());
+				stat.put("error", e.getClass().getSimpleName());
 				runningServices.remove(serviceName);
 			}
+        }
+        else {
+        	stat.put("status", "stoped");
         }
         return stat;
     }

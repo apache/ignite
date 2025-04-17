@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
@@ -29,6 +31,31 @@ public interface CacheAgentService extends Service {
 		for(int i=0;i<selectCaches.size();i++) {
 			list.add(selectCaches.getJsonObject(i));					
 		}		
+		return list;
+	}
+	
+	public default List<String> cacheNameSelectList(Ignite ignite,JsonObject args) {		
+		List<String> list = new ArrayList<>();
+		
+		if(args.containsKey("cache")) {
+			String cacheName = args.getJsonObject("cache").getString("name");
+			if(cacheName!=null && !cacheName.isEmpty()) {
+				IgniteCache<?,?> igcache = ignite.cache(cacheName);
+				if(igcache!=null) {
+					list.add(cacheName);
+				}
+			}
+		}
+		if(args.containsKey("caches")) {
+			JsonArray selectCaches = args.getJsonArray("caches");
+			for(Object cache: selectCaches) {			
+				IgniteCache<?,?> igcache = ignite.cache(cache.toString());
+				
+				if(igcache!=null) {
+					list.add(igcache.getName());
+				}				
+			}
+		}
 		return list;
 	}
 }

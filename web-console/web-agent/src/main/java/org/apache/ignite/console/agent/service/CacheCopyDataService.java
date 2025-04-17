@@ -75,7 +75,7 @@ public class CacheCopyDataService implements CacheAgentService {
 		ServiceResult result = new ServiceResult();
 		int count = 0;		
 		JsonObject args = new JsonObject(payload);
-		List<String> caches = ClusterAgentServiceUtil.cacheNameSelectList(ignite,args);
+		List<String> caches = cacheNameSelectList(ignite,args);
 		String clusterId = args.getString("clusterId");
 		for(String targetCache: caches) {			
 			JsonArray taskFlows = DataSourceManager.getTaskFlows(clusterId, targetCache);
@@ -83,7 +83,7 @@ public class CacheCopyDataService implements CacheAgentService {
 				JsonObject task = taskFlows.getJsonObject(i);
 				ServiceResult resultOne = copyFrom(task);
 				result.getMessages().addAll(resultOne.getMessages());
-				result.getResult().putAll(resultOne.getResult());
+				result.result.getMap().putAll(resultOne.getResult().getMap());
 				result.setStatus(resultOne.getStatus());
 				count++;
 			}

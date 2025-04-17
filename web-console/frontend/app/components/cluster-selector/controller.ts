@@ -11,6 +11,7 @@ export default class {
     isDemo = this.agentMgr.isDemoMode();
     _inProgressSubject = new BehaviorSubject(false);
     clusterId = null;
+    cluster: any = null;
     static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages', '$translate'];
 
     constructor(
@@ -33,7 +34,10 @@ export default class {
             filter(([sbj, inProgress]) => !inProgress),
             tap(([{cluster, clusters}]) => {
                 if(cluster && localStorage.clusterId && localStorage.clusterId===cluster.id){
-                    this.cluster = {...cluster} 
+                    this.cluster = {...cluster}
+                    // add@byron
+                    localStorage.clusterName = cluster.name;
+                    // end@
                 }
                 else if(!this.cluster){
                     this.cluster = cluster ? {...cluster} : null;
@@ -51,7 +55,12 @@ export default class {
 
     change(item) {
         this.agentMgr.switchCluster(item)
-            .then(() => this.cluster = item)
+            .then(() => {
+                this.cluster = item;
+                // add@byron
+                localStorage.clusterName = item.name;
+                // end@
+            })
             .catch((err) => {
                 if (!(err instanceof CancellationError))
                     this.Messages.showError(this.$translate.instant('clusterSelectorComponent.failedToSwitchClusterErrorMessage'), err);
@@ -59,7 +68,7 @@ export default class {
     }
 
     isChangeStateAvailable() {
-        return !this.isDemo && this.cluster && this.Version.since(this.cluster.clusterVersion, '2.0.0');
+        return !this.isDemo && this.cluster;
     }
 
     toggle($event) {

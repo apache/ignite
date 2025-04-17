@@ -52,13 +52,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.console.agent.handlers.StringStreamHandler;
-import org.apache.ignite.console.agent.service.CacheClearDataService;
-import org.apache.ignite.console.agent.service.CacheCopyDataService;
-import org.apache.ignite.console.agent.service.CacheLoadDataService;
-import org.apache.ignite.console.agent.service.CacheSaveDataService;
-import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
-import org.apache.ignite.console.agent.service.ClusterAgentVerticleManager;
-import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
+import org.apache.ignite.console.agent.service.*;
 import org.apache.ignite.console.json.JsonBinarySerializer;
 import org.apache.ignite.console.utils.BeanMerger;
 import org.apache.ignite.console.utils.Utils;
@@ -200,14 +194,20 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      */
     public static void deployServices(IgniteServices services) {    	
         
+        services.deployNodeSingleton("CacheMetricsService", new CacheMetricsService());
         services.deployNodeSingleton("CacheLoadDataService", new CacheLoadDataService());
         services.deployNodeSingleton("CacheSaveDataService", new CacheSaveDataService());
         services.deployNodeSingleton("CacheClearDataService", new CacheClearDataService());
+        services.deployNodeSingleton("CacheDestroyService", new CacheDestroyService());
+        services.deployNodeSingleton("CacheDeleteTableService", new CacheDeleteTableService());
+        
         services.deployClusterSingleton("CacheCopyDataService", new CacheCopyDataService());        
         services.deployNodeSingleton("ComputeTaskLoadService", new ComputeTaskLoadService());
         
         services.deployClusterSingleton("ClusterAgentServiceManager", new ClusterAgentServiceManager());
         services.deployClusterSingleton("ClusterAgentVerticleManager", new ClusterAgentVerticleManager());
+
+        
         //String cacheName = "default";
         //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
     }

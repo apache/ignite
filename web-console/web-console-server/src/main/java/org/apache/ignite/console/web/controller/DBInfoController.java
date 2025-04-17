@@ -148,7 +148,7 @@ public class DBInfoController {
             ListCollectionsIterable<Document> collections = database.listCollections();            
             collections.forEach((row)->{
             	String collectionName = row.getString("name");
-            	if(!collectionName.startsWith("wc_")) {
+            	if(!collectionName.startsWith("wc_") && !collectionName.startsWith("INDEXES.") && !collectionName.startsWith("igfs-internal-")) {
             		JsonObject table = new JsonObject(row);            	
                 	list.add(table);
             	}

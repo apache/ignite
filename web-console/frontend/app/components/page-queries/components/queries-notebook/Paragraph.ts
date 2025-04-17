@@ -117,7 +117,7 @@ export class Paragraph {
 
                 this.data = self.rows;
 
-                const height = Math.min(self.rows.length, 15) * 30 + 47;
+                const height = Math.min(self.rows.length, 20) * 30 + 47;
 
                 // Remove header height.
                 this.api.grid.element.css('height', height + 'px');

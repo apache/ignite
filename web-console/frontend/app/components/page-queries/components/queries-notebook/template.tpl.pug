@@ -329,7 +329,8 @@ mixin chart-result
         label.margin-top-dflt(translate='queries.notebook.chartResult.noQueryAndScanSupportErrorMessage')
 
 mixin paragraph-scan
-    panel-title {{ paragraph.name }}
+    panel-title {{ paragraph.name }} &nbsp;
+        +btn-toolbar('fa-pencil', '$ctrl.renameParagraph(paragraph)', 'Rename paragraph')
     panel-actions
         query-actions-button(actions='$ctrl.scanActions' item='paragraph')
     panel-content
@@ -436,7 +437,9 @@ mixin paragraph-scan
                     a(translate='queries.notebook.queryResult.nextButtonLabel')
 
 mixin paragraph-query
-    panel-title {{ paragraph.name }}
+    panel-title {{ paragraph.name }} &nbsp;
+        +btn-toolbar('fa-pencil', '$ctrl.renameParagraph(paragraph)', 'Rename paragraph')
+        
     panel-actions
         query-actions-button(actions='$ctrl.queryActions' item='paragraph')
     panel-content
@@ -528,7 +531,8 @@ mixin paragraph-query
                     a(translate='queries.notebook.queryResult.nextButtonLabel')
 
 mixin paragraph-gremlin
-    panel-title {{ paragraph.name }}
+    panel-title {{ paragraph.name }} &nbsp;
+        +btn-toolbar('fa-pencil', '$ctrl.renameParagraph(paragraph)', 'Rename paragraph')
     panel-actions
         query-actions-button(actions='$ctrl.queryActions' item='paragraph')
     panel-content
@@ -718,7 +722,7 @@ div
                         opened='$ctrl.isParagraphOpened($index)'
                         on-close='$ctrl.onParagraphClose($index)'
                         on-open='$ctrl.onParagraphOpen($index)'
-                    )
+                    )                        
                         +paragraph-query
                     panel-collapsible(
                         ng-if='paragraph.queryType === "GREMLIN"'

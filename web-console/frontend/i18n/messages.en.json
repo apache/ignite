@@ -208,6 +208,9 @@
                 "moveUpParagraph":{
                     "buttonLabel": "Move up"
                 },
+                "moveDownParagraph":{
+                    "buttonLabel": "Move down"
+                },
                 "explain": {
                     "buttonLabel": "Explain",
                     "tooltip": "explain query"

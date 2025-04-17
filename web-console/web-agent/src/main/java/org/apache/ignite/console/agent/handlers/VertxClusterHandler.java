@@ -38,8 +38,8 @@ import org.apache.ignite.console.agent.rest.GremlinExecutor;
 import org.apache.ignite.console.agent.rest.GridTaskExecutor;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
-
-
+import org.apache.ignite.console.agent.service.LangflowApiClient;
+import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -85,6 +85,8 @@ public class VertxClusterHandler implements ClusterHandler{
     
     private GridTaskExecutor gridTaskExecutor;
     
+    private final LangflowApiClient langflowClient;
+    
     /** Agent configuration. */
     protected final AgentConfiguration cfg;
     
@@ -95,6 +97,7 @@ public class VertxClusterHandler implements ClusterHandler{
     	this.cfg = cfg;
         gremlinExecutor = new GremlinExecutor(F.first(cfg.nodeURIs()),cfg.gremlinPort());
         gridTaskExecutor = new GridTaskExecutor();
+        this.langflowClient = new LangflowApiClient();
     }
 
     /** {@inheritDoc} */
@@ -108,8 +111,21 @@ public class VertxClusterHandler implements ClusterHandler{
     		if("text2gremlin".equals(cmd)) {
     			
     			JsonArray list = new JsonArray();
-    			String text = "// g.V() " + params.getString("text");
-    			list.add(text);
+    			params.put("input_value", params.getString("text"));
+    			String endpoint = params.getString("endpoint","text2gremlin");
+            	ServiceResult r = langflowClient.call(endpoint,params);
+            	if(r.getStatus().equals("200")) {
+            		try {
+    		    		JsonArray outputs = r.getResult().getJsonArray("outputs").getJsonObject(0).getJsonArray("outputs");
+    		    		for(int i=0;i<outputs.size();i++) {
+    			    		String sql = outputs.getJsonObject(i).getJsonObject("results").getJsonObject("message").getString("text");
+    						list.add(sql);
+    		    		}
+            		}
+            		catch(Exception e) {
+            			
+            		}
+    			}
     			return RestResult.success(list.encode(), params.getString("sessionToken"));
     		}
     		

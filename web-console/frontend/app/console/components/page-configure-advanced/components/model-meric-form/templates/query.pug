@@ -230,7 +230,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                     )
                         list-editable-item-view(item-name='queryIndex')
                             div {{ queryIndex.name }} [{{ queryIndex.indexType }}]
-                            div(ng-repeat='field in queryIndex.fields track by field.id')
+                            div(ng-repeat='field in queryIndex.fields track by field.name')
                                 span {{ field.name }}
                                 span(ng-if='queryIndex.indexType == "SORTED"')
                                     |  / {{ field.direction ? 'ASC' : 'DESC'}}

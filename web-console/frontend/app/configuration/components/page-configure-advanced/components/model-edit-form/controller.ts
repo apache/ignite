@@ -2,7 +2,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import _ from 'lodash';
 import get from 'lodash/get';
 import {StateService} from '@uirouter/angularjs';
-
+import {Menu} from 'app/types';
 import {default as Models} from '../../../../services/Models';
 import {default as ModalImportModels} from '../../../../components/modal-import-models/service';
 import {default as IgniteVersion} from 'app/services/Version.service';
@@ -16,6 +16,7 @@ import ConfigChangesGuard from '../../../../services/ConfigChangesGuard';
 import FormUtils from 'app/services/FormUtils.service';
 
 export default class ModelEditFormController {
+    cachesMenu: Menu<string>;
     model: DomainModel;
     onSave: ng.ICompiledExpression;
 

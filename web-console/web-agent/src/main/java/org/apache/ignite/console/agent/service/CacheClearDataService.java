@@ -16,7 +16,7 @@ import io.swagger.annotations.ApiOperation;
 import io.vertx.core.json.JsonObject;
 
 
-@ApiOperation("clear cache data to cluster")
+@ApiOperation("Clear cache data to cluster")
 public class CacheClearDataService implements CacheAgentService {
    
 	 /** Ignite instance. */
@@ -29,7 +29,7 @@ public class CacheClearDataService implements CacheAgentService {
 		int count = 0;		
 		JsonObject args = new JsonObject(payload);	
 		List<String> message = result.messages;	
-		List<String> caches = ClusterAgentServiceUtil.cacheNameSelectList(ignite,args);
+		List<String> caches = cacheNameSelectList(ignite,args);
 		for(String cache: caches) {
 			try {
 				IgniteCache<?,?> igcache = ignite.cache(cache);
@@ -45,7 +45,7 @@ public class CacheClearDataService implements CacheAgentService {
 			message.add("Finish clear data successfull!");
 		}
 		
-		result.put("caches", ignite.cacheNames());
+		result.put("caches", caches);
 		result.put("count", count);
 		return result;
 	}

@@ -1624,8 +1624,16 @@ public class IgfsDataManager extends IgfsManager {
             lock.lock();
 
             try {
-                while (!ackMap.isEmpty())
-                    U.await(allAcksRcvCond);
+                while (!ackMap.isEmpty()) {                
+	                try {
+	                	allAcksRcvCond.await();
+	                }
+	                catch (InterruptedException e) {
+	                    Thread.currentThread().interrupt();
+	
+	                    throw new IgniteInterruptedCheckedException(e);
+	                }
+                }
             }
             finally {
                 lock.unlock();

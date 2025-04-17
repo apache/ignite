@@ -8,9 +8,10 @@ import java.util.Map;
 import io.vertx.core.json.JsonObject;
 
 public class ServiceResult {
-	String status;
+	private String status;
+	private String error;	
 	List<String> messages = new ArrayList<>();
-	Map<String, Object> result = new HashMap<>();
+	JsonObject result = new JsonObject();
 
 	public ServiceResult setStatus(String status) {
 		this.status = status;
@@ -36,13 +37,24 @@ public class ServiceResult {
 		return messages;
 	}
 
-	public Map<String, Object> getResult() {
+	public JsonObject getResult() {
 		return result;
+	}
+	
+	public String getError() {
+		return error;
+	}
+
+	public void setError(String error) {
+		this.error = error;
 	}
 	
 	public JsonObject toJson() {
 		JsonObject stat = new JsonObject();
 		stat.put("status", status);
+		if(error!=null) {
+			stat.put("error", error);
+		}
 		stat.put("result", result);
 		stat.put("message", messages);
 		return stat;

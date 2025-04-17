@@ -498,14 +498,23 @@ export default class AgentManager {
     }
     
     callClusterService(cluster,serviceName,payload) {
+        if(typeof cluster==='string'){
+            cluster = {id: cluster};
+        }
         return this._sendToAgent('agent:callClusterService',{id:cluster.id,name:cluster.name,serviceName:serviceName,args:payload});
     }
 
     callCacheService(cluster,serviceName,payload) {
+        if(typeof cluster==='string'){
+            cluster = {id: cluster};
+        }
         return this._sendToAgent('agent:callClusterService',{id:cluster.id,name:cluster.name,serviceName:serviceName,serviceType:'CacheAgentService',args:payload});
     }
     
     callClusterCommand(cluster,cmdName,payload) {
+        if(typeof cluster==='string'){
+            cluster = {id: cluster};
+        }
         return this._sendToAgent('agent:callClusterCommand',{id:cluster.id,name:cluster.name,cmdName:cmdName,args:payload});
     }
     
@@ -640,16 +649,16 @@ export default class AgentManager {
         return Promise.resolve({cacheGroupsNotAvailable: true});
     }
 
-    text2sql(text:string,nid: string) {
+    text2sql(text:string,nid: string, endpoint:string) {
         if (this.available(AI_SUPPORT_SINCE))
-            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('text2sql', nid,{text});
+            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('text2sql', nid,{text,endpoint});
 
         return Promise.resolve({cacheGroupsNotAvailable: true});
     }
 
-    text2gremlin(text:string,nid: string) {
+    text2gremlin(text:string,nid: string, endpoint:string) {
         if (this.available(AI_SUPPORT_SINCE))
-            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('text2gremlin', nid,{text});
+            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('text2gremlin', nid,{text,endpoint});
 
         return Promise.resolve({cacheGroupsNotAvailable: true});
     }
@@ -668,7 +677,7 @@ export default class AgentManager {
                     .then((nodes) => {
                         let caches = _.map(_.uniqBy(_.flatMap(nodes, 'caches'), 'name'), 'name');
                         return _.filter(caches,(cache)=>{ 
-                            return !cache.startsWith('INDEXES.') && !cache.startsWith('_igfs-internal-')
+                            return !cache.startsWith('INDEXES.') && !cache.startsWith('igfs-internal-')
                         });
                     });
             });

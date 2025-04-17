@@ -461,7 +461,7 @@ export default class ConfigEffects {
             exhaustMap((a) => {
                 return a.confirm
                     // TODO: list items to remove in confirmation
-                    ? from(this.Confirm.confirm('Are you sure you want to remove these items?')).pipe(
+                    ? from(this.Confirm.confirm('Are you sure you want to remove these items from cluster configuration?')).pipe(
                         mapTo(a),
                         catchError(() => empty())
                     )

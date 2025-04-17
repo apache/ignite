@@ -23,7 +23,7 @@ import org.apache.ignite.services.ServiceContext;
 import io.swagger.annotations.ApiOperation;
 import io.vertx.core.json.JsonObject;
 
-@ApiOperation("save ignite cache data to dbstore")
+@ApiOperation("Save ignite cache data to dbstore")
 public class CacheSaveDataService implements CacheAgentService {
    
 	 /** Ignite instance. */
@@ -36,7 +36,7 @@ public class CacheSaveDataService implements CacheAgentService {
 		int count = 0;
 		JsonObject args = new JsonObject(payload);	
 		List<String> message = result.getMessages();
-		List<String> caches = ClusterAgentServiceUtil.cacheNameSelectList(ignite,args);
+		List<String> caches = cacheNameSelectList(ignite,args);
 		for(String cache: caches) {
 			try {
 				IgniteCache<Object, Object> igcache = ignite.cache(cache);					
@@ -72,10 +72,10 @@ public class CacheSaveDataService implements CacheAgentService {
 			}
 		}
 		if(message.isEmpty()) {
-			message.add("Finish load data successfull!");
+			message.add("Finish save data successfull!");
 		}
 		
-		result.put("caches", ignite.cacheNames());
+		result.put("caches", caches);
 		result.put("count", count);
 		return result;
 	}

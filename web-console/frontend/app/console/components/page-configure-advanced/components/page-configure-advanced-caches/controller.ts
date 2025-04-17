@@ -1,12 +1,14 @@
 import cloneDeep from 'lodash/cloneDeep';
 import uuidv4 from 'uuid/v4';
-import {Subject, from, merge, combineLatest} from 'rxjs';
-import {tap, map, filter, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
+import {Subject, BehaviorSubject, from, merge, combineLatest} from 'rxjs';
+import {tap, map, filter, skip, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
+import {Confirm} from 'app/services/Confirm.service';
 import naturalCompare from 'natural-compare-lite';
-
+import {removeClusterItems, advancedSaveCache} from 'app/configuration/store/actionCreators';
 import ConfigureState from 'app/configuration/services/ConfigureState';
 import ConfigSelectors from 'app/configuration/store/selectors';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 import Caches from 'app/configuration/services/Caches';
 import TaskFlows from 'app/console/services/TaskFlows';
 import Version from 'app/services/Version.service';
@@ -18,11 +20,14 @@ export default class Controller {
     static $inject = [
         'ConfigSelectors',
         'configSelectionManager',
+        'Confirm',
         '$uiRouter',
+        '$scope',
         '$transitions',
         'ConfigureState',
         '$state',
         'IgniteVersion',
+        'AgentManager',
         'TaskFlows',
         'Caches'
     ];
@@ -30,17 +35,20 @@ export default class Controller {
     constructor(
         private ConfigSelectors,
         private configSelectionManager,
+        private Confirm: Confirm,
         private $uiRouter: UIRouter,
+        private $scope: ng.IScope,
         private $transitions: TransitionService,
         private ConfigureState: ConfigureState,
         private $state: StateService,
         private Version: Version,
+        private AgentManager: AgentManager, 
         private TaskFlows: TaskFlows,
         private Caches: Caches
     ) {}
 
     visibleRows$ = new Subject();
-    selectedRows$ = new Subject();
+    selectedRows$ = new BehaviorSubject([]); // modify@Byron new Subject();
 
     cachesColumnDefs: Array<IColumnDefOf<ShortCache>> = [
         {
@@ -129,9 +137,11 @@ export default class Controller {
         this.itemEditTitle$ = combineLatest(this.isNew$, this.originalCache$, (isNew, cache) => {
             return `${isNew ? 'Create' : 'Edit'} cache ${!isNew && !!cache && cache.name ? `‘${cache.name}’` : ''}`;
         });
+
+        // 将 BehaviorSubject 转换为忽略初始值的 Observable
         this.selectionManager = this.configSelectionManager({
             itemID$: cacheID$,
-            selectedItemRows$: this.selectedRows$,
+            selectedItemRows$: this.selectedRows$.pipe(skip(1)),
             visibleRows$: this.visibleRows$,
             loadedItems$: this.shortCaches$
         });
@@ -155,7 +165,7 @@ export default class Controller {
                 click: () => {
                     this.remove(selectedItems);
                 },
-                available: false
+                available: true
             }
         ]));        
         
@@ -176,9 +186,29 @@ export default class Controller {
     }
 
     remove(itemIDs: Array<string>) {
-       // this.ConfigureState.dispatchAction(
-            //removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
-       // );
+        const serviceName = 'CacheDestroyService';
+        const currentValue = this.selectedRows$.getValue();
+        const args = {
+            caches: currentValue.map((item) => item.name)
+        }
+        this.Confirm.confirm('Are you sure you want to destroy current selected caches?').then(() => true)
+            .then(() => {
+                this.AgentManager.callCacheService(this.$uiRouter.globals.params.clusterID,serviceName,args).then((data) => {  
+                    this.$scope.status = data.status;                            
+                    if(data.message){
+                        this.$scope.message = data.message;
+                    }
+                })   
+               .catch((e) => {
+                   this.$scope.status = 'failed'                   
+                   this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+                });
+            })
+            .catch(() => {});
+        
+        this.ConfigureState.dispatchAction(
+            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
+        );
     }
     
     $onDestroy() {

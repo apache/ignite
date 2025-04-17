@@ -4,7 +4,6 @@ import {Subject, merge, combineLatest} from 'rxjs';
 import {tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
 import naturalCompare from 'natural-compare-lite';
-import {removeClusterItems, advancedSaveCache} from '../../../configuration/store/actionCreators';
 import ConfigureState from '../../../configuration/services/ConfigureState';
 import ConfigSelectors from '../../../configuration/store/selectors';
 import {default as MessagesFactory} from '../../../services/Messages.service';

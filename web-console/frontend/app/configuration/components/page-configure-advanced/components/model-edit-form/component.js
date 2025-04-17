@@ -9,7 +9,6 @@ export default {
     templateUrl,
     bindings: {
         model: '<',
-        models: '<',
         caches: '<',
         onSave: '&'
     }

@@ -1,5 +1,3 @@
-
-
 import {StateParams} from '@uirouter/angularjs';
 
 import pageConsoleAdvancedClusterComponent from './components/page-configure-advanced/components/page-configure-advanced-cluster/component';
@@ -42,7 +40,7 @@ function registerStates($stateProvider) {
     // Setup the states.
   $stateProvider
     .state('base.console', {
-        permission: 'configuration',
+        permission: 'management',
         url: '/console',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
         resolve: {
@@ -58,14 +56,14 @@ function registerStates($stateProvider) {
     .state('base.console.overview', {
         url: '/overview',
         component: 'pageConsoleOverview',
-        permission: 'configuration',
+        permission: 'management',
         tfMetaTags: {
             title: 'Console'
         }
     })
     .state('base.console.edit', {
         url: `/{clusterID}`,
-        permission: 'configuration',
+        permission: 'management',
         component: 'pageConsole',
         resolve: {
             _cluster: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
@@ -101,7 +99,7 @@ function registerStates($stateProvider) {
     .state('base.console.edit.basic', {
         url: '/basic',
         component: 'pageConsoleBasic',
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _shortCaches: shortCachesResolve
         },
@@ -115,7 +113,7 @@ function registerStates($stateProvider) {
     .state('base.console.edit.service', {
         url: '/service',
         component: 'pageConsoleService',
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _shortCachesAndModels: shortCachesAndModels,
         },
@@ -129,7 +127,7 @@ function registerStates($stateProvider) {
     .state('base.console.edit.cache-service', {
         url: '/cache-service',
         component: 'pageConsoleCacheService',
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _shortCachesAndModels: shortCachesAndModels,            
         },
@@ -142,7 +140,7 @@ function registerStates($stateProvider) {
     })
     .state('base.console.edit.service.select', {
         url: `/{serviceID}`,
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
 
         },
@@ -158,7 +156,7 @@ function registerStates($stateProvider) {
     })
     .state('base.console.edit.cache-service.select', {
         url: `/{cacheID}`,
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
                 const {clusterID, cacheID} = $transition$.params();
@@ -182,13 +180,13 @@ function registerStates($stateProvider) {
     .state('base.console.edit.advanced', {
         url: '/advanced',
         component: 'pageConsoleAdvanced',
-        permission: 'configuration',
+        permission: 'management',
         redirectTo: 'base.console.edit.advanced.cluster'
     })
     .state('base.console.edit.advanced.cluster', {
         url: '/cluster',
         component: pageConsoleAdvancedClusterComponent.name,
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _shortCaches: shortCachesResolve
         },
@@ -201,7 +199,7 @@ function registerStates($stateProvider) {
     })
     .state('base.console.edit.advanced.cluster.command', {
         url: `/{serviceID}`,
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             
         },
@@ -217,7 +215,7 @@ function registerStates($stateProvider) {
     })
     .state('base.console.edit.advanced.caches', {
         url: '/caches',
-        permission: 'configuration',
+        permission: 'management',
         component: pageConsoleAdvancedCachesComponent.name,
         resolve: {            
             _shortCachesAndModels: shortCachesAndModels
@@ -231,7 +229,7 @@ function registerStates($stateProvider) {
     })
     .state('base.console.edit.advanced.caches.cache', {
         url: `/{cacheID}`,
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
                 const {clusterID, cacheID} = $transition$.params();
@@ -255,7 +253,7 @@ function registerStates($stateProvider) {
     .state('base.console.edit.advanced.models', {
         url: '/models',
         component: pageConsoleAdvancedModelsComponent.name,
-        permission: 'configuration',
+        permission: 'management',
         resolve: {
             _shortCachesAndModels: shortCachesAndModels
         },
@@ -281,7 +279,7 @@ function registerStates($stateProvider) {
         data: {
             errorState: 'base.console.edit.advanced.models'
         },
-        permission: 'configuration',
+        permission: 'management',
         resolvePolicy: {
             async: 'NOWAIT'
         }

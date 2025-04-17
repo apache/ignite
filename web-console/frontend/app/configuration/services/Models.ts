@@ -32,7 +32,7 @@ export default class Models {
     indexType = {
         values: [
             {label: 'SORTED', value: 'SORTED'},
-            {label: 'FULLTEXT', value: 'FULLTEXT'},
+            {label: 'FULLTEXT', value: 'FULLTEXT'},           
             {label: 'GEOSPATIAL', value: 'GEOSPATIAL'}
         ]
     };
@@ -71,8 +71,8 @@ export default class Models {
             if (!entity)
                 return '';
 
-            const precision = available('2.7.0') && this.fieldProperties.precisionAvailable(entity);
-            const scale = available('2.7.0') && this.fieldProperties.scaleAvailable(entity);
+            const precision = this.fieldProperties.precisionAvailable(entity);
+            const scale = this.fieldProperties.scaleAvailable(entity);
 
             return `${entity.name || ''} ${entity.className || ''}${precision && entity.precision ? ' (' + entity.precision : ''}\
 ${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precision && entity.precision ? ')' : ''}\

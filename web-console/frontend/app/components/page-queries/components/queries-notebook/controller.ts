@@ -64,11 +64,12 @@ export class NotebookCtrl {
         $scope.caches = [];
 
         $scope.pageSizesOptions = [
+            {value: 10, label: '10'},
+            {value: 20, label: '20'},
             {value: 50, label: '50'},
             {value: 100, label: '100'},
             {value: 200, label: '200'},
-            {value: 400, label: '400'},
-            {value: 800, label: '800'},
+            {value: 500, label: '500'},            
             {value: 1000, label: '1000'}
         ];
 
@@ -592,7 +593,7 @@ export class NotebookCtrl {
         };
         
 
-        $scope.chartAcceptValColumn = function(paragraph, item) {
+        $scope.chartAcceptValColumn = function(paragraph:Paragraph, item) {
             const valCols = paragraph.chartValCols;
 
             const accepted = _.findIndex(valCols, item) < 0 && item.value >= 0 && _numberType(item.type);
@@ -637,8 +638,8 @@ export class NotebookCtrl {
         };        
 
         const databaseMetadata = this.allLoadedMetadatas;
-        
-        $scope.aceInit = function(paragraph) {
+        const clusterName = localStorage.clusterName;
+        $scope.aceInit = function(paragraph:Paragraph) {
 
             const metaDataCompleter = {
                 getCompletions: (editor, session, pos, prefix, callback) => {
@@ -697,7 +698,7 @@ export class NotebookCtrl {
                     let mode:string = session.$mode.$id;
                     
                     if(mode.endsWith('groovy')){
-                        agentMgr.text2gremlin(line,null)
+                        agentMgr.text2gremlin(line,null,'text2gremlin-'+clusterName)
                             .then((stements) => {
                                 let suggestions = [];
                                 _.forEach(stements, (name) => {
@@ -709,7 +710,7 @@ export class NotebookCtrl {
                             });
                     }
                     else{ // sql
-                        agentMgr.text2sql(line,null)
+                        agentMgr.text2sql(line,null,'text2sql-'+clusterName)
                             .then((stements) => {
                                 let suggestions = [];
                                 _.forEach(stements, (name) => {
@@ -884,10 +885,7 @@ export class NotebookCtrl {
 
         Notebook.find($state.params.noteId)
             .then((notebook) => {
-                $scope.notebook = _.cloneDeep(notebook);
-                // add@byron
-                localStorage.clusterId = notebook.clusterId;
-                // end@
+                $scope.notebook = _.cloneDeep(notebook);                
                 $scope.notebook_name = $scope.notebook.name;
 
                 if (!$scope.notebook.expandedParagraphs)
@@ -961,6 +959,17 @@ export class NotebookCtrl {
             // 将当前元素与其前一个元素交换  
             let arr = $scope.notebook.paragraphs;
             [arr[index], arr[index - 1]] = [arr[index - 1], arr[index]];            
+            
+        };
+
+        $scope.moveDownParagraph = (paragraph) => {            
+
+            let index = $scope.notebook.paragraphs.indexOf(paragraph);
+            if(index<0 || index==$scope.notebook.paragraphs.length) return ;
+
+            // 将当前元素与其后一个元素交换  
+            let arr = $scope.notebook.paragraphs;
+            [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];            
             
         };
 
@@ -1640,8 +1649,7 @@ export class NotebookCtrl {
                             $scope.notebook.clusterId = localStorage.clusterId;
                         }
                         Notebook.save($scope.notebook).catch(Messages.showError);
-                    }
-                        
+                    }                        
 
                     paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
@@ -2264,6 +2272,11 @@ export class NotebookCtrl {
             available: (p) => this.$scope.scanAvailable(p)
         },
         {
+            text: this.$translate.instant('queries.notebook.queryActions.moveDownParagraph.buttonLabel'),
+            click: (p) => this.$scope.moveDownParagraph(p),
+            available: (p) => this.$scope.scanAvailable(p)
+        },
+        {
             text: this.$translate.instant('queries.notebook.scanActions.rename'),
             click: (p) => this.renameParagraph(p),
             available: () => true
@@ -2284,6 +2297,11 @@ export class NotebookCtrl {
         {
             text: this.$translate.instant('queries.notebook.queryActions.moveUpParagraph.buttonLabel'),
             click: (p) => this.$scope.moveUpParagraph(p),
+            available: (p) => this.$scope.queryAvailable(p)
+        },
+        {
+            text: this.$translate.instant('queries.notebook.queryActions.moveDownParagraph.buttonLabel'),
+            click: (p) => this.$scope.moveDownParagraph(p),
             available: (p) => this.$scope.queryAvailable(p)
         },
         {

@@ -40,6 +40,12 @@
             <artifactId>ignite-web-console-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-binary-api</artifactId>
+            <version>${web-console.ignite.version}</version>         
+        </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>

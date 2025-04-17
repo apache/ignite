@@ -6,6 +6,7 @@ form(id='model' name='ui.inputForm' novalidate)
     include ./templates/store
 
 .pc-form-actions-panel
+    span.message(ng-bind-html='$ctrl.$scope.message || $ctrl.$scope.$parent.message')
     .pc-form-actions-panel__right-after
     button.btn-ignite.btn-ignite--link-success(
         type='button'

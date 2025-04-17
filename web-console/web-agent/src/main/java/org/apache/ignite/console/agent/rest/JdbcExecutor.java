@@ -49,6 +49,8 @@ import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.ignite.console.agent.db.JdbcQueryExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
+import org.apache.ignite.console.agent.service.LangflowApiClient;
+import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.db.VisorQueryIndex;
 import org.apache.ignite.console.db.VisorQueryIndexField;
@@ -82,6 +84,8 @@ public class JdbcExecutor implements AutoCloseable {
     private int jdbcQueryCancellationTime = 10000;
     
     private DbMetadataReader metadataReader = new DbMetadataReader();
+    
+    private final LangflowApiClient langflowClient;
 
     /**
      * Constructor.
@@ -94,7 +98,7 @@ public class JdbcExecutor implements AutoCloseable {
     ) {
     	
     	this.dbListener = dbListener;
-    	
+    	this.langflowClient = new LangflowApiClient();
     }
 
     /**
@@ -147,8 +151,21 @@ public class JdbcExecutor implements AutoCloseable {
             	if("text2sql".equals(cmd)) {
             		// Text Query
             		JsonArray list = new JsonArray();
-            		String text = "SELECT * from //" + params.getString("text");
-        			list.add(text);                    		
+                	params.put("input_value", params.getString("text"));
+                	String endpoint = params.getString("endpoint","text2sql");
+                	ServiceResult r = langflowClient.call(endpoint,params);
+                	if(r.getStatus().equals("200")) {
+                		try {
+        		    		JsonArray outputs = r.getResult().getJsonArray("outputs").getJsonObject(0).getJsonArray("outputs");
+        		    		for(int k=0;k<outputs.size();k++) {
+        			    		String sql = outputs.getJsonObject(k).getJsonObject("results").getJsonObject("message").getString("text");
+        						list.add(sql);
+        		    		}
+                		}
+                		catch(Exception e) {
+                			
+                		}
+        			}                		
             		return RestResult.success(list.encode(), params.getString("sessionToken"));
         		}            	
             	else if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {

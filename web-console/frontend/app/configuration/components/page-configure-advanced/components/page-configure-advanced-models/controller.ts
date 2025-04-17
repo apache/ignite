@@ -1,5 +1,5 @@
-
-
+import cloneDeep from 'lodash/cloneDeep';
+import uuidv4 from 'uuid/v4';
 import {Subject, Observable, combineLatest, merge} from 'rxjs';
 import {pluck, tap, publishReplay, refCount, distinctUntilChanged, switchMap, map} from 'rxjs/operators';
 
@@ -37,7 +37,6 @@ export default class PageConfigureAdvancedModels {
     columnDefs: Array<IColumnDefOf<ShortDomainModel>>;
     itemID$: Observable<string>;
     shortItems$: Observable<Array<ShortDomainModel>>;
-    shortCaches$: Observable<Array<ShortCache>>;
     originalItem$: Observable<DomainModel>;
 
     $onDestroy() {
@@ -136,11 +135,11 @@ export default class PageConfigureAdvancedModels {
             loadedItems$: this.shortItems$
         });
 
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems:Array<string>) => [
             {
                 action: 'Clone',
                 click: () => this.clone(selectedItems),
-                available: false
+                available: selectedItems.length==1
             },
             {
                 action: 'Delete',
@@ -164,6 +163,20 @@ export default class PageConfigureAdvancedModels {
 
     save({model, download}) {
         this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
+    }
+
+    clone(itemIDs: Array<string>) {
+        this.originalItem$.pipe(            
+            switchMap((cache) => {
+                let clonedCache = cloneDeep(cache);
+                clonedCache.id = uuidv4();
+                clonedCache.valueType = cache.valueType+'_cloned';
+                this.ConfigureState.dispatchAction(
+                    advancedSaveModel(clonedCache, false)
+                );
+                return clonedCache;
+            })
+        )
     }
 
     remove(itemIDs: Array<string>) {

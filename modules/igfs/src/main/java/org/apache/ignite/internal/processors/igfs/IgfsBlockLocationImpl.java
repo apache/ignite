@@ -289,8 +289,8 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
         if (nodeIds != null) {
             rawWriter.writeInt(nodeIds.size());
 
-            for (UUID nodeId : nodeIds)
-                U.writeUuid(rawWriter, nodeId);
+            for (UUID nodeId : nodeIds)                
+            	rawWriter.writeUuid(nodeId);
         }
 
         rawWriter.writeInt(names.size());
@@ -319,7 +319,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
             nodeIds = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                nodeIds.add(U.readUuid(rawReader));
+                nodeIds.add(rawReader.readUuid());
         }
 
         size = rawReader.readInt();
