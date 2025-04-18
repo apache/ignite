@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1148,7 +1149,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             obsoleteVer = cctx.cache().nextVersion();
 
                         GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
-                            ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
+                            ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link, obsoleteVer)
+                            : row.key);
 
                         if (entry != null)
                             c.apply(entry, obsoleteVer);
@@ -1751,6 +1753,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (!(key instanceof ExpiredKeyCacheObject)
                     || ((ExpiredKeyCacheObject)key).expireTime != oldRow.expireTime()
                     || ((ExpiredKeyCacheObject)key).link != oldRow.link()
+                    || !Objects.equals(((ExpiredKeyCacheObject)key).ver, oldRow.version())
                 )
                     clearPendingEntries(cctx, oldRow);
 
@@ -2008,12 +2011,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private long link;
 
         /** */
-        public ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link) {
+        private GridCacheVersion ver;
+
+        /** */
+        public ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link, GridCacheVersion ver) {
             super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
 
             this.expireTime = expireTime;
-
             this.link = link;
+            this.ver = ver;
         }
 
         /** */
