@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -87,7 +88,8 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
             for (Integer key : map.keySet()) {
                 info("Affinity nodes [key=" + key + ", nodes=" +
-                    F.viewReadOnly(grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key), F.node2id()) + ']');
+                    F.viewReadOnly(grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key),
+                        ClusterNode::id) + ']');
             }
 
             grid(0).cache(DEFAULT_CACHE_NAME).putAll(map);

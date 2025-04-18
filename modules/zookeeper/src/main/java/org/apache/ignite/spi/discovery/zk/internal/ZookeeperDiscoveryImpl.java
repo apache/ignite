@@ -107,6 +107,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CRED
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -3423,7 +3424,7 @@ public class ZookeeperDiscoveryImpl {
                             if (log.isInfoEnabled()) {
                                 log.info("Communication error resolver forced nodes stop [reqId=" + futId +
                                     ", killNodeCnt=" + killedNodes.size() +
-                                    ", nodeIds=" + U.nodeIds(killedNodes) + ']');
+                                    ", nodeIds=" + nodeIds(killedNodes) + ']');
                             }
 
                             killedNodesList = new GridLongList(killedNodes.size());
@@ -3835,7 +3836,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (processed)
-            handleProcessedEvents("fail-" + U.nodeIds(failedNodes));
+            handleProcessedEvents("fail-" + nodeIds(failedNodes));
     }
 
     /**

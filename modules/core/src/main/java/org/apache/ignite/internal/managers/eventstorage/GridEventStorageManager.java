@@ -55,6 +55,8 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
@@ -1144,9 +1146,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
         GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
-        ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
+        ClusterNode locNode = F.find(nodes, null, new HasEqualIdPredicate<>(ctx.localNodeId()));
 
-        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, new HasNotEqualIdPredicate<>(ctx.localNodeId()));
 
         if (locNode != null)
             ctx.io().sendToGridTopic(locNode, topic, msg, plc);

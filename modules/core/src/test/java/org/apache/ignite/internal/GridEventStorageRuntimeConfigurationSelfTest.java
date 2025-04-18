@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,6 +40,7 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.noop;
 
 /**
  * Tests for runtime events configuration.
@@ -78,13 +78,13 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
                 }
             }, EVT_TASK_STARTED);
 
-            g.compute().run(F.noop());
+            g.compute().run(noop());
 
             assertEquals(0, cnt.get());
 
             g.events().enableLocal(EVT_TASK_STARTED);
 
-            g.compute().run(F.noop());
+            g.compute().run(noop());
 
             assertEquals(1, cnt.get());
         }
@@ -113,13 +113,13 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
                 }
             }, EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_STARTED);
 
-            g.compute().run(F.noop());
+            g.compute().run(noop());
 
             assertEquals(2, cnt.get());
 
             g.events().enableLocal(EVT_TASK_FINISHED, EVT_JOB_STARTED);
 
-            g.compute().run(F.noop());
+            g.compute().run(noop());
 
             assertEquals(5, cnt.get());
         }
@@ -150,13 +150,13 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
                 }
             }, EVT_TASK_STARTED, EVT_JOB_STARTED);
 
-            g.compute().run(F.noop());
+            g.compute().run(noop());
 
             assertEquals(2, cnt.get());
 
             g.events().disableLocal(EVT_TASK_STARTED, EVT_JOB_FAILED);
 
-            g.compute().run(F.noop());
+            g.compute().run(noop());
 
             assertEquals(3, cnt.get());
         }

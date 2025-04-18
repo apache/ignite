@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.noop;
+
 /**
  * Tests case when connection is closed only for one side, when other is not notified.
  */
@@ -115,7 +117,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
         System.out.println(">> Send job");
 
         // Establish connection
-        client.compute(srvGrp).run(F.noop());
+        client.compute(srvGrp).run(noop());
 
         if (reverseReconnect)
             reconnect(srv, client, clientGrp);
@@ -164,7 +166,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
         info(">> Removed client");
 
         // Reestablish connection
-        srcNode.compute(targetGrp).run(F.noop());
+        srcNode.compute(targetGrp).run(noop());
 
         info(">> Sent second job");
     }

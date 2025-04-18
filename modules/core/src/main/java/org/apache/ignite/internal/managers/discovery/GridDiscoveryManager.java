@@ -183,6 +183,8 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isSec
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -1687,7 +1689,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     offlineNodes.removeAll(discoCache.aliveBaselineNodes());
 
-                    offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
+                    offlineConsistentIds = ' ' + nodeConsistentIds(offlineNodes).toString();
                 }
 
                 if (bltOffline == 0) {
@@ -3158,7 +3160,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     case EVT_NODE_SEGMENTED: {
-                        assert F.eqNodes(localNode(), node);
+                        assert eqNodes(localNode(), node);
 
                         if (nodeSegFired) {
                             if (log.isDebugEnabled()) {

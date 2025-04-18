@@ -37,6 +37,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -189,7 +190,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(ignite2);
 
-        ClusterGroup prj = ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()));
+        ClusterGroup prj = ignite1.cluster().forPredicate(new HasNotEqualIdPredicate<>(ignite1.cluster().localNode().id()));
 
         Collection<Event> evts = events(prj).remoteQuery(filter, 0);
 
@@ -206,10 +207,11 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(ignite1);
 
+        ClusterGroup prj = ignite1.cluster().forPredicate(new HasNotEqualIdPredicate<>(ignite1.cluster().localNode().id()));
+
         Collection<Event> evts = ignite1.events().remoteQuery(filter, 0);
         Collection<Event> locEvts = ignite1.events().localQuery(filter);
-        Collection<Event> remEvts =
-            events(ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()))).remoteQuery(filter, 0);
+        Collection<Event> remEvts = events(prj).remoteQuery(filter, 0);
 
         assert evts != null;
         assert locEvts != null;

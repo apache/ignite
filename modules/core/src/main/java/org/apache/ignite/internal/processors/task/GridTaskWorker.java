@@ -634,7 +634,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
         }
 
-        ses.jobNodes(F.viewReadOnly(jobs.values(), F.node2id()));
+        ses.jobNodes(F.viewReadOnly(jobs.values(), ClusterNode::id));
 
         evtLsnr.onJobsMapped(this);
 

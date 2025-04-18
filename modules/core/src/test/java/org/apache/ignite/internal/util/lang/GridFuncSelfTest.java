@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.lang;
 
 import java.util.TreeMap;
-import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNotOrdered;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -41,7 +41,7 @@ public class GridFuncSelfTest {
         m1.put("2", "2");
         m2.put("3", "3");
 
-        assertFalse(F.eqNotOrdered(m1, m2));
+        assertFalse(eqNotOrdered(m1, m2));
 
         m1.remove("2");
         m2.remove("3");
@@ -49,6 +49,6 @@ public class GridFuncSelfTest {
         m1.put("arr", new byte[] {1, 2, 3});
         m2.put("arr", new byte[] {1, 2, 3});
 
-        assertTrue(F.eqNotOrdered(m1, m2));
+        assertTrue(eqNotOrdered(m1, m2));
     }
 }

@@ -122,7 +122,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -183,6 +182,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.GridFunc.asList;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -3106,7 +3106,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ACTIVE);
 
-        List<Ignite> srvGrids = GridFunc.asList(grid(0), grid(1));
+        List<Ignite> srvGrids = asList(grid(0), grid(1));
 
         enableCheckpoints(srvGrids, false);
 
@@ -3395,7 +3395,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         try {
             injectTestSystemOut();
 
-            int code = execute(new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync")));
+            int code = execute(new ArrayList<>(asList("--snapshot", "create", "testDsSnp", "--sync")));
 
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
@@ -3403,7 +3403,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             logLsnr.accept(testOut.toString());
             logLsnr.check();
 
-            code = execute(new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp")));
+            code = execute(new ArrayList<>(asList("--snapshot", "check", "testDsSnp")));
 
             assertEquals(EXIT_CODE_OK, code);
 
@@ -3446,7 +3446,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--sync", "blah"));
         assertContains(log, testOut.toString(), "Unexpected argument: blah");
 
-        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName));
+        List<String> args = new ArrayList<>(asList("--snapshot", "create", snpName));
 
         if (syncMode)
             args.add("--sync");
@@ -4034,7 +4034,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME));
+        fut = srv.snapshot().restoreSnapshot(snapshotName, asList(DEFAULT_CACHE_NAME));
 
         spi.waitForBlocked();
 
@@ -4053,7 +4053,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME), 1);
+        fut = srv.snapshot().restoreSnapshot(snapshotName, asList(DEFAULT_CACHE_NAME), 1);
 
         spi.waitForBlocked();
 

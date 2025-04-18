@@ -54,7 +54,7 @@ public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer
     @NotNull @SuppressWarnings({"unchecked"})
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
         if (log.isInfoEnabled()) {
-            log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, F.node2id()) +
+            log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, ClusterNode::id) +
                 ", arg=" + arg + ']');
         }
 

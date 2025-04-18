@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util.typedef;
 
+import org.apache.ignite.internal.util.GridFunc;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
-import org.apache.ignite.internal.util.lang.GridFunc;
 
 /**
  * Defines {@code alias} for {@link GridAbsPredicateX} by extending it. Since Java doesn't provide type aliases

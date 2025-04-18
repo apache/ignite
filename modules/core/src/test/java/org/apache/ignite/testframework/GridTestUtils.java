@@ -135,6 +135,7 @@ import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -1565,7 +1566,7 @@ public final class GridTestUtils {
 
                     if (nodes.size() > backups + 1) {
                         LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
-                            ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
+                            ", p=" + p + ", nodes=" + nodeIds(nodes) + ']');
 
                         wait = true;
 

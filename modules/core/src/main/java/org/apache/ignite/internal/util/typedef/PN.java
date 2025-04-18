@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.GridFunc;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**

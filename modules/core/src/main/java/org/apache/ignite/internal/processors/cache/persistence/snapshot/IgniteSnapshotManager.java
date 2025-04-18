@@ -769,8 +769,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>();
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
-        leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            F.node2id()));
+        leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE), ClusterNode::id));
 
         if (!leftNodes.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of baseline nodes left the cluster " +
@@ -2067,7 +2066,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             });
 
             Set<UUID> bltNodeIds =
-                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
+                new HashSet<>(F.viewReadOnly(srvNodes, ClusterNode::id, (node) -> CU.baselineNode(node, clusterState)));
 
             SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
                     snpFut0.rqId,

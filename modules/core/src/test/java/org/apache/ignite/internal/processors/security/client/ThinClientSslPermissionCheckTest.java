@@ -49,7 +49,7 @@ import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest.assertAuthorizationFailed;
-import static org.apache.ignite.internal.util.lang.GridFunc.t;
+import static org.apache.ignite.internal.util.GridFunc.t;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;

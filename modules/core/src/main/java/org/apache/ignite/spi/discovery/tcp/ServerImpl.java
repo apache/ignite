@@ -1067,8 +1067,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         if (nodeAlive) {
             synchronized (mux) {
-                nodeAlive = !F.transform(failedNodes.keySet(), F.node2id()).contains(nodeId) &&
-                    !F.transform(leavingNodes, F.node2id()).contains(nodeId);
+                nodeAlive = !F.transform(failedNodes.keySet(), ClusterNode::id).contains(nodeId) &&
+                    !F.transform(leavingNodes, ClusterNode::id).contains(nodeId);
             }
         }
 

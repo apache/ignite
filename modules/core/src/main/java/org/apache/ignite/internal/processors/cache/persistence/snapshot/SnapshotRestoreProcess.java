@@ -394,7 +394,7 @@ public class SnapshotRestoreProcess {
             assert reqGrpIds.isEmpty() : "Cache group(s) was not found in the snapshot [groups=" + reqGrpIds.values()
                 + ", snapshot=" + snpName + ']';
 
-            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
+            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), ClusterNode::id);
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
                 fut0.rqId,

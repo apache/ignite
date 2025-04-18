@@ -216,7 +216,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
             return nodes.size() > GridAffinityAssignmentV2.IGNITE_AFFINITY_BACKUPS_THRESHOLD
                     ? getOrCreateAssignmentsIds(part)
-                    : F.viewReadOnly(nodes, F.node2id());
+                    : F.viewReadOnly(nodes, ClusterNode::id);
         }
     }
 

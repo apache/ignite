@@ -279,8 +279,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             assert p.remaining.isEmpty();
 
             p.remaining.addAll(F.viewReadOnly(
-                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer),
-                F.node2id()));
+                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), ClusterNode::id));
 
             p.initCrdFut.onDone();
         }

@@ -29,16 +29,12 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,35 +61,6 @@ public class ClusterNodeFunc {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
-    /** */
-    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
-
-    /** */
-    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
-        BaselineNode::consistentId;
-
-    /**
-     * Gets predicate that evaluates to {@code true} only for given local node ID.
-     *
-     * @param locNodeId Local node ID.
-     * @param <T> Type of the node.
-     * @return Return {@code true} only for the node with given local node ID.
-     */
-    public static <T extends ClusterNode> IgnitePredicate<T> localNode(final UUID locNodeId) {
-        return new HasEqualIdPredicate<>(locNodeId);
-    }
-
-    /**
-     * Gets predicate that evaluates to {@code false} for given local node ID.
-     *
-     * @param locNodeId Local node ID.
-     * @param <T> Type of the node.
-     * @return Return {@code false} for the given local node ID.
-     */
-    public static <T extends ClusterNode> IgnitePredicate<T> remoteNodes(final UUID locNodeId) {
-        return new HasNotEqualIdPredicate<>(locNodeId);
-    }
-
     /**
      * Convenient utility method that returns collection of node IDs for a given
      * collection of grid nodes.
@@ -108,7 +75,7 @@ public class ClusterNodeFunc {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
-        return F.viewReadOnly(nodes, node2id());
+        return F.viewReadOnly(nodes, ClusterNode::id);
     }
 
     /**
@@ -125,16 +92,7 @@ public class ClusterNodeFunc {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
-        return F.viewReadOnly(nodes, NODE2CONSISTENTID);
-    }
-
-    /**
-     * Gets closure which converts node to node ID.
-     *
-     * @return Closure which converts node to node ID.
-     */
-    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
-        return NODE2ID;
+        return F.viewReadOnly(nodes, BaselineNode::consistentId);
     }
 
     /**
@@ -165,19 +123,6 @@ public class ClusterNodeFunc {
             return F.alwaysFalse();
 
         return new ContainsNodeIdsPredicate<>(nodeIds);
-    }
-
-    /**
-     * Creates predicates that evaluates to {@code true} for each node in given collection.
-     * Note that if collection is empty the result predicate will always evaluate to {@code false}.
-     * Implementation simply creates {@link GridNodePredicate} instance.
-     *
-     * @param nodes Collection of nodes. If none provided - result predicate will always
-     *      return {@code false}.
-     * @return Predicates that evaluates to {@code true} for each node in given collection.
-     */
-    public static IgnitePredicate<ClusterNode> nodeForNodes(ClusterNode... nodes) {
-        return new GridNodePredicate(nodes);
     }
 
     /**

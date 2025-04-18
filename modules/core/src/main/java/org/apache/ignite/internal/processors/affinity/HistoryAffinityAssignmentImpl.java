@@ -258,7 +258,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
 
             return nodes.size() > AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
                     ? assignments2ids(nodes)
-                    : F.viewReadOnly(nodes, F.node2id());
+                    : F.viewReadOnly(nodes, ClusterNode::id);
         }
     }
 

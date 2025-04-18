@@ -64,8 +64,8 @@ public abstract class AbstractSnapshotVerificationTask extends
         if (!subgrid.containsAll(clusterMetas.keySet())) {
             throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
                 new IgniteException("Some of Ignite nodes left the cluster during the snapshot verification " +
-                    "[curr=" + F.viewReadOnly(subgrid, F.node2id()) +
-                    ", init=" + F.viewReadOnly(clusterMetas.keySet(), F.node2id()) + ']')));
+                    "[curr=" + F.viewReadOnly(subgrid, ClusterNode::id) +
+                    ", init=" + F.viewReadOnly(clusterMetas.keySet(), ClusterNode::id) + ']')));
         }
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();

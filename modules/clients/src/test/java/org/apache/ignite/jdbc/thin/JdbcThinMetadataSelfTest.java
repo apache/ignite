@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_N
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
-import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
+import static org.apache.ignite.internal.util.GridFunc.asMap;
 
 /**
  * Metadata tests.

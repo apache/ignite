@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -353,7 +354,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             assert pick != null;
 
             if (!cctx.rebalanceEnabled() && loc.id().equals(pick.id()))
-                pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
+                pick = F.first(F.view(owners, new HasNotEqualIdPredicate<>(loc.id())));
 
             if (pick == null) {
                 if (log.isTraceEnabled())

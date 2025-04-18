@@ -111,6 +111,8 @@ import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2399,9 +2401,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             );
         }
         else {
-            ClusterNode locNode = F.find(nodes, null, F.localNode(locNodeId));
+            ClusterNode locNode = F.find(nodes, null, new HasEqualIdPredicate<>(locNodeId));
 
-            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(locNodeId));
+            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, new HasNotEqualIdPredicate<>(locNodeId));
 
             if (!rmtNodes.isEmpty())
                 sendToGridTopic(rmtNodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);

@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -42,6 +41,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cach
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.arrayEq;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -331,11 +331,11 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         HistogramMetric hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
 
-        assertFalse(F.arrayEq(BOUNDS, hist.bounds()));
+        assertFalse(arrayEq(BOUNDS, hist.bounds()));
 
         ignite.context().metric().configureHistogram(metricName(regName, TASK_EXEC_TIME), BOUNDS);
 
-        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
+        assertTrue(arrayEq(BOUNDS, hist.bounds()));
 
         stopGrid("persistent-0", false);
 
@@ -343,7 +343,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
 
-        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
+        assertTrue(arrayEq(BOUNDS, hist.bounds()));
     }
 
     /** Tests metric configuration removed on registry remove. */
