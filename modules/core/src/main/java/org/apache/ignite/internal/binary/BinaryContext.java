@@ -1376,32 +1376,6 @@ public class BinaryContext {
         return compactFooter;
     }
 
-    /**
-     * Gets {@link BinarySchema} field ids array.
-     *
-     * @return Field ids.
-     */
-    public int[] schemaFieldIds(BinaryTypeImpl meta, int typeId, int schemaId) {
-        BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
-        BinarySchema schema = schemaReg.schema(schemaId);
-
-        if (schema == null) {
-            if (meta != null) {
-                for (BinarySchema typeSchema : meta.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
-                        break;
-                    }
-                }
-            }
-
-            if (schema != null)
-                schemaReg.addSchema(schemaId, schema);
-        }
-
-        return schema == null ? null : schema.fieldIds();
-    }
-
     /** */
     public void updateMetaIfNeeded(
         BinaryWriterExImpl writer,

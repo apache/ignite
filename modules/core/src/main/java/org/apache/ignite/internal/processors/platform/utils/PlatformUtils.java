@@ -54,13 +54,11 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -1101,21 +1099,6 @@ public class PlatformUtils {
      */
     public static String getFullStackTrace(Throwable throwable) {
         return X.getFullStackTrace(throwable);
-    }
-
-    /**
-     * Gets the schema.
-     *
-     * @param cacheObjProc Cache object processor.
-     * @param typeId Type id.
-     * @param schemaId Schema id.
-     */
-    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
-        assert cacheObjProc != null;
-
-        BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
-
-        return cacheObjProc.binaryContext().schemaFieldIds(meta, typeId, schemaId);
     }
 
     /**
