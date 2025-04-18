@@ -668,6 +668,11 @@ public class WebSocketRouter implements AutoCloseable {
         		ServiceResult result = serviceList.serviceList(args.getMap());
         		return result.toJson();   		
         	}
+        	if(serviceName.equals("deployService")) {
+        		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
+        		ServiceResult result = serviceList.call(cluterId,args.getMap());
+        		return result.toJson();   		
+        	}
         	if(serviceName.equals("redeployService")) {
         		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
         		ServiceResult result = serviceList.redeployService(args.getMap());

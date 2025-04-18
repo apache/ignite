@@ -15,9 +15,9 @@ import Version from 'app/services/Version.service';
 import FormUtils from 'app/services/FormUtils.service';
 
 export default class ClusterEditFormController {
+    cluster: any;
     caches: ShortCache[];
     cachesMenu: Menu<string>;
-    servicesCachesMenu: Menu<string>;
     onSave: ng.ICompiledExpression;
 
     static $inject = ['SqlTypes', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
@@ -39,12 +39,7 @@ export default class ClusterEditFormController {
             this.eventStorage = [
                 {value: 'Memory', label: 'Memory'},
                 {value: 'Custom', label: 'Custom'}
-            ];
-
-            this.marshallerVariant = [
-                {value: 'JdkMarshaller', label: 'JdkMarshaller'},
-                {value: null, label: 'Default'}
-            ];
+            ];            
 
             this.failureHandlerVariant = [
                 {value: 'RestartProcess', label: 'Restart process'},
@@ -63,13 +58,13 @@ export default class ClusterEditFormController {
                 {value: 'SYSTEM_CRITICAL_OPERATION_TIMEOUT', label: 'SYSTEM_CRITICAL_OPERATION_TIMEOUT'}
             ];
 
-            if (this.available('2.0.0')) {
-                this.eventStorage.push({value: null, label: 'Disabled'});
+            
+            this.eventStorage.push({value: null, label: 'Disabled'});
 
-                this.eventGroups = _.filter(this.IgniteEventGroups, ({value}) => value !== 'EVTS_SWAPSPACE');
+            this.eventGroups = _.filter(this.IgniteEventGroups, ({value}) => value !== 'EVTS_SWAPSPACE');
 
-                _.forEach(this.eventGroups, (grp) => grp.events = _.filter(grp.events, (evt) => evt.indexOf('SWAP') < 0));
-            }            
+            _.forEach(this.eventGroups, (grp) => grp.events = _.filter(grp.events, (evt) => evt.indexOf('SWAP') < 0));
+                      
 
             this.eventTypes = [];
 
@@ -87,14 +82,8 @@ export default class ClusterEditFormController {
 
         const filterModel = (cluster) => {
             if (cluster) {
-                if (this.available('2.0.0')) {
-                    const evtGrps = _.map(this.eventGroups, 'value');
-
-                    _.remove(cluster.includeEventTypes, (evtGrp) => !_.includes(evtGrps, evtGrp));
-
-                    if (_.get(cluster, 'marshaller.kind') === 'OptimizedMarshaller')
-                        cluster.marshaller.kind = null;
-                }                
+                const evtGrps = _.map(this.eventGroups, 'value');
+                _.remove(cluster.includeEventTypes, (evtGrp) => !_.includes(evtGrps, evtGrp));             
             }
         };
 
@@ -107,7 +96,7 @@ export default class ClusterEditFormController {
         this.supportedJdbcTypes = this.SqlTypes.mkJdbcTypeOptions();
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration'];
+        this.$scope.ui.loadedPanels = ['checkpoint'];
 
         this.formActions = [
             {text: 'Save', icon: 'checkmark', click: () => this.save(false)},
@@ -129,8 +118,7 @@ export default class ClusterEditFormController {
         }
 
         if ('caches' in changes) {
-            this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c.id}));
-            this.servicesCachesMenu = [{label: 'Key-affinity not used', value: null}].concat(this.cachesMenu);
+            this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c.id}));            
         }
     }
 

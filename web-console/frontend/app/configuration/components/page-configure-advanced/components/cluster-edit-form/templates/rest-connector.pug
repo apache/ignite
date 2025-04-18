@@ -9,7 +9,7 @@ include /app/configuration/mixins
 -var sslEnabled = enabled + ' && ' + model + '.sslEnabled'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Connector configuration
+    panel-title Rest Connector configuration
     panel-description
         | Configure HTTP REST configuration to enable HTTP server features.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/rest-api#general-configuration" target="_blank") More info]

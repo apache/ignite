@@ -16,7 +16,7 @@ form(id='cluster' name='ui.inputForm' novalidate)
 
         include ./templates/collision
         include ./templates/communication
-        include ./templates/connector
+        include ./templates/rest-connector
         include ./templates/deployment
 
         // - Since ignite 2.3
@@ -36,8 +36,7 @@ form(id='cluster' name='ui.inputForm' novalidate)
 
 
         // - Since ignite 2.5
-        include ./templates/rebalance
-        include ./templates/service
+        include ./templates/rebalance 
         include ./templates/ssl
 
         include ./templates/thread

@@ -1,5 +1,6 @@
 package org.apache.ignite.console.agent.service;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -88,24 +89,30 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 	
 	public ServiceResult redeployService(Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
+		List<String> messages = result.messages;
 		Collection<ServiceDescriptor> descs = ignite.services().serviceDescriptors();		
 		JsonObject args = new JsonObject(payload);		
 		JsonArray services = args.getJsonArray("services");
-		List<String> messages = new ArrayList<>();
+		
 		for(ServiceDescriptor desc: descs) {
 			for(Object service: services) {
 				if(desc.name().equals(service)) {
 					ServiceConfiguration cfg = new ServiceConfiguration();
 				    cfg.setName(desc.name());
+				    cfg.setCacheName(desc.cacheName());
+				    cfg.setAffinityKey(desc.affinityKey());
+				    cfg.setMaxPerNodeCount(desc.maxPerNodeCount());
+				    cfg.setTotalCount(desc.totalCount());
+				    
 				    JsonObject info = new JsonObject();
 					info.put("name", desc.name());
 					info.put("cacheName", desc.cacheName());
 					
 				    try {
-						cfg.setService(desc.serviceClass().newInstance());
-						ignite.services().deployNodeSingleton(cfg.getName(),cfg.getService());						
+						cfg.setService(desc.serviceClass().getDeclaredConstructor().newInstance());
+						ignite.services().deploy(cfg);						
 						
-					} catch (InstantiationException | IllegalAccessException e) {
+					} catch (Exception e) {
 						messages.add(e.getMessage());
 					}
 				    result.put(desc.name(), info);					
@@ -165,17 +172,41 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 	 */
 	@Override
 	public ServiceResult call(String cluterId, Map<String, Object> payload) {
-		ServiceResult result = new ServiceResult();		
-		JsonObject args = new JsonObject(payload);		
+		ServiceResult result = new ServiceResult();
+		List<String> messages = result.messages;
+		JsonObject args = new JsonObject(payload);
+		if(args.containsKey("service")) {
+			JsonObject service = args.getJsonObject("service");
+			ServiceConfiguration cfg = new ServiceConfiguration();
+		    cfg.setName(service.getString("name"));
+		    cfg.setCacheName(service.getString("cache"));
+		    cfg.setAffinityKey(service.getString("affinityKey"));
+		    cfg.setMaxPerNodeCount(service.getInteger("maxPerNodeCount"));
+		    cfg.setTotalCount(service.getInteger("totalCount"));		    
+		    
+		    try {
+		    	String serviceCls = service.getString("service");
+		    	// must be java bean
+		    	Class<? extends Service> serviceClass = (Class) Class.forName(serviceCls);
+				cfg.setService(serviceClass.getDeclaredConstructor().newInstance());
+				ignite.services().deploy(cfg);				
+				
+			} catch (Exception e) {
+				messages.add(e.getMessage());
+			}
+			result.setStatus("success");
+			return result;
+		}
+		// 依次部署多个class，信息从ApiOperation获取
 		JsonArray services = args.getJsonArray("servicesClass");
 		// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
 		String mode = args.getString("mode","NodeSingleton");
-		List<String> messages = new ArrayList<>();
+		
 		for(Object service: services) {
 			if(service instanceof String) {				
 			    try {
 			    	Class<? extends Service> ctx = (Class)Class.forName(service.toString());
-			    	Service svc = ctx.newInstance();
+			    	Service svc = ctx.getDeclaredConstructor().newInstance();
 			    	
 				    JsonObject info = new JsonObject();
 					info.put("name", ctx.getSimpleName());
@@ -211,10 +242,9 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 					
 				} catch (InstantiationException | IllegalAccessException e) {
 					messages.add(e.getMessage());
-				} catch (ClassNotFoundException e) {
+				} catch (Exception e) {
 					messages.add(e.getMessage());
-				}
-			    				
+				}			    				
 			}
 		}
 		return result;

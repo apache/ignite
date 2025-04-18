@@ -242,10 +242,8 @@ export default class PageDatasourceBasicController {
                         },100)
                     }
                 }
-            );  
-            
-        }
-        
+            );            
+        }        
     }
 
     reset() {

@@ -56,7 +56,12 @@ public class ServiceResult {
 			stat.put("error", error);
 		}
 		stat.put("result", result);
-		stat.put("message", messages);
+		if(messages.isEmpty()) {
+			stat.put("message", null);
+		}
+		else {
+			stat.put("message", String.join("\n",messages));
+		}
 		return stat;
 	}
 }

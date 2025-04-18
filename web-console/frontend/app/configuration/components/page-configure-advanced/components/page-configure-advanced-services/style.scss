@@ -1,10 +1,9 @@
 
-
-page-console-basic {
+page-configure-advanced-services {
     display: block;
     padding: 30px 20px;
     $max-row-width: 500px;
-    $row-height: 28px;    
+    $row-height: 28px;
 
     .pcb-row-no-margin {
         [class*='grid-col'] {
@@ -118,27 +117,4 @@ page-console-basic {
             }
         }
     }
-
-    panel-collapsible {
-        margin-bottom: 20px;
-    }
-
-    panel-content.pca-form-row {
-        display: flex !important;
-    }
-
-    .pca-form-row {
-        display: flex;
-        flex-direction: row;
-
-        .pca-form-column-6 {
-            flex: 6;
-        }
-    }
-     
-    // Aligns config section form and preview top
-    .pca-form-column-6.pc-form-grid-row {
-        margin-top: -10px;
-    }
-
 }

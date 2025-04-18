@@ -40,10 +40,9 @@ public class DataSourceInfoService {
         		JsonObject result = new JsonObject();
         		result.put("name", key);
                 result.put("typeName", "VARCHAR");
-                result.put("type", 1111);
+                result.put("type", 12);
                 result.put("unsigned", false);
-                result.put("nullable", false);
-	        	
+                result.put("nullable", true);
 	        	
 	        	for(int i=0;i<samples.size();i++) {
 	        		Object value = samples.getJsonObject(i).getValue(key);
@@ -148,7 +147,4 @@ public class DataSourceInfoService {
             }
         }
     }
-    
-    
-
 }

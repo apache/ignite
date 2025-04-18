@@ -113,7 +113,7 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterDataStorageConfiguration(cluster, available));
     }
 
-    // Generate marshaller group.
+    // Generate Misc group.
     static clusterMisc(cluster, available) {
         return this.toSection(this.generator.clusterMisc(cluster, available));
     }

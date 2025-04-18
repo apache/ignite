@@ -5,10 +5,10 @@ include /app/configuration/mixins
 
 - const model = '$ctrl.clonedCluster'
 - const modelDiscoveryKind = `${model}.discovery.kind`
-- let form = '$ctrl.form'
-- form.ngDisabled=true
+- let basicForm = '$ctrl.form'
+- basicForm.ngDisabled=true
 
-form(novalidate name=form)
+form(novalidate name=basicForm)
     h2.pcb-section-header.pcb-inner-padding 1. Cluster Metric
 
     .pcb-section-notification.pcb-inner-padding(ng-if='!$ctrl.shortClusters')
@@ -17,43 +17,73 @@ form(novalidate name=form)
     .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
         | Configure cluster properties and associate your cluster with caches.
 
-    .pc-form-grid-row.pcb-form-grid-row
-        .pc-form-grid-col-60
-            +form-field__text({
-                label: 'Name:',
-                model: `${model}.name`,
-                name: '"clusterName"',
-                placeholder: 'Input name',
-                required: true,
-                disabled: true,             
-                tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
-            })(
-                ignite-unique='$ctrl.shortClusters'
-                ignite-unique-property='name'
-                ignite-unique-skip=`["id", ${model}]`
-            )
-                +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
+    .pca-form-row
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Name:',
+                    model: `${model}.name`,
+                    name: '"clusterName"',
+                    placeholder: 'Input name',
+                    required: true,
+                    disabled: true,             
+                    tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
+                })(
+                    ignite-unique='$ctrl.shortClusters'
+                    ignite-unique-property='name'
+                    ignite-unique-skip=`["id", ${model}]`
+                )
+                    +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
 
-        .pc-form-grid__break
-        .pc-form-grid-col-60
-            +form-field__dropdown({
-                label: 'Discovery:',
-                model: modelDiscoveryKind,
-                name: '"discovery"',               
-                placeholder: 'Choose discovery',
-                options: '$ctrl.Clusters.discoveries',
-                disabled: true,
-                tip: 'Discovery allows to discover remote nodes in grid\
-                <ul>\
-                    <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
-                    <li>Multicast - Multicast based IP finder</li>\
-                    <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
-                    <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
-                </ul>'
-            })
-        .pc-form-grid__break
+            .pc-form-grid__break
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Discovery:',
+                    model: modelDiscoveryKind,
+                    name: '"discovery"',               
+                    placeholder: 'Choose discovery',
+                    options: '$ctrl.Clusters.discoveries',
+                    disabled: true,
+                    tip: 'Discovery allows to discover remote nodes in grid\
+                    <ul>\
+                        <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                        <li>Multicast - Multicast based IP finder</li>\
+                        <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                        <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
+                    </ul>'
+                })
+            .pc-form-grid__break
+
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__ip-address({
+                    label: 'Local host:',
+                    model: `${model}.localHost`,
+                    name: '"localHost"',
+                    disabled: 'true',
+                    placeholder: '0.0.0.0',
+                    tip: 'System-wide local address or host for all Ignite components to bind to<br/>\
+                          If not defined then Ignite tries to use local wildcard address<br/>\
+                          That means that all services will be available on all network interfaces of the host machine'
+                })
+
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 2. Client Configuration
+        .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
+            | Configure client properties and associate your cluster with thin client api.
+    
+    .pca-form-row
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
+            .pc-form-grid-col-120    
+                .panel-group
+                    //- Since ignite 2.3
+                    include ./client-connector
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
+            .pc-form-grid-col-120 
+                .panel-group
+                    //- Since ignite 2.3
+                    include ./communication
         
-    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 2. Caches Matric
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 3. Caches Matric
 
     .pcb-form-grid-row.pc-form-grid-row
         

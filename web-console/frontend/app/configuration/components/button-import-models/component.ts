@@ -22,6 +22,6 @@ export const component = {
     controller: ButtonImportModels,
     template,
     bindings: {
-        clusterID: '<clusterId'
+        clusterId: '<clusterId'
     }
 };

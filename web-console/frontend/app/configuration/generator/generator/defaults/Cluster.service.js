@@ -170,7 +170,6 @@ const DFLT_CLUSTER = {
     failureDetectionTimeout: 10000,
     clientFailureDetectionTimeout: 30000,    
     marshalLocalJobs: false,
-    marshallerCacheKeepAliveTime: 10000,
     metricsHistorySize: 10000,
     metricsLogFrequency: 60000,
     metricsUpdateFrequency: 2000,

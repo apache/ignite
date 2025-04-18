@@ -26,6 +26,9 @@ import pageConsoleService from './components/page-console-service';
 import pageConsoleCacheService from './components/page-console-cache-service';
 import pageConsoleOverview from './components/page-configure-overview';
 
+import modalImportService from './components/modal-import-service';
+import buttonImportService from './components/button-import-service';
+
 
 import itemsTable from '../configuration/components/pc-items-table';
 import pcUiGridFilters from '../configuration/components/pc-ui-grid-filters';
@@ -77,7 +80,10 @@ export default angular
         pageConsoleCacheService.name,
         pageConsoleOverview.name,
         pcUiGridFilters.name,
-    
+
+        modalImportService.name,
+        buttonImportService.name,
+        
         itemsTable.name,
         pcValidation.name,
       

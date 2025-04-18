@@ -134,6 +134,9 @@ export default class PageConfigureBasicController {
                 
             }))
         ).subscribe();
+
+        this.$scope.ui = this.IgniteFormUtils.formUI();
+        this.$scope.ui.loadedPanels = [];
         
     }
 

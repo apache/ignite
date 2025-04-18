@@ -3,7 +3,9 @@
 header.header-with-selector
     div
         h1 {{ $ctrl.clusterName$|async:this }}
-        version-picker   
+        version-picker  
+    div(ng-if='$ctrl.toolButtonVisible')
+        button-import-service(cluster='$ctrl.cluster$|async:this')
 
 div.pc-content-container
     ul.tabs.tabs--blue

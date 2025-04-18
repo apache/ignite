@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.UUID;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.console.common.Test;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Activity;
 import org.apache.ignite.console.repositories.NodeRepository;
@@ -98,7 +96,7 @@ public class DiscoController {
         	}
         	addresses.append(act.getAction());
         }
-        if(group.equals(ignite.name())){
+        if(group.equals(ignite.name())){ // admin instance
 	        
         	TcpDiscoveryNode node = (TcpDiscoveryNode)ignite.configuration().getDiscoverySpi().getLocalNode();
 	        

@@ -3,19 +3,18 @@
 include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
--var form = 'serviceConfiguration'
 -var model = '$ctrl.clonedCluster.serviceConfigurations'
 
-panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Service configuration
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('serviceConfigurations')`)  
     panel-description
         | Service Grid allows for deployments of arbitrary user-defined services on the cluster.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
-    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+    
+    panel-content.pca-form-row()
         .pca-form-column-6
             mixin clusters-service-configurations
                 .ignite-form-field(ng-init='serviceConfigurationsTbl={type: "serviceConfigurations", model: "serviceConfigurations", focusId: "kind", ui: "failover-table"}')
-                    +form-field__label({ label: 'Service configurations:', name: '"serviceConfigurations"' })
+                    
 
                     -let items = model
 

@@ -1,8 +1,8 @@
 
 
 import {StateParams} from '@uirouter/angularjs';
-
 import pageConfigureAdvancedClusterComponent from './components/page-configure-advanced/components/page-configure-advanced-cluster/component';
+import pageConfigureAdvancedServicesComponent from './components/page-configure-advanced/components/page-configure-advanced-services/component';
 import pageConfigureAdvancedModelsComponent from './components/page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from './components/page-configure-advanced/components/page-configure-advanced-caches/component';
 
@@ -123,6 +123,20 @@ function registerStates($stateProvider) {
     .state('base.configuration.edit.advanced.cluster', {
         url: '/cluster',
         component: pageConfigureAdvancedClusterComponent.name,
+        permission: 'configuration',
+        resolve: {
+            _shortCaches: shortCachesResolve
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure Cluster'
+        }
+    })
+    .state('base.configuration.edit.advanced.services', {
+        url: '/services',
+        component: pageConfigureAdvancedServicesComponent.name,
         permission: 'configuration',
         resolve: {
             _shortCaches: shortCachesResolve

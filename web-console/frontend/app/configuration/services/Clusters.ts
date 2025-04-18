@@ -113,7 +113,6 @@ export default class Clusters {
                     scanners: []
                 }
             },
-            marshaller: {},
             peerClassLoadingLocalClassPathExclude: [],
             sslContextFactory: {
                 trustManagers: []
@@ -399,12 +398,6 @@ export default class Clusters {
             customValidators: {
                 uniqueName: uniqueNameValidator()
             }
-        }
-    };
-
-    marshaller = {
-        kind: {
-            default: 'BinaryMarshaller'
         }
     };
 
