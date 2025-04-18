@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,19 +62,19 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
         return new GridSerializableSet<Entry<K, V>>() {
             @NotNull
             @Override public Iterator<Entry<K, V>> iterator() {
-                return CF.iterator0(map.entrySet(), false, entryPred);
+                return F.iterator0(map.entrySet(), false, entryPred);
             }
 
             @Override public int size() {
-                return CF.size(map.keySet(), preds);
+                return F.size(map.keySet(), preds);
             }
 
             @Override public boolean remove(Object o) {
-                return CF.isAll((Entry<K, V>)o, entryPred) && map.entrySet().remove(o);
+                return F.isAll((Entry<K, V>)o, entryPred) && map.entrySet().remove(o);
             }
 
             @Override public boolean contains(Object o) {
-                return CF.isAll((Entry<K, V>)o, entryPred) && map.entrySet().contains(o);
+                return F.isAll((Entry<K, V>)o, entryPred) && map.entrySet().contains(o);
             }
 
             @Override public boolean isEmpty() {
@@ -90,14 +90,14 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(Object key) {
-        return CF.isAll((K)key, preds) ? map.get(key) : null;
+        return F.isAll((K)key, preds) ? map.get(key) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public V put(K key, V val) {
         V oldVal = get(key);
 
-        if (CF.isAll(key, preds))
+        if (F.isAll(key, preds))
             map.put(key, val);
 
         return oldVal;
@@ -105,6 +105,6 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(Object key) {
-        return CF.isAll((K)key, preds) && map.containsKey(key);
+        return F.isAll((K)key, preds) && map.containsKey(key);
     }
 }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.lang.gridfunc;
 
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -43,7 +43,7 @@ public class EntryByKeyEvaluationPredicate<K, V> implements IgnitePredicate<Map.
 
     /** {@inheritDoc} */
     @Override public boolean apply(Map.Entry<K, V> e) {
-        return CF.isAll(e.getKey(), preds);
+        return F.isAll(e.getKey(), preds);
     }
 
     /** {@inheritDoc} */

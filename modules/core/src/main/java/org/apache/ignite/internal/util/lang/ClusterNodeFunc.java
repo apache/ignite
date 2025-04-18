@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridCommonFunc;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
  * the empty predicate array.
  */
 @SuppressWarnings("unchecked")
-public class GridFunc extends GridCommonFunc {
+public class ClusterNodeFunc {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
@@ -108,7 +108,7 @@ public class GridFunc extends GridCommonFunc {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
-        return viewReadOnly(nodes, node2id());
+        return F.viewReadOnly(nodes, node2id());
     }
 
     /**
@@ -125,7 +125,7 @@ public class GridFunc extends GridCommonFunc {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
-        return viewReadOnly(nodes, NODE2CONSISTENTID);
+        return F.viewReadOnly(nodes, NODE2CONSISTENTID);
     }
 
     /**
@@ -142,7 +142,7 @@ public class GridFunc extends GridCommonFunc {
      *
      * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
      * @return Grid node predicate evaluating on the given node ID.
-     * @see #idForNodeId(UUID)
+     * @see F#idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
     public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeId(final UUID nodeId) {
@@ -156,13 +156,13 @@ public class GridFunc extends GridCommonFunc {
      *
      * @param nodeIds Collection of node IDs.
      * @return Grid node predicate evaluating on the given node IDs.
-     * @see #idForNodeId(UUID)
+     * @see F#idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
     public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
         nodeIds) {
-        if (isEmpty(nodeIds))
-            return alwaysFalse();
+        if (F.isEmpty(nodeIds))
+            return F.alwaysFalse();
 
         return new ContainsNodeIdsPredicate<>(nodeIds);
     }
@@ -195,14 +195,14 @@ public class GridFunc extends GridCommonFunc {
      */
     @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
-        if (isEmpty(ps))
-            return alwaysTrue();
+        if (F.isEmpty(ps))
+            return F.alwaysTrue();
 
-        if (isAlwaysFalse(ps))
-            return alwaysFalse();
+        if (F.isAlwaysFalse(ps))
+            return F.alwaysFalse();
 
-        if (isAlwaysTrue(ps))
-            return alwaysTrue();
+        if (F.isAlwaysTrue(ps))
+            return F.alwaysTrue();
 
         if (F0.isAllNodePredicates(ps)) {
             Set<UUID> ids = new HashSet<>();
@@ -263,7 +263,7 @@ public class GridFunc extends GridCommonFunc {
                 return false;
 
             if (v1 instanceof Collection && v2 instanceof Collection) {
-                if (!eqNotOrdered((Collection)v1, (Collection)v2))
+                if (!F.eqNotOrdered((Collection)v1, (Collection)v2))
                     return false;
             }
             else {

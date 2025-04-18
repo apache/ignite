@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.internal.util.GridCommonFunc;
+import org.apache.ignite.internal.util.GridFunc;
 
 /**
- * Defines {@code alias} for {@link GridCommonFunc} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link GridFunc} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridCommonFunc}.
- * @see GridCommonFunc
+ * concise code in cases when readability won't be sacrificed. For more information see {@link GridFunc}.
+ * @see GridFunc
  */
-public class CF extends GridCommonFunc { /* No-op. */ }
+public class F extends GridFunc { /* No-op. */ }

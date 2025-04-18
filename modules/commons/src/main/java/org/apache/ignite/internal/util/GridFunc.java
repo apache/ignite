@@ -70,7 +70,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -100,7 +100,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <b>Remove when GridFunc migrated</b>
  */
-public class GridCommonFunc {
+public class GridFunc {
     /** */
     private static final IgniteClosure IDENTITY = new IdentityClosure();
 
@@ -1180,7 +1180,7 @@ public class GridCommonFunc {
      *      found (or {@code null} if key is not found and closure is not provided). Note that
      *      in case when key is not found the default value will be put into the map.
      * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see CF#newSet()
+     * @see F#newSet()
      */
     @Nullable public static <K, V> V addIfAbsent(Map<? super K, V> map, @Nullable K key,
         @Nullable Callable<? extends V> c) {
@@ -1390,7 +1390,7 @@ public class GridCommonFunc {
      * Collection&lt;Integer&gt; nums = new ArrayList&lt;Integer&gt;(size);
      *
      * // Search max value.
-     * Integer max = CF.fold(nums, CF.first(nums), new C2&lt;Integer, Integer, Integer&gt;() {
+     * Integer max = F.fold(nums, F.first(nums), new C2&lt;Integer, Integer, Integer&gt;() {
      *     public Integer apply(Integer n, Integer max) { return Math.max(n, max); }
      * });
      *

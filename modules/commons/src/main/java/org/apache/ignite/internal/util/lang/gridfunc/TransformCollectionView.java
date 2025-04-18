@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
@@ -59,16 +59,16 @@ public class TransformCollectionView<T1, T2> extends GridSerializableCollection<
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<T1> iterator() {
-        return CF.<T2, T1>iterator(col, clos, true, preds);
+        return F.<T2, T1>iterator(col, clos, true, preds);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return CF.isEmpty(preds) ? col.size() : CF.size(iterator());
+        return F.isEmpty(preds) ? col.size() : F.size(iterator());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return CF.isEmpty(preds) ? col.isEmpty() : !iterator().hasNext();
+        return F.isEmpty(preds) ? col.isEmpty() : !iterator().hasNext();
     }
 }

@@ -43,7 +43,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1895,7 +1895,7 @@ public class GridToStringBuilder {
         if (c.isEmpty())
             return "[]";
 
-        return '[' + CF.concat(new TreeSet<>(c), ",") + ']';
+        return '[' + F.concat(new TreeSet<>(c), ",") + ']';
     }
 
     /**
@@ -1970,7 +1970,7 @@ public class GridToStringBuilder {
         int maxLen,
         int maxCnt
     ) {
-        if (CF.isEmpty(list))
+        if (F.isEmpty(list))
             return "";
 
         SB buf = new SB();

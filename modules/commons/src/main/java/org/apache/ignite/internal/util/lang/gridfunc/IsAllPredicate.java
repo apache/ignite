@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -42,7 +42,7 @@ public class IsAllPredicate<T> implements IgnitePredicate<T> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(T t) {
-        return CF.isAll(t, preds);
+        return F.isAll(t, preds);
     }
 
     /** {@inheritDoc} */

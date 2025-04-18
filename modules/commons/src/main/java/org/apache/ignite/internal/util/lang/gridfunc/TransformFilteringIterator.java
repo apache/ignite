@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -73,7 +73,7 @@ public class TransformFilteringIterator<T2, T1> extends GridIteratorAdapter<T2> 
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() {
-        if (CF.isEmpty(preds))
+        if (F.isEmpty(preds))
             return iter.hasNext();
         else {
             if (!moved)
@@ -110,7 +110,7 @@ public class TransformFilteringIterator<T2, T1> extends GridIteratorAdapter<T2> 
 
     /** {@inheritDoc} */
     @Nullable @Override public T2 nextX() {
-        if (CF.isEmpty(preds))
+        if (F.isEmpty(preds))
             return clos.apply(iter.next());
         else {
             if (hasNext()) {
