@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -39,20 +38,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
  * Binary object representing array.
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
-    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
-
-    /** Value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
-    private static boolean USE_BINARY_ARRAYS =
-        IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -267,20 +258,5 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BinaryArray.class, this);
-    }
-
-    /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */
-    public static boolean useBinaryArrays() {
-        return USE_BINARY_ARRAYS;
-    }
-
-    /**
-     * Initialize {@link #USE_BINARY_ARRAYS} value with
-     * {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} system property value.
-     *
-     * This method invoked using reflection in tests.
-     */
-    public static void initUseBinaryArrays() {
-        USE_BINARY_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
     }
 }

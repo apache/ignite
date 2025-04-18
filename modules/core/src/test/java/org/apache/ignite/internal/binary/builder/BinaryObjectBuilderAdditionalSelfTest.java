@@ -1838,7 +1838,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
      */
     private TestEnum[] deserializeEnumBinaryArray(Object obj) {
         if (useBinaryArrays)
-            return ((BinaryArray)obj).deserialize();
+            return ((BinaryObject)obj).deserialize();
 
         Object[] arr;
 

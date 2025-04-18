@@ -30,7 +30,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -415,7 +414,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else if (BinaryUtils.isBinaryEnumArray(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
-        else if (newVal instanceof BinaryArray)
+        else if (BinaryUtils.isBinaryArray(newVal))
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
         else

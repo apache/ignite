@@ -46,6 +46,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -451,8 +452,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Obje
         public BinaryObject[] testBinaryObjectArray(Object arg0) {
             Object[] arg;
 
-            if (BinaryArray.useBinaryArrays()) {
-                assertTrue(arg0 instanceof BinaryArray);
+            if (BinaryUtils.useBinaryArrays()) {
+                assertTrue(BinaryUtils.isBinaryArray(arg0));
 
                 arg = ((BinaryArray)arg0).array();
             }

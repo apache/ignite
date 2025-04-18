@@ -28,9 +28,9 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.IgniteServicesImpl;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -184,7 +184,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                if (!BinaryArray.useBinaryArrays())
+                if (!BinaryUtils.useBinaryArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
                 res = proxy.invokeMethod(method, args, callAttrs);

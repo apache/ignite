@@ -191,7 +191,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof BinaryArray) {
+        if (BinaryUtils.isBinaryArray(val)) {
             BinaryArray val0 = (BinaryArray)val;
 
             if (val0.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)

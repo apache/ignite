@@ -769,7 +769,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case OBJECT_ARR:
-                    if (obj instanceof BinaryArray)
+                    if (BinaryUtils.isBinaryArray(obj))
                         writer.doWriteBinaryArray(((BinaryArray)obj));
                     else
                         writer.doWriteObjectArray((Object[])obj);
@@ -797,7 +797,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case ENUM_ARR:
-                    if (obj instanceof BinaryArray)
+                    if (BinaryUtils.isBinaryArray(obj))
                         writer.doWriteBinaryArray(((BinaryArray)obj));
                     else
                         writer.doWriteEnumArray((Object[])obj);

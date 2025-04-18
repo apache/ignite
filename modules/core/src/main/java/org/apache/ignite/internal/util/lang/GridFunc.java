@@ -39,7 +39,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridCommonFunc;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -2035,7 +2035,7 @@ public class GridFunc extends GridCommonFunc {
             return Arrays.equals((float[])a1, (float[])a2);
         else if (a1 instanceof double[])
             return Arrays.equals((double[])a1, (double[])a2);
-        else if (a1 instanceof BinaryArray)
+        else if (BinaryUtils.isBinaryArray(a1))
             return a1.equals(a2);
 
         return Arrays.deepEquals((Object[])a1, (Object[])a2);
