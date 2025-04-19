@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.compatibility.testframework.junits;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.junit.Assume;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -25,7 +25,7 @@ import org.junit.runners.model.Statement;
 /** */
 public class SkipTestIfJdkNewerRule implements TestRule {
     /** */
-    private static final String jdkVersion = U.jdkVersion();
+    private static final String jdkVersion = CommonUtils.jdkVersion();
 
     /** {@inheritDoc} */
     @Override public Statement apply(Statement base, Description desc) {
@@ -36,7 +36,7 @@ public class SkipTestIfJdkNewerRule implements TestRule {
         if (ann == null)
             ann = desc.getTestClass().getAnnotation(SkipTestIfIsJdkNewer.class);
 
-        Assume.assumeTrue("Skipping test", ann == null || U.majorJavaVersion(jdkVersion) <= ann.value());
+        Assume.assumeTrue("Skipping test", ann == null || CommonUtils.majorJavaVersion(jdkVersion) <= ann.value());
 
         return res;
     }

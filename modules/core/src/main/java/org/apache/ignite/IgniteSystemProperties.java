@@ -139,7 +139,6 @@ import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
 import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
-import static org.apache.ignite.internal.util.GridUnsafe.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.internal.util.StripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
@@ -999,26 +998,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used")
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
-
-    /**
-     * Whether Ignite can access unaligned memory addresses.
-     * <p>
-     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
-     */
-    @SystemProperty("Whether Ignite can access unaligned memory addresses. Defaults to false, " +
-        "meaning that unaligned access will be performed only on x86 architecture")
-    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
-
-    /**
-     * When unsafe memory copy if performed below this threshold, Ignite will do it on per-byte basis instead of
-     * calling to Unsafe.copyMemory().
-     * <p>
-     * Defaults to 0, meaning that threshold is disabled.
-     */
-    @SystemProperty(value = "When unsafe memory copy if performed below this threshold, Ignite will do it " +
-        "on per-byte basis instead of calling to Unsafe.copyMemory(). 0 disables threshold",
-        type = Long.class, defaults = "" + DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD)
-    public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
 
     /**
      * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve

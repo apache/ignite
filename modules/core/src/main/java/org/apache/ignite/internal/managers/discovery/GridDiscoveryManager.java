@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1399,7 +1400,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
         String verStr = node.<String>attribute("java.version");
 
-        int res = U.majorJavaVersion(verStr);
+        int res = CommonUtils.majorJavaVersion(verStr);
 
         if (res == 0) {
             U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +

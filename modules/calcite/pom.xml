@@ -69,6 +69,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-grid-unsafe</artifactId>
+            <version>${revision}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!--
             Indexing is required for cross-engines tests.
         -->

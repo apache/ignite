@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
@@ -156,7 +157,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Concurrency lvl. */
     private final int lockConcLvl = IgniteSystemProperties.getInteger(
         IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL,
-        U.nearestPow2(Runtime.getRuntime().availableProcessors() * 4, true)
+        CommonUtils.nearestPow2(Runtime.getRuntime().availableProcessors() * 4, true)
     );
 
     /** */
