@@ -33,8 +33,8 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.Assume;
 import org.junit.Test;
@@ -81,10 +81,10 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     /** */
     @Test
     public void testQueryOldInlinedIndex() throws Exception {
-        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+        int majorJavaVer = CommonUtils.majorJavaVersion(CommonUtils.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+            Assume.assumeTrue("Skipped on jdk " + CommonUtils.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
         }
 

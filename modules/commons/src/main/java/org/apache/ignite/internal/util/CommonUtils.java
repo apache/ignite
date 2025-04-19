@@ -21,12 +21,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
-public abstract class CommonUtils {
+public class CommonUtils {
     /**
      * The maximum size of array to allocate.
      * Some VMs reserve some header words in an array.
@@ -47,6 +48,9 @@ public abstract class CommonUtils {
 
     /** System line separator. */
     static final String NL = System.getProperty("line.separator");
+
+    /** Version of the JDK. */
+    static String jdkVer;
 
     static {
         try {
@@ -74,6 +78,8 @@ public abstract class CommonUtils {
 
         CTOR_FACTORY = ctorFac;
         SUN_REFLECT_FACTORY = refFac;
+
+        CommonUtils.jdkVer = System.getProperty("java.specification.version");
     }
 
     /**
@@ -175,5 +181,63 @@ public abstract class CommonUtils {
      */
     public static String nl() {
         return NL;
+    }
+
+    /**
+     * Gets JDK version.
+     *
+     * @return JDK version.
+     */
+    public static String jdkVersion() {
+        return jdkVer;
+    }
+
+    /**
+     * Get major Java version from string.
+     *
+     * @param verStr Version string.
+     * @return Major version or zero if failed to resolve.
+     */
+    public static int majorJavaVersion(String verStr) {
+        if (F.isEmpty(verStr))
+            return 0;
+
+        try {
+            String[] parts = verStr.split("\\.");
+
+            int major = Integer.parseInt(parts[0]);
+
+            if (parts.length == 1)
+                return major;
+
+            int minor = Integer.parseInt(parts[1]);
+
+            return major == 1 ? minor : major;
+        }
+        catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * @param x X.
+     * @param less Less.
+     */
+    public static int nearestPow2(int x, boolean less) {
+        assert x > 0 : "can not calculate for less zero";
+
+        long y = 1;
+
+        while (y < x) {
+            if (y * 2 > Integer.MAX_VALUE)
+                return (int)y;
+
+            y *= 2;
+        }
+
+        if (less)
+            y /= 2;
+
+        return (int)y;
     }
 }
