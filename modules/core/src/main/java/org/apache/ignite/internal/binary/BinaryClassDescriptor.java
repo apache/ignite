@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 /**
  * Binary class descriptor.
  */
-public class BinaryClassDescriptor {
+class BinaryClassDescriptor {
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;

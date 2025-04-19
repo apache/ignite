@@ -573,15 +573,50 @@ public class BinaryContext {
      * @param cls Class to register.
      * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param failIfUnregistered Throw exception if class isn't registered.
-     * @return Class descriptor.
+     * @return Class descriptor ID.
      * @throws BinaryObjectException In case of error.
      */
-    @NotNull public BinaryClassDescriptor registerClass(
+    public int registerClass(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered
     ) throws BinaryObjectException {
-        return registerClass(cls, registerMeta, failIfUnregistered, false);
+        return registerClassEx(cls, registerMeta, failIfUnregistered).typeId();
+    }
+
+    /**
+     * Attempts registration of the provided class. If the type is already registered, then an existing descriptor is
+     * returned.
+     *
+     * @param cls Class to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @return Class descriptor.
+     * @throws BinaryObjectException In case of error.
+     */
+    @NotNull BinaryClassDescriptor registerClassEx(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
+        return registerClassEx(cls, registerMeta, failIfUnregistered, false);
+    }
+
+    /**
+     * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
+     * @return Class descriptor ID.
+     * @throws BinaryObjectException In case of error.
+     */
+    public int registerClass(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered,
+        boolean onlyLocReg
+    ) throws BinaryObjectException {
+        return registerClassEx(cls, registerMeta, failIfUnregistered, onlyLocReg).typeId();
     }
 
     /**
@@ -592,7 +627,7 @@ public class BinaryContext {
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    @NotNull public BinaryClassDescriptor registerClass(
+    @NotNull BinaryClassDescriptor registerClassEx(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered,
@@ -629,7 +664,7 @@ public class BinaryContext {
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
      */
-    @NotNull public BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
@@ -700,7 +735,7 @@ public class BinaryContext {
      * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
-    public BinaryClassDescriptor descriptorForTypeId(
+    BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
@@ -756,7 +791,7 @@ public class BinaryContext {
         }
 
         if (desc == null) {
-            desc = registerClass(cls, registerMeta, false);
+            desc = registerClassEx(cls, registerMeta, false);
 
             assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
                 + ", desc=" + desc + "]";
@@ -806,7 +841,7 @@ public class BinaryContext {
      * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
      * @return Registered class descriptor.
      */
-    @NotNull public BinaryClassDescriptor registerDescriptor(
+    @NotNull BinaryClassDescriptor registerDescriptor(
         BinaryClassDescriptor desc,
         boolean registerMeta,
         boolean onlyLocReg
@@ -1067,7 +1102,7 @@ public class BinaryContext {
      * @param id Type ID.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+    BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         return registerPredefinedType(cls, id, null, true);
     }
 
@@ -1077,7 +1112,7 @@ public class BinaryContext {
      * @param affFieldName Affinity field name.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
+    BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
         String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
@@ -1209,7 +1244,7 @@ public class BinaryContext {
     /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#registerClass(Class, boolean, boolean)} already call this functionality
+     * {@link BinaryContext#registerClassEx(Class, boolean, boolean)} already call this functionality
      * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.

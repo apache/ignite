@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -1625,9 +1624,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
-        BinaryClassDescriptor clsDesc = binaryCtx.registerClass(cls, true, false);
+        int typeId = binaryCtx.registerClass(cls, true, false);
 
-        return metadata(clsDesc.typeId());
+        return metadata(typeId);
     }
 
     /** */

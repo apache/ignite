@@ -477,7 +477,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteInt(intfs.length);
 
             for (Class<?> intf : intfs) {
-                BinaryClassDescriptor desc = ctx.registerClass(intf, true, failIfUnregistered);
+                BinaryClassDescriptor desc = ctx.registerClassEx(intf, true, failIfUnregistered);
 
                 if (desc.registered())
                     out.writeInt(desc.typeId());
