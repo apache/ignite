@@ -59,10 +59,10 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.prepareSerializerVersionBuffer;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.jdkVersion;
+import static org.apache.ignite.internal.util.CommonUtils.majorJavaVersion;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
 import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
-import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
-import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
  * File handle for one log segment.
