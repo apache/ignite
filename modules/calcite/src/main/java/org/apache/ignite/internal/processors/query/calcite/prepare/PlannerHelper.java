@@ -91,7 +91,7 @@ public class PlannerHelper {
      *
      * @see #optimizeJoinsOrder(IgnitePlanner, RelNode, List)
      */
-    public static final int JOINS_COUNT_FOR_HEURISTIC_ORDER = 3;
+    public static final int JOINS_COUNT_FOR_HEURISTIC_ORDER = 30;
 
     /**
      * Default constructor.
@@ -106,6 +106,8 @@ public class PlannerHelper {
      * @param log Logger.
      */
     public static IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner, IgniteLogger log) {
+        log.error("TEST | begin");
+
         try {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
@@ -127,7 +129,7 @@ public class PlannerHelper {
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
-            // rel = planner.extractConjunctionOverDisjunctionCommonPart(rel);
+            rel = planner.extractConjunctionOverDisjunctionCommonPart(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
@@ -141,13 +143,15 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
-            //rel = optimizeJoinsOrder(planner, rel, topHints);
+            rel = optimizeJoinsOrder(planner, rel, topHints);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
                 .simplify();
+
+            log.error("TEST | planning...");
 
             IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
@@ -163,6 +167,8 @@ public class PlannerHelper {
 
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
+
+            log.error("TEST | Plan:\n" + RelOptUtil.toString(igniteRel));
 
             return igniteRel;
         }

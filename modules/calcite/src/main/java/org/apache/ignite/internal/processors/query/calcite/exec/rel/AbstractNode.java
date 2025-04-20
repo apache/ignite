@@ -68,6 +68,9 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     private List<Node<Row>> sources;
 
+    protected long outCnt, leftCnt, rightCnt;
+    protected boolean begin;
+
     /**
      * @param ctx Execution context.
      */

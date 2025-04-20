@@ -131,7 +131,8 @@ public class IgniteMultiJoinOptimizeRule extends RelRule<IgniteMultiJoinOptimize
                 multiJoin.getNumTotalFields()
             );
 
-            bestPlan.put(relNumPow2, new Vertex(relNumPow2, callMeta.getRowCount(input), input, fldMapping));
+//            bestPlan.put(relNumPow2, new Vertex(relNumPow2, callMeta.getRowCount(input), input, fldMapping));
+            bestPlan.put(relNumPow2, new Vertex(relNumPow2, 100000, input, fldMapping));
 
             connections.set(relNumPow2);
 

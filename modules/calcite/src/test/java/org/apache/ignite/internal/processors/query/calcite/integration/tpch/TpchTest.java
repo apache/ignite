@@ -58,7 +58,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
 
         TpchHelper.createTables(client);
 
-        TpchHelper.fillTables(client, 0.01);
+        TpchHelper.fillTables(client, 0.1);
 
         TpchHelper.collectSqlStatistics(client);
     }

@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
@@ -171,12 +172,16 @@ public class TpchHelper {
                                   BiFunction<Ignite, String, GridMapEntry<?, ?>> entryGen) {
         ignite.log().info("Filling table: " + table + " ...");
 
+        LongAdder cnt = new LongAdder();
+
         try (IgniteDataStreamer<Object, Object> ds = ignite.dataStreamer(table)) {
             data.forEach(line -> {
                 try {
                     GridMapEntry<?, ?> entry = entryGen.apply(ignite, line);
 
                     ds.addData(entry.getKey(), entry.getValue());
+
+                    cnt.increment();
                 }
                 catch (Exception e) {
                     ignite.log().error(e.getMessage(), e);
@@ -184,7 +189,7 @@ public class TpchHelper {
             });
         }
 
-        ignite.log().info("Table: " + table + " is filled");
+        ignite.log().info("Table: " + table + " is filled, cnt: " + cnt.sum());
     }
 
     /**
