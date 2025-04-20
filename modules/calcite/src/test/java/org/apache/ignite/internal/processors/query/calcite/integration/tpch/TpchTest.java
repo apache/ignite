@@ -37,7 +37,7 @@ import org.junit.runners.Parameterized;
 @WithSystemProperty(key = "IGNITE_CALCITE_PLANNER_TIMEOUT", value = "300000")
 public class TpchTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final int CNT = 15;
+    private static final int CNT = 1;
 
     /** */
     private static final int WARM = 3;

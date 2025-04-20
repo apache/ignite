@@ -23,7 +23,6 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Sort;
-import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -34,11 +33,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -55,28 +51,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
-        return joinRowCount(mq, rel);
+        return rel.estimateRowCount(mq);
     }
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Sort rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
-
-//    @Override
-//    public @org.checkerframework.checker.nullness.qual.Nullable Double getRowCount(Exchange rel, RelMetadataQuery mq) {
-//        return rel.estimateRowCount(mq);
-//    }
-//
-//    public static void printCosts(RelNode rel, RelMetadataQuery mq){
-//        new RelShuttleImpl(){
-//            @Override public RelNode visit(RelNode other) {
-//                Commons.context(rel).logger().error("Rel " + other + ", rows: " + other.estimateRowCount(mq));
-//
-//                return super.visit(other);
-//            }
-//        }.visit(rel);
-//    }
 
     /** */
     @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {
@@ -103,7 +84,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         if (left <= 1D || right <= 1D) {
             Double max = mq.getMaxRowCount(rel);
-
             if (max != null && max <= 1D)
                 return max;
         }
@@ -115,18 +95,23 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
+        double rowsCnt;
+
         if (left <= 1D || right <= 1D || F.isEmpty(leftKeys) || F.isEmpty(rightKeys))
-            return left * right * selectivity;
+            rowsCnt = left * right * selectivity;
+        else  {
+            double leftDistinct = Util.first(
+                mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
+            double rightDistinct = Util.first(
+                mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
 
-        double leftDistinct = Util.first(
-            mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
-        double rightDistinct = Util.first(
-            mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
+            double leftCardinality = leftDistinct / left;
+            double rightCardinality = rightDistinct / right;
 
-        double leftCardinality = leftDistinct / left;
-        double rightCardinality = rightDistinct / right;
+            rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
 
-        double rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
+            rowsCnt = leftDistinct * rightDistinct * selectivity;
+        }
 
         JoinRelType type = rel.getJoinType();
 
@@ -147,13 +132,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
      */
     public double getRowCount(IgniteSortedIndexSpool rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
-    }
-
-    @Override
-    public @org.checkerframework.checker.nullness.qual.Nullable Double getRowCount(TableScan rel, RelMetadataQuery mq) {
-        Double res = super.getRowCount(rel, mq);
-
-        return res;
     }
 
     /** {@inheritDoc} */

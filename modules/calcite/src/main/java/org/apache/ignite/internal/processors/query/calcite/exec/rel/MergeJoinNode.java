@@ -83,12 +83,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
-//        if (!begin) {
-//            begin = true;
-//
-//            context().logger().error("TEST | Merge.begin()");
-//        }
-
         checkState();
 
         requested = rowsCnt;
@@ -161,8 +155,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         ++leftCnt;
 
-        //context().logger().error("TEST | Merge.pushLeft()");
-
         checkState();
 
         waitingLeft--;
@@ -178,8 +170,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert waitingRight > 0;
 
         ++rightCnt;
-
-        //context().logger().error("TEST | Merge.pushRight()");
 
         checkState();
 

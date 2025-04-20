@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -33,9 +32,6 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinNode;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdCumulativeCost;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -86,6 +82,7 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
 
         if (Double.isInfinite(leftCnt))
             return costFactory.makeInfiniteCost();
+
         double rightCnt = mq.getRowCount(getRight());
 
         if (Double.isInfinite(rightCnt))
@@ -98,11 +95,12 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
         RelOptCost res = costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0, rightSize, 0);
 
-        if (getLeft() instanceof IgniteMergeJoin && getRight() instanceof IgniteMergeJoin && (rightCnt < 100 || leftCnt < 100))
-            res = costFactory.makeInfiniteCost();
+        if (getLeft() instanceof IgniteExchange && getRight() instanceof IgniteExchange)
+            System.err.println("TEST | NL rows: " + estimateRowCount(mq));
 
-        //rightCnt = mq.getRowCount(getRight());
-//        }
+        if (getLeft() instanceof IgniteExchange && getRight() instanceof IgniteMergeJoin)
+            System.err.println("TEST | NL rows: " + estimateRowCount(mq));
+
         return res;
     }
 

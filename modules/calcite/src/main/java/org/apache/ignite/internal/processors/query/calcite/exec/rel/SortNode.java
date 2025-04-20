@@ -129,7 +129,6 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
 
         waiting--;
 
-        ++outCnt;
         int size = rows.size();
         Row top = rows.peek();
 
@@ -195,6 +194,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
 
                 nodeMemoryTracker.onRowRemoved(row);
 
+                ++outCnt;
+
                 downstream().push(row);
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
@@ -206,11 +207,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
             }
 
             if (reversed == null ? rows.isEmpty() : reversed.isEmpty()) {
-                if (requested > 0) {
-                    context().logger().error("TEST | Sort.end(), cnt: " + outCnt);
-
+                if (requested > 0)
                     downstream().end();
-                }
 
                 requested = 0;
             }

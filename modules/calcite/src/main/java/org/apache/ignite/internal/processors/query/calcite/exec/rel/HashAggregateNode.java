@@ -221,7 +221,6 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         if (requested > 0) {
             requested = 0;
-            //context().logger().error("TEST | HashAgg.end()");
             downstream().end();
         }
     }

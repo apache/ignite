@@ -41,7 +41,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdCumulativeCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -266,8 +265,15 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelOptCost res = costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
 
-//        if (getLeft() instanceof IgniteMergeJoin && getRight() instanceof IgniteMergeJoin)
-//            System.err.println("TEST | Merge rows: " + rows);
+
+        if (getLeft() instanceof IgniteExchange && getRight() instanceof IgniteExchange)
+            System.err.println("TEST | Merge rows: " + estimateRowCount(mq) + ", left: " + leftCnt + ", right: " + rightCnt);
+
+        if (getLeft() instanceof IgniteExchange && getRight() instanceof IgniteNestedLoopJoin)
+            System.err.println("TEST | Merge rows: " + estimateRowCount(mq) + ", left: " + leftCnt + ", right: " + rightCnt);
+
+        if (getLeft() instanceof IgniteSort && getRight() instanceof IgniteSort)
+            System.err.println("TEST | Merge rows: " + estimateRowCount(mq) + ", left: " + leftCnt + ", right: " + rightCnt);
 
         //res = costFactory.makeZeroCost();
         //IgniteMdCumulativeCost.printCost(this, res, mq, leftCnt, rightCnt);

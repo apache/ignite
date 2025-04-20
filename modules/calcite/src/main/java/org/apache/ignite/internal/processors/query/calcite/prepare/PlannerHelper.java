@@ -106,8 +106,6 @@ public class PlannerHelper {
      * @param log Logger.
      */
     public static IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner, IgniteLogger log) {
-        log.error("TEST | begin");
-
         try {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);

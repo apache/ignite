@@ -71,7 +71,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     private static final double IS_NOT_NULL_SELECTIVITY = 1 - IS_NULL_SELECTIVITY;
 
     /** Default selectivity for equals conditions. */
-    private static final double EQUALS_SELECTIVITY = 0.333;
+    private static final double EQUALS_SELECTIVITY = 0.25;
 
     /** Default selectivity for comparison conitions. */
     private static final double COMPARISON_SELECTIVITY = 0.5;
@@ -564,12 +564,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         return DEFAULT_SELECTIVITY;
     }
-
-    /** */
-    @Override public Double getSelectivity(RelNode rel, RelMetadataQuery mq, @org.checkerframework.checker.nullness.qual.Nullable RexNode predicate) {
-        return guessSelectivity(predicate);
-    }
-
     /** */
     @Override public @Nullable Double getSelectivity(Join rel, RelMetadataQuery mq, @Nullable RexNode predicate) {
         return guessSelectivity(predicate);

@@ -85,12 +85,6 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     @Override public void request(int rowsCnt) throws Exception {
         assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
-//        if (!begin) {
-//            begin = true;
-//
-//            context().logger().error("TEST | Scan.begin(), src: " + src);
-//        }
-
         checkState();
 
         requested = rowsCnt;
@@ -189,8 +183,6 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
             it = null;
 
             requested = 0;
-
-            //context().logger().error("TEST | Scan.end(), cnt: " + outCnt + ", scan: " + this);
 
             downstream().end();
         }

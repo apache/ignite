@@ -75,12 +75,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
-//        if (!begin) {
-//            begin = true;
-//
-//            context().logger().error("TEST | NL.begin()");
-//        }
-
         checkState();
 
         requested = rowsCnt;
