@@ -705,7 +705,7 @@ public class FilePerformanceStatisticsReader {
         }
     }
 
-    /** Write schema of system view to file. */
+    /** */
     private class RowReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
         /** Number of system view attributes. */
         private final int size;
