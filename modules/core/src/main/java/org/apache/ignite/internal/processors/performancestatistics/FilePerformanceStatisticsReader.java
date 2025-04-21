@@ -713,7 +713,7 @@ public class FilePerformanceStatisticsReader {
         /** Row. */
         private List<Object> row;
 
-        /** Not enough bytes. */
+        /** Not enough bytes flag. */
         private boolean notEnoughBytes;
 
         public RowReaderVisitor(int size) {
