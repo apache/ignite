@@ -55,13 +55,13 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
             serializedTestObjectsBytes = writer.array();
         }
 
-        RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryStreams.createHeapInputStream(serializedTestObjectsBytes));
+        RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryStreams.inputStream(serializedTestObjectsBytes));
 
         for (Object testObj : testObjects) {
             byte[] objRawBytes = rawReader.extractObject();
 
             try (BinaryReaderExImpl binReader
-                     = new BinaryReaderExImpl(ctx, BinaryStreams.createHeapInputStream(objRawBytes), null, false)) {
+                     = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(objRawBytes), null, false)) {
                 Object deserializedObj = binReader.readObject();
 
                 if (testObj instanceof Proxy)

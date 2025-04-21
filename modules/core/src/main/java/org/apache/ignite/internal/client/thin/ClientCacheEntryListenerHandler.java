@@ -145,7 +145,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
     /** {@inheritDoc} */
     @Override public void acceptNotification(ByteBuffer payload, Exception err) {
         if (err == null && payload != null) {
-            BinaryInputStream in = BinaryStreams.createInputStream(payload);
+            BinaryInputStream in = BinaryStreams.inputStream(payload);
 
             int cnt = in.readInt();
 

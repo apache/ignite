@@ -518,7 +518,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * Process next message from the input stream and complete corresponding future.
      */
     private void processNextMessage(ByteBuffer buf) throws ClientProtocolError, ClientConnectionException {
-        BinaryInputStream dataInput = BinaryStreams.createInputStream(buf);
+        BinaryInputStream dataInput = BinaryStreams.inputStream(buf);
 
         if (protocolCtx == null) {
             // Process handshake.
@@ -740,7 +740,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             try {
                 ByteBuffer buf = timeout > 0 ? fut.get(timeout) : fut.get();
 
-                BinaryInputStream res = BinaryStreams.createInputStream(buf);
+                BinaryInputStream res = BinaryStreams.inputStream(buf);
 
                 try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
                     boolean success = res.readBoolean();
@@ -842,7 +842,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         Map<String, String> userAttrs) throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, BinaryStreams.createThreadLocalHeapOutputStream(32), null, null)) {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, BinaryStreams.outputStream(32), null, null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size

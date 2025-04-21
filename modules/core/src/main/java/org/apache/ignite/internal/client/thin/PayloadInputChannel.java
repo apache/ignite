@@ -35,7 +35,7 @@ class PayloadInputChannel {
      * Constructor.
      */
     PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        in = BinaryStreams.createInputStream(payload);
+        in = BinaryStreams.inputStream(payload);
         this.ch = ch;
     }
 

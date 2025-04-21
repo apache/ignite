@@ -45,7 +45,7 @@ class ObjectDetachHelper {
 
     /** */
     static ObjectDetachHelper create(byte[] data, int offset) {
-        ObjectDetachHelper res = new ObjectDetachHelper(BinaryStreams.createHeapInputStream(data, offset));
+        ObjectDetachHelper res = new ObjectDetachHelper(BinaryStreams.inputStream(data, offset));
 
         res.findCrossObjectReferences();
 

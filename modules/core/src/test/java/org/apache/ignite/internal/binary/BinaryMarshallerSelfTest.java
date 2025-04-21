@@ -3236,13 +3236,13 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action, boolean deserialize) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        BinaryOutputStream os = BinaryStreams.createThreadLocalHeapOutputStream(1024);
+        BinaryOutputStream os = BinaryStreams.outputStream(1024);
 
         BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
 
         writer.writeObject(obj);
 
-        BinaryInputStream is = BinaryStreams.createHeapInputStream(os.array());
+        BinaryInputStream is = BinaryStreams.inputStream(os.array());
 
         BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
 

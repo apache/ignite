@@ -42,7 +42,7 @@ class PayloadOutputChannel implements AutoCloseable {
      */
     PayloadOutputChannel(ClientChannel ch) {
         // Disable AutoCloseable on the stream so that out callers don't release the pooled buffer before it is written to the socket.
-        out = BinaryStreams.createPooledHeapOutputStream(INITIAL_BUFFER_CAPACITY, true);
+        out = BinaryStreams.createPooledOutputStream(INITIAL_BUFFER_CAPACITY, true);
         this.ch = ch;
     }
 

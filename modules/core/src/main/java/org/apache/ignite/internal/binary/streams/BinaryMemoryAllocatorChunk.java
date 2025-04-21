@@ -17,18 +17,10 @@
 
 package org.apache.ignite.internal.binary.streams;
 
-import org.apache.ignite.IgniteSystemProperties;
-
 /**
  * Memory allocator chunk.
  */
 public interface BinaryMemoryAllocatorChunk {
-    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
-    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
-
-    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
-    public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
-
     /**
      * Allocate.
      *

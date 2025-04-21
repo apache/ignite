@@ -299,7 +299,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             ObjectDetachHelper detachHelper = ObjectDetachHelper.create(arr, start);
 
             if (detachHelper.isCrossObjectReferencesDetected()) {
-                try (BinaryOutputStream out = BinaryStreams.createThreadLocalHeapOutputStream(2 * len)) {
+                try (BinaryOutputStream out = BinaryStreams.outputStream(2 * len)) {
                     detachHelper.detach(out);
 
                     return new BinaryObjectImpl(ctx, out.arrayCopy(), 0);
@@ -589,7 +589,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = BinaryUtils.unmarshal(BinaryStreams.createHeapInputStream(arr, fieldPos), ctx, null);
+                val = BinaryUtils.unmarshal(BinaryStreams.inputStream(arr, fieldPos), ctx, null);
 
                 break;
         }
@@ -917,7 +917,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             ldr = ctx.configuration().getClassLoader();
 
         return new BinaryReaderExImpl(ctx,
-            BinaryStreams.createHeapInputStream(arr, start),
+            BinaryStreams.inputStream(arr, start),
             ldr,
             rCtx,
             false,

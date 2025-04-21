@@ -60,7 +60,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @return Reader.
      */
     protected BinaryReaderExImpl createReader(ClientMessage msg) {
-        BinaryInputStream stream = BinaryStreams.createHeapInputStream(msg.payload());
+        BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
         return new BinaryReaderExImpl(binCtx, stream, ctx.config().getClassLoader(), true);
     }
@@ -70,7 +70,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @return Writer.
      */
     protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(binCtx, BinaryStreams.createThreadLocalHeapOutputStream(cap), null);
+        return new BinaryWriterExImpl(binCtx, BinaryStreams.outputStream(cap), null);
     }
 
     /** {@inheritDoc} */

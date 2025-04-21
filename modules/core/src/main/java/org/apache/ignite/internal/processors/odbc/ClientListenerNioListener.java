@@ -365,7 +365,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ctx.configure(marsh);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, BinaryStreams.createHeapInputStream(msg.payload()), null, true);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 
@@ -383,7 +383,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.createThreadLocalHeapOutputStream(8), null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(8), null, null);
 
         byte clientType = reader.readByte();
 

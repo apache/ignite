@@ -80,7 +80,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream stream = BinaryStreams.createHeapInputStream(msg.payload());
+        BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
@@ -258,7 +258,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         // Creating new binary writer
         BinaryWriterExImpl writer = new BinaryWriterExImpl(
             marsh.context(),
-            BinaryStreams.createThreadLocalHeapOutputStream(INIT_CAP),
+            BinaryStreams.outputStream(INIT_CAP),
             null
         );
 

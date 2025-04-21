@@ -30,7 +30,7 @@ public class BinaryStreams {
      * @param pos Position.
      * @return Stream.
      */
-    public static BinaryInputStream createHeapInputStream(byte[] data, int pos) {
+    public static BinaryInputStream inputStream(byte[] data, int pos) {
         return BinaryHeapInputStream.create(data, pos);
     }
 
@@ -40,41 +40,25 @@ public class BinaryStreams {
      * @param data Data.
      * @return Stream.
      */
-    public static BinaryInputStream createHeapInputStream(byte[] data) {
+    public static BinaryInputStream inputStream(byte[] data) {
         return new BinaryHeapInputStream(data);
-    }
-
-    /**
-     * @param cap Capacity.
-     * @return Binary output stream data.
-     */
-    public static BinaryOutputStream createPooledHeapOutputStream(int cap, boolean disableAutoClose) {
-        return new BinaryHeapOutputStream(cap, BinaryMemoryAllocator.POOLED.chunk(), disableAutoClose);
-    }
-
-    /**
-     * @param cap Capacity.
-     * @return Binary output stream data.
-     */
-    public static BinaryOutputStream createThreadLocalHeapOutputStream(int cap) {
-        return new BinaryHeapOutputStream(cap);
-    }
-
-    /**
-     * @param cap Capacity.
-     * @param chunk Memory allocator chunk.
-     * @return Binary output stream.
-     */
-    public static BinaryOutputStream createHeapOutputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
-        return new BinaryHeapOutputStream(cap, chunk);
     }
 
     /**
      * @param buf Buffer to wrap.
      * @return Stream.
      */
-    public static BinaryInputStream createInputStream(ByteBuffer buf) {
+    public static BinaryInputStream inputStream(ByteBuffer buf) {
         return new BinaryByteBufferInputStream(buf);
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @param cap Capacity.
+     * @return Stream.
+     */
+    public static BinaryInputStream inputStream(long ptr, int cap) {
+        return new BinaryOffheapInputStream(ptr, cap);
     }
 
     /**
@@ -84,21 +68,39 @@ public class BinaryStreams {
      *        create heap-based objects.
      * @return Stream.
      */
-    public static BinaryInputStream createOffheapInputStream(long ptr, int cap, boolean forceHeap) {
+    public static BinaryInputStream inputStream(long ptr, int cap, boolean forceHeap) {
         return new BinaryOffheapInputStream(ptr, cap, forceHeap);
     }
 
     /**
-     * @param ptr Pointer.
      * @param cap Capacity.
-     * @return Stream.
+     * @param disableAutoClose Whether to disable resource release in {@link BinaryOutputStream#close()} method
+     *                         so that an explicit {@link BinaryOutputStream#release()} call is required.
+     * @return Binary output stream data.
      */
-    public static BinaryInputStream createOffheapInputStream(long ptr, int cap) {
-        return new BinaryOffheapInputStream(ptr, cap);
+    public static BinaryOutputStream createPooledOutputStream(int cap, boolean disableAutoClose) {
+        return new BinaryHeapOutputStream(cap, BinaryMemoryAllocator.POOLED.chunk(), disableAutoClose);
     }
 
     /**
-     * @return
+     * @param cap Capacity.
+     * @return Binary output stream data.
+     */
+    public static BinaryOutputStream outputStream(int cap) {
+        return new BinaryHeapOutputStream(cap);
+    }
+
+    /**
+     * @param cap Capacity.
+     * @param chunk Memory allocator chunk.
+     * @return Binary output stream.
+     */
+    public static BinaryOutputStream outputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
+        return new BinaryHeapOutputStream(cap, chunk);
+    }
+
+    /**
+     * @return Thread local binary memory allocator.
      */
     public static BinaryMemoryAllocatorChunk threadLocalChunk() {
         return BinaryMemoryAllocator.THREAD_LOCAL.chunk();

@@ -433,7 +433,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (type != CacheObject.TYPE_BYTE_ARR) {
             assert size > 0 : size;
 
-            BinaryInputStream in = BinaryStreams.createOffheapInputStream(ptr, size, forceHeap);
+            BinaryInputStream in = BinaryStreams.inputStream(ptr, size, forceHeap);
 
             return binaryMarsh.unmarshal(in);
         }
