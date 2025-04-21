@@ -664,9 +664,7 @@ public class FilePerformanceStatisticsReader {
         /** */
         private final String viewName;
 
-        /**
-         * Attribute names of system view.
-         */
+        /** Attribute names of system view. */
         private final List<String> schema;
 
         /**  */
