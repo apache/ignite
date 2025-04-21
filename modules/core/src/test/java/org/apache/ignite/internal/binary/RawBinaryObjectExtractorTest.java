@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -256,7 +257,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
                 new Class[] { UnregisteredClass.class },
                 new TestInvocationHandler(UnregisteredClass.class));
 
-            binObj =  BinaryUtils.createBuilder(ctx, "TestBinaryType").setField("test-field", "test-value").build();
+            binObj = BinaryObjectBuilders.createBuilder(ctx, "TestBinaryType").setField("test-field", "test-value").build();
         }
     }
 }

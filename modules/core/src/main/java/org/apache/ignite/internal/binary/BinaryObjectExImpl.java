@@ -27,6 +27,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerInaccessibleClassException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -158,7 +159,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryUtils.toBuilder(this);
+        return BinaryObjectBuilders.toBuilder(this);
     }
 
     /** {@inheritDoc} */

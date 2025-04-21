@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 /**
  *
  */
-public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
+class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private static final Object REMOVED_FIELD_MARKER = new Object();
 
