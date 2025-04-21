@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.dataStartRelative;
 import static org.apache.ignite.internal.binary.BinaryUtils.length;
@@ -45,7 +45,7 @@ class ObjectDetachHelper {
 
     /** */
     static ObjectDetachHelper create(byte[] data, int offset) {
-        ObjectDetachHelper res = new ObjectDetachHelper(BinaryHeapInputStream.create(data, offset));
+        ObjectDetachHelper res = new ObjectDetachHelper(BinaryStreams.createHeapInputStream(data, offset));
 
         res.findCrossObjectReferences();
 
