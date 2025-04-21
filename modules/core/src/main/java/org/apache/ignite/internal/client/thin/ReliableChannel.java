@@ -418,85 +418,92 @@ final class ReliableChannel implements AutoCloseable {
                 CompletableFuture<T> fut = new CompletableFuture<>();
                 List<ClientConnectionException> failures = new ArrayList<>();
 
-                Object result = applyOnNodeChannel(
-                    affNodeId,
-                    channel -> applyOnClientChannelAsync(channel, op, payloadWriter, payloadReader),
-                    failures
-                );
+                ClientChannel ch = applyOnNodeChannel(affNodeId, channel -> channel, failures);
 
-                // TODO: retry the channel.
+                withRetryChannelAsync(fut, ch, op, payloadWriter, payloadReader, failures);
 
-                if (result != null)
-                    return new IgniteClientFutureImpl<>(fut);
+                return new IgniteClientFutureImpl<>(fut);
             }
         }
 
         return serviceAsync(op, payloadWriter, payloadReader);
     }
 
-    /*
-    public <T> IgniteClientFuture<T> affinityServiceAsync(
-        int cacheId,
-        Object key,
+    private <T> void withRetryChannelAsync(
+        CompletableFuture<T> fut,
+        ClientChannel ch,
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException, ClientError {
-        if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
-            UUID affNodeId = affinityCtx.affinityNode(cacheId, key);
+        Function<PayloadInputChannel, T> payloadReader,
+        List<ClientConnectionException> failures
+    ) {
+        CompletableFuture<T> chFut = applyOnClientChannelAsync(ch, op, payloadWriter, payloadReader);
 
-            if (affNodeId != null) {
-                CompletableFuture<T> fut = new CompletableFuture<>();
-                List<ClientConnectionException> failures = new ArrayList<>();
+        // Retry use same channel in case of connection exception.
+        CompletableFuture<T> retryFut = chFut
+            .handle((res, err) -> {
+                if (err == null) {
+                    fut.complete(res);
 
-                try {
-                    ClientChannelHolder hld = nodeChannels.get(affNodeId);
-                    if (hld != null) {
-                        ClientChannel channel = hld.getOrCreateChannel();
-
-                        channel.serviceAsync(op, payloadWriter, payloadReader)
-                            .whenComplete((res, err) -> {
-                                if (err == null) {
-                                    fut.complete(res);
-
-                                    return;
-                                }
-
-                                failures.add((ClientConnectionException)err);
-
-                                onChannelFailure(hld, channel, err, failures);
-
-                                if (shouldRetry(op, 0, (ClientConnectionException)err)) {
-                                    // Retry with the same channel after reconnection
-                                    try {
-                                        ClientChannel newChannel = hld.getOrCreateChannel();
-
-                                        newChannel.serviceAsync(op, payloadWriter, payloadReader)
-                                            .whenComplete((retryRes, retryErr) -> {
-                                                if (retryErr == null)
-                                                    fut.complete(retryRes);
-                                                else
-                                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-                                            });
-                                    } catch (Throwable t) {
-                                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-                                    }
-                                } else
-                                    handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-                            });
-
-                        return new IgniteClientFutureImpl<>(fut);
-                    }
-                } catch (ClientConnectionException e) {
-                    failures.add(e);
+                    return null;
                 }
-            }
-        }
 
-        return serviceAsync(op, payloadWriter, payloadReader);
+                if (!(err instanceof ClientConnectionException)) {
+                    fut.completeExceptionally(err);
+
+                    return null;
+                }
+
+                onChannelFailure(ch, err, failures);
+
+                ClientChannel newCh = null;
+
+                for (ClientChannelHolder holder : channels) {
+                    if (holder.ch == ch) {
+                        newCh = holder.getOrCreateChannel();
+
+                        break;
+                    }
+                }
+
+                if (newCh == null)
+                    throw (ClientConnectionException)err;
+
+                if (shouldRetry(op, 1, (ClientConnectionException)err))
+                    return applyOnClientChannelAsync(newCh, op, payloadWriter, payloadReader);
+
+                fut.completeExceptionally(composeException(failures));
+
+                return null;
+
+            }).thenCompose(f -> f);
+
+        // Try other channels in case of failed retry.
+        retryFut.whenComplete((res, err) -> {
+            if (fut.isDone())
+                return;
+
+            if (err == null) {
+                fut.complete(res);
+
+                return;
+            }
+
+            if (!(err instanceof ClientConnectionException)) {
+                fut.completeExceptionally(err);
+
+                return;
+            }
+
+            failures.add((ClientConnectionException)err);
+
+            if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, (ClientConnectionException)err))
+                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+            else
+                fut.completeExceptionally(composeException(failures));
+        });
     }
-    */
-     
+
     /**
      * @param cacheName Cache name.
      */
