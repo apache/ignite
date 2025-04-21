@@ -209,7 +209,8 @@ class SystemViewFileWriter extends GridWorker {
     private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
-            writeString(buf, String.valueOf(val), strCache.cacheIfPossible(String.valueOf(val)));
+            String str = String.valueOf(val);
+            writeString(buf, str, strCache.cacheIfPossible(str));
         }
 
         /** {@inheritDoc} */
