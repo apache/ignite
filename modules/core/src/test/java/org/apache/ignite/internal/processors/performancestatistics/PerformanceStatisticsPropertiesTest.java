@@ -102,9 +102,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         assertEquals(2, files.size());
 
-        File file = getMainStatisticsFile(files);
-
-        long statFileLen = file.length();
+        long statFileLen = performanceStatisticsFiles(files).get(0).length();
 
         assertEquals(expLen, statFileLen);
 
@@ -129,7 +127,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         assertEquals(2, files.size());
 
-        File file = getMainStatisticsFile(files);
+        File file = performanceStatisticsFiles(files).get(0);
 
         assertEquals(0, file.length());
 
@@ -204,7 +202,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         assertEquals(2, files.size());
 
-        File file = getMainStatisticsFile(files);
+        File file = performanceStatisticsFiles(files).get(0);
         assertEquals(expLen, file.length());
     }
 }

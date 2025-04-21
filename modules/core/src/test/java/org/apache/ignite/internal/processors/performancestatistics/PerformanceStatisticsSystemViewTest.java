@@ -81,6 +81,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
                 }
             });
 
+            assertEquals(1, systemViewStatisticsFiles(statisticsFiles()).size());
             assertEquals(viewsExpected, viewsActual);
         }
     }

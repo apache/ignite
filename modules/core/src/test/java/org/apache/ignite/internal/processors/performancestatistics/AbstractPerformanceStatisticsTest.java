@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
@@ -129,15 +131,20 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     /**
      * @param files Performance statistics files.
      */
-    protected File getMainStatisticsFile(List<File> files) {
-        File file = files.stream()
+    protected List<File> systemViewStatisticsFiles(List<File> files) {
+        return files.stream()
             .filter(file1 -> file1.getName()
-                .matches("node-" + nodeId(0) + ".prf"))
-            .findFirst().orElse(null);
+                .matches("node-.*-system-views(-\\d+)?\\.prf"))
+            .collect(Collectors.toList());
+    }
 
-        assertNotNull(file);
-
-        return file;
+    /**
+     * @param files Performance statistics files.
+     */
+    protected List<File> performanceStatisticsFiles(List<File> files) {
+        List<File> perfFiles = new ArrayList<>(files);
+        perfFiles.removeAll(systemViewStatisticsFiles(files));
+        return perfFiles;
     }
 
     /**

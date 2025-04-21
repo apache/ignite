@@ -78,7 +78,7 @@ public class StringCacheTest extends AbstractPerformanceStatisticsTest {
 
         assertEquals(2, files.size());
 
-        File file = getMainStatisticsFile(files);
+        File file = performanceStatisticsFiles(files).get(0);
 
         assertEquals(expLen, file.length());
     }
