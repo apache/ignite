@@ -23,17 +23,9 @@ import java.util.Arrays;
 /**
  * Input stream over {@link ByteBuffer}.
  */
-public class BinaryByteBufferInputStream implements BinaryInputStream {
+class BinaryByteBufferInputStream implements BinaryInputStream {
     /** */
     private final ByteBuffer buf;
-
-    /**
-     * @param buf Buffer to wrap.
-     * @return Stream.
-     */
-    public static BinaryByteBufferInputStream create(ByteBuffer buf) {
-        return new BinaryByteBufferInputStream(buf);
-    }
 
     /**
      * @param buf Buffer to get data from.

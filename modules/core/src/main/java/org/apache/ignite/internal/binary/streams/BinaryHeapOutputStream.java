@@ -24,7 +24,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary heap output stream.
  */
-public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
+final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */
     private final BinaryMemoryAllocatorChunk chunk;
 
@@ -74,10 +74,8 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
             release();
     }
 
-    /**
-     * Releases pooled memory.
-     */
-    public void release() {
+    /** {@inheritDoc} */
+    @Override public void release() {
         chunk.release(data, pos);
     }
 

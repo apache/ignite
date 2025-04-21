@@ -19,22 +19,17 @@ package org.apache.ignite.internal.binary.streams;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_RECHECK;
 
 /**
  * On-heap memory allocator.
  */
-public abstract class BinaryMemoryAllocator {
-    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
-    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
-
-    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
-    public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
-
+abstract class BinaryMemoryAllocator {
     /** Buffer size re-check frequency. */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 

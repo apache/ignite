@@ -40,8 +40,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -87,7 +87,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
             OutputStream os = s.getOutputStream();
 
-            try (BinaryOutputStream bos = new BinaryHeapOutputStream(32)) {
+            try (BinaryOutputStream bos = BinaryStreams.createThreadLocalHeapOutputStream(32)) {
                 bos.writeInt(1000); // Size.
 
                 os.write(bos.arrayCopy());
