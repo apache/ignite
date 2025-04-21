@@ -188,8 +188,6 @@ public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
 
         IgniteEx srv = startGrid();
 
-        srv.cluster().state(ClusterState.ACTIVE);
-
         CountDownLatch expirationStarted = new CountDownLatch(1);
         CountDownLatch entryUpdated = new CountDownLatch(1);
 
@@ -256,6 +254,8 @@ public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int partition(Object key) {
+            // Partition calculation is invoked during expiration of each key for in-memory cluster.
+            // Inject code to simulate race here.
             if (Thread.currentThread().getName().contains("ttl-cleanup-worker")) {
                 expirationStarted.countDown();
 

@@ -2785,8 +2785,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 obsoleteVer = cctx.cache().nextVersion();
 
                             GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
-                                ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link, obsoleteVer)
-                                : row.key);
+                                ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
 
                             if (entry != null)
                                 c.apply(entry, obsoleteVer);

@@ -4943,6 +4943,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     newExpireTime = explicitExpireTime != CU.EXPIRE_TIME_CALCULATE ?
                         explicitExpireTime : CU.toExpireTime(explicitTtl);
+
+                    if (newExpireTime > 0 && newExpireTime < U.currentTimeMillis()) {
+                        op = DELETE;
+
+                        writeObj = null;
+
+                        remove(conflictCtx, invokeRes, readFromStore, false);
+
+                        return;
+                    }
                 }
                 else {
                     newSysTtl = expiryPlc == null ? CU.TTL_NOT_CHANGED :
@@ -4972,6 +4982,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else {
                 newSysTtl = newTtl = conflictCtx.ttl();
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
+
+                if (newExpireTime > 0 && newExpireTime < U.currentTimeMillis()) {
+                    op = DELETE;
+
+                    writeObj = null;
+
+                    remove(conflictCtx, invokeRes, readFromStore, false);
+
+                    return;
+                }
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
