@@ -29,7 +29,6 @@ public interface BinaryMemoryAllocatorChunk {
     /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
     public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
 
-
     /**
      * Allocate.
      *
