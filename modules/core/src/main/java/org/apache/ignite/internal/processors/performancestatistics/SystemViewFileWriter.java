@@ -68,7 +68,7 @@ class SystemViewFileWriter extends GridWorker {
     private final Predicate<SystemView<?>> sysViewPredicate;
 
     /** Writes system view attributes to {@link SystemViewFileWriter#buf}. */
-    private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor;
+    private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor = new AttributeWithValueWriterVisitor();
 
     /** */
     private StringCache strCache = new StringCache();
@@ -93,8 +93,6 @@ class SystemViewFileWriter extends GridWorker {
         int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
         buf = ByteBuffer.allocateDirect(bufSize);
         buf.order(ByteOrder.LITTLE_ENDIAN);
-
-        valWriterVisitor = new AttributeWithValueWriterVisitor(buf);
 
         // System views that won't be recorded. They may be large or copy another PerfStat values.
         Set<String> ignoredViews = Set.of("baseline.node.attributes",
@@ -209,16 +207,6 @@ class SystemViewFileWriter extends GridWorker {
 
     /** Writes view row to file. */
     private class AttributeWithValueWriterVisitor implements SystemViewRowAttributeWalker.AttributeWithValueVisitor {
-        /** */
-        private final ByteBuffer buf;
-
-        /**
-         * @param buf Buffer to write.
-         */
-        private AttributeWithValueWriterVisitor(ByteBuffer buf) {
-            this.buf = buf;
-        }
-
         /** {@inheritDoc} */
         @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
             writeString(buf, String.valueOf(val), strCache.cacheIfPossible(String.valueOf(val)));
