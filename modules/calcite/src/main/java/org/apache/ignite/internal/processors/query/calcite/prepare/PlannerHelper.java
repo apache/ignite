@@ -240,8 +240,6 @@ public class PlannerHelper {
             restoreJoinTypeHints(res);
         }
 
-        planner.heuristicJoinsOrder = true;
-
         return res;
     }
 

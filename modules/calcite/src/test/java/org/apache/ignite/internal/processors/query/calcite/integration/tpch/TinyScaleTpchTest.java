@@ -17,19 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import java.util.Collection;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** The Tpch test with scale 0.01. */
 @RunWith(Parameterized.class)
 public class TinyScaleTpchTest extends AbstractTpchTest {
-    /** */
-    @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<Integer> params() {
-        return QUERIES;
-    }
-
     /** {@inheritDoc} */
     @Override protected double scale() {
         return 0.01;

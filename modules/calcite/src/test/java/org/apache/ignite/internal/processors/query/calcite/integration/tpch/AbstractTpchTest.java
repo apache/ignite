@@ -35,11 +35,18 @@ public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     protected static final Collection<Integer> QUERIES = IntStream.range(1, 23)
         .filter(q -> q != 15)
         .filter(q -> q != 17)
-        .boxed().collect(Collectors.toSet());
+        .boxed()
+        .collect(Collectors.toSet());
 
     /** Query ID. */
     @Parameterized.Parameter
     public int qryId;
+
+    /** */
+    @Parameterized.Parameters(name = "queryId={0}")
+    public static Collection<Integer> params() {
+        return QUERIES;
+    }
 
     /** */
     protected abstract double scale();

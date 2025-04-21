@@ -33,7 +33,6 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -101,20 +100,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         double rightDistinct = Util.first(
             mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
 
-        double rowsCnt;
-
-        if ((rel.getCluster().getPlanner().getContext().unwrap(IgnitePlanner.class)).heuristicJoinsOrder()) {
-            // TODO: Keep only this or similar rows number estimation after fixing IGNITE-18390.
-            // Currently, if JoinCommuteRule or JoinPushThroughJoinRule issue their products, we may keep producing
-            // plenty of {@link IgniteExchange} with this count.
-            rowsCnt = leftDistinct * rightDistinct * selectivity;
-        }
-        else {
-            double leftCardinality = leftDistinct / left;
-            double rightCardinality = rightDistinct / right;
-
-            rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
-        }
+        double rowsCnt = leftDistinct * rightDistinct * selectivity;
 
         JoinRelType type = rel.getJoinType();
 

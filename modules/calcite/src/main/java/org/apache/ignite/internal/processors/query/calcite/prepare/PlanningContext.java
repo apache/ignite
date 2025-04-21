@@ -177,9 +177,6 @@ public final class PlanningContext implements Context {
         if (aCls == CancelFlag.class)
             return aCls.cast(cancelFlag);
 
-        if (aCls == IgnitePlanner.class)
-            return aCls.cast(planner);
-
         return parentCtx.unwrap(aCls);
     }
 
