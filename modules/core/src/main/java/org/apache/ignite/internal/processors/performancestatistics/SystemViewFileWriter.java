@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 
-/** Worker to write to performance statistics file. */
+/** Worker to write system views to performance statistics file. */
 class SystemViewFileWriter extends GridWorker {
     /** File writer thread name. */
     private static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
