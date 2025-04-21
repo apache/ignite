@@ -59,16 +59,16 @@ class SystemViewFileWriter extends GridWorker {
     private final FileIO fileIo;
 
     /** */
-    private final int flushSize;
+    private final int flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
     /** */
     private final GridSystemViewManager sysViewMgr;
 
-    /** Writes system view attributes to {@link SystemViewFileWriter#buf}. */
-    private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor;
-
     /** System view predicate to filter recorded views. */
     private final Predicate<SystemView<?>> sysViewPredicate;
+
+    /** Writes system view attributes to {@link SystemViewFileWriter#buf}. */
+    private final SystemViewRowAttributeWalker.AttributeWithValueVisitor valWriterVisitor;
 
     /** */
     private StringCache strCache = new StringCache();
@@ -93,8 +93,6 @@ class SystemViewFileWriter extends GridWorker {
         int bufSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_BUFFER_SIZE, DFLT_BUFFER_SIZE);
         buf = ByteBuffer.allocateDirect(bufSize);
         buf.order(ByteOrder.LITTLE_ENDIAN);
-
-        flushSize = IgniteSystemProperties.getInteger(IGNITE_PERF_STAT_FLUSH_SIZE, DFLT_FLUSH_SIZE);
 
         valWriterVisitor = new AttributeWithValueWriterVisitor(buf);
 
