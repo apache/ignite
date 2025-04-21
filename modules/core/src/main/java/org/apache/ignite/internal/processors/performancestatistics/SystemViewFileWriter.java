@@ -198,7 +198,7 @@ class SystemViewFileWriter extends GridWorker {
         }
     }
 
-    /**  */
+    /** */
     private void flush() throws IOException {
         buf.flip();
         fileIo.writeFully(buf);
