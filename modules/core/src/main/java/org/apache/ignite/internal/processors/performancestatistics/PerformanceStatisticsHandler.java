@@ -167,8 +167,8 @@ public interface PerformanceStatisticsHandler {
     void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
 
     /**
-     * @param id    Node id.
-     * @param name  Name of system view.
+     * @param id Node id.
+     * @param name Name of system view.
      * @param schema Attributes of system view.
      * @param row System view row.
      */
