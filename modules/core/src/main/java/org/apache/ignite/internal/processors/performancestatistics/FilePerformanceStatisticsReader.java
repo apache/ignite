@@ -716,6 +716,9 @@ public class FilePerformanceStatisticsReader {
         /** Not enough bytes flag. */
         private boolean notEnoughBytes;
 
+        /**
+         * @param size Size of row.
+         */
         public RowReaderVisitor(int size) {
             this.size = size;
 
