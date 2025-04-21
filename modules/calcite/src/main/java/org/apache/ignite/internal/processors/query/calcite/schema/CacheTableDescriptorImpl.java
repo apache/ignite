@@ -405,7 +405,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         GridCacheContext<?, ?> cctx = cacheContext();
 
         BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-
         BinaryObjectBuilders.prepareAffinityField(builder, cctx.cacheObjectContext());
 
         return builder;
