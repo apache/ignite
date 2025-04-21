@@ -60,17 +60,22 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2757,6 +2762,48 @@ public class BinaryUtils {
      */
     public static boolean isBinaryEnumArray(Object val) {
         return val instanceof BinaryEnumArray;
+    }
+
+    /**
+     * @param obj Object to convert to builder.
+     * @return Builder instance.
+     */
+    public static BinaryObjectBuilder toBuilder(BinaryObject obj) {
+        return BinaryObjectBuilderImpl.wrap(obj);
+    }
+
+    /**
+     * @param binaryCtx Binary context.
+     * @param clsName Class name.
+     * @return Builder instance.
+     */
+    public static BinaryObjectBuilder createBuilder(BinaryContext binaryCtx, String clsName) {
+        return new BinaryObjectBuilderImpl(binaryCtx, clsName);
+    }
+
+    /**
+     * Prepare affinity field for builder (if possible).
+     *
+     * @param builder Builder.
+     */
+    public static void prepareAffinityField(BinaryObjectBuilder builder, CacheObjectContext cacheObjCtx) {
+        if (cacheObjCtx.customAffinityMapper())
+            return;
+
+        assert builder instanceof BinaryObjectBuilderImpl;
+
+        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
+
+        CacheDefaultBinaryAffinityKeyMapper mapper =
+            (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
+
+        BinaryField field = mapper.affinityKeyField(builder0.typeId());
+
+        if (field != null) {
+            String fieldName = field.name();
+
+            builder0.affinityFieldName(fieldName);
+        }
     }
 
     /**

@@ -71,7 +71,6 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.managers.systemview.walker.BinaryMetadataViewWalker;
@@ -536,12 +535,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
-        return new BinaryObjectBuilderImpl(binaryCtx, clsName);
+        return BinaryUtils.createBuilder(binaryCtx, clsName);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) {
-        return BinaryObjectBuilderImpl.wrap(binaryObj);
+        return BinaryUtils.toBuilder(binaryObj);
     }
 
     /** {@inheritDoc} */
