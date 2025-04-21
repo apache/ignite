@@ -145,8 +145,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        ++leftCnt;
-
         checkState();
 
         waitingLeft--;
@@ -160,8 +158,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
     private void pushRight(Row row) throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        ++rightCnt;
 
         checkState();
 
@@ -180,8 +176,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        context().logger().error("TEST | NL.endLeft(), leftCnt: " + leftCnt);
-
         checkState();
 
         waitingLeft = NOT_WAITING;
@@ -193,8 +187,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
     private void endRight() throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        context().logger().error("TEST | NL.endRight(), rightCnt: " + rightCnt);
 
         checkState();
 
@@ -294,7 +286,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
                             requested--;
                             Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
-                            ++outCnt;
                             downstream().push(row);
                         }
 
@@ -316,8 +307,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                context().logger().error("TEST | NL.end(), cnt: " + outCnt);
-
                 requested = 0;
                 downstream().end();
             }

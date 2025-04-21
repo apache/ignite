@@ -21,7 +21,6 @@ import java.util.Set;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.rel.RelNode;
@@ -34,7 +33,6 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.distribution;
@@ -45,23 +43,6 @@ public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.C
     /** */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
         BuiltInMethod.CUMULATIVE_COST.method, new IgniteMdCumulativeCost());
-
-    /** */
-    public static void printCost(RelNode rel, RelOptCost cost, RelMetadataQuery mq, Number leftCnt, Number rightCnt) {
-        if (cost.isInfinite())
-            return;
-
-        for (RelNode input : rel.getInputs()) {
-            RelOptCost inputCost = mq.getCumulativeCost(input);
-
-            if (inputCost.isInfinite())
-                return;
-
-            cost = cost.plus(inputCost);
-        }
-
-        Commons.context(rel).logger().error("CCost " + cost + ", leftCnt=" + leftCnt + ", rightCnt=" + rightCnt + " on\n" + RelOptUtil.toString(rel));
-    }
 
     /** {@inheritDoc} */
     @Override public MetadataDef<BuiltInMetadata.CumulativeCost> getDef() {

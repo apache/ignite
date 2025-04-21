@@ -262,23 +262,8 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         double rows = leftCnt + rightCnt;
 
-        RelOptCost res = costFactory.makeCost(rows,
+        return costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
-
-
-        if (getLeft() instanceof IgniteExchange && getRight() instanceof IgniteExchange)
-            System.err.println("TEST | Merge rows: " + estimateRowCount(mq) + ", left: " + leftCnt + ", right: " + rightCnt);
-
-        if (getLeft() instanceof IgniteExchange && getRight() instanceof IgniteNestedLoopJoin)
-            System.err.println("TEST | Merge rows: " + estimateRowCount(mq) + ", left: " + leftCnt + ", right: " + rightCnt);
-
-        if (getLeft() instanceof IgniteSort && getRight() instanceof IgniteSort)
-            System.err.println("TEST | Merge rows: " + estimateRowCount(mq) + ", left: " + leftCnt + ", right: " + rightCnt);
-
-        //res = costFactory.makeZeroCost();
-        //IgniteMdCumulativeCost.printCost(this, res, mq, leftCnt, rightCnt);
-
-        return res;
     }
 
     /** {@inheritDoc} */

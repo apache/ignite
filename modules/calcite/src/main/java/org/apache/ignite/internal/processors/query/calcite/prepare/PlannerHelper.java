@@ -91,7 +91,7 @@ public class PlannerHelper {
      *
      * @see #optimizeJoinsOrder(IgnitePlanner, RelNode, List)
      */
-    public static final int JOINS_COUNT_FOR_HEURISTIC_ORDER = 30;
+    public static final int JOINS_COUNT_FOR_HEURISTIC_ORDER = 3;
 
     /**
      * Default constructor.
@@ -149,8 +149,6 @@ public class PlannerHelper {
                 .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
                 .simplify();
 
-            log.error("TEST | planning...");
-
             IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             if (!root.isRefTrivial()) {
@@ -165,8 +163,6 @@ public class PlannerHelper {
 
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
-
-            log.error("TEST | Plan:\n" + RelOptUtil.toString(igniteRel));
 
             return igniteRel;
         }
@@ -243,6 +239,8 @@ public class PlannerHelper {
 
             restoreJoinTypeHints(res);
         }
+
+        planner.heuristicJoinsOrder = true;
 
         return res;
     }

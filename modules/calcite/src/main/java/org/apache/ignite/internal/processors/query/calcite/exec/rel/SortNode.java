@@ -194,8 +194,6 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
 
                 nodeMemoryTracker.onRowRemoved(row);
 
-                ++outCnt;
-
                 downstream().push(row);
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {

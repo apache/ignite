@@ -33,6 +33,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -79,9 +80,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
         if (left == null || right == null)
             return null;
 
-        if (left == 1 && right == 1)
-            return 1d;
-
         if (left <= 1D || right <= 1D) {
             Double max = mq.getMaxRowCount(rel);
             if (max != null && max <= 1D)
@@ -95,22 +93,27 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
+        if (F.isEmpty(leftKeys) || F.isEmpty(rightKeys))
+            return left * right * selectivity;
+
+        double leftDistinct = Util.first(
+            mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
+        double rightDistinct = Util.first(
+            mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
+
         double rowsCnt;
 
-        if (left <= 1D || right <= 1D || F.isEmpty(leftKeys) || F.isEmpty(rightKeys))
-            rowsCnt = left * right * selectivity;
-        else  {
-            double leftDistinct = Util.first(
-                mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
-            double rightDistinct = Util.first(
-                mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
-
+        if ((rel.getCluster().getPlanner().getContext().unwrap(IgnitePlanner.class)).heuristicJoinsOrder()) {
+            // TODO: Keep only this or similar rows number estimation after fixing IGNITE-18390.
+            // Currently, if JoinCommuteRule or JoinPushThroughJoinRule issue their products, we may keep producing
+            // plenty of {@link IgniteExchange} with this count.
+            rowsCnt = leftDistinct * rightDistinct * selectivity;
+        }
+        else {
             double leftCardinality = leftDistinct / left;
             double rightCardinality = rightDistinct / right;
 
             rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
-
-            //rowsCnt = leftDistinct * rightDistinct * selectivity;
         }
 
         JoinRelType type = rel.getJoinType();

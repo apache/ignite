@@ -105,41 +105,37 @@ public class TpchBenchmark {
     private static final String DATASET_READY_MARK_FILE_NAME = "ready.txt";
 
     /** Scale factor. scale == 1.0 means about 1Gb of data. */
-    @Param({"0.01"})
+    @Param({"0.01", "0.1", "1.0"})
     private String scale;
 
     /** Query engine. */
-    @Param({"CALCITE"})
+    @Param({"CALCITE", "H2"})
     private String engine;
 
-    /**
-     * Query id.
-     * <p>
-     * The 11, 13, 15 can not be parsed with H2.
-     */
+    /** Query id.  */
     @Param({
-//        "1",
-//        "2",
-//        "3",
-//        "4",
+        "1",
+        "2",
+        "3",
+        "4",
         "5",
-//        "6",
-//        "7",
-//        "8",
-//        "9",
-//        "10",
-        //"11",
-//        "12",
-        //"13",
-//        "14",
-        //"15",
-//        "16",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+//        "11", // Can't be parsed by H2
+        "12",
+//        "13", // Can't be parsed by H2
+        "14",
+//        "15", // Can't be parsed by H2
+        "16",
 //        "17", // TODO: https://issues.apache.org/jira/browse/IGNITE-24754
-//        "18",
-//        "19",
-//        "20",
-//        "21",
-//        "22"
+        "18",
+        "19",
+        "20",
+        "21",
+        "22"
     })
     private String queryId;
 

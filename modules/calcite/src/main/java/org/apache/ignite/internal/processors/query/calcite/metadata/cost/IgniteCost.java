@@ -233,7 +233,6 @@ public class IgniteCost implements RelOptCost {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "" + (cpu + memory + io + network + rowCount);
-        //return S.toString(IgniteCost.class, this);
+        return S.toString(IgniteCost.class, this);
     }
 }

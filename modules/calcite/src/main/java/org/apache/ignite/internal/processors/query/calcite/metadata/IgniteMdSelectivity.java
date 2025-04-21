@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -77,7 +76,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     private static final double COMPARISON_SELECTIVITY = 0.5;
 
     /** Default selectivity for other conditions. */
-    private static final double DEFAULT_SELECTIVITY = 0.25;
+    private static final double OTHER_SELECTIVITY = 0.25;
 
     /**
      * Math context to use in estimations calculations.
@@ -550,23 +549,17 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @param pred Predicate to guess selectivity by.
      * @return Selectivity.
      */
-    private double guessSelectivity(@Nullable RexNode pred) {
-        if (pred != null) {
-            if (pred.getKind() == SqlKind.IS_NULL)
-                return IS_NULL_SELECTIVITY;
-            else if (pred.getKind() == SqlKind.IS_NOT_NULL)
-                return IS_NOT_NULL_SELECTIVITY;
-            else if (pred.isA(SqlKind.EQUALS))
-                return EQUALS_SELECTIVITY;
-            else if (pred.isA(SqlKind.COMPARISON))
-                return COMPARISON_SELECTIVITY;
-        }
-
-        return DEFAULT_SELECTIVITY;
-    }
-    /** */
-    @Override public @Nullable Double getSelectivity(Join rel, RelMetadataQuery mq, @Nullable RexNode predicate) {
-        return guessSelectivity(predicate);
+    private double guessSelectivity(RexNode pred) {
+        if (pred.getKind() == SqlKind.IS_NULL)
+            return IS_NULL_SELECTIVITY;
+        else if (pred.getKind() == SqlKind.IS_NOT_NULL)
+            return IS_NOT_NULL_SELECTIVITY;
+        else if (pred.isA(SqlKind.EQUALS))
+            return EQUALS_SELECTIVITY;
+        else if (pred.isA(SqlKind.COMPARISON))
+            return COMPARISON_SELECTIVITY;
+        else
+            return OTHER_SELECTIVITY;
     }
 
     /**

@@ -153,8 +153,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        ++leftCnt;
-
         checkState();
 
         waitingLeft--;
@@ -168,8 +166,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     private void pushRight(Row row) throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        ++rightCnt;
 
         checkState();
 
@@ -185,8 +181,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        context().logger().error("TEST | Merge.endLeft(), leftCnt: " + leftCnt);
-
         checkState();
 
         waitingLeft = NOT_WAITING;
@@ -198,8 +192,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     private void endRight() throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        context().logger().error("TEST | Merge.endRight(), rightCnt: " + rightCnt);
 
         checkState();
 
@@ -225,7 +217,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected void checkJoinFinished() throws Exception {
         if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
             requested = 0;
-            context().logger().error("TEST | Merge.end(), cnt: " + outCnt);
             downstream().end();
         }
     }
@@ -394,7 +385,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                     }
 
                     requested--;
-                    ++outCnt;
                     downstream().push(row);
                 }
             }

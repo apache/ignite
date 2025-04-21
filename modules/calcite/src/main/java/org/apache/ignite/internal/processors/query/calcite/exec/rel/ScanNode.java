@@ -165,8 +165,6 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
                 if (rowTransformer != null)
                     r = rowTransformer.apply(r);
 
-                ++outCnt;
-
                 downstream().push(r);
             }
 

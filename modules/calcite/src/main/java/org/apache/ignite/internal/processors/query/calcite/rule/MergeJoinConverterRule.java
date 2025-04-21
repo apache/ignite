@@ -69,10 +69,6 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        IgniteMergeJoin res = new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
-
-        //System.err.println("TEST | " + RelOptUtil.toString(res));
-
-        return res;
+        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
 }
