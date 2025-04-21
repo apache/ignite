@@ -116,6 +116,9 @@ class SystemViewFileWriter extends GridWorker {
 
     /** {@inheritDoc} */
     @Override protected void body() {
+        if (log.isInfoEnabled())
+            log.info("Started writing system views to " + filePath + ".");
+
         try {
             for (SystemView<?> view : sysViewMgr)
                 if (sysViewPredicate.test(view))
