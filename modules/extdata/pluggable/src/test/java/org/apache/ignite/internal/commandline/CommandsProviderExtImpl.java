@@ -27,6 +27,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;

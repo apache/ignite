@@ -18,34 +18,35 @@
 package org.apache.ignite.internal.util.typedef;
 
 import java.io.Externalizable;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 
 /**
- * Defines {@code alias} for {@link GridTuple} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link GridTuple3} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridTuple}.
- * @param <V> Type of the free variable.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link GridTuple3}.
  * @see GridFunc
  * @see GridTuple
  */
-public class T1<V> extends GridTuple<V> {
+public class T3<V1, V2, V3> extends GridTuple3<V1, V2, V3> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public T1() {
+    public T3() {
         // No-op.
     }
 
     /**
-     * Constructs mutable object with given value.
+     * Fully initializes this tuple.
      *
-     * @param val Wrapped value.
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @param val3 Third value.
      */
-    public T1(V val) {
-        super(val);
+    public T3(V1 val1, V2 val2, V3 val3) {
+        super(val1, val2, val3);
     }
 }

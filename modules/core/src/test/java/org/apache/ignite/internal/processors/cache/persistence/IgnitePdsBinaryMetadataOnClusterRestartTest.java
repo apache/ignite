@@ -40,7 +40,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -326,7 +326,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         stopAllGrids();
 
-        String fileName = BinaryUtils.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode());
+        String fileName = NodeFileTree.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode());
 
         Files.copy(
             new File(igniteC.context().pdsFolderResolver().fileTree().binaryMeta(), fileName).toPath(),

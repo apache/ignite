@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary;
 /**
  * Holder for handles.
  */
-public interface BinaryReaderHandlesHolder {
+interface BinaryReaderHandlesHolder {
     /**
      * Set handle.
      *

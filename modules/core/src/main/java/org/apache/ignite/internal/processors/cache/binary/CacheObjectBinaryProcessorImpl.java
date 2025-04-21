@@ -61,7 +61,6 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -69,7 +68,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -465,32 +463,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (!BinaryArray.useBinaryArrays())
                 return pArr;
 
-            Class<?> compCls = obj.getClass().getComponentType();
-
-            boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
-
-            String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
-
-            // In case of interface or multidimensional array rely on class name.
-            // Interfaces and array not registered as binary types.
-            BinaryClassDescriptor desc = binaryCtx.descriptorForClass(compCls);
-
-            if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
-                return new BinaryEnumArray(
-                    binaryCtx,
-                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
-                    compClsName,
-                    pArr
-                );
-            }
-            else {
-                return new BinaryArray(
-                    binaryCtx,
-                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
-                    compClsName,
-                    pArr
-                );
-            }
+            return binaryCtx.createBinaryArray(obj.getClass().getComponentType(), pArr);
         }
 
         if (obj instanceof IgniteBiTuple) {
@@ -1417,13 +1390,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
-        if (!ctx.cacheObjectContext().binaryEnabled())
-            return obj;
-
-        if (obj instanceof BinaryObjectOffheapImpl)
-            return ((BinaryObjectOffheapImpl)obj).heapCopy();
-
-        return obj;
+        return ctx.cacheObjectContext().binaryEnabled()
+            ? BinaryUtils.unwrapTemporary(obj)
+            : obj;
     }
 
     /**

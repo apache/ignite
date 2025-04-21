@@ -50,9 +50,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -182,6 +184,14 @@ public class BinaryContext {
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
+
+    /**
+     * @param igniteCfg Ignite configuration.
+     * @param log Logger.
+     */
+    public BinaryContext(IgniteConfiguration igniteCfg, IgniteLogger log) {
+        this(BinaryNoopMetadataHandler.instance(), igniteCfg, log);
+    }
 
     /**
      * @param metaHnd Meta data handler.
@@ -1275,7 +1285,7 @@ public class BinaryContext {
      * @param fieldName Field name.
      * @return Binary field.
      */
-    public BinaryFieldImpl createField(int typeId, String fieldName) {
+    public BinaryField createField(int typeId, String fieldName) {
         BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
         BinaryInternalMapper mapper = userTypeMapper(typeId);
@@ -1480,6 +1490,34 @@ public class BinaryContext {
     /** */
     Collection<BinaryClassDescriptor> predefinedTypes() {
         return Collections.unmodifiableCollection(predefinedTypes.values());
+    }
+
+    /** Creates instance of {@link BinaryArray}. */
+    public BinaryObject createBinaryArray(Class<?> compCls, Object[] pArr) {
+        boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
+
+        String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+        // In case of interface or multidimensional array rely on class name.
+        // Interfaces and array not registered as binary types.
+        BinaryClassDescriptor desc = descriptorForClass(compCls);
+
+        if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+            return new BinaryEnumArray(
+                this,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                pArr
+            );
+        }
+        else {
+            return new BinaryArray(
+                this,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                pArr
+            );
+        }
     }
 
     /**

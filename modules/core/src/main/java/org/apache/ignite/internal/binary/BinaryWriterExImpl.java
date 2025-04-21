@@ -43,7 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
  * Binary writer implementation.
@@ -111,8 +111,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param out Output stream.
      * @param handles Handles.
      */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
-        BinaryWriterHandles handles) {
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterHandles handles) {
+        this(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), handles);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @param handles Handles.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema, BinaryWriterHandles handles) {
         this.ctx = ctx;
         this.out = out;
         this.schema = schema;

@@ -21,20 +21,14 @@ import java.util.Objects;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * Contains entry processors for DML. Should be modified very carefully to maintain binary compatibility due to
  * serializable anonymous classes.
  */
-@SuppressWarnings({"Anonymous2MethodRef", "PublicInnerClass", "unused"})
+@SuppressWarnings({"PublicInnerClass", "unused"})
 public class DmlStatementsProcessor {
-    /** The version which changed the anonymous class position of REMOVE closure. */
-    private static final IgniteProductVersion RMV_ANON_CLS_POS_CHANGED_SINCE =
-        IgniteProductVersion.fromString("2.7.0");
-
     /** */
     public static final class InsertEntryProcessor implements EntryProcessor<Object, Object, Boolean> {
         /** Value to set. */
@@ -95,60 +89,15 @@ public class DmlStatementsProcessor {
         }
     }
 
-    /** Dummy anonymous class to advance RMV anonymous value to 5. */
-    private static final Runnable DUMMY_1 = new Runnable() {
-        @Override public void run() {
-            // No-op.
+    /** Remove updater. */
+    public static final IgniteInClosure<MutableEntry<Object, Object>> RMV = new RemoveClosure();
+
+    /** Remove updater class. */
+    private static final class RemoveClosure implements IgniteInClosure<MutableEntry<Object, Object>> {
+        /** {@inheritDoc} */
+        @Override public void apply(MutableEntry<Object, Object> e) {
+            e.remove();
         }
-    };
-
-    /** Dummy anonymous class to advance RMV anonymous value to 5. */
-    private static final Runnable DUMMY_2 = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
-
-    /** Dummy anonymous class to advance RMV anonymous value to 5. */
-    private static final Runnable DUMMY_3 = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
-
-    /** Remove updater for compatibility with < 2.7.0. Must not be moved around to keep at anonymous position 4. */
-    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV_OLD =
-        new IgniteInClosure<MutableEntry<Object, Object>>() {
-            @Override public void apply(MutableEntry<Object, Object> e) {
-                e.remove();
-            }
-        };
-
-    /** Remove updater. Must not be moved around to keep at anonymous position 5. */
-    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
-        new IgniteInClosure<MutableEntry<Object, Object>>() {
-            @Override public void apply(MutableEntry<Object, Object> e) {
-                e.remove();
-            }
-        };
-
-    /**
-     * Returns the remove closure based on the version of the primary node.
-     *
-     * @param node Primary node.
-     * @param key Key.
-     * @return Remove closure.
-     */
-    public static IgniteInClosure<MutableEntry<Object, Object>> getRemoveClosure(ClusterNode node, Object key) {
-        assert node != null;
-        assert key != null;
-
-        IgniteInClosure<MutableEntry<Object, Object>> rmvC = RMV;
-
-        if (node.version().compareTo(RMV_ANON_CLS_POS_CHANGED_SINCE) < 0)
-            rmvC = RMV_OLD;
-
-        return rmvC;
     }
 
     /**
