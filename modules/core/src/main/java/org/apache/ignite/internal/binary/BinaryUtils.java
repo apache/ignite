@@ -71,7 +71,6 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -83,7 +82,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
@@ -2556,14 +2554,6 @@ public class BinaryUtils {
         return ctx.metadata(obj.typeId());
     }
 
-    /**
-     * @param typeId Type id.
-     * @return Binary metadata file name.
-     */
-    public static String binaryMetaFileName(int typeId) {
-        return typeId + FILE_SUFFIX;
-    }
-
     /** @param fileName Name of file with marshaller mapping information. */
     public static int mappedTypeId(String fileName) {
         try {
@@ -2610,16 +2600,6 @@ public class BinaryUtils {
      */
     public static String mappingFileName(byte platformId, int typeId) {
         return typeId + MAPPING_FILE_EXTENSION + platformId;
-    }
-
-    /**
-     * @param fileName File name.
-     * @return Type id
-     * @see #binaryMetaFileName(int)
-     * @see NodeFileTree#FILE_SUFFIX
-     */
-    public static int typeId(String fileName) {
-        return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
     /**
