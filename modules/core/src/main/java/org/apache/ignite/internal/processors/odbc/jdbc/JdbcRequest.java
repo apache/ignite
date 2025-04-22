@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -125,7 +125,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryRawReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
 
@@ -152,7 +152,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
      * @throws BinaryObjectException On error.
      */
     public static JdbcRequest readRequest(
-        BinaryReaderExImpl reader,
+        BinaryRawReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         int reqType = reader.readByte();

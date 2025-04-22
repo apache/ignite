@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.Objects;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
@@ -173,7 +173,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryRawReaderEx reader,
         JdbcProtocolContext protoCtx
     ) {
         schemaName = reader.readString();

@@ -55,8 +55,8 @@ import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -979,7 +979,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** */
     private <T> Map<K, EntryProcessorResult<T>> readEntryProcessorResult(PayloadInputChannel ch) {
-        try (BinaryReaderExImpl r = serDes.createBinaryReader(ch.in())) {
+        try (BinaryRawReaderEx r = serDes.createBinaryReader(ch.in())) {
             int cnt = r.readInt();
             Map<K, EntryProcessorResult<T>> res = new LinkedHashMap<>();
 

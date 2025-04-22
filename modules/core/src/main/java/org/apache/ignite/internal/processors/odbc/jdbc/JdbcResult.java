@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -115,7 +115,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryRawReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
     }
@@ -127,7 +127,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
      * @throws BinaryObjectException On error.
      */
     public static JdbcResult readResult(
-        BinaryReaderExImpl reader,
+        BinaryRawReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         int resId = reader.readByte();

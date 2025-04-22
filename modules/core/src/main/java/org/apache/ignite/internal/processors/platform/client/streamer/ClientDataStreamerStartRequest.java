@@ -21,7 +21,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -72,7 +72,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader) {
+    public ClientDataStreamerStartRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         cacheId = reader.readInt();

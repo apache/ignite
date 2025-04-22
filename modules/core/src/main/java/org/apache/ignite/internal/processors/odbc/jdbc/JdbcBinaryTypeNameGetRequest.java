@@ -78,7 +78,7 @@ public class JdbcBinaryTypeNameGetRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, JdbcProtocolContext protoCtx)
+    @Override public void readBinary(BinaryRawReaderEx reader, JdbcProtocolContext protoCtx)
         throws BinaryObjectException {
         super.readBinary(reader, protoCtx);
 

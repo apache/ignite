@@ -38,7 +38,7 @@ import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.NullLogger;
@@ -125,7 +125,7 @@ public class ClientDiscoveryContext {
                         req.out().writeLong(UNKNOWN_TOP_VER);
                     },
                     res -> {
-                        try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res.in())) {
+                        try (BinaryRawReaderEx reader = ClientUtils.createBinaryReader(null, res.in())) {
                             long topVer = reader.readLong();
 
                             // Read added nodes.

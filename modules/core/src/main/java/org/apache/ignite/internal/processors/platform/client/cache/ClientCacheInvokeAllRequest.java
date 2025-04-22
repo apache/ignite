@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -36,7 +37,7 @@ public class ClientCacheInvokeAllRequest extends ClientCacheKeysRequest {
      *
      * @param reader Reader.
      */
-    public ClientCacheInvokeAllRequest(BinaryReaderExImpl reader) {
+    public ClientCacheInvokeAllRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         entryProcReader = new ClientCacheInvokeRequest.EntryProcessorReader(reader);

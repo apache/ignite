@@ -3244,7 +3244,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryInputStream is = new BinaryHeapInputStream(os.array());
 
-        BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
+        BinaryRawReaderEx reader = marsh.binaryMarshaller().reader(is);
 
         Object bObj = reader.readObjectDetached(deserialize);
 

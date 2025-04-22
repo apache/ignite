@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
@@ -53,7 +53,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return Query results items.
      */
-    public static List<List<Object>> readItems(BinaryReaderExImpl reader, JdbcProtocolContext protoCtx) {
+    public static List<List<Object>> readItems(BinaryRawReaderEx reader, JdbcProtocolContext protoCtx) {
         int rowsSize = reader.readInt();
 
         if (rowsSize > 0) {
@@ -95,7 +95,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return List of string.
      */
-    public static List<String> readStringList(BinaryReaderExImpl reader) {
+    public static List<String> readStringList(BinaryRawReaderEx reader) {
         int size = reader.readInt();
 
         if (size > 0) {
@@ -116,7 +116,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return read value.
      */
-    @Nullable public static Integer readNullableInteger(BinaryReaderExImpl reader) {
+    @Nullable public static Integer readNullableInteger(BinaryRawReaderEx reader) {
         return reader.readBoolean() ? reader.readInt() : null;
     }
 
@@ -141,7 +141,7 @@ public class JdbcUtils {
      * @throws BinaryObjectException On error.
      */
     @Nullable public static Object readObject(
-            BinaryReaderExImpl reader,
+            BinaryRawReaderEx reader,
             JdbcProtocolContext protoCtx,
             boolean createByteArrayCopy
     ) throws BinaryObjectException {
@@ -156,7 +156,7 @@ public class JdbcUtils {
      * @throws BinaryObjectException On error.
      */
     @Nullable public static Object readObject(
-        BinaryReaderExImpl reader,
+        BinaryRawReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         return readObject(reader, protoCtx, true);

@@ -54,7 +54,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
@@ -743,7 +743,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
 
-                try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
+                try (BinaryRawReaderEx reader = ClientUtils.createBinaryReader(null, res)) {
                     boolean success = res.readBoolean();
 
                     if (success) {

@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -83,7 +84,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg.payload());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
+        BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
         byte cmd = reader.readByte();
 
@@ -239,7 +240,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param paramNum Number of parameters in a row
      * @return Parameters array.
      */
-    @NotNull private static Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
+    @NotNull private static Object[] readParameterRow(BinaryRawReaderEx reader, int paramNum) {
         Object[] params = new Object[paramNum];
 
         for (int i = 0; i < paramNum; ++i)

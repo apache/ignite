@@ -360,7 +360,7 @@ public class GridBinaryMarshaller {
      * @param stream Stream.
      * @return Reader.
      */
-    public BinaryReaderExImpl reader(BinaryInputStream stream) {
+    public BinaryRawReaderEx reader(BinaryInputStream stream) {
         assert stream != null;
 
         return new BinaryReaderExImpl(ctx, stream, null, true);

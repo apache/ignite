@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
@@ -69,7 +69,7 @@ public class PartitionResultMarshaler {
      * @return Deserialized partition result.
      * @throws BinaryObjectException In case of error.
      */
-    public static PartitionResult unmarshal(BinaryReaderExImpl reader) throws BinaryObjectException {
+    public static PartitionResult unmarshal(BinaryRawReaderEx reader) throws BinaryObjectException {
         PartitionNode tree = readNode(reader);
 
         String cacheName = reader.readString();
@@ -88,7 +88,7 @@ public class PartitionResultMarshaler {
      * @return Deserialized partition node.
      * @throws BinaryObjectException In case of error.
      */
-    private static PartitionNode readNode(BinaryReaderExImpl reader) throws BinaryObjectException {
+    private static PartitionNode readNode(BinaryRawReaderEx reader) throws BinaryObjectException {
         int nodeType = reader.readByte();
 
         switch (nodeType) {
@@ -141,7 +141,7 @@ public class PartitionResultMarshaler {
      * @throws BinaryObjectException On error.
      */
     @SuppressWarnings("unused")
-    private static PartitionConstantNode readConstantNode(BinaryReaderExImpl reader)
+    private static PartitionConstantNode readConstantNode(BinaryRawReaderEx reader)
         throws BinaryObjectException {
         int part = reader.readInt();
 
@@ -170,7 +170,7 @@ public class PartitionResultMarshaler {
      * @return Debinarized partition composite node.
      * @throws BinaryObjectException On error.
      */
-    private static PartitionCompositeNode readCompositeNode(BinaryReaderExImpl reader) throws BinaryObjectException {
+    private static PartitionCompositeNode readCompositeNode(BinaryRawReaderEx reader) throws BinaryObjectException {
         PartitionCompositeNodeOperator op = PartitionCompositeNodeOperator.fromOrdinal(reader.readInt());
 
         PartitionNode left = readNode(reader);
@@ -205,7 +205,7 @@ public class PartitionResultMarshaler {
      * @return Debinarized partition group node.
      * @throws BinaryObjectException On error.
      */
-    private static PartitionGroupNode readGroupNode(BinaryReaderExImpl reader)
+    private static PartitionGroupNode readGroupNode(BinaryRawReaderEx reader)
         throws BinaryObjectException {
         int siblingsCnt = reader.readInt();
 
@@ -265,7 +265,7 @@ public class PartitionResultMarshaler {
      * @return Debinarized parameter node.
      * @throws BinaryObjectException On error.
      */
-    private static PartitionParameterNode readParameterNode(BinaryReaderExImpl reader) throws BinaryObjectException {
+    private static PartitionParameterNode readParameterNode(BinaryRawReaderEx reader) throws BinaryObjectException {
 
         int idx = reader.readInt();
 

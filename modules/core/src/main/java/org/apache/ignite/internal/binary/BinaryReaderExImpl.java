@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.ObjectInput;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -35,7 +34,6 @@ import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -92,7 +90,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
  * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
-public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, BinaryReaderHandlesHolder, ObjectInput {
+public class BinaryReaderExImpl implements BinaryRawReaderEx {
     /** Binary context. */
     private final BinaryContext ctx;
 
@@ -303,40 +301,28 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         streamPosition(start);
     }
 
-    /**
-     * @return Input stream.
-     */
-    public BinaryInputStream in() {
+    /** {@inheritDoc} */
+    @Override public BinaryInputStream in() {
         return in;
     }
 
-    /**
-     * @return Descriptor.
-     */
-    BinaryClassDescriptor descriptor() {
+    /** {@inheritDoc} */
+    @Override public BinaryClassDescriptor descriptor() {
         if (desc == null)
             desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);
 
         return desc;
     }
 
-    /**
-     * @param offset Offset in the array.
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public Object unmarshal(int offset) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public Object unmarshal(int offset) throws BinaryObjectException {
         streamPosition(offset);
 
         return in.position() >= 0 ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
-    /**
-     * @param fieldName Field name.
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    @Nullable Object unmarshalField(String fieldName) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public Object unmarshalField(String fieldName) throws BinaryObjectException {
         try {
             return findFieldByName(fieldName) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
         }
@@ -345,12 +331,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         }
     }
 
-    /**
-     * @param fieldId Field ID.
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    @Nullable Object unmarshalField(int fieldId) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public Object unmarshalField(int fieldId) throws BinaryObjectException {
         return findFieldById(fieldId) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
@@ -386,10 +368,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         return null;
     }
 
-    /**
-     * @param obj Object.
-     */
-    void setHandle(Object obj) {
+    /** {@inheritDoc} */
+    @Override public void setHandle(Object obj) {
         setHandle(obj, start);
     }
 
@@ -1719,11 +1699,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             throw new BinaryObjectException("Method \"rawReader\" can be called only once.");
     }
 
-    /**
-     * @return Deserialized object.
-     * @throws BinaryObjectException If failed.
-     */
-    @Nullable Object deserialize() throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public @Nullable Object deserialize() throws BinaryObjectException {
         String newName = ctx.configuration().getIgniteInstanceName();
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
@@ -2004,12 +1981,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         return mapper.fieldId(typeId, name);
     }
 
-    /**
-     * Get or create object schema.
-     *
-     * @return Schema.
-     */
-    public BinarySchema getOrCreateSchema() {
+    /** {@inheritDoc} */
+    @Override public BinarySchema getOrCreateSchema() {
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
@@ -2083,13 +2056,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         return builder.build();
     }
 
-    /**
-     * Try finding the field by name.
-     *
-     * @param name Field name.
-     * @return Offset.
-     */
-    public boolean findFieldByName(String name) {
+    /** {@inheritDoc} */
+    @Override public boolean findFieldByName(String name) {
         if (raw)
             throw new BinaryObjectException("Failed to read named field because reader is in raw mode.");
 

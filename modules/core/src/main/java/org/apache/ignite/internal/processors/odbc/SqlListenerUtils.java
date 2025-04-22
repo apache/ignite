@@ -26,7 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -46,7 +46,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
+    @Nullable public static Object readObject(BinaryRawReaderEx reader, boolean binObjAllow)
         throws BinaryObjectException {
         return readObject(reader, binObjAllow, true);
     }
@@ -58,7 +58,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow, boolean keepBinary)
+    @Nullable public static Object readObject(BinaryRawReaderEx reader, boolean binObjAllow, boolean keepBinary)
         throws BinaryObjectException {
         byte type = reader.readByte();
 
@@ -72,7 +72,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+    @Nullable public static Object readObject(byte type, BinaryRawReaderEx reader, boolean binObjAllow,
                                               boolean keepBinary) throws BinaryObjectException {
         return readObject(type, reader, binObjAllow, keepBinary, true);
     }
@@ -86,7 +86,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+    @Nullable public static Object readObject(byte type, BinaryRawReaderEx reader, boolean binObjAllow,
         boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
@@ -202,7 +202,7 @@ public abstract class SqlListenerUtils {
      * @param createByteArrayCopy Whether create new byte array copy or try to create copy-on-write buffer.
      * @return Either byte[] or {@link JdbcBinaryBuffer}.
      */
-    private static Object readByteArray(BinaryReaderExImpl reader, boolean createByteArrayCopy) {
+    private static Object readByteArray(BinaryRawReaderEx reader, boolean createByteArrayCopy) {
         if (!createByteArrayCopy && reader.in().hasArray()) {
             int len = reader.in().readInt();
 

@@ -52,7 +52,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
@@ -1373,7 +1372,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @param isKey {@code True} if object is a key.
      */
-    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
+    public static <T extends CacheObject> T readCacheObject(BinaryRawReaderEx reader, boolean isKey) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();
