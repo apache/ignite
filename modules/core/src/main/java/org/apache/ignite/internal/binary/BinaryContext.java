@@ -125,11 +125,8 @@ public class BinaryContext {
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
         sysClss.add(BinaryTreeMap.class.getName());
-
-        if (BinaryUtils.wrapTrees()) {
-            sysClss.add(TreeMap.class.getName());
-            sysClss.add(TreeSet.class.getName());
-        }
+        sysClss.add(TreeMap.class.getName());
+        sysClss.add(TreeSet.class.getName());
 
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }
@@ -317,7 +314,7 @@ public class BinaryContext {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null) {
-            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
+            if (cls == TreeMap.class || cls == TreeSet.class)
                 return false;
 
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
