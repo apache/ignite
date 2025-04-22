@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.util.GridFunc;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.typedef.F;

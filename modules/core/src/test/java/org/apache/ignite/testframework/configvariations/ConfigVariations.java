@@ -42,7 +42,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 
-import static org.apache.ignite.internal.util.GridFunc.asArray;
+import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 
 /**
  * Cache configuration variations.

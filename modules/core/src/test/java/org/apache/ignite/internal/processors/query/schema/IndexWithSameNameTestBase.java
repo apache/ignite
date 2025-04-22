@@ -61,8 +61,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.schema.IndexWithSameNameTestBase.SchemaFinishListeningTcpDiscoverySpi.discoSpi;
-import static org.apache.ignite.internal.util.GridFunc.asSet;
-import static org.apache.ignite.internal.util.GridFunc.t;
+import static org.apache.ignite.internal.util.lang.GridFunc.asSet;
+import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /** */
 @SuppressWarnings("deprecation")

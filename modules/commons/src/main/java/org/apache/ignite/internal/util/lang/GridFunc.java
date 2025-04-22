@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.util.lang;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,14 +36,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
-import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.lang.GridTuple4;
-import org.apache.ignite.internal.util.lang.GridTuple5;
-import org.apache.ignite.internal.util.lang.GridTuple6;
-import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.lang.gridfunc.AlwaysFalsePredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTrueReducer;

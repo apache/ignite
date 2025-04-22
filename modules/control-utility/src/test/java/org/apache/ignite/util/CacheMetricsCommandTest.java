@@ -33,7 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.util.GridFunc.asMap;
+import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
 import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 
 /**

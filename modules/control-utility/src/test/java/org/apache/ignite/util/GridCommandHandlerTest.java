@@ -182,7 +182,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
-import static org.apache.ignite.internal.util.GridFunc.asList;
+import static org.apache.ignite.internal.util.lang.GridFunc.asList;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
