@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Extended reader interface.
  */
-public interface BinaryRawReaderEx extends BinaryReader, BinaryRawReader, BinaryReaderHandlesHolder, ObjectInput {
+public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryReaderHandlesHolder, ObjectInput {
     /**
      * @return Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.

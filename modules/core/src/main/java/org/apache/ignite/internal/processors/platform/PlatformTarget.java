@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +45,7 @@ public interface PlatformTarget {
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
+    long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException;
 
     /**
      * Process IN operation.
@@ -55,7 +55,7 @@ public interface PlatformTarget {
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException;
+    long processInStreamOutLong(int type, BinaryReaderEx reader, PlatformMemory mem) throws IgniteCheckedException;
 
     /**
      * Process IN-OUT operation.
@@ -65,7 +65,7 @@ public interface PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException;
 
     /**
@@ -75,7 +75,7 @@ public interface PlatformTarget {
      * @param reader Binary reader.
      * @throws IgniteCheckedException In case of exception.
      */
-    PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
+    PlatformTarget processInStreamOutObject(int type, BinaryReaderEx reader) throws IgniteCheckedException;
 
     /**
      * Process IN-OUT operation.
@@ -86,7 +86,7 @@ public interface PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader,
+    PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException;
 
     /**
@@ -114,7 +114,7 @@ public interface PlatformTarget {
      * @return Async result (should not be null).
      * @throws IgniteCheckedException In case of exception.
      */
-    PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
+    PlatformAsyncResult processInStreamAsync(int type, BinaryReaderEx reader) throws IgniteCheckedException;
 
     /**
      * Convert caught exception.

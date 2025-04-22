@@ -26,7 +26,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -129,7 +129,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
             in.synchronize();
 
-            BinaryRawReaderEx reader = ctx.reader(in);
+            BinaryReaderEx reader = ctx.reader(in);
 
             return readResultAndUpdateEntry(ctx, entry, reader);
         }
@@ -166,7 +166,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @throws EntryProcessorException If processing has failed in user code.
      */
     @SuppressWarnings("unchecked")
-    private Object readResultAndUpdateEntry(PlatformContext ctx, MutableEntry entry, BinaryRawReaderEx reader) {
+    private Object readResultAndUpdateEntry(PlatformContext ctx, MutableEntry entry, BinaryReaderEx reader) {
         byte state = reader.readByte();
 
         switch (state) {

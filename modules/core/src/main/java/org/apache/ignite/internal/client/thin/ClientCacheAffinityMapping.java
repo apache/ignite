@@ -30,7 +30,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -177,7 +177,7 @@ public class ClientCacheAffinityMapping {
         PayloadInputChannel ch,
         Function<Integer, Function<Integer, ClientPartitionAwarenessMapper>> mappers
     ) {
-        try (BinaryRawReaderEx in = ClientUtils.createBinaryReader(null, ch.in())) {
+        try (BinaryReaderEx in = ClientUtils.createBinaryReader(null, ch.in())) {
             long topVer = in.readLong();
             int minorTopVer = in.readInt();
 
@@ -232,7 +232,7 @@ public class ClientCacheAffinityMapping {
     /**
      * @param in Input reader.
      */
-    private static Map<Integer, Integer> readCacheKeyConfiguration(BinaryRawReaderEx in) {
+    private static Map<Integer, Integer> readCacheKeyConfiguration(BinaryReaderEx in) {
         int keyCfgCnt = in.readInt();
 
         Map<Integer, Integer> keyCfg = U.newHashMap(keyCfgCnt);
@@ -246,7 +246,7 @@ public class ClientCacheAffinityMapping {
     /**
      * @param in Input reader.
      */
-    private static UUID[] readNodePartitions(BinaryRawReaderEx in) {
+    private static UUID[] readNodePartitions(BinaryReaderEx in) {
         int nodesCnt = in.readInt();
 
         int maxPart = -1;

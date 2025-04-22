@@ -27,7 +27,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -50,7 +50,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     private final byte[] arr;
 
     /** */
-    private final BinaryRawReaderEx reader;
+    private final BinaryReaderEx reader;
 
     /** */
     private final Map<Integer, Object> objMap;
@@ -907,7 +907,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     /**
      * @return Reader.
      */
-    BinaryRawReaderEx reader() {
+    BinaryReaderEx reader() {
         return reader;
     }
 

@@ -3244,7 +3244,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryInputStream is = BinaryStreams.inputStream(os.array());
 
-        BinaryRawReaderEx reader = marsh.binaryMarshaller().reader(is);
+        BinaryReaderEx reader = marsh.binaryMarshaller().reader(is);
 
         Object bObj = reader.readObjectDetached(deserialize);
 
@@ -5389,7 +5389,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            BinaryRawReaderEx raw = (BinaryRawReaderEx)reader.rawReader();
+            BinaryReaderEx raw = (BinaryReaderEx)reader.rawReader();
 
             inner1 = (DetachedInnerTestObject)raw.readObject();
             inner2 = raw.readObjectDetached();

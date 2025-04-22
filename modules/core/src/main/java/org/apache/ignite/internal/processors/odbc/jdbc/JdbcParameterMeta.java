@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -162,7 +162,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryRawReaderEx reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         isNullable = reader.readInt();

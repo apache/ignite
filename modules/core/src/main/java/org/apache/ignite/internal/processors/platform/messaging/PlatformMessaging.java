@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.messaging;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -81,7 +81,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_SEND:
@@ -143,7 +143,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN: {
@@ -163,7 +163,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
      * @param messaging Messaging.
      * @return Listen id.
      */
-    private UUID startRemoteListen(BinaryRawReaderEx reader, IgniteMessaging messaging) {
+    private UUID startRemoteListen(BinaryReaderEx reader, IgniteMessaging messaging) {
         Object nativeFilter = reader.readObjectDetached();
 
         long ptr = reader.readLong();  // interop pointer
@@ -181,7 +181,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
      * @param messaging Messaging.
      * @return Future of the operation.
      */
-    private IgniteFuture<UUID> startRemoteListenAsync(BinaryRawReaderEx reader, IgniteMessaging messaging) {
+    private IgniteFuture<UUID> startRemoteListenAsync(BinaryReaderEx reader, IgniteMessaging messaging) {
         Object nativeFilter = reader.readObjectDetached();
 
         long ptr = reader.readLong();  // interop pointer

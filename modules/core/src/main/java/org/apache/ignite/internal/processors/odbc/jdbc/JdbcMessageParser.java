@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -60,7 +60,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @param msg Message.
      * @return Reader.
      */
-    protected BinaryRawReaderEx createReader(ClientMessage msg) {
+    protected BinaryReaderEx createReader(ClientMessage msg) {
         BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
         return new BinaryReaderExImpl(binCtx, stream, ctx.config().getClassLoader(), true);
@@ -78,7 +78,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryRawReaderEx reader = createReader(msg);
+        BinaryReaderEx reader = createReader(msg);
 
         return JdbcRequest.readRequest(reader, protoCtx);
     }

@@ -32,7 +32,7 @@ import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -366,7 +366,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ctx.configure(marsh);
 
-        BinaryRawReaderEx reader = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
+        BinaryReaderEx reader = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 

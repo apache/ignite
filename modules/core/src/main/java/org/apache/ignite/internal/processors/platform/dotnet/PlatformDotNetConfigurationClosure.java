@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
@@ -159,7 +159,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(BinaryRawReaderEx in) {
+    private void processPrepareResult(BinaryReaderEx in) {
         assert cfg != null;
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);

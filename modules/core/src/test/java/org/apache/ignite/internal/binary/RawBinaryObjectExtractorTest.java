@@ -60,7 +60,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         for (Object testObj : testObjects) {
             byte[] objRawBytes = rawReader.extractObject();
 
-            try (BinaryRawReaderEx binReader
+            try (BinaryReaderEx binReader
                      = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(objRawBytes), null, false)) {
                 Object deserializedObj = binReader.readObject();
 

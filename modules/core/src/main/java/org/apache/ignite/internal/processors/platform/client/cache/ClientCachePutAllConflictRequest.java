@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -48,7 +48,7 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
      * @param reader Reader.
      * @param ctx Connection context.
      */
-    public ClientCachePutAllConflictRequest(BinaryRawReaderEx reader, ClientConnectionContext ctx) {
+    public ClientCachePutAllConflictRequest(BinaryReaderEx reader, ClientConnectionContext ctx) {
         super(reader);
 
         int cnt = reader.readInt();

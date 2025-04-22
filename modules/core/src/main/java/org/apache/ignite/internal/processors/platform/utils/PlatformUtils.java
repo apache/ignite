@@ -50,7 +50,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
@@ -286,7 +286,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readCollection(BinaryRawReaderEx reader) {
+    public static <T> List<T> readCollection(BinaryReaderEx reader) {
         return readCollection(reader, null);
     }
 
@@ -297,7 +297,7 @@ public class PlatformUtils {
      * @param readClo Optional reader closure.
      * @return List.
      */
-    public static <T> List<T> readCollection(BinaryRawReaderEx reader, @Nullable PlatformReaderClosure<T> readClo) {
+    public static <T> List<T> readCollection(BinaryReaderEx reader, @Nullable PlatformReaderClosure<T> readClo) {
         int cnt = reader.readInt();
 
         List<T> res = new ArrayList<>(cnt);
@@ -320,7 +320,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readNullableCollection(BinaryRawReaderEx reader) {
+    public static <T> List<T> readNullableCollection(BinaryReaderEx reader) {
         return readNullableCollection(reader, null);
     }
 
@@ -330,8 +330,8 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readNullableCollection(BinaryRawReaderEx reader,
-        @Nullable PlatformReaderClosure<T> readClo) {
+    public static <T> List<T> readNullableCollection(BinaryReaderEx reader,
+                                                     @Nullable PlatformReaderClosure<T> readClo) {
         if (!reader.readBoolean())
             return null;
 
@@ -342,7 +342,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Set.
      */
-    public static <T> Set<T> readSet(BinaryRawReaderEx reader) {
+    public static <T> Set<T> readSet(BinaryReaderEx reader) {
         int cnt = reader.readInt();
 
         Set<T> res = U.newHashSet(cnt);
@@ -357,7 +357,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Set.
      */
-    public static <T> Set<T> readNullableSet(BinaryRawReaderEx reader) {
+    public static <T> Set<T> readNullableSet(BinaryReaderEx reader) {
         if (!reader.readBoolean())
             return null;
 
@@ -370,7 +370,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readMap(BinaryRawReaderEx reader) {
+    public static <K, V> Map<K, V> readMap(BinaryReaderEx reader) {
         return readMap(reader, null);
     }
 
@@ -381,8 +381,8 @@ public class PlatformUtils {
      * @param readClo Reader closure.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readMap(BinaryRawReaderEx reader,
-        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+    public static <K, V> Map<K, V> readMap(BinaryReaderEx reader,
+                                           @Nullable PlatformReaderBiClosure<K, V> readClo) {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newHashMap(cnt);
@@ -409,8 +409,8 @@ public class PlatformUtils {
      * @param readClo Reader closure.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readLinkedMap(BinaryRawReaderEx reader,
-        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+    public static <K, V> Map<K, V> readLinkedMap(BinaryReaderEx reader,
+                                                 @Nullable PlatformReaderBiClosure<K, V> readClo) {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newLinkedHashMap(cnt);
@@ -436,7 +436,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readNullableMap(BinaryRawReaderEx reader) {
+    public static <K, V> Map<K, V> readNullableMap(BinaryReaderEx reader) {
         if (!reader.readBoolean())
             return null;
 
@@ -835,7 +835,7 @@ public class PlatformUtils {
      * @return Result.
      * @throws IgniteCheckedException When invocation result is an error.
      */
-    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
+    public static Object readInvocationResult(PlatformContext ctx, BinaryReaderEx reader)
         throws IgniteCheckedException {
         return readInvocationResult(ctx, reader, false);
     }
@@ -849,7 +849,7 @@ public class PlatformUtils {
      * @return Result.
      * @throws IgniteCheckedException When invocation result is an error.
      */
-    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader, boolean deserialize)
+    public static Object readInvocationResult(PlatformContext ctx, BinaryReaderEx reader, boolean deserialize)
             throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
@@ -1203,10 +1203,10 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Collection of metas.
      */
-    public static Collection<BinaryMetadata> readBinaryMetadataCollection(BinaryRawReaderEx reader) {
+    public static Collection<BinaryMetadata> readBinaryMetadataCollection(BinaryReaderEx reader) {
         return readCollection(reader,
                 new PlatformReaderClosure<BinaryMetadata>() {
-                    @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
+                    @Override public BinaryMetadata read(BinaryReaderEx reader) {
                         return readBinaryMetadata(reader);
                     }
                 }
@@ -1219,14 +1219,14 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Binary type metadata.
      */
-    public static BinaryMetadata readBinaryMetadata(BinaryRawReaderEx reader) {
+    public static BinaryMetadata readBinaryMetadata(BinaryReaderEx reader) {
         int typeId = reader.readInt();
         String typeName = reader.readString();
         String affKey = reader.readString();
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
                 new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryReaderEx reader) {
                         String name = reader.readString();
                         int typeId = reader.readInt();
                         int fieldId = reader.readInt();
@@ -1301,7 +1301,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Attributes.
      */
-    public static Map<String, Object> readNodeAttributes(BinaryRawReaderEx reader) {
+    public static Map<String, Object> readNodeAttributes(BinaryReaderEx reader) {
         assert reader != null;
 
         int attrCnt = reader.readInt();
@@ -1372,7 +1372,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @param isKey {@code True} if object is a key.
      */
-    public static <T extends CacheObject> T readCacheObject(BinaryRawReaderEx reader, boolean isKey) {
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderEx reader, boolean isKey) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();

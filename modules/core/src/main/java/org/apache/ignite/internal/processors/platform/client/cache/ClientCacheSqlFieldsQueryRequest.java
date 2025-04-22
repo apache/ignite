@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
@@ -60,8 +60,8 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
      * @param reader Reader.
      * @param protocolCtx Protocol context.
      */
-    public ClientCacheSqlFieldsQueryRequest(BinaryRawReaderEx reader,
-        ClientProtocolContext protocolCtx) {
+    public ClientCacheSqlFieldsQueryRequest(BinaryReaderEx reader,
+                                            ClientProtocolContext protocolCtx) {
         super(reader);
 
         // Same request format as in JdbcQueryExecuteRequest.

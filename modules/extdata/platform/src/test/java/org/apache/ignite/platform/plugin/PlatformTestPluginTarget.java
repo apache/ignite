@@ -19,7 +19,7 @@ package org.apache.ignite.platform.plugin;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAsyncResult;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -72,18 +72,18 @@ class PlatformTestPluginTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         return reader.readString().length();
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader, PlatformMemory mem)
             throws IgniteCheckedException {
         return processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
             throws IgniteCheckedException {
         String s = reader.readString();
 
@@ -91,14 +91,14 @@ class PlatformTestPluginTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryReaderEx reader)
             throws IgniteCheckedException {
         return new PlatformTestPluginTarget(platformCtx, reader.readString());
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(
-            int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+        int type, @Nullable PlatformTarget arg, BinaryReaderEx reader, BinaryRawWriterEx writer)
             throws IgniteCheckedException {
         PlatformTestPluginTarget t = (PlatformTestPluginTarget)arg;
 
@@ -126,7 +126,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
 
         platformCtx.gateway().pluginCallback(1, outMem, inMem);
 
-        BinaryRawReaderEx reader = platformCtx.reader(inMem);
+        BinaryReaderEx reader = platformCtx.reader(inMem);
 
         return reader.readString();
     }
@@ -142,7 +142,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case 1: {
                 // Async upper case.

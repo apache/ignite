@@ -40,7 +40,7 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -393,7 +393,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     }
                 },
                 res -> {
-                    try (BinaryRawReaderEx reader = utils.createBinaryReader(res.in())) {
+                    try (BinaryReaderEx reader = utils.createBinaryReader(res.in())) {
                         int nodesCnt = reader.readInt();
 
                         Collection<ClusterNode> nodes = new ArrayList<>();
@@ -422,7 +422,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      * @param reader Reader.
      */
-    private ClusterNode readClusterNode(BinaryRawReaderEx reader) {
+    private ClusterNode readClusterNode(BinaryReaderEx reader) {
         return new ClientClusterNodeImpl(
             reader.readUuid(),
             readNodeAttributes(reader),
@@ -440,7 +440,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      * @param reader Reader.
      */
-    private Map<String, Object> readNodeAttributes(BinaryRawReaderEx reader) {
+    private Map<String, Object> readNodeAttributes(BinaryReaderEx reader) {
         int attrCnt = reader.readInt();
 
         Map<String, Object> attrs = new HashMap<>(attrCnt);
@@ -460,7 +460,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      * @param reader Reader.
      */
-    private IgniteProductVersion readProductVersion(BinaryRawReaderEx reader) {
+    private IgniteProductVersion readProductVersion(BinaryReaderEx reader) {
         return new IgniteProductVersion(
             reader.readByte(), // Major.
             reader.readByte(), // Minor.

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.websession;
 import java.sql.Timestamp;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
@@ -57,7 +57,7 @@ public class PlatformDotNetSessionCacheExtension implements PlatformCacheExtensi
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public long processInOutStreamLong(PlatformCache target, int type, BinaryRawReaderEx reader,
+    @Override public long processInOutStreamLong(PlatformCache target, int type, BinaryReaderEx reader,
         PlatformMemory mem) throws IgniteCheckedException {
         switch (type) {
             case OP_LOCK: {

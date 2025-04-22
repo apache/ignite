@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -134,7 +134,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(GridNioSession ses,
-        ClientListenerProtocolVersion ver, BinaryRawReaderEx reader)
+        ClientListenerProtocolVersion ver, BinaryReaderEx reader)
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver) : "Unsupported ODBC protocol version.";
 

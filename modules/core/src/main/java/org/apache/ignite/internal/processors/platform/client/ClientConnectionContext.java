@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
@@ -186,7 +186,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(GridNioSession ses,
-        ClientListenerProtocolVersion ver, BinaryRawReaderEx reader)
+        ClientListenerProtocolVersion ver, BinaryReaderEx reader)
         throws IgniteCheckedException {
 
         EnumSet<ClientBitmaskFeature> features = null;

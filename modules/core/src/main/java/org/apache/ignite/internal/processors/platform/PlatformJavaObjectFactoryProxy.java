@@ -29,7 +29,7 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -148,7 +148,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReaderEx rawReader = (BinaryRawReaderEx)reader.rawReader();
+        BinaryReaderEx rawReader = (BinaryReaderEx)reader.rawReader();
 
         factoryTyp = rawReader.readInt();
         clsName = rawReader.readString();

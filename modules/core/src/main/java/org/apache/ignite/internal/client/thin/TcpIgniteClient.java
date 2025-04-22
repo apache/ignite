@@ -62,7 +62,7 @@ import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -538,7 +538,7 @@ public class TcpIgniteClient implements IgniteClient {
     /** Deserialize string. */
     private String readString(BinaryInputStream in) throws BinaryObjectException {
         try {
-            try (BinaryRawReaderEx r = serDes.createBinaryReader(in)) {
+            try (BinaryReaderEx r = serDes.createBinaryReader(in)) {
                 return r.readString();
             }
         }

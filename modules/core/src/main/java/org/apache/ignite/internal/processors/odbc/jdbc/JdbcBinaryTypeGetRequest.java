@@ -19,7 +19,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -62,7 +62,7 @@ public class JdbcBinaryTypeGetRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryRawReaderEx reader, JdbcProtocolContext protoCtx)
+    @Override public void readBinary(BinaryReaderEx reader, JdbcProtocolContext protoCtx)
         throws BinaryObjectException {
         super.readBinary(reader, protoCtx);
 
