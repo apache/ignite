@@ -118,7 +118,7 @@ class BinaryBuilderSerializer {
             writer.writeInt(obj.typeId());
 
             if (obj.typeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                writer.doWriteString(obj.className());
+                writer.writeString(obj.className());
 
             writer.writeInt(obj.enumOrdinal());
 
@@ -233,7 +233,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        writer.doWriteObject(val);
+        writer.writeObject(val);
     }
 
     /**
