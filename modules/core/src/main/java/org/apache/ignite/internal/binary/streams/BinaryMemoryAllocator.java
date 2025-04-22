@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 
 /**
  * On-heap memory allocator.

@@ -59,8 +59,8 @@ import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
 import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
