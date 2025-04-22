@@ -805,7 +805,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case CLASS:
-                    writer.doWriteClass((Class)obj);
+                    writer.writeClass((Class)obj);
 
                     break;
 
@@ -815,7 +815,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case BINARY_OBJ:
-                    writer.doWriteBinaryObject((BinaryObjectImpl)obj);
+                    writer.writeBinaryObject((BinaryObjectImpl)obj);
 
                     break;
 

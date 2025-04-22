@@ -43,6 +43,6 @@ class BinaryPlainBinaryObject implements BinaryLazyValue {
 
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        writer.doWriteBinaryObject((BinaryObjectImpl)BinaryUtils.unwrapTemporary(binaryObj));
+        writer.writeBinaryObject((BinaryObjectImpl)BinaryUtils.unwrapTemporary(binaryObj));
     }
 }
