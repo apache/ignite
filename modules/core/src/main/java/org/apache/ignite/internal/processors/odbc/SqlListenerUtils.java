@@ -87,7 +87,7 @@ public abstract class SqlListenerUtils {
      * @throws BinaryObjectException On error.
      */
     @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
-                                              boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
+        boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;

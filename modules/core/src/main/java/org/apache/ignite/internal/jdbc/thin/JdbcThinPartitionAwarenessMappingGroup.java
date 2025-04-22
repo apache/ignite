@@ -138,7 +138,7 @@ public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinaryliza
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-         BinaryReaderEx reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     )
         throws BinaryObjectException {
@@ -154,7 +154,7 @@ public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinaryliza
      * @throws BinaryObjectException In case of error.
      */
     public static JdbcThinPartitionAwarenessMappingGroup readGroup(
-         BinaryReaderEx reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext binCtx
     ) throws BinaryObjectException {
         JdbcThinPartitionAwarenessMappingGroup res = new JdbcThinPartitionAwarenessMappingGroup();
