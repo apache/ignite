@@ -22,8 +22,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -291,7 +291,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
      * @return Request Id.
      */
     public static long readRequestId(byte[] msg) {
-        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+        BinaryInputStream stream = BinaryStreams.inputStream(msg);
 
         stream.position(1);
 

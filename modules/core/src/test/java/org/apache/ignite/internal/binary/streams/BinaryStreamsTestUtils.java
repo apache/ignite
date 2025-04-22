@@ -15,41 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.binary.streams;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.THREAD_LOCAL;
 
 /**
- * Thin client payload input channel.
+ * Simple utility class to check package-private class in some tests.
  */
-class PayloadInputChannel {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Input stream. */
-    private final BinaryInputStream in;
-
+public class BinaryStreamsTestUtils {
     /**
-     * Constructor.
+     * @return {@code True} if thread local binary memory allocator acquired.
      */
-    PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        in = BinaryStreams.inputStream(payload);
-        this.ch = ch;
-    }
-
-    /**
-     * Gets client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
-
-    /**
-     * Gets input stream.
-     */
-    public BinaryInputStream in() {
-        return in;
+    public static boolean threadLocalIsAcquired() {
+        return THREAD_LOCAL.isAcquired();
     }
 }

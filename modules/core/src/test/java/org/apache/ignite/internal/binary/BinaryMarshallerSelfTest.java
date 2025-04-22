@@ -81,9 +81,10 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.binary.streams.BinaryStreamsTestUtils;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
@@ -110,7 +111,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.THREAD_LOCAL;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -3016,28 +3016,28 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     @Test
     public void testThreadLocalArrayReleased() throws Exception {
         // Checking the writer directly.
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
         BinaryMarshaller marsh = binaryMarshaller();
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryContext(marsh))) {
-            assertEquals(true, THREAD_LOCAL.isAcquired());
+            assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
             writer.writeString("Thread local test");
 
             writer.array();
 
-            assertEquals(true, THREAD_LOCAL.isAcquired());
+            assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
         }
 
         // Checking the binary marshaller.
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
         marsh = binaryMarshaller();
 
         marsh.marshal(new SimpleObject());
 
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
         marsh = binaryMarshaller();
 
@@ -3049,7 +3049,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryObject binaryObj = builder.build();
 
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
     }
 
     /**
@@ -3236,13 +3236,13 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action, boolean deserialize) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
+        BinaryOutputStream os = BinaryStreams.outputStream(1024);
 
         BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
 
         writer.writeObject(obj);
 
-        BinaryInputStream is = new BinaryHeapInputStream(os.array());
+        BinaryInputStream is = BinaryStreams.inputStream(os.array());
 
         BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
 
