@@ -478,7 +478,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param date Date.
      */
-     private void doWriteDate(@Nullable Date date) {
+    private void doWriteDate(@Nullable Date date) {
         if (date == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
