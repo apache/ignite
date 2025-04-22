@@ -127,10 +127,8 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         start = out.position();
     }
 
-    /**
-     * @return Fail if unregistered flag value.
-     */
-    public boolean failIfUnregistered() {
+    /** {@inheritDoc} */
+    @Override public boolean failIfUnregistered() {
         return failIfUnregistered;
     }
 
@@ -268,13 +266,8 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
             doWriteString(clsName);
     }
 
-    /**
-     * Perform post-write. Fills object header.
-     *
-     * @param userType User type flag.
-     * @param registered Whether type is registered.
-     */
-    public void postWrite(boolean userType, boolean registered) {
+    /** {@inheritDoc} */
+    @Override public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
@@ -343,12 +336,8 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         out.unsafePosition(retPos);
     }
 
-    /**
-     * Perform post-write hash code update if necessary.
-     *
-     * @param clsName Class name. Always null if class is registered.
-     */
-    public void postWriteHashCode(@Nullable String clsName) {
+    /** {@inheritDoc} */
+    @Override public void postWriteHashCode(@Nullable String clsName) {
         int typeId = clsName == null ? this.typeId : ctx.typeId(clsName);
 
         BinaryIdentityResolver identity = ctx.identity(typeId);
@@ -373,10 +362,8 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /**
-     * Pop schema.
-     */
-    public void popSchema() {
+    /** {@inheritDoc} */
+    @Override public void popSchema() {
         if (fieldCnt > 0)
             schema.pop(fieldCnt);
     }
@@ -1944,17 +1931,13 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         this.schemaId = schemaId;
     }
 
-    /**
-     * @return Schema ID.
-     */
-    public int schemaId() {
+    /** {@inheritDoc} */
+    @Override public int schemaId() {
         return schemaId;
     }
 
-    /**
-     * @return Current writer's schema.
-     */
-    public BinarySchema currentSchema() {
+    /** {@inheritDoc} */
+    @Override public BinarySchema currentSchema() {
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)
@@ -2014,10 +1997,8 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         return res;
     }
 
-    /**
-     * @return Binary context.
-     */
-    public BinaryContext context() {
+    /** {@inheritDoc} */
+    @Override public BinaryContext context() {
         return ctx;
     }
 }

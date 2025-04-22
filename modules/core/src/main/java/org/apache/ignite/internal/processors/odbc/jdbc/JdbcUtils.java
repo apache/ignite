@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
@@ -126,7 +127,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param val Integer value..
      */
-    public static void writeNullableInteger(BinaryWriterExImpl writer, @Nullable Integer val) {
+    public static void writeNullableInteger(BinaryWriterEx writer, @Nullable Integer val) {
         writer.writeBoolean(val != null);
 
         if (val != null)

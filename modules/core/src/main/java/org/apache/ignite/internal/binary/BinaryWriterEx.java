@@ -62,6 +62,11 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
 
 
     /**
+     * @return Fail if unregistered flag value.
+     */
+    public boolean failIfUnregistered();
+
+    /**
      * @param failIfUnregistered Fail if unregistered.
      */
     public void failIfUnregistered(boolean failIfUnregistered);
@@ -84,6 +89,26 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public void preWrite(@Nullable String clsName);
 
     /**
+     * Perform post-write. Fills object header.
+     *
+     * @param userType User type flag.
+     * @param registered Whether type is registered.
+     */
+    public void postWrite(boolean userType, boolean registered);
+
+    /**
+     * Perform post-write hash code update if necessary.
+     *
+     * @param clsName Class name. Always null if class is registered.
+     */
+    public void postWriteHashCode(@Nullable String clsName);
+
+    /**
+     * Pop schema.
+     */
+    public void popSchema();
+
+    /**
      * Write field ID.
      * @param fieldId Field ID.
      */
@@ -104,4 +129,20 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @param len       the number of bytes that are written
      */
     @Override public void write(byte b[], int off, int len);
+
+
+    /**
+     * @return Schema ID.
+     */
+    public int schemaId();
+
+    /**
+     * @return Current writer's schema.
+     */
+    public BinarySchema currentSchema();
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext context();
 }
