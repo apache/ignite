@@ -257,7 +257,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
                 new Class[] { UnregisteredClass.class },
                 new TestInvocationHandler(UnregisteredClass.class));
 
-            binObj = BinaryObjectBuilders.createBuilder(ctx, "TestBinaryType").setField("test-field", "test-value").build();
+            binObj = BinaryObjectBuilders.builder(ctx, "TestBinaryType").setField("test-field", "test-value").build();
         }
     }
 }

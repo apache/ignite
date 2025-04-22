@@ -459,7 +459,7 @@ public class IgniteMock implements IgniteEx {
 
             /** {@inheritDoc} */
             @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
-                return BinaryObjectBuilders.createBuilder(ctx, typeName);
+                return BinaryObjectBuilders.builder(ctx, typeName);
             }
         };
 

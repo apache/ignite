@@ -536,12 +536,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
-        return BinaryObjectBuilders.createBuilder(binaryCtx, clsName);
+        return BinaryObjectBuilders.builder(binaryCtx, clsName);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) {
-        return BinaryObjectBuilders.toBuilder(binaryObj);
+        return BinaryObjectBuilders.builder(binaryObj);
     }
 
     /** {@inheritDoc} */

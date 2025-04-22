@@ -159,7 +159,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilders.toBuilder(this);
+        return BinaryObjectBuilders.builder(this);
     }
 
     /** {@inheritDoc} */

@@ -443,7 +443,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilders.toBuilder(heapCopy());
+        return BinaryObjectBuilders.builder(heapCopy());
     }
 
     /** {@inheritDoc} */
