@@ -49,7 +49,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
@@ -86,7 +85,6 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -149,13 +147,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private @Nullable SqlNode validatedSqlNode;
 
     /**
-     * TODO: Remove after IGNITE-18390.
-     *
-     * @see IgniteMdRowCount#joinRowCount(RelMetadataQuery, Join)
-     */
-    boolean heuristicJoinsOrder;
-
-    /**
      * @param ctx Planner context.
      */
     IgnitePlanner(PlanningContext ctx) {
@@ -190,7 +181,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         planner = null;
         validator = null;
         cluster = null;
-        heuristicJoinsOrder = false;
     }
 
     /** {@inheritDoc} */
@@ -340,11 +330,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 && ((SqlBasicCall)node).operandCount() == 2
                 && ((SqlBasicCall)node).operand(0) instanceof SqlIdentifier
                 && ((SqlBasicCall)node).operand(1) instanceof SqlIdentifier;
-    }
-
-    /** */
-    public boolean heuristicJoinsOrder() {
-        return heuristicJoinsOrder;
     }
 
     /** {@inheritDoc} */

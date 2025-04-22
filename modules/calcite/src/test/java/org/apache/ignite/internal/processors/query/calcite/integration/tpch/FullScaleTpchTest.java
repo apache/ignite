@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-/** The Tpch test with scale 0.3. */
+/** The Tpch test with scale 1. */
 @RunWith(Parameterized.class)
-public class ThirdScaleTpchTest extends AbstractTpchTest {
+public class FullScaleTpchTest extends AbstractTpchTest {
     /** {@inheritDoc} */
     @Override protected double scale() {
-        return 0.3;
+        return 1;
     }
 }

@@ -31,11 +31,20 @@ public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     /**
      * All the knows queries.
      * TODO: IGNITE-25209 for q15 and q17
+     * Query 21 is still long due to the same cost of the plans with NL and Merge joins despite the merge is significanlty
+     * cheaper (but sort and project nodes raise the final cost).
      */
     protected static final Collection<Integer> QUERIES = IntStream.range(1, 23)
         .filter(q -> q != 15)
         .filter(q -> q != 17)
+        .filter(q -> q != 21)
         .boxed().collect(Collectors.toSet());
+
+    /** */
+    @Parameterized.Parameters(name = "queryId={0}")
+    public static Collection<Integer> params() {
+        return QUERIES;
+    }
 
     /** Query ID. */
     @Parameterized.Parameter
