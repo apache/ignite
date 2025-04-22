@@ -137,10 +137,10 @@ public class TpchBenchmark {
         "21",
         "22"
     })
-    private String queryId;
+    private String qryId;
 
     /** Query SQL string. */
-    private String queryString;
+    private String qryStr;
 
     /** Ignite client. */
     private Ignite client;
@@ -156,7 +156,7 @@ public class TpchBenchmark {
     @Warmup(iterations = 1, time = 10)
     @Measurement(iterations = 3, time = 10)
     public void cached(Blackhole bh) {
-        sql(bh, queryString);
+        sql(bh, qryStr);
     }
 
     /**
@@ -167,7 +167,7 @@ public class TpchBenchmark {
     @Warmup(iterations = 0)
     @Measurement(iterations = 1, time = 1)
     public void cold(Blackhole bh) {
-        sql(bh, queryString);
+        sql(bh, qryStr);
     }
 
     /**
@@ -183,7 +183,7 @@ public class TpchBenchmark {
 
         client = Ignition.start(configuration("client").setClientMode(true));
 
-        queryString = TpchHelper.getQuery(Integer.parseInt(queryId));
+        qryStr = TpchHelper.getQuery(Integer.parseInt(qryId));
 
         loadDataset();
     }
