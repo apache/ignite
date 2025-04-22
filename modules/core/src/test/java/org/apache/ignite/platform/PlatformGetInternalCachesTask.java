@@ -31,7 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
@@ -71,8 +72,8 @@ public class PlatformGetInternalCachesTask extends ComputeTaskAdapter<Object, by
 
             BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
-            try (BinaryWriterExImpl writer
-                     = new BinaryWriterExImpl(ctx, BinaryStreams.outputStream(512), null, null)) {
+            try (BinaryWriterEx writer
+                     = BinaryUtils.writer(ctx, BinaryStreams.outputStream(512), null)) {
                 Collection<IgniteInternalCache<?, ?>> caches = ign.cachesx();
 
                 writer.writeInt(caches.size());

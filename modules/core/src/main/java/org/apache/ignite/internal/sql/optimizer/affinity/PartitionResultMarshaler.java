@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
@@ -48,7 +48,7 @@ public class PartitionResultMarshaler {
      * @param partRes Partitoin result to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    public static void marshal(BinaryWriterExImpl writer, PartitionResult partRes)
+    public static void marshal(BinaryWriterEx writer, PartitionResult partRes)
         throws BinaryObjectException {
 
         writeNode(writer, partRes.tree());
@@ -116,7 +116,7 @@ public class PartitionResultMarshaler {
      * @param node Partition node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    private static void writeNode(BinaryWriterExImpl writer, PartitionNode node)
+    private static void writeNode(BinaryWriterEx writer, PartitionNode node)
         throws BinaryObjectException {
         assert !(node instanceof PartitionAllNode);
         assert !(node instanceof PartitionNoneNode);
@@ -156,7 +156,7 @@ public class PartitionResultMarshaler {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unused")
-    private static void writeConstantNode(BinaryWriterExImpl writer, PartitionConstantNode node)
+    private static void writeConstantNode(BinaryWriterEx writer, PartitionConstantNode node)
         throws BinaryObjectException {
         writer.writeByte(CONST_NODE);
 
@@ -187,7 +187,7 @@ public class PartitionResultMarshaler {
      * @param node Partition composite node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    private static void writeCompositeNode(BinaryWriterExImpl writer, PartitionCompositeNode node)
+    private static void writeCompositeNode(BinaryWriterEx writer, PartitionCompositeNode node)
         throws BinaryObjectException {
         writer.writeByte(COMPOSITE_NODE);
 
@@ -238,7 +238,7 @@ public class PartitionResultMarshaler {
      * @param node Partition group node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    private static void writeGroupNode(BinaryWriterExImpl writer, PartitionGroupNode node)
+    private static void writeGroupNode(BinaryWriterEx writer, PartitionGroupNode node)
         throws BinaryObjectException {
         writer.writeByte(GROUP_NODE);
 
@@ -282,7 +282,7 @@ public class PartitionResultMarshaler {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unused")
-    private static void writeParameterNode(BinaryWriterExImpl writer, PartitionParameterNode node)
+    private static void writeParameterNode(BinaryWriterEx writer, PartitionParameterNode node)
         throws BinaryObjectException {
         writer.writeByte(PARAM_NODE);
 

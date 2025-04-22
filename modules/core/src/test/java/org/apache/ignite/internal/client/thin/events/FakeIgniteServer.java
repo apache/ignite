@@ -31,7 +31,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.client.thin.ProtocolContext;
@@ -224,7 +224,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
 
     /** */
     private ByteBuffer createMessage(Consumer<BinaryRawWriter> writerAction) {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(32), null, null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(32), null)) {
             writer.writeInt(0);
 
             writerAction.accept(writer);

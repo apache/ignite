@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.InputStream;
 import java.io.ObjectOutput;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -60,7 +61,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      */
     public void writeInt(int pos, int val) throws BinaryObjectException;
 
-
     /**
      * @return Fail if unregistered flag value.
      */
@@ -70,6 +70,12 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @param failIfUnregistered Fail if unregistered.
      */
     public void failIfUnregistered(boolean failIfUnregistered);
+
+    /**
+     * @param obj Object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    void marshal(Object obj) throws BinaryObjectException;
 
     /**
      * @param typeId Type ID.
@@ -130,7 +136,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      */
     @Override public void write(byte b[], int off, int len);
 
-
     /**
      * @return Schema ID.
      */
@@ -145,4 +150,66 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @return Binary context.
      */
     public BinaryContext context();
+
+    /**
+     * @param val Value.
+     */
+    public void writeBooleanFieldPrimitive(boolean val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeByteFieldPrimitive(byte val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeCharFieldPrimitive(char val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeShortFieldPrimitive(short val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeIntFieldPrimitive(int val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeLongFieldPrimitive(long val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeFloatFieldPrimitive(float val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeDoubleFieldPrimitive(double val);
+
+    /**
+     * Write byte array from the InputStream.
+     *
+     * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
+     * If {@code limit} == -1 than it will try to read and write all bytes.
+     *
+     * <p>In any case if actual number of bytes is greater than {@code MAX_ARRAY_SIZE}
+     * than exception will be thrown.
+     *
+     * @param in InputStream.
+     * @param limit Max length of data to be read from the stream or -1 if all data should be read.
+     * @return Number of bytes written.
+     * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    public int writeByteArray(InputStream in, int limit) throws BinaryObjectException;
+
+    /**
+     * @param po Binary object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException;
 }

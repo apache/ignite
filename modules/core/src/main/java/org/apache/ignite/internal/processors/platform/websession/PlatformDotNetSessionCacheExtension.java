@@ -21,8 +21,9 @@ import java.sql.Timestamp;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -72,7 +73,7 @@ public class PlatformDotNetSessionCacheExtension implements PlatformCacheExtensi
 
                 return target.writeResult(mem, res, new PlatformWriterClosure() {
                     @Override public void write(BinaryWriterEx writer, Object val) {
-                        res.writeBinary(writer);
+                        res.writeBinary((BinaryRawWriter)writer);
                     }
                 });
             }
@@ -108,7 +109,7 @@ public class PlatformDotNetSessionCacheExtension implements PlatformCacheExtensi
 
                 return target.writeResult(mem, data, new PlatformWriterClosure() {
                     @Override public void write(BinaryWriterEx writer, Object val) {
-                        data.writeBinary(writer);
+                        data.writeBinary((BinaryRawWriter)writer);
                     }
                 });
             }
