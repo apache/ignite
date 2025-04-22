@@ -956,19 +956,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE";
 
     /**
-     * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
-     * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
-     * interface on {@code BinaryObject}.
-     * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
-     */
-    @Deprecated
-    @SystemProperty("If enabled then tree-based data structures - TreeMap and TreeSet - will " +
-        "not be wrapped into special holders introduced to overcome serialization issue caused by missing " +
-        "Comparable interface on BinaryObject")
-    public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
-
-    /**
      * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
      * only one node for host in cluster.
      */

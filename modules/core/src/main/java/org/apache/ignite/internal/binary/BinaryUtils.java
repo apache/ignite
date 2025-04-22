@@ -71,6 +71,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -111,7 +112,10 @@ public class BinaryUtils {
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
     /** Map from class to associated write replacer. */
-    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
+    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
+        TreeMap.class, new BinaryTreeMapWriteReplacer(),
+        TreeSet.class, new BinaryTreeSetWriteReplacer()
+    );
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
@@ -155,10 +159,6 @@ public class BinaryUtils {
 
     /** Field ID length. */
     public static final int FIELD_ID_LEN = 4;
-
-    /** Whether to skip TreeMap/TreeSet wrapping. */
-    public static final boolean WRAP_TREES =
-        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
@@ -300,11 +300,6 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
-
-        if (wrapTrees()) {
-            CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
-            CLS_TO_WRITE_REPLACER.put(TreeSet.class, new BinaryTreeSetWriteReplacer());
-        }
     }
 
     /**
@@ -671,13 +666,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Whether tree structures should be wrapped.
-     */
-    public static boolean wrapTrees() {
-        return WRAP_TREES;
-    }
-
-    /**
      * @param map Map to check.
      * @return {@code True} if this map type is supported.
      */
@@ -686,7 +674,6 @@ public class BinaryUtils {
 
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
-            (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap.class;
     }
 
@@ -703,8 +690,6 @@ public class BinaryUtils {
             return U.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
-        else if (!wrapTrees() && cls == TreeMap.class)
-            return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(((Map)map).size());
 
@@ -738,7 +723,6 @@ public class BinaryUtils {
 
         return cls == HashSet.class ||
             cls == LinkedHashSet.class ||
-            (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class ||
@@ -782,8 +766,6 @@ public class BinaryUtils {
             return U.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
-        else if (!wrapTrees() && cls == TreeSet.class)
-            return new TreeSet<>(((TreeSet<Object>)col).comparator());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
         else if (cls == ArrayList.class)
@@ -2728,6 +2710,38 @@ public class BinaryUtils {
      */
     public static void clearCache() {
         BinaryEnumCache.clear();
+    }
+
+    /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null)
+                schemaReg.addSchema(schemaId, schema);
+        }
+
+        return schema == null ? null : schema.fieldIds();
     }
 
     /**

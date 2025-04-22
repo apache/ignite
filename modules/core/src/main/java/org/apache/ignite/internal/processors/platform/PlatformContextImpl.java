@@ -361,7 +361,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId) {
-        writer.writeIntArray(PlatformUtils.getSchema(cacheObjProc, typeId, schemaId));
+        writer.writeIntArray(BinaryUtils.getSchema(cacheObjProc, typeId, schemaId));
     }
 
     /**
