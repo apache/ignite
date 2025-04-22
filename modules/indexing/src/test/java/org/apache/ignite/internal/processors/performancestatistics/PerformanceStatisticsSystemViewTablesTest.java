@@ -23,11 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +39,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Test system views for SQL.  */
 public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerformanceStatisticsTest {
+    /** */
+    private static final int GRIDS_CNT = 2;
+
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger();
 
@@ -54,15 +56,18 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
     /** @throws Exception If failed. */
     @Test
     public void testSystemViewTables() throws Exception {
-        LogListener lsnr = LogListener.matches("Performance statistics writer started.").build();
+        LogListener lsnr = LogListener
+            .matches("Finished writing system views to performance statistics file:")
+            .times(GRIDS_CNT)
+            .build();
         listeningLog.registerListener(lsnr);
 
-        try (IgniteEx ignite = startGrid(0)) {
+        try (IgniteEx ignite = startGrids(GRIDS_CNT)) {
             CacheConfiguration<Long, Person> personCacheCfg = new CacheConfiguration<>();
             personCacheCfg.setName("Person");
 
             QueryEntity qryEntity = new QueryEntity(Long.class, Person.class)
-                .addQueryField("id", Long.class.getName(), null).addQueryField("age", Integer.class.getName(), null)
+                .addQueryField("id", Long.class.getName(), null)
                 .addQueryField("salary", Float.class.getName(), null)
                 .addQueryField("name", String.class.getName(), null);
 
@@ -71,27 +76,24 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
             personCacheCfg.setQueryEntities(List.of(qryEntity));
 
             IgniteCache<Long, Person> cache = ignite.createCache(personCacheCfg);
-            cache.put(0L, new Person(1, "Alex", 3));
+
+            cache.put(0L, new Person(1, "Alex", 2));
+            cache.put(0L, new Person(2, "Bob", 3));
+
+            cache.query(new SqlFieldsQuery("select * from Person"));
 
             startCollectStatistics();
-
-            cache.put(0L, new Person(2, "Bob", 1));
-
-            SqlFieldsQuery sql = new SqlFieldsQuery(
-                "select * from Person");
-
-            try (QueryCursor<List<?>> cursor = cache.query(sql)) {
-                for (List<?> row : cursor)
-                    System.out.println("personName=" + row.get(0));
-            }
 
             Set<Object> expectedIndexes = Set.of("PERSON_ID_ASC_IDX", "PERSON_SALARY_DESC_IDX");
             Set<Object> actualIndexes = new HashSet<>();
 
-            Set<Object> expectedColumns = Set.of("SALARY", "AGE", "NAME");
+            Set<Object> expectedColumns = Set.of("ID", "SALARY", "NAME");
             Set<Object> actualColumns = new HashSet<>();
 
-            AtomicInteger tablesCnt = new AtomicInteger(0);
+            Set<Object> expectedSchemas = Set.of("PUBLIC", "SYS", "Person");
+            Set<Object> actualSchemas = new HashSet<>();
+
+            AtomicBoolean hasPersonTable = new AtomicBoolean(false);
 
             assertTrue("Performance statistics writer did not start.", waitForCondition(lsnr::check, TIMEOUT));
 
@@ -104,7 +106,10 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
                         actualIndexes.add(getAttrValByName(schema, row, "indexName"));
 
                     if ("tables".equals(name))
-                        tablesCnt.incrementAndGet();
+                        hasPersonTable.compareAndSet(false, "PERSON".equals(getAttrValByName(schema, row, "tableName")));
+
+                    if ("schemas".equals(name))
+                        actualSchemas.add(getAttrValByName(schema, row, "schemaName"));
                 }
 
                 /** */
@@ -115,7 +120,9 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
 
             assertTrue(actualColumns.containsAll(expectedColumns));
             assertTrue(actualIndexes.containsAll(expectedIndexes));
-            assertEquals(1, tablesCnt.get());
+            assertTrue(hasPersonTable.get());
+            assertEquals(expectedSchemas, actualSchemas);
+            assertEquals(2, systemViewStatisticsFiles(statisticsFiles()).size());
         }
     }
 
