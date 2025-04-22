@@ -916,7 +916,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
-        return new BinaryReaderExImpl(ctx,
+        return BinaryUtils.reader(ctx,
             BinaryStreams.inputStream(arr, start),
             ldr,
             rCtx,

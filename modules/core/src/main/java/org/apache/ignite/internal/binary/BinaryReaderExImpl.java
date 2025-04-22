@@ -90,7 +90,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
  * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
-public class BinaryReaderExImpl implements BinaryReaderEx {
+class BinaryReaderExImpl implements BinaryReaderEx {
     /** Binary context. */
     private final BinaryContext ctx;
 
