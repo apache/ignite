@@ -53,7 +53,6 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
      */
     public BinarySchema getOrCreateSchema();
 
-
     /**
      * @param offset Offset in the array.
      * @return Unmarshalled value.

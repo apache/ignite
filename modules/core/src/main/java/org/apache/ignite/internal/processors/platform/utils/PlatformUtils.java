@@ -50,8 +50,8 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
@@ -331,7 +331,7 @@ public class PlatformUtils {
      * @return List.
      */
     public static <T> List<T> readNullableCollection(BinaryReaderEx reader,
-                                                     @Nullable PlatformReaderClosure<T> readClo) {
+        @Nullable PlatformReaderClosure<T> readClo) {
         if (!reader.readBoolean())
             return null;
 
@@ -382,7 +382,7 @@ public class PlatformUtils {
      * @return Map.
      */
     public static <K, V> Map<K, V> readMap(BinaryReaderEx reader,
-                                           @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newHashMap(cnt);
@@ -410,7 +410,7 @@ public class PlatformUtils {
      * @return Map.
      */
     public static <K, V> Map<K, V> readLinkedMap(BinaryReaderEx reader,
-                                                 @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newLinkedHashMap(cnt);

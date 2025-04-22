@@ -23,10 +23,11 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
@@ -247,7 +248,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @return Result.
      */
     private EventAdapter startWaitForLocal(BinaryReaderEx reader, IgniteEvents events) {
-        Long filterHnd = reader.readObject();
+        Long filterHnd = ((BinaryRawReader)reader).readObject();
 
         IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
 
@@ -264,7 +265,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @return Result.
      */
     private IgniteFuture<EventAdapter> startWaitForLocalAsync(BinaryReaderEx reader, IgniteEvents events) {
-        Long filterHnd = reader.readObject();
+        Long filterHnd = ((BinaryRawReader)reader).readObject();
 
         IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
 

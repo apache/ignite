@@ -1968,7 +1968,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         if (!findFieldById(fieldId))
             return null;
 
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
+        return BinaryUtils.reader(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**

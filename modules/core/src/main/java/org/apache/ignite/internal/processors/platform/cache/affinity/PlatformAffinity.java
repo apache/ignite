@@ -21,10 +21,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -161,7 +162,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_PRIMARY_PARTITIONS: {
-                UUID nodeId = reader.readObject();
+                UUID nodeId = ((BinaryRawReader)reader).readObject();
 
                 ClusterNode node = discovery.node(nodeId);
 
@@ -173,7 +174,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_BACKUP_PARTITIONS: {
-                UUID nodeId = reader.readObject();
+                UUID nodeId = ((BinaryRawReader)reader).readObject();
 
                 ClusterNode node = discovery.node(nodeId);
 
@@ -185,7 +186,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_ALL_PARTITIONS: {
-                UUID nodeId = reader.readObject();
+                UUID nodeId = ((BinaryRawReader)reader).readObject();
 
                 ClusterNode node = discovery.node(nodeId);
 
@@ -215,7 +216,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_MAP_PARTITION_TO_NODE: {
-                int part = reader.readObject();
+                int part = ((BinaryRawReader)reader).readObject();
 
                 ClusterNode node = aff.mapPartitionToNode(part);
 
@@ -233,7 +234,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_MAP_PARTITION_TO_PRIMARY_AND_BACKUPS: {
-                int part = reader.readObject();
+                int part = ((BinaryRawReader)reader).readObject();
 
                 platformCtx.writeNodes(writer, aff.mapPartitionToPrimaryAndBackups(part));
 

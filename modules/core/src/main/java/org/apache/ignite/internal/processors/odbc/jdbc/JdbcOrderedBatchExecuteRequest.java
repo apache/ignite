@@ -72,7 +72,7 @@ public class JdbcOrderedBatchExecuteRequest extends JdbcBatchExecuteRequest
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderEx reader,
+         BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);

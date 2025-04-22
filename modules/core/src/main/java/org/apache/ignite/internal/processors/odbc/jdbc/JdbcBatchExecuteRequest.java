@@ -157,7 +157,7 @@ public class JdbcBatchExecuteRequest extends JdbcClientInfoAwareRequest {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderEx reader,
+         BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);

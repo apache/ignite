@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -83,7 +83,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
         BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
-        BinaryReaderEx reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
         byte cmd = reader.readByte();
 

@@ -922,7 +922,7 @@ public class BinaryClassDescriptor {
      * @return Object.
      * @throws BinaryObjectException If failed.
      */
-    Object read(BinaryReaderEx reader) throws BinaryObjectException {
+    Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
         try {
             assert reader != null;
             assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
@@ -948,7 +948,7 @@ public class BinaryClassDescriptor {
                     reader.setHandle(res);
 
                     for (BinaryFieldAccessor info : fields)
-                        info.read(res, (BinaryReaderExImpl)reader);
+                        info.read(res, reader);
 
                     break;
 

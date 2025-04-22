@@ -53,9 +53,8 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -561,7 +560,7 @@ public final class ClientUtils {
      * @param in Input stream.
      */
     static BinaryReaderEx createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
-        return new BinaryReaderExImpl(binaryCtx, in, null, null, true, true);
+        return BinaryUtils.reader(binaryCtx, in, null, null, true, true);
     }
 
     /** Read Ignite binary object from input stream. */
