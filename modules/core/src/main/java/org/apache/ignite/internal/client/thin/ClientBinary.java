@@ -69,7 +69,7 @@ public class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        return BinaryObjectBuilders.createBuilder(binaryContext(), typeName);
+        return BinaryObjectBuilders.builder(binaryContext(), typeName);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +77,7 @@ public class ClientBinary implements IgniteBinary {
         if (binaryObj == null)
             throw new NullPointerException("binaryObj");
 
-        return BinaryObjectBuilders.toBuilder(binaryObj);
+        return BinaryObjectBuilders.builder(binaryObj);
     }
 
     /** {@inheritDoc} */
