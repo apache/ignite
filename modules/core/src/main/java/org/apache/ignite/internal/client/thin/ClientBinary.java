@@ -29,8 +29,8 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
 /**
  * Thin client implementation of {@link IgniteBinary}.
@@ -61,7 +61,7 @@ public class ClientBinary implements IgniteBinary {
 
         byte[] objBytes = marsh.marshal(obj);
 
-        return (T)marsh.unmarshal(new BinaryHeapInputStream(objBytes));
+        return (T)marsh.unmarshal(BinaryStreams.inputStream(objBytes));
     }
 
     /** {@inheritDoc} */
@@ -69,7 +69,7 @@ public class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        return new BinaryObjectBuilderImpl(binaryContext(), typeName);
+        return BinaryObjectBuilders.createBuilder(binaryContext(), typeName);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +77,7 @@ public class ClientBinary implements IgniteBinary {
         if (binaryObj == null)
             throw new NullPointerException("binaryObj");
 
-        return BinaryObjectBuilderImpl.wrap(binaryObj);
+        return BinaryObjectBuilders.toBuilder(binaryObj);
     }
 
     /** {@inheritDoc} */

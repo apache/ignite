@@ -88,6 +88,12 @@ import static org.apache.ignite.internal.util.GridUnsafe.align;
  * Binary utils.
  */
 public class BinaryUtils {
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
+    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
+
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
+    public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
+
     /**
      * Actual file name "{type_id}.classname{platform_id}".
      * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}

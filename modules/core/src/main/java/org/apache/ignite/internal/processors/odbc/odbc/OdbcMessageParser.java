@@ -26,9 +26,8 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -82,7 +81,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream stream = new BinaryHeapInputStream(msg.payload());
+        BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
         BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
@@ -258,7 +257,11 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         OdbcResponse msg = (OdbcResponse)msg0;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(INIT_CAP), null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(
+            marsh.context(),
+            BinaryStreams.outputStream(INIT_CAP),
+            null
+        );
 
         // Writing status.
         if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {

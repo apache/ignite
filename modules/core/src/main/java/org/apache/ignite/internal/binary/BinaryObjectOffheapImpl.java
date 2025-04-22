@@ -33,9 +33,9 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -99,7 +99,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
+            String clsName = BinaryUtils.doReadClassName(BinaryStreams.inputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -389,7 +389,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
                 break;
 
             default:
-                BinaryInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+                BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
                 stream.position(fieldPos);
 
@@ -443,7 +443,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilderImpl.wrap(heapCopy());
+        return BinaryObjectBuilders.toBuilder(heapCopy());
     }
 
     /** {@inheritDoc} */
@@ -554,7 +554,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
-        BinaryInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+        BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
 

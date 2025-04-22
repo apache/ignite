@@ -24,7 +24,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary heap input stream.
  */
-public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
+final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     /**
      * Create stream with pointer set at the given position.
      *

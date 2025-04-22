@@ -35,8 +35,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
@@ -367,7 +366,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ctx.configure(marsh);
 
-        BinaryRawReaderEx reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(msg.payload()), null, true);
+        BinaryRawReaderEx reader = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 
@@ -385,7 +384,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(8), null, null);
 
         byte clientType = reader.readByte();
 

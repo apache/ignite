@@ -71,9 +71,9 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.managers.systemview.walker.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
@@ -433,7 +433,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (type != CacheObject.TYPE_BYTE_ARR) {
             assert size > 0 : size;
 
-            BinaryInputStream in = new BinaryOffheapInputStream(ptr, size, forceHeap);
+            BinaryInputStream in = BinaryStreams.inputStream(ptr, size, forceHeap);
 
             return binaryMarsh.unmarshal(in);
         }
@@ -536,12 +536,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
-        return new BinaryObjectBuilderImpl(binaryCtx, clsName);
+        return BinaryObjectBuilders.createBuilder(binaryCtx, clsName);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) {
-        return BinaryObjectBuilderImpl.wrap(binaryObj);
+        return BinaryObjectBuilders.toBuilder(binaryObj);
     }
 
     /** {@inheritDoc} */
