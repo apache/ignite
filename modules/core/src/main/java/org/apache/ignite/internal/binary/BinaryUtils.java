@@ -71,6 +71,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2709,6 +2710,38 @@ public class BinaryUtils {
      */
     public static void clearCache() {
         BinaryEnumCache.clear();
+    }
+
+    /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null)
+                schemaReg.addSchema(schemaId, schema);
+        }
+
+        return schema == null ? null : schema.fieldIds();
     }
 
     /**

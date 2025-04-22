@@ -1373,13 +1373,48 @@ public class BinaryContext {
         return compactFooter;
     }
 
+    /** */
+    public void updateMetaIfNeeded(
+        BinaryWriterExImpl writer,
+        BinaryType meta,
+        int typeId,
+        String typeName,
+        String affFieldName,
+        Map<String, BinaryFieldMetadata> fieldsMeta
+    ) {
+        BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
+
+        // Update metadata if needed.
+        int schemaId = writer.schemaId();
+
+        if (schemaReg.schema(schemaId) == null) {
+            if (typeName == null) {
+                assert meta != null;
+
+                typeName = meta.typeName();
+            }
+
+            BinarySchema curSchema = writer.currentSchema();
+
+            if (affFieldName == null)
+                affFieldName = affinityKeyFieldName(typeId);
+
+            registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
+
+            updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName,
+                Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
+
+            schemaReg.addSchema(curSchema.schemaId(), curSchema);
+        }
+    }
+
     /**
      * Get schema registry for type ID.
      *
      * @param typeId Type ID.
      * @return Schema registry for type ID.
      */
-    public BinarySchemaRegistry schemaRegistry(int typeId) {
+    BinarySchemaRegistry schemaRegistry(int typeId) {
         Map<Integer, BinarySchemaRegistry> schemas0 = schemas;
 
         if (schemas0 == null) {
