@@ -251,7 +251,7 @@ public abstract class SqlListenerUtils {
         else if (cls == String.class)
             writer.writeString((String)obj);
         else if (cls == BigDecimal.class)
-            writer.doWriteDecimal((BigDecimal)obj);
+            writer.writeDecimal((BigDecimal)obj);
         else if (cls == UUID.class)
             writer.writeUuid((UUID)obj);
         else if (cls == Time.class)

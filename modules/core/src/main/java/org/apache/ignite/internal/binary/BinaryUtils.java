@@ -455,102 +455,102 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                writer.doWriteDecimal((BigDecimal)val);
+                writer.writeDecimal((BigDecimal)val);
 
                 break;
 
             case GridBinaryMarshaller.STRING:
-                writer.doWriteString((String)val);
+                writer.writeString((String)val);
 
                 break;
 
             case GridBinaryMarshaller.UUID:
-                writer.doWriteUuid((UUID)val);
+                writer.writeUuid((UUID)val);
 
                 break;
 
             case GridBinaryMarshaller.DATE:
-                writer.doWriteDate((Date)val);
+                writer.writeDate((Date)val);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP:
-                writer.doWriteTimestamp((Timestamp)val);
+                writer.writeTimestamp((Timestamp)val);
 
                 break;
 
             case GridBinaryMarshaller.TIME:
-                writer.doWriteTime((Time)val);
+                writer.writeTime((Time)val);
 
                 break;
 
             case GridBinaryMarshaller.BYTE_ARR:
-                writer.doWriteByteArray((byte[])val);
+                writer.writeByteArray((byte[])val);
 
                 break;
 
             case GridBinaryMarshaller.SHORT_ARR:
-                writer.doWriteShortArray((short[])val);
+                writer.writeShortArray((short[])val);
 
                 break;
 
             case GridBinaryMarshaller.INT_ARR:
-                writer.doWriteIntArray((int[])val);
+                writer.writeIntArray((int[])val);
 
                 break;
 
             case GridBinaryMarshaller.LONG_ARR:
-                writer.doWriteLongArray((long[])val);
+                writer.writeLongArray((long[])val);
 
                 break;
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                writer.doWriteFloatArray((float[])val);
+                writer.writeFloatArray((float[])val);
 
                 break;
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])val);
+                writer.writeDoubleArray((double[])val);
 
                 break;
 
             case GridBinaryMarshaller.CHAR_ARR:
-                writer.doWriteCharArray((char[])val);
+                writer.writeCharArray((char[])val);
 
                 break;
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])val);
+                writer.writeBooleanArray((boolean[])val);
 
                 break;
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[])val);
+                writer.writeDecimalArray((BigDecimal[])val);
 
                 break;
 
             case GridBinaryMarshaller.STRING_ARR:
-                writer.doWriteStringArray((String[])val);
+                writer.writeStringArray((String[])val);
 
                 break;
 
             case GridBinaryMarshaller.UUID_ARR:
-                writer.doWriteUuidArray((UUID[])val);
+                writer.writeUuidArray((UUID[])val);
 
                 break;
 
             case GridBinaryMarshaller.DATE_ARR:
-                writer.doWriteDateArray((Date[])val);
+                writer.writeDateArray((Date[])val);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                writer.doWriteTimestampArray((Timestamp[])val);
+                writer.writeTimestampArray((Timestamp[])val);
 
                 break;
 
             case GridBinaryMarshaller.TIME_ARR:
-                writer.doWriteTimeArray((Time[])val);
+                writer.writeTimeArray((Time[])val);
 
                 break;
 
