@@ -189,7 +189,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
 
         new DumpReader(new DumpReaderConfiguration(
             CACHE_DUMP_NAME,
-            customSnpPath ? customSnapshotPath(U.defaultWorkDirectory(), CUSTOM_SNP_RELATIVE_PATH, false) : null,
+            snpDir(customSnpPath, U.defaultWorkDirectory(), false),
             node.configuration(),
             consumer
         ), log).run();

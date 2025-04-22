@@ -1,5 +1,6 @@
 package org.apache.ignite.compatibility.persistence;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,9 +47,6 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
     protected static final int ENTRIES_CNT_FOR_INCREMENT = 100;
 
     /** */
-    protected static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
-
-    /** */
     @Parameter
     public boolean incSnp;
 
@@ -88,8 +86,13 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
     }
 
     /** */
-    protected static String customSnapshotPath(String workDirPath, String snpPath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(workDirPath, snpPath, delIfExist).getAbsolutePath();
+    protected static String snpDir(boolean custom, String workDirPath, boolean delIfExist) throws IgniteCheckedException {
+        return U.resolveWorkDirectory(workDirPath, custom ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
+    }
+
+    /** */
+    protected static String snpPath(boolean custom, String workDirPath, String snpName) throws IgniteCheckedException {
+        return Paths.get(snpDir(custom, workDirPath, false), snpName).toString();
     }
 
     /**
@@ -112,7 +115,7 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
         private final CacheGroupInfo cacheGrpInfo;
 
         /** */
-        private String workDirectory;
+        private String workDir;
 
         /** */
         public ConfigurationClosure(
@@ -127,7 +130,7 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
             this.customSnpPath = customSnpPath;
             this.delIfExist = delIfExist;
             this.cacheGrpInfo = cacheGrpInfo;
-            workDirectory = U.defaultWorkDirectory();
+            workDir = U.defaultWorkDirectory();
         }
 
         /** */
@@ -137,16 +140,16 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
             boolean customSnpPath,
             boolean delIfExist,
             CacheGroupInfo cacheGrpInfo,
-            String workDirectory
+            String workDir
         ) throws IgniteCheckedException {
             this(incSnp, consId, customSnpPath, delIfExist, cacheGrpInfo);
 
-            this.workDirectory = workDirectory;
+            this.workDir = workDir;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
-            cfg.setWorkDirectory(workDirectory);
+            cfg.setWorkDirectory(workDir);
 
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
@@ -169,13 +172,11 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
                 );
             }
 
-            if (customSnpPath) {
-                try {
-                    cfg.setSnapshotPath(customSnapshotPath(workDirectory, CUSTOM_SNP_RELATIVE_PATH, delIfExist));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                cfg.setSnapshotPath(snpDir(customSnpPath, workDir, delIfExist));
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
             }
         }
     }
