@@ -53,14 +53,11 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinarySchemaRegistry;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -1101,39 +1098,6 @@ public class PlatformUtils {
      */
     public static String getFullStackTrace(Throwable throwable) {
         return X.getFullStackTrace(throwable);
-    }
-
-    /**
-     * Gets the schema.
-     *
-     * @param cacheObjProc Cache object processor.
-     * @param typeId Type id.
-     * @param schemaId Schema id.
-     */
-    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
-        assert cacheObjProc != null;
-
-        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
-        BinarySchema schema = schemaReg.schema(schemaId);
-
-        if (schema == null) {
-            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
-
-            if (meta != null) {
-                for (BinarySchema typeSchema : meta.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
-                        break;
-                    }
-                }
-            }
-
-            if (schema != null) {
-                schemaReg.addSchema(schemaId, schema);
-            }
-        }
-
-        return schema == null ? null : schema.fieldIds();
     }
 
     /**
