@@ -33,6 +33,15 @@ public interface PageEvictionTracker extends LifecycleAware {
     public void touchPage(long pageId) throws IgniteCheckedException;
 
     /**
+     * Call this method when data page containing fragment of row is written.
+     *
+     * @param pageId Page id.
+     * @param tailPageId Id of page containing the last row fragment (tail page).
+     * @throws IgniteCheckedException In case of page memory error.
+     */
+    public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException;
+
+    /**
      * Check if page eviction is required according to the configured policy.
      *
      * @return {@code True} if eviction required.

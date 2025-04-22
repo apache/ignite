@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionRe
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionPutLargeObjectsTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruNearEnabledPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionMultinodeTest;
@@ -90,6 +91,7 @@ public class IgniteCacheEvictionSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, Random2LruNearEnabledPageEvictionMultinodeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionWithRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionWithRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionPutLargeObjectsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageEvictionTouchOrderTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageEvictionReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageEvictionDataStreamerTest.class, ignoredTests);

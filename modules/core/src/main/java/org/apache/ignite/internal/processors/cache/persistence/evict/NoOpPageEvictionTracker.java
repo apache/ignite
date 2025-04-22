@@ -39,6 +39,11 @@ public class NoOpPageEvictionTracker implements PageEvictionTracker {
     }
 
     /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void evictDataPage() throws IgniteCheckedException {
         // No-op.
     }

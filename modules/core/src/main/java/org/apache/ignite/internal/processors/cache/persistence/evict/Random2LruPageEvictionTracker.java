@@ -94,6 +94,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
+            if (firstTs == -1)
+                break;
+
             int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L + 4);
 
             if (firstTs <= secondTs)
@@ -102,6 +105,30 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 success = GridUnsafe.compareAndSwapInt(
                     null, trackingArrPtr + trackingIdx * 8L + 4, secondTs, (int)latestTs);
             }
+        } while (!success);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        int tailPageIdx = PageIdUtils.pageIndex(tailPageId);
+
+        boolean success;
+
+        do {
+            int trackingIdx = trackingIdx(pageIdx);
+
+            int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+            if (firstTs == -1)
+                return;
+
+            success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8L, firstTs, -1);
+
+            if (success)
+                GridUnsafe.putInt(trackingArrPtr + trackingIdx * 8L + 4, tailPageIdx);
         } while (!success);
     }
 
@@ -124,6 +151,12 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
                 int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+                if (firstTs == -1) {
+                    trackingIdx = getHeadPageTrackingIdx(trackingIdx);
+
+                    firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                }
 
                 int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L + 4);
 
@@ -158,6 +191,28 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         }
 
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+    }
+
+    /**
+     * Find tracking index of head page of row spanning several pages.
+     *
+     * @param trackingIdx tracking index of page containing one of the row fragment.
+     * @return tracking index of head row page.
+     */
+    private int getHeadPageTrackingIdx(int trackingIdx) {
+        int headPageIdx = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L + 4);
+
+        int headPageTrackingIdx = trackingIdx(headPageIdx);
+
+        int first = GridUnsafe.getIntVolatile(null, trackingArrPtr + headPageTrackingIdx * 8L);
+
+        if (first == -1) {
+            headPageIdx = GridUnsafe.getIntVolatile(null, trackingArrPtr + headPageTrackingIdx * 8L + 4);
+
+            return trackingIdx(headPageIdx);
+        }
+        else
+            return headPageTrackingIdx;
     }
 
     /** {@inheritDoc} */

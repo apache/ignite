@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+/** */
 public class Random2LruPageEvictionPutLargeObjectsTest extends GridCommonAbstractTest {
     /** Offheap size for memory policy. */
     private static final int SIZE = 1024 * 1024 * 1024;
@@ -54,6 +55,9 @@ public class Random2LruPageEvictionPutLargeObjectsTest extends GridCommonAbstrac
         stopAllGrids();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     @WithSystemProperty(key = "IGNITE_DUMP_THREADS_ON_FAILURE", value = "false")
     public void testPutLargeObjects() throws Exception {
@@ -63,14 +67,14 @@ public class Random2LruPageEvictionPutLargeObjectsTest extends GridCommonAbstrac
 
         Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
-        TestObject testObject = new TestObject(RECORD_SIZE);
+        TestObject testObj = new TestObject(RECORD_SIZE);
 
         int counter = 0;
 
         for (int key = 1; key <= ENTRIES; key++) {
             // Skip keys local node is primary for to force async processing in system striped pool in the non-local node.
             if (!aff.isPrimary(ignite.localNode(), key)) {
-                cache.put(key, testObject);
+                cache.put(key, testObj);
 
                 counter++;
 

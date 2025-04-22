@@ -87,6 +87,11 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         return pageMem.loadedPages() > pagesThreshold && freeList.emptyDataPages() < regCfg.getEmptyPagesPoolSize();
     }
 
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException {
+        // No-op.
+    }
+
     /**
      * @param pageIdx Page index.
      * @return true if at least one data row has been evicted
