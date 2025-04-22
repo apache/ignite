@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
@@ -52,7 +53,7 @@ public class PredicateCollectionView<T> extends GridSerializableCollection<T> {
     /** {@inheritDoc} */
     @Override public boolean add(T e) {
         // Pass through (will fail for readonly).
-        return F.isAll(e, preds) && col.add(e);
+        return GridFunc.isAll(e, preds) && col.add(e);
     }
 
     /** {@inheritDoc} */

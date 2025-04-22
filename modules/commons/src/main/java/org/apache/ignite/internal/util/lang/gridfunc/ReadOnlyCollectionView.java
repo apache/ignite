@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.GridSerializableIterator;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,6 +84,6 @@ public class ReadOnlyCollectionView<T> extends GridSerializableCollection<T> {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj instanceof Collection && F.eqNotOrdered(this, (Collection)obj);
+        return obj instanceof Collection && GridFunc.eqNotOrdered(this, (Collection)obj);
     }
 }

@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static com.google.common.primitives.Booleans.asList;
+import static org.apache.ignite.internal.util.lang.GridFunc.asList;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 

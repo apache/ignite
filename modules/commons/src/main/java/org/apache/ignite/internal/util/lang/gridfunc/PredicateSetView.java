@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Set;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -70,7 +71,7 @@ public class PredicateSetView<K, V> extends GridSerializableMap<K, V> {
             @NotNull @Override public Iterator<Entry<K, V>> iterator() {
                 return new Iterator<Entry<K, V>>() {
 
-                    private Iterator<K> it = F.iterator0(set, true, entryPred);
+                    private Iterator<K> it = GridFunc.iterator0(set, true, entryPred);
 
                     @Override public boolean hasNext() {
                         return it.hasNext();
@@ -141,6 +142,6 @@ public class PredicateSetView<K, V> extends GridSerializableMap<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(Object key) {
-        return F.isAll((K)key, preds) && set.contains(key);
+        return GridFunc.isAll((K)key, preds) && set.contains(key);
     }
 }

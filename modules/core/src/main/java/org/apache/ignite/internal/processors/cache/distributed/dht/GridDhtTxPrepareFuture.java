@@ -423,7 +423,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
-                        if (!isEmpty(txEntry.entryProcessors())) {
+                        if (!F.isEmpty(txEntry.entryProcessors())) {
                             invoke = true;
 
                             if (txEntry.hasValue())
@@ -907,7 +907,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return Prepare response.
      */
     private GridNearTxPrepareResponse createPrepareResponse(@Nullable Throwable prepErr) {
-        assert isEmpty(tx.invalidPartitions());
+        assert F.isEmpty(tx.invalidPartitions());
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
             -1,
@@ -1099,7 +1099,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             boolean ser = tx.serializable() && tx.optimistic();
 
-            if (!isEmpty(req.writes()) || (ser && !isEmpty(req.reads()))) {
+            if (!F.isEmpty(req.writes()) || (ser && !F.isEmpty(req.reads()))) {
                 Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
 
                 for (IgniteTxEntry entry : req.writes())
@@ -1142,8 +1142,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         Map<Integer, Collection<KeyCacheObject>> map
     ) {
         if (retVal ||
-            !isEmpty(e.entryProcessors()) ||
-            !isEmpty(e.filters()) ||
+            !F.isEmpty(e.entryProcessors()) ||
+            !F.isEmpty(e.filters()) ||
             e.entryReadVersion() != null) {
             if (map == null)
                 map = new HashMap<>();
@@ -1167,7 +1167,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return Keys request future.
      */
     private IgniteInternalFuture<Object> forceRebalanceKeys(Map<Integer, Collection<KeyCacheObject>> keysMap) {
-        if (isEmpty(keysMap))
+        if (F.isEmpty(keysMap))
             return null;
 
         GridCompoundFuture<Object, Object> compFut = null;
@@ -1320,7 +1320,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             TxCounters counters = tx.txCounters(true);
 
             // Assign keys to primary nodes.
-            if (!isEmpty(req.writes())) {
+            if (!F.isEmpty(req.writes())) {
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
@@ -1337,7 +1337,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            if (!isEmpty(req.reads())) {
+            if (!F.isEmpty(req.reads())) {
                 for (IgniteTxEntry read : req.reads())
                     map(tx.entry(read.txKey()));
             }
@@ -1406,7 +1406,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<IgniteTxEntry> dhtWrites = dhtMapping.writes();
 
-            if (isEmpty(dhtWrites) && isEmpty(nearWrites))
+            if (F.isEmpty(dhtWrites) && isEmpty(nearWrites))
                 continue;
 
             MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
@@ -1467,7 +1467,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 idx++;
             }
 
-            if (!isEmpty(nearWrites)) {
+            if (!F.isEmpty(nearWrites)) {
                 for (IgniteTxEntry entry : nearWrites) {
                     try {
                         if (entry.explicitVersion() == null) {
@@ -1663,7 +1663,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 Collection<UUID> readers = cached.readers();
 
-                if (!isEmpty(readers)) {
+                if (!F.isEmpty(readers)) {
                     for (UUID readerId : readers) {
                         if (readerId.equals(tx.nearNodeId()))
                             continue;
@@ -1894,7 +1894,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 onError(res.error());
             else {
                 // Process evicted readers (no need to remap).
-                if (nearMapping != null && !isEmpty(res.nearEvicted())) {
+                if (nearMapping != null && !F.isEmpty(res.nearEvicted())) {
                     for (IgniteTxEntry entry : nearMapping.entries()) {
                         if (res.nearEvicted().contains(entry.txKey())) {
                             while (true) {
@@ -1921,7 +1921,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 // Process invalid partitions (no need to remap).
-                if (!isEmpty(res.invalidPartitionsByCacheId())) {
+                if (!F.isEmpty(res.invalidPartitionsByCacheId())) {
                     Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
 
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {

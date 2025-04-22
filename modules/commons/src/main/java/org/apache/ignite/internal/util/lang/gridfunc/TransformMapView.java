@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -75,7 +76,7 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
             @NotNull
             @Override public Iterator<Entry<K, V1>> iterator() {
                 return new Iterator<Entry<K, V1>>() {
-                    private Iterator<Entry<K, V>> iter = F.iterator0(map.entrySet(), true, entryPred);
+                    private Iterator<Entry<K, V>> iter = GridFunc.iterator0(map.entrySet(), true, entryPred);
 
                     @Override public boolean hasNext() {
                         return iter.hasNext();
@@ -130,7 +131,7 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
 
     /** {@inheritDoc} */
     @Nullable @Override public V1 get(Object key) {
-        if (F.isAll((K)key, preds)) {
+        if (GridFunc.isAll((K)key, preds)) {
             V v = map.get(key);
 
             if (v != null)
@@ -152,6 +153,6 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(Object key) {
-        return F.isAll((K)key, preds) && map.containsKey(key);
+        return GridFunc.isAll((K)key, preds) && map.containsKey(key);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.lang.gridfunc;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +46,7 @@ public class FlatCollectionWrapper<T> extends GridSerializableCollection<T> {
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<T> iterator() {
-        return F.flat((Iterable<? extends Iterable<T>>)cols);
+        return GridFunc.flat((Iterable<? extends Iterable<T>>)cols);
     }
 
     /** {@inheritDoc} */
