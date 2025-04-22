@@ -672,7 +672,7 @@ abstract class BinaryFieldAccessor {
                     break;
 
                 case BINARY_ENUM:
-                    writer.doWriteBinaryEnum((BinaryEnumObjectImpl)val);
+                    writer.writeBinaryEnum((BinaryEnumObjectImpl)val);
 
                     break;
 
