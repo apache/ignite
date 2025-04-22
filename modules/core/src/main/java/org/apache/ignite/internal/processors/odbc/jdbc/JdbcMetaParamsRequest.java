@@ -77,7 +77,7 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-         BinaryReaderEx reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);

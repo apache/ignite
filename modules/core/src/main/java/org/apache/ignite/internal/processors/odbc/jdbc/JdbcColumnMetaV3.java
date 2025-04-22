@@ -74,7 +74,7 @@ public class JdbcColumnMetaV3 extends JdbcColumnMetaV2 {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-         BinaryReaderEx reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) {
         super.readBinary(reader, protoCtx);

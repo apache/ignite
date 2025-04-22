@@ -32,7 +32,7 @@ public class BinaryObjectBuilders {
      * @param obj Object to convert to builder.
      * @return Builder instance.
      */
-    public static BinaryObjectBuilder toBuilder(BinaryObject obj) {
+    public static BinaryObjectBuilder builder(BinaryObject obj) {
         return BinaryObjectBuilderImpl.wrap(obj);
     }
 
@@ -41,7 +41,7 @@ public class BinaryObjectBuilders {
      * @param clsName Class name.
      * @return Builder instance.
      */
-    public static BinaryObjectBuilder createBuilder(BinaryContext binaryCtx, String clsName) {
+    public static BinaryObjectBuilder builder(BinaryContext binaryCtx, String clsName) {
         return new BinaryObjectBuilderImpl(binaryCtx, clsName);
     }
 

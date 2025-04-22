@@ -61,7 +61,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
      * @param protocolCtx Protocol context.
      */
     public ClientCacheSqlFieldsQueryRequest(BinaryReaderEx reader,
-                                            ClientProtocolContext protocolCtx) {
+        ClientProtocolContext protocolCtx) {
         super(reader);
 
         // Same request format as in JdbcQueryExecuteRequest.

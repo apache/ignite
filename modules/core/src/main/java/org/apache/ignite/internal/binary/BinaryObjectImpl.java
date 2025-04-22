@@ -912,7 +912,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Reader.
      */
     private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-                                  boolean forUnmarshal) {
+        boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
