@@ -179,38 +179,6 @@ public class BinaryUtils {
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
-    /** Binary classes. */
-    private static final Collection<Class<?>> BINARY_CLS = Set.of(
-        Byte.class,
-        Short.class,
-        Integer.class,
-        Long.class,
-        Float.class,
-        Double.class,
-        Character.class,
-        Boolean.class,
-        String.class,
-        UUID.class,
-        Date.class,
-        Timestamp.class,
-        Time.class,
-        BigDecimal.class,
-        byte[].class,
-        short[].class,
-        int[].class,
-        long[].class,
-        float[].class,
-        double[].class,
-        char[].class,
-        boolean[].class,
-        String[].class,
-        UUID[].class,
-        Date[].class,
-        Timestamp[].class,
-        Time[].class,
-        BigDecimal[].class
-    );
-
     /** Class for SingletonList obtained at runtime. */
     public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
 
@@ -679,7 +647,7 @@ public class BinaryUtils {
 
         return BinaryObject.class.isAssignableFrom(cls) ||
             Proxy.class.isAssignableFrom(cls) ||
-            BINARY_CLS.contains(cls);
+            FLAG_TO_CLASS.containsValue(cls);
     }
 
     /**
