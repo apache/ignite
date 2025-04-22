@@ -29,7 +29,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
 /**
@@ -69,7 +69,7 @@ public class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        return new BinaryObjectBuilderImpl(binaryContext(), typeName);
+        return BinaryObjectBuilders.builder(binaryContext(), typeName);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +77,7 @@ public class ClientBinary implements IgniteBinary {
         if (binaryObj == null)
             throw new NullPointerException("binaryObj");
 
-        return BinaryObjectBuilderImpl.wrap(binaryObj);
+        return BinaryObjectBuilders.builder(binaryObj);
     }
 
     /** {@inheritDoc} */

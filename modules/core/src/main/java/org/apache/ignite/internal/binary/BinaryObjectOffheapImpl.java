@@ -33,7 +33,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -443,7 +443,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilderImpl.wrap(heapCopy());
+        return BinaryObjectBuilders.builder(heapCopy());
     }
 
     /** {@inheritDoc} */

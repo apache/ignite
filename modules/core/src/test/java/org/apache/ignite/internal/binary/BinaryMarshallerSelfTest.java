@@ -80,7 +80,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -2503,7 +2503,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @return Copy.
      */
     private BinaryObject copy(BinaryObject po, Map<String, Object> fields) {
-        BinaryObjectBuilder builder = BinaryObjectBuilderImpl.wrap(po);
+        BinaryObjectBuilder builder = BinaryObjectBuilders.builder(po);
 
         if (fields != null) {
             for (Map.Entry<String, Object> e : fields.entrySet())
@@ -3042,7 +3042,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         marsh = binaryMarshaller();
 
         // Checking the builder.
-        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(binaryContext(marsh),
+        BinaryObjectBuilder builder = BinaryObjectBuilders.builder(binaryContext(marsh),
             "org.gridgain.foo.bar.TestClass");
 
         builder.setField("a", "1");
@@ -3726,7 +3726,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMarshaller m = binaryMarshaller();
 
-        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(binaryContext(m), "MyFakeClass");
+        BinaryObjectBuilder builder = BinaryObjectBuilders.builder(binaryContext(m), "MyFakeClass");
 
         String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
 
@@ -4245,7 +4245,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setBinaryContext(ctx, iCfg);
 
-        return new BinaryObjectBuilderImpl(ctx, typeName);
+        return BinaryObjectBuilders.builder(ctx, typeName);
     }
 
     /**
