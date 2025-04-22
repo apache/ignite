@@ -432,7 +432,7 @@ class ClientComputeImpl implements ClientCompute {
             if (err == null) {
                 try {
                     R res = payload == null ? null :
-                        utils.readObject(BinaryStreams.createInputStream(payload), false);
+                        utils.readObject(BinaryStreams.inputStream(payload), false);
 
                     fut.onDone(res);
                 }

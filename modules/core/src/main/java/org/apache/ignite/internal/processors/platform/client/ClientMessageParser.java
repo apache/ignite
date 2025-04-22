@@ -436,7 +436,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = BinaryStreams.createHeapInputStream(msg.payload());
+        BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
         BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), inStream,
@@ -740,7 +740,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientMessage encode(ClientListenerResponse resp) {
         assert resp != null;
 
-        BinaryOutputStream outStream = BinaryStreams.createPooledHeapOutputStream(32, false);
+        BinaryOutputStream outStream = BinaryStreams.createPooledOutputStream(32, false);
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
@@ -755,7 +755,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public int decodeCommandType(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = BinaryStreams.createHeapInputStream(msg.payload());
+        BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         return inStream.readShort();
     }

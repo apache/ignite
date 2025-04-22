@@ -99,7 +99,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(BinaryStreams.createOffheapInputStream(ptr + off, size));
+            String clsName = BinaryUtils.doReadClassName(BinaryStreams.inputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -389,7 +389,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
                 break;
 
             default:
-                BinaryInputStream stream = BinaryStreams.createOffheapInputStream(ptr, size);
+                BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
                 stream.position(fieldPos);
 
@@ -554,7 +554,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
-        BinaryInputStream stream = BinaryStreams.createOffheapInputStream(ptr, size);
+        BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
 

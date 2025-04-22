@@ -155,7 +155,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
                 return;
             }
 
-            BinaryInputStream res = BinaryStreams.createInputStream(msg);
+            BinaryInputStream res = BinaryStreams.inputStream(msg);
             try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, null, true, true)) {
                 byte reqType = reader.readByte();
 
@@ -223,7 +223,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
 
     /** */
     private ByteBuffer createMessage(Consumer<BinaryRawWriter> writerAction) {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.createThreadLocalHeapOutputStream(32), null, null)) {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(32), null, null)) {
             writer.writeInt(0);
 
             writerAction.accept(writer);

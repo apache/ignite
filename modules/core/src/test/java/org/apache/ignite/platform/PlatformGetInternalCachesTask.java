@@ -72,7 +72,7 @@ public class PlatformGetInternalCachesTask extends ComputeTaskAdapter<Object, by
             BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
             try (BinaryWriterExImpl writer
-                     = new BinaryWriterExImpl(ctx, BinaryStreams.createThreadLocalHeapOutputStream(512), null, null)) {
+                     = new BinaryWriterExImpl(ctx, BinaryStreams.outputStream(512), null, null)) {
                 Collection<IgniteInternalCache<?, ?>> caches = ign.cachesx();
 
                 writer.writeInt(caches.size());

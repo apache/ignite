@@ -103,7 +103,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param tlsCtx TLS context.
      */
     public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
-        this(ctx, BinaryStreams.createHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+        this(ctx, BinaryStreams.outputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
     }
 
     /**

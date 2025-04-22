@@ -87,7 +87,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
             OutputStream os = s.getOutputStream();
 
-            try (BinaryOutputStream bos = BinaryStreams.createThreadLocalHeapOutputStream(32)) {
+            try (BinaryOutputStream bos = BinaryStreams.outputStream(32)) {
                 bos.writeInt(1000); // Size.
 
                 os.write(bos.arrayCopy());

@@ -268,7 +268,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.unmarshal(BinaryStreams.createHeapInputStream(bytes, 0), ctx, clsLdr);
+            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes, 0), ctx, clsLdr);
         }
         finally {
             popContext(oldCtx);
@@ -304,7 +304,7 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return deserialize(BinaryStreams.createHeapInputStream(arr, 0), ldr, null);
+        return deserialize(BinaryStreams.inputStream(arr, 0), ldr, null);
     }
 
     /**

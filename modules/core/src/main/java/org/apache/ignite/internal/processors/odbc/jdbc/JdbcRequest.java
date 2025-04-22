@@ -291,7 +291,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
      * @return Request Id.
      */
     public static long readRequestId(byte[] msg) {
-        BinaryInputStream stream = BinaryStreams.createHeapInputStream(msg);
+        BinaryInputStream stream = BinaryStreams.inputStream(msg);
 
         stream.position(1);
 
