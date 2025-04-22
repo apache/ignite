@@ -31,7 +31,6 @@ import java.util.Map;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -371,10 +370,7 @@ public class DmlUtils {
 
             Object key = row.get(0);
 
-            ClusterNode node = snd.primaryNodeByKey(key);
-
-            IgniteInClosure<MutableEntry<Object, Object>> rmvC =
-                DmlStatementsProcessor.getRemoveClosure(node, key);
+            IgniteInClosure<MutableEntry<Object, Object>> rmvC = DmlStatementsProcessor.RMV;
 
             snd.add(
                 key,

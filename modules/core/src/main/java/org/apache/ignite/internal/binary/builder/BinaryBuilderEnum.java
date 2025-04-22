@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
+class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     /** */
     private final int ordinal;
 

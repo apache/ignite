@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -62,7 +60,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @return Reader.
      */
     protected BinaryReaderExImpl createReader(ClientMessage msg) {
-        BinaryInputStream stream = new BinaryHeapInputStream(msg.payload());
+        BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
         return new BinaryReaderExImpl(binCtx, stream, ctx.config().getClassLoader(), true);
     }
@@ -72,8 +70,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @return Writer.
      */
     protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(binCtx, new BinaryHeapOutputStream(cap),
-            BinaryThreadLocalContext.get().schemaHolder(), null);
+        return new BinaryWriterExImpl(binCtx, BinaryStreams.outputStream(cap), null);
     }
 
     /** {@inheritDoc} */

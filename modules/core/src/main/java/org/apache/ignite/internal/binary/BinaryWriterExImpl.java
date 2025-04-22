@@ -35,15 +35,15 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
  * Binary writer implementation.
@@ -103,7 +103,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param tlsCtx TLS context.
      */
     public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
-        this(ctx, new BinaryHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+        this(ctx, BinaryStreams.outputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
     }
 
     /**
@@ -111,8 +111,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param out Output stream.
      * @param handles Handles.
      */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
-        BinaryWriterHandles handles) {
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterHandles handles) {
+        this(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), handles);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @param handles Handles.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema, BinaryWriterHandles handles) {
         this.ctx = ctx;
         this.out = out;
         this.schema = schema;
@@ -404,7 +412,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val String value.
      */
-    public void doWriteDecimal(@Nullable BigDecimal val) {
+    private void doWriteDecimal(@Nullable BigDecimal val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -434,7 +442,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val String value.
      */
-    public void doWriteString(@Nullable String val) {
+    private void doWriteString(@Nullable String val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -456,7 +464,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param uuid UUID.
      */
-    public void doWriteUuid(@Nullable UUID uuid) {
+    private void doWriteUuid(@Nullable UUID uuid) {
         if (uuid == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -470,7 +478,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param date Date.
      */
-    public void doWriteDate(@Nullable Date date) {
+    private void doWriteDate(@Nullable Date date) {
         if (date == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -483,7 +491,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param ts Timestamp.
      */
-    public void doWriteTimestamp(@Nullable Timestamp ts) {
+    private void doWriteTimestamp(@Nullable Timestamp ts) {
         if (ts == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -497,7 +505,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param time Time.
      */
-    public void doWriteTime(@Nullable Time time) {
+    private void doWriteTime(@Nullable Time time) {
         if (time == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -513,7 +521,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param obj Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void doWriteObject(@Nullable Object obj) throws BinaryObjectException {
+    private void doWriteObject(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -528,7 +536,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Byte array.
      */
-    void doWriteByteArray(@Nullable byte[] val) {
+    private void doWriteByteArray(@Nullable byte[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -543,7 +551,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Short array.
      */
-    void doWriteShortArray(@Nullable short[] val) {
+    private void doWriteShortArray(@Nullable short[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -558,7 +566,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Integer array.
      */
-    void doWriteIntArray(@Nullable int[] val) {
+    private void doWriteIntArray(@Nullable int[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -573,7 +581,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Long array.
      */
-    void doWriteLongArray(@Nullable long[] val) {
+    private void doWriteLongArray(@Nullable long[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -588,7 +596,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Float array.
      */
-    void doWriteFloatArray(@Nullable float[] val) {
+    private void doWriteFloatArray(@Nullable float[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -603,7 +611,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Double array.
      */
-    void doWriteDoubleArray(@Nullable double[] val) {
+    private void doWriteDoubleArray(@Nullable double[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -618,7 +626,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Char array.
      */
-    void doWriteCharArray(@Nullable char[] val) {
+    private void doWriteCharArray(@Nullable char[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -633,7 +641,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Boolean array.
      */
-    void doWriteBooleanArray(@Nullable boolean[] val) {
+    private void doWriteBooleanArray(@Nullable boolean[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -648,7 +656,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Array of strings.
      */
-    void doWriteDecimalArray(@Nullable BigDecimal[] val) {
+    private void doWriteDecimalArray(@Nullable BigDecimal[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -680,7 +688,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Array of UUIDs.
      */
-    void doWriteUuidArray(@Nullable UUID[] val) {
+    private void doWriteUuidArray(@Nullable UUID[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -696,7 +704,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Array of dates.
      */
-    void doWriteDateArray(@Nullable Date[] val) {
+    private void doWriteDateArray(@Nullable Date[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -712,7 +720,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Array of timestamps.
      */
-    void doWriteTimestampArray(@Nullable Timestamp[] val) {
+    private void doWriteTimestampArray(@Nullable Timestamp[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -728,7 +736,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Array of time.
      */
-    void doWriteTimeArray(@Nullable Time[] val) {
+    private void doWriteTimeArray(@Nullable Time[] val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -745,7 +753,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Array of objects.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void doWriteObjectArray(@Nullable Object[] val) throws BinaryObjectException {
+    private void doWriteObjectArray(@Nullable Object[] val) throws BinaryObjectException {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -807,7 +815,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param col Collection.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void doWriteCollection(@Nullable Collection<?> col) throws BinaryObjectException {
+    private void doWriteCollection(@Nullable Collection<?> col) throws BinaryObjectException {
         if (col == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -828,7 +836,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param map Map.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void doWriteMap(@Nullable Map<?, ?> map) throws BinaryObjectException {
+    private void doWriteMap(@Nullable Map<?, ?> map) throws BinaryObjectException {
         if (map == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -850,7 +858,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void doWriteEnum(@Nullable Enum<?> val) {
+    private void doWriteEnum(@Nullable Enum<?> val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -935,7 +943,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Class.
      */
-    void doWriteClass(@Nullable Class val) {
+    private void doWriteClass(@Nullable Class val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -990,7 +998,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param po Binary object.
      */
-    public void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
+    private void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -1028,7 +1036,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Class.
      */
-    void writeClassField(@Nullable Class val) {
+    void writeClass(@Nullable Class val) {
         doWriteClass(val);
     }
 
@@ -1173,48 +1181,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param val Value.
-     */
-    void writeDecimalField(@Nullable BigDecimal val) {
-        doWriteDecimal(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeStringField(@Nullable String val) {
-        doWriteString(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeUuidField(@Nullable UUID val) {
-        doWriteUuid(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeDateField(@Nullable Date val) {
-        doWriteDate(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeTimestampField(@Nullable Timestamp val) {
-        doWriteTimestamp(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeTimeField(@Nullable Time val) {
-        doWriteTime(val);
-    }
-
-    /**
      * @param obj Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
@@ -1223,146 +1189,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param val Value.
-     */
-    void writeByteArrayField(@Nullable byte[] val) {
-        doWriteByteArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeShortArrayField(@Nullable short[] val) {
-        doWriteShortArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeIntArrayField(@Nullable int[] val) {
-        doWriteIntArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeLongArrayField(@Nullable long[] val) {
-        doWriteLongArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeFloatArrayField(@Nullable float[] val) {
-        doWriteFloatArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeDoubleArrayField(@Nullable double[] val) {
-        doWriteDoubleArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeCharArrayField(@Nullable char[] val) {
-        doWriteCharArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeBooleanArrayField(@Nullable boolean[] val) {
-        doWriteBooleanArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeDecimalArrayField(@Nullable BigDecimal[] val) {
-        doWriteDecimalArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeStringArrayField(@Nullable String[] val) {
-        doWriteStringArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeUuidArrayField(@Nullable UUID[] val) {
-        doWriteUuidArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeDateArrayField(@Nullable Date[] val) {
-        doWriteDateArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeTimestampArrayField(@Nullable Timestamp[] val) {
-        doWriteTimestampArray(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeTimeArrayField(@Nullable Time[] val) {
-        doWriteTimeArray(val);
-    }
-
-    /**
-     * @param val Value.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    void writeObjectArrayField(@Nullable Object[] val) throws BinaryObjectException {
-        doWriteObjectArray(val);
-    }
-
-    /**
-     * @param col Collection.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    void writeCollectionField(@Nullable Collection<?> col) throws BinaryObjectException {
-        doWriteCollection(col);
-    }
-
-    /**
-     * @param map Map.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    void writeMapField(@Nullable Map<?, ?> map) throws BinaryObjectException {
-        doWriteMap(map);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeEnumField(@Nullable Enum<?> val) {
-        doWriteEnum(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeEnumArrayField(@Nullable Object[] val) {
-        doWriteEnumArray(val);
-    }
-
-    /**
      * @param po Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void writeBinaryObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+    public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
         doWriteBinaryObject(po);
     }
 
@@ -1457,7 +1287,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDecimal(String fieldName, @Nullable BigDecimal val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeDecimalField(val);
+        writeDecimal(val);
     }
 
     /** {@inheritDoc} */
@@ -1468,7 +1298,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeString(String fieldName, @Nullable String val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeStringField(val);
+        writeString(val);
     }
 
     /** {@inheritDoc} */
@@ -1479,7 +1309,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeUuid(String fieldName, @Nullable UUID val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeUuidField(val);
+        writeUuid(val);
     }
 
     /** {@inheritDoc} */
@@ -1490,7 +1320,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDate(String fieldName, @Nullable Date val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeDateField(val);
+        writeDate(val);
     }
 
     /** {@inheritDoc} */
@@ -1501,7 +1331,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeTimestampField(val);
+        writeTimestamp(val);
     }
 
     /** {@inheritDoc} */
@@ -1512,7 +1342,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeTimeField(val);
+        writeTime(val);
     }
 
     /** {@inheritDoc} */
@@ -1547,7 +1377,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeByteArrayField(val);
+        writeByteArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1558,7 +1388,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeShortArrayField(val);
+        writeShortArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1569,7 +1399,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeIntArrayField(val);
+        writeIntArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1580,7 +1410,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeLongArrayField(val);
+        writeLongArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1591,7 +1421,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeFloatArrayField(val);
+        writeFloatArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1603,7 +1433,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeDoubleArray(String fieldName, @Nullable double[] val)
         throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeDoubleArrayField(val);
+        writeDoubleArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1614,7 +1444,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeCharArrayField(val);
+        writeCharArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1626,7 +1456,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val)
         throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeBooleanArrayField(val);
+        writeBooleanArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1638,7 +1468,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeDecimalArray(String fieldName, @Nullable BigDecimal[] val)
         throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeDecimalArrayField(val);
+        writeDecimalArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1650,7 +1480,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeStringArray(String fieldName, @Nullable String[] val)
         throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeStringArrayField(val);
+        writeStringArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1661,7 +1491,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeUuidArrayField(val);
+        writeUuidArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1672,7 +1502,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeDateArrayField(val);
+        writeDateArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1683,7 +1513,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeTimestampArrayField(val);
+        writeTimestampArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1694,7 +1524,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeTimeArrayField(val);
+        writeTimeArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1705,7 +1535,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeObjectArrayField(val);
+        writeObjectArray(val);
     }
 
     /** {@inheritDoc} */
@@ -1717,7 +1547,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col)
         throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeCollectionField(col);
+        writeCollection(col);
     }
 
     /** {@inheritDoc} */
@@ -1729,7 +1559,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map)
         throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeMapField(map);
+        writeMap(map);
     }
 
     /** {@inheritDoc} */
@@ -1740,7 +1570,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeEnumField(val);
+        writeEnum(val);
     }
 
     /** {@inheritDoc} */
@@ -1751,7 +1581,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeEnumArrayField(val);
+        doWriteEnumArray(val);
     }
 
     /** {@inheritDoc} */

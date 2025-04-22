@@ -18,35 +18,37 @@
 package org.apache.ignite.internal.util.typedef;
 
 import java.io.Externalizable;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.lang.GridTuple5;
 
 /**
- * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteBiTuple} by extending it. Since Java doesn't provide type aliases
+ * Defines {@code alias} for {@link GridTuple5} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link org.apache.ignite.lang.IgniteBiTuple}.
+ * concise code in cases when readability won't be sacrificed. For more information see {@link GridTuple5}.
  * @see GridFunc
  * @see GridTuple
  */
-public class T2<V1, V2> extends IgniteBiTuple<V1, V2> {
+public class T5<V1, V2, V3, V4, V5> extends GridTuple5<V1, V2, V3, V4, V5> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public T2() {
+    public T5() {
         // No-op.
     }
 
     /**
      * Fully initializes this tuple.
      *
-     * @param val1 First value.
-     * @param val2 Second value.
+     * @param v1 First value.
+     * @param v2 Second value.
+     * @param v3 Third value.
+     * @param v4 Forth value.
+     * @param v5 Fifth value.
      */
-    public T2(V1 val1, V2 val2) {
-        super(val1, val2);
+    public T5(V1 v1, V2 v2, V3 v3, V4 v4, V5 v5) {
+        super(v1, v2, v3, v4, v5);
     }
 }

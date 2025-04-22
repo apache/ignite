@@ -32,7 +32,8 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -40,7 +41,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  *
  */
-public class BinaryBuilderReader implements BinaryPositionReadable {
+class BinaryBuilderReader implements BinaryPositionReadable {
     /** */
     private final BinaryContext ctx;
 
@@ -67,7 +68,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         pos = objImpl.start();
 
         reader = new BinaryReaderExImpl(ctx,
-            BinaryHeapInputStream.create(arr, pos),
+            BinaryStreams.inputStream(arr, pos),
             ctx.configuration().getClassLoader(),
             false);
 
@@ -86,7 +87,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         this.pos = start;
 
         reader = new BinaryReaderExImpl(ctx,
-            BinaryHeapInputStream.create(arr, start),
+            BinaryStreams.inputStream(arr, start),
             null,
             other.reader.handles(),
             false);
@@ -497,7 +498,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.OPTM_MARSH: {
-                final BinaryHeapInputStream bin = BinaryHeapInputStream.create(arr, pos + 1);
+                final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos + 1);
 
                 final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
 
@@ -849,7 +850,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.OPTM_MARSH: {
-                final BinaryHeapInputStream bin = BinaryHeapInputStream.create(arr, pos);
+                final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos);
 
                 final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
 

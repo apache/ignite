@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.internal.binary.builder;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -57,9 +57,11 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
+import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
-import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
@@ -939,7 +941,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         BinaryObject bo = mutableObj.build();
 
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
+        assertEquals(BinaryObjectTestUtils.binaryArrayIdentityResolverHashCode(bo), bo.hashCode());
     }
 
     /**

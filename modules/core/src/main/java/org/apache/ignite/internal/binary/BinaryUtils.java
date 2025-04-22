@@ -54,6 +54,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -69,7 +71,8 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -80,12 +83,18 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
+import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
  * Binary utils.
  */
 public class BinaryUtils {
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
+    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
+
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
+    public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
+
     /**
      * Actual file name "{type_id}.classname{platform_id}".
      * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}
@@ -103,7 +112,10 @@ public class BinaryUtils {
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
     /** Map from class to associated write replacer. */
-    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
+    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
+        TreeMap.class, new BinaryTreeMapWriteReplacer(),
+        TreeSet.class, new BinaryTreeSetWriteReplacer()
+    );
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
@@ -147,10 +159,6 @@ public class BinaryUtils {
 
     /** Field ID length. */
     public static final int FIELD_ID_LEN = 4;
-
-    /** Whether to skip TreeMap/TreeSet wrapping. */
-    public static final boolean WRAP_TREES =
-        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
@@ -292,11 +300,6 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
-
-        if (wrapTrees()) {
-            CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
-            CLS_TO_WRITE_REPLACER.put(TreeSet.class, new BinaryTreeSetWriteReplacer());
-        }
     }
 
     /**
@@ -452,102 +455,102 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                writer.doWriteDecimal((BigDecimal)val);
+                writer.writeDecimal((BigDecimal)val);
 
                 break;
 
             case GridBinaryMarshaller.STRING:
-                writer.doWriteString((String)val);
+                writer.writeString((String)val);
 
                 break;
 
             case GridBinaryMarshaller.UUID:
-                writer.doWriteUuid((UUID)val);
+                writer.writeUuid((UUID)val);
 
                 break;
 
             case GridBinaryMarshaller.DATE:
-                writer.doWriteDate((Date)val);
+                writer.writeDate((Date)val);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP:
-                writer.doWriteTimestamp((Timestamp)val);
+                writer.writeTimestamp((Timestamp)val);
 
                 break;
 
             case GridBinaryMarshaller.TIME:
-                writer.doWriteTime((Time)val);
+                writer.writeTime((Time)val);
 
                 break;
 
             case GridBinaryMarshaller.BYTE_ARR:
-                writer.doWriteByteArray((byte[])val);
+                writer.writeByteArray((byte[])val);
 
                 break;
 
             case GridBinaryMarshaller.SHORT_ARR:
-                writer.doWriteShortArray((short[])val);
+                writer.writeShortArray((short[])val);
 
                 break;
 
             case GridBinaryMarshaller.INT_ARR:
-                writer.doWriteIntArray((int[])val);
+                writer.writeIntArray((int[])val);
 
                 break;
 
             case GridBinaryMarshaller.LONG_ARR:
-                writer.doWriteLongArray((long[])val);
+                writer.writeLongArray((long[])val);
 
                 break;
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                writer.doWriteFloatArray((float[])val);
+                writer.writeFloatArray((float[])val);
 
                 break;
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])val);
+                writer.writeDoubleArray((double[])val);
 
                 break;
 
             case GridBinaryMarshaller.CHAR_ARR:
-                writer.doWriteCharArray((char[])val);
+                writer.writeCharArray((char[])val);
 
                 break;
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])val);
+                writer.writeBooleanArray((boolean[])val);
 
                 break;
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[])val);
+                writer.writeDecimalArray((BigDecimal[])val);
 
                 break;
 
             case GridBinaryMarshaller.STRING_ARR:
-                writer.doWriteStringArray((String[])val);
+                writer.writeStringArray((String[])val);
 
                 break;
 
             case GridBinaryMarshaller.UUID_ARR:
-                writer.doWriteUuidArray((UUID[])val);
+                writer.writeUuidArray((UUID[])val);
 
                 break;
 
             case GridBinaryMarshaller.DATE_ARR:
-                writer.doWriteDateArray((Date[])val);
+                writer.writeDateArray((Date[])val);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                writer.doWriteTimestampArray((Timestamp[])val);
+                writer.writeTimestampArray((Timestamp[])val);
 
                 break;
 
             case GridBinaryMarshaller.TIME_ARR:
-                writer.doWriteTimeArray((Time[])val);
+                writer.writeTimeArray((Time[])val);
 
                 break;
 
@@ -563,6 +566,17 @@ public class BinaryUtils {
     public static Object unwrapLazy(@Nullable Object obj) {
         if (obj instanceof BinaryLazyValue)
             return ((BinaryLazyValue)obj).value();
+
+        return obj;
+    }
+
+    /**
+     * @param obj Value to unwrap.
+     * @return Unwrapped value.
+     */
+    public static Object unwrapTemporary(Object obj) {
+        if (obj instanceof BinaryObjectOffheapImpl)
+            return ((BinaryObjectOffheapImpl)obj).heapCopy();
 
         return obj;
     }
@@ -652,13 +666,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Whether tree structures should be wrapped.
-     */
-    public static boolean wrapTrees() {
-        return WRAP_TREES;
-    }
-
-    /**
      * @param map Map to check.
      * @return {@code True} if this map type is supported.
      */
@@ -667,7 +674,6 @@ public class BinaryUtils {
 
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
-            (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap.class;
     }
 
@@ -684,8 +690,6 @@ public class BinaryUtils {
             return U.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
-        else if (!wrapTrees() && cls == TreeMap.class)
-            return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(((Map)map).size());
 
@@ -719,7 +723,6 @@ public class BinaryUtils {
 
         return cls == HashSet.class ||
             cls == LinkedHashSet.class ||
-            (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class ||
@@ -763,8 +766,6 @@ public class BinaryUtils {
             return U.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
-        else if (!wrapTrees() && cls == TreeSet.class)
-            return new TreeSet<>(((TreeSet<Object>)col).comparator());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
         else if (cls == ArrayList.class)
@@ -2541,14 +2542,6 @@ public class BinaryUtils {
         return ctx.metadata(obj.typeId());
     }
 
-    /**
-     * @param typeId Type id.
-     * @return Binary metadata file name.
-     */
-    public static String binaryMetaFileName(int typeId) {
-        return typeId + FILE_SUFFIX;
-    }
-
     /** @param fileName Name of file with marshaller mapping information. */
     public static int mappedTypeId(String fileName) {
         try {
@@ -2595,16 +2588,6 @@ public class BinaryUtils {
      */
     public static String mappingFileName(byte platformId, int typeId) {
         return typeId + MAPPING_FILE_EXTENSION + platformId;
-    }
-
-    /**
-     * @param fileName File name.
-     * @return Type id
-     * @see #binaryMetaFileName(int)
-     * @see NodeFileTree#FILE_SUFFIX
-     */
-    public static int typeId(String fileName) {
-        return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
     /**
@@ -2720,6 +2703,80 @@ public class BinaryUtils {
         return obj instanceof BinaryObject
             ? ((BinaryObject)obj).type().typeName()
             : obj == null ? null : obj.getClass().getSimpleName();
+    }
+
+    /**
+     * Clears binary caches.
+     */
+    public static void clearCache() {
+        BinaryEnumCache.clear();
+    }
+
+    /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null)
+                schemaReg.addSchema(schemaId, schema);
+        }
+
+        return schema == null ? null : schema.fieldIds();
+    }
+
+    /**
+     * @return Unwrap function for object size calculation.
+     */
+    public static Map<Class<?>, Function<Object, Object>> unwrapFuncForSizeCalc() {
+        return Map.of(
+            BinaryArray.class, bo -> ((BinaryArray)bo).array(),
+            BinaryEnumArray.class, bo -> ((BinaryArray)bo).array()
+        );
+    }
+
+    /**
+     * @return Map of function returning size of the object.
+     */
+    public static Map<Class<?>, ToIntFunction<Object>> sizeProviders() {
+        return Map.of(
+            BinaryObjectOffheapImpl.class, obj -> 0, // No extra heap memory.
+            BinaryObjectImpl.class, new ToIntFunction<>() {
+                private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
+
+                @Override public int applyAsInt(Object bo) {
+                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).array().length);
+                }
+            },
+            BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
+        );
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryEnumArray}.
+     */
+    public static boolean isBinaryEnumArray(Object val) {
+        return val instanceof BinaryEnumArray;
     }
 
     /**

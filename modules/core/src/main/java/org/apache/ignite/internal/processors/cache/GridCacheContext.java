@@ -48,8 +48,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -62,7 +60,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
@@ -2226,30 +2223,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
-    }
-
-    /**
-     * Prepare affinity field for builder (if possible).
-     *
-     * @param builder Builder.
-     */
-    public void prepareAffinityField(BinaryObjectBuilder builder) {
-        assert builder instanceof BinaryObjectBuilderImpl;
-
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
-
-        if (!cacheObjCtx.customAffinityMapper()) {
-            CacheDefaultBinaryAffinityKeyMapper mapper =
-                (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
-
-            BinaryField field = mapper.affinityKeyField(builder0.typeId());
-
-            if (field != null) {
-                String fieldName = field.name();
-
-                builder0.affinityFieldName(fieldName);
-            }
-        }
     }
 
     /**

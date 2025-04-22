@@ -22,7 +22,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -119,7 +118,7 @@ class BinaryBuilderSerializer {
             writer.writeInt(obj.typeId());
 
             if (obj.typeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                writer.doWriteString(obj.className());
+                writer.writeString(obj.className());
 
             writer.writeInt(obj.enumOrdinal());
 
@@ -181,7 +180,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof BinaryEnumArray) {
+        if (BinaryUtils.isBinaryEnumArray(val)) {
             BinaryArray val0 = (BinaryArray)val;
 
             if (val0.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
@@ -234,7 +233,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        writer.doWriteObject(val);
+        writer.writeObject(val);
     }
 
     /**

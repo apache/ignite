@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
 import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
 /**
  * Contains thread-local data for binary marshalling.
  */
-public class BinaryThreadLocalContext {
+class BinaryThreadLocalContext {
     /** Thread-local instance. */
     private static final ThreadLocal<BinaryThreadLocalContext> CTX = new ThreadLocal<BinaryThreadLocalContext>() {
         @Override protected BinaryThreadLocalContext initialValue() {
@@ -32,7 +32,7 @@ public class BinaryThreadLocalContext {
     };
 
     /** Memory chunk. */
-    private final BinaryMemoryAllocatorChunk chunk = BinaryMemoryAllocator.THREAD_LOCAL.chunk();
+    private final BinaryMemoryAllocatorChunk chunk = BinaryStreams.threadLocalChunk();
 
     /** Schema holder. */
     private final BinaryWriterSchemaHolder schema = new BinaryWriterSchemaHolder();

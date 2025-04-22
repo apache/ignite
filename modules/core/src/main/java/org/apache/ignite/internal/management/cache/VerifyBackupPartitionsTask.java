@@ -345,11 +345,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
-
                 ForkJoinPool pool = poolSupplier.get();
 
-                for (GridDhtLocalPartition part : parts)
+                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));
             }
 

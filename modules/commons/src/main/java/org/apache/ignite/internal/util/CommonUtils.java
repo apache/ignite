@@ -27,6 +27,15 @@ import org.jetbrains.annotations.Nullable;
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
 public abstract class CommonUtils {
+    /**
+     * The maximum size of array to allocate.
+     * Some VMs reserve some header words in an array.
+     * Attempts to allocate larger arrays may result in
+     * OutOfMemoryError: Requested array size exceeds VM limit
+     * @see java.util.ArrayList#MAX_ARRAY_SIZE
+     */
+    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;
 

@@ -34,8 +34,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
@@ -366,7 +365,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ctx.configure(marsh);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(msg.payload()), null, true);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 
@@ -384,7 +383,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(8), null, null);
 
         byte clientType = reader.readByte();
 
@@ -435,7 +434,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             writer.writeShort((short)0);
             writer.writeShort((short)0);
 
-            writer.doWriteString(authEx.getMessage());
+            writer.writeString(authEx.getMessage());
 
             if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
                 writer.writeInt(ClientStatus.AUTH_FAILED);
@@ -459,7 +458,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             writer.writeShort(currVer.minor());
             writer.writeShort(currVer.maintenance());
 
-            writer.doWriteString(e.getMessage());
+            writer.writeString(e.getMessage());
 
             if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0) {
                 writer.writeInt(e instanceof ClientConnectionNodeRecoveryException

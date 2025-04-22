@@ -65,7 +65,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
@@ -459,7 +459,7 @@ public class IgniteMock implements IgniteEx {
 
             /** {@inheritDoc} */
             @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
-                return new BinaryObjectBuilderImpl(ctx, typeName);
+                return BinaryObjectBuilders.builder(ctx, typeName);
             }
         };
 
