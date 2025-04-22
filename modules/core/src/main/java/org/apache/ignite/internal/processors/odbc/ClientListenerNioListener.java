@@ -435,7 +435,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             writer.writeShort((short)0);
             writer.writeShort((short)0);
 
-            writer.doWriteString(authEx.getMessage());
+            writer.writeString(authEx.getMessage());
 
             if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
                 writer.writeInt(ClientStatus.AUTH_FAILED);
@@ -459,7 +459,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             writer.writeShort(currVer.minor());
             writer.writeShort(currVer.maintenance());
 
-            writer.doWriteString(e.getMessage());
+            writer.writeString(e.getMessage());
 
             if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0) {
                 writer.writeInt(e instanceof ClientConnectionNodeRecoveryException
