@@ -50,7 +50,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
@@ -127,7 +127,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param col Collection to write.
      */
-    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col) {
+    public static <T> void writeNullableCollection(BinaryWriterEx writer, @Nullable Collection<T> col) {
         writeNullableCollection(writer, col, null, null);
     }
 
@@ -138,8 +138,8 @@ public class PlatformUtils {
      * @param col Collection to write.
      * @param writeClo Writer closure.
      */
-    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col,
-        @Nullable PlatformWriterClosure<T> writeClo) {
+    public static <T> void writeNullableCollection(BinaryWriterEx writer, @Nullable Collection<T> col,
+                                                   @Nullable PlatformWriterClosure<T> writeClo) {
         writeNullableCollection(writer, col, writeClo, null);
     }
 
@@ -151,8 +151,8 @@ public class PlatformUtils {
      * @param writeClo Optional writer closure.
      * @param filter Optional filter.
      */
-    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col,
-        @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
+    public static <T> void writeNullableCollection(BinaryWriterEx writer, @Nullable Collection<T> col,
+                                                   @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
         if (col != null) {
             writer.writeBoolean(true);
 
@@ -168,7 +168,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param col Collection to write.
      */
-    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col) {
+    public static <T> void writeCollection(BinaryWriterEx writer, Collection<T> col) {
         writeCollection(writer, col, null, null);
     }
 
@@ -179,8 +179,8 @@ public class PlatformUtils {
      * @param col Collection to write.
      * @param writeClo Writer closure.
      */
-    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col,
-        @Nullable PlatformWriterClosure<T> writeClo) {
+    public static <T> void writeCollection(BinaryWriterEx writer, Collection<T> col,
+                                           @Nullable PlatformWriterClosure<T> writeClo) {
         writeCollection(writer, col, writeClo, null);
     }
 
@@ -192,8 +192,8 @@ public class PlatformUtils {
      * @param writeClo Optional writer closure.
      * @param filter Optional filter.
      */
-    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col,
-        @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
+    public static <T> void writeCollection(BinaryWriterEx writer, Collection<T> col,
+                                           @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
         assert col != null;
 
         if (filter == null) {
@@ -233,7 +233,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param map Map to write.
      */
-    public static <K, V> void writeNullableMap(BinaryRawWriterEx writer, @Nullable Map<K, V> map) {
+    public static <K, V> void writeNullableMap(BinaryWriterEx writer, @Nullable Map<K, V> map) {
         if (map != null) {
             writer.writeBoolean(true);
 
@@ -249,7 +249,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param map Map to write.
      */
-    public static <K, V> void writeMap(BinaryRawWriterEx writer, Map<K, V> map) {
+    public static <K, V> void writeMap(BinaryWriterEx writer, Map<K, V> map) {
         assert map != null;
 
         writeMap(writer, map, null);
@@ -262,8 +262,8 @@ public class PlatformUtils {
      * @param map Map to write.
      * @param writeClo Writer closure.
      */
-    public static <K, V> void writeMap(BinaryRawWriterEx writer, Map<K, V> map,
-        @Nullable PlatformWriterBiClosure<K, V> writeClo) {
+    public static <K, V> void writeMap(BinaryWriterEx writer, Map<K, V> map,
+                                       @Nullable PlatformWriterBiClosure<K, V> writeClo) {
         assert map != null;
 
         writer.writeInt(map.size());
@@ -449,7 +449,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param val Values.
      */
-    public static void writeIgniteUuid(BinaryRawWriterEx writer, IgniteUuid val) {
+    public static void writeIgniteUuid(BinaryWriterEx writer, IgniteUuid val) {
         if (val == null)
             writer.writeUuid(null);
         else {
@@ -542,7 +542,7 @@ public class PlatformUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeLong(lsnrPtr);
 
@@ -615,7 +615,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param evt Event.
      */
-    private static void writeCacheEntryEvent(BinaryRawWriterEx writer, CacheEntryEvent evt) {
+    private static void writeCacheEntryEvent(BinaryWriterEx writer, CacheEntryEvent evt) {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
@@ -627,7 +627,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param evtType Type of event.
      */
-    private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
+    private static void writeEventType(BinaryWriterEx writer, EventType evtType) {
         switch (evtType) {
             case CREATED: writer.writeByte((byte)0); break;
             case UPDATED: writer.writeByte((byte)1); break;
@@ -644,7 +644,7 @@ public class PlatformUtils {
      * @param ex Error.
      * @param writer Writer.
      */
-    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+    public static void writeError(Throwable ex, BinaryWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
 
         writer.writeObjectDetached(ex.getMessage());
@@ -668,7 +668,7 @@ public class PlatformUtils {
      * @param err Error.
      * @param writer Writer.
      */
-    public static void writeErrorData(Throwable err, BinaryRawWriterEx writer) {
+    public static void writeErrorData(Throwable err, BinaryWriterEx writer) {
         writeErrorData(err, writer, null);
     }
 
@@ -678,7 +678,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param log Optional logger.
      */
-    public static void writeErrorData(Throwable err, BinaryRawWriterEx writer, @Nullable IgniteLogger log) {
+    public static void writeErrorData(Throwable err, BinaryWriterEx writer, @Nullable IgniteLogger log) {
         // Write additional data if needed.
         if (err instanceof PlatformExtendedException) {
             PlatformExtendedException err0 = (PlatformExtendedException)err;
@@ -762,7 +762,7 @@ public class PlatformUtils {
                 // Write error data.
                 PlatformOutputStream out = mem.output();
 
-                BinaryRawWriterEx writer = ctx.writer(out);
+                BinaryWriterEx writer = ctx.writer(out);
 
                 try {
                     PlatformUtils.writeErrorData(err, writer, ctx.kernalContext().log(PlatformContext.class));
@@ -799,7 +799,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err) {
+    public static void writeInvocationResult(BinaryWriterEx writer, Object resObj, Throwable err) {
         if (err == null) {
             writer.writeBoolean(true);
             writer.writeObject(resObj);
@@ -1278,7 +1278,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param attrs Attributes.
      */
-    public static void writeNodeAttributes(BinaryRawWriterEx writer, Map<String, Object> attrs) {
+    public static void writeNodeAttributes(BinaryWriterEx writer, Map<String, Object> attrs) {
         assert writer != null;
         assert attrs != null;
 
@@ -1320,7 +1320,7 @@ public class PlatformUtils {
      * @param out Writer.
      * @param productVersion IgniteProductVersion.
      */
-    public static void writeNodeVersion(BinaryRawWriterEx out, IgniteProductVersion productVersion) {
+    public static void writeNodeVersion(BinaryWriterEx out, IgniteProductVersion productVersion) {
         out.writeByte(productVersion.major());
         out.writeByte(productVersion.minor());
         out.writeByte(productVersion.maintenance());

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutput;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
@@ -33,7 +32,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -48,7 +46,7 @@ import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 /**
  * Binary writer implementation.
  */
-public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, ObjectOutput {
+public class BinaryWriterExImpl implements BinaryWriterEx {
     /** Length: integer. */
     private static final int LEN_INT = 4;
 
@@ -136,17 +134,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         return failIfUnregistered;
     }
 
-    /**
-     * @param failIfUnregistered Fail if unregistered.
-     */
-    public void failIfUnregistered(boolean failIfUnregistered) {
+    /** {@inheritDoc} */
+    @Override public void failIfUnregistered(boolean failIfUnregistered) {
         this.failIfUnregistered = failIfUnregistered;
     }
 
-    /**
-     * @param typeId Type ID.
-     */
-    public void typeId(int typeId) {
+    /** {@inheritDoc} */
+    @Override public void typeId(int typeId) {
         this.typeId = typeId;
     }
 
@@ -245,10 +239,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         desc.write(obj, this);
     }
 
-    /**
-     * @return Array.
-     */
-    public byte[] array() {
+    /** {@inheritDoc} */
+    @Override public byte[] array() {
         return out.arrayCopy();
     }
 
@@ -268,12 +260,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.position(pos);
     }
 
-    /**
-     * Perform pre-write. Reserves space for header and writes class name if needed.
-     *
-     * @param clsName Class name (optional).
-     */
-    public void preWrite(@Nullable String clsName) {
+    /** {@inheritDoc} */
+    @Override public void preWrite(@Nullable String clsName) {
         out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
 
         if (clsName != null)
@@ -1864,11 +1852,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         writeFieldId(id);
     }
 
-    /**
-     * Write field ID.
-     * @param fieldId Field ID.
-     */
-    public void writeFieldId(int fieldId) {
+    /** {@inheritDoc} */
+    @Override public void writeFieldId(int fieldId) {
         int fieldOff = out.position() - start;
 
         // Advance schema hash.
@@ -2018,13 +2003,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
     }
 
-    /**
-     * Create new writer with same context.
-     *
-     * @param typeId type
-     * @return New writer.
-     */
-    public BinaryWriterExImpl newWriter(int typeId) {
+    /** {@inheritDoc} */
+    @Override public BinaryWriterEx newWriter(int typeId) {
         BinaryWriterExImpl res = new BinaryWriterExImpl(ctx, out, schema, handles());
 
         res.failIfUnregistered(failIfUnregistered);

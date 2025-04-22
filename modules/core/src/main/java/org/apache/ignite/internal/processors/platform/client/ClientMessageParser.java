@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -743,7 +743,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryOutputStream outStream = BinaryStreams.createPooledOutputStream(32, false);
 
-        BinaryRawWriterEx writer = marsh.writer(outStream);
+        BinaryWriterEx writer = marsh.writer(outStream);
 
         assert resp instanceof ClientOutgoingMessage : "Unexpected response type: " + resp.getClass();
 

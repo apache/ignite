@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
@@ -88,7 +88,7 @@ public interface PlatformContext {
      * @param mem Memory.
      * @return Writer.
      */
-    public BinaryRawWriterEx writer(PlatformMemory mem);
+    public BinaryWriterEx writer(PlatformMemory mem);
 
     /**
      * Get memory writer.
@@ -96,7 +96,7 @@ public interface PlatformContext {
      * @param out Output.
      * @return Writer.
      */
-    public BinaryRawWriterEx writer(PlatformOutputStream out);
+    public BinaryWriterEx writer(PlatformOutputStream out);
 
     /**
      * Sends node info to native platform, if necessary.
@@ -111,7 +111,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param node Node.
      */
-    public void writeNode(BinaryRawWriterEx writer, ClusterNode node);
+    public void writeNode(BinaryWriterEx writer, ClusterNode node);
 
     /**
      * Writes multiple node ids to a stream and sends node info to native platform, if necessary.
@@ -119,7 +119,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param nodes Nodes.
      */
-    public void writeNodes(BinaryRawWriterEx writer, Collection<ClusterNode> nodes);
+    public void writeNodes(BinaryWriterEx writer, Collection<ClusterNode> nodes);
 
     /**
      * Process metadata from the platform.
@@ -135,14 +135,14 @@ public interface PlatformContext {
      * @param typeId Type ID.
      * @param includeSchemas Whether to include binary object schemas into the result.
      */
-    public void writeMetadata(BinaryRawWriterEx writer, int typeId, boolean includeSchemas);
+    public void writeMetadata(BinaryWriterEx writer, int typeId, boolean includeSchemas);
 
     /**
      * Write all available metadata.
      *
      * @param writer Writer.
      */
-    public void writeAllMetadata(BinaryRawWriterEx writer);
+    public void writeAllMetadata(BinaryWriterEx writer);
 
     /**
      * Write schema for the given type ID and schema ID.
@@ -151,7 +151,7 @@ public interface PlatformContext {
      * @param typeId Type ID.
      * @param schemaId Schema ID.
      */
-    public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId);
+    public void writeSchema(BinaryWriterEx writer, int typeId, int schemaId);
 
     /**
      * Write cluster metrics.
@@ -159,7 +159,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param metrics Metrics.
      */
-    public void writeClusterMetrics(BinaryRawWriterEx writer, @Nullable ClusterMetrics metrics);
+    public void writeClusterMetrics(BinaryWriterEx writer, @Nullable ClusterMetrics metrics);
 
     /**
      *
@@ -201,7 +201,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param evt Event.
      */
-    public void writeEvent(BinaryRawWriterEx writer, Event evt);
+    public void writeEvent(BinaryWriterEx writer, Event evt);
 
     /**
      * Create local event filter.

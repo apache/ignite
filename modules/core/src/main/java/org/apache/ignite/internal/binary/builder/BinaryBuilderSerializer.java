@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -51,7 +52,7 @@ class BinaryBuilderSerializer {
      * @param writer Writer.
      * @param val Value.
      */
-    public void writeValue(BinaryWriterExImpl writer, Object val) {
+    public void writeValue(BinaryWriterEx writer, Object val) {
         writeValue(writer, val, false, false);
     }
 
@@ -61,7 +62,7 @@ class BinaryBuilderSerializer {
      * @param forceCol Whether to force collection type.
      * @param forceMap Whether to force map type.
      */
-    public void writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
+    public void writeValue(BinaryWriterEx writer, Object val, boolean forceCol, boolean forceMap) {
         assert !(forceCol && forceMap);
 
         if (val == null) {

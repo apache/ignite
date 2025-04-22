@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +65,7 @@ public interface PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
+    void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
         throws IgniteCheckedException;
 
     /**
@@ -87,7 +87,7 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of exception.
      */
     PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException;
+        BinaryWriterEx writer) throws IgniteCheckedException;
 
     /**
      * Process OUT operation.
@@ -96,7 +96,7 @@ public interface PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException;
+    void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException;
 
     /**
      * Process OUT operation.

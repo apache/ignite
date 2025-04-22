@@ -5379,7 +5379,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            BinaryRawWriterEx raw = (BinaryRawWriterEx)writer.rawWriter();
+            BinaryWriterEx raw = (BinaryWriterEx)writer.rawWriter();
 
             raw.writeObject(inner1);
             raw.writeObjectDetached(inner2);

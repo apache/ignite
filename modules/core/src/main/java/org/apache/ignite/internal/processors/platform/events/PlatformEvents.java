@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -161,7 +161,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
@@ -313,7 +313,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_ENABLED_EVENTS:
                 writeEventTypes(events.enabledEvents(), writer);
@@ -367,7 +367,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param writer Writer
      * @param types Types.
      */
-    private void writeEventTypes(int[] types, BinaryRawWriterEx writer) {
+    private void writeEventTypes(int[] types, BinaryWriterEx writer) {
         if (types == null) {
             writer.writeIntArray(null);
 
@@ -414,7 +414,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         /** <inheritDoc /> */
-        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryWriterEx writer, Object obj, Throwable err) {
             platformCtx.writeEvent(writer, (EventAdapter)obj);
         }
 
@@ -443,7 +443,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         /** <inheritDoc /> */
-        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryWriterEx writer, Object obj, Throwable err) {
             Collection<Event> evts = (Collection<Event>)obj;
 
             if (obj != null) {

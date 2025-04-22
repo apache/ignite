@@ -53,7 +53,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.BinarySchema;
@@ -202,7 +202,7 @@ public final class ClientUtils {
 
     /** Serialize binary type metadata to stream. */
     void binaryMetadata(BinaryMetadata meta, BinaryOutputStream out) {
-        try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+        try (BinaryWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             w.writeInt(meta.typeId());
             w.writeString(meta.typeName());
             w.writeString(meta.affinityKeyFieldName());
@@ -247,7 +247,7 @@ public final class ClientUtils {
 
     /** Serialize configuration to stream. */
     void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
-        try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+        try (BinaryWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
             writer.writeInt(0); // configuration length is to be assigned in the end
@@ -544,7 +544,7 @@ public final class ClientUtils {
     /**
      * @param out Output stream.
      */
-    BinaryRawWriterEx createBinaryWriter(BinaryOutputStream out) {
+    BinaryWriterEx createBinaryWriter(BinaryOutputStream out) {
         return new BinaryWriterExImpl(marsh.context(), out, null);
     }
 

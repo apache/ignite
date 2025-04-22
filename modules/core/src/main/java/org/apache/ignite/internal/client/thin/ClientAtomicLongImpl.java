@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAtomicLong;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.jetbrains.annotations.Nullable;
@@ -134,7 +134,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
      * @param out Output channel.
      */
     private void writeName(PayloadOutputChannel out) {
-        try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
+        try (BinaryWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
             w.writeString(name);
             w.writeString(groupName);
         }

@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
@@ -120,7 +120,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 PlatformOutputStream out = outMem.output();
 
                 GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
-                BinaryRawWriterEx writer = marshaller.writer(out);
+                BinaryWriterEx writer = marshaller.writer(out);
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 

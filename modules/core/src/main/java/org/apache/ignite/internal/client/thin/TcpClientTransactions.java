@@ -25,7 +25,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -99,7 +99,7 @@ class TcpClientTransactions implements ClientTransactions {
                         "protocol version %s, required version %s", protocolCtx.version(), TRANSACTIONS.verIntroduced()));
                 }
 
-                try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {
+                try (BinaryWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {
                     writer.writeByte((byte)(concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency).ordinal());
                     writer.writeByte((byte)(isolation == null ? txCfg.getDefaultTxIsolation() : isolation).ordinal());
                     writer.writeLong(timeout == null ? txCfg.getDefaultTxTimeout() : timeout);
