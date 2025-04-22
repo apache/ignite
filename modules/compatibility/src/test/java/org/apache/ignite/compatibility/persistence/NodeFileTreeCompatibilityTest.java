@@ -107,8 +107,6 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
                     scanSnp(snpPath(customSnpPath, U.defaultWorkDirectory(), SNAPSHOT_NAME))
                 );
             }
-
-
         }
         finally {
             stopAllGrids();
@@ -276,7 +274,7 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
 
             if (!(o instanceof CacheGrpScanResult)) return false;
 
-            CacheGrpScanResult other = (CacheGrpScanResult) o;
+            CacheGrpScanResult other = (CacheGrpScanResult)o;
 
             return Objects.equals(cacheGrpName, other.cacheGrpName) &&
                 Objects.equals(cacheNames, other.cacheNames) &&

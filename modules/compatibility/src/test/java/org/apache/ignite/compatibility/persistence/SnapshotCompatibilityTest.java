@@ -44,6 +44,8 @@ import org.junit.Test;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assume.assumeFalse;
+
 /**
  *
  */
@@ -52,11 +54,7 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
     @Parameter(5)
     public int oldNodesCnt;
 
-    /**
-     * Restore incremental snapshot if consistent ID is null is fixed in 2.17.0, see here
-     * <a href="https://issues.apache.org/jira/browse/IGNITE-23222">...</a>. Restore of an incremental snapshot doesn't work for different
-     * topology. Also restoring cache dump and any kind of snapshot is pointless.
-     */
+    /** */
     @Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, oldNodesCnt={5}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
@@ -76,6 +74,12 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
+        assumeFalse("Incremental snapshots for cache dump not supported", incSnp && cacheDump);
+
+        assumeFalse("Incremental snapshots require same consistentID", incSnp && !customConsId);
+
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-25096", incSnp && oldNodesCnt == 3);
+
         try {
             for (int i = 1; i < oldNodesCnt; ++i) {
                 startGrid(
