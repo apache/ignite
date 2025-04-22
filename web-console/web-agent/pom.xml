@@ -61,7 +61,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-rest-http</artifactId>
+            <artifactId>ignite-vertx-rest</artifactId>
             <version>${web-console.ignite.version}</version>           
         </dependency>
         

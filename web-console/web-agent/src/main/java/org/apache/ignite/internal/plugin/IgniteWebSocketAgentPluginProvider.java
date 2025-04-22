@@ -41,13 +41,12 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-import io.vertx.core.Vertx;
 
 
 /**
  * WebSocketRouter processor provider for websocket api.
  */
-public class IgniteVertxAgentPluginProvider implements PluginProvider<AgentConfiguration> {
+public class IgniteWebSocketAgentPluginProvider implements PluginProvider<AgentConfiguration> {
 	// Singerton
 	private static WebSocketRouter websocketAgent;
     
@@ -58,17 +57,17 @@ public class IgniteVertxAgentPluginProvider implements PluginProvider<AgentConfi
 	
     private AgentConfiguration cfg;
     
-    private String instanceName;
+
 
 	
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Vertx Agent";
+        return "WebSocket Agent";
     }
 
     /** {@inheritDoc} */
     @Override public String version() {
-        return "4.4.5";
+        return "2.16.999";
     }
 
     /** {@inheritDoc} */
@@ -77,16 +76,16 @@ public class IgniteVertxAgentPluginProvider implements PluginProvider<AgentConfi
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteVertxPlugin plugin() {
-        return new IgniteVertxPlugin(instanceName);
+    @Override public IgniteWebSocketPlugin plugin() {
+        return new IgniteWebSocketPlugin(websocketAgent);
     }
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
     	 IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
          
-         this.log = ctx.log(this.getClass());    
-         this.instanceName = igniteCfg.getIgniteInstanceName();
+         this.log = ctx.log(this.getClass());
+
          this.cfg = null;
          
          if (igniteCfg.getPluginConfigurations() != null) {
@@ -150,7 +149,7 @@ public class IgniteVertxAgentPluginProvider implements PluginProvider<AgentConfi
     	 // start mongodb singerton when admin grid start
     	if(cfg!=null && websocketAgent==null) {    		      
  	       try {
- 	    	   synchronized(IgniteVertxAgentPluginProvider.class) {
+ 	    	   synchronized(IgniteWebSocketAgentPluginProvider.class) {
  	    		  if(websocketAgent==null) {
  	    			 websocketAgent = new WebSocketRouter(cfg);
  	    			 websocketAgent.start();
@@ -169,7 +168,7 @@ public class IgniteVertxAgentPluginProvider implements PluginProvider<AgentConfi
     	if(cfg!=null) {
     		counter--;
     		if(websocketAgent!=null) {
-        		synchronized(IgniteVertxAgentPluginProvider.class) {
+        		synchronized(IgniteWebSocketAgentPluginProvider.class) {
         			if(websocketAgent!=null && counter<=0) {
     		      	   log.info("mongoServer","shutting down "+ websocketAgent.toString());
     		      	   websocketAgent.close();

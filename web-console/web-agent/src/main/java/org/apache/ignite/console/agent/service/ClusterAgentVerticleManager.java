@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.plugin.IgniteVertxPlugin;
+import org.apache.ignite.internal.plugin.IgniteWebSocketPlugin;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 
@@ -46,9 +47,9 @@ public class ClusterAgentVerticleManager implements ClusterAgentService {
 		ServiceResult result = new ServiceResult();
 		JsonObject args = new JsonObject(payload);
 		String serviceName = args.getString("op", "list");
-		vertxPlugin = ignite.plugin("Vertx Agent");
+		vertxPlugin = ignite.plugin("Vertx");
 		if (vertxPlugin == null) {
-			result.addMessage("Vertx Agent not found! Please start vertx cluster first!");
+			result.addMessage("Vertx Plugin not found! Please start vertx cluster first!");
 			return result;
 		}
 		if (serviceName.equals("list")) {
@@ -68,7 +69,7 @@ public class ClusterAgentVerticleManager implements ClusterAgentService {
 
 	public ServiceResult verticleList(Map<String, Object> payload) {
 		ServiceResult result = new ServiceResult();
-		VertxInternal vertx = (VertxInternal)vertxPlugin.getVertx();
+		VertxInternal vertx = (VertxInternal)vertxPlugin.vertx();
 		for (String id : vertx.deploymentIDs()) {
 			
 			Deployment deployment = vertx.getDeployment(id);

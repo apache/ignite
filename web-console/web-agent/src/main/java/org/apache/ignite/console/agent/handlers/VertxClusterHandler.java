@@ -43,6 +43,7 @@ import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.plugin.IgniteVertxPlugin;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
@@ -143,25 +144,20 @@ public class VertxClusterHandler implements ClusterHandler{
                 
                 
                 lastErrors.clear();
-                if (!clusterVertxMap.containsKey(clusterName)) {
-                	startVertxCluster(clusterName,cfg);
-                	
-                	while(!lastErrors.containsKey(clusterName) && !clusterVertxMap.containsKey(clusterName)) {
-                		Thread.sleep(200);
-                	}
+                Vertx vertx = clusterVertxMap.get(clusterName);
+                if (vertx==null) {
+                	vertx = startVertxCluster(clusterName,cfg);                	
                 }            
 
-                if (clusterVertxMap.containsKey(clusterName)) {
-                	try {
-            			// Gremlin Query
-                		Ignite ignite = Ignition.ignite(clusterName);      		
-                		Vertx vertx = clusterVertxMap.get(clusterName);
-                		return gremlinExecutor.execRequest(ignite, vertx, clusterId, params);
-            		}
-            		catch(Exception e) {
-            			log.error("Vertx cluster rest call fail!",e);        			
-            		}
-                }
+                try {
+        			// Gremlin Query
+            		Ignite ignite = Ignition.ignite(clusterName);
+            		return gremlinExecutor.execRequest(ignite, vertx, clusterId, params);
+        		}
+        		catch(Exception e) {
+        			log.error("gremlin rest call fail!",e);
+        			lastErrors.put(clusterName, e);
+        		}
                 
                 if (lastErrors.containsKey(clusterName)) {
                 	return RestResult.fail(GridRestResponse.STATUS_FAILED, lastErrors.get(clusterName).getMessage());
@@ -177,27 +173,23 @@ public class VertxClusterHandler implements ClusterHandler{
         
     }
     
-    void startVertxCluster(String clusterName, AgentConfiguration cfg) {
+    private Vertx startVertxCluster(String clusterName, AgentConfiguration cfg) {
         
     	Ignite ignite = Ignition.ignite(clusterName);
-    	IgniteClusterManager clusterManager = new IgniteClusterManager(ignite);
-        
-        VertxOptions options = new VertxOptions();
-        options.setClusterManager(clusterManager);
-        
-        Vertx.clusteredVertx(options,res->{
-            if(res.succeeded()) {
-                Vertx vertx = res.result();
-                clusterVertxMap.put(clusterName, vertx); 
-                clusterNameMap.put(ignite.cluster().id().toString(), clusterName);
-                
-            }else{
-                //失败的时候做什么！
-            	lastErrors.put(clusterName, res.cause());
-            	log.error("Failt to start Vertx cluster.",res.cause());
-            }
-        });
+    	IgniteVertxPlugin vertxPlugin = ignite.plugin("Vertx");
 
+        Vertx vertx = vertxPlugin.vertx();
+        if(vertx!=null) {
+            
+            clusterVertxMap.put(clusterName, vertx); 
+            clusterNameMap.put(ignite.cluster().id().toString(), clusterName);
+            
+        }else{
+            //失败的时候做什么！
+        	lastErrors.put(clusterName, new RuntimeException("Vertx cluster start failed!"));
+        	
+        }
+        return vertx;
     }
     
     public boolean isVertxCluster(String clusterId) {

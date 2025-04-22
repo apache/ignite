@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeB
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
-import org.eclipse.jetty.client.HttpResponseException;
+
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.Vertx;
