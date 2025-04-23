@@ -695,7 +695,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Snapshot manager related to given ignite instance.
      */
     public static IgniteSnapshotManager snp(IgniteEx ignite) {
-        return ignite.snapshot().cache().context().snapshotMgr();
+        return ignite.context().cache().context().snapshotMgr();
     }
 
     /**
