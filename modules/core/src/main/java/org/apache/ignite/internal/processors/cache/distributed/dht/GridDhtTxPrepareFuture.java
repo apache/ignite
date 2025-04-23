@@ -1406,7 +1406,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<IgniteTxEntry> dhtWrites = dhtMapping.writes();
 
-            if (F.isEmpty(dhtWrites) && isEmpty(nearWrites))
+            if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                 continue;
 
             MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);

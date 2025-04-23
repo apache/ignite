@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PX3;
 
 /**
@@ -34,7 +35,7 @@ public abstract class GridPredicate3X<E1, E2, E3> implements GridPredicate3<E1, 
             return applyx(e1, e2, e3);
         }
         catch (IgniteCheckedException ex) {
-            throw new GridClosureException(ex);
+            throw F.wrap(ex);
         }
     }
 

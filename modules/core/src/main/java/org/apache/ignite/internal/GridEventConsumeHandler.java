@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -282,7 +281,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                     initFilter(filter, ctx);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new GridClosureException(e);
+                    throw F.wrap(e);
                 }
 
                 ctx.event().addLocalEventListener(lsnr, types);

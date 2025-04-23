@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Convenient predicate subclass that allows for thrown grid exception. This class
@@ -31,7 +32,7 @@ public abstract class GridAbsPredicateX implements GridAbsPredicate {
             return applyx();
         }
         catch (IgniteCheckedException ex) {
-            throw new GridClosureException(ex);
+            throw F.wrap(ex);
         }
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.RX1;
 import org.apache.ignite.lang.IgniteReducer;
 
@@ -37,7 +38,7 @@ public abstract class IgniteReducerX<E1, R> implements IgniteReducer<E1, R> {
             return applyx();
         }
         catch (IgniteCheckedException e) {
-            throw new GridClosureException(e);
+            throw F.wrap(e);
         }
     }
 

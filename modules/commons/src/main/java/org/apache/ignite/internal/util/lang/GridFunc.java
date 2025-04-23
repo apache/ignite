@@ -1907,6 +1907,16 @@ public class GridFunc {
     }
 
     /**
+     * Shortcut method that creates an instance of {@link GridClosureException}.
+     *
+     * @param e Exception to wrap.
+     * @return Newly created instance of {@link GridClosureException}.
+     */
+    public static GridClosureException wrap(Throwable e) {
+        return new GridClosureException(e);
+    }
+
+    /**
      * @param arr Array to check.
      * @return {@code True} if array sorted, {@code false} otherwise.
      */

@@ -89,7 +89,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1340,7 +1339,7 @@ public class SnapshotRestoreProcess {
         return ctx.cache().dynamicDestroyCaches(stopCaches, false, false)
             .chain(fut -> {
                 if (fut.error() != null)
-                    throw new GridClosureException(fut.error());
+                    throw F.wrap(fut.error());
                 else
                     return true;
             });

@@ -55,8 +55,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1198,7 +1198,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                 }
                 catch (Exception e) {
-                    throw new GridClosureException(e);
+                    throw F.wrap(e);
                 }
                 finally {
                     stopGrid(id);
@@ -1420,7 +1420,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     }
                     catch (Exception e) {
                         if (failed.compareAndSet(false, true))
-                            throw new GridClosureException(e);
+                            throw F.wrap(e);
                     }
                 }
             }, topChangeThreads, "topology-change-thread");
@@ -1477,7 +1477,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     }
                     catch (Exception e) {
                         if (failed.compareAndSet(false, true))
-                            throw new GridClosureException(e);
+                            throw F.wrap(e);
                     }
                 }
             }, topChangeThreads, "topology-change-thread");
@@ -1531,7 +1531,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                             barrier.reset();
 
-                            throw new GridClosureException(e);
+                            throw F.wrap(e);
                         }
                     }
                 }
@@ -1575,7 +1575,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                             barrier.reset();
 
-                            throw new GridClosureException(e);
+                            throw F.wrap(e);
                         }
                     }
                 }
