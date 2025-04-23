@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef;
 
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.lang.IgniteReducer;
 
 /**

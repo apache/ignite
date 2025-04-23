@@ -34,6 +34,8 @@ import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+
 /**
  * Heap-space optimized version of calculated affinity assignment.
  */
@@ -258,7 +260,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
 
             return nodes.size() > AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
                     ? assignments2ids(nodes)
-                    : F.viewReadOnly(nodes, ClusterNode::id);
+                    : F.viewReadOnly(nodes, node2id());
         }
     }
 

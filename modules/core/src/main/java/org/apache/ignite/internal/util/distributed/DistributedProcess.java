@@ -48,6 +48,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
  * Distributed process is a cluster-wide process that accumulates single nodes results to finish itself.
@@ -279,7 +280,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             assert p.remaining.isEmpty();
 
             p.remaining.addAll(F.viewReadOnly(
-                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), ClusterNode::id));
+                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), node2id()));
 
             p.initCrdFut.onDone();
         }

@@ -27,31 +27,54 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EqualsUuidPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
- * It also contains functional style collection comprehensions.
+ * Contains utility methods for {@code ClusterNode}, and {@code BaselineNode}.
  * <p>
  * Most of the methods in this class can be divided into two groups:
  * <ul>
- * <li><b>Factory</b> higher-order methods for closures, predicates and tuples, and</li>
- * <li><b>Utility</b> higher-order methods for processing collections with closures and predicates.</li>
+ * <li><b>Factory</b> higher-order methods for predicates.</li>
+ * <li><b>Utility</b> higher-order methods for processing collections with predicates.</li>
  * </ul>
- * Note that contrary to the usual design this class has substantial number of
- * methods (over 200). This design is chosen to simulate a global namespace
- * (like a {@code Predef} in Scala) to provide general utility and functional
- * programming functionality in a shortest syntactical context using {@code F}
- * typedef.
- * <p>
- * Also note, that in all methods with predicates, null predicate has a {@code true} meaning. So does
- * the empty predicate array.
  */
-@SuppressWarnings("unchecked")
 public class ClusterNodeFunc {
+    /** */
+    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = ClusterNode::id;
+
+    /** */
+    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
+        BaselineNode::consistentId;
+
+    /**
+     * Gets predicate that evaluates to {@code true} only for given local node ID.
+     *
+     * @param locNodeId Local node ID.
+     * @param <T> Type of the node.
+     * @return Return {@code true} only for the node with given local node ID.
+     */
+    public static <T extends ClusterNode> IgnitePredicate<T> localNode(final UUID locNodeId) {
+        return new HasEqualIdPredicate<>(locNodeId);
+    }
+
+    /**
+     * Gets predicate that evaluates to {@code false} for given local node ID.
+     *
+     * @param locNodeId Local node ID.
+     * @param <T> Type of the node.
+     * @return Return {@code false} for the given local node ID.
+     */
+    public static <T extends ClusterNode> IgnitePredicate<T> remoteNodes(final UUID locNodeId) {
+        return new HasNotEqualIdPredicate<>(locNodeId);
+    }
+
     /**
      * Convenient utility method that returns collection of node IDs for a given
      * collection of grid nodes.
@@ -66,7 +89,7 @@ public class ClusterNodeFunc {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
-        return F.viewReadOnly(nodes, ClusterNode::id);
+        return F.viewReadOnly(nodes, node2id());
     }
 
     /**
@@ -83,7 +106,16 @@ public class ClusterNodeFunc {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
-        return F.viewReadOnly(nodes, BaselineNode::consistentId);
+        return F.viewReadOnly(nodes, NODE2CONSISTENTID);
+    }
+
+    /**
+     * Gets closure which converts node to node ID.
+     *
+     * @return Closure which converts node to node ID.
+     */
+    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
+        return NODE2ID;
     }
 
     /**
@@ -91,7 +123,7 @@ public class ClusterNodeFunc {
      *
      * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
      * @return Grid node predicate evaluating on the given node ID.
-     * @see F#idForNodeId(UUID)
+     * @see ClusterNodeFunc#idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
     public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeId(final UUID nodeId) {
@@ -105,7 +137,7 @@ public class ClusterNodeFunc {
      *
      * @param nodeIds Collection of node IDs.
      * @return Grid node predicate evaluating on the given node IDs.
-     * @see F#idForNodeId(UUID)
+     * @see ClusterNodeFunc#idForNodeId(UUID)
      * @see #nodeIds(Collection)
      */
     public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
@@ -114,6 +146,20 @@ public class ClusterNodeFunc {
             return F.alwaysFalse();
 
         return new ContainsNodeIdsPredicate<>(nodeIds);
+    }
+
+    /**
+     * Creates {@link UUID} predicate evaluating on the given node ID.
+     *
+     * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
+     * @return {@link UUID} predicate evaluating on the given node ID.
+     * @see #nodeForNodeId(UUID)
+     * @see #nodeIds(Collection)
+     */
+    public static IgnitePredicate<UUID> idForNodeId(final UUID nodeId) {
+        A.notNull(nodeId, "nodeId");
+
+        return new EqualsUuidPredicate(nodeId);
     }
 
     /**

@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+
 /**
  * Cached affinity calculations V2.
  * It supports adaptive usage of BitSets instead of HashSets.
@@ -216,7 +218,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
             return nodes.size() > GridAffinityAssignmentV2.IGNITE_AFFINITY_BACKUPS_THRESHOLD
                     ? getOrCreateAssignmentsIds(part)
-                    : F.viewReadOnly(nodes, ClusterNode::id);
+                    : F.viewReadOnly(nodes, node2id());
         }
     }
 

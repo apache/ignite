@@ -111,8 +111,6 @@ import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -170,6 +168,8 @@ import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PAIRED_CONN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -2401,9 +2401,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             );
         }
         else {
-            ClusterNode locNode = F.find(nodes, null, new HasEqualIdPredicate<>(locNodeId));
+            ClusterNode locNode = F.find(nodes, null, localNode(locNodeId));
 
-            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, new HasNotEqualIdPredicate<>(locNodeId));
+            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, remoteNodes(locNodeId));
 
             if (!rmtNodes.isEmpty())
                 sendToGridTopic(rmtNodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);

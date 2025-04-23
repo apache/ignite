@@ -25,12 +25,13 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
  * Tests service reassignment.
@@ -168,7 +169,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         Map<UUID, Integer> srvcTop = grid.context().service().serviceTopology(SERVICE_NAME, SERVICE_TOP_WAIT_TIMEOUT);
 
-        Collection<UUID> nodes = F.viewReadOnly(grid.context().discovery().aliveServerNodes(), ClusterNode::id);
+        Collection<UUID> nodes = F.viewReadOnly(grid.context().discovery().aliveServerNodes(), node2id());
 
         assertNotNull("Grid assignments object is null", srvcTop);
 

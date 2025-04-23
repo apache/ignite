@@ -40,6 +40,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+
 /**
  * Simple test task.
  */
@@ -54,7 +56,7 @@ public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer
     @NotNull @SuppressWarnings({"unchecked"})
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
         if (log.isInfoEnabled()) {
-            log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, ClusterNode::id) +
+            log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, node2id()) +
                 ", arg=" + arg + ']');
         }
 

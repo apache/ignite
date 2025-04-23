@@ -117,7 +117,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
-import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -150,7 +149,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Future for exchanging partition maps.
@@ -907,7 +908,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             srvNodes = new ArrayList<>(firstEvtDiscoCache.serverNodes());
 
-            remaining.addAll(nodeIds(F.view(srvNodes, new HasNotEqualIdPredicate<>(cctx.localNodeId()))));
+            remaining.addAll(nodeIds(F.view(srvNodes, remoteNodes(cctx.localNodeId()))));
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
@@ -2206,7 +2207,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !nodes.contains(cctx.localNode());
 
         if (log.isTraceEnabled()) {
-            log.trace("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, ClusterNode::id) +
+            log.trace("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, node2id()) +
                 ", exchId=" + exchId + ", msg=" + fullMsg + ']');
         }
 

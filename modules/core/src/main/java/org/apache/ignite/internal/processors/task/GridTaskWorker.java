@@ -114,6 +114,7 @@ import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAI
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
@@ -634,7 +635,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
         }
 
-        ses.jobNodes(F.viewReadOnly(jobs.values(), ClusterNode::id));
+        ses.jobNodes(F.viewReadOnly(jobs.values(), node2id()));
 
         evtLsnr.onJobsMapped(this);
 

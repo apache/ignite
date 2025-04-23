@@ -31,7 +31,6 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
-import org.apache.ignite.internal.util.lang.gridfunc.EqualsUuidPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.FlatCollectionWrapper;
 import org.apache.ignite.internal.util.lang.gridfunc.FlatIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.IdentityClosure;
@@ -419,20 +417,6 @@ public class GridFunc {
         }
 
         return res;
-    }
-
-    /**
-     * Creates {@link UUID} predicate evaluating on the given node ID.
-     *
-     * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
-     * @return {@link UUID} predicate evaluating on the given node ID.
-     * @see #nodeForNodeId(UUID)
-     * @see #nodeIds(Collection)
-     */
-    public static IgnitePredicate<UUID> idForNodeId(final UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
-        return new EqualsUuidPredicate(nodeId);
     }
 
     /**

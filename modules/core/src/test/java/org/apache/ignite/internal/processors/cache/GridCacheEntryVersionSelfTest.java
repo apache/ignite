@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -33,6 +32,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
  *
@@ -88,8 +88,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
             for (Integer key : map.keySet()) {
                 info("Affinity nodes [key=" + key + ", nodes=" +
-                    F.viewReadOnly(grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key),
-                        ClusterNode::id) + ']');
+                    F.viewReadOnly(grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key), node2id()) + ']');
             }
 
             grid(0).cache(DEFAULT_CACHE_NAME).putAll(map);

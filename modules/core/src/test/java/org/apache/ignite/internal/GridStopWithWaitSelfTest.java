@@ -40,7 +40,6 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -51,6 +50,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Tests waiting for unfinished tasks while stopping the grid.
@@ -200,7 +201,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
-            ClusterNode node = F.view(subgrid, new HasNotEqualIdPredicate<>(ignite.configuration().getNodeId()))
+            ClusterNode node = F.view(subgrid, remoteNodes(ignite.configuration().getNodeId()))
                 .iterator().next();
 
             nodeRef.set(node);
