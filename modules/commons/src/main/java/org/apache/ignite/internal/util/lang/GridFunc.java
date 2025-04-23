@@ -91,8 +91,6 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Also note, that in all methods with predicates, null predicate has a {@code true} meaning. So does
  * the empty predicate array.
- *
- * <b>Remove when GridFunc migrated</b>
  */
 public class GridFunc {
     /** */
@@ -1051,7 +1049,7 @@ public class GridFunc {
     }
 
     /**
-     * Gets first key from given map or returns {@code null} if the map is empty.
+     * Gets first entry from given map or returns {@code null} if the map is empty.
      *
      * @param m A map.
      * @param <K> Key type.
@@ -1113,7 +1111,7 @@ public class GridFunc {
                 v = c.call();
             }
             catch (Exception e) {
-                throw new GridClosureException(e);
+                throw wrap(e);
             }
 
             V v0 = map.putIfAbsent(key, v);
@@ -1160,7 +1158,7 @@ public class GridFunc {
      *      found (or {@code null} if key is not found and closure is not provided). Note that
      *      in case when key is not found the default value will be put into the map.
      * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see F#newSet()
+     * @see #newSet()
      */
     @Nullable public static <K, V> V addIfAbsent(Map<? super K, V> map, @Nullable K key,
         @Nullable Callable<? extends V> c) {
@@ -1178,7 +1176,7 @@ public class GridFunc {
                 return map.get(key);
         }
         catch (Exception e) {
-            throw new GridClosureException(e);
+            throw wrap(e);
         }
     }
 
@@ -1208,7 +1206,7 @@ public class GridFunc {
                 return map.get(key);
         }
         catch (Exception e) {
-            throw new GridClosureException(e);
+            throw wrap(e);
         }
     }
 

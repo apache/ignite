@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteException;
  * This exception provides closures with facility to throw exceptions. Closures can't
  * throw checked exception and this class provides a standard idiom on how to wrap and pass an
  * exception up the call chain.
+ *
+ * @see GridFunc#wrap(Throwable)
  */
 public class GridClosureException extends IgniteException {
     /** */
