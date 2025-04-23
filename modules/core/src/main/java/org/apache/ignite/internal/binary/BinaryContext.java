@@ -585,6 +585,21 @@ public class BinaryContext {
     }
 
     /**
+     * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @return Class descriptor ID.
+     * @throws BinaryObjectException In case of error.
+     */
+    public int registerTypeLocally(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
+        return registerClass(cls, registerMeta, failIfUnregistered, true).typeId();
+    }
+
+    /**
      * Attempts registration of the provided class. If the type is already registered, then an existing descriptor is
      * returned.
      *
@@ -600,21 +615,6 @@ public class BinaryContext {
         boolean failIfUnregistered
     ) throws BinaryObjectException {
         return registerClass(cls, registerMeta, failIfUnregistered, false);
-    }
-
-    /**
-     * @param cls Class.
-     * @param failIfUnregistered Throw exception if class isn't registered.
-     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
-     * @return Class descriptor ID.
-     * @throws BinaryObjectException In case of error.
-     */
-    public int registerClassLocally(
-        Class<?> cls,
-        boolean registerMeta,
-        boolean failIfUnregistered
-    ) throws BinaryObjectException {
-        return registerClass(cls, registerMeta, failIfUnregistered, true).typeId();
     }
 
     /**
