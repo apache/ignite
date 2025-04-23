@@ -810,7 +810,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case PROXY:
-                    writer.doWriteProxy((Proxy)obj, intfs);
+                    writer.writeProxy((Proxy)obj, intfs);
 
                     break;
 
