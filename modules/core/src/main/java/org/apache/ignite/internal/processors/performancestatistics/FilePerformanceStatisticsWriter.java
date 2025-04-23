@@ -136,8 +136,8 @@ public class FilePerformanceStatisticsWriter {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** */
-    private StringCache strCache = new StringCache();
+    /** String cache. */
+    private final StringCache strCache = new StringCache();
 
     /** @param ctx Kernal context. */
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
@@ -191,8 +191,6 @@ public class FilePerformanceStatisticsWriter {
         }
 
         U.closeQuiet(fileIo);
-
-        strCache = null;
 
         started = false;
     }
