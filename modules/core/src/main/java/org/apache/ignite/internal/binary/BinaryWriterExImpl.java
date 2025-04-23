@@ -523,7 +523,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryClassDescriptor desc = ctx.registerClass(val, false, failIfUnregistered);
+            BinaryClassDescriptor desc = ctx.registerClassEx(val, false, failIfUnregistered);
 
             out.unsafeEnsure(1 + 4);
 
@@ -1238,7 +1238,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (tryWriteAsHandle(val))
                 return;
 
-            BinaryClassDescriptor desc = ctx.registerClass(
+            BinaryClassDescriptor desc = ctx.registerClassEx(
                 val.getClass().getComponentType(),
                 true,
                 failIfUnregistered);
@@ -1324,7 +1324,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryClassDescriptor desc = ctx.registerClass(val.getDeclaringClass(), true, failIfUnregistered);
+            BinaryClassDescriptor desc = ctx.registerClassEx(val.getDeclaringClass(), true, failIfUnregistered);
 
             out.unsafeEnsure(1 + 4);
 
@@ -1361,7 +1361,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryClassDescriptor desc = ctx.registerClass(
+            BinaryClassDescriptor desc = ctx.registerClassEx(
                 val.getClass().getComponentType(),
                 true,
                 failIfUnregistered);
