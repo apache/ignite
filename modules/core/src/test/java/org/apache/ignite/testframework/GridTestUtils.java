@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -155,6 +156,18 @@ public final class GridTestUtils {
 
     /** */
     private static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+
+    /** */
+    private static final GridAbsClosure NOOP = new NoOpClosure();
+
+    /**
+     * Creates an absolute (no-arg) closure that does nothing.
+     *
+     * @return Absolute (no-arg) closure that does nothing.
+     */
+    public static GridAbsClosure noop() {
+        return NOOP;
+    }
 
     /**
      * Hook object intervenes to discovery message handling

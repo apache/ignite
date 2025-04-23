@@ -64,7 +64,7 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.noop;
+import static org.apache.ignite.testframework.GridTestUtils.noop;
 
 /**
  * Event consume test.

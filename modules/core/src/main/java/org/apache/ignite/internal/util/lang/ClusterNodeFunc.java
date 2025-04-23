@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -58,9 +57,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("unchecked")
 public class ClusterNodeFunc {
-    /** */
-    private static final GridAbsClosure NOOP = new NoOpClosure();
-
     /**
      * Convenient utility method that returns collection of node IDs for a given
      * collection of grid nodes.
@@ -168,15 +164,6 @@ public class ClusterNodeFunc {
         }
         else
             return new IsAllPredicate<>(ps);
-    }
-
-    /**
-     * Creates an absolute (no-arg) closure that does nothing.
-     *
-     * @return Absolute (no-arg) closure that does nothing.
-     */
-    public static GridAbsClosure noop() {
-        return NOOP;
     }
 
     /**

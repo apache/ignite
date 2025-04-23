@@ -86,7 +86,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.noop;
+import static org.apache.ignite.testframework.GridTestUtils.noop;
 
 /**
  * Client-based discovery tests.

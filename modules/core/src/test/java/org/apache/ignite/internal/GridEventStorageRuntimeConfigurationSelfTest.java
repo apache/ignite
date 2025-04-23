@@ -40,7 +40,7 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.noop;
+import static org.apache.ignite.testframework.GridTestUtils.noop;
 
 /**
  * Tests for runtime events configuration.
