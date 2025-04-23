@@ -448,7 +448,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F fieldByOrder(int order) {
-        if (order == BinarySchema.ORDER_NOT_FOUND)
+        if (order == BinaryUtils.ORDER_NOT_FOUND)
             return null;
 
         Object val;

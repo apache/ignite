@@ -29,6 +29,10 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.MAP_EMPTY;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAP_MIN_SIZE;
+import static org.apache.ignite.internal.binary.BinaryUtils.ORDER_NOT_FOUND;
+
 /**
  * Schema describing binary object content. We rely on the following assumptions:
  * - When amount of fields in the object is low, it is better to inline these values into int fields thus allowing
@@ -38,15 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class BinarySchema implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Order returned if field is not found. */
-    public static final int ORDER_NOT_FOUND = -1;
-
-    /** Minimum sensible size. */
-    private static final int MAP_MIN_SIZE = 32;
-
-    /** Empty cell. */
-    private static final int MAP_EMPTY = 0;
 
     /** Schema ID. */
     private int schemaId;
@@ -426,53 +421,6 @@ public class BinarySchema implements Externalizable {
 
         idToOrderData = finalRes.data;
         idToOrderMask = maskForPowerOfTwo(idToOrderData.length / 2);
-    }
-
-    /**
-     * Schema builder.
-     */
-    public static class Builder {
-        /** Schema ID. */
-        private int schemaId = BinaryUtils.schemaInitialId();
-
-        /** Fields. */
-        private final ArrayList<Integer> fields = new ArrayList<>();
-
-        /**
-         * Create new schema builder.
-         *
-         * @return Schema builder.
-         */
-        public static Builder newBuilder() {
-            return new Builder();
-        }
-
-        /**
-         * Private constructor.
-         */
-        private Builder() {
-            // No-op.
-        }
-
-        /**
-         * Add field.
-         *
-         * @param fieldId Field ID.
-         */
-        public void addField(int fieldId) {
-            fields.add(fieldId);
-
-            schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
-        }
-
-        /**
-         * Build schema.
-         *
-         * @return Schema.
-         */
-        public BinarySchema build() {
-            return new BinarySchema(schemaId, fields);
-        }
     }
 
     /**

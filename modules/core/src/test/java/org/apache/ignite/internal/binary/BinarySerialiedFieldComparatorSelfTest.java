@@ -495,7 +495,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      * @return Order.
      */
     private int singleFieldOrder(BinaryObjectExImpl obj) {
-        return obj.hasField(FIELD_SINGLE) ? 0 : BinarySchema.ORDER_NOT_FOUND;
+        return obj.hasField(FIELD_SINGLE) ? 0 : BinaryUtils.ORDER_NOT_FOUND;
     }
 
     /**

@@ -65,7 +65,7 @@ class BinaryWriterSchemaHolder {
      * @param builder Builder.
      * @param fieldCnt Fields count.
      */
-    public void build(BinarySchema.Builder builder, int fieldCnt) {
+    public void build(BinarySchemaBuilder builder, int fieldCnt) {
         for (int curIdx = idx - fieldCnt * 2; curIdx < idx; curIdx += 2)
             builder.addField(data[curIdx]);
     }

@@ -50,7 +50,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     private final Map<String, BinaryFieldMetadata> meta = new HashMap<>();
 
     /** Schema builder. */
-    private BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+    private BinarySchemaBuilder schemaBuilder = new BinarySchemaBuilder();
 
     /**
      * Constructor.

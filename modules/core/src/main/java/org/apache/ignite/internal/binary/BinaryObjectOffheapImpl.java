@@ -247,7 +247,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F fieldByOrder(int order) {
-        if (order == BinarySchema.ORDER_NOT_FOUND)
+        if (order == BinaryUtils.ORDER_NOT_FOUND)
             return null;
 
         Object val;

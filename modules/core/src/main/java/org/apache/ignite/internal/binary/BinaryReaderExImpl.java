@@ -2040,7 +2040,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
     private BinarySchema createSchema() {
         assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
 
-        BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
+        BinarySchemaBuilder builder = new BinarySchemaBuilder();
 
         int searchPos = footerStart;
         int searchEnd = searchPos + footerLen;
@@ -2178,7 +2178,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return {@code True} if field was found and stream was positioned accordingly.
      */
     private boolean trySetUserFieldPosition(int order) {
-        if (order != BinarySchema.ORDER_NOT_FOUND) {
+        if (order != BinaryUtils.ORDER_NOT_FOUND) {
             int offsetPos = footerStart + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
             int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);

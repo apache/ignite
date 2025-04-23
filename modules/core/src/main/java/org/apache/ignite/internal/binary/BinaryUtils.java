@@ -164,6 +164,15 @@ public class BinaryUtils {
     public static boolean FIELDS_SORTED_ORDER =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
+    /** Order returned if field is not found. */
+    static final int ORDER_NOT_FOUND = -1;
+
+    /** Minimum sensible size. */
+    static final int MAP_MIN_SIZE = 32;
+
+    /** Empty cell. */
+    static final int MAP_EMPTY = 0;
+
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
 

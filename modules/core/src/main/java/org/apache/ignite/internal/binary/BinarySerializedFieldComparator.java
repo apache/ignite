@@ -87,7 +87,7 @@ class BinarySerializedFieldComparator {
     public void findField(int order) {
         curFieldOrder = order;
 
-        if (order == BinarySchema.ORDER_NOT_FOUND)
+        if (order == BinaryUtils.ORDER_NOT_FOUND)
             curFieldPos = POS_NOT_FOUND;
         else {
             int pos = orderBase + order * orderMultiplier;
