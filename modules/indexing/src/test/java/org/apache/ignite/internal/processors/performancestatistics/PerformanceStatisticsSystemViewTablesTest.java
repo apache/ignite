@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -79,8 +78,6 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
 
             cache.put(0L, new Person(1, "Alex", 2));
             cache.put(0L, new Person(2, "Bob", 3));
-
-            cache.query(new SqlFieldsQuery("select * from Person"));
 
             startCollectStatistics();
 
