@@ -99,8 +99,6 @@ class SystemViewFileWriter extends GridWorker {
             "metrics",
             "caches",
             "sql.queries",
-            "partitionStates", // TODO: IGNITE-25151
-            "statisticsPartitionData", // TODO: IGNITE-25152
             "nodes");
         sysViewPredicate = view -> !ignoredViews.contains(view.name());
 
@@ -116,9 +114,15 @@ class SystemViewFileWriter extends GridWorker {
             log.info("Started writing system views to " + filePath + ".");
 
         try {
-            for (SystemView<?> view : sysViewMgr)
-                if (sysViewPredicate.test(view))
-                    systemView(view);
+            for (SystemView<?> view : sysViewMgr) {
+                try {
+                    if (sysViewPredicate.test(view))
+                        systemView(view);
+                }
+                catch (RuntimeException | Error e) {
+                    log.warning("Unable to write system view: " + view.name() + ".", e);
+                }
+            }
 
             flush();
 
