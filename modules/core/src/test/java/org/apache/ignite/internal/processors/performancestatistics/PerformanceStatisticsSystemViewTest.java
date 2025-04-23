@@ -23,6 +23,9 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.systemview.walker.AtomicReferenceViewWalker;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateCollectionView;
+import org.apache.ignite.spi.systemview.view.datastructures.AtomicReferenceView;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
@@ -62,15 +65,28 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
         listeningLog.registerListener(lsnr);
 
         try (IgniteEx igniteEx = startGrid(0)) {
-            startCollectStatistics();
-
             Set<String> viewsExpected = new HashSet<>();
             igniteEx.context().systemView().forEach(view -> {
                 if (view.size() > 0 && !IGNORED_VIEWS.contains(view.name()))
                     viewsExpected.add(view.name());
             });
 
-            assertTrue("Performance statistics writer did not start.", waitForCondition(lsnr::check, TIMEOUT));
+            String invalidViewName = "invalidView";
+            igniteEx.context().systemView().registerView(
+                invalidViewName,
+                invalidViewName,
+                new AtomicReferenceViewWalker(),
+                new PredicateCollectionView<>(null),
+                AtomicReferenceView::new
+            );
+
+            LogListener warningLsnr = LogListener.matches("Unable to write system view: " + invalidViewName + ".").build();
+            listeningLog.registerListener(warningLsnr);
+
+            startCollectStatistics();
+
+            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
+            assertTrue("Performance statistics writer did not catch exception.", waitForCondition(warningLsnr::check, TIMEOUT));
 
             Set<String> viewsActual = new HashSet<>();
             stopCollectStatisticsAndRead(new TestHandler() {
