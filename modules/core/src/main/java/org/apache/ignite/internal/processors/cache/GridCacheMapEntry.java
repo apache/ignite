@@ -4944,15 +4944,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     newExpireTime = explicitExpireTime != CU.EXPIRE_TIME_CALCULATE ?
                         explicitExpireTime : CU.toExpireTime(explicitTtl);
 
-                    if (newExpireTime > 0 && newExpireTime < U.currentTimeMillis()) {
-                        op = DELETE;
-
-                        writeObj = null;
-
-                        remove(conflictCtx, invokeRes, readFromStore, false);
-
+                    if (removeIfExpired(newExpireTime, conflictCtx, invokeRes, readFromStore))
                         return;
-                    }
                 }
                 else {
                     newSysTtl = expiryPlc == null ? CU.TTL_NOT_CHANGED :
@@ -4964,11 +4957,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         newExpireTime = entry.expireTimeExtras();
                     }
                     else if (newSysTtl == CU.TTL_ZERO) {
-                        op = DELETE;
+                        boolean removed = removeIfExpired(U.currentTimeMillis() - 1, conflictCtx, invokeRes,
+                            readFromStore);
 
-                        writeObj = null;
-
-                        remove(conflictCtx, invokeRes, readFromStore, false);
+                        assert removed;
 
                         return;
                     }
@@ -4983,15 +4975,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysTtl = newTtl = conflictCtx.ttl();
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
 
-                if (newExpireTime > 0 && newExpireTime < U.currentTimeMillis()) {
-                    op = DELETE;
-
-                    writeObj = null;
-
-                    remove(conflictCtx, invokeRes, readFromStore, false);
-
+                if (removeIfExpired(newExpireTime, conflictCtx, invokeRes, readFromStore))
                     return;
-                }
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
@@ -5102,6 +5087,33 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 conflictCtx,
                 updateCntr0,
                 transformed);
+        }
+
+        /**
+         * Remove entry if expired.
+         * @param conflictCtx Conflict context.
+         * @param invokeRes Entry processor result (for invoke operation).
+         * @param readFromStore {@code True} if initial entry value was {@code null} and it was read from store.
+         * @return {@code True} if entry is removed.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean removeIfExpired(
+            long expireTime,
+            @Nullable GridCacheVersionConflictContext<?, ?> conflictCtx,
+            @Nullable IgniteBiTuple<Object, Exception> invokeRes,
+            boolean readFromStore
+        ) throws IgniteCheckedException {
+            if (expireTime > 0 && expireTime < U.currentTimeMillis()) {
+                op = DELETE;
+
+                writeObj = null;
+
+                remove(conflictCtx, invokeRes, readFromStore, false);
+
+                return true;
+            }
+
+            return false;
         }
 
         /**
