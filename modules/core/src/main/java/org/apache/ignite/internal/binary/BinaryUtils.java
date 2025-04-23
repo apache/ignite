@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.DataInput;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,6 +47,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -2834,6 +2836,29 @@ public class BinaryUtils {
                                         boolean skipHdrCheck,
                                         boolean forUnmarshal) {
         return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+    }
+
+    /**
+     * Reads schema from {@link DataInput}.
+     *
+     * @param in Input.
+     */
+    public static BinarySchema readSchema(DataInput in) throws IOException {
+        BinarySchema schema = new BinarySchemaImpl();
+
+        schema.readFrom(in);
+
+        return schema;
+    }
+
+    /**
+     * Constructs {@link BinarySchema}.
+     *
+     * @param id Id.
+     * @param fieldIds Field ids.
+     */
+    public static BinarySchema binarySchema(int id, List<Integer> fieldIds) {
+        return new BinarySchemaImpl(id, fieldIds);
     }
 
     /**

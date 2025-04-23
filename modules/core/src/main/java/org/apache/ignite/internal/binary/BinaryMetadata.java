@@ -30,11 +30,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.binary.BinaryUtils.readSchema;
 
 /**
  * Binary metadata which is passed over a wire.
@@ -317,9 +318,7 @@ public class BinaryMetadata implements Externalizable {
             schemaIds = U.newHashSet(schemasSize);
 
             for (int i = 0; i < schemasSize; i++) {
-                BinarySchema schema = new BinarySchema();
-
-                schema.readFrom(in);
+                BinarySchema schema = readSchema(in);
 
                 schemas.add(schema);
 

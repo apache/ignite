@@ -182,7 +182,7 @@ public final class ClientUtils {
 
             Collection<BinarySchema> schemas = ClientUtils.collection(
                 in,
-                unused -> new BinarySchema(
+                unused -> BinaryUtils.binarySchema(
                     reader.readInt(),
                     new ArrayList<>(ClientUtils.collection(in, unused2 -> reader.readInt()))
                 )

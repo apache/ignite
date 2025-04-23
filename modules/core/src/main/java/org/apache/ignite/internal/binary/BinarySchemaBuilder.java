@@ -57,6 +57,6 @@ class BinarySchemaBuilder {
      * @return Schema.
      */
     public BinarySchema build() {
-        return new BinarySchema(schemaId, fields);
+        return new BinarySchemaImpl(schemaId, fields);
     }
 }
