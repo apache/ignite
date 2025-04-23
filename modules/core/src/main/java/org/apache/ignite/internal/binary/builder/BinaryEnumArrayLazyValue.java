@@ -56,7 +56,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            compTypeId = reader.binaryContext().registerClass(cls, false, false).typeId();
+            compTypeId = reader.binaryContext().registerType(cls, false, false);
         }
         else {
             compTypeId = typeId;
