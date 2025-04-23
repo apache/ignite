@@ -92,7 +92,7 @@ public class PerformanceStatisticsSystemViewTablesTest extends AbstractPerforman
 
             AtomicBoolean hasPersonTable = new AtomicBoolean(false);
 
-            assertTrue("Performance statistics writer did not start.", waitForCondition(lsnr::check, TIMEOUT));
+            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
 
             stopCollectStatisticsAndRead(new TestHandler() {
                 @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
