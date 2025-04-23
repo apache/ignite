@@ -74,8 +74,6 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
         List<File> filesBefore = new ArrayList<>();
 
-        boolean firstRotate = true;
-
         for (int i = 0; i < cnt; i++) {
             G.allGrids().forEach(ignite -> ignite.cache(DEFAULT_CACHE_NAME).get(0));
 
@@ -97,10 +95,8 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
             checkFiles(performanceStatisticsFiles(files), NODES_CNT, NODES_CNT);
 
-            if (firstRotate) {
+            if (i == 0)
                 checkFiles(systemViewStatisticsFiles(files), NODES_CNT, 0);
-                firstRotate = false;
-            }
         }
 
         stopCollectStatistics();
