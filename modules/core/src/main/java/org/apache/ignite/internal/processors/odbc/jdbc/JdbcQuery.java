@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,7 +81,7 @@ public class JdbcQuery implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) {
         sql = reader.readString();

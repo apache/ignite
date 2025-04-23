@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -80,7 +80,7 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) {
         super.readBinary(reader, protoCtx);

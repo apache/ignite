@@ -39,8 +39,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -499,7 +499,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_DESTROY_CACHE: {
                 ctx.grid().destroyCache(reader.readString());
@@ -571,14 +571,14 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
         return processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */
     @Override public void processInStreamOutStream(
         int type,
-        BinaryRawReaderEx reader,
+        BinaryReaderEx reader,
         BinaryRawWriterEx writer
     ) throws IgniteCheckedException {
         if (type == OP_GET_CACHE_CONFIG) {
@@ -593,7 +593,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_CACHE: {
                 String name = reader.readString();
@@ -763,7 +763,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
-                                                                         BinaryRawReaderEx reader,
+                                                                         BinaryReaderEx reader,
                                                                          BinaryRawWriterEx writer)
             throws IgniteCheckedException {
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -836,7 +836,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
@@ -873,7 +873,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * @param reader Reader.
      * @param cache Cache.
      */
-    private static void setPlatformCache(BinaryRawReaderEx reader, IgniteCacheProxy cache) {
+    private static void setPlatformCache(BinaryReaderEx reader, IgniteCacheProxy cache) {
         if (reader.readBoolean())
             cache.context().cache().configuration().setPlatformCacheConfiguration(
                     PlatformConfigurationUtils.readPlatformCacheConfiguration(reader));

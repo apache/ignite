@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.ObjectInput;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended reader interface.
  */
-public interface BinaryRawReaderEx extends BinaryRawReader {
+public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryReaderHandlesHolder, ObjectInput {
     /**
      * @return Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
@@ -37,4 +40,56 @@ public interface BinaryRawReaderEx extends BinaryRawReader {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+
+    /**
+     * @return Input stream.
+     */
+    public BinaryInputStream in();
+
+    /**
+     * Get or create object schema.
+     *
+     * @return Schema.
+     */
+    public BinarySchema getOrCreateSchema();
+
+    /**
+     * @param offset Offset in the array.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Object unmarshal(int offset);
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    public Object deserialize() throws BinaryObjectException;
+
+    /**
+     * @return Descriptor.
+     */
+    public BinaryClassDescriptor descriptor();
+
+    /**
+     * @param fieldName Field name.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Object unmarshalField(String fieldName) throws BinaryObjectException;
+
+    /**
+     * @param fieldId Field ID.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Object unmarshalField(int fieldId) throws BinaryObjectException;
+
+    /**
+     * Try finding the field by name.
+     *
+     * @param name Field name.
+     * @return Offset.
+     */
+    public boolean findFieldByName(String name);
 }

@@ -319,7 +319,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
+            return (T)BinaryUtils.reader(ctx, in, ldr, hnds, true).deserialize();
         }
         finally {
             popContext(oldCtx);
@@ -360,10 +360,10 @@ public class GridBinaryMarshaller {
      * @param stream Stream.
      * @return Reader.
      */
-    public BinaryReaderExImpl reader(BinaryInputStream stream) {
+    public BinaryReaderEx reader(BinaryInputStream stream) {
         assert stream != null;
 
-        return new BinaryReaderExImpl(ctx, stream, null, true);
+        return BinaryUtils.reader(ctx, stream, null, true);
     }
 
     /**

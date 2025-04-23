@@ -46,8 +46,8 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -451,7 +451,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader, PlatformMemory mem)
         throws IgniteCheckedException {
         try {
             switch (type) {
@@ -932,7 +932,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param loc Local flag.
      * @return Cache async operation future.
      */
-    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
+    private void loadCache0(BinaryReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
 
         Object[] args = readLoadCacheArgs(reader);
@@ -950,7 +950,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param loc Local flag.
      * @return Cache async operation future.
      */
-    private IgniteFuture<Void> loadCacheAsync0(BinaryRawReaderEx reader, boolean loc) {
+    private IgniteFuture<Void> loadCacheAsync0(BinaryReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
 
         Object[] args = readLoadCacheArgs(reader);
@@ -965,7 +965,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return created object.
      */
-    @Nullable private PlatformCacheEntryFilter createPlatformCacheEntryFilter(BinaryRawReaderEx reader) {
+    @Nullable private PlatformCacheEntryFilter createPlatformCacheEntryFilter(BinaryReaderEx reader) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
@@ -980,7 +980,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return Arguments array.
      */
-    @Nullable private Object[] readLoadCacheArgs(BinaryRawReaderEx reader) {
+    @Nullable private Object[] readLoadCacheArgs(BinaryReaderEx reader) {
         Object[] args = null;
 
         int argCnt = reader.readInt();
@@ -996,7 +996,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_QRY_SQL:
@@ -1060,7 +1060,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -1426,7 +1426,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @return Query.
      * @throws IgniteCheckedException On error.
      */
-    private Query readInitialQuery(BinaryRawReaderEx reader) throws IgniteCheckedException {
+    private Query readInitialQuery(BinaryReaderEx reader) throws IgniteCheckedException {
         int typ = reader.readInt();
 
         switch (typ) {
@@ -1455,7 +1455,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return Query.
      */
-    private Query readSqlQuery(BinaryRawReaderEx reader) {
+    private Query readSqlQuery(BinaryReaderEx reader) {
         boolean loc = reader.readBoolean();
         String sql = reader.readString();
         String typ = reader.readString();
@@ -1482,7 +1482,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return Query.
      */
-    private Query readFieldsQuery(BinaryRawReaderEx reader) {
+    private Query readFieldsQuery(BinaryReaderEx reader) {
         boolean loc = reader.readBoolean();
         String sql = reader.readString();
         final int pageSize = reader.readInt();
@@ -1541,7 +1541,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return Query.
      */
-    private Query readScanQuery(BinaryRawReaderEx reader) {
+    private Query readScanQuery(BinaryReaderEx reader) {
         boolean loc = reader.readBoolean();
         final int pageSize = reader.readInt();
 

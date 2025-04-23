@@ -23,10 +23,11 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
@@ -113,7 +114,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
@@ -160,7 +161,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
@@ -246,8 +247,8 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param events Events.
      * @return Result.
      */
-    private EventAdapter startWaitForLocal(BinaryRawReaderEx reader, IgniteEvents events) {
-        Long filterHnd = reader.readObject();
+    private EventAdapter startWaitForLocal(BinaryReaderEx reader, IgniteEvents events) {
+        Long filterHnd = ((BinaryRawReader)reader).readObject();
 
         IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
 
@@ -263,8 +264,8 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param events Events.
      * @return Result.
      */
-    private IgniteFuture<EventAdapter> startWaitForLocalAsync(BinaryRawReaderEx reader, IgniteEvents events) {
-        Long filterHnd = reader.readObject();
+    private IgniteFuture<EventAdapter> startWaitForLocalAsync(BinaryReaderEx reader, IgniteEvents events) {
+        Long filterHnd = ((BinaryRawReader)reader).readObject();
 
         IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
 
@@ -280,7 +281,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param events Events.
      * @return Result.
      */
-    private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader, IgniteEvents events) {
+    private Collection<Event> startRemoteQuery(BinaryReaderEx reader, IgniteEvents events) {
         Object pred = reader.readObjectDetached();
 
         long timeout = reader.readLong();
@@ -299,7 +300,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param events Events.
      * @return Result.
      */
-    private IgniteFuture<List<Event>> startRemoteQueryAsync(BinaryRawReaderEx reader, IgniteEvents events) {
+    private IgniteFuture<List<Event>> startRemoteQueryAsync(BinaryReaderEx reader, IgniteEvents events) {
         Object pred = reader.readObjectDetached();
 
         long timeout = reader.readLong();
@@ -356,7 +357,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param reader Reader
      * @return Event types, or null.
      */
-    private int[] readEventTypes(BinaryRawReaderEx reader) {
+    private int[] readEventTypes(BinaryReaderEx reader) {
         return reader.readIntArray();
     }
 

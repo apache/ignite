@@ -27,7 +27,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -49,7 +49,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     private final byte[] arr;
 
     /** */
-    private final BinaryReaderExImpl reader;
+    private final BinaryReaderEx reader;
 
     /** */
     private final Map<Integer, Object> objMap;
@@ -67,7 +67,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         arr = objImpl.array();
         pos = objImpl.start();
 
-        reader = new BinaryReaderExImpl(ctx,
+        reader = BinaryUtils.reader(ctx,
             BinaryStreams.inputStream(arr, pos),
             ctx.configuration().getClassLoader(),
             false);
@@ -86,7 +86,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         this.arr = other.arr;
         this.pos = start;
 
-        reader = new BinaryReaderExImpl(ctx,
+        reader = BinaryUtils.reader(ctx,
             BinaryStreams.inputStream(arr, start),
             null,
             other.reader.handles(),
@@ -906,7 +906,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     /**
      * @return Reader.
      */
-    BinaryReaderExImpl reader() {
+    BinaryReaderEx reader() {
         return reader;
     }
 

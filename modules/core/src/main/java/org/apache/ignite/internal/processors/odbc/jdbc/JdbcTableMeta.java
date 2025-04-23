@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -91,7 +91,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         schemaName = reader.readString();

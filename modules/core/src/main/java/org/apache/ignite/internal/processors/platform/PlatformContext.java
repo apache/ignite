@@ -23,8 +23,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
@@ -72,7 +72,7 @@ public interface PlatformContext {
      * @param mem Memory.
      * @return Reader.
      */
-    public BinaryRawReaderEx reader(PlatformMemory mem);
+    public BinaryReaderEx reader(PlatformMemory mem);
 
     /**
      * Get memory reader.
@@ -80,7 +80,7 @@ public interface PlatformContext {
      * @param in Input.
      * @return Reader.
      */
-    public BinaryRawReaderEx reader(PlatformInputStream in);
+    public BinaryReaderEx reader(PlatformInputStream in);
 
     /**
      * Get memory writer.
@@ -126,7 +126,7 @@ public interface PlatformContext {
      *
      * @param reader Reader.
      */
-    public void processMetadata(BinaryRawReaderEx reader);
+    public void processMetadata(BinaryReaderEx reader);
 
     /**
      * Write metadata for the given type ID.

@@ -24,8 +24,8 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -112,7 +112,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             in.synchronize();
 
-            BinaryRawReaderEx reader = platformCtx.reader(in);
+            BinaryReaderEx reader = platformCtx.reader(in);
 
             PlatformUtils.readInvocationResult(platformCtx, reader);
         }
@@ -223,7 +223,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             in.synchronize();
 
-            BinaryRawReaderEx reader = platformCtx.reader(in);
+            BinaryReaderEx reader = platformCtx.reader(in);
 
             return PlatformUtils.readInvocationResult(platformCtx, reader, deserializeResult);
         }

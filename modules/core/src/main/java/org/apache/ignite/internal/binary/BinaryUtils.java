@@ -1854,7 +1854,7 @@ public class BinaryUtils {
      */
     @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
+        return reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**
@@ -2777,6 +2777,54 @@ public class BinaryUtils {
      */
     public static boolean isBinaryEnumArray(Object val) {
         return val instanceof BinaryEnumArray;
+    }
+
+    /**
+     * Creates reader instance.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, forUnmarshal);
+    }
+
+    /**
+     * Creates reader instance.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        @Nullable BinaryReaderHandles hnds,
+                                        boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, forUnmarshal);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param skipHdrCheck Whether to skip header check.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        @Nullable BinaryReaderHandles hnds,
+                                        boolean skipHdrCheck,
+                                        boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
     }
 
     /**

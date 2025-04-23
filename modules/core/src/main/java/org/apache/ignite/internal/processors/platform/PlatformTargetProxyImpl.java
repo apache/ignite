@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
@@ -62,7 +62,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     /** {@inheritDoc} */
     @Override public long inStreamOutLong(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-            BinaryRawReaderEx reader = platformCtx.reader(mem);
+            BinaryReaderEx reader = platformCtx.reader(mem);
 
             return target.processInStreamOutLong(type, reader, mem);
         }
@@ -74,7 +74,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     /** {@inheritDoc} */
     @Override public Object inStreamOutObject(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = memPtr != 0 ? platformCtx.memory().get(memPtr) : null) {
-            BinaryRawReaderEx reader = mem != null ? platformCtx.reader(mem) : null;
+            BinaryReaderEx reader = mem != null ? platformCtx.reader(mem) : null;
 
             return wrapProxy(target.processInStreamOutObject(type, reader));
         }
@@ -126,7 +126,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     /** {@inheritDoc} */
     @Override public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception {
         try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            BinaryRawReaderEx reader = platformCtx.reader(inMem);
+            BinaryReaderEx reader = platformCtx.reader(inMem);
 
             try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
@@ -150,7 +150,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
         PlatformMemory outMem = null;
 
         try {
-            BinaryRawReaderEx reader = null;
+            BinaryReaderEx reader = null;
 
             if (inMemPtr != 0) {
                 inMem = platformCtx.memory().get(inMemPtr);
@@ -226,7 +226,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      */
     private PlatformListenable inStreamOutListenableAsync(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-            BinaryRawReaderEx reader = platformCtx.reader(mem);
+            BinaryReaderEx reader = platformCtx.reader(mem);
 
             long futId = reader.readLong();
             int futTyp = reader.readInt();

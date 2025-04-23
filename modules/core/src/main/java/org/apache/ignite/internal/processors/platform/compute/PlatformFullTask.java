@@ -27,8 +27,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -126,7 +126,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
                 in.synchronize();
 
-                BinaryRawReaderEx reader = ctx.reader(in);
+                BinaryReaderEx reader = ctx.reader(in);
 
                 return read(reader, nodes);
             }
@@ -179,7 +179,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
      * @param nodes Current topology nodes.
      * @return Map result.
      */
-    private Map<ComputeJob, ClusterNode> read(BinaryRawReaderEx reader, Collection<ClusterNode> nodes) {
+    private Map<ComputeJob, ClusterNode> read(BinaryReaderEx reader, Collection<ClusterNode> nodes) {
         if (reader.readBoolean()) {
             if (!reader.readBoolean())
                 return null;

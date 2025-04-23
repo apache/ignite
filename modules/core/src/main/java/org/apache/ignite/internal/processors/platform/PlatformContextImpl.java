@@ -43,9 +43,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -175,13 +174,13 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryRawReaderEx reader(PlatformMemory mem) {
+    @Override public BinaryReaderEx reader(PlatformMemory mem) {
         return reader(mem.input());
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
-        return new BinaryReaderExImpl(marsh.context(),
+    @Override public BinaryReaderEx reader(PlatformInputStream in) {
+        return BinaryUtils.reader(marsh.context(),
             in,
             ctx.config().getClassLoader(),
             null,
@@ -336,7 +335,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void processMetadata(BinaryRawReaderEx reader) {
+    @Override public void processMetadata(BinaryReaderEx reader) {
         Collection<BinaryMetadata> metas = PlatformUtils.readBinaryMetadataCollection(reader);
 
         BinaryContext binCtx = cacheObjProc.binaryContext();

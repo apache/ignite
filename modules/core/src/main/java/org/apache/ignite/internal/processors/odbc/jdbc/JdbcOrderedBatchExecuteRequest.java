@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -72,7 +72,7 @@ public class JdbcOrderedBatchExecuteRequest extends JdbcBatchExecuteRequest
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);

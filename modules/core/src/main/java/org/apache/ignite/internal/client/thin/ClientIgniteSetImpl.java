@@ -29,7 +29,7 @@ import org.apache.ignite.client.ClientAutoCloseableIterator;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.X;
@@ -379,7 +379,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @return Page.
      */
     private List<T> readPage(PayloadInputChannel in) {
-        try (BinaryReaderExImpl r = serDes.createBinaryReader(in.in())) {
+        try (BinaryReaderEx r = serDes.createBinaryReader(in.in())) {
             int size = r.readInt();
             List<T> res = new ArrayList<>(size);
 

@@ -880,7 +880,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
-        BinaryReaderExImpl reader = reader(null, coCtx != null ?
+        BinaryReaderEx reader = reader(null, coCtx != null ?
             coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
 
         Object obj0 = reader.deserialize();
@@ -911,12 +911,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
-        return new BinaryReaderExImpl(ctx,
+        return BinaryUtils.reader(ctx,
             BinaryStreams.inputStream(arr, start),
             ldr,
             rCtx,
@@ -931,7 +931,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
     }
 

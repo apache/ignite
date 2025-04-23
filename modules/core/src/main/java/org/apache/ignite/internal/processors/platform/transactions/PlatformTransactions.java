@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -218,7 +218,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         long txId = reader.readLong();
 
         IgniteFuture fut0;
@@ -255,7 +255,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public void processInStreamOutStream(
         int type,
-        BinaryRawReaderEx reader,
+        BinaryReaderEx reader,
         BinaryRawWriterEx writer
     ) throws IgniteCheckedException {
         switch (type) {

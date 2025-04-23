@@ -29,8 +29,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -179,8 +179,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeString(ses.cacheName());
                     writer.writeObject(key);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
+            }, new IgniteInClosureX<BinaryReaderEx>() {
+                @Override public void applyx(BinaryReaderEx reader) {
                     val.set((V)reader.readObjectDetached());
                 }
             });
@@ -210,8 +210,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     for (Object o : keys0)
                         writer.writeObject(o);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
+            }, new IgniteInClosureX<BinaryReaderEx>() {
+                @Override public void applyx(BinaryReaderEx reader) {
                     int cnt = reader.readInt();
 
                     for (int i = 0; i < cnt; i++)
@@ -236,8 +236,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeString(ses.cacheName());
                     writer.writeObjectArray(args);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
+            }, new IgniteInClosureX<BinaryReaderEx>() {
+                @Override public void applyx(BinaryReaderEx reader) {
                     int cnt = reader.readInt();
 
                     for (int i = 0; i < cnt; i++)
@@ -462,7 +462,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @return Result.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    protected int doInvoke(IgniteInClosure<BinaryRawWriterEx> task, IgniteInClosure<BinaryRawReaderEx> readClo)
+    protected int doInvoke(IgniteInClosure<BinaryRawWriterEx> task, IgniteInClosure<BinaryReaderEx> readClo)
         throws IgniteCheckedException {
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
@@ -485,7 +485,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
             }
 
             if (readClo != null) {
-                BinaryRawReaderEx reader = platformCtx.reader(mem);
+                BinaryReaderEx reader = platformCtx.reader(mem);
 
                 readClo.apply(reader);
             }

@@ -54,7 +54,7 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -165,7 +165,7 @@ public final class ClientUtils {
 
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
-        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
+        try (BinaryReaderEx reader = createBinaryReader(in)) {
             int typeId = reader.readInt();
             String typeName = reader.readString();
             String affKeyFieldName = reader.readString();
@@ -381,7 +381,7 @@ public final class ClientUtils {
     /** Deserialize configuration from stream. */
     ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolCtx)
         throws IOException {
-        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
+        try (BinaryReaderEx reader = createBinaryReader(in)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
 
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
@@ -551,7 +551,7 @@ public final class ClientUtils {
     /**
      * @param in Input stream.
      */
-    BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+    BinaryReaderEx createBinaryReader(BinaryInputStream in) {
         return createBinaryReader(marsh.context(), in);
     }
 
@@ -559,8 +559,8 @@ public final class ClientUtils {
      * @param binaryCtx Binary context.
      * @param in Input stream.
      */
-    static BinaryReaderExImpl createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
-        return new BinaryReaderExImpl(binaryCtx, in, null, null, true, true);
+    static BinaryReaderEx createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
+        return BinaryUtils.reader(binaryCtx, in, null, null, true, true);
     }
 
     /** Read Ignite binary object from input stream. */

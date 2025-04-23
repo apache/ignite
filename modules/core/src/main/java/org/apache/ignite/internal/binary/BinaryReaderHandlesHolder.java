@@ -25,6 +25,13 @@ interface BinaryReaderHandlesHolder {
      * Set handle.
      *
      * @param obj Object.
+     */
+    public void setHandle(Object obj);
+
+    /**
+     * Set handle.
+     *
+     * @param obj Object.
      * @param pos Position.
      */
     public void setHandle(Object obj, int pos);

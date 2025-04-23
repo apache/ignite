@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -148,7 +148,7 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         schemaName = reader.readString();
