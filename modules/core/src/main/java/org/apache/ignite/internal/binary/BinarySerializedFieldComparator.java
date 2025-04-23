@@ -21,7 +21,7 @@ import java.util.Objects;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.arrayEq;
+import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 
 /**
  * Compares fiels in serialized form when possible.

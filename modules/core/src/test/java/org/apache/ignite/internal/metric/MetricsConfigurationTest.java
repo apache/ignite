@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cach
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.arrayEq;
+import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
