@@ -26,9 +26,7 @@ interface BinaryReaderHandlesHolder {
      *
      * @param obj Object.
      */
-    public default void setHandle(Object obj) {
-        throw new UnsupportedOperationException();
-    }
+    public void setHandle(Object obj);
 
     /**
      * Set handle.

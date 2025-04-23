@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutput;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
@@ -32,8 +33,10 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,9 +48,12 @@ import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 /**
  * Binary writer implementation.
  */
-class BinaryWriterExImpl implements BinaryWriterEx {
+public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, ObjectOutput {
     /** Length: integer. */
     private static final int LEN_INT = 4;
+
+    /** Initial capacity. */
+    private static final int INIT_CAP = 1024;
 
     /** Default buffer size for reading from streams. */
     public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
@@ -87,6 +93,30 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
     /**
      * @param ctx Context.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx) {
+        this(ctx, BinaryThreadLocalContext.get());
+    }
+
+    /**
+     * @param ctx Context.
+     * @param tlsCtx TLS context.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
+        this(ctx, BinaryStreams.outputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @param handles Handles.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterHandles handles) {
+        this(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), handles);
+    }
+
+    /**
+     * @param ctx Context.
      * @param out Output stream.
      * @param handles Handles.
      */
@@ -99,28 +129,39 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         start = out.position();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean failIfUnregistered() {
+    /**
+     * @return Fail if unregistered flag value.
+     */
+    public boolean failIfUnregistered() {
         return failIfUnregistered;
     }
 
-    /** {@inheritDoc} */
-    @Override public void failIfUnregistered(boolean failIfUnregistered) {
+    /**
+     * @param failIfUnregistered Fail if unregistered.
+     */
+    public void failIfUnregistered(boolean failIfUnregistered) {
         this.failIfUnregistered = failIfUnregistered;
     }
 
-    /** {@inheritDoc} */
-    @Override public void typeId(int typeId) {
+    /**
+     * @param typeId Type ID.
+     */
+    public void typeId(int typeId) {
         this.typeId = typeId;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Close the writer releasing resources if necessary.
+     */
     @Override public void close() {
         out.close();
     }
 
-    /** {@inheritDoc} */
-    @Override public void marshal(Object obj) throws BinaryObjectException {
+    /**
+     * @param obj Object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    void marshal(Object obj) throws BinaryObjectException {
         marshal(obj, true);
     }
 
@@ -204,8 +245,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         desc.write(obj, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public byte[] array() {
+    /**
+     * @return Array.
+     */
+    public byte[] array() {
         return out.arrayCopy();
     }
 
@@ -225,16 +268,25 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         out.position(pos);
     }
 
-    /** {@inheritDoc} */
-    @Override public void preWrite(@Nullable String clsName) {
+    /**
+     * Perform pre-write. Reserves space for header and writes class name if needed.
+     *
+     * @param clsName Class name (optional).
+     */
+    public void preWrite(@Nullable String clsName) {
         out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
 
         if (clsName != null)
             writeString(clsName);
     }
 
-    /** {@inheritDoc} */
-    @Override public void postWrite(boolean userType, boolean registered) {
+    /**
+     * Perform post-write. Fills object header.
+     *
+     * @param userType User type flag.
+     * @param registered Whether type is registered.
+     */
+    public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
@@ -303,8 +355,12 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         out.unsafePosition(retPos);
     }
 
-    /** {@inheritDoc} */
-    @Override public void postWriteHashCode(@Nullable String clsName) {
+    /**
+     * Perform post-write hash code update if necessary.
+     *
+     * @param clsName Class name. Always null if class is registered.
+     */
+    public void postWriteHashCode(@Nullable String clsName) {
         int typeId = clsName == null ? this.typeId : ctx.typeId(clsName);
 
         BinaryIdentityResolver identity = ctx.identity(typeId);
@@ -329,8 +385,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void popSchema() {
+    /**
+     * Pop schema.
+     */
+    public void popSchema() {
         if (fieldCnt > 0)
             schema.pop(fieldCnt);
     }
@@ -407,40 +465,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /**
-     * @param val Array.
-     */
-    void doWriteEnumArray(@Nullable Object[] val) {
-        assert val == null || val.getClass().getComponentType().isEnum();
-
-        if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
-        else {
-            BinaryClassDescriptor desc = ctx.registerClass(
-                val.getClass().getComponentType(),
-                true,
-                failIfUnregistered);
-
-            out.unsafeEnsure(1 + 4);
-
-            out.unsafeWriteByte(GridBinaryMarshaller.ENUM_ARR);
-
-            if (desc.registered())
-                out.unsafeWriteInt(desc.typeId());
-            else {
-                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-
-                writeString(val.getClass().getComponentType().getName());
-            }
-
-            out.writeInt(val.length);
-
-            // TODO: Denis: Redundant data for each element of the array.
-            for (Object o : val)
-                writeEnum((Enum<?>)o);
-        }
-    }
-
-    /**
      * @param proxy Proxy.
      */
     public void writeProxy(Proxy proxy, Class<?>[] intfs) {
@@ -472,8 +496,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeByteFieldPrimitive(byte val) {
+    /**
+     * @param val Value.
+     */
+    public void writeByteFieldPrimitive(byte val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE);
@@ -513,8 +539,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeShortFieldPrimitive(short val) {
+    /**
+     * @param val Value.
+     */
+    public void writeShortFieldPrimitive(short val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.SHORT);
@@ -531,8 +559,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeShortFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeIntFieldPrimitive(int val) {
+    /**
+     * @param val Value.
+     */
+    public void writeIntFieldPrimitive(int val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.INT);
@@ -549,8 +579,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeIntFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeLongFieldPrimitive(long val) {
+    /**
+     * @param val Value.
+     */
+    public void writeLongFieldPrimitive(long val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.LONG);
@@ -567,8 +599,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeLongFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeFloatFieldPrimitive(float val) {
+    /**
+     * @param val Value.
+     */
+    public void writeFloatFieldPrimitive(float val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.FLOAT);
@@ -585,8 +619,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeFloatFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeDoubleFieldPrimitive(double val) {
+    /**
+     * @param val Value.
+     */
+    public void writeDoubleFieldPrimitive(double val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE);
@@ -603,8 +639,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeDoubleFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeCharFieldPrimitive(char val) {
+    /**
+     * @param val Value.
+     */
+    public void writeCharFieldPrimitive(char val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.CHAR);
@@ -621,8 +659,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeCharFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBooleanFieldPrimitive(boolean val) {
+    /**
+     * @param val Value.
+     */
+    public void writeBooleanFieldPrimitive(boolean val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN);
@@ -640,15 +680,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /**
-     * @param obj Object.
+     * @param po Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void writeObjectField(@Nullable Object obj) throws BinaryObjectException {
-        writeObject(obj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+    public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -884,7 +919,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
         writeFieldId(fieldName);
-        writeObjectField(obj);
+        writeObject(obj);
     }
 
     /** {@inheritDoc} */
@@ -1317,6 +1352,40 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         doWriteEnumArray(val);
     }
 
+    /**
+     * @param val Array.
+     */
+    void doWriteEnumArray(@Nullable Object[] val) {
+        assert val == null || val.getClass().getComponentType().isEnum();
+
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            BinaryClassDescriptor desc = ctx.registerClass(
+                val.getClass().getComponentType(),
+                true,
+                failIfUnregistered);
+
+            out.unsafeEnsure(1 + 4);
+
+            out.unsafeWriteByte(GridBinaryMarshaller.ENUM_ARR);
+
+            if (desc.registered())
+                out.unsafeWriteInt(desc.typeId());
+            else {
+                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+
+                writeString(val.getClass().getComponentType().getName());
+            }
+
+            out.writeInt(val.length);
+
+            // TODO: Denis: Redundant data for each element of the array.
+            for (Object o : val)
+                writeEnum((Enum<?>)o);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public BinaryRawWriter rawWriter() {
         if (rawOffPos == 0)
@@ -1414,8 +1483,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         writeFieldId(id);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeFieldId(int fieldId) {
+    /**
+     * Write field ID.
+     * @param fieldId Field ID.
+     */
+    public void writeFieldId(int fieldId) {
         int fieldOff = out.position() - start;
 
         // Advance schema hash.
@@ -1440,8 +1512,21 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         fieldCnt++;
     }
 
-    /** {@inheritDoc} */
-    @Override public int writeByteArray(InputStream in, int limit) throws BinaryObjectException {
+    /**
+     * Write byte array from the InputStream.
+     *
+     * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
+     * If {@code limit} == -1 than it will try to read and write all bytes.
+     *
+     * <p>In any case if actual number of bytes is greater than {@code MAX_ARRAY_SIZE}
+     * than exception will be thrown.
+     *
+     * @param in InputStream.
+     * @param limit Max length of data to be read from the stream or -1 if all data should be read.
+     * @return Number of bytes written.
+     * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    public int writeByteArray(InputStream in, int limit) throws BinaryObjectException {
         if (limit != -1)
             out.unsafeEnsure(1 + 4 + limit);
         else
@@ -1493,13 +1578,17 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         this.schemaId = schemaId;
     }
 
-    /** {@inheritDoc} */
-    @Override public int schemaId() {
+    /**
+     * @return Schema ID.
+     */
+    public int schemaId() {
         return schemaId;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinarySchema currentSchema() {
+    /**
+     * @return Current writer's schema.
+     */
+    public BinarySchema currentSchema() {
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)
@@ -1548,8 +1637,13 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryWriterEx newWriter(int typeId) {
+    /**
+     * Create new writer with same context.
+     *
+     * @param typeId type
+     * @return New writer.
+     */
+    public BinaryWriterExImpl newWriter(int typeId) {
         BinaryWriterExImpl res = new BinaryWriterExImpl(ctx, out, schema, handles());
 
         res.failIfUnregistered(failIfUnregistered);
@@ -1559,8 +1653,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryContext context() {
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext context() {
         return ctx;
     }
 }

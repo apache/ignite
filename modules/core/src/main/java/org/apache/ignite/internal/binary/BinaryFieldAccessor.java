@@ -684,7 +684,7 @@ abstract class BinaryFieldAccessor {
                 case BINARY:
                 case OBJECT:
                 case PROXY:
-                    writer.writeObjectField(val);
+                    writer.writeObject(val);
 
                     break;
 
