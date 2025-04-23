@@ -100,10 +100,10 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
      */
     protected static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
-        private final String consId;
+        private final boolean incSnp;
 
         /** */
-        private final boolean incSnp;
+        private final String consId;
 
         /** */
         private final boolean customSnpPath;
@@ -125,8 +125,8 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
             boolean delIfExist,
             CacheGroupInfo cacheGrpInfo
         ) throws IgniteCheckedException {
-            this.consId = consId;
             this.incSnp = incSnp;
+            this.consId = consId;
             this.customSnpPath = customSnpPath;
             this.delIfExist = delIfExist;
             this.cacheGrpInfo = cacheGrpInfo;

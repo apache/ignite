@@ -83,17 +83,17 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
         try {
             for (int i = 1; i < oldNodesCnt; ++i) {
                 startGrid(
-                        i,
-                        OLD_IGNITE_VERSION,
-                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
+                    i,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
                 );
             }
 
             startGrid(
-                    oldNodesCnt,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
-                    new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+                oldNodesCnt,
+                OLD_IGNITE_VERSION,
+                new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
+                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
             );
 
             stopAllGrids();
@@ -191,12 +191,15 @@ public class SnapshotCompatibilityTest extends IgniteNodeFileTreeCompatibilityAb
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(
-            CACHE_DUMP_NAME,
-            snpDir(customSnpPath, U.defaultWorkDirectory(), false),
-            node.configuration(),
-            consumer
-        ), log).run();
+        new DumpReader(
+            new DumpReaderConfiguration(
+                CACHE_DUMP_NAME,
+                snpDir(customSnpPath, U.defaultWorkDirectory(), false),
+                node.configuration(),
+                consumer
+            ),
+            log
+        ).run();
 
         cacheGrpInfo.cacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
