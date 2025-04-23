@@ -52,7 +52,9 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -65,7 +67,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableCollection;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.and;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
@@ -379,6 +380,51 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /**
+     * Get a predicate that evaluates to {@code true} if each of its component predicates
+     * evaluates to {@code true}. The components are evaluated in order they are supplied.
+     * Evaluation will be stopped as soon as first predicate evaluates to {@code false}.
+     * Passed in predicates are NOT copied. If no predicates are passed in the returned
+     * predicate will always evaluate to {@code false}.
+     *
+     * @param ps Passed in predicate. If none provided - always-{@code false} predicate is
+     *      returned.
+     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
+     * @return Predicate that evaluates to {@code true} if each of its component predicates
+     *      evaluates to {@code true}.
+     */
+    @SuppressWarnings({"unchecked"})
+    private static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
+        if (F.isEmpty(ps))
+            return F.alwaysTrue();
+
+        if (F.isAlwaysFalse(ps))
+            return F.alwaysFalse();
+
+        if (F.isAlwaysTrue(ps))
+            return F.alwaysTrue();
+
+        if (F0.isAllNodePredicates(ps)) {
+            Set<UUID> ids = new HashSet<>();
+
+            for (IgnitePredicate<? super T> p : ps) {
+                if (p != null) {
+                    Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
+
+                    if (ids.isEmpty())
+                        ids.addAll(list);
+                    else
+                        ids.retainAll(list);
+                }
+            }
+
+            // T must be <T extends ClusterNode>.
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
+        }
+        else
+            return new IsAllPredicate<>(ps);
     }
 
     /** {@inheritDoc} */

@@ -20,10 +20,8 @@ package org.apache.ignite.internal.util.lang;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -31,7 +29,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -119,51 +116,6 @@ public class ClusterNodeFunc {
             return F.alwaysFalse();
 
         return new ContainsNodeIdsPredicate<>(nodeIds);
-    }
-
-    /**
-     * Get a predicate that evaluates to {@code true} if each of its component predicates
-     * evaluates to {@code true}. The components are evaluated in order they are supplied.
-     * Evaluation will be stopped as soon as first predicate evaluates to {@code false}.
-     * Passed in predicates are NOT copied. If no predicates are passed in the returned
-     * predicate will always evaluate to {@code false}.
-     *
-     * @param ps Passed in predicate. If none provided - always-{@code false} predicate is
-     *      returned.
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if each of its component predicates
-     *      evaluates to {@code true}.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
-        if (F.isEmpty(ps))
-            return F.alwaysTrue();
-
-        if (F.isAlwaysFalse(ps))
-            return F.alwaysFalse();
-
-        if (F.isAlwaysTrue(ps))
-            return F.alwaysTrue();
-
-        if (F0.isAllNodePredicates(ps)) {
-            Set<UUID> ids = new HashSet<>();
-
-            for (IgnitePredicate<? super T> p : ps) {
-                if (p != null) {
-                    Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
-
-                    if (ids.isEmpty())
-                        ids.addAll(list);
-                    else
-                        ids.retainAll(list);
-                }
-            }
-
-            // T must be <T extends ClusterNode>.
-            return (IgnitePredicate<T>)new GridNodePredicate(ids);
-        }
-        else
-            return new IsAllPredicate<>(ps);
     }
 
     /**
