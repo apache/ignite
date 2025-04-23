@@ -1624,7 +1624,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
-        int typeId = binaryCtx.registerClass(cls, true, false);
+        int typeId = binaryCtx.registerType(cls, true, false);
 
         return metadata(typeId);
     }

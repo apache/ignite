@@ -131,7 +131,7 @@ class BinaryBuilderSerializer {
             int typeId = writer.context().typeId(clsName);
 
             // Need register class for marshaller to be able to deserialize enum value.
-            writer.context().registerClass(((Enum)val).getDeclaringClass(), true, false);
+            writer.context().registerType(((Enum)val).getDeclaringClass(), true, false);
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(typeId);
@@ -216,7 +216,7 @@ class BinaryBuilderSerializer {
             if (compCls.isEnum()) {
                 Enum[] enumArr = (Enum[])val;
 
-                writer.context().registerClass(compCls, true, false);
+                writer.context().registerType(compCls, true, false);
 
                 writer.writeByte(GridBinaryMarshaller.ENUM_ARR);
                 writer.writeInt(compTypeId);

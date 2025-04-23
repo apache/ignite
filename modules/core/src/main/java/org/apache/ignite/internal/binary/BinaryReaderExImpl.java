@@ -264,7 +264,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.registerClassEx(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), true, false);
+                    desc = ctx.registerClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), true, false);
 
                     typeId = desc.typeId();
                 }

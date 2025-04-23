@@ -167,7 +167,7 @@ public class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
-        int typeId = binaryContext().registerClass(cls, true, false);
+        int typeId = binaryContext().registerType(cls, true, false);
 
         return binaryContext().metadata(typeId);
     }

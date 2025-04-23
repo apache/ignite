@@ -1680,7 +1680,7 @@ public class BinaryUtils {
 
             // forces registering of class by type id, at least locally
             if (useCache)
-                ctx.registerClass(cls, false, false);
+                ctx.registerType(cls, false, false);
         }
 
         return cls;
@@ -1709,7 +1709,7 @@ public class BinaryUtils {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            ctx.registerClass(cls, false, false);
+            ctx.registerType(cls, false, false);
         }
 
         return cls;

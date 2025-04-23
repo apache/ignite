@@ -576,12 +576,12 @@ public class BinaryContext {
      * @return Class descriptor ID.
      * @throws BinaryObjectException In case of error.
      */
-    public int registerClass(
+    public int registerType(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered
     ) throws BinaryObjectException {
-        return registerClassEx(cls, registerMeta, failIfUnregistered).typeId();
+        return registerClass(cls, registerMeta, failIfUnregistered).typeId();
     }
 
     /**
@@ -594,29 +594,27 @@ public class BinaryContext {
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    @NotNull BinaryClassDescriptor registerClassEx(
+    @NotNull BinaryClassDescriptor registerClass(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered
     ) throws BinaryObjectException {
-        return registerClassEx(cls, registerMeta, failIfUnregistered, false);
+        return registerClass(cls, registerMeta, failIfUnregistered, false);
     }
 
     /**
      * @param cls Class.
      * @param failIfUnregistered Throw exception if class isn't registered.
      * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
      * @return Class descriptor ID.
      * @throws BinaryObjectException In case of error.
      */
-    public int registerClass(
+    public int registerClassLocally(
         Class<?> cls,
         boolean registerMeta,
-        boolean failIfUnregistered,
-        boolean onlyLocReg
+        boolean failIfUnregistered
     ) throws BinaryObjectException {
-        return registerClassEx(cls, registerMeta, failIfUnregistered, onlyLocReg).typeId();
+        return registerClass(cls, registerMeta, failIfUnregistered, true).typeId();
     }
 
     /**
@@ -627,7 +625,7 @@ public class BinaryContext {
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    @NotNull BinaryClassDescriptor registerClassEx(
+    @NotNull BinaryClassDescriptor registerClass(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered,
@@ -791,7 +789,7 @@ public class BinaryContext {
         }
 
         if (desc == null) {
-            desc = registerClassEx(cls, registerMeta, false);
+            desc = registerClass(cls, registerMeta, false);
 
             assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
                 + ", desc=" + desc + "]";
@@ -1244,7 +1242,7 @@ public class BinaryContext {
     /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#registerClassEx(Class, boolean, boolean)} already call this functionality
+     * {@link BinaryContext#registerClass(Class, boolean, boolean)} already call this functionality
      * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
