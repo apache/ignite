@@ -87,6 +87,30 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     @Test
+    public void testCheckWithCustomHandlersUnallowed() throws Exception {
+        createFullSnapshot();
+
+        int incSnpCnt = 1;
+
+        createIncrementalSnapshots(incSnpCnt);
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> snp(grid(1)).checkSnapshot(SNP, null, null, true, 1, true).get(getTestTimeout()),
+            IllegalArgumentException.class,
+            "Snapshot handlers aren't supported for incremental snapshot"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> snp(grid(1)).restoreSnapshot(SNP, null, null, 1, true).get(getTestTimeout()),
+            IllegalArgumentException.class,
+            "Snapshot handlers aren't supported for incremental snapshot"
+        );
+    }
+
+    /** */
+    @Test
     public void testCheckCorrectIncrementalSnapshot() throws Exception {
         createFullSnapshot();
 

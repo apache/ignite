@@ -1701,6 +1701,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
+        A.ensure(!includeCustomHandlers || incIdx < 1, "Snapshot handlers aren't supported for incremental snapshot.");
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
