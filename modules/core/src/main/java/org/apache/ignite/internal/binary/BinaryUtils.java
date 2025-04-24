@@ -2834,9 +2834,9 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx) {
-        BinaryThreadLocalContext tlsCtx = BinaryThreadLocalContext.get();
+        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
-        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)U.KB, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)U.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
     }
 
     /**

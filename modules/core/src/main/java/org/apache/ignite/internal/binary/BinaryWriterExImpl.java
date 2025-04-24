@@ -34,7 +34,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -49,9 +48,6 @@ import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 class BinaryWriterExImpl implements BinaryWriterEx {
     /** Length: integer. */
     private static final int LEN_INT = 4;
-
-    /** Initial capacity. */
-    private static final int INIT_CAP = 1024;
 
     /** Default buffer size for reading from streams. */
     public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
@@ -88,30 +84,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
     /** */
     private boolean failIfUnregistered;
-
-    /**
-     * @param ctx Context.
-     */
-    public BinaryWriterExImpl(BinaryContext ctx) {
-        this(ctx, BinaryThreadLocalContext.get());
-    }
-
-    /**
-     * @param ctx Context.
-     * @param tlsCtx TLS context.
-     */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
-        this(ctx, BinaryStreams.outputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param out Output stream.
-     * @param handles Handles.
-     */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterHandles handles) {
-        this(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), handles);
-    }
 
     /**
      * @param ctx Context.
