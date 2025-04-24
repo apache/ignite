@@ -14,15 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
-import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionAbstractTest.setEvictionMode;
-
-/** */
-public class Random2LruPageEvictionPutLargeObjectsTest extends PageEvictionPutLargeObjectsAbstractTest {
+/**
+ * Enables but not touches persistent region, checks page eviction and PDS+no PDS mode.
+ */
+public class Random2LruPageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinodeMixedRegionsAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

@@ -22,11 +22,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionAbstractTest.setEvictionMode;
 
 /** */
-public class Random2LruPageEvictionPutLargeObjectsTest extends PageEvictionPutLargeObjectsAbstractTest {
+public class RandomLruPageEvictionPutLargeObjectsTest extends PageEvictionPutLargeObjectsAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        return setEvictionMode(DataPageEvictionMode.RANDOM_2_LRU, cfg);
+        return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, cfg);
     }
 }

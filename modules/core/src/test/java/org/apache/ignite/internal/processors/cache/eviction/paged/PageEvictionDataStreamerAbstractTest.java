@@ -21,18 +21,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
  */
-public class PageEvictionDataStreamerTest extends PageEvictionMultinodeAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));
-    }
-
+public class PageEvictionDataStreamerAbstractTest extends PageEvictionMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected void createCacheAndTestEviction(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = clientGrid().getOrCreateCache(cfg);
