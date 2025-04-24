@@ -215,7 +215,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 evictionTracker.touchPage(pageId);
 
                 if (tailPageId != -1)
-                    evictionTracker.trackFragmentPage(tailPageId, pageId);
+                    evictionTracker.trackTailFragmentPage(tailPageId, pageId);
             }
             else if (tailPageId != -1)
                 evictionTracker.trackFragmentPage(pageId, tailPageId);

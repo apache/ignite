@@ -110,10 +110,28 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException {
+    @Override public void trackFragmentPage(long pageId, long tailPageId) {
+        // Store link to tail fragment page in each fragment page.
+        linkFragmentPages(pageId, tailPageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
+        // Store link to head fragment page in tail fragment page.
+        linkFragmentPages(tailPageId, headPageId);
+    }
+
+    /**
+     * Link two pages containing fragments of row.
+     * First timestamp in tracking array is set to -1. Link is stored as a page index in the second timestamp.
+     *
+     * @param pageId Page id.
+     * @param nextPageId Page id of previous fragment.
+     */
+    private void linkFragmentPages(long pageId, long nextPageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        int tailPageIdx = PageIdUtils.pageIndex(tailPageId);
+        int nextPageIdx = PageIdUtils.pageIndex(nextPageId);
 
         boolean success;
 
@@ -128,7 +146,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8L, firstTs, -1);
 
             if (success)
-                GridUnsafe.putInt(trackingArrPtr + trackingIdx * 8L + 4, tailPageIdx);
+                GridUnsafe.putInt(trackingArrPtr + trackingIdx * 8L + 4, nextPageIdx);
         } while (!success);
     }
 
@@ -194,7 +212,10 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /**
-     * Find tracking index of head page of row spanning several pages.
+     * Given tracking index of page containing any row fragment finds tracking index of the head one.
+     *
+     * Each fragment page (other than the tail one) contains link to tail page.
+     * Tail page contains link to head page. So head page is found no more than for two hops.
      *
      * @param trackingIdx tracking index of page containing one of the row fragment.
      * @return tracking index of head row page.
