@@ -310,8 +310,9 @@ public class FilePerformanceStatisticsReader {
                 sysViewEntry = new SystemViewEntry(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
-                throw new IOException("Could not find walker: " + walkerName);
+                throw new IgniteException("Could not find walker: " + walkerName);
             }
+
             return true;
         }
         else if (opType == SYSTEM_VIEW_ROW) {
@@ -322,6 +323,7 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.systemView(nodeId, sysViewEntry.viewName, sysViewEntry.schema, row);
+
             return true;
         }
         else if (opType == QUERY_READS) {
@@ -803,8 +805,11 @@ public class FilePerformanceStatisticsReader {
             }
             else {
                 ForwardableString str = readString(buf);
-                if (str != null)
-                    row.add(str.str);
+                if (str == null) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(str.str);
             }
         }
     }
