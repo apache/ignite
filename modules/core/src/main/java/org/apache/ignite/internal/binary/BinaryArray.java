@@ -134,17 +134,18 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
         }
     }
 
-    /**
-     * @return Underlying array.
-     */
-    public Object[] array() {
+    /** {@inheritDoc} */
+    @Override public Object[] array() {
         return arr;
     }
 
-    /**
-     * @return Component type ID.
-     */
-    public int componentTypeId() {
+    /** {@inheritDoc} */
+    @Override public boolean isArray() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int componentTypeId() {
         // This can happen when binary type was not registered in time of binary array creation.
         // In this case same type will be written differently:
         // arr1 = [compTypeId=UNREGISTERED_TYPE_ID,compClsName="org.apache.Pojo"]
@@ -153,10 +154,8 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
         return compTypeId == UNREGISTERED_TYPE_ID ? ctx.typeId(compClsName) : compTypeId;
     }
 
-    /**
-     * @return Component class name.
-     */
-    public String componentClassName() {
+    /** {@inheritDoc} */
+    @Override public String componentClassName() {
         return compClsName;
     }
 

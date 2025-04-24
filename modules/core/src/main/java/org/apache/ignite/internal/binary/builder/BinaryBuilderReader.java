@@ -64,7 +64,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
      */
     BinaryBuilderReader(BinaryObjectImpl objImpl) {
         ctx = objImpl.context();
-        arr = objImpl.array();
+        arr = objImpl.bytes();
         pos = objImpl.start();
 
         reader = BinaryUtils.reader(ctx,

@@ -319,7 +319,7 @@ public class ColumnStatisticsCollector {
         else if (cls.isAssignableFrom(String.class))
             buf = ((String)obj).getBytes(StandardCharsets.UTF_8);
         else if (obj instanceof BinaryObjectImpl)
-            buf = ((BinaryObjectImpl)obj).array();
+            buf = ((BinaryObjectImpl)obj).bytes();
         else {
             try {
                 buf = IndexProcessor.serializer.serialize(obj);

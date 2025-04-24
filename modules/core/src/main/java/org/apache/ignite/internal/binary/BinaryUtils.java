@@ -2774,7 +2774,7 @@ public class BinaryUtils {
                 private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
 
                 @Override public int applyAsInt(Object bo) {
-                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).array().length);
+                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
                 }
             },
             BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()

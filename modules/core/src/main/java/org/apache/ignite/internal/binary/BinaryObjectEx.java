@@ -46,4 +46,32 @@ public interface BinaryObjectEx extends BinaryObject {
      * @return {@code true} if flag is set, {@code false} otherwise.
      */
     public boolean isFlagSet(short flag);
+
+    /**
+     * @return {@code True} if object is binary array.
+     */
+    public default boolean isArray() {
+        return false;
+    }
+
+    /**
+     * @return Component class name.
+     */
+    public default String componentClassName() {
+        throw new UnsupportedOperationException("Not array");
+    }
+
+    /**
+     * @return Component type ID.
+     */
+    public default int componentTypeId() {
+        throw new UnsupportedOperationException("Not array");
+    }
+
+    /**
+     * @return Underlying array.
+     */
+    public default Object[] array() {
+        throw new UnsupportedOperationException("Not array");
+    }
 }
