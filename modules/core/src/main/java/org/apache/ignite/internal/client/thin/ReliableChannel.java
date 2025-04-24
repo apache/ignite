@@ -123,9 +123,9 @@ final class ReliableChannel implements AutoCloseable {
      * Constructor.
      */
     ReliableChannel(
-        BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
-        ClientConfiguration clientCfg,
-        IgniteBinary binary
+            BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
+            ClientConfiguration clientCfg,
+            IgniteBinary binary
     ) {
         if (chFactory == null)
             throw new NullPointerException("chFactory");
@@ -220,9 +220,9 @@ final class ReliableChannel implements AutoCloseable {
      * Send request and handle response asynchronously.
      */
     public <T> IgniteClientFuture<T> serviceAsync(
-        ClientOperation op,
-        Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
         CompletableFuture<T> fut = new CompletableFuture<>();
 
@@ -266,7 +266,7 @@ final class ReliableChannel implements AutoCloseable {
      * Send request without payload and handle response.
      */
     public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientException, ClientError {
+            throws ClientException, ClientError {
         return service(op, null, payloadReader);
     }
 
@@ -484,9 +484,9 @@ final class ReliableChannel implements AutoCloseable {
                             return false;
 
                         Boolean result = applyOnNodeChannel(nodeId, channel ->
-                                channel.service(ClientOperation.CACHE_PARTITIONS,
-                                    affinityCtx::writePartitionsUpdateRequest,
-                                    affinityCtx::readPartitionsUpdateResponse),
+                            channel.service(ClientOperation.CACHE_PARTITIONS,
+                                affinityCtx::writePartitionsUpdateRequest,
+                                affinityCtx::readPartitionsUpdateResponse),
                             failures
                         );
 
