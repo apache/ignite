@@ -99,10 +99,10 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             if (ts < 0)
                 return;
 
-            GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx * 4L, (int) res);
+            GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx * 4L, (int)res);
 
             success = GridUnsafe.compareAndSwapInt(
-                null, trackingArrPtr + trackingIdx * 4L, ts, (int) res);
+                null, trackingArrPtr + trackingIdx * 4L, ts, (int)res);
         } while (!success);
     }
 

@@ -68,14 +68,14 @@ public class PageEvictionPutLargeObjectsAbstractTest extends GridCommonAbstractT
 
         Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
-        Object value = new byte[RECORD_SIZE];
+        Object val = new byte[RECORD_SIZE];
 
         int counter = 0;
 
         for (int key = 1; key <= ENTRIES; key++) {
             // Skip keys local node is primary for to force async processing in system striped pool in the non-local node.
             if (!aff.isPrimary(ignite.localNode(), key)) {
-                cache.put(key, value);
+                cache.put(key, val);
 
                 counter++;
 

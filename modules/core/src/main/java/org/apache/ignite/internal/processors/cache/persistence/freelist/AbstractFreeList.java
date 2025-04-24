@@ -620,7 +620,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** */
-    private static class WriteRowsGridCursor<T> extends GridCursorIteratorWrapper<T> { //implements TailPageIdHolder {
+    private static class WriteRowsGridCursor<T> extends GridCursorIteratorWrapper<T> {
         /** */
         private long tailPageId = -1;
 
@@ -631,6 +631,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             super(iter);
         }
 
+        /** {@inheritDoc} */
         @Override public boolean next() throws IgniteCheckedException {
             tailPageId(-1);
 
