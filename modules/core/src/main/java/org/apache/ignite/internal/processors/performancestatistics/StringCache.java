@@ -39,4 +39,8 @@ class StringCache {
 
         return !knownStrs.add(str.hashCode());
     }
+
+    public void clear() {
+        knownStrs.clear();
+    }
 }

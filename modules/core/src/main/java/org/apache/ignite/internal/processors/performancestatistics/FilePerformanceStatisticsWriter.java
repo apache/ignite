@@ -192,6 +192,8 @@ public class FilePerformanceStatisticsWriter {
 
         U.closeQuiet(fileIo);
 
+        strCache.clear();
+
         started = false;
     }
 
