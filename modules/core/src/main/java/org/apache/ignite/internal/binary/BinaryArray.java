@@ -140,11 +140,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isArray() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public int componentTypeId() {
         // This can happen when binary type was not registered in time of binary array creation.
         // In this case same type will be written differently:

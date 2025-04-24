@@ -48,13 +48,6 @@ public interface BinaryObjectEx extends BinaryObject {
     public boolean isFlagSet(short flag);
 
     /**
-     * @return {@code True} if object is binary array.
-     */
-    public default boolean isArray() {
-        return false;
-    }
-
-    /**
      * @return Component class name.
      */
     public default String componentClassName() {
