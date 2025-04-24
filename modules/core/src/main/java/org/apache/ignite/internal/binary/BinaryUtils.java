@@ -2828,6 +2828,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @return Instance of caching handler.
+     */
+    public static BinaryMetadataHandler cachingMetadataHandler() {
+        return BinaryCachingMetadataHandler.create();
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {

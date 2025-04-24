@@ -29,8 +29,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -69,7 +69,7 @@ public class PlatformGetInternalCachesTask extends ComputeTaskAdapter<Object, by
         @Override public byte[] execute() {
             IgniteEx ign = (IgniteEx)ignite;
 
-            BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+            BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
 
             try (BinaryWriterExImpl writer
                      = new BinaryWriterExImpl(ctx, BinaryStreams.outputStream(512), null, null)) {
