@@ -1,5 +1,6 @@
 package io.vertx.webmvc.creater.strategy.patch;
 
+import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.webmvc.annotation.AuthedUser;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,10 @@ public class PatchAuthedUser implements PatchRouter {
     @Override
     public void dealRouter(RoutingContext ctx, Method method, Object[] parameters) {
         log.info("path: " + ctx.request().path());
+        User user = ctx.user();
+        if(user!=null){        	
+            log.info("[vertx web] method name:{}, user:{}", method.getName(), user);            
+        }
     }
 
     @Override

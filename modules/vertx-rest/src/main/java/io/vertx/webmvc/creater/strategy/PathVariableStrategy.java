@@ -7,7 +7,6 @@ import io.vertx.webmvc.common.WebConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -20,13 +19,20 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class PathVariableStrategy implements RouterStrategy {
+public class PathVariableStrategy extends RouterStrategy {
 
     @Override
     public void dealRouter(RoutingContext ctx, Method method, Object[] parameters, int i) {
-        // RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+
         PathVariable requestParam = method.getParameters()[i].getAnnotation(PathVariable.class);
         String paramName = requestParam.value();
+        if(paramName.isEmpty() && ctx.pathParams().size()<=2) {
+        	for(String name: ctx.pathParams().keySet()) {
+        		if(name.equals("*")) 
+        			continue;
+        		paramName = name;
+        	}
+        }
         String param = ctx.pathParam(paramName);
         if(param==null){
             out(ctx, ResultDTO.failed("this path variable could not be null!"));

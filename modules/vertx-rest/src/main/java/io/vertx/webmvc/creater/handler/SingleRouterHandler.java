@@ -1,7 +1,9 @@
 package io.vertx.webmvc.creater.handler;
 
 import cn.hutool.core.convert.Convert;
+import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -13,17 +15,20 @@ import io.vertx.webmvc.creater.factory.RequestFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.format.support.FormattingConversionService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
 
-import javax.annotation.Resource;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +41,9 @@ public abstract class SingleRouterHandler {
 
 	@Autowired
     private RequestFactory requestFactory;
+	
+	@Autowired
+	private ConversionService conversionService;
 
     private SingleRouterHandler nextSingleRouterHandler;
     
@@ -52,12 +60,36 @@ public abstract class SingleRouterHandler {
         }
         else if(msg instanceof CharSequence){
             String output = msg.toString();
-            ctx.response()
-                    .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.TEXT_MEDIA_TYPE)
+            ctx.response()                    
                     .end(output);
         }
-        else{
-            String output = JsonObject.mapFrom(msg).encode();
+        else if(msg.getClass().isArray() && !msg.getClass().getComponentType().isPrimitive()) {
+        	Object[] list = (Object[]) msg;
+    		String output = JsonArray.of(list).encodePrettily();
+    		ctx.response()
+    			.putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
+    			.end(output);
+    	}
+        else if(msg instanceof List) {
+        	List list = (List) msg;
+    		String output = new JsonArray(list).encodePrettily();
+    		ctx.response()
+	    		.putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
+	    		.end(output);
+    	}
+        else if(msg instanceof ResponseEntity) {
+        	ResponseEntity res = (ResponseEntity)msg;
+        	ctx.response().setStatusCode(res.getStatusCodeValue());
+        	if(res.getHeaders()!=null) {        		
+        		res.getHeaders().forEach((k,v)->{
+        			ctx.response().putHeader(k, v);
+            	});
+        	}
+        	
+        	out(ctx,res.getBody());
+        }
+        else if(msg!=null){
+            String output = JsonObject.mapFrom(msg).encodePrettily();
             ctx.response()
                     .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
                     .end(output);
@@ -84,7 +116,8 @@ public abstract class SingleRouterHandler {
 
     public void dealRouterTemplate(Method method, String prefix, Object classBean, Router router) {    	
         String url = getUrl(method);
-        if(method.getAnnotation(Blocking.class) != null) {
+        boolean isAync = Future.class.isAssignableFrom(method.getReturnType()) || java.util.concurrent.Future.class.isAssignableFrom(method.getReturnType());
+        if((method.getAnnotation(Blocking.class) != null || classBean.getClass().getAnnotation(Blocking.class) != null) && !isAync) {
         	
         	getRoute(router, prefix, url).blockingHandler(ctx -> webHandle(ctx, method, prefix, url, classBean))
 	            .failureHandler(frc -> {
@@ -121,22 +154,36 @@ public abstract class SingleRouterHandler {
 
         log.info("[vertx web] objects:{}", Arrays.toString(parameters));
         log.info("[vertx web] api has benn invoke.The api name is:" + prefix + url);
-        if ("void".equals(method.getReturnType().getTypeName())) {
+        boolean isAync = Future.class.isAssignableFrom(method.getReturnType()) || java.util.concurrent.Future.class.isAssignableFrom(method.getReturnType());
+        if (isAync || "void".equals(method.getReturnType().getTypeName())) {
             log.info("[vertx web] this method returnType is void");
             try {
                 //method.invoke(classBean,parameters);
                 ReflectionUtils.invokeMethod(method, classBean, parameters);
             } catch (Exception e) {
-                throw new RuntimeException(e.toString());
+            	if(e instanceof IllegalArgumentException) {
+            		ctx.response().setStatusCode(404);
+            	}
+            	else {
+            		ctx.response().setStatusCode(500);
+            	}
+            	ctx.response().setStatusMessage(e.getMessage());
+                
             }
-            out(ctx, ResultDTO.success("ok"));
+            
         } else {
             log.info("[vertx web] this method returnType isn't void");
             try {
                 out(ctx, ReflectionUtils.invokeMethod(method, classBean, parameters));
 
             } catch (Exception e) {
-                e.printStackTrace();
+            	if(e instanceof IllegalArgumentException) {
+            		ctx.response().setStatusCode(404);
+            	}
+            	else {
+            		ctx.response().setStatusCode(500);
+            	}
+            	ctx.response().setStatusMessage(e.getMessage());
             }
         }
     }
@@ -155,8 +202,13 @@ public abstract class SingleRouterHandler {
                 .collect(Collectors.toList());
     }
 
-    protected Object typeConverter(String obj, Parameter parameter) {
+    protected Object typeConverter(Object obj, Parameter parameter) {
+    	
         try {
+        	if(obj!=null && conversionService.canConvert(obj.getClass(), parameter.getType())) {
+        		return conversionService.convert(obj, parameter.getType());
+        	}
+        	
             return Convert.convertQuietly(parameter.getType(), obj, null);
         } catch (Throwable throwable) {
             throwable.printStackTrace();

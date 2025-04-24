@@ -253,7 +253,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	// 创建应用上下文并指定要扫描的包
     	AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 
-    	context.scan("io.vertx.webmvc","org.apache.ignite.http.vertx","org.elasticsearch.relay"); // 指定要扫描的包 
+    	context.scan("io.vertx.webmvc","org.apache.ignite.internal.processors.rest.igfs","org.elasticsearch.relay"); // 指定要扫描的包 
   
     	context.refresh();
     	
@@ -360,6 +360,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void stop() {
     	handlerCount--;
     	
+
     	if(httpSrv!=null && httpSrv.isStarted()) {  
     		if(ctx.igniteInstanceName()==null || ctx.igniteInstanceName().isBlank()) {            	
             	httpSrv.getRouter().delete("/ignite");

@@ -1,6 +1,7 @@
 package io.vertx.webmvc.controller;
 
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.webmvc.annotation.AuthedUser;
 import io.vertx.webmvc.common.ResultDTO;
 
@@ -22,7 +23,7 @@ public class BaseRestController {
 
     @AuthedUser
     @GetMapping("")
-    public ResultDTO<String> list() {
+    public ResultDTO<String> list(RoutingContext rc) {
         return ResultDTO.success("list hello world");
     }
 

@@ -1,7 +1,0 @@
-server:
-  port: 8787
-
-spring:
-  web:
-    resources:
-      static-locations: static
