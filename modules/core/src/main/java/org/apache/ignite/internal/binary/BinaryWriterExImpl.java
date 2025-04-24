@@ -246,10 +246,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Array.
+     * @return Copy of the underlying array.
      */
     public byte[] array() {
         return out.arrayCopy();
+    }
+
+    /**
+     * @return The underlying array.
+     */
+    public byte[] arrayUnderlying() {
+        return out.array();
     }
 
     /**
