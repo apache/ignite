@@ -24,7 +24,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary off-heap input stream.
  */
-public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
+class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     /** Pointer. */
     private final long ptr;
 

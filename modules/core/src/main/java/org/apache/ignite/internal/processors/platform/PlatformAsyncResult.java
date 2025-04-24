@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -37,5 +37,5 @@ public interface PlatformAsyncResult {
      * @param writer Writer.
      * @param result Async operation result.
      */
-    void write(BinaryRawWriterEx writer, Object result);
+    void write(BinaryWriterEx writer, Object result);
 }

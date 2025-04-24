@@ -28,9 +28,8 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.IgniteServicesImpl;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -83,7 +82,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     private final Object[] args;
 
     /** Objects reader. */
-    private final BinaryRawReaderEx reader;
+    private final BinaryReaderEx reader;
 
     /** Service call context attributes. */
     private final Map<String, Object> callAttrs;
@@ -94,7 +93,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
      * @param reader Reader.
      * @param protocolCtx Protocol context.
      */
-    public ClientServiceInvokeRequest(BinaryReaderExImpl reader, ClientProtocolContext protocolCtx) {
+    public ClientServiceInvokeRequest(BinaryReaderEx reader, ClientProtocolContext protocolCtx) {
         super(reader);
 
         name = reader.readString();

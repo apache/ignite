@@ -31,9 +31,8 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -150,7 +149,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
@@ -278,7 +277,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private PlatformTarget processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast) {
+    private PlatformTarget processClosures(long taskPtr, BinaryReaderEx reader, boolean broadcast) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -327,12 +326,12 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Closure job.
      */
-    private PlatformJob nextClosureJob(PlatformAbstractTask task, BinaryRawReaderEx reader) {
+    private PlatformJob nextClosureJob(PlatformAbstractTask task, BinaryReaderEx reader) {
         return platformCtx.createClosureJob(task, reader.readLong(), reader.readObjectDetached(), reader.readString());
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_EXEC:
@@ -380,7 +379,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @return Task result.
      * @throws IgniteCheckedException On error.
      */
-    protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) throws IgniteCheckedException {
+    protected Object executeJavaTask(BinaryReaderEx reader, boolean async) throws IgniteCheckedException {
         String taskName = reader.readString();
         boolean keepBinary = reader.readBoolean();
         Object arg = reader.readObjectDetached();
@@ -414,7 +413,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Node IDs.
      */
-    protected Collection<UUID> readNodeIds(BinaryRawReaderEx reader) {
+    protected Collection<UUID> readNodeIds(BinaryReaderEx reader) {
         if (reader.readBoolean()) {
             int len = reader.readInt();
 
