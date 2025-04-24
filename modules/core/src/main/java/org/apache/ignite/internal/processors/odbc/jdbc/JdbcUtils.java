@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +36,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param items Query results items.
      */
-    public static void writeItems(BinaryWriterExImpl writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
+    public static void writeItems(BinaryWriterEx writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
         writer.writeInt(items.size());
 
         for (List<Object> row : items) {
@@ -80,7 +80,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param lst List to write.
      */
-    public static void writeStringCollection(BinaryWriterExImpl writer, Collection<String> lst) {
+    public static void writeStringCollection(BinaryWriterEx writer, Collection<String> lst) {
         if (lst == null)
             writer.writeInt(0);
         else {
@@ -126,7 +126,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param val Integer value..
      */
-    public static void writeNullableInteger(BinaryWriterExImpl writer, @Nullable Integer val) {
+    public static void writeNullableInteger(BinaryWriterEx writer, @Nullable Integer val) {
         writer.writeBoolean(val != null);
 
         if (val != null)
@@ -169,7 +169,7 @@ public class JdbcUtils {
      * @throws BinaryObjectException On error.
      */
     public static void writeObject(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         @Nullable Object obj,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {

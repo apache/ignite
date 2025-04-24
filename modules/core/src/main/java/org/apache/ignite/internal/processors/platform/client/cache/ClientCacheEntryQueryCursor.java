@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 /**
@@ -38,7 +38,7 @@ class ClientCacheEntryQueryCursor extends ClientCacheQueryCursor<Cache.Entry> {
     }
 
     /** {@inheritDoc} */
-    @Override void writeEntry(BinaryRawWriterEx writer, Cache.Entry e) {
+    @Override void writeEntry(BinaryWriterEx writer, Cache.Entry e) {
         writer.writeObjectDetached(e.getKey());
         writer.writeObjectDetached(e.getValue());
     }

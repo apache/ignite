@@ -40,8 +40,8 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -307,7 +307,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     if (!req.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_GROUPS))
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_GROUPS);
 
-                    try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
+                    try (BinaryWriterEx writer = utils.createBinaryWriter(req.out())) {
                         writer.writeLong(topDataSrc == null || topDataSrc.closed() ? 0 : cachedTopVer);
 
                         projectionFilters.write(writer);
@@ -779,7 +779,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
         /**
          * @param writer Writer.
          */
-        void write(BinaryRawWriterEx writer) {
+        void write(BinaryWriterEx writer) {
             int size = (attrs == null ? 0 : attrs.size()) + (nodeType == null ? 0 : 1);
 
             writer.writeInt(size);

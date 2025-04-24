@@ -33,7 +33,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -383,7 +383,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(8), null, null);
+        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(8), null);
 
         byte clientType = reader.readByte();
 

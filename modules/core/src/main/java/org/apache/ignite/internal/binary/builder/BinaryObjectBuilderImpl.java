@@ -37,7 +37,7 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -172,7 +172,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
             Thread curThread = Thread.currentThread();
 
             if (curThread instanceof IgniteThread)
@@ -196,7 +196,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
+    void serializeTo(BinaryWriterEx writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
 

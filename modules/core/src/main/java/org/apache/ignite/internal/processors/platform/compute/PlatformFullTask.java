@@ -27,8 +27,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -112,7 +112,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
             try (PlatformMemory mem = memMgr.allocate()) {
                 PlatformOutputStream out = mem.output();
 
-                BinaryRawWriterEx writer = ctx.writer(out);
+                BinaryWriterEx writer = ctx.writer(out);
 
                 writer.writeLong(taskPtr);
 
@@ -148,7 +148,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
      * @param nodes Current topology nodes.
      * @param subgrid Subgrid.
      */
-    private void write(BinaryRawWriterEx writer, Collection<ClusterNode> nodes, List<ClusterNode> subgrid) {
+    private void write(BinaryWriterEx writer, Collection<ClusterNode> nodes, List<ClusterNode> subgrid) {
         GridDiscoveryManager discoMgr = ctx.kernalContext().discovery();
 
         long curTopVer = discoMgr.topologyVersion();

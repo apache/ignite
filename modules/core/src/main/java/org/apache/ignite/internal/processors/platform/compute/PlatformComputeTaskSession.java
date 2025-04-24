@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform.compute;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -68,7 +68,7 @@ public class PlatformComputeTaskSession extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override public void processInStreamOutStream(
-        final int type, final BinaryReaderEx reader, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+        final int type, final BinaryReaderEx reader, final BinaryWriterEx writer) throws IgniteCheckedException {
 
         if (type == OP_GET_ATTRIBUTE) {
             final Object key = reader.readObjectDetached();

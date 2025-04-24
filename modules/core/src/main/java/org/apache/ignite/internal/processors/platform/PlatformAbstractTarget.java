@@ -21,8 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
@@ -88,7 +88,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
         throws IgniteCheckedException {
         throwUnsupported(type);
     }
@@ -101,12 +101,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
-        BinaryReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        BinaryReaderEx reader, BinaryWriterEx writer) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 

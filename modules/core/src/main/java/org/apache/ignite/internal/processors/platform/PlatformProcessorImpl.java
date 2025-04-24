@@ -39,8 +39,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -276,7 +276,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeString(ctx.igniteInstanceName());
 
@@ -579,7 +579,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public void processInStreamOutStream(
         int type,
         BinaryReaderEx reader,
-        BinaryRawWriterEx writer
+        BinaryWriterEx writer
     ) throws IgniteCheckedException {
         if (type == OP_GET_CACHE_CONFIG) {
             int cacheId = reader.readInt();
@@ -764,13 +764,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
                                                                          BinaryReaderEx reader,
-                                                                         BinaryRawWriterEx writer)
+                                                                         BinaryWriterEx writer)
             throws IgniteCheckedException {
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_IGNITE_CONFIGURATION: {
                 PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());

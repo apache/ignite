@@ -30,7 +30,7 @@ import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -941,7 +941,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

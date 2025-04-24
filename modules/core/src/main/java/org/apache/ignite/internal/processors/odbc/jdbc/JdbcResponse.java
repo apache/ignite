@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -99,7 +99,7 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeInt(status());

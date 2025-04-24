@@ -28,8 +28,8 @@ import java.util.function.Function;
 import org.apache.ignite.client.ClientAutoCloseableIterator;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.X;
@@ -170,7 +170,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             // Special case: remove all.
             // Not the same as clear, because we need the boolean result.
             return ch.service(ClientOperation.OP_SET_VALUE_RETAIN_ALL, out -> {
-                try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+                try (BinaryWriterEx w = serDes.createBinaryWriter(out.out())) {
                     writeIdentity(w);
                     w.writeBoolean(serverKeepBinary);
                     w.writeInt(0); // Size.
@@ -264,7 +264,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         Object affKey = affinityKey(key);
 
         return ch.affinityService(cacheId, affKey, op, out -> {
-            try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+            try (BinaryWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
 
                 w.writeBoolean(serverKeepBinary);
@@ -293,7 +293,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         Object affKey = affinityKey(firstKey);
 
         return ch.affinityService(cacheId, affKey, op, out -> {
-            try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+            try (BinaryWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
 
                 w.writeBoolean(serverKeepBinary);
@@ -317,9 +317,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param <TR> Result type.
      * @return Result.
      */
-    private <TR> TR op(ClientOperation op, Consumer<BinaryRawWriterEx> writer, Function<PayloadInputChannel, TR> reader) {
+    private <TR> TR op(ClientOperation op, Consumer<BinaryWriterEx> writer, Function<PayloadInputChannel, TR> reader) {
         return ch.service(op, out -> {
-            try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+            try (BinaryWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
 
                 if (writer != null)
@@ -334,7 +334,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param out Output channel.
      */
     private void writeIdentity(PayloadOutputChannel out) {
-        try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+        try (BinaryWriterEx w = serDes.createBinaryWriter(out.out())) {
             writeIdentity(w);
         }
     }
@@ -344,7 +344,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      *
      * @param w Writer.
      */
-    private void writeIdentity(BinaryRawWriterEx w) {
+    private void writeIdentity(BinaryWriterEx w) {
         // IgniteSet is uniquely identified by name, cacheId, and colocated flag.
         // Just name and groupName are not enough, because target cache name depends on multiple config properties
         // (atomicity mode, backups, etc).

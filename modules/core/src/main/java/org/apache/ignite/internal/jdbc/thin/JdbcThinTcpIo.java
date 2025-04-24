@@ -43,7 +43,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
@@ -277,8 +277,8 @@ public class JdbcThinTcpIo {
 
         ctx.configure(marsh);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
-            null, null);
+        BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
+            null);
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -434,8 +434,8 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake_2_1_0() throws IOException, SQLException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
-            null, null);
+        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
+            null);
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -588,7 +588,7 @@ public class JdbcThinTcpIo {
     private void sendRequestRaw(JdbcRequest req) throws IOException {
         int cap = guessCapacity(req);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, BinaryStreams.outputStream(cap), null);
+        BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(cap));
 
         req.writeBinary(writer, protoCtx);
 

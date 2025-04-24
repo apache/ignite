@@ -1408,7 +1408,7 @@ public class BinaryContext {
 
     /** */
     public void updateMetaIfNeeded(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         BinaryType meta,
         int typeId,
         String typeName,
@@ -1714,40 +1714,6 @@ public class BinaryContext {
             }
             else if (!other.canOverride)
                 throw new BinaryObjectException("Duplicate explicit class definition in configuration: " + clsName);
-        }
-    }
-
-    /**
-     * Type id wrapper.
-     */
-    static class Type {
-        /** Type id */
-        private final int id;
-
-        /** Whether the following type is registered in a cache or not */
-        private final boolean registered;
-
-        /**
-         * @param id Id.
-         * @param registered Registered.
-         */
-        public Type(int id, boolean registered) {
-            this.id = id;
-            this.registered = registered;
-        }
-
-        /**
-         * @return Type ID.
-         */
-        public int id() {
-            return id;
-        }
-
-        /**
-         * @return Registered flag value.
-         */
-        public boolean registered() {
-            return registered;
         }
     }
 }

@@ -49,7 +49,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         
         byte[] serializedTestObjectsBytes;
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
             testObjects.forEach(writer::writeObject);
 
             serializedTestObjectsBytes = writer.array();

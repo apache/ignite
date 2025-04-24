@@ -81,8 +81,8 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
@@ -135,7 +135,7 @@ public class PlatformConfigurationUtils {
      * @param writer Writer.
      * @param cfg Configuration.
      */
-    public static void writeDotNetConfiguration(BinaryRawWriterEx writer, PlatformDotNetConfiguration cfg) {
+    public static void writeDotNetConfiguration(BinaryWriterEx writer, PlatformDotNetConfiguration cfg) {
         // 1. Write assemblies.
         PlatformUtils.writeNullableCollection(writer, cfg.getAssemblies());
 
@@ -146,7 +146,7 @@ public class PlatformConfigurationUtils {
 
             PlatformUtils.writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
                 new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                    @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
+                    @Override public void write(BinaryWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
                         writer.writeString(typ.getTypeName());
                         writer.writeString(typ.getNameMapper());
                         writer.writeString(typ.getIdMapper());

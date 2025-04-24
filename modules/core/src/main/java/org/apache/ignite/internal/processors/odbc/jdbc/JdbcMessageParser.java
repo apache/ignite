@@ -21,7 +21,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -70,8 +70,8 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @param cap Capacisty
      * @return Writer.
      */
-    protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(binCtx, BinaryStreams.outputStream(cap), null);
+    protected BinaryWriterEx createWriter(int cap) {
+        return BinaryUtils.writer(binCtx, BinaryStreams.outputStream(cap));
     }
 
     /** {@inheritDoc} */
@@ -91,7 +91,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
 
         JdbcResponse res = (JdbcResponse)msg;
 
-        BinaryWriterExImpl writer = createWriter(INIT_CAP);
+        BinaryWriterEx writer = createWriter(INIT_CAP);
 
         res.writeBinary(writer, protoCtx);
 

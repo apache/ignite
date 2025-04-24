@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
@@ -88,7 +88,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             target.processOutStream(type, writer);
 
@@ -131,7 +131,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
             try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
 
-                BinaryRawWriterEx writer = platformCtx.writer(out);
+                BinaryWriterEx writer = platformCtx.writer(out);
 
                 target.processInStreamOutStream(type, reader, writer);
 
@@ -159,7 +159,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
             }
 
             PlatformOutputStream out = null;
-            BinaryRawWriterEx writer = null;
+            BinaryWriterEx writer = null;
 
             if (outMemPtr != 0) {
                 outMem = platformCtx.memory().get(outMemPtr);
@@ -243,7 +243,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
 
             return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, new PlatformFutureUtils.Writer() {
                 /** {@inheritDoc} */
-                @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+                @Override public void write(BinaryWriterEx writer, Object obj, Throwable err) {
                     res.write(writer, obj);
                 }
 

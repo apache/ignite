@@ -70,6 +70,8 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -399,7 +401,7 @@ public class BinaryUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterEx writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -2825,6 +2827,34 @@ public class BinaryUtils {
                                         boolean skipHdrCheck,
                                         boolean forUnmarshal) {
         return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Writer instance.
+     */
+    public static BinaryWriterEx writer(BinaryContext ctx) {
+        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
+
+        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)U.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @return Writer instance.
+     */
+    public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
+        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @return Writer instance.
+     */
+    public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
+        return new BinaryWriterExImpl(ctx, out, schema, null);
     }
 
     /**

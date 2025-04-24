@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.messaging;
 
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -60,7 +60,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObject(uuid);
             writer.writeObject(m);
@@ -81,7 +81,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
 
