@@ -119,7 +119,9 @@ class SystemViewFileWriter extends GridWorker {
                     if (sysViewPredicate.test(view))
                         systemView(view);
                 }
-                catch (RuntimeException | Error e) {
+                catch (AssertionError | RuntimeException e) {
+                    if (e instanceof BufferOverflowException)
+                        throw e;
                     log.warning("Unable to write system view: " + view.name() + ".", e);
                 }
             }
