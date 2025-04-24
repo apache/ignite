@@ -357,9 +357,11 @@ final class ReliableChannel implements AutoCloseable {
 
                 ClientChannel ch = applyOnNodeChannel(affNodeId, channel -> channel, failures);
 
-                withRetryChannelAsync(fut, ch, op, payloadWriter, payloadReader, failures);
+                if (ch != null) {
+                    withRetryChannelAsync(fut, ch, op, payloadWriter, payloadReader, failures);
 
-                return new IgniteClientFutureImpl<>(fut);
+                    return new IgniteClientFutureImpl<>(fut);
+                }
             }
         }
 
