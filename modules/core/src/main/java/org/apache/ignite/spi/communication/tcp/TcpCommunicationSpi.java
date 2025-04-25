@@ -417,42 +417,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         return metricsLsnr.receivedBytesCount();
     }
 
-    /**
-     * Gets received messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
-    }
-
-    /**
-     * Gets received messages counts (grouped by node).
-     *
-     * @return Map containing sender nodes and respective counts.
-     */
-    public Map<UUID, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by node).
-     *
-     * @return Map containing receiver nodes and respective counts.
-     */
-    public Map<UUID, Long> getSentMessagesByNode() {
-        return metricsLsnr.sentMessagesByNode();
-    }
-
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvWrapper.nio();
@@ -1185,16 +1149,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
-     * @param node Node.
-     * @return {@code True} if remote current node cannot receive TCP connections. Applicable for client nodes only.
-     */
-    private boolean forceClientToServerConnections(ClusterNode node) {
-        Boolean forceClientToSrvConnections = node.attribute(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS));
-
-        return Boolean.TRUE.equals(forceClientToSrvConnections);
-    }
-
-    /**
      * @param sndId Sender ID.
      * @param msg Communication message.
      * @param msgC Closure to call when message processing finished.
@@ -1229,14 +1183,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         U.join(commWorker, log);
 
         clientPool.forceClose();
-    }
-
-    /**
-     * @param msg Error message.
-     * @param e Exception.
-     */
-    private void onException(String msg, Exception e) {
-        getExceptionRegistry().onException(msg, e);
     }
 
     /** {@inheritDoc} */
