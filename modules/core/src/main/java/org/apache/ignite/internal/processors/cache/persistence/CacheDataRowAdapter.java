@@ -301,7 +301,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 try {
                     long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
 
-                    assert pageAddr != 0L : nextLink;
+                    assert pageAddr != 0L : "Cannot lock page [link=" + U.hexLong(nextLink) +
+                        ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]";
 
                     try {
                         DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
