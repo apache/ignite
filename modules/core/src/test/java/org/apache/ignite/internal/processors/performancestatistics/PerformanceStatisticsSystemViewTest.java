@@ -17,16 +17,24 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static java.util.function.Function.identity;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -42,8 +50,13 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
         "nodes");
 
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger();
+    private static final int VALID_VIEWS_CNT = 10;
 
+    /** */
+    private static final int INVALID_VIEWS_CNT = 10;
+
+    /** */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -76,6 +89,68 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
             stopCollectStatisticsAndRead(new TestHandler() {
                 @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
                     viewsActual.add(name);
+                }
+            });
+
+            assertEquals(1, systemViewStatisticsFiles(statisticsFiles()).size());
+            assertEquals(viewsExpected, viewsActual);
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testInvalidSystemView() throws Exception {
+        LogListener lsnr = LogListener.matches("Finished writing system views to performance statistics file:").build();
+        listeningLog.registerListener(lsnr);
+
+        LogListener warningLsnr = LogListener.matches("Unable to write system view:").times(INVALID_VIEWS_CNT).build();
+        listeningLog.registerListener(warningLsnr);
+
+        try (IgniteEx igniteEx = startGrid(0)) {
+            GridSystemViewManager sysViewMngr = igniteEx.context().systemView();
+
+            Map<?, ?> oldViews = U.field(sysViewMngr, "systemViews");
+            oldViews.clear();
+
+            Map<String, String> viewsExpected = new HashMap<>(VALID_VIEWS_CNT);
+
+            for (int i = 0; i < VALID_VIEWS_CNT; i++) {
+                String val = "value " + i;
+                MetastorageView view = new MetastorageView("name", val);
+
+                String viewName = "valid_" + i;
+                sysViewMngr.registerView(
+                    viewName,
+                    "valid_desc",
+                    new MetastorageViewWalker(), () -> Collections.singletonList(view), identity());
+
+                viewsExpected.put(viewName, val);
+            }
+
+            for (int i = 0; i < INVALID_VIEWS_CNT; i++) {
+                sysViewMngr.registerView(
+                    "invalid_desc" + i,
+                    "invalid_" + i,
+                    new MetastorageViewWalker(), () -> null, identity());
+            }
+
+            startCollectStatistics();
+
+            assertTrue("Performance statistics writer did not catch exception.", waitForCondition(warningLsnr::check, TIMEOUT));
+            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
+
+            Map<String, String> viewsActual = new HashMap<>();
+            stopCollectStatisticsAndRead(new TestHandler() {
+                @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
+                    if (name.startsWith("valid_")) {
+                        Object val = getAttrValByName(schema, row, "value");
+                        viewsActual.put(name, String.valueOf(val));
+                    }
+                }
+
+                /** */
+                private Object getAttrValByName(List<String> schema, List<Object> row, String attr) {
+                    return row.get(schema.indexOf(attr));
                 }
             });
 
