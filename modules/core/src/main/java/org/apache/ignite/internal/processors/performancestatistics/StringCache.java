@@ -40,6 +40,7 @@ class StringCache {
         return !knownStrs.add(str.hashCode());
     }
 
+    /** Clear cache. */
     public void clear() {
         knownStrs.clear();
     }
