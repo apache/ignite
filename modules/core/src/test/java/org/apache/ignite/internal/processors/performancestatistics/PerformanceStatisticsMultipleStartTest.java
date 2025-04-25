@@ -63,7 +63,7 @@ public class PerformanceStatisticsMultipleStartTest extends AbstractPerformanceS
 
             List<File> files = statisticsFiles();
 
-            assertEquals(i, files.size());
+            assertEquals(i, files.size() / 2);
         }
     }
 }

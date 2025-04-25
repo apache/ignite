@@ -115,6 +115,20 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         new FilePerformanceStatisticsReader(handlers).read(files);
     }
 
+    /**
+     * @param files Performance statistics files.
+     */
+    File getMainStatisticsFile(List<File> files) {
+        File file = files.stream()
+            .filter(file1 -> file1.getName()
+                .matches("node-" + nodeId(0) + ".prf"))
+            .findFirst().orElse(null);
+
+        assertNotNull(file);
+
+        return file;
+    }
+
     /** Wait for statistics started/stopped in the cluster. */
     public static void waitForStatisticsEnabled(boolean performanceStatsEnabled) throws Exception {
         assertTrue(waitForCondition(() -> {
@@ -235,6 +249,11 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
             // No-op.
         }
     }
