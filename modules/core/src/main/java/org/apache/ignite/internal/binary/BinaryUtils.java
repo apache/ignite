@@ -2696,7 +2696,7 @@ public class BinaryUtils {
     public static Object[] rawArrayFromBinary(Object obj) {
         if (isBinaryArray(obj))
             // We want raw data(no deserialization).
-            return ((BinaryArray)obj).array();
+            return ((BinaryObjectEx)obj).array();
         else
             // This can happen even in BinaryArray.USE_TYPED_ARRAY = true.
             // In case user pass special array type to arguments, String[], for example.
