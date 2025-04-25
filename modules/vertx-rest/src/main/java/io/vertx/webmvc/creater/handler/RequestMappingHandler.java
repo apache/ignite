@@ -35,10 +35,10 @@ public class RequestMappingHandler extends SingleRouterHandler {
     }
 
     @Override
-    public Route getRoute(Router router,String prefix,String url) {
-        log.info("[vertx web] method api(get):" + prefix + url);
+    public Route getRoute(Router router,String prefix,String url) {        
         Route r = router.route(prefix + url);
         for(RequestMethod m : mapping.method()) {
+        	log.info("[vertx web] method api({}):{}", m.name().toLowerCase(),prefix + url);
         	r = r.method(HttpMethod.valueOf(m.name()));
         }
         for(String contentType: mapping.consumes()) {
