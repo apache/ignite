@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -284,7 +283,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash() ? new GridEmptyIterator<>()
+                            skipHash() ? F.emptyIterator()
                                 : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
                             null
                         );

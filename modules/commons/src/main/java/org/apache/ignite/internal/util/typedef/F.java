@@ -25,4 +25,5 @@ import org.apache.ignite.internal.util.lang.GridFunc;
  * concise code in cases when readability won't be sacrificed. For more information see {@link GridFunc}.
  * @see GridFunc
  */
+@SuppressWarnings({"ExtendsUtilityClass"})
 public class F extends GridFunc { /* No-op. */ }

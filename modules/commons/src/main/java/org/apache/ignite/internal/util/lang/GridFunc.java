@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -453,6 +452,16 @@ public class GridFunc {
     }
 
     /**
+     * Creates new empty iterator.
+     *
+     * @param <T> Type of the iterator.
+     * @return Newly created empty iterator.
+     */
+    public static <T> GridIterator<T> emptyIterator() {
+        return new GridEmptyIterator<>();
+    }
+
+    /**
      * Flattens collection-of-collections and returns collection over the
      * elements of the inner collections. This method doesn't create any
      * new collections or copies any elements.
@@ -484,7 +493,7 @@ public class GridFunc {
      * @return Iterable over the elements of the inner collections.
      */
     public static <T> GridIterator<T> flat(@Nullable final Iterable<? extends Iterable<T>> c) {
-        return isEmpty(c) ? new GridEmptyIterator<T>() : new FlatIterator<T>(c);
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
     }
 
     /**
@@ -496,7 +505,7 @@ public class GridFunc {
      * @return Iterator over the elements of given iterators.
      */
     public static <T> Iterator<T> flatIterators(@Nullable final Iterable<Iterator<T>> c) {
-        return isEmpty(c) ? new GridEmptyIterator<T>() : new FlatIterator<T>(c);
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
     }
 
     /**
@@ -841,7 +850,7 @@ public class GridFunc {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
-            return new GridEmptyIterator<>();
+            return emptyIterator();
 
         return new TransformFilteringIterator<>(c.iterator(), trans, readOnly, p);
     }
@@ -863,7 +872,7 @@ public class GridFunc {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
-            return new GridEmptyIterator<>();
+            return emptyIterator();
 
         return new TransformFilteringIterator<>(c, trans, readOnly, p);
     }

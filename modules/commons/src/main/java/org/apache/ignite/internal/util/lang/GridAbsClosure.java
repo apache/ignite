@@ -26,10 +26,6 @@ import org.apache.ignite.lang.IgniteRunnable;
  * Note that this interface does not impose or assume any specific thread-safety by its
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
- * <p>
- * Note that this class implements {@link org.apache.ignite.compute.ComputeJob} interface for convenience and can be
- * used in {@link org.apache.ignite.compute.ComputeTask} implementations directly, if needed, as an alternative to
- * {@link org.apache.ignite.compute.ComputeJobAdapter}.
  * @see GridFunc
  */
 public abstract class GridAbsClosure implements IgniteRunnable {
