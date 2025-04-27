@@ -142,15 +142,8 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
             Map<String, String> viewsActual = new HashMap<>();
             stopCollectStatisticsAndRead(new TestHandler() {
                 @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
-                    if (name.startsWith("valid_")) {
-                        Object val = getAttrValByName(schema, row, "value");
-                        viewsActual.put(name, String.valueOf(val));
-                    }
-                }
-
-                /** */
-                private Object getAttrValByName(List<String> schema, List<Object> row, String attr) {
-                    return row.get(schema.indexOf(attr));
+                    Object val = row.get(schema.indexOf("value"));
+                    viewsActual.put(name, String.valueOf(val));
                 }
             });
 
