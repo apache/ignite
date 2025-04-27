@@ -119,9 +119,10 @@ class SystemViewFileWriter extends GridWorker {
                     if (sysViewPredicate.test(view))
                         systemView(view);
                 }
+                catch (BufferOverflowException e) {
+                    throw e;
+                }
                 catch (AssertionError | RuntimeException e) {
-                    if (e instanceof BufferOverflowException)
-                        throw e;
                     log.warning("Unable to write system view: " + view.name() + ".", e);
                 }
             }
@@ -131,7 +132,7 @@ class SystemViewFileWriter extends GridWorker {
             if (log.isInfoEnabled())
                 log.info("Finished writing system views to performance statistics file: " + filePath + '.');
         }
-        catch (IOException e) {
+        catch (IOException | BufferOverflowException e) {
             log.error("Unable to write to the performance statistics file: " + filePath + '.', e);
         }
     }
