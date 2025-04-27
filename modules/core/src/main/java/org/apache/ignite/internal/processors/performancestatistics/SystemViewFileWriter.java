@@ -122,7 +122,7 @@ class SystemViewFileWriter extends GridWorker {
                 catch (BufferOverflowException e) {
                     throw e;
                 }
-                catch (AssertionError | RuntimeException e) {
+                catch (AssertionError /* TODO: IGNITE-25152 */ | RuntimeException e) {
                     log.warning("Unable to write system view: " + view.name() + ".", e);
                 }
             }
