@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
 /**
  * Binary object representing array.
  */
-public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
+class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
     /** */
     private static final long serialVersionUID = 0L;
 
