@@ -514,7 +514,7 @@ public class RexImpTable {
             BuiltInMethod.JSON_EXISTS3.method);
         map.put(JSON_VALUE,
             new JsonValueImplementor(BuiltInMethod.JSON_VALUE.method));
-        defineReflective(JSON_QUERY, BuiltInMethod.JSON_QUERY.method);
+        map.put(JSON_QUERY, new JsonQueryImplementor(BuiltInMethod.JSON_QUERY.method));
         defineMethod(JSON_TYPE, BuiltInMethod.JSON_TYPE.method, NullPolicy.ARG0);
         defineMethod(JSON_DEPTH, BuiltInMethod.JSON_DEPTH.method, NullPolicy.ARG0);
         defineMethod(JSON_KEYS, BuiltInMethod.JSON_KEYS.method, NullPolicy.ARG0);
@@ -1034,6 +1034,31 @@ public class RexImpTable {
                     Util.skip(argValueList, 1));
             }
             return expression;
+        }
+    }
+
+    /**
+     * Implementor for JSON_QUERY function. Passes the jsonize flag depending on the output type.
+     */
+    private static class JsonQueryImplementor extends MethodImplementor {
+        /** */
+        private JsonQueryImplementor(Method method) {
+            super(method, NullPolicy.ARG0, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValList) {
+            List<Expression> newOperands = new ArrayList<>(argValList);
+
+            Expression jsonize = SqlTypeUtil.inCharFamily(call.getType()) ? TRUE_EXPR : FALSE_EXPR;
+
+            newOperands.add(jsonize);
+
+            List<Expression> argValList0 = ConverterUtils.fromInternal(method.getParameterTypes(), newOperands);
+
+            Expression target = Expressions.new_(method.getDeclaringClass());
+
+            return Expressions.call(target, method, argValList0);
         }
     }
 
