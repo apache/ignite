@@ -176,7 +176,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasByteArray() {
+    @Override public boolean hasBytes() {
         return false;
     }
 

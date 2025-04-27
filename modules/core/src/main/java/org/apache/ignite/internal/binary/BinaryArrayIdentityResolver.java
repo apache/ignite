@@ -56,7 +56,7 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
             int start = ex.dataStartOffset();
             int end = ex.footerStartOffset();
 
-            if (ex.hasByteArray())
+            if (ex.hasBytes())
                 return hashCode(ex.bytes(), start, end);
             else {
                 // Handle offheap object.
@@ -114,10 +114,10 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
                 BinaryObjectExImpl exx1 = (BinaryObjectExImpl)ex1;
                 BinaryObjectExImpl exx2 = (BinaryObjectExImpl)ex2;
 
-                if (exx1.hasByteArray())
-                    return exx2.hasByteArray() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
+                if (exx1.hasBytes())
+                    return exx2.hasBytes() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
                 else
-                    return exx2.hasByteArray() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
+                    return exx2.hasBytes() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
             }
             else {
                 // Handle enums.

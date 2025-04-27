@@ -55,7 +55,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
      * @return {@code True} if object is array based.
      */
-    public abstract boolean hasByteArray();
+    public abstract boolean hasBytes();
 
     /**
      * @return Object array if object is array based, otherwise {@code null}.
