@@ -397,6 +397,8 @@ final class ReliableChannel implements AutoCloseable {
                     return res;
                 }
 
+                failures.add((ClientConnectionException)err);
+
                 ClientChannelHolder hld = null;
 
                 for (ClientChannelHolder holder : channels) {
@@ -406,12 +408,20 @@ final class ReliableChannel implements AutoCloseable {
                     }
                 }
 
-                onChannelFailure(ch, err, failures);
+                try {
+                    onChannelFailure(ch, err, failures);
 
-                ClientChannel newCh = hld.getOrCreateChannel();
+                    if (shouldRetry(op, failures.size() - 1, (ClientConnectionException)err)) {
+                        ClientChannel newCh = hld.getOrCreateChannel();
 
-                if (shouldRetry(op, 1, (ClientConnectionException)err))
-                    return applyOnClientChannelAsync(newCh, op, payloadWriter, payloadReader);
+                        return applyOnClientChannelAsync(newCh, op, payloadWriter, payloadReader);
+                    }
+                }
+                catch (ClientConnectionException reconnectEx) {
+                    failures.add(reconnectEx);
+
+                    onChannelFailure(hld, null, reconnectEx, failures);
+                }
 
                 fut.completeExceptionally(err);
 

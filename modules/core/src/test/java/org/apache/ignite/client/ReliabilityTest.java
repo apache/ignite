@@ -717,10 +717,24 @@ public class ReliabilityTest extends AbstractThinClientTest {
             stopFlag.set(true);
         });
 
-        // Use Ignite while nodes keep failing.
+        final int MAX_RECONNECTS = 1;
+        int reconnectAttempts = 0;
+
         try {
-            while (!stopFlag.get())
-                clo.run();
+            while (!stopFlag.get()) {
+                try {
+                    clo.run();
+                    reconnectAttempts = 0;
+                }
+                catch (ClientConnectionException | ClientReconnectedException networkErr) {
+                    if (reconnectAttempts < MAX_RECONNECTS) {
+                        reconnectAttempts++;
+
+                        continue;
+                    }
+                    throw networkErr;
+                }
+            }
 
             topChangeFut.get();
         }
