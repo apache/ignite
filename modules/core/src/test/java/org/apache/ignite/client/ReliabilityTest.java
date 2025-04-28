@@ -717,6 +717,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             stopFlag.set(true);
         });
 
+        // Use Ignite while nodes keep failing.
         final int MAX_RECONNECTS = 1;
         int reconnectAttempts = 0;
 
