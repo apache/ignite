@@ -92,7 +92,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
-//            log.info("touchPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
+//            log.info("touchPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
+//                    ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
 
             long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
@@ -117,7 +118,10 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         } while (!success);
     }
 
+    /** */
     private static final long LO_INT_MASK = ~(-1L << Integer.SIZE);
+
+    /** */
     private static final long HI_INT_MASK = -1L << Integer.SIZE;
 
     /** */
@@ -157,7 +161,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
 
-//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
+//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
+//                ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
 
         GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, l((int)latestTs, 0));
     }
@@ -183,11 +188,13 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int firstTs = lo(ts);
 
-//            log.info(">>> linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag + ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx
+//            log.info(">>> linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
+//                ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx
 //                + " nextPageId=" + PageIdUtils.pageId(nextPageId));
 
             if (firstTs != 0)
-                log.info("!!!! linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag + ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
+                log.info("!!!! linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
+                    ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
 
             if (firstTs == -1 || firstTs == -2)
                 return;
@@ -262,7 +269,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 }
             }
 
-//            log.info(">>>>> Selected page: pageIdx=" + pageIdx(lruTrackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(lruTrackingIdx)) + ", trackingIdx=" + lruTrackingIdx);
+//            log.info(">>>>> Selected page: pageIdx=" + pageIdx(lruTrackingIdx) +
+//                ", pageId=" + PageIdUtils.pageId(pageIdx(lruTrackingIdx)) + ", trackingIdx=" + lruTrackingIdx);
 
             if (evictDataPage(pageIdx(lruTrackingIdx)))
                 return;
@@ -288,7 +296,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         int firstTs = lo(ts);
 
         if (firstTs == -1) {
-//            log.info(">>> Evict via fragment page: trackingPageIdx=" + trackingIdx + ", pageIdx=" + pageIdx(trackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(trackingIdx)));
+//            log.info(">>> Evict via fragment page: trackingPageIdx=" + trackingIdx +
+//                    ", pageIdx=" + pageIdx(trackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(trackingIdx)));
 
             int tailPageIdx = hi(ts);
 
@@ -299,7 +308,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             int tailFirst = lo(tailTs);
 
             if (tailFirst != -2) {
-                log.info("!!!! Tail page contains firstTs = " + tailFirst + ", secondTs = " + hi(tailTs) + ", pageIdx=" + tailPageIdx + ", trackingIdx=" + tailPageTrackingIdx);
+                log.info("!!!! Tail page contains firstTs = " + tailFirst + ", secondTs = " + hi(tailTs) +
+                    ", pageIdx=" + tailPageIdx + ", trackingIdx=" + tailPageTrackingIdx);
 
                 return -1;
             }
@@ -313,13 +323,15 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             int headFirst = lo(headTs);
 
             if (headFirst == -1 || headFirst == -2) {
-                log.info("!!!! Head page contains firstTs = " + headFirst + "; secondTs = " + hi(ts) + ", pageIdx=" + headPageIdx + ", trackingIdx=" + headPageTrackingIdx);
+                log.info("!!!! Head page contains firstTs = " + headFirst + "; secondTs = " + hi(ts) +
+                    ", pageIdx=" + headPageIdx + ", trackingIdx=" + headPageTrackingIdx);
 
                 return -1;
             }
         }
         else {
-//            log.info(">>> Evict via tail page: trackingPageIdx=" + trackingIdx + ", pageIdx=" + pageIdx(trackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(trackingIdx)));
+//            log.info(">>> Evict via tail page: trackingPageIdx=" + trackingIdx +
+//                ", pageIdx=" + pageIdx(trackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(trackingIdx)));
 
             int headPageIdx = hi(ts);
 
@@ -330,7 +342,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             int headFirst = lo(headTs);
 
             if (headFirst == -1 || headFirst == -2) {
-                log.info("!!!! Head page contains firstTs = " + headFirst + "; secondTs = " + hi(ts) + ", pageIdx=" + headPageIdx + ", trackingIdx=" + headPageTrackingIdx);
+                log.info("!!!! Head page contains firstTs = " + headFirst + "; secondTs = " + hi(ts) +
+                    ", pageIdx=" + headPageIdx + ", trackingIdx=" + headPageTrackingIdx);
 
                 return -1;
             }

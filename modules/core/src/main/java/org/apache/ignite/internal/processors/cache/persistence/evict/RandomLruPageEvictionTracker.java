@@ -129,7 +129,8 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
 
-//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
+//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
+//        ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
 
         GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx * 4L, (int)latestTs);
     }
