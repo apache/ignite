@@ -2880,6 +2880,14 @@ public class BinaryUtils {
         return val instanceof BinaryArray;
     }
 
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryObjectExImpl}.
+     */
+    public static boolean isBinaryObjectExImpl(Object val) {
+        return val instanceof BinaryObjectExImpl;
+    }
+
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */
     public static boolean useBinaryArrays() {
         return USE_BINARY_ARRAYS;
@@ -2893,6 +2901,17 @@ public class BinaryUtils {
      */
     public static void initUseBinaryArrays() {
         USE_BINARY_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
+    }
+
+    /**
+     * @param fieldId Field id.
+     * @return {@link BinaryObjectExImpl#field(int)} value or {@code null} if object not instance of {@link BinaryObjectExImpl}.
+     */
+    public static Object field(Object obj, int fieldId) {
+        if(!(obj instanceof BinaryObjectExImpl))
+            return null;
+
+        return ((BinaryObjectExImpl)obj).field(fieldId);
     }
 
     /**

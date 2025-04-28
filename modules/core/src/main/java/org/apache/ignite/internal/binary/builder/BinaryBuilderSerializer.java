@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -76,7 +75,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof BinaryObjectExImpl) {
+        if (BinaryUtils.isBinaryObjectExImpl(val)) {
             if (binaryObjToWrapper == null)
                 binaryObjToWrapper = new IdentityHashMap<>();
 
