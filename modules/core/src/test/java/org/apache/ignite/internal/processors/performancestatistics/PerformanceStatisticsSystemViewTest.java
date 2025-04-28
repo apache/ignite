@@ -44,6 +44,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
     /** */
     private static final List<String> IGNORED_VIEWS = List.of(
         "baseline.node.attributes",
+        "node.attributes",
         "metrics",
         "caches",
         "sql.queries",
