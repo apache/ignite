@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  *
  */
-public class PageEvictionDataStreamerAbstractTest extends PageEvictionMultinodeAbstractTest {
+public abstract class PageEvictionDataStreamerAbstractTest extends PageEvictionMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected void createCacheAndTestEviction(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = clientGrid().getOrCreateCache(cfg);

@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Enables but not touches persistent region, checks page eviction and PDS+no PDS mode.
  */
-public class PageEvictionMultinodeMixedRegionsAbstractTest extends PageEvictionMultinodeAbstractTest {
+public abstract class PageEvictionMultinodeMixedRegionsAbstractTest extends PageEvictionMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

@@ -29,7 +29,7 @@ import org.junit.Test;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /** */
-public class PageEvictionPutLargeObjectsAbstractTest extends GridCommonAbstractTest {
+public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommonAbstractTest {
     /** Offheap size for memory policy. */
     private static final int SIZE = 1024 * 1024 * 1024;
 
