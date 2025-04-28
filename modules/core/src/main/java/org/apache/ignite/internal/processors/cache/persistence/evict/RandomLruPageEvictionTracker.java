@@ -96,8 +96,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
-            if (ts < 0)
+            if (ts < 0) {
+                log.info("!!!! Touch fragment page, ts = " + ts);
+
                 return;
+            }
 
             success = GridUnsafe.compareAndSwapInt(
                 null, trackingArrPtr + trackingIdx * 4L, ts, (int)res);
@@ -114,6 +117,21 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
         // Store link to head fragment page in tail fragment page.
         linkFragmentPages(tailPageId, headPageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unTrackFragmentPage(long pageId) throws IgniteCheckedException {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        int trackingIdx = trackingIdx(pageIdx);
+
+        long latestTs = compactTimestamp(U.currentTimeMillis());
+
+        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
+
+//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
+
+        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx * 4L, (int)latestTs);
     }
 
     /**
@@ -211,7 +229,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
         if (compactTs < 0)
-            return trackingIdx(-GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L));
+            return trackingIdx(-compactTs);
         else
             return trackingIdx;
     }
@@ -222,7 +240,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
-        return ts != 0;
+        return ts > 0;
     }
 
     /** {@inheritDoc} */

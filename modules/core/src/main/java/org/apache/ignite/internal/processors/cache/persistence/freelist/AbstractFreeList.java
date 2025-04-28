@@ -429,6 +429,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     put(null, pageId, page, pageAddr, newBucket, statHolder);
             }
 
+            if (nextLink != 0 && !io.isEmpty(pageAddr))
+                evictionTracker.unTrackFragmentPage(pageId);
+
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
@@ -607,7 +610,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 written = writeSinglePage(row, written, statHolder, tailPageId);
 
                 if (tailPageId == -1)
-                    tailPageId = row.link();
+                    tailPageId = PageIdUtils.pageId(row.link());
             }
             while (written != COMPLETE);
         }
@@ -724,7 +727,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             written = writeSinglePage(row, written, statHolder, cur.tailPageId());
 
             if (written != COMPLETE && cur.tailPageId() == -1)
-                cur.tailPageId(row.link());
+                cur.tailPageId(PageIdUtils.pageId(row.link()));
 
             memMetrics.incrementLargeEntriesPages();
         }
