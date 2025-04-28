@@ -108,8 +108,8 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
         assertTrue(waitForCondition(() -> {
             try {
                 List<File> files = statisticsFiles();
-                return performanceStatisticsFiles(files).size() == G.allGrids().size() * 2
-                    && systemViewStatisticsFiles(files).size() == G.allGrids().size();
+                return performanceStatisticsFiles(files).size() == G.allGrids().size() * 2 &&
+                    systemViewStatisticsFiles(files).size() == G.allGrids().size();
             }
             catch (Exception e) {
                 fail();
