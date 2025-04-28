@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util;
 
+import java.io.File;
+import java.util.List;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
@@ -27,7 +29,9 @@ import static org.apache.ignite.internal.management.performancestatistics.Perfor
 import static org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsTask.STATUS_ENABLED;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.TIMEOUT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.performanceStatisticsFiles;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.statisticsFiles;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.systemViewStatisticsFiles;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -103,7 +107,9 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
 
         assertTrue(waitForCondition(() -> {
             try {
-                return statisticsFiles().size() == G.allGrids().size() * 2;
+                List<File> files = statisticsFiles();
+                return performanceStatisticsFiles(files).size() == G.allGrids().size() * 2
+                    && systemViewStatisticsFiles(files).size() == G.allGrids().size();
             }
             catch (Exception e) {
                 fail();
