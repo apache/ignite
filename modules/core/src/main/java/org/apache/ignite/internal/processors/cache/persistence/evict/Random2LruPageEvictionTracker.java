@@ -131,19 +131,30 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                long trackData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                int firstTs = first(trackData);
+                int firstTs = first(trackingData);
 
                 if (firstTs == -1) {
-                    trackingIdx = getHeadPageTrackingIdx(trackingIdx(second(trackData)));
+                    // For page containing fragmented row data timestamps stored in the row's head page are used.
+                    // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
+                    // head page. So head page is found no more than in two hops.
+                    trackingIdx = trackingIdx(second(trackingData));
 
-                    trackData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                    trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                    firstTs = first(trackData);
+                    firstTs = first(trackingData);
+
+                    if (firstTs == -1) {
+                        trackingIdx = trackingIdx(second(trackingData));
+
+                        trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+                        firstTs = first(trackingData);
+                    }
                 }
 
-                int secondTs = second(trackData);
+                int secondTs = second(trackingData);
 
                 int minTs = Math.min(firstTs, secondTs);
 
@@ -255,26 +266,6 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             if (!success)
                 log.info("!!!! linkFragmentPages: !success");
         } while (!success);
-    }
-
-    /**
-     * Given tracking index of page containing any row fragment finds tracking index of the head fragment page.
-     * <p>
-     * Each fragment page (other than the tail one) contains link to tail page.
-     * Tail page contains link to head page. So head page is found no more than in two hops.
-     *
-     * @param trackingIdx tracking index of page containing one of the row fragment.
-     * @return tracking index of head row page.
-     */
-    private int getHeadPageTrackingIdx(int trackingIdx) {
-        long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
-
-        int firstTs = first(trackingData);
-
-        if (firstTs == -1)
-            return trackingIdx(second(trackingData));
-        else
-            return trackingIdx;
     }
 
     /** */
