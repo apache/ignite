@@ -97,24 +97,24 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-            int firstTs = lo(ts);
+            int firstTs = first(ts);
 
-            if (firstTs == -1 || firstTs == -2) {
+            if (firstTs < 0) {
                 log.info("!!!! Touch fragment page, firstTs = " + firstTs);
+
                 break;
             }
 
-            int secondTs = hi(ts);
+            int secondTs = second(ts);
 
-            long newvalue;
+            long newTs;
 
             if (firstTs <= secondTs)
-                newvalue = l((int)latestTs, secondTs);
+                newTs = asLong((int)latestTs, secondTs);
             else
-                newvalue = l(firstTs, (int)latestTs);
+                newTs = asLong(firstTs, (int)latestTs);
 
-            success = GridUnsafe.compareAndSwapLong(
-                    null, trackingArrPtr + trackingIdx * 8L, ts, newvalue);
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, ts, newTs);
         } while (!success);
     }
 
@@ -124,31 +124,37 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     /** */
     private static final long HI_INT_MASK = -1L << Integer.SIZE;
 
-    /** */
-    private int hi(long l) {
+    /**
+     * Decode long and extract first integer value.
+     */
+    private int second(long l) {
         return (int)((l & HI_INT_MASK) >> Integer.SIZE);
     }
 
-    /** */
-    private int lo(long l) {
+    /**
+     * Decode long and extract second integer value.
+     */
+    private int first(long l) {
         return (int)(l & LO_INT_MASK);
     }
 
-    /** */
-    private long l(int lo, int hi) {
-        return (((long)hi) << Integer.SIZE) | ((long)lo & LO_INT_MASK);
+    /**
+     * Encode a pair of integer values as a single long.
+     */
+    private long asLong(int first, int second) {
+        return (((long)second) << Integer.SIZE) | ((long)first & LO_INT_MASK);
     }
 
     /** {@inheritDoc} */
     @Override public void trackFragmentPage(long pageId, long tailPageId) {
         // Store link to tail fragment page in each fragment page.
-        linkFragmentPages(pageId, tailPageId, -1);
+        linkFragmentPages(pageId, tailPageId);
     }
 
     /** {@inheritDoc} */
     @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
         // Store link to head fragment page in tail fragment page.
-        linkFragmentPages(tailPageId, headPageId, -2);
+        linkFragmentPages(tailPageId, headPageId);
     }
 
     /** {@inheritDoc} */
@@ -164,7 +170,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 //        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
 //                ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
 
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, l((int)latestTs, 0));
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, asLong((int)latestTs, 0));
     }
 
     /**
@@ -174,7 +180,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
      * @param pageId Page id.
      * @param nextPageId Page id of previous fragment.
      */
-    private void linkFragmentPages(long pageId, long nextPageId, int tag) {
+    private void linkFragmentPages(long pageId, long nextPageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         int nextPageIdx = PageIdUtils.pageIndex(nextPageId);
@@ -186,23 +192,23 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-            int firstTs = lo(ts);
+            int firstTs = first(ts);
 
 //            log.info(">>> linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
 //                ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx
 //                + " nextPageId=" + PageIdUtils.pageId(nextPageId));
 
             if (firstTs != 0)
-                log.info("!!!! linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
+                log.info("!!!! linkFragmentPages: firstTs=" + firstTs +
                     ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
 
-            if (firstTs == -1 || firstTs == -2)
+            if (firstTs < 0)
                 return;
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, ts, l(tag, nextPageIdx));
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, ts, asLong(-nextPageIdx, 0));
 
             if (!success)
-                log.info("!!!! linkFragmentPages: !success; tag=" + tag);
+                log.info("!!!! linkFragmentPages: !success");
         } while (!success);
     }
 
@@ -226,24 +232,19 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                int firstTs = lo(ts);
+                int firstTs = first(ts);
 
 //                log.info(">>> evictDataPage: firstTs=" + firstTs);
 
-                if (firstTs == -1 || firstTs == -2) {
-                    trackingIdx = getHeadPageTrackingIdx(ts, trackingIdx);
-
-                    if (trackingIdx == -1)
-                        continue;
+                if (firstTs < 0) {
+                    trackingIdx = getHeadPageTrackingIdx(trackingIdx(-firstTs));
 
                     ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                    firstTs = lo(ts);
+                    firstTs = first(ts);
                 }
-//                else
-//                    log.info(">>> Evict via usual page: " + trackingIdx);
 
-                int secondTs = hi(ts);
+                int secondTs = second(ts);
 
                 int minTs = Math.min(firstTs, secondTs);
 
@@ -283,73 +284,22 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /**
      * Given tracking index of page containing any row fragment finds tracking index of the head one.
-     *
+     * <p>
      * Each fragment page (other than the tail one) contains link to tail page.
      * Tail page contains link to head page. So head page is found no more than for two hops.
      *
      * @param trackingIdx tracking index of page containing one of the row fragment.
      * @return tracking index of head row page.
      */
-    private int getHeadPageTrackingIdx(long ts, int trackingIdx) {
-        int headPageTrackingIdx;
+    private int getHeadPageTrackingIdx(int trackingIdx) {
+        long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-        int firstTs = lo(ts);
+        int firstTs = first(ts);
 
-        if (firstTs == -1) {
-//            log.info(">>> Evict via fragment page: trackingPageIdx=" + trackingIdx +
-//                    ", pageIdx=" + pageIdx(trackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(trackingIdx)));
-
-            int tailPageIdx = hi(ts);
-
-            int tailPageTrackingIdx = trackingIdx(tailPageIdx);
-
-            long tailTs = GridUnsafe.getLongVolatile(null, trackingArrPtr + tailPageTrackingIdx * 8L);
-
-            int tailFirst = lo(tailTs);
-
-            if (tailFirst != -2) {
-                log.info("!!!! Tail page contains firstTs = " + tailFirst + ", secondTs = " + hi(tailTs) +
-                    ", pageIdx=" + tailPageIdx + ", trackingIdx=" + tailPageTrackingIdx);
-
-                return -1;
-            }
-
-            int headPageIdx = hi(tailTs);
-
-            headPageTrackingIdx = trackingIdx(headPageIdx);
-
-            long headTs = GridUnsafe.getLongVolatile(null, trackingArrPtr + headPageTrackingIdx * 8L);
-
-            int headFirst = lo(headTs);
-
-            if (headFirst == -1 || headFirst == -2) {
-                log.info("!!!! Head page contains firstTs = " + headFirst + "; secondTs = " + hi(ts) +
-                    ", pageIdx=" + headPageIdx + ", trackingIdx=" + headPageTrackingIdx);
-
-                return -1;
-            }
-        }
-        else {
-//            log.info(">>> Evict via tail page: trackingPageIdx=" + trackingIdx +
-//                ", pageIdx=" + pageIdx(trackingIdx) + ", pageId=" + PageIdUtils.pageId(pageIdx(trackingIdx)));
-
-            int headPageIdx = hi(ts);
-
-            headPageTrackingIdx = trackingIdx(headPageIdx);
-
-            long headTs = GridUnsafe.getLongVolatile(null, trackingArrPtr + headPageTrackingIdx * 8L);
-
-            int headFirst = lo(headTs);
-
-            if (headFirst == -1 || headFirst == -2) {
-                log.info("!!!! Head page contains firstTs = " + headFirst + "; secondTs = " + hi(ts) +
-                    ", pageIdx=" + headPageIdx + ", trackingIdx=" + headPageTrackingIdx);
-
-                return -1;
-            }
-        }
-
-        return headPageTrackingIdx;
+        if (firstTs < 0)
+            return trackingIdx(-firstTs);
+        else
+            return trackingIdx;
     }
 
     /** {@inheritDoc} */
@@ -358,7 +308,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-        return lo(ts) > 0;
+        return first(ts) > 0;
     }
 
     /** {@inheritDoc} */

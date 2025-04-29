@@ -153,12 +153,12 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
-            int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
+            int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
-            if (compactTs < 0)
+            if (ts < 0)
                 return;
 
-            success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 4L, compactTs, -nextPageIdx);
+            success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 4L, ts, -nextPageIdx);
         } while (!success);
     }
 
