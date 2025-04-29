@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.dump;
+package org.apache.ignite.internal.binary;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
- * Json test suite.
+ * Simple utility class to init binary related serializers.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    JsonDumpConsumerTest.class,
-    JsonArrayTest.class
-})
-public class IgniteJsonSuite {
+public class BinarySerializers {
+    /** Adds binary serializers to module. */
+    public static void init(SimpleModule module) {
+        module.addSerializer(BinaryObjectImpl.class, new BinaryObjectImplSerializer());
+        module.addSerializer(BinaryArray.class, new BinaryArraySerializer());
+    }
 }

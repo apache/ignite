@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.dump;
+package org.apache.ignite.internal.binary;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.IOException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * Json test suite.
+ * Custom serializer for {@link BinaryArray}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    JsonDumpConsumerTest.class,
-    JsonArrayTest.class
-})
-public class IgniteJsonSuite {
+class BinaryArraySerializer extends JsonSerializer<BinaryArray> {
+    /** {@inheritDoc} */
+    @Override public void serialize(BinaryArray val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        gen.writeStartArray();
+
+        for (Object o : val.array())
+            gen.writeObject(o);
+
+        gen.writeEndArray();
+    }
 }

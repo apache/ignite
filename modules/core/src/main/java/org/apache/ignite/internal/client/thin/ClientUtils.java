@@ -585,7 +585,7 @@ public final class ClientUtils {
         if (obj instanceof BinaryObjectImpl) {
             BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
 
-            return marsh.deserialize(BinaryStreams.inputStream(obj0.array(), obj0.start()), hnds);
+            return marsh.deserialize(BinaryStreams.inputStream(obj0.bytes(), obj0.start()), hnds);
         }
         else if (obj instanceof BinaryObject)
             return ((BinaryObject)obj).deserialize();

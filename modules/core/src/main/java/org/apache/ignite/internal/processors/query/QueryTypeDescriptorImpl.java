@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -718,7 +717,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param expColType Type of the column based on Query Property info.
      */
     private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType) {
-        if (!(val instanceof BinaryObject) || val instanceof BinaryArray) {
+        if (!(val instanceof BinaryObject) || BinaryUtils.isBinaryArray(val)) {
             if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
                 return true;
 
