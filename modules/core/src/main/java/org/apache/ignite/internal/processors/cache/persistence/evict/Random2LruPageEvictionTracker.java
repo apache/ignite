@@ -104,12 +104,14 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int secondTs = second(trackingData);
 
+            long newTrackingData;
+
             if (firstTs <= secondTs)
-                success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, asLong((int)latestTs, secondTs));
-            else {
-                success = GridUnsafe.compareAndSwapLong(
-                    null, trackingArrPtr + trackingIdx * 8L, trackingData, asLong(firstTs, (int) latestTs));
-            }
+                newTrackingData = asLong((int)latestTs, secondTs);
+            else
+                newTrackingData = asLong(firstTs, (int)latestTs);
+
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
         } while (!success);
     }
 
