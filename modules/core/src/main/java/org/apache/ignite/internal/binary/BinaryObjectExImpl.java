@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.COLLE
 /**
  * Internal binary object interface.
  */
-public abstract class BinaryObjectExImpl implements BinaryObjectEx {
+abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
      * @return Length.
      */
