@@ -16,17 +16,75 @@
  */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionAbstractTest.setEvictionMode;
 
 /** */
-public class Random2LruPageEvictionPutLargeObjectsTest extends PageEvictionPutLargeObjectsAbstractTest {
+public class Random2LruPageEvictionPutLargeObjectsTest extends GridCommonAbstractTest {
+    /** Offheap size for memory policy. */
+    private static final int SIZE = 1024 * 1024 * 1024;
+
+    /** Record size. */
+    private static final int RECORD_SIZE = 80 * 1024 * 1024;
+
+    /** Number of entries. */
+    static final int ENTRIES = 100;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(gridName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setInitialSize(SIZE)
+                    .setMaxSize(SIZE)
+                )
+                .setPageSize(DFLT_PAGE_SIZE)
+            );
 
         return setEvictionMode(DataPageEvictionMode.RANDOM_2_LRU, cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_DUMP_THREADS_ON_FAILURE", value = "false")
+    public void testPutLargeObjects() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        IgniteCache<Integer, Object> cache = ignite.createCache(DEFAULT_CACHE_NAME);
+
+        Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
+
+        Object val = new byte[RECORD_SIZE];
+
+        int counter = 0;
+
+        for (int key = 1; key <= ENTRIES; key++) {
+            // Skip keys local node is primary for to force async processing in system striped pool in the non-local node.
+            if (!aff.isPrimary(ignite.localNode(), key)) {
+                cache.put(key, val);
+
+                counter++;
+
+                System.out.println(">>> Key put: " + key + ", total entries put: " + counter);
+            }
+        }
     }
 }
