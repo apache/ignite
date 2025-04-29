@@ -747,7 +747,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param row Row to write.
      * @param written Written size.
      * @param statHolder Statistics holder to track IO operations.
-     * @param tailPageId Link to tail page.
+     * @param tailPageId ID of page containing tail fragment if row is fragmented.
+     *                   -1 means either row is not fragmented or tail fragment is to be written now.
      * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
      * @throws IgniteCheckedException If failed.
      */
