@@ -2908,7 +2908,7 @@ public class BinaryUtils {
      * @return {@link BinaryObjectExImpl#field(int)} value or {@code null} if object not instance of {@link BinaryObjectExImpl}.
      */
     public static Object field(Object obj, int fieldId) {
-        if(!(obj instanceof BinaryObjectExImpl))
+        if (!(obj instanceof BinaryObjectExImpl))
             return null;
 
         return ((BinaryObjectExImpl)obj).field(fieldId);
