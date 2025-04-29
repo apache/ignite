@@ -625,40 +625,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Grid cursor for rows to be written.
-     * <p>
-     * If current row is fragmented allows to maintain ID of page containg tail fragment.
-     */
-    private static class WriteRowsGridCursor<T> extends GridCursorIteratorWrapper<T> {
-        /** Tail page id. */
-        private long tailPageId = -1;
-
-        /**
-         * @param iter Iterator.
-         */
-        public WriteRowsGridCursor(Iterator<T> iter) {
-            super(iter);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            tailPageId(-1);
-
-            return super.next();
-        }
-
-        /** Get tail page id. */
-        public void tailPageId(long tailPageId) {
-            this.tailPageId = tailPageId;
-        }
-
-        /** Set tail page id. */
-        public long tailPageId() {
-            return tailPageId;
-        }
-    }
-
-    /**
      * Reduces the workload on the free list by writing multiple rows into a single memory page at once.<br>
      * <br>
      * Rows are sequentially added to the page as long as there is enough free space on it. If the row is large then
@@ -709,6 +675,40 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
+        }
+    }
+
+    /**
+     * Grid cursor for rows to be written.
+     * <p>
+     * If current row is fragmented allows to maintain ID of page containg tail fragment.
+     */
+    private static class WriteRowsGridCursor<T> extends GridCursorIteratorWrapper<T> {
+        /** Tail page id. */
+        private long tailPageId = -1;
+
+        /**
+         * @param iter Iterator.
+         */
+        public WriteRowsGridCursor(Iterator<T> iter) {
+            super(iter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() throws IgniteCheckedException {
+            tailPageId(-1);
+
+            return super.next();
+        }
+
+        /** Get tail page id. */
+        public void tailPageId(long tailPageId) {
+            this.tailPageId = tailPageId;
+        }
+
+        /** Set tail page id. */
+        public long tailPageId() {
+            return tailPageId;
         }
     }
 
