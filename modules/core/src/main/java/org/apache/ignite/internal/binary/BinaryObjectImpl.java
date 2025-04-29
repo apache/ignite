@@ -341,7 +341,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] array() {
+    @Override public byte[] bytes() {
         return arr;
     }
 
@@ -356,7 +356,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasArray() {
+    @Override public boolean hasBytes() {
         return true;
     }
 

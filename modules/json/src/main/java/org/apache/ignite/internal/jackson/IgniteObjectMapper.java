@@ -42,12 +42,8 @@ import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinarySerializers;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.F;
@@ -85,8 +81,8 @@ public class IgniteObjectMapper extends ObjectMapper {
         module.addSerializer(IgniteUuid.class, IGNITE_UUID_SERIALIZER);
         module.addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER);
         module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
-        module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
-        module.addSerializer(BinaryArray.class, IGNITE_BINARY_ARRAY_SERIALIZER);
+
+        BinarySerializers.init(module);
 
         // Standard serializer loses nanoseconds.
         module.addSerializer(Timestamp.class, IGNITE_TIMESTAMP_SERIALIZER);
@@ -268,61 +264,6 @@ public class IgniteObjectMapper extends ObjectMapper {
             }
         };
 
-    /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
-    private static final JsonSerializer<BinaryObjectImpl> IGNITE_BINARY_OBJECT_SERIALIZER = new JsonSerializer<BinaryObjectImpl>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(BinaryObjectImpl bin, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            try {
-                BinaryType meta = bin.rawType();
-
-                // Serialize to JSON if we have metadata.
-                if (meta != null && !F.isEmpty(meta.fieldNames())) {
-                    gen.writeStartObject();
-
-                    for (String name : meta.fieldNames()) {
-                        Object val = bin.field(name);
-
-                        if (val instanceof BinaryObjectImpl) {
-                            BinaryObjectImpl ref = (BinaryObjectImpl)val;
-
-                            if (ref.hasCircularReferences())
-                                throw ser.mappingException("Failed convert to JSON object for circular references");
-                        }
-
-                        if (val instanceof BinaryEnumObjectImpl)
-                            gen.writeObjectField(name, ((BinaryObject)val).enumName());
-                        else
-                            gen.writeObjectField(name, val);
-                    }
-
-                    gen.writeEndObject();
-                }
-                else {
-                    // Otherwise serialize as Java object.
-                    Object obj = bin.deserialize();
-
-                    gen.writeObject(obj);
-                }
-            }
-            catch (BinaryObjectException ignore) {
-                gen.writeNull();
-            }
-        }
-    };
-
-    /** Custom serializer for {@link BinaryArray}. */
-    private static final JsonSerializer<BinaryArray> IGNITE_BINARY_ARRAY_SERIALIZER = new JsonSerializer<BinaryArray>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(BinaryArray val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeStartArray();
-
-            for (Object o : val.array())
-                gen.writeObject(o);
-
-            gen.writeEndArray();
-        }
-    };
-
     /** Custom serializer for {@link java.sql.Timestamp}. */
     private static final JsonSerializer<Timestamp> IGNITE_TIMESTAMP_SERIALIZER = new JsonSerializer<Timestamp>() {
         /** {@inheritDoc} */
@@ -382,4 +323,5 @@ public class IgniteObjectMapper extends ObjectMapper {
             return false;
         }
     }
+
 }

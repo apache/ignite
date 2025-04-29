@@ -246,7 +246,7 @@ class BinarySerializedFieldComparator {
                 Object val1 = c1.currentField();
                 Object val2 = c2.currentField();
 
-                return (F.isArray(val1) || val1 instanceof BinaryArray) ? F.arrayEq(val1, val2) : Objects.equals(val1, val2);
+                return (F.isArray(val1) || BinaryUtils.isBinaryArray(val1)) ? F.arrayEq(val1, val2) : Objects.equals(val1, val2);
         }
     }
 

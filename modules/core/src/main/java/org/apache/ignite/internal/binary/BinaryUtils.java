@@ -85,6 +85,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
@@ -112,6 +113,13 @@ public class BinaryUtils {
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
+
+    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
+
+    /** Value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    private static boolean USE_BINARY_ARRAYS =
+        IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
 
     /** Map from class to associated write replacer. */
     public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
@@ -2032,7 +2040,7 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                if (BinaryArray.useBinaryArrays() && !deserialize)
+                if (useBinaryArrays() && !deserialize)
                     return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, false);
                 else
                     return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
@@ -2051,7 +2059,7 @@ public class BinaryUtils {
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
-                if (BinaryArray.useBinaryArrays() && !deserialize)
+                if (useBinaryArrays() && !deserialize)
                     return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, true);
                 else {
                     doReadEnumType(in); // Simply skip this part as we do not need it.
@@ -2100,7 +2108,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++) {
             Object res = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-            if (deserialize && BinaryArray.useBinaryArrays() && res instanceof BinaryObject)
+            if (deserialize && useBinaryArrays() && res instanceof BinaryObject)
                 arr[i] = ((BinaryObject)res).deserialize(ldr);
             else
                 arr[i] = res;
@@ -2686,9 +2694,9 @@ public class BinaryUtils {
      * @return Objects array.
      */
     public static Object[] rawArrayFromBinary(Object obj) {
-        if (obj instanceof BinaryArray)
+        if (isBinaryArray(obj))
             // We want raw data(no deserialization).
-            return ((BinaryArray)obj).array();
+            return ((BinaryObjectEx)obj).array();
         else
             // This can happen even in BinaryArray.USE_TYPED_ARRAY = true.
             // In case user pass special array type to arguments, String[], for example.
@@ -2766,7 +2774,7 @@ public class BinaryUtils {
                 private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
 
                 @Override public int applyAsInt(Object bo) {
-                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).array().length);
+                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
                 }
             },
             BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
@@ -2862,6 +2870,48 @@ public class BinaryUtils {
      */
     public static BinaryMetadataHandler cachingMetadataHandler() {
         return BinaryCachingMetadataHandler.create();
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryObjectExImpl}.
+     */
+    public static boolean isBinaryObjectExImpl(Object val) {
+        return val instanceof BinaryObjectExImpl;
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryArray}.
+     */
+    public static boolean isBinaryArray(Object val) {
+        return val instanceof BinaryArray;
+    }
+
+    /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */
+    public static boolean useBinaryArrays() {
+        return USE_BINARY_ARRAYS;
+    }
+
+    /**
+     * Initialize {@link #USE_BINARY_ARRAYS} value with
+     * {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} system property value.
+     *
+     * This method invoked using reflection in tests.
+     */
+    public static void initUseBinaryArrays() {
+        USE_BINARY_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
+    }
+
+    /**
+     * @param fieldId Field id.
+     * @return {@link BinaryObjectExImpl#field(int)} value or {@code null} if object not instance of {@link BinaryObjectExImpl}.
+     */
+    public static Object field(Object obj, int fieldId) {
+        if (!(obj instanceof BinaryObjectExImpl))
+            return null;
+
+        return ((BinaryObjectExImpl)obj).field(fieldId);
     }
 
     /**

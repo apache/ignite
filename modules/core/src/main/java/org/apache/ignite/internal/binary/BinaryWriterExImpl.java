@@ -604,7 +604,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            byte[] poArr = po.array();
+            byte[] poArr = po.bytes();
 
             out.unsafeEnsure(1 + 4 + poArr.length + 4);
 
