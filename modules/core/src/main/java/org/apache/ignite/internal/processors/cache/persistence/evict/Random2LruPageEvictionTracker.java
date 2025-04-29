@@ -92,14 +92,11 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
-//            log.info("touchPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
-//                    ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
-
             long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
             int firstTs = first(trackingData);
 
-            if (firstTs < 0) {
+            if (firstTs == -1) {
                 log.info("!!!! Touch fragment page, firstTs = " + firstTs);
 
                 break;
@@ -107,14 +104,12 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int secondTs = second(trackingData);
 
-            long newTrackData;
-
             if (firstTs <= secondTs)
-                newTrackData = asLong((int)latestTs, secondTs);
-            else
-                newTrackData = asLong(firstTs, (int)latestTs);
-
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackData);
+                success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, asLong((int)latestTs, secondTs));
+            else {
+                success = GridUnsafe.compareAndSwapLong(
+                    null, trackingArrPtr + trackingIdx * 8L, trackingData, asLong(firstTs, (int) latestTs));
+            }
         } while (!success);
     }
 
@@ -140,10 +135,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 int firstTs = first(trackData);
 
-//                log.info(">>> evictDataPage: firstTs=" + firstTs);
-
-                if (firstTs < 0) {
-                    trackingIdx = getHeadPageTrackingIdx(trackingIdx(-firstTs));
+                if (firstTs == -1) {
+                    trackingIdx = getHeadPageTrackingIdx(trackingIdx(second(trackData)));
 
                     trackData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
@@ -176,9 +169,6 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 }
             }
 
-//            log.info(">>>>> Selected page: pageIdx=" + pageIdx(lruTrackingIdx) +
-//                ", pageId=" + PageIdUtils.pageId(pageIdx(lruTrackingIdx)) + ", trackingIdx=" + lruTrackingIdx);
-
             if (evictDataPage(pageIdx(lruTrackingIdx)))
                 return;
 
@@ -192,9 +182,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+        int firstTs = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L));
 
-        return first(trackingData) > 0;
+        return firstTs > 0;
     }
 
     /** {@inheritDoc} */
@@ -228,18 +218,15 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
 
-//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
-//                ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
-
         GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, asLong((int)latestTs, 0));
     }
 
     /**
      * Link two pages containing fragments of row.
-     * First timestamp in tracking array is set to -1. Link is stored as a page index in the second timestamp.
+     * Link is stored as a next page index in the second int in tracking data.
      *
      * @param pageId Page id.
-     * @param nextPageId Page id of previous fragment.
+     * @param nextPageId Id of page to link to.
      */
     private void linkFragmentPages(long pageId, long nextPageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
@@ -255,18 +242,15 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int firstTs = first(trackinData);
 
-//            log.info(">>> linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
-//                ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx
-//                + " nextPageId=" + PageIdUtils.pageId(nextPageId));
-
-            if (firstTs != 0)
+            if (firstTs != 0) {
                 log.info("!!!! linkFragmentPages: firstTs=" + firstTs +
                     ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
+            }
 
-            if (firstTs < 0)
+            if (firstTs == -1)
                 return;
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, asLong(-nextPageIdx, 0));
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, asLong(-1, nextPageIdx));
 
             if (!success)
                 log.info("!!!! linkFragmentPages: !success");
@@ -287,8 +271,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         int firstTs = first(trackingData);
 
-        if (firstTs < 0)
-            return trackingIdx(-firstTs);
+        if (firstTs == -1)
+            return trackingIdx(second(trackingData));
         else
             return trackingIdx;
     }
@@ -307,16 +291,16 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /**
-     * Decode long and extract first integer value.
+     * Decode long and extract firsts integer value.
      */
-    private int second(long l) {
-        return (int)((l & SECOND_INT_MASK) >> Integer.SIZE);
+    private int first(long l) {
+        return (int)(l & FIRST_INT_MASK);
     }
 
     /**
      * Decode long and extract second integer value.
      */
-    private int first(long l) {
-        return (int)(l & FIRST_INT_MASK);
+    private int second(long l) {
+        return (int)((l & SECOND_INT_MASK) >> Integer.SIZE);
     }
 }
