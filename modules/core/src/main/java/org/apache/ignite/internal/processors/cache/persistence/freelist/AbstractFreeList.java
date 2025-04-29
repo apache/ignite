@@ -430,7 +430,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
 
             if (nextLink != 0 && !io.isEmpty(pageAddr))
-                evictionTracker.unTrackFragmentPage(pageId);
+                evictionTracker.forgetFragmentPage(pageId);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;

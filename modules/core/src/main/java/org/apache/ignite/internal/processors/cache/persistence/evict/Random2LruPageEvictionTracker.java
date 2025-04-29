@@ -95,9 +95,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 //            log.info("touchPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
 //                    ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
 
-            long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+            long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-            int firstTs = first(ts);
+            int firstTs = first(trackingData);
 
             if (firstTs < 0) {
                 log.info("!!!! Touch fragment page, firstTs = " + firstTs);
@@ -105,110 +105,16 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 break;
             }
 
-            int secondTs = second(ts);
+            int secondTs = second(trackingData);
 
-            long newTs;
+            long newTrackData;
 
             if (firstTs <= secondTs)
-                newTs = asLong((int)latestTs, secondTs);
+                newTrackData = asLong((int)latestTs, secondTs);
             else
-                newTs = asLong(firstTs, (int)latestTs);
+                newTrackData = asLong(firstTs, (int)latestTs);
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, ts, newTs);
-        } while (!success);
-    }
-
-    /** */
-    private static final long LO_INT_MASK = ~(-1L << Integer.SIZE);
-
-    /** */
-    private static final long HI_INT_MASK = -1L << Integer.SIZE;
-
-    /**
-     * Decode long and extract first integer value.
-     */
-    private int second(long l) {
-        return (int)((l & HI_INT_MASK) >> Integer.SIZE);
-    }
-
-    /**
-     * Decode long and extract second integer value.
-     */
-    private int first(long l) {
-        return (int)(l & LO_INT_MASK);
-    }
-
-    /**
-     * Encode a pair of integer values as a single long.
-     */
-    private long asLong(int first, int second) {
-        return (((long)second) << Integer.SIZE) | ((long)first & LO_INT_MASK);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long tailPageId) {
-        // Store link to tail fragment page in each fragment page.
-        linkFragmentPages(pageId, tailPageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
-        // Store link to head fragment page in tail fragment page.
-        linkFragmentPages(tailPageId, headPageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unTrackFragmentPage(long pageId) throws IgniteCheckedException {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        int trackingIdx = trackingIdx(pageIdx);
-
-        long latestTs = compactTimestamp(U.currentTimeMillis());
-
-        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
-
-//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
-//                ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
-
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, asLong((int)latestTs, 0));
-    }
-
-    /**
-     * Link two pages containing fragments of row.
-     * First timestamp in tracking array is set to -1. Link is stored as a page index in the second timestamp.
-     *
-     * @param pageId Page id.
-     * @param nextPageId Page id of previous fragment.
-     */
-    private void linkFragmentPages(long pageId, long nextPageId) {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        int nextPageIdx = PageIdUtils.pageIndex(nextPageId);
-
-        boolean success;
-
-        do {
-            int trackingIdx = trackingIdx(pageIdx);
-
-            long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
-
-            int firstTs = first(ts);
-
-//            log.info(">>> linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
-//                ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx
-//                + " nextPageId=" + PageIdUtils.pageId(nextPageId));
-
-            if (firstTs != 0)
-                log.info("!!!! linkFragmentPages: firstTs=" + firstTs +
-                    ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
-
-            if (firstTs < 0)
-                return;
-
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, ts, asLong(-nextPageIdx, 0));
-
-            if (!success)
-                log.info("!!!! linkFragmentPages: !success");
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackData);
         } while (!success);
     }
 
@@ -230,21 +136,21 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                long trackData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                int firstTs = first(ts);
+                int firstTs = first(trackData);
 
 //                log.info(">>> evictDataPage: firstTs=" + firstTs);
 
                 if (firstTs < 0) {
                     trackingIdx = getHeadPageTrackingIdx(trackingIdx(-firstTs));
 
-                    ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                    trackData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                    firstTs = first(ts);
+                    firstTs = first(trackData);
                 }
 
-                int secondTs = second(ts);
+                int secondTs = second(trackData);
 
                 int minTs = Math.min(firstTs, secondTs);
 
@@ -282,33 +188,13 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
     }
 
-    /**
-     * Given tracking index of page containing any row fragment finds tracking index of the head one.
-     * <p>
-     * Each fragment page (other than the tail one) contains link to tail page.
-     * Tail page contains link to head page. So head page is found no more than for two hops.
-     *
-     * @param trackingIdx tracking index of page containing one of the row fragment.
-     * @return tracking index of head row page.
-     */
-    private int getHeadPageTrackingIdx(int trackingIdx) {
-        long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
-
-        int firstTs = first(ts);
-
-        if (firstTs < 0)
-            return trackingIdx(-firstTs);
-        else
-            return trackingIdx;
-    }
-
     /** {@inheritDoc} */
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        long ts = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+        long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-        return first(ts) > 0;
+        return first(trackingData) > 0;
     }
 
     /** {@inheritDoc} */
@@ -318,5 +204,119 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         int trackingIdx = trackingIdx(pageIdx);
 
         GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, 0L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long tailPageId) {
+        // Store link to tail fragment page in each fragment page.
+        linkFragmentPages(pageId, tailPageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
+        // Store link to head fragment page in tail fragment page.
+        linkFragmentPages(tailPageId, headPageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void forgetFragmentPage(long pageId) throws IgniteCheckedException {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        int trackingIdx = trackingIdx(pageIdx);
+
+        long latestTs = compactTimestamp(U.currentTimeMillis());
+
+        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
+
+//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
+//                ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
+
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, asLong((int)latestTs, 0));
+    }
+
+    /**
+     * Link two pages containing fragments of row.
+     * First timestamp in tracking array is set to -1. Link is stored as a page index in the second timestamp.
+     *
+     * @param pageId Page id.
+     * @param nextPageId Page id of previous fragment.
+     */
+    private void linkFragmentPages(long pageId, long nextPageId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        int nextPageIdx = PageIdUtils.pageIndex(nextPageId);
+
+        boolean success;
+
+        do {
+            int trackingIdx = trackingIdx(pageIdx);
+
+            long trackinData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+            int firstTs = first(trackinData);
+
+//            log.info(">>> linkFragmentPages: firstTs=" + firstTs + ", tag=" + tag +
+//                ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx
+//                + " nextPageId=" + PageIdUtils.pageId(nextPageId));
+
+            if (firstTs != 0)
+                log.info("!!!! linkFragmentPages: firstTs=" + firstTs +
+                    ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
+
+            if (firstTs < 0)
+                return;
+
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, asLong(-nextPageIdx, 0));
+
+            if (!success)
+                log.info("!!!! linkFragmentPages: !success");
+        } while (!success);
+    }
+
+    /**
+     * Given tracking index of page containing any row fragment finds tracking index of the head fragment page.
+     * <p>
+     * Each fragment page (other than the tail one) contains link to tail page.
+     * Tail page contains link to head page. So head page is found no more than in two hops.
+     *
+     * @param trackingIdx tracking index of page containing one of the row fragment.
+     * @return tracking index of head row page.
+     */
+    private int getHeadPageTrackingIdx(int trackingIdx) {
+        long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+        int firstTs = first(trackingData);
+
+        if (firstTs < 0)
+            return trackingIdx(-firstTs);
+        else
+            return trackingIdx;
+    }
+
+    /** */
+    private static final long FIRST_INT_MASK = ~(-1L << Integer.SIZE);
+
+    /** */
+    private static final long SECOND_INT_MASK = -1L << Integer.SIZE;
+
+    /**
+     * Encode a pair of integer values into a single long.
+     */
+    private long asLong(int first, int second) {
+        return (((long)second) << Integer.SIZE) | ((long)first & FIRST_INT_MASK);
+    }
+
+    /**
+     * Decode long and extract first integer value.
+     */
+    private int second(long l) {
+        return (int)((l & SECOND_INT_MASK) >> Integer.SIZE);
+    }
+
+    /**
+     * Decode long and extract second integer value.
+     */
+    private int first(long l) {
+        return (int)(l & FIRST_INT_MASK);
     }
 }

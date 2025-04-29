@@ -33,32 +33,6 @@ public interface PageEvictionTracker extends LifecycleAware {
     public void touchPage(long pageId) throws IgniteCheckedException;
 
     /**
-     * Call this method when data page containing fragment of row is written.
-     *
-     * @param pageId Page id.
-     * @param tailPageId Id of page containing the last row fragment (tail page).
-     * @throws IgniteCheckedException In case of page memory error.
-     */
-    public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException;
-
-    /**
-     * Call this method when data page containing tail fragment of row is written.
-     *
-     * @param pageId Page id.
-     * @param headPageId Id of page containing the first row fragment (head page).
-     * @throws IgniteCheckedException In case of page memory error.
-     */
-    public void trackTailFragmentPage(long pageId, long headPageId) throws IgniteCheckedException;
-
-    /**
-     * Call this method when row fragment is removed from data page.
-     *
-     * @param pageId Page id.
-     * @throws IgniteCheckedException In case of page memory error.
-     */
-    public void unTrackFragmentPage(long pageId) throws IgniteCheckedException;
-
-    /**
      * Check if page eviction is required according to the configured policy.
      *
      * @return {@code True} if eviction required.
@@ -82,4 +56,30 @@ public interface PageEvictionTracker extends LifecycleAware {
      * @throws IgniteCheckedException In case of page memory error.
      */
     public void forgetPage(long pageId) throws IgniteCheckedException;
+
+    /**
+     * Call this method when data page containing fragment of row is written.
+     *
+     * @param pageId Page id.
+     * @param tailPageId Id of page containing the last row fragment (tail page).
+     * @throws IgniteCheckedException In case of page memory error.
+     */
+    public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException;
+
+    /**
+     * Call this method when data page containing tail fragment of row is written.
+     *
+     * @param pageId Page id.
+     * @param headPageId Id of page containing the first row fragment (head page).
+     * @throws IgniteCheckedException In case of page memory error.
+     */
+    public void trackTailFragmentPage(long pageId, long headPageId) throws IgniteCheckedException;
+
+    /**
+     * Call this method when row fragment is removed from data page.
+     *
+     * @param pageId Page id.
+     * @throws IgniteCheckedException In case of page memory error.
+     */
+    public void forgetFragmentPage(long pageId) throws IgniteCheckedException;
 }
