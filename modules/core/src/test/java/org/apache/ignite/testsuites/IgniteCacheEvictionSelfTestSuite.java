@@ -96,7 +96,6 @@ public class IgniteCacheEvictionSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, PageEvictionReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionDataStreamerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionDataStreamerTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionPutLargeObjectsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionPutLargeObjectsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, PageEvictionMetricTest.class, ignoredTests);
