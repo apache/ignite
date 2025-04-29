@@ -188,6 +188,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @param iox IO.
          * @param row Row to write.
          * @param written Written size.
+         * @param tailPageId ID of page containing tail fragment if row is fragmented.
+         *                   -1 means either row is not fragmented or tail fragment is to be written now.
          * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
          * @throws IgniteCheckedException If failed.
          */
@@ -622,9 +624,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
-    /** */
+    /**
+     * Grid cursor for rows to be written.
+     * <p>
+     * If current row is fragmented allows to maintain ID of page containg tail fragment.
+     */
     private static class WriteRowsGridCursor<T> extends GridCursorIteratorWrapper<T> {
-        /** */
+        /** Tail page id. */
         private long tailPageId = -1;
 
         /**
@@ -641,12 +647,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             return super.next();
         }
 
-        /** */
+        /** Get tail page id. */
         public void tailPageId(long tailPageId) {
             this.tailPageId = tailPageId;
         }
 
-        /** */
+        /** Set tail page id. */
         public long tailPageId() {
             return tailPageId;
         }
