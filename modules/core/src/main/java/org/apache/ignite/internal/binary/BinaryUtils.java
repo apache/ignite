@@ -2874,18 +2874,18 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@link BinaryArray}.
-     */
-    public static boolean isBinaryArray(Object val) {
-        return val instanceof BinaryArray;
-    }
-
-    /**
-     * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryObjectExImpl}.
      */
     public static boolean isBinaryObjectExImpl(Object val) {
         return val instanceof BinaryObjectExImpl;
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryArray}.
+     */
+    public static boolean isBinaryArray(Object val) {
+        return val instanceof BinaryArray;
     }
 
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */

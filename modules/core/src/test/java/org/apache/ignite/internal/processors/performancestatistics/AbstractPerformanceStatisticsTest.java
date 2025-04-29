@@ -131,7 +131,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     /**
      * @param files Performance statistics files.
      */
-    protected List<File> systemViewStatisticsFiles(List<File> files) {
+    public static List<File> systemViewStatisticsFiles(List<File> files) {
         return files.stream()
             .filter(file1 -> file1.getName().matches("node-.*-system-views(-\\d+)?\\.prf"))
             .collect(Collectors.toList());
@@ -140,7 +140,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     /**
      * @param files Performance statistics files.
      */
-    protected List<File> performanceStatisticsFiles(List<File> files) {
+    public static List<File> performanceStatisticsFiles(List<File> files) {
         List<File> perfFiles = new ArrayList<>(files);
         perfFiles.removeAll(systemViewStatisticsFiles(files));
         return perfFiles;
