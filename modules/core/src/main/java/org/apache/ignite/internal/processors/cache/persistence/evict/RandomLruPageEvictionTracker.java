@@ -89,21 +89,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert res >= 0 && res < Integer.MAX_VALUE;
 
-        int trackingIdx = trackingIdx(pageIdx);
-
-        boolean success;
-
-        do {
-            int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
-
-            if (ts < 0) {
-                log.info("!!!! Touch fragment page, ts = " + ts);
-
-                return;
-            }
-
-            success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 4L, ts, (int)res);
-        } while (!success);
+        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4L, (int)res);
     }
 
     /** {@inheritDoc} */
@@ -125,12 +111,6 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                 int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
                 int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
-
-                if (compactTs < 0) {
-                    sampleTrackingIdx = getHeadPageTrackingIdx(trackingIdx(-compactTs));
-
-                    compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
-                }
 
                 if (compactTs != 0) {
                     // We chose data page with at least one touch.
@@ -167,7 +147,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
-        return ts > 0;
+        return ts != 0;
     }
 
     /** {@inheritDoc} */
@@ -175,78 +155,5 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4L, 0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long tailPageId) {
-        // Store link to tail fragment page in each fragment page.
-        linkFragmentPages(pageId, tailPageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
-        // Store link to head fragment page in tail fragment page.
-        linkFragmentPages(tailPageId, headPageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void forgetFragmentPage(long pageId) throws IgniteCheckedException {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        int trackingIdx = trackingIdx(pageIdx);
-
-        long latestTs = compactTimestamp(U.currentTimeMillis());
-
-        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
-
-//        log.info("unTrackFragmentPage: latestTs=" + latestTs + ", pageIdx=" + pageIdx +
-//        ", pageId=" + PageIdUtils.pageId(pageId) + ", trackingIdx=" + trackingIdx);
-
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx * 4L, (int)latestTs);
-    }
-
-    /**
-     * Link two pages containing fragments of row.
-     * <p>
-     * Link is stored as a negated page index in the second timestamp.
-     *
-     * @param pageId Page id.
-     * @param nextPageId Page id of previous fragment.
-     */
-    private void linkFragmentPages(long pageId, long nextPageId) {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        int nextPageIdx = PageIdUtils.pageIndex(nextPageId);
-
-        boolean success;
-
-        do {
-            int trackingIdx = trackingIdx(pageIdx);
-
-            int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
-
-            if (ts < 0)
-                return;
-
-            success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 4L, ts, -nextPageIdx);
-        } while (!success);
-    }
-
-    /**
-     * Given tracking index of page containing any row fragment finds tracking index of the head one.
-     *
-     * Each fragment page (other than the tail one) contains link to tail page.
-     * Tail page contains link to head page. So head page is found no more than for two hops.
-     *
-     * @param trackingIdx tracking index of page containing one of the row fragment.
-     * @return tracking index of head row page.
-     */
-    private int getHeadPageTrackingIdx(int trackingIdx) {
-        int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
-
-        if (compactTs < 0)
-            return trackingIdx(-compactTs);
-        else
-            return trackingIdx;
     }
 }
