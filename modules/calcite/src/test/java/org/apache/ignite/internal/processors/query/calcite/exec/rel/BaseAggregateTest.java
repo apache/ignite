@@ -444,8 +444,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     /** */
     @Test
     public void sumOnDifferentRowsCount() throws IgniteCheckedException {
-        int[] grpsCnt = {1, inBufSize / 2, inBufSize, inBufSize + 1, inBufSize * 4};
-        int[] rowsInGrps = {1, 5, inBufSize};
+        int[] grpsCnt = {1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE, IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
+        int[] rowsInGrps = {1, 5, IN_BUFFER_SIZE};
 
         for (int grps : grpsCnt) {
             for (int rowsInGrp : rowsInGrps) {

@@ -891,9 +891,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             rel.withOrdinality
         );
 
-        Node<Row> input = visit(rel.getInput());
-
-        node.register(input);
+        node.register(visit(rel.getInput()));
 
         return node;
     }

@@ -41,7 +41,8 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
     public void testSizes() {
         for (boolean withOrdinality : new boolean[] {false, true}) {
             for (int colCnt : new int[] {1, 2, 3}) {
-                int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
+                int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
+                    IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
 
                 for (int size : sizes) {
                     log.info("Check: size=" + size + ", colCnt=" + colCnt + ", withOrdinality=" + withOrdinality);

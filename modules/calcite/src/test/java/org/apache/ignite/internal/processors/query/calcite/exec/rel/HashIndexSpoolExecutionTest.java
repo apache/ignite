@@ -58,7 +58,9 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
+        int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
+            IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
+
         int[] eqCnts = {1, 10};
 
         for (int size : sizes) {
