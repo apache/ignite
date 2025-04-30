@@ -67,4 +67,11 @@ public interface BinaryObjectEx extends BinaryObject {
     public default Object[] array() {
         throw new UnsupportedOperationException("Not array");
     }
+
+    /**
+     * @return Class name.
+     */
+    @Nullable public default String className() {
+        throw new UnsupportedOperationException("");
+    }
 }

@@ -25,7 +25,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
@@ -116,7 +115,7 @@ public class ClientBinary implements IgniteBinary {
 
         int typeId = ctx.typeId(typeName);
 
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ord);
+        return BinaryUtils.binaryEnum(ord, ctx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +147,7 @@ public class ClientBinary implements IgniteBinary {
                 name
             ));
 
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ordinal);
+        return BinaryUtils.binaryEnum(ordinal, ctx, typeId);
     }
 
     /** {@inheritDoc} */

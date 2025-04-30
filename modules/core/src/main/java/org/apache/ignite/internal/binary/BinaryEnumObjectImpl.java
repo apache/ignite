@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
@@ -46,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.obj
 /**
  * Binary enum object.
  */
-public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
+class BinaryEnumObjectImpl implements BinaryObjectEx, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,7 +67,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /**
      * {@link Externalizable} support.
      */
-    public BinaryEnumObjectImpl() {
+    BinaryEnumObjectImpl() {
         // No-op.
     }
 
@@ -82,7 +79,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
      * @param clsName Class name.
      * @param ord Ordinal.
      */
-    public BinaryEnumObjectImpl(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
+    BinaryEnumObjectImpl(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -95,7 +92,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
      * @param ctx Context.
      * @param arr Array.
      */
-    public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
+    BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
 
@@ -136,10 +133,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         this.ord = BinaryPrimitives.readInt(arr, off);
     }
 
-    /**
-     * @return Class name.
-     */
-    @Nullable public String className() {
+    /** {@inheritDoc} */
+    @Nullable @Override public String className() {
         return clsName;
     }
 
@@ -300,22 +295,6 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             else
                 return S.toString("BinaryEnum", "typeId", typeId, true, "ordinal", ord, true);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(typeId);
-        out.writeObject(clsName);
-        out.writeInt(ord);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = GridBinaryMarshaller.threadLocalContext();
-
-        typeId = in.readInt();
-        clsName = (String)in.readObject();
-        ord = in.readInt();
     }
 
     /** {@inheritDoc} */

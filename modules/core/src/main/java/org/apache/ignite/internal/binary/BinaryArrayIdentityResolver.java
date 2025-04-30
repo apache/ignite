@@ -70,7 +70,7 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
                 return hash;
             }
         }
-        else if (obj instanceof BinaryEnumObjectImpl) {
+        else if (BinaryUtils.isBinaryEnumObject(obj)) {
             int hash = 1;
 
             int ord = obj.enumOrdinal();
@@ -121,8 +121,8 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
             }
             else {
                 // Handle enums.
-                assert ex1 instanceof BinaryEnumObjectImpl;
-                assert ex2 instanceof BinaryEnumObjectImpl;
+                assert BinaryUtils.isBinaryEnumObject(ex1);
+                assert BinaryUtils.isBinaryEnumObject(ex2);
 
                 return ex1.enumOrdinal() == ex2.enumOrdinal();
             }

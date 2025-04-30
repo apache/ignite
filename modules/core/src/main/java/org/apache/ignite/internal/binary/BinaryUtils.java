@@ -1732,7 +1732,7 @@ public class BinaryUtils {
      * @param ctx Binary context.
      * @return Enum.
      */
-    public static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+    static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
         return doReadBinaryEnum(in, ctx, doReadEnumType(in));
     }
 
@@ -1747,6 +1747,30 @@ public class BinaryUtils {
     private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param ord Ordinal.
+     * @param ctx Context.
+     * @param typeId Type ID.
+     */
+    public static BinaryObjectEx binaryEnum(int ord, BinaryContext ctx, int typeId) {
+        return new BinaryEnumObjectImpl(ctx, typeId, null, ord);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param arr Array.
+     */
+    public static CacheObject binaryEnum(BinaryContext ctx, byte[] arr) {
+        return new BinaryEnumObjectImpl(ctx, arr);
+    }
+
+    /** */
+    public static CacheObject binaryEnum() {
+        return new BinaryEnumObjectImpl();
     }
 
     /**
@@ -2533,7 +2557,7 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        String clsName = obj instanceof BinaryEnumObjectImpl ? ((BinaryEnumObjectImpl)obj).className() : null;
+        String clsName = BinaryUtils.isBinaryEnumObject(obj) ? ((BinaryEnumObjectImpl)obj).className() : null;
 
         return new BinaryTypeProxy(ctx, obj.typeId(), clsName);
     }
@@ -2787,6 +2811,22 @@ public class BinaryUtils {
      */
     public static boolean isBinaryEnumArray(Object val) {
         return val instanceof BinaryEnumArray;
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of binary Enum object.
+     */
+    public static boolean isBinaryEnumObject(Object val) {
+        return val instanceof BinaryEnumObjectImpl;
+    }
+
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if {@code val} is assignable to binary Enum object.
+     */
+    public static boolean isAssignableToBinaryEnumObject(Class<?> cls) {
+        return BinaryEnumObjectImpl.class.isAssignableFrom(cls);
     }
 
     /**
