@@ -96,11 +96,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int firstTs = first(trackingData);
 
-            if (firstTs == -1) {
-                log.info("!!!! Touch fragment page, firstTs = " + firstTs);
-
+            if (firstTs == -1)
                 break;
-            }
 
             int secondTs = second(trackingData);
 
@@ -236,7 +233,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /**
      * Link two pages containing fragments of row.
-     * Link is stored as a next page index in the second int in tracking data.
+     * Link is stored as a page index in the second integer in the tracking data.
+     * First integer in the tracking data is set to -1.
      *
      * @param pageId Page id.
      * @param nextPageId Id of page to link to.
@@ -255,18 +253,10 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int firstTs = first(trackinData);
 
-            if (firstTs != 0) {
-                log.info("!!!! linkFragmentPages: firstTs=" + firstTs +
-                    ", pageIdx=" + pageIdx + ", pageId=" + PageIdUtils.pageId(pageId) + ", nextPageIdx=" + nextPageIdx);
-            }
-
             if (firstTs == -1)
                 return;
 
             success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, asLong(-1, nextPageIdx));
-
-            if (!success)
-                log.info("!!!! linkFragmentPages: !success");
         } while (!success);
     }
 
