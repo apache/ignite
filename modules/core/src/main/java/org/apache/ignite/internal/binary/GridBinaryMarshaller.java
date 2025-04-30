@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -26,6 +30,8 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.MutableSingletonList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -292,6 +298,84 @@ public class GridBinaryMarshaller {
     }
 
     /**
+     * @param in Input stream.
+     * @param clazz input object class.
+     * @return Binary object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    @Nullable public <T> T unwrapBinary(BinaryInputStream in, Class<?> clazz) throws BinaryObjectException {
+        BinaryReaderHandles hnds = new BinaryReaderHandles();
+        Object obj = deserialize(in, null, hnds);
+
+        return (T)unwrapBinary(obj, hnds, clazz);
+    }
+
+    /**
+     * Unwrap binary object.
+     */
+    private Object unwrapBinary(Object obj, BinaryReaderHandles hnds, Class<?> clazz) {
+        if (obj instanceof BinaryObjectImpl) {
+            BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
+            BinaryInputStream in = BinaryStreams.inputStream(obj0.bytes(), obj0.start());
+
+            return deserialize(in, null, hnds);
+        }
+        else if (obj instanceof BinaryObject)
+            return ((BinaryObject)obj).deserialize();
+        else if (BinaryUtils.knownCollection(obj))
+            return unwrapCollection((Collection<Object>)obj, hnds);
+        else if (BinaryUtils.knownMap(obj))
+            return unwrapMap((Map<Object, Object>)obj, hnds);
+        else if (obj instanceof Object[])
+            return unwrapArray((Object[])obj, hnds, clazz);
+        else
+            return obj;
+    }
+
+    /**
+     * Unwrap collection with binary objects.
+     */
+    private Collection<Object> unwrapCollection(Collection<Object> col, BinaryReaderHandles hnds) {
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
+
+        for (Object obj0 : col)
+            col0.add(unwrapBinary(obj0, hnds, null));
+
+        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+    }
+
+    /**
+     * Unwrap map with binary objects.
+     */
+    private Map<Object, Object> unwrapMap(Map<Object, Object> map, BinaryReaderHandles hnds) {
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapBinary(e.getKey(), hnds, null), unwrapBinary(e.getValue(), hnds, null));
+
+        return map0;
+    }
+
+    /**
+     * Unwrap array with binary objects.
+     */
+    private Object[] unwrapArray(Object[] arr, BinaryReaderHandles hnds, Class<?> arrayClass) {
+        if (BinaryUtils.knownArray(arr))
+            return arr;
+
+        Class<?> componentType = arrayClass != null && arrayClass.isArray()
+            ? arrayClass.getComponentType()
+            : arr.getClass().getComponentType();
+
+        Object[] res = (Object[])Array.newInstance(componentType, arr.length);
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(arr[i], hnds, null);
+
+        return res;
+    }
+
+    /**
      * @param arr Byte array.
      * @param ldr Class loader.
      * @return Deserialized object.
@@ -314,7 +398,7 @@ public class GridBinaryMarshaller {
      * @return Deserialized object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public <T> T deserialize(BinaryInputStream in, @Nullable ClassLoader ldr,
+    @Nullable <T> T deserialize(BinaryInputStream in, @Nullable ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds) throws BinaryObjectException {
         BinaryContext oldCtx = pushContext(ctx);
 

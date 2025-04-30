@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reader handles.
  */
-public class BinaryReaderHandles {
+class BinaryReaderHandles {
     /** Mode: empty. */
     private static final int MODE_EMPTY = 0;
 
