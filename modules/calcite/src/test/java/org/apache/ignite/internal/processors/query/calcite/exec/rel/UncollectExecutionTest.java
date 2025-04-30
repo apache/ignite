@@ -38,7 +38,7 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
     /** */
     @SuppressWarnings("unchecked")
     @Test
-    public void testSizes() {
+    public void testInputSizes() {
         for (boolean withOrdinality : new boolean[] {false, true}) {
             for (int colCnt : new int[] {1, 2, 3}) {
                 int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
@@ -51,7 +51,7 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
 
                     for (int i = 0; i < colCnt; i++) {
                         int mul = 2 << i;
-                        funcs[i] = r -> F.asList(mul * r, mul * r + 1);
+                        funcs[i] = row -> F.asList(mul * row, mul * row + 1);
                     }
 
                     RootRewindable<Object[]> root = createNodes(colCnt, withOrdinality, new TestTable(size, colCnt, funcs));
@@ -70,7 +70,10 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
                     assertEquals(size * (1 << colCnt), cnt);
 
                     for (int i = 0; i < colCnt; i++) {
-                        long expSum = (size * (size - 1L) * (2L << i) + size) * (1L << (colCnt - 1));
+                        long uniqSumByCol = (size * (size - 1L) * (2L << i) + size);
+                        long repeatCnt = (1L << (colCnt - 1));
+                        long expSum = uniqSumByCol * repeatCnt;
+
                         assertEquals("Unexpected sum: size=" + size + ", colCnt=" + colCnt +
                             ", withOrdinality=" + withOrdinality + ", i=" + i, expSum, colsSum[i]);
                     }

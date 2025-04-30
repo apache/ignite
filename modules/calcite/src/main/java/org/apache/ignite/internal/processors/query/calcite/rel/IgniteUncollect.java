@@ -41,7 +41,7 @@ public class IgniteUncollect extends Uncollect implements IgniteRel {
     /**
      * Creates an Uncollect relational operator.
      */
-    public IgniteUncollect(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, boolean withOrdinality) {
+    private IgniteUncollect(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, boolean withOrdinality) {
         super(cluster, traitSet, child, withOrdinality, Collections.emptyList());
     }
 
