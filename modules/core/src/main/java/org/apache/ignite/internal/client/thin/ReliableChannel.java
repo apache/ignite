@@ -272,64 +272,62 @@ final class ReliableChannel implements AutoCloseable {
                 if (err == null) {
                     fut.complete(res);
 
-                    return res;
+                    return null;
                 }
 
-                if (!(err instanceof ClientConnectionException)) {
+                if (err instanceof ClientConnectionException) {
+                    ClientConnectionException failure0 = (ClientConnectionException)err;
+
+                    ClientChannelHolder hld = null;
+
+                    for (ClientChannelHolder holder : channels) {
+                        if (holder.ch == ch) {
+                            hld = holder;
+                            break;
+                        }
+                    }
+
+                    try {
+                        // Will try to reinit channels if topology changed.
+                        onChannelFailure(ch, err, failures);
+
+                        if (hld != null && shouldRetry(op, failures.size() - 1, failure0)) {
+                            ClientChannel newCh = hld.getOrCreateChannel();
+
+                            return newCh.serviceAsync(op, payloadWriter, payloadReader);
+                        }
+
+                        failures.add(failure0);
+
+                        fut.completeExceptionally(composeException(failures));
+                    }
+                    catch (ClientConnectionException reconnectEx) {
+                        onChannelFailure(hld, null, reconnectEx, failures);
+                    }
+                    catch (Throwable ex) {
+                        fut.completeExceptionally(ex);
+
+                        return null;
+                    }
+                }
+                else
                     fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
 
-                    return res;
-                }
-
-                ClientChannelHolder hld = null;
-
-                for (ClientChannelHolder holder : channels) {
-                    if (holder.ch == ch) {
-                        hld = holder;
-                        break;
-                    }
-                }
-
-                try {
-                    onChannelFailure(ch, err, failures);
-
-                    if (hld != null && shouldRetry(op, failures.size() - 1, (ClientConnectionException)err)) {
-                        ClientChannel newCh = hld.getOrCreateChannel();
-
-                        return newCh.serviceAsync(op, payloadWriter, payloadReader);
-                    }
-
-                    failures.add((ClientConnectionException)err);
-                }
-                catch (ClientConnectionException reconnectEx) {
-                    failures.add(reconnectEx);
-
-                    onChannelFailure(hld, null, reconnectEx, failures);
-                }
-
-                fut.completeExceptionally(err);
-
-                return res;
-
-            }).thenCompose(f -> (CompletableFuture<T>)f);
+                return null;
+            }).thenCompose(f -> f == null ? CompletableFuture.completedFuture(null) : f);
 
         // Try other channels in case of failed retry.
         retryFut.whenComplete((res, err) -> {
-            if (fut.isDone() || err == null) {
-                fut.complete(res);
-
+            if (fut.isDone())
                 return;
-            }
 
-            if (!(err instanceof ClientConnectionException)) {
+            if (err != null && !(err instanceof ClientConnectionException)) {
                 fut.completeExceptionally(err);
 
                 return;
             }
 
             ClientConnectionException failure0 = (ClientConnectionException)err;
-
-            failures.add(failure0);
 
             if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0))
                 handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
@@ -928,7 +926,13 @@ final class ReliableChannel implements AutoCloseable {
 
         ClientConnectionException failure = failures.get(0);
 
-        failures.subList(1, failures.size()).forEach(failure::addSuppressed);
+        try {
+            failures.subList(1, failures.size()).forEach(failure::addSuppressed);
+        }
+        catch (IllegalArgumentException e) {
+            throw e;
+        }
+
 
         return failure;
     }
