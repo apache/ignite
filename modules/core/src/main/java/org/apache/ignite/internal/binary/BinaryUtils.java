@@ -2948,7 +2948,7 @@ public class BinaryUtils {
             return Arrays.equals((float[])a1, (float[])a2);
         else if (a1 instanceof double[])
             return Arrays.equals((double[])a1, (double[])a2);
-        else if (BinaryUtils.isBinaryArray(a1))
+        else if (isBinaryArray(a1))
             return a1.equals(a2);
 
         return Arrays.deepEquals((Object[])a1, (Object[])a2);
