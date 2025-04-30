@@ -40,8 +40,8 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -307,7 +307,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     if (!req.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_GROUPS))
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_GROUPS);
 
-                    try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
+                    try (BinaryWriterEx writer = utils.createBinaryWriter(req.out())) {
                         writer.writeLong(topDataSrc == null || topDataSrc.closed() ? 0 : cachedTopVer);
 
                         projectionFilters.write(writer);
@@ -393,7 +393,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     }
                 },
                 res -> {
-                    try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                    try (BinaryReaderEx reader = utils.createBinaryReader(res.in())) {
                         int nodesCnt = reader.readInt();
 
                         Collection<ClusterNode> nodes = new ArrayList<>();
@@ -422,7 +422,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      * @param reader Reader.
      */
-    private ClusterNode readClusterNode(BinaryReaderExImpl reader) {
+    private ClusterNode readClusterNode(BinaryReaderEx reader) {
         return new ClientClusterNodeImpl(
             reader.readUuid(),
             readNodeAttributes(reader),
@@ -440,7 +440,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      * @param reader Reader.
      */
-    private Map<String, Object> readNodeAttributes(BinaryReaderExImpl reader) {
+    private Map<String, Object> readNodeAttributes(BinaryReaderEx reader) {
         int attrCnt = reader.readInt();
 
         Map<String, Object> attrs = new HashMap<>(attrCnt);
@@ -460,7 +460,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /**
      * @param reader Reader.
      */
-    private IgniteProductVersion readProductVersion(BinaryReaderExImpl reader) {
+    private IgniteProductVersion readProductVersion(BinaryReaderEx reader) {
         return new IgniteProductVersion(
             reader.readByte(), // Major.
             reader.readByte(), // Minor.
@@ -779,7 +779,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
         /**
          * @param writer Writer.
          */
-        void write(BinaryRawWriterEx writer) {
+        void write(BinaryWriterEx writer) {
             int size = (attrs == null ? 0 : attrs.size()) + (nodeType == null ? 0 : 1);
 
             writer.writeInt(size);

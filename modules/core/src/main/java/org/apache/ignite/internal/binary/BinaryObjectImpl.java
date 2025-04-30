@@ -34,9 +34,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -300,7 +299,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             ObjectDetachHelper detachHelper = ObjectDetachHelper.create(arr, start);
 
             if (detachHelper.isCrossObjectReferencesDetected()) {
-                try (BinaryOutputStream out = new BinaryHeapOutputStream(2 * len)) {
+                try (BinaryOutputStream out = BinaryStreams.outputStream(2 * len)) {
                     detachHelper.detach(out);
 
                     return new BinaryObjectImpl(ctx, out.arrayCopy(), 0);
@@ -590,7 +589,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);
+                val = BinaryUtils.unmarshal(BinaryStreams.inputStream(arr, fieldPos), ctx, null);
 
                 break;
         }
@@ -881,7 +880,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
-        BinaryReaderExImpl reader = reader(null, coCtx != null ?
+        BinaryReaderEx reader = reader(null, coCtx != null ?
             coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
 
         Object obj0 = reader.deserialize();
@@ -912,13 +911,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
-        return new BinaryReaderExImpl(ctx,
-            BinaryHeapInputStream.create(arr, start),
+        return BinaryUtils.reader(ctx,
+            BinaryStreams.inputStream(arr, start),
             ldr,
             rCtx,
             false,
@@ -932,7 +931,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
     }
 

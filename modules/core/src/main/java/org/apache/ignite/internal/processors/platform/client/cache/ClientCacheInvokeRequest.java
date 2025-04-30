@@ -22,7 +22,7 @@ import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
@@ -45,7 +45,7 @@ public class ClientCacheInvokeRequest extends ClientCacheKeyRequest {
      *
      * @param reader Reader.
      */
-    public ClientCacheInvokeRequest(BinaryReaderExImpl reader) {
+    public ClientCacheInvokeRequest(BinaryReaderEx reader) {
         super(reader);
 
         entryProcReader = new EntryProcessorReader(reader);
@@ -95,13 +95,13 @@ public class ClientCacheInvokeRequest extends ClientCacheKeyRequest {
         private final Object[] args;
 
         /** Objects reader. */
-        private final BinaryReaderExImpl reader;
+        private final BinaryReaderEx reader;
 
         /** */
         private final int argsStartPos;
 
         /** */
-        public EntryProcessorReader(BinaryReaderExImpl reader) {
+        public EntryProcessorReader(BinaryReaderEx reader) {
             entryProc = reader.readObjectDetached();
             entryProcPlatform = reader.readByte();
 

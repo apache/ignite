@@ -21,9 +21,9 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
@@ -248,7 +248,7 @@ public class GridBinaryMarshaller {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
             writer.failIfUnregistered(failIfUnregistered);
 
             writer.marshal(obj);
@@ -268,7 +268,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
+            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes, 0), ctx, clsLdr);
         }
         finally {
             popContext(oldCtx);
@@ -304,7 +304,7 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return deserialize(BinaryHeapInputStream.create(arr, 0), ldr, null);
+        return deserialize(BinaryStreams.inputStream(arr, 0), ldr, null);
     }
 
     /**
@@ -319,7 +319,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
+            return (T)BinaryUtils.reader(ctx, in, ldr, hnds, true).deserialize();
         }
         finally {
             popContext(oldCtx);
@@ -360,10 +360,10 @@ public class GridBinaryMarshaller {
      * @param stream Stream.
      * @return Reader.
      */
-    public BinaryReaderExImpl reader(BinaryInputStream stream) {
+    public BinaryReaderEx reader(BinaryInputStream stream) {
         assert stream != null;
 
-        return new BinaryReaderExImpl(ctx, stream, null, true);
+        return BinaryUtils.reader(ctx, stream, null, true);
     }
 
     /**
@@ -382,8 +382,8 @@ public class GridBinaryMarshaller {
      * @param out Output stream.
      * @return Writer.
      */
-    public BinaryWriterExImpl writer(BinaryOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    public BinaryWriterEx writer(BinaryOutputStream out) {
+        return BinaryUtils.writer(ctx, out, BinaryThreadLocalContext.get().schemaHolder());
     }
 
     /**

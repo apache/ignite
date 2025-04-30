@@ -27,13 +27,13 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -49,7 +49,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     private final byte[] arr;
 
     /** */
-    private final BinaryReaderExImpl reader;
+    private final BinaryReaderEx reader;
 
     /** */
     private final Map<Integer, Object> objMap;
@@ -67,8 +67,8 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         arr = objImpl.array();
         pos = objImpl.start();
 
-        reader = new BinaryReaderExImpl(ctx,
-            BinaryHeapInputStream.create(arr, pos),
+        reader = BinaryUtils.reader(ctx,
+            BinaryStreams.inputStream(arr, pos),
             ctx.configuration().getClassLoader(),
             false);
 
@@ -86,8 +86,8 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         this.arr = other.arr;
         this.pos = start;
 
-        reader = new BinaryReaderExImpl(ctx,
-            BinaryHeapInputStream.create(arr, start),
+        reader = BinaryUtils.reader(ctx,
+            BinaryStreams.inputStream(arr, start),
             null,
             other.reader.handles(),
             false);
@@ -498,7 +498,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.OPTM_MARSH: {
-                final BinaryInputStream bin = BinaryHeapInputStream.create(arr, pos + 1);
+                final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos + 1);
 
                 final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
 
@@ -850,7 +850,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.OPTM_MARSH: {
-                final BinaryInputStream bin = BinaryHeapInputStream.create(arr, pos);
+                final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos);
 
                 final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
 
@@ -906,7 +906,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     /**
      * @return Reader.
      */
-    BinaryReaderExImpl reader() {
+    BinaryReaderEx reader() {
         return reader;
     }
 
@@ -941,7 +941,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

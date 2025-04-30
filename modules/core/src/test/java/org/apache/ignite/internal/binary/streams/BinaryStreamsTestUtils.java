@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.internal.binary.streams;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.THREAD_LOCAL;
 
 /**
- * Extended reader interface.
+ * Simple utility class to check package-private class in some tests.
  */
-public interface BinaryRawReaderEx extends BinaryRawReader {
+public class BinaryStreamsTestUtils {
     /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @return {@code True} if thread local binary memory allocator acquired.
      */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
-
-    /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    public static boolean threadLocalIsAcquired() {
+        return THREAD_LOCAL.isAcquired();
+    }
 }

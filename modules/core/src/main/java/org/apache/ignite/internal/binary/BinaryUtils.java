@@ -70,7 +70,10 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -88,6 +91,12 @@ import static org.apache.ignite.internal.util.GridUnsafe.align;
  * Binary utils.
  */
 public class BinaryUtils {
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
+    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
+
+    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
+    public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
+
     /**
      * Actual file name "{type_id}.classname{platform_id}".
      * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}
@@ -105,7 +114,10 @@ public class BinaryUtils {
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
     /** Map from class to associated write replacer. */
-    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
+    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
+        TreeMap.class, new BinaryTreeMapWriteReplacer(),
+        TreeSet.class, new BinaryTreeSetWriteReplacer()
+    );
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
@@ -149,10 +161,6 @@ public class BinaryUtils {
 
     /** Field ID length. */
     public static final int FIELD_ID_LEN = 4;
-
-    /** Whether to skip TreeMap/TreeSet wrapping. */
-    public static final boolean WRAP_TREES =
-        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
@@ -294,11 +302,6 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
-
-        if (wrapTrees()) {
-            CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
-            CLS_TO_WRITE_REPLACER.put(TreeSet.class, new BinaryTreeSetWriteReplacer());
-        }
     }
 
     /**
@@ -398,7 +401,7 @@ public class BinaryUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterEx writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -454,102 +457,102 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                writer.doWriteDecimal((BigDecimal)val);
+                writer.writeDecimal((BigDecimal)val);
 
                 break;
 
             case GridBinaryMarshaller.STRING:
-                writer.doWriteString((String)val);
+                writer.writeString((String)val);
 
                 break;
 
             case GridBinaryMarshaller.UUID:
-                writer.doWriteUuid((UUID)val);
+                writer.writeUuid((UUID)val);
 
                 break;
 
             case GridBinaryMarshaller.DATE:
-                writer.doWriteDate((Date)val);
+                writer.writeDate((Date)val);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP:
-                writer.doWriteTimestamp((Timestamp)val);
+                writer.writeTimestamp((Timestamp)val);
 
                 break;
 
             case GridBinaryMarshaller.TIME:
-                writer.doWriteTime((Time)val);
+                writer.writeTime((Time)val);
 
                 break;
 
             case GridBinaryMarshaller.BYTE_ARR:
-                writer.doWriteByteArray((byte[])val);
+                writer.writeByteArray((byte[])val);
 
                 break;
 
             case GridBinaryMarshaller.SHORT_ARR:
-                writer.doWriteShortArray((short[])val);
+                writer.writeShortArray((short[])val);
 
                 break;
 
             case GridBinaryMarshaller.INT_ARR:
-                writer.doWriteIntArray((int[])val);
+                writer.writeIntArray((int[])val);
 
                 break;
 
             case GridBinaryMarshaller.LONG_ARR:
-                writer.doWriteLongArray((long[])val);
+                writer.writeLongArray((long[])val);
 
                 break;
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                writer.doWriteFloatArray((float[])val);
+                writer.writeFloatArray((float[])val);
 
                 break;
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])val);
+                writer.writeDoubleArray((double[])val);
 
                 break;
 
             case GridBinaryMarshaller.CHAR_ARR:
-                writer.doWriteCharArray((char[])val);
+                writer.writeCharArray((char[])val);
 
                 break;
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])val);
+                writer.writeBooleanArray((boolean[])val);
 
                 break;
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[])val);
+                writer.writeDecimalArray((BigDecimal[])val);
 
                 break;
 
             case GridBinaryMarshaller.STRING_ARR:
-                writer.doWriteStringArray((String[])val);
+                writer.writeStringArray((String[])val);
 
                 break;
 
             case GridBinaryMarshaller.UUID_ARR:
-                writer.doWriteUuidArray((UUID[])val);
+                writer.writeUuidArray((UUID[])val);
 
                 break;
 
             case GridBinaryMarshaller.DATE_ARR:
-                writer.doWriteDateArray((Date[])val);
+                writer.writeDateArray((Date[])val);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                writer.doWriteTimestampArray((Timestamp[])val);
+                writer.writeTimestampArray((Timestamp[])val);
 
                 break;
 
             case GridBinaryMarshaller.TIME_ARR:
-                writer.doWriteTimeArray((Time[])val);
+                writer.writeTimeArray((Time[])val);
 
                 break;
 
@@ -665,13 +668,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Whether tree structures should be wrapped.
-     */
-    public static boolean wrapTrees() {
-        return WRAP_TREES;
-    }
-
-    /**
      * @param map Map to check.
      * @return {@code True} if this map type is supported.
      */
@@ -680,7 +676,6 @@ public class BinaryUtils {
 
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
-            (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap.class;
     }
 
@@ -697,8 +692,6 @@ public class BinaryUtils {
             return U.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
-        else if (!wrapTrees() && cls == TreeMap.class)
-            return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(((Map)map).size());
 
@@ -732,7 +725,6 @@ public class BinaryUtils {
 
         return cls == HashSet.class ||
             cls == LinkedHashSet.class ||
-            (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class ||
@@ -776,8 +768,6 @@ public class BinaryUtils {
             return U.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
-        else if (!wrapTrees() && cls == TreeSet.class)
-            return new TreeSet<>(((TreeSet<Object>)col).comparator());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
         else if (cls == ArrayList.class)
@@ -1692,7 +1682,7 @@ public class BinaryUtils {
 
             // forces registering of class by type id, at least locally
             if (useCache)
-                ctx.registerClass(cls, false, false);
+                ctx.registerType(cls, false, false);
         }
 
         return cls;
@@ -1721,7 +1711,7 @@ public class BinaryUtils {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            ctx.registerClass(cls, false, false);
+            ctx.registerType(cls, false, false);
         }
 
         return cls;
@@ -1866,7 +1856,7 @@ public class BinaryUtils {
      */
     @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
+        return reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**
@@ -2725,6 +2715,38 @@ public class BinaryUtils {
     }
 
     /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null)
+                schemaReg.addSchema(schemaId, schema);
+        }
+
+        return schema == null ? null : schema.fieldIds();
+    }
+
+    /**
      * @return Unwrap function for object size calculation.
      */
     public static Map<Class<?>, Function<Object, Object>> unwrapFuncForSizeCalc() {
@@ -2757,6 +2779,89 @@ public class BinaryUtils {
      */
     public static boolean isBinaryEnumArray(Object val) {
         return val instanceof BinaryEnumArray;
+    }
+
+    /**
+     * Creates reader instance.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, forUnmarshal);
+    }
+
+    /**
+     * Creates reader instance.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        @Nullable BinaryReaderHandles hnds,
+                                        boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, forUnmarshal);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param skipHdrCheck Whether to skip header check.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        @Nullable BinaryReaderHandles hnds,
+                                        boolean skipHdrCheck,
+                                        boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Writer instance.
+     */
+    public static BinaryWriterEx writer(BinaryContext ctx) {
+        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
+
+        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)U.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @return Writer instance.
+     */
+    public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
+        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @return Writer instance.
+     */
+    public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
+        return new BinaryWriterExImpl(ctx, out, schema, null);
+    }
+
+    /**
+     * @return Instance of caching handler.
+     */
+    public static BinaryMetadataHandler cachingMetadataHandler() {
+        return BinaryCachingMetadataHandler.create();
     }
 
     /**

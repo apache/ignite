@@ -23,12 +23,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** */
@@ -59,8 +57,14 @@ public class IgniteRexBuilder extends RexBuilder {
                 return super.makeLiteral(bd, type, type.getSqlTypeName());
             }
 
-            if (TypeUtils.hasScale(type) && SqlTypeUtil.isNumeric(type))
-                return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
+            if (SqlTypeUtil.isNumeric(type)) {
+                if(SqlTypeUtil.hasScale(type))
+                    return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
+
+                //type = this.typeFactory.createSqlType(SqlTypeName.DECIMAL, bd.precision()-1);
+
+                return super.makeLiteral(bd, type, typeName);
+            }
         }
 
         return super.makeLiteral(o, type, typeName);
