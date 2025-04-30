@@ -303,7 +303,7 @@ public class GridBinaryMarshaller {
      * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public <T> T unmarshal(BinaryInputStream in, Class<?> clazz) throws BinaryObjectException {
+    @Nullable public <T> T unwrapBinary(BinaryInputStream in, Class<?> clazz) throws BinaryObjectException {
         BinaryReaderHandles hnds = new BinaryReaderHandles();
         Object obj = deserialize(in, null, hnds);
 
@@ -316,7 +316,7 @@ public class GridBinaryMarshaller {
     private Object unwrapBinary(Object obj, BinaryReaderHandles hnds, Class<?> clazz) {
         if (obj instanceof BinaryObjectImpl) {
             BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
-            BinaryInputStream in = BinaryStreams.inputStream(obj0.array(), obj0.start());
+            BinaryInputStream in = BinaryStreams.inputStream(obj0.bytes(), obj0.start());
 
             return deserialize(in, null, hnds);
         }

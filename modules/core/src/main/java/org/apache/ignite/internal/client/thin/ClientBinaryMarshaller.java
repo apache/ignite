@@ -64,14 +64,14 @@ class ClientBinaryMarshaller {
     }
 
     /**
-     * Unmarshals Ignite binary object from input stream.
+     * Unwrap binary object.
      *
      * @param in Input stream.
      * @param clazz input object class.
      * @return Binary object.
      */
-    public <T> T unmarshal(BinaryInputStream in, Class<?> clazz) {
-        return impl.unmarshal(in, clazz);
+    public <T> T unwrapBinary(BinaryInputStream in, Class<?> clazz) {
+        return impl.unwrapBinary(in, clazz);
     }
 
     /**

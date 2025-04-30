@@ -565,7 +565,7 @@ public final class ClientUtils {
         if (keepBinary)
             return (T)marsh.unmarshal(in);
         else
-            return (T)marsh.unmarshal(in, clazz);
+            return (T)marsh.unwrapBinary(in, clazz);
     }
 
     /** A helper class to translate query fields. */
