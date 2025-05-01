@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
@@ -43,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.obj
 /**
  * Binary enum object.
  */
-class BinaryEnumObjectImpl implements BinaryObjectEx, CacheObject {
+class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,7 +70,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, CacheObject {
     /**
      * {@link Externalizable} support.
      */
-    BinaryEnumObjectImpl() {
+    public BinaryEnumObjectImpl() {
         // No-op.
     }
 
@@ -79,7 +82,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, CacheObject {
      * @param clsName Class name.
      * @param ord Ordinal.
      */
-    BinaryEnumObjectImpl(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
+    public BinaryEnumObjectImpl(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -92,7 +95,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, CacheObject {
      * @param ctx Context.
      * @param arr Array.
      */
-    BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
+    public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
 
@@ -295,6 +298,22 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, CacheObject {
             else
                 return S.toString("BinaryEnum", "typeId", typeId, true, "ordinal", ord, true);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(typeId);
+        out.writeObject(clsName);
+        out.writeInt(ord);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        ctx = GridBinaryMarshaller.threadLocalContext();
+
+        typeId = in.readInt();
+        clsName = (String)in.readObject();
+        ord = in.readInt();
     }
 
     /** {@inheritDoc} */
