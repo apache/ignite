@@ -69,9 +69,9 @@ public interface BinaryObjectEx extends BinaryObject {
     }
 
     /**
-     * @return Class name.
+     * @return Enum class name.
      */
-    @Nullable public default String className() {
-        throw new UnsupportedOperationException("");
+    @Nullable public default String enumClassName() {
+        throw new UnsupportedOperationException("Not enum");
     }
 }

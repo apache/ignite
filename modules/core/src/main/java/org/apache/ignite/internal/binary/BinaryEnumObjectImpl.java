@@ -137,7 +137,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String className() {
+    @Nullable @Override public String enumClassName() {
         return clsName;
     }
 
