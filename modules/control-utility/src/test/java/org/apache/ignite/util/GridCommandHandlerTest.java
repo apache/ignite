@@ -3397,17 +3397,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             int code = execute(new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync")));
 
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
+            assertEquals(EXIT_CODE_OK, code);
+
+            String out = testOut.toString();
 
             LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
-            logLsnr.accept(testOut.toString());
+            logLsnr.accept(out);
             logLsnr.check();
+
+            assertNotContains(log, out, "Failed to perform operation");
 
             code = execute(new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp")));
 
             assertEquals(EXIT_CODE_OK, code);
 
-            String out = testOut.toString();
+            out = testOut.toString();
 
             logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
             logLsnr.accept(out);
