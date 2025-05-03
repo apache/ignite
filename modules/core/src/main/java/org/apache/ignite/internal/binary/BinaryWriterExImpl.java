@@ -394,7 +394,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
             out.unsafeWriteInt(typeId);
 
-            writeString(val.className());
+            writeString(val.enumClassName());
 
             out.writeInt(val.enumOrdinal());
         }

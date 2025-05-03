@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -1016,7 +1015,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         updateMetadata(typeId, typeName, null, null, true, null);
 
-        return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);
+        return BinaryUtils.binaryEnum(ord, binaryCtx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -1040,7 +1039,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
 
-        return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ordinal);
+        return BinaryUtils.binaryEnum(ordinal, binaryCtx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -1302,7 +1301,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 return new BinaryObjectImpl(binaryContext(), bytes, ctx);
 
             case BinaryObjectImpl.TYPE_BINARY_ENUM:
-                return new BinaryEnumObjectImpl(binaryContext(), bytes);
+                return BinaryUtils.binaryEnum(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);

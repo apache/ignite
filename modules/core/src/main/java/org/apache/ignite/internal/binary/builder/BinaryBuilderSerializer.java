@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -110,14 +109,14 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof BinaryEnumObjectImpl) {
-            BinaryEnumObjectImpl obj = (BinaryEnumObjectImpl)val;
+        if (BinaryUtils.isBinaryEnumObject(val)) {
+            BinaryObjectEx obj = (BinaryObjectEx)val;
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(obj.typeId());
 
             if (obj.typeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                writer.writeString(obj.className());
+                writer.writeString(obj.enumClassName());
 
             writer.writeInt(obj.enumOrdinal());
 
@@ -206,7 +205,7 @@ class BinaryBuilderSerializer {
 
             int compTypeId = writer.context().typeId(compCls.getName());
 
-            if (BinaryEnumObjectImpl.class.isAssignableFrom(compCls) || val instanceof BinaryBuilderEnum[]) {
+            if (BinaryUtils.isAssignableToBinaryEnumObject(compCls) || val instanceof BinaryBuilderEnum[]) {
                 writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
                 return;

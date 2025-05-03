@@ -31,7 +31,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
@@ -371,10 +370,11 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 nullFieldVal = true;
         }
         // Detect Enum and Enum array type.
-        else if (newVal instanceof BinaryEnumObjectImpl)
+        else if (BinaryUtils.isBinaryEnumObject(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM;
 
-        else if (newVal.getClass().isArray() && BinaryEnumObjectImpl.class.isAssignableFrom(newVal.getClass().getComponentType()))
+        else if (newVal.getClass().isArray() &&
+            BinaryUtils.isAssignableToBinaryEnumObject(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
         else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))

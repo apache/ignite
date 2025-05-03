@@ -51,7 +51,7 @@ class BinaryObjectImplSerializer extends JsonSerializer<BinaryObjectImpl> {
                         }
                     }
 
-                    if (val instanceof BinaryEnumObjectImpl) {
+                    if (BinaryUtils.isBinaryEnumObject(val)) {
                         gen.writeObjectField(name, ((BinaryObject)val).enumName());
                     }
                     else {
