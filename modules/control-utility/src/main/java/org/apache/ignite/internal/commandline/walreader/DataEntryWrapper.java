@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 import java.util.Base64;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,9 +30,9 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
-import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.MD5;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.HASH;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.HIDE;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.MD5;
 
 /**
  * Wrapper {@link DataEntry} for sensitive data output.

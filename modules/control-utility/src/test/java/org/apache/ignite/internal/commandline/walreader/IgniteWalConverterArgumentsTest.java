@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -38,9 +38,9 @@ import org.junit.Test;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
-import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageId;
-import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageIds;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverterArguments.parse;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverterArguments.parsePageId;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverterArguments.parsePageIds;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 

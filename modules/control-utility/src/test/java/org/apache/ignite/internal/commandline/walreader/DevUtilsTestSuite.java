@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Strategy for the processing of sensitive data.
+ * Test suite for wal-reader.
  */
-enum ProcessSensitiveData {
-    /** Show sensitive data. */
-    SHOW,
-    /** Hide sensitive data. */
-    HIDE,
-    /** Replace sensitive data with {@link Object#hashCode}. */
-    HASH,
-    /** Replace sensitive data with MD5 hash. */
-    MD5;
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteWalConverterTest.class,
+    IgniteEncryptedWalConverterTest.class,
+    IgniteWalConverterArgumentsTest.class,
+    IgniteWalConverterSensitiveDataTest.class
+})
+public class DevUtilsTestSuite {
 }

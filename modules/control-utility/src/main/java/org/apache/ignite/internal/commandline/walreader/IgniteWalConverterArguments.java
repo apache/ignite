@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,53 +33,57 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.argument;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.optionalArgument;
 
 /**
  * Parameters for IgniteWalConverter with parsed and validated.
  */
 public class IgniteWalConverterArguments {
     /** */
-    private static final String ROOT_DIR = "root";
+    private static final String ROOT_DIR = "--root";
 
     /** */
-    private static final String FOLDER_NAME = "folderName";
+    private static final String FOLDER_NAME = "--folder-name";
 
     /** */
-    private static final String PAGE_SIZE = "pageSize";
+    private static final String PAGE_SIZE = "--page-size";
 
     /** */
-    private static final String KEEP_BINARY = "keepBinary";
+    private static final String KEEP_BINARY = "--keep-binary";
 
     /** */
-    private static final String RECORD_TYPES = "recordTypes";
+    private static final String RECORD_TYPES = "--record-types";
 
     /** */
-    private static final String WAL_TIME_FROM_MILLIS = "walTimeFromMillis";
+    private static final String WAL_TIME_FROM_MILLIS = "--wal-time-from-millis";
 
     /** */
-    private static final String WAL_TIME_TO_MILLIS = "walTimeToMillis";
+    private static final String WAL_TIME_TO_MILLIS = "--wal-time-to-millis";
 
     /** */
-    private static final String RECORD_CONTAINS_TEXT = "recordContainsText";
+    private static final String RECORD_CONTAINS_TEXT = "--record-contains-text";
 
     /** */
-    private static final String PROCESS_SENSITIVE_DATA = "processSensitiveData";
+    private static final String PROCESS_SENSITIVE_DATA = "--process-sensitive-data";
 
     /** */
-    private static final String PRINT_STAT = "printStat";
+    private static final String PRINT_STAT = "--print-stat";
 
     /** */
-    private static final String SKIP_CRC = "skipCrc";
+    private static final String SKIP_CRC = "--skip-crc";
 
     /** Argument "pages". */
-    private static final String PAGES = "pages";
+    private static final String PAGES = "--pages";
 
     /** Record pattern for {@link #PAGES}. */
     private static final Pattern PAGE_ID_PATTERN = Pattern.compile("(-?\\d+):(-?\\d+)");
@@ -105,7 +110,7 @@ public class IgniteWalConverterArguments {
     private final String recordContainsText;
 
     /** Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5). */
-    private final ProcessSensitiveData processSensitiveData;
+    private final ProcessSensitiveData procSensitiveData;
 
     /** Write summary statistics for WAL */
     private final boolean printStat;
@@ -126,7 +131,7 @@ public class IgniteWalConverterArguments {
      * @param fromTime                      The start time interval for the record time in milliseconds.
      * @param toTime                        The end time interval for the record time in milliseconds.
      * @param recordContainsText            Filter by substring in the WAL record.
-     * @param processSensitiveData          Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5).
+     * @param procSensitiveData          Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5).
      * @param printStat                     Write summary statistics for WAL.
      * @param skipCrc                       Skip CRC calculation/check flag.
      * @param pages                         Pages for searching in format grpId:pageId.
@@ -134,7 +139,7 @@ public class IgniteWalConverterArguments {
     public IgniteWalConverterArguments(NodeFileTree ft, int pageSize,
         boolean keepBinary,
         Set<WALRecord.RecordType> recordTypes, Long fromTime, Long toTime, String recordContainsText,
-        ProcessSensitiveData processSensitiveData,
+        ProcessSensitiveData procSensitiveData,
         boolean printStat, boolean skipCrc, Collection<T2<Integer, Long>> pages) {
         this.ft = ft;
         this.pageSize = pageSize;
@@ -143,7 +148,7 @@ public class IgniteWalConverterArguments {
         this.fromTime = fromTime;
         this.toTime = toTime;
         this.recordContainsText = recordContainsText;
-        this.processSensitiveData = processSensitiveData;
+        this.procSensitiveData = procSensitiveData;
         this.printStat = printStat;
         this.skipCrc = skipCrc;
         this.pages = pages;
@@ -218,7 +223,7 @@ public class IgniteWalConverterArguments {
      * @return processSensitiveData
      */
     public ProcessSensitiveData getProcessSensitiveData() {
-        return processSensitiveData;
+        return procSensitiveData;
     }
 
     /**
@@ -256,35 +261,72 @@ public class IgniteWalConverterArguments {
      * @return IgniteWalConverterArguments.
      */
     public static IgniteWalConverterArguments parse(final PrintStream out, String... args) {
+        CLIArgumentParser p = new CLIArgumentParser(
+            Collections.emptyList(),
+            asList(
+                argument(ROOT_DIR, String.class)
+                        .withUsage("Root pds directory.")
+                        .build(),
+                argument(FOLDER_NAME, String.class)
+                        .withUsage("Node specific folderName.")
+                        .build(),
+                    optionalArgument(PAGE_SIZE, String.class)
+                            .withUsage("Size of pages, which was selected for file store (1024, 2048, 4096, etc.).")
+                            .withDefault("4096")
+                            .build(),
+                optionalArgument(KEEP_BINARY, String.class)
+                    .withUsage("Keep binary flag")
+                    .withDefault("true")
+                    .build(),
+                optionalArgument(RECORD_TYPES, String.class)
+                        .withUsage("Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc.).")
+                        .withDefault("all")
+                        .build(),
+                optionalArgument(WAL_TIME_FROM_MILLIS, String.class)
+                        .withUsage("The start time interval for the record time in milliseconds.")
+                        .build(),
+                optionalArgument(WAL_TIME_TO_MILLIS, String.class)
+                        .withUsage("The end time interval for the record time in milliseconds.")
+                        .build(),
+                optionalArgument(RECORD_CONTAINS_TEXT, String.class)
+                        .withUsage("Filter by substring in the WAL record.")
+                        .build(),
+                optionalArgument(PROCESS_SENSITIVE_DATA, String.class)
+                        .withUsage("Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5)")
+                        .withDefault("SHOW")
+                        .build(),
+                optionalArgument(PRINT_STAT, String.class)
+                        .withUsage("Write summary statistics for WAL")
+                        .withDefault("false")
+                        .build(),
+                optionalArgument(SKIP_CRC, String.class)
+                        .withUsage("Skip CRC calculation/check flag.")
+                        .withDefault("false")
+                        .build(),
+                optionalArgument(PAGES, String.class)
+                        .withUsage("Comma-separated pages or path to file with pages on each line in grpId:pageId format.")
+                        .build()
+            ),
+            null
+        );
+
         if (args == null || args.length < 1) {
             out.println("Print WAL log data in human-readable form.");
-            out.println("You need to provide:");
-            out.println("    root                           Root pds directory.");
-            out.println("    folderName                     Node specific folderName.");
-            out.println("    pageSize                         " +
-                "Size of pages, which was selected for file store (1024, 2048, 4096, etc). Default 4096.");
-            out.println("    keepBinary                       Keep binary flag. Default true.");
-            out.println("    recordTypes                      " +
-                "(Optional) Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc). Default all.");
-            out.println("    walTimeFromMillis                (Optional) The start time interval for the record time in milliseconds.");
-            out.println("    walTimeToMillis                  (Optional) The end time interval for the record time in milliseconds.");
-            out.println("    recordContainsText               (Optional) Filter by substring in the WAL record.");
-            out.println("    processSensitiveData             " +
-                "(Optional) Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5). Default SHOW.");
-            out.println("    printStat                        Write summary statistics for WAL. Default false.");
-            out.println("    skipCrc                          Skip CRC calculation/check flag. Default false.");
-            out.println("    pages                            (Optional) Comma-separated pages or path to file with " +
-                "pages on each line in grpId:pageId format.");
+
+            System.out.println(p.usage());
+
             out.println("For example:");
-            out.println("    pageSize=4096");
-            out.println("    keepBinary=true");
-            out.println("    recordTypes=DataRecord,TxRecord");
-            out.println("    walTimeFromMillis=1575158400000");
-            out.println("    walTimeToMillis=1577836740999");
-            out.println("    recordContainsText=search string");
-            out.println("    processSensitiveData=SHOW");
-            out.println("    skipCrc=true");
-            out.println("    pages=123456:789456123,123456:789456124");
+            out.println("    --root=ft"); // fixme
+            out.println("    --folder-name="); // fixme
+            out.println("    --page-size=4096");
+            out.println("    --keep-binary=true");
+            out.println("    --record-types=DataRecord,TxRecord");
+            out.println("    --wal-time-from-millis=1575158400000");
+            out.println("    --wal-time-to-millis=1577836740999");
+            out.println("    --record-contains-text=search string");
+            out.println("    --process-sensitive-data=SHOW");
+            out.println("    --skip-crc=true");
+            out.println("    --pages=123456:789456123,123456:789456124");
             return null;
         }
 
@@ -328,9 +370,9 @@ public class IgniteWalConverterArguments {
                     throw new IllegalArgumentException("Incorrect page size. Error parse: " + pageSizeStr);
                 }
             }
-            else if (arg.startsWith(KEEP_BINARY + "=")) {
+            else if (arg.startsWith(KEEP_BINARY + "="))
                 keepBinary = parseBoolean(KEEP_BINARY, arg.substring(KEEP_BINARY.length() + 1));
-            }
+
             else if (arg.startsWith(RECORD_TYPES + "=")) {
                 final String recordTypesStr = arg.substring(RECORD_TYPES.length() + 1);
 
@@ -371,9 +413,9 @@ public class IgniteWalConverterArguments {
                     throw new IllegalArgumentException("Incorrect walTimeToMillis. Error parse: " + toTimeStr);
                 }
             }
-            else if (arg.startsWith(RECORD_CONTAINS_TEXT + "=")) {
+            else if (arg.startsWith(RECORD_CONTAINS_TEXT + "="))
                 recordContainsText = arg.substring(RECORD_CONTAINS_TEXT.length() + 1);
-            }
+
             else if (arg.startsWith(PROCESS_SENSITIVE_DATA + "=")) {
                 final String procSensitiveDataStr = arg.substring(PROCESS_SENSITIVE_DATA.length() + 1);
                 try {
@@ -384,12 +426,12 @@ public class IgniteWalConverterArguments {
                         ". Supported: " + Arrays.toString(ProcessSensitiveData.values()));
                 }
             }
-            else if (arg.startsWith(PRINT_STAT + "=")) {
+            else if (arg.startsWith(PRINT_STAT + "="))
                 printStat = parseBoolean(PRINT_STAT, arg.substring(PRINT_STAT.length() + 1));
-            }
-            else if (arg.startsWith(SKIP_CRC + "=")) {
+
+            else if (arg.startsWith(SKIP_CRC + "="))
                 skipCrc = parseBoolean(SKIP_CRC, arg.substring(SKIP_CRC.length() + 1));
-            }
+
             else if (arg.startsWith(PAGES + "=")) {
                 String pagesStr = arg.replace(PAGES + "=", "");
 
@@ -460,20 +502,20 @@ public class IgniteWalConverterArguments {
      * {@code "false"}, else throw IllegalArgumentException<p>
      *
      * @param name parameter name of boolean type.
-     * @param value the {@code String} containing the boolean representation to be parsed.
+     * @param val the {@code String} containing the boolean representation to be parsed.
      * @return the boolean represented by the string argument
      *
      */
-    private static boolean parseBoolean(String name, String value) {
-        if (value == null)
+    private static boolean parseBoolean(String name, String val) {
+        if (val == null)
             throw new IllegalArgumentException("Null value passed for flag " + name);
 
-        if (value.equalsIgnoreCase(Boolean.TRUE.toString()))
+        if (val.equalsIgnoreCase(Boolean.TRUE.toString()))
             return true;
-        else if (value.equalsIgnoreCase(Boolean.FALSE.toString()))
+        else if (val.equalsIgnoreCase(Boolean.FALSE.toString()))
             return false;
         else
-            throw new IllegalArgumentException("Incorrect flag " + name + ", valid value: true or false. Error parse: " + value);
+            throw new IllegalArgumentException("Incorrect flag " + name + ", valid value: true or false. Error parse: " + val);
     }
 
     /**
