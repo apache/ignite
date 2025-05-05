@@ -130,7 +130,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySchema createSchema() {
+    @Override BinarySchema createSchema() {
         return reader(null, false).getOrCreateSchema();
     }
 

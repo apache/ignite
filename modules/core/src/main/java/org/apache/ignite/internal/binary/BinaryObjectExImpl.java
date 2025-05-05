@@ -148,7 +148,7 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
      *
      * @return Schema.
      */
-    public abstract BinarySchema createSchema();
+    abstract BinarySchema createSchema();
 
     /**
      * Get binary context.

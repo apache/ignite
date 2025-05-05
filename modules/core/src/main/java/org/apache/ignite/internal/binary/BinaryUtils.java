@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -55,8 +56,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -78,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -3026,6 +3030,156 @@ public class BinaryUtils {
             return a1.equals(a2);
 
         return Arrays.deepEquals((Object[])a1, (Object[])a2);
+    }
+
+    /**
+     * Writes schemas of the specified {@link BinaryMetadata} by means of {@link BinaryRawWriter}.
+     *
+     * @param writer Bimary raw writer.
+     * @param meta Binary metadata.
+     */
+    public static void writeSchemas(BinaryMetadata meta, BinaryRawWriter writer) {
+        Collection<BinarySchema> schemas = meta.schemas();
+
+        writer.writeInt(schemas.size());
+
+        for (BinarySchema schema : schemas) {
+            writer.writeInt(schema.schemaId());
+
+            int[] ids = schema.fieldIds();
+            writer.writeInt(ids.length);
+
+            for (int id : ids)
+                writer.writeInt(id);
+        }
+    }
+
+    /**
+     * Reads collection of {@link BinarySchema} by means of {@link BinaryRawReader}.
+     *
+     * @param reader Bimary raw reader.
+     */
+    public static Collection<BinarySchema> readSchemas(BinaryRawReader reader) {
+        int schemaCnt = reader.readInt();
+
+        List<BinarySchema> schemas = null;
+
+        if (schemaCnt > 0) {
+            schemas = new ArrayList<>(schemaCnt);
+
+            for (int i = 0; i < schemaCnt; i++) {
+                int id = reader.readInt();
+                int fieldCnt = reader.readInt();
+                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                for (int j = 0; j < fieldCnt; j++)
+                    fieldIds.add(reader.readInt());
+
+                schemas.add(new BinarySchema(id, fieldIds));
+            }
+        }
+
+        return schemas;
+    }
+
+    /**
+     * Writes schemas of specified {@link BinaryMetadata} by means of {@link BinaryOutputStream} and
+     * {@link BinaryOutputStream}.
+     *
+     * @param meta Binary metadata.
+     * @param writer Binary raw writer.
+     * @param out Output stream.
+     */
+    public static void writeSchemas(BinaryMetadata meta, BinaryRawWriter writer, BinaryOutputStream out) {
+        collection(
+            meta.schemas(),
+            out,
+            (unused, s) -> {
+                writer.writeInt(s.schemaId());
+
+                collection(
+                    Arrays.stream(s.fieldIds()).boxed().collect(Collectors.toList()),
+                    out,
+                    (unused2, i) -> writer.writeInt(i)
+                );
+            }
+        );
+    }
+
+    /**
+     * Reads collection of {@link BinarySchema} by means of {@link BinaryRawReader} and {@link BinaryInputStream}.
+     *
+     * @param reader Binary raw reader.
+     * @param in Binary input stream
+     * @return Collection of binary schemas.
+     */
+    public static Collection<BinarySchema> readSchemas(BinaryRawReader reader, BinaryInputStream in) {
+        return collection(
+            in,
+            unused -> new BinarySchema(
+                reader.readInt(),
+                new ArrayList<>(collection(in, unused2 -> reader.readInt()))
+            )
+        );
+    }
+
+    /**
+     * @param col Collection to serialize.
+     * @param out Output stream.
+     * @param elemWriter Collection element serializer
+     */
+    public static <E> void collection(
+        Collection<E> col, BinaryOutputStream out,
+        BiConsumer<BinaryOutputStream, E> elemWriter
+    ) {
+        if (F.isEmpty(col))
+            out.writeInt(0);
+        else {
+            out.writeInt(col.size());
+
+            for (E e : col)
+                elemWriter.accept(out, e);
+        }
+    }
+
+    /**
+     * @param col Collection to serialize.
+     * @param out Output stream.
+     * @param elemWriter Collection element serializer
+     */
+    public static <E> void collection(E[] col, BinaryOutputStream out, BiConsumer<BinaryOutputStream, E> elemWriter) {
+        if (F.isEmpty(col))
+            out.writeInt(0);
+        else {
+            out.writeInt(col.length);
+
+            for (E e : col)
+                elemWriter.accept(out, e);
+        }
+    }
+
+    /**
+     * @param in Input stream.
+     * @param elemReader Collection element deserializer.
+     * @return Deserialized collection.
+     */
+    public static <E> Collection<E> collection(BinaryInputStream in, Function<BinaryInputStream, E> elemReader) {
+        Collection<E> col = new LinkedList<>(); // needs to be ordered for some use cases
+
+        int cnt = in.readInt();
+
+        for (int i = 0; i < cnt; i++)
+            col.add(elemReader.apply(in));
+
+        return col;
+    }
+
+    /**
+     * @param meta Binary metadata.
+     * @return Schemas identifiers of the specified {@link BinaryMetadata}.
+     */
+    public static Collection<T2<Integer, int[]>> schemasAndFieldsIds(BinaryMetadata meta) {
+        return F.viewReadOnly(meta.schemas(), s -> new T2<>(s.schemaId(), s.fieldIds()));
     }
 
     /**

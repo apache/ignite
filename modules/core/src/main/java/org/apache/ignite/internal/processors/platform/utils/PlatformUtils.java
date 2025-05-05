@@ -51,7 +51,6 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -1144,21 +1143,7 @@ public class PlatformUtils {
             return;
         }
 
-        // Schemas.
-        Collection<BinarySchema> schemas = meta.schemas();
-
-        writer.writeInt(schemas.size());
-
-        for (BinarySchema schema : schemas) {
-            writer.writeInt(schema.schemaId());
-
-            int[] ids = schema.fieldIds();
-            writer.writeInt(ids.length);
-
-            for (int id : ids) {
-                writer.writeInt(id);
-            }
-        }
+        BinaryUtils.writeSchemas(meta, writer);
     }
 
     /**
@@ -1213,27 +1198,7 @@ public class PlatformUtils {
                 enumMap.put(reader.readString(), reader.readInt());
         }
 
-        // Read schemas
-        int schemaCnt = reader.readInt();
-
-        List<BinarySchema> schemas = null;
-
-        if (schemaCnt > 0) {
-            schemas = new ArrayList<>(schemaCnt);
-
-            for (int i = 0; i < schemaCnt; i++) {
-                int id = reader.readInt();
-                int fieldCnt = reader.readInt();
-                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
-
-                for (int j = 0; j < fieldCnt; j++)
-                    fieldIds.add(reader.readInt());
-
-                schemas.add(new BinarySchema(id, fieldIds));
-            }
-        }
-
-        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
+        return new BinaryMetadata(typeId, typeName, fields, affKey, BinaryUtils.readSchemas(reader), isEnum, enumMap);
     }
 
     /**
