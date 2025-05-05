@@ -15,27 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang.gridfunc;
+package org.apache.ignite.internal.util.lang;
 
-import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * Grid node to node ID transformer closure.
+ * Defines a convenient absolute, i.e. {@code no-arg} and {@code no return value} closure. This closure
+ * that has {@code void} return type and no arguments (free variables).
+ * <h2 class="header">Thread Safety</h2>
+ * Note that this interface does not impose or assume any specific thread-safety by its
+ * implementations. Each implementation can elect what type of thread-safety it provides,
+ * if any.
+ * @see GridFunc
  */
-public class ClusterNodeGetIdClosure implements IgniteClosure<ClusterNode, UUID> {
+public abstract class GridAbsClosure implements IgniteRunnable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override public UUID apply(ClusterNode n) {
-        return n.id();
-    }
+    /**
+     * Absolute closure body.
+     */
+    public abstract void apply();
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ClusterNodeGetIdClosure.class, this);
+    /**
+     * Delegates to {@link #apply()} method.
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override public final void run() {
+        apply();
     }
 }

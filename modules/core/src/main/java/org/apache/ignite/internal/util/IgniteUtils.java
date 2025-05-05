@@ -6628,16 +6628,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Converts collection of nodes to collection of node IDs.
-     *
-     * @param nodes Nodes.
-     * @return Node IDs.
-     */
-    public static Collection<UUID> nodeIds(@Nullable Collection<? extends ClusterNode> nodes) {
-        return F.viewReadOnly(nodes, F.node2id());
-    }
-
-    /**
      * Converts collection of Grid instances to collection of grid names.
      *
      * @param grids Grids.
