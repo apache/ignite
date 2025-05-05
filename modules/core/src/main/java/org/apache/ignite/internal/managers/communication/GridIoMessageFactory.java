@@ -298,7 +298,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)116, GridNearSingleGetRequest::new);
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);
-        // 119 - BinaryEnumObjectIMpl
+        // 119 - BinaryEnumObjectImpl
         BinaryUtils.registerMessages(factory::register);
 
         // [120..123] - DR

@@ -418,8 +418,8 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
                 int typeId = GridBinaryMarshaller.OBJ;
 
                 BinaryObjectEx binObj = (BinaryObjectEx)ignite.binary().builder(Character.toString((char)typeId))
-                    .setField("dummy", "dummy")
-                    .build();
+                        .setField("dummy", "dummy")
+                        .build();
 
                 assertEquals(typeId, binObj.typeId());
 
