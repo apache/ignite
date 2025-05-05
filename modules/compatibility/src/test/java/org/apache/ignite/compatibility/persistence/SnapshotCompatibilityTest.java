@@ -52,8 +52,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -84,34 +82,34 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
 
     /** */
-    @Parameter
+    @Parameterized.Parameter
     public boolean incSnp;
 
     /** */
-    @Parameter(1)
+    @Parameterized.Parameter(1)
     public boolean customConsId;
 
     /** */
-    @Parameter(2)
+    @Parameterized.Parameter(2)
     public int oldNodesCnt;
 
     /** */
-    @Parameter(3)
+    @Parameterized.Parameter(3)
     public boolean cacheDump;
 
     /** */
-    @Parameter(4)
+    @Parameterized.Parameter(4)
     public boolean customSnpPath;
 
     /** */
-    @Parameter(5)
+    @Parameterized.Parameter(5)
     public boolean testCacheGrp;
 
     /** */
     private CacheGroupInfo cacheGrpInfo;
 
     /** */
-    @Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
+    @Parameterized.Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
 
