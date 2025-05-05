@@ -315,7 +315,7 @@ public class GridBinaryMarshaller {
      */
     private Object unwrapBinary(Object obj, BinaryReaderHandles hnds, Class<?> clazz) {
         if (BinaryUtils.isBinaryObjectImpl(obj)) {
-            BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
+            BinaryObjectEx obj0 = (BinaryObjectEx)obj;
             BinaryInputStream in = BinaryStreams.inputStream(obj0.bytes(), obj0.start());
 
             return deserialize(in, null, hnds);

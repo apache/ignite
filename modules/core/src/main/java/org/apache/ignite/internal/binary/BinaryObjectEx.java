@@ -83,10 +83,10 @@ public interface BinaryObjectEx extends BinaryObject {
     }
 
     /**
-     * @return Object array if object has byte array based, otherwise {@code null}.
+     * @return Object array if object is byte array based, otherwise {@code null}.
      */
     public default byte[] bytes() {
-        throw new UnsupportedOperationException("Has no bytes");
+        return null;
     }
 
     /**
