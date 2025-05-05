@@ -250,15 +250,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             }
         };
 
-        new DumpReader(
-            new DumpReaderConfiguration(
+        new DumpReader(new DumpReaderConfiguration(
                 CACHE_DUMP_NAME,
                 customSnpPath ? customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
                 node.configuration(),
                 consumer
-            ),
-            log
-        ).run();
+        ), log).run();
 
         cacheGrpInfo.cacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
@@ -302,10 +299,10 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
      */
     private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
-        private final boolean incSnp;
+        private final String consId;
 
         /** */
-        private final String consId;
+        private final boolean incSnp;
 
         /** */
         private final boolean customSnpPath;
@@ -324,8 +321,8 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             boolean delIfExist,
             CacheGroupInfo cacheGrpInfo
         ) {
-            this.incSnp = incSnp;
             this.consId = consId;
+            this.incSnp = incSnp;
             this.customSnpPath = customSnpPath;
             this.delIfExist = delIfExist;
             this.cacheGrpInfo = cacheGrpInfo;
