@@ -183,6 +183,7 @@ import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.C
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
@@ -1067,8 +1068,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         if (nodeAlive) {
             synchronized (mux) {
-                nodeAlive = !F.transform(failedNodes.keySet(), F.node2id()).contains(nodeId) &&
-                    !F.transform(leavingNodes, F.node2id()).contains(nodeId);
+                nodeAlive = !F.transform(failedNodes.keySet(), node2id()).contains(nodeId) &&
+                    !F.transform(leavingNodes, node2id()).contains(nodeId);
             }
         }
 
