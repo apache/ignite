@@ -54,7 +54,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -73,6 +75,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -81,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -1571,11 +1575,8 @@ public class BinaryUtils {
 
             BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
 
-            if (detach) {
-                binO.detachAllowed(true);
-
-                return binO.detach();
-            }
+            if (detach)
+                return (BinaryObject)detach(binO);
 
             return binO;
         }
@@ -1764,13 +1765,31 @@ public class BinaryUtils {
      * @param ctx Context.
      * @param arr Array.
      */
-    public static CacheObject binaryEnum(BinaryContext ctx, byte[] arr) {
+    public static BinaryObjectEx binaryEnum(BinaryContext ctx, byte[] arr) {
         return new BinaryEnumObjectImpl(ctx, arr);
     }
 
+    /**
+     * @param register Register method.
+     */
+    public static void registerMessages(BiConsumer<Short, Supplier<Message>> register) {
+        register.accept((short)113, BinaryObjectImpl::new);
+        register.accept((short)119, BinaryEnumObjectImpl::new);
+    }
+
     /** */
-    public static CacheObject binaryEnum() {
-        return new BinaryEnumObjectImpl();
+    public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start) {
+        return new BinaryObjectImpl(ctx, arr, start);
+    }
+
+    /** */
+    public static <T> T binaryObject(BinaryContext ctx, byte[] bytes) {
+        return (T)new BinaryObjectImpl(ctx, bytes);
+    }
+
+    /** */
+    public static BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectContext coCtx) {
+        return new BinaryObjectImpl(ctx, valBytes, coCtx);
     }
 
     /**
@@ -2956,6 +2975,14 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryObjectImpl}.
+     */
+    public static boolean isBinaryObjectImpl(Object val) {
+        return val instanceof BinaryObjectImpl;
+    }
+
+    /**
+     * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {
@@ -2986,6 +3013,34 @@ public class BinaryUtils {
             return null;
 
         return ((BinaryObjectExImpl)obj).field(fieldId);
+    }
+
+    /**
+     * Compare two objects for DML operation.
+     *
+     * @param first First.
+     * @param second Second.
+     * @return Comparison result.
+     */
+    public static int compareForDml(Object first, Object second) {
+        return BinaryObjectImpl.compareForDml(first, second);
+    }
+
+    /**
+     * @param o Object to detach.
+     * @return Detached object.
+     */
+    public static Object detach(Object o) {
+        ((BinaryObjectImpl)o).detachAllowed(true);
+        return ((BinaryObjectImpl)o).detach();
+    }
+
+    /**
+     * @param o
+     */
+    public static void detachAllowedIfPossible(Object o) {
+        if (isBinaryObjectImpl(o))
+            ((BinaryObjectImpl)o).detachAllowed(true);
     }
 
     /**

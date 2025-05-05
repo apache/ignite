@@ -64,7 +64,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -518,8 +517,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         Object obj0 = binaryMarsh.unmarshal(arr, null);
 
         // Possible if a class has writeObject method.
-        if (obj0 instanceof BinaryObjectImpl)
-            ((BinaryObjectImpl)obj0).detachAllowed(true);
+        BinaryUtils.detachAllowedIfPossible(obj0);
 
         return obj0;
     }
@@ -1192,7 +1190,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
-            if (key instanceof BinaryObjectImpl) {
+            if (BinaryUtils.isBinaryObjectImpl(key)) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
             }
@@ -1205,7 +1203,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         obj = toBinary(obj, false);
 
-        if (obj instanceof BinaryObjectImpl) {
+        if (BinaryUtils.isBinaryObjectImpl(obj)) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
@@ -1297,11 +1295,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
-            case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes, ctx);
+            case CacheObject.TYPE_BINARY:
+                return (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
 
-            case BinaryObjectImpl.TYPE_BINARY_ENUM:
-                return BinaryUtils.binaryEnum(binaryContext(), bytes);
+            case CacheObject.TYPE_BINARY_ENUM:
+                return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);
@@ -1317,8 +1315,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
         throws IgniteCheckedException {
         switch (type) {
-            case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes);
+            case CacheObject.TYPE_BINARY:
+                return BinaryUtils.binaryObject(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");

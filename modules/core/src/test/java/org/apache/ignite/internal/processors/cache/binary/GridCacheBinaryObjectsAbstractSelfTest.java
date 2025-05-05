@@ -56,7 +56,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -166,10 +165,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 Object val = CU.value(e.rawGet(), c.context(), false);
 
                 if (key instanceof BinaryObject)
-                    assert ((BinaryObjectImpl)key).detached() : val;
+                    assert BinaryObjectTestUtils.isDetached(key) : key;
 
                 if (val instanceof BinaryObject)
-                    assert ((BinaryObjectImpl)val).detached() : val;
+                    assert BinaryObjectTestUtils.isDetached(val) : val;
             }
         }
 
