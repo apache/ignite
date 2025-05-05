@@ -1795,8 +1795,6 @@ public class GridDhtPartitionDemander {
             long bytes = 0;
             long minStartTime = Long.MAX_VALUE;
 
-            Map<String, Map<UUID, Set<Integer>>> res = new HashMap<>();
-
             for (RebalanceFuture fut : futs) {
                 parts += fut.rebalancingParts.values().stream().mapToLong(Collection::size).sum();
 
@@ -1807,19 +1805,7 @@ public class GridDhtPartitionDemander {
                     .flatMap(map -> map.values().stream()).mapToLong(LongAdder::sum).sum();
 
                 minStartTime = Math.min(minStartTime, fut.startTime);
-
-                for (Map.Entry<UUID, Set<Integer>> e : fut.rebalancingParts.entrySet())
-                    res.computeIfAbsent(fut.grp.cacheOrGroupName(), k -> new HashMap<>()).put(e.getKey(), e.getValue());
             }
-
-            log.info("Following partitions have been successfully evicted as part of rebalance chain: "
-                + "topVer=" + topologyVersion() + ", rebalanceId=" + rebalanceId + ", totalPartitionsCount="
-                + res.values().stream().flatMap(map -> map.values().stream()).mapToLong(Collection::size).sum()
-                + ", cacheGroups=[" + res.entrySet().stream().map(entry -> "grp=" + entry.getKey() + " ["
-                    + entry.getValue().entrySet().stream().map(e -> "supplierNode=" + e.getKey()
-                    + ", partitionsCount=" + e.getValue().size() + ", partitions="
-                        + S.toStringSortedDistinct(e.getValue())).collect(Collectors.joining("; ")) + "]")
-                .collect(Collectors.joining("; ")) + "]");
 
             log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
                 ", partitions=" + parts +

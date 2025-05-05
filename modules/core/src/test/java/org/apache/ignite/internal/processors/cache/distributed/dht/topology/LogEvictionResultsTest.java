@@ -54,9 +54,6 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     /** Default pattern for extracting partitions count from log messages */
     private static final Pattern DEF_PARTS_CNT_PATTERN = Pattern.compile("partitionsCount=(?<count>\\d+)");
 
-    /** Additional pattern for extracting partitions count from log messages */
-    private static final Pattern ADD_PARTS_CNT_PATTERN = Pattern.compile("partitions=(?<count>\\d+)");
-
     /** Pattern for extracting partitions ids from log messages #1. */
     private static final Pattern P_PATTERN = Pattern.compile("p=(?<count>\\d+)");
 
@@ -154,8 +151,6 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     public void testClearingDuringRebalance() throws Exception {
         List<String> rebalPrepMsgs = new ArrayList<>();
         List<String> rebalEvictMsgs = new ArrayList<>();
-        List<String> chainComplMsgs = new ArrayList<>();
-        List<String> chainEvictMsgs = new ArrayList<>();
 
         CallbackExecutorLogListener rebalPrepLsnr = new CallbackExecutorLogListener(
             "Prepared rebalancing.*", rebalPrepMsgs::add);
@@ -164,14 +159,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
             "Following partitions have been successfully evicted in preparation for rebalancing.*",
             rebalEvictMsgs::add);
 
-        CallbackExecutorLogListener chainComplLsnr = new CallbackExecutorLogListener(
-            "Completed rebalance chain.*", chainComplMsgs::add);
-
-        CallbackExecutorLogListener chainEvictLsnr = new CallbackExecutorLogListener(
-            "Following partitions have been successfully evicted as part of rebalance chain.*",
-            chainEvictMsgs::add);
-
-        testLog.registerAllListeners(of(rebalPrepLsnr, rebalEvictLsnr, chainComplLsnr, chainEvictLsnr)
+        testLog.registerAllListeners(of(rebalPrepLsnr, rebalEvictLsnr)
             .toArray(LogListener[]::new));
 
         startTestGrids();
@@ -179,10 +167,6 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         compareListsDisregardOrder(
             extractPartsCnt(rebalPrepMsgs),
             extractPartsCnt(rebalEvictMsgs));
-
-        compareListsDisregardOrder(
-            extractPartsCnt(chainComplMsgs, ADD_PARTS_CNT_PATTERN),
-            extractPartsCnt(chainEvictMsgs));
     }
 
     /**

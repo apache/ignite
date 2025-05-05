@@ -25,11 +25,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
@@ -49,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static java.util.Objects.nonNull;
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
@@ -65,6 +72,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     @SystemProperty(value = "Eviction progress frequency in milliseconds", type = Long.class,
         defaults = "" + DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS)
     public static final String SHOW_EVICTION_PROGRESS_FREQ = "SHOW_EVICTION_PROGRESS_FREQ";
+
+    /** Eviction completion timeout in ms. */
+    private static final int EVICTION_COMPLETION_TIMEOUT = 500;
 
     /** Eviction progress frequency in ms. */
     private final long evictionProgressFreqMs =
@@ -284,6 +294,15 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** */
         private ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
+        /** Timeout scheduler. */
+        private final ScheduledExecutorService timeoutScheduler = Executors.newSingleThreadScheduledExecutor();
+
+        /** Pending eviction completion timeout. */
+        private final AtomicReference<ScheduledFuture<?>> pendingTimeout = new AtomicReference<>();
+
+        /** Evicted parttitions ids. */
+        private final ConcurrentLinkedQueue<Integer> evictedParts = new ConcurrentLinkedQueue<>();
+
         /**
          * @param grp Group context.
          */
@@ -299,6 +318,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             taskInProgress++;
 
             GridFutureAdapter<?> fut = task.finishFut;
+
+            evictedParts.add(task.part.id());
+
+            if (totalTasks.get() < 2)
+                runAsync(() -> checkFinish(fut));
 
             fut.listen(() -> {
                 synchronized (this) {
@@ -356,6 +380,40 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     ", remainingPartsToEvict=" + (totalTasks.get() - taskInProgress) +
                     ", partsEvictInProgress=" + taskInProgress +
                     ", totalParts=" + grp.topology().localPartitions().size() + "]");
+        }
+
+        /** @param fut Eviction task future. */
+        private void checkFinish(IgniteInternalFuture<?> fut) {
+            ScheduledFuture<?> oldTimeout = pendingTimeout.getAndSet(null);
+
+            if (oldTimeout != null)
+                oldTimeout.cancel(false);
+
+            try {
+                fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.warning("Failed to await partition eviction.", e);
+            }
+
+            ScheduledFuture<?> newTimeout = timeoutScheduler.schedule(
+                () -> {
+                    if (!evictedParts.isEmpty()) {
+                        log.info("Completed all eviction tasks for cache group" +
+                            " [grp=" + grp.cacheOrGroupName() +
+                            ", nodeId=" + grp.shared().localNodeId() +
+                            ", totalParts=" + grp.topology().localPartitions().size() +
+                            ", evictedPartsCount = " + evictedParts.size() +
+                            ", evictedParts=[" + evictedParts.stream().map(String::valueOf).collect(Collectors.joining(", ")) + "]]");
+
+                        evictedParts.clear();
+                    }},
+                EVICTION_COMPLETION_TIMEOUT,
+                TimeUnit.MILLISECONDS
+            );
+
+            pendingTimeout.set(newTimeout);
         }
     }
 
