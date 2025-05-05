@@ -1784,8 +1784,8 @@ public class BinaryUtils {
     }
 
     /** */
-    public static <T> T binaryObject(BinaryContext ctx, byte[] bytes) {
-        return (T)new BinaryObjectImpl(ctx, bytes);
+    public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] bytes) {
+        return new BinaryObjectImpl(ctx, bytes);
     }
 
     /** */

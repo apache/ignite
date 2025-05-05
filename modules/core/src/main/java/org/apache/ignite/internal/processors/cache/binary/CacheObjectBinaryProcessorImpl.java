@@ -1316,7 +1316,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return BinaryUtils.binaryObject(binaryContext(), bytes);
+                return (KeyCacheObject)BinaryUtils.binaryObject(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
