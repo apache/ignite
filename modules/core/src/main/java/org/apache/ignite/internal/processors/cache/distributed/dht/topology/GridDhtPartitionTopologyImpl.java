@@ -3311,7 +3311,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return;
 
         Set<Integer> evictedParts = new HashSet<>();
-        Set<Integer> notEvictedParts = new HashSet<>();
+        Set<Integer> nonEvictedParts = new HashSet<>();
 
         CompletableFuture.allOf(futPartMap.entrySet().stream().map(entry -> CompletableFuture.supplyAsync(() -> {
             try {
@@ -3322,29 +3322,23 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 return null;
             }
             catch (Exception ex) {
-                notEvictedParts.add(entry.getKey());
+                nonEvictedParts.add(entry.getKey());
 
                 return null;
             }
         })).toArray(CompletableFuture[]::new)).whenComplete((res, err) -> {
-            if (notEvictedParts.isEmpty()) {
-                log.info("Partitions have been successfullly evicted (eviction reason: " + evictReason + ")"
-                    + " [grp=" + grp.cacheOrGroupName() + ", partitionsCount=" + evictedParts.size()
-                    + ", partitions=" + S.toStringSortedDistinct(evictedParts) + "]");
-            }
-            else if (evictedParts.isEmpty()) {
-                log.warning("None of partitions have been evicted (eviction reason: " + evictReason + ")"
-                    + " [grp=" + grp.cacheOrGroupName() + ", partitionsCount=" + notEvictedParts.size()
-                    + ", partitions=" + S.toStringSortedDistinct(notEvictedParts) + "]");
-            }
-            else {
-                log.warning("Some of partitions have not been evicted (eviction reason: " + evictReason + ")"
-                    + " [grp=" + grp.cacheOrGroupName()
-                    + ", evictedPartitionsCount=" + evictedParts.size()
-                    + ", evictedPartitions=" + S.toStringSortedDistinct(evictedParts)
-                    + ", notEvictedPartitionsCount=" + notEvictedParts.size()
-                    + ", notEvictedPartitions=" + S.toStringSortedDistinct(notEvictedParts) + "]");
-            }
+            String msg = "Eviction completed" +
+                (nonEvictedParts.isEmpty() ? " successfully" : " with warnings: non-evicted partitions detected") +
+                " (eviction reason: " + evictReason + ") [grp=" + grp.cacheOrGroupName() +
+                ", evictedPartsCount=" + evictedParts.size() +
+                ", evictedParts=" + S.toStringSortedDistinct(evictedParts) +
+                (nonEvictedParts.isEmpty() ? "" : ", nonEvictedPartsCount=" + nonEvictedParts.size() +
+                ", nonEvictedParts=" + S.toStringSortedDistinct(nonEvictedParts)) + "]";
+
+            if (nonEvictedParts.isEmpty())
+                log.info(msg);
+            else
+                log.warning(msg);
         });
     }
 
