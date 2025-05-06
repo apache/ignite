@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 
@@ -46,13 +47,15 @@ class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void addMeta(int typeId, BinaryType type, boolean failIfUnregistered)
+    @Override public synchronized void addMeta(int typeId, BinaryContext ctx, BinaryMetadata meta, boolean failIfUnregistered)
         throws BinaryObjectException {
+        BinaryTypeImpl type = new BinaryTypeImpl(ctx, meta);
+
         BinaryType oldType = metas.put(typeId, type);
 
         if (oldType != null) {
             BinaryMetadata oldMeta = ((BinaryTypeImpl)oldType).metadata();
-            BinaryMetadata newMeta = ((BinaryTypeImpl)type).metadata();
+            BinaryMetadata newMeta = type.metadata();
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
 
@@ -63,9 +66,9 @@ class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+    @Override public synchronized void addMetaLocally(int typeId, BinaryContext ctx, BinaryMetadata meta, boolean failIfUnregistered)
         throws BinaryObjectException {
-        addMeta(typeId, meta, failIfUnregistered);
+        addMeta(typeId, ctx, meta, failIfUnregistered);
     }
 
     /** {@inheritDoc} */
@@ -83,11 +86,24 @@ class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     /** {@inheritDoc} */
     @Override public synchronized BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
         BinaryTypeImpl type = (BinaryTypeImpl)metas.get(typeId);
+
         return type != null && type.metadata().hasSchema(schemaId) ? type : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
+        BinaryTypeImpl type = (BinaryTypeImpl)metas.get(typeId);
+
+        return type != null && type.metadata().hasSchema(schemaId) ? type.metadata() : null;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
         return metas.values();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryMetadata> metadata0() throws BinaryObjectException {
+        return metas.values().stream().map(type -> ((BinaryTypeImpl)type).metadata()).collect(Collectors.toList());
     }
 }
