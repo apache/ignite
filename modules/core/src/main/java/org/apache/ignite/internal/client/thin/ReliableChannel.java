@@ -269,6 +269,8 @@ final class ReliableChannel implements AutoCloseable {
         // Retry use same channel in case of connection exception.
         CompletableFuture<T> retryFut = chFut
             .handle((res, err) -> {
+                UUID nodeID = ch.serverNodeId();
+
                 if (err == null) {
                     fut.complete(res);
 
@@ -278,7 +280,7 @@ final class ReliableChannel implements AutoCloseable {
                 if (err instanceof ClientConnectionException) {
                     ClientConnectionException failure0 = (ClientConnectionException)err;
 
-                    ClientChannelHolder hld = nodeChannels.get(ch.serverNodeId());
+                    ClientChannelHolder hld = (nodeID != null) ? nodeChannels.get(nodeID) : null;
 
                     try {
                         // Will try to reinit channels if topology changed.
