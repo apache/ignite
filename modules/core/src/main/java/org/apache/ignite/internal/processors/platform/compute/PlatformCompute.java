@@ -30,7 +30,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -387,7 +386,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         Collection<UUID> nodeIds = readNodeIds(reader);
 
-        if (!keepBinary && (arg instanceof BinaryObjectImpl || BinaryUtils.isBinaryArray(arg)))
+        if (!keepBinary && (BinaryUtils.isBinaryObjectImpl(arg) || BinaryUtils.isBinaryArray(arg)))
             arg = ((BinaryObject)arg).deserialize();
 
         if (nodeIds != null)

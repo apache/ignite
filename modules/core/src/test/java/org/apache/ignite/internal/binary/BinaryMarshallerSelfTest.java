@@ -3753,7 +3753,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param marsh Binary marshaller.
      * @return Instance of BinaryObjectOffheapImpl.
      */
-    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectImpl obj, BinaryMarshaller marsh) {
+    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectEx obj, BinaryMarshaller marsh) {
         long ptr = copyOffheap(obj);
 
         return new BinaryObjectOffheapImpl(binaryContext(marsh),
@@ -3979,7 +3979,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param obj Object.
      * @return Offheap address.
      */
-    private long copyOffheap(BinaryObjectImpl obj) {
+    private long copyOffheap(BinaryObjectEx obj) {
         byte[] arr = obj.bytes();
 
         long ptr = GridUnsafe.allocateMemory(arr.length);
@@ -4063,7 +4063,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param marsh Marshaller.
      * @return Result object.
      */
-    private <T> T unmarshal(BinaryObjectImpl bo, BinaryMarshaller marsh) throws IgniteCheckedException {
+    private <T> T unmarshal(BinaryObjectEx bo, BinaryMarshaller marsh) throws IgniteCheckedException {
         return marsh.unmarshal(bo.bytes(), null);
     }
 

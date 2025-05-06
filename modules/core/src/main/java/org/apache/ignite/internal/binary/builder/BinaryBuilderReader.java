@@ -22,9 +22,10 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -62,7 +63,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
      *
      * @param objImpl Binary object
      */
-    BinaryBuilderReader(BinaryObjectImpl objImpl) {
+    BinaryBuilderReader(BinaryObjectEx objImpl) {
         ctx = objImpl.context();
         arr = objImpl.bytes();
         pos = objImpl.start();
@@ -492,7 +493,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readIntPositioned(pos + 4 + size);
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
+                BinaryObject binaryObj = BinaryUtils.binaryObject(ctx, arr, pos + 4 + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }
@@ -844,7 +845,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos - 4 - size + start);
+                BinaryObject binaryObj = BinaryUtils.binaryObject(ctx, arr, pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }
