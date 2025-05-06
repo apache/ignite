@@ -54,6 +54,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /**
  *
@@ -133,11 +134,14 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
-        assumeFalse("Incremental snapshots for cache dump not supported", incSnp && cacheDump);
+        if (incSnp) {
+            assumeFalse("Incremental snapshots for cache dump not supported", cacheDump);
 
-        assumeFalse("Incremental snapshots require same consistentID", incSnp && !customConsId);
+            assumeTrue("Incremental snapshots require same consistentID", customConsId);
 
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-25096", incSnp && oldNodesCnt == 3);
+            assumeTrue("https://issues.apache.org/jira/browse/IGNITE-25096", oldNodesCnt == 1);
+        }
+
 
         try {
             for (int i = 1; i < oldNodesCnt; ++i) {
@@ -290,8 +294,8 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    private static String consId(boolean custom, int nodeIdx) {
-        return custom ? "node-" + nodeIdx : null;
+    private String consId(int nodeIdx) {
+        return customConsId ? "node-" + nodeIdx : null;
     }
 
     /**
