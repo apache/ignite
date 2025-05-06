@@ -278,28 +278,28 @@ final class ReliableChannel implements AutoCloseable {
                 if (err instanceof ClientConnectionException) {
                     ClientConnectionException failure0 = (ClientConnectionException)err;
 
-                    ClientChannelHolder hld = null;
-
-                    for (ClientChannelHolder holder : channels) {
-                        if (holder.ch == ch) {
-                            hld = holder;
-                            break;
-                        }
-                    }
+                    ClientChannelHolder hld = nodeChannels.get(ch.serverNodeId());
 
                     try {
                         // Will try to reinit channels if topology changed.
                         onChannelFailure(ch, err, failures);
 
-                        if (hld != null && shouldRetry(op, failures.size() - 1, failure0)) {
+                        if (hld == null) {
+                            failures.add(failure0);
+
+                            throw failure0;
+                        }
+
+                        if (shouldRetry(op, failures.size() - 1, failure0)) {
                             ClientChannel newCh = hld.getOrCreateChannel();
 
                             return newCh.serviceAsync(op, payloadWriter, payloadReader);
                         }
+                        else {
+                            failures.add(failure0);
 
-                        failures.add(failure0);
-
-                        fut.completeExceptionally(composeException(failures));
+                            fut.completeExceptionally(composeException(failures));
+                        }
                     }
                     catch (ClientConnectionException reconnectEx) {
                         onChannelFailure(hld, null, reconnectEx, failures);
