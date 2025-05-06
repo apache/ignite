@@ -19,9 +19,12 @@ package org.apache.ignite.internal.util.lang;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.EqualsUuidPredicate;
@@ -179,5 +182,54 @@ public class ClusterNodeFunc {
     public static boolean eqNodes(Object n1, Object n2) {
         return n1 == n2 || !(n1 == null || n2 == null) && !(!(n1 instanceof ClusterNode) || !(n2 instanceof ClusterNode))
             && ((ClusterNode)n1).id().equals(((ClusterNode)n2).id());
+    }
+
+    /**
+     * Compares two maps. Unlike {@code java.util.AbstractMap#equals(...)} method this implementation
+     * checks not only entry sets, but also the keys. Some optimization checks are also used.
+     *
+     * @param m1 First map to check.
+     * @param m2 Second map to check
+     * @param <K> Collection elements key.
+     * @param <V> Collection elements value.
+     * @return {@code True} is maps are equal, {@code False} otherwise.
+     */
+    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
+        if (m1 == m2)
+            return true;
+
+        if (m1 == null || m2 == null)
+            return false;
+
+        if (m1.size() != m2.size())
+            return false;
+
+        for (Map.Entry<K, V> e : m1.entrySet()) {
+            V v1 = e.getValue();
+            V v2 = m2.get(e.getKey());
+
+            if (v1 == v2)
+                continue;
+
+            if (v1 == null || v2 == null)
+                return false;
+
+            if (v1 instanceof Collection && v2 instanceof Collection) {
+                if (!F.eqNotOrdered((Collection)v1, (Collection)v2))
+                    return false;
+            }
+            else {
+                if (v1 instanceof Map && v2 instanceof Map) {
+                    if (!eqNotOrdered((Map)v1, (Map)v2))
+                        return false;
+                }
+                else {
+                    if (!(v1.getClass().isArray() ? BinaryUtils.arrayEq(v1, v2) : Objects.equals(v1, v2)))
+                        return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

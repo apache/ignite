@@ -1762,6 +1762,17 @@ public class GridFunc {
     }
 
     /**
+     * Tests whether specified arguments are equal, or both {@code null}.
+     *
+     * @param o1 Object to compare.
+     * @param o2 Object to compare.
+     * @return Returns {@code true} if the specified arguments are equal, or both {@code null}.
+     */
+    public static boolean eq(@Nullable Object o1, @Nullable Object o2) {
+        return o1 == null ? o2 == null : o2 != null && (o1 == o2 || o1.equals(o2));
+    }
+
+    /**
      * Checks if both collections have equal elements in the same order.
      *
      * @param c1 First collection.
