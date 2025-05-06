@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Encryption configuration.
@@ -104,5 +105,10 @@ public class EncryptionConfiguration implements Serializable {
         this.reencryptionBatchSize = reencryptionBatchSize;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(EncryptionConfiguration.class, this);
     }
 }

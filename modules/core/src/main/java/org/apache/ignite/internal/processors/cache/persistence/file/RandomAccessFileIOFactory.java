@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
@@ -31,5 +32,10 @@ public class RandomAccessFileIOFactory implements FileIOFactory {
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         return new RandomAccessFileIO(file, modes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RandomAccessFileIOFactory.class, this);
     }
 }

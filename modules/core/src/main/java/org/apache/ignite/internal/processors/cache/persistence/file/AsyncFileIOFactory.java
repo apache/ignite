@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * File I/O factory which uses {@link AsynchronousFileChannel} based implementation of FileIO.
@@ -30,6 +32,7 @@ public class AsyncFileIOFactory implements FileIOFactory {
     private static final long serialVersionUID = 0L;
 
     /** Thread local channel future holder. */
+    @GridToStringExclude
     private transient volatile ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = initHolder();
 
     /** {@inheritDoc} */
@@ -53,5 +56,10 @@ public class AsyncFileIOFactory implements FileIOFactory {
                 return new AsyncFileIO.ChannelOpFuture();
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(AsyncFileIOFactory.class, this, "holder", holder.get());
     }
 }
