@@ -148,14 +148,14 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
                 startGrid(
                     i,
                     OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)
+                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo)
                 );
             }
 
             startGrid(
                 oldNodesCnt,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(customConsId, oldNodesCnt), customSnpPath, true, cacheGrpInfo),
+                new ConfigurationClosure(incSnp, consId(oldNodesCnt), customSnpPath, true, cacheGrpInfo),
                 new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
             );
 
@@ -163,7 +163,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             cleanPersistenceDir(true);
 
-            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId(customConsId, 1), customSnpPath));
+            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId(1), customSnpPath));
 
             node.cluster().state(ClusterState.ACTIVE);
 
