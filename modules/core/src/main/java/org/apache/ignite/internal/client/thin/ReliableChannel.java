@@ -926,13 +926,7 @@ final class ReliableChannel implements AutoCloseable {
 
         ClientConnectionException failure = failures.get(0);
 
-        try {
-            failures.subList(1, failures.size()).forEach(failure::addSuppressed);
-        }
-        catch (IllegalArgumentException e) {
-            throw e;
-        }
-
+        failures.subList(1, failures.size()).forEach(failure::addSuppressed);
 
         return failure;
     }
