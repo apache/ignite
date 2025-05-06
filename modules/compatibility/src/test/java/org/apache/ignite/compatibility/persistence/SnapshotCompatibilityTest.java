@@ -142,7 +142,6 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             assumeTrue("https://issues.apache.org/jira/browse/IGNITE-25096", oldNodesCnt == 1);
         }
 
-
         try {
             for (int i = 1; i < oldNodesCnt; ++i) {
                 startGrid(
