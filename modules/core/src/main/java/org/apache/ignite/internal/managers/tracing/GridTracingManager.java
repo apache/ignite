@@ -48,10 +48,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.SpanTags.NODE;
-import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToInt;
-import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToShort;
-import static org.apache.ignite.internal.util.GridClientByteUtils.intToBytes;
-import static org.apache.ignite.internal.util.GridClientByteUtils.shortToBytes;
+import static org.apache.ignite.internal.util.CommonUtils.bytesToInt;
+import static org.apache.ignite.internal.util.CommonUtils.bytesToShort;
+import static org.apache.ignite.internal.util.CommonUtils.intToBytes;
+import static org.apache.ignite.internal.util.CommonUtils.shortToBytes;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /**
