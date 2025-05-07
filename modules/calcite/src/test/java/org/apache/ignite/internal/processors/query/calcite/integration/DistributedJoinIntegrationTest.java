@@ -100,6 +100,36 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
             .check();
     }
 
+    /** */
+    @Test
+    public void testJoinWithBroadcastAggregate() {
+        sql("CREATE TABLE items(id INT, name VARCHAR, PRIMARY KEY(id)) WITH " + atomicity());
+        sql("CREATE TABLE selected_items_part(id INT, val VARCHAR) WITH " + atomicity());
+        sql("CREATE TABLE selected_items_repl(id INT) WITH TEMPLATE=REPLICATED," + atomicity());
+
+        for (int i = 0; i < 1000; i++)
+            sql("INSERT INTO items VALUES (?, ?)", i, "item" + i);
+
+        sql("INSERT INTO selected_items_part VALUES (10, 'val10'), (20, 'val20'), (30, 'val30')");
+        sql("INSERT INTO selected_items_repl VALUES (10), (20), (30)");
+
+        // Broadcast-distributed dynamic parameters.
+        assertQuery("SELECT id, name FROM items WHERE id IN (SELECT * FROM (VALUES (?), (?), (?)))")
+            .withParams(10, 20, 30)
+            .returns(10, "item10").returns(20, "item20").returns(30, "item30")
+            .check();
+
+        // Single-distributed values from table.
+        assertQuery("SELECT id, name FROM items WHERE id IN (SELECT avg(id) FROM selected_items_part GROUP BY val)")
+            .returns(10, "item10").returns(20, "item20").returns(30, "item30")
+            .check();
+
+        // Broadcast-distributed values from table.
+        assertQuery("SELECT id, name FROM items WHERE id IN (SELECT * FROM selected_items_repl)")
+            .returns(10, "item10").returns(20, "item20").returns(30, "item30")
+            .check();
+    }
+
     /** Prepare tables orders and order_items with data. */
     private void prepareTables() {
         sql("CREATE TABLE items (\n" +

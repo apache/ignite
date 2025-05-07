@@ -30,14 +30,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -117,7 +115,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /**
      * @param obj Object to wrap.
      */
-    public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
+    public BinaryObjectBuilderImpl(BinaryObjectEx obj) {
         this(new BinaryBuilderReader(obj), obj.start());
         reader.registerObject(this);
     }
@@ -156,7 +154,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
             }
 
-            this.typeId = ctx.registerClass(cls, true, false).typeId();
+            this.typeId = ctx.registerType(cls, true, false);
 
             registeredType = false;
 
@@ -172,7 +170,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
             Thread curThread = Thread.currentThread();
 
             if (curThread instanceof IgniteThread)
@@ -188,7 +186,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             byte[] arr = writer.array();
 
-            return new BinaryObjectImpl(ctx, arr, 0);
+            return BinaryUtils.binaryObject(ctx, arr, 0);
         }
     }
 
@@ -196,7 +194,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
+    void serializeTo(BinaryWriterEx writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
 
@@ -372,10 +370,11 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 nullFieldVal = true;
         }
         // Detect Enum and Enum array type.
-        else if (newVal instanceof BinaryEnumObjectImpl)
+        else if (BinaryUtils.isBinaryEnumObject(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM;
 
-        else if (newVal.getClass().isArray() && BinaryEnumObjectImpl.class.isAssignableFrom(newVal.getClass().getComponentType()))
+        else if (newVal.getClass().isArray() &&
+            BinaryUtils.isAssignableToBinaryEnumObject(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
         else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))
@@ -384,7 +383,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else if (BinaryUtils.isBinaryEnumArray(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
-        else if (newVal instanceof BinaryArray)
+        else if (BinaryUtils.isBinaryArray(newVal))
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
         else
@@ -587,7 +586,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @return New builder.
      */
     public static BinaryObjectBuilderImpl wrap(BinaryObject obj) {
-        return new BinaryObjectBuilderImpl((BinaryObjectImpl)BinaryUtils.unwrapTemporary(obj));
+        return new BinaryObjectBuilderImpl((BinaryObjectEx)BinaryUtils.unwrapTemporary(obj));
     }
 
     /**

@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -59,25 +60,25 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
      * @param msg Message.
      * @return Reader.
      */
-    protected BinaryReaderExImpl createReader(ClientMessage msg) {
+    protected BinaryReaderEx createReader(ClientMessage msg) {
         BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
-        return new BinaryReaderExImpl(binCtx, stream, ctx.config().getClassLoader(), true);
+        return BinaryUtils.reader(binCtx, stream, ctx.config().getClassLoader(), true);
     }
 
     /**
      * @param cap Capacisty
      * @return Writer.
      */
-    protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(binCtx, BinaryStreams.outputStream(cap), null);
+    protected BinaryWriterEx createWriter(int cap) {
+        return BinaryUtils.writer(binCtx, BinaryStreams.outputStream(cap));
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryReaderExImpl reader = createReader(msg);
+        BinaryReaderEx reader = createReader(msg);
 
         return JdbcRequest.readRequest(reader, protoCtx);
     }
@@ -90,7 +91,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
 
         JdbcResponse res = (JdbcResponse)msg;
 
-        BinaryWriterExImpl writer = createWriter(INIT_CAP);
+        BinaryWriterEx writer = createWriter(INIT_CAP);
 
         res.writeBinary(writer, protoCtx);
 

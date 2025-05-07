@@ -26,9 +26,9 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -46,7 +46,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow)
         throws BinaryObjectException {
         return readObject(reader, binObjAllow, true);
     }
@@ -58,7 +58,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow, boolean keepBinary)
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary)
         throws BinaryObjectException {
         byte type = reader.readByte();
 
@@ -72,7 +72,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
                                               boolean keepBinary) throws BinaryObjectException {
         return readObject(type, reader, binObjAllow, keepBinary, true);
     }
@@ -86,7 +86,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
         boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
@@ -202,7 +202,7 @@ public abstract class SqlListenerUtils {
      * @param createByteArrayCopy Whether create new byte array copy or try to create copy-on-write buffer.
      * @return Either byte[] or {@link JdbcBinaryBuffer}.
      */
-    private static Object readByteArray(BinaryReaderExImpl reader, boolean createByteArrayCopy) {
+    private static Object readByteArray(BinaryReaderEx reader, boolean createByteArrayCopy) {
         if (!createByteArrayCopy && reader.in().hasArray()) {
             int len = reader.in().readInt();
 
@@ -222,7 +222,7 @@ public abstract class SqlListenerUtils {
      * @param binObjAllow Allow to write non plain objects.
      * @throws BinaryObjectException On error.
      */
-    public static void writeObject(BinaryWriterExImpl writer, @Nullable Object obj, boolean binObjAllow)
+    public static void writeObject(BinaryWriterEx writer, @Nullable Object obj, boolean binObjAllow)
         throws BinaryObjectException {
         if (obj == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
@@ -304,7 +304,7 @@ public abstract class SqlListenerUtils {
      * @param writer Writer.
      * @param wrapper stream wrapper
      */
-    private static void writeByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
+    private static void writeByteArray(BinaryWriterEx writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
         int written = writer.writeByteArray(wrapper.inputStream(), wrapper.length());
 
         if (wrapper.length() != -1 && wrapper.length() != written) {
@@ -319,7 +319,7 @@ public abstract class SqlListenerUtils {
      * @param writer Writer.
      * @param blob Blob.
      */
-    private static void writeByteArray(BinaryWriterExImpl writer, Blob blob) throws BinaryObjectException {
+    private static void writeByteArray(BinaryWriterEx writer, Blob blob) throws BinaryObjectException {
         try {
             int written = writer.writeByteArray(blob.getBinaryStream(), (int)blob.length());
 

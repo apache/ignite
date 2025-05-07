@@ -19,7 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -47,10 +47,8 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
     public CacheJavaObjectIndexKey(CacheObject obj, CacheObjectValueContext valCtx) {
         assert obj != null;
 
-        if (obj instanceof BinaryObjectImpl) {
-            ((BinaryObjectImpl)obj).detachAllowed(true);
-            obj = ((BinaryObjectImpl)obj).detach();
-        }
+        if (BinaryUtils.isBinaryObjectImpl(obj))
+            obj = (CacheObject)BinaryUtils.detach(obj);
 
         this.obj = obj;
         this.valCtx = valCtx;
