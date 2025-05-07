@@ -147,8 +147,8 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             for (int i = 1; i <= oldNodesCnt; ++i) {
                 if (i == oldNodesCnt) {
                     startGrid(
-                            oldNodesCnt,
-                            OLD_IGNITE_VERSION,
+                        oldNodesCnt,
+                        OLD_IGNITE_VERSION,
                         oldConfigurationClosure(oldNodesCnt),
                         new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
                     );
