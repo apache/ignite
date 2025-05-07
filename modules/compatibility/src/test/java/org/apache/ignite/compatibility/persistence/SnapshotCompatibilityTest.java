@@ -26,9 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,7 +53,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /**
  *
@@ -83,15 +84,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
 
     /** */
-    private static final String CONSISTENT_ID = UUID.randomUUID().toString();
-
-    /** */
     @Parameterized.Parameter
     public boolean incSnp;
 
     /** */
     @Parameterized.Parameter(1)
-    @Nullable public String consId;
+    public boolean customConsId;
 
     /** */
     @Parameterized.Parameter(2)
@@ -112,23 +110,18 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     private CacheGroupInfo cacheGrpInfo;
 
-    /**
-     * The test is parameterized by whether an incremental snapshot is taken and by consistentId.
-     * Restore incremental snapshot if consistentId is null is fixed in 2.17.0, see here https://issues.apache.org/jira/browse/IGNITE-23222.
-     * Also restoring cache dump and any kind of snapshot is pointless.
-     */
-    @Parameters(name = "incrementalSnp={0}, consistentID={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
+    /** */
+    @Parameterized.Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
 
         for (boolean incSnp : Arrays.asList(true, false))
-            for (String consId : Arrays.asList(CONSISTENT_ID, null))
+            for (boolean customConsId: Arrays.asList(true, false))
                 for (int oldNodesCnt : Arrays.asList(1, 3))
                     for (boolean cacheDump : Arrays.asList(true, false))
                         for (boolean customSnpPath : Arrays.asList(true, false))
                             for (boolean testCacheGrp : Arrays.asList(true, false))
-                                if ((!incSnp || !cacheDump) && (!incSnp || consId != null))
-                                    data.add(new Object[]{incSnp, consId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+                                data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
 
         return data;
     }
@@ -142,19 +135,29 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
+        if (incSnp) {
+            assumeFalse("Incremental snapshots for cache dump not supported", cacheDump);
+
+            assumeTrue("Incremental snapshots require same consistentID", customConsId);
+
+            assumeTrue("https://issues.apache.org/jira/browse/IGNITE-25096", oldNodesCnt == 1);
+        }
+
         try {
-            startGrid(
-                oldNodesCnt,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId, customSnpPath, true, cacheGrpInfo),
-                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
-            );
+            for (int i = 1; i <= oldNodesCnt; ++i) {
+                startGrid(
+                    i,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
+                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
+                );
+            }
 
             stopAllGrids();
 
             cleanPersistenceDir(true);
 
-            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId, customSnpPath));
+            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId(1), customSnpPath));
 
             node.cluster().state(ClusterState.ACTIVE);
 
@@ -272,6 +275,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         new ConfigurationClosure(incSnp, consId, customSnpPath, false, cacheGrpInfo).apply(cfg);
 
         return cfg;
+    }
+
+    /** */
+    private String consId(int nodeIdx) {
+        return customConsId ? "node-" + nodeIdx : null;
     }
 
     /** */
