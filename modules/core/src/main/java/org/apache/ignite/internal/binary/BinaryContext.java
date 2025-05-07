@@ -648,13 +648,15 @@ public class BinaryContext {
     /**
      * Registers binary type locally.
      *
-     * @param binaryType Binary type to register.
+     * @param ctx BinaryContext.
+     * @param meta BinaryMetadata.
      * @param failIfUnregistered Whether to fail when not registered.
      * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
      */
-    public void registerClassLocally(BinaryType binaryType, boolean failIfUnregistered, byte platformId) {
-        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
-        registerUserClassName(binaryType.typeId(), binaryType.typeName(), failIfUnregistered, true, platformId);
+    public void registerClassLocally(BinaryContext ctx, BinaryMetadata meta, boolean failIfUnregistered, byte platformId) {
+        metaHnd.addMetaLocally(meta.typeId(), ctx, meta, failIfUnregistered);
+
+        registerUserClassName(meta.typeId(), meta.typeName(), failIfUnregistered, true, platformId);
     }
 
     /**
@@ -887,9 +889,9 @@ public class BinaryContext {
 
             if (registerMeta) {
                 if (onlyLocReg)
-                    metaHnd.addMetaLocally(typeId, regDesc.metadata(false).wrap(this), false);
+                    metaHnd.addMetaLocally(typeId, this, regDesc.metadata(false), false);
                 else
-                    metaHnd.addMeta(typeId, regDesc.metadata(true).wrap(this), false);
+                    metaHnd.addMeta(typeId, this, regDesc.metadata(true), false);
             }
 
             descByCls.put(cls, regDesc);
@@ -1225,8 +1227,9 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id,
-            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap).wrap(this), false);
+        BinaryMetadata meta = new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap);
+
+        metaHnd.addMeta(id, this, meta, false);
     }
 
     /**
@@ -1361,6 +1364,16 @@ public class BinaryContext {
     }
 
     /**
+     * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Meta data.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata0(typeId, schemaId) : null;
+    }
+
+    /**
      * Get affinity key field name for type. First consult to predefined configuration, then delegate to metadata.
      *
      * @param typeId Type ID.
@@ -1396,7 +1409,7 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
-        metaHnd.addMeta(typeId, meta.wrap(this), failIfUnregistered);
+        metaHnd.addMeta(typeId, this, meta, failIfUnregistered);
     }
 
     /**
