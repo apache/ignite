@@ -628,7 +628,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             SnapshotFileTree sft = snapshotFileTree(node0, snpName, snpPath);
 
-            if (!sft.nodeStorage().exists())
+            if (!sft.defaultNodeStorage().exists())
                 continue;
 
             for (File cacheDir : sft.existingCacheDirsWithoutMeta()) {

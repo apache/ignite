@@ -225,6 +225,6 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         check.accept(ft.binaryMeta());
         check.accept(ft.wal());
         check.accept(ft.walArchive());
-        check.accept(ft.nodeStorage());
+        check.accept(ft.defaultNodeStorage());
     }
 }

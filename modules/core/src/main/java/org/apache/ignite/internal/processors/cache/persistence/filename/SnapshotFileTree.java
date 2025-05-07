@@ -194,7 +194,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Dump lock file.
      */
     public File dumpLock() {
-        return new File(nodeStorage(), DUMP_LOCK);
+        return new File(defaultNodeStorage(), DUMP_LOCK);
     }
 
     /**
@@ -417,7 +417,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private NodeFileTree tempFileTree(GridKernalContext ctx) {
         NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
-        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.defaultNodeStorage()), name), folderName());
 
         Map<String, File> snpTmpDrStorages = new HashMap<>();
 

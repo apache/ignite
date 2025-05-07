@@ -674,7 +674,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         SnapshotFileTree sft = snapshotFileTree(srv, SNAPSHOT_NAME);
 
         String failingFilePath = sft.partitionFile(dfltCacheCfg, dfltCacheCfg.getAffinity().partitions() / 2).getAbsolutePath()
-            .replace(sft.nodeStorage().getAbsolutePath(), "");
+            .replace(sft.defaultNodeStorage().getAbsolutePath(), "");
 
         grid(2).context().cache().context().snapshotMgr().ioFactory(
             new CustomFileIOFactory(new RandomAccessFileIOFactory(),

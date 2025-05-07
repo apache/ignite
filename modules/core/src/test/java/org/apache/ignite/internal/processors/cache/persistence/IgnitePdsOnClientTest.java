@@ -67,7 +67,7 @@ public class IgnitePdsOnClientTest extends GridCommonAbstractTest {
             assertEquals((Integer)1, cache.get(1));
 
             // Checking there are no files created on client node start.
-            assertFalse(client.context().pdsFolderResolver().fileTree().nodeStorage().exists());
+            assertFalse(client.context().pdsFolderResolver().fileTree().defaultNodeStorage().exists());
         }
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,10 +38,8 @@ public class FileTreeUtils {
      * @param log Logger.
      */
     public static void createCacheStorages(NodeFileTree ft, IgniteLogger log) throws IgniteCheckedException {
-        createAndCheck(ft.nodeStorage(), "page store work directory", log);
-
-        for (Map.Entry<String, File> e : ft.dataRegionStorages().entrySet())
-            createAndCheck(e.getValue(), "page store work directory [dataRegion=" + e.getKey() + ']', log);
+        for (File ns : ft.nodeStorages())
+            createAndCheck(ns, "page store work directory", log);
     }
 
     /**
@@ -57,7 +54,7 @@ public class FileTreeUtils {
 
         removeTmpDir(tmpFt.root(), err, log);
 
-        for (File tmpDrStorage : tmpFt.dataRegionStorages().values())
+        for (File tmpDrStorage : tmpFt.nodeStorages())
             removeTmpDir(tmpDrStorage.getParentFile(), err, log);
     }
 

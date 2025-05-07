@@ -360,7 +360,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
                 mem += metrics.getTotalAllocatedSize();
 
-                File nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().fileTree().nodeStorage();
+                File nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().fileTree().defaultNodeStorage();
 
                 if (nodeFolder != null)
                     pers += FileUtils.sizeOfDirectory(nodeFolder);

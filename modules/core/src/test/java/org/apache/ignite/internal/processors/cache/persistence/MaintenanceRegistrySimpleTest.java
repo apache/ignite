@@ -71,7 +71,7 @@ public class MaintenanceRegistrySimpleTest {
 
     /** */
     private void cleanMaintenanceRegistryFile() throws IgniteCheckedException {
-        for (File f : fileTree().nodeStorage().listFiles()) {
+        for (File f : fileTree().defaultNodeStorage().listFiles()) {
             if (f.getName().endsWith(".mntc"))
                 f.delete();
         }
@@ -81,7 +81,7 @@ public class MaintenanceRegistrySimpleTest {
     private NodeFileTree fileTree() throws IgniteCheckedException {
         NodeFileTree ft = new NodeFileTree(new File(U.defaultWorkDirectory()), "test");
 
-        ft.nodeStorage().mkdirs();
+        ft.defaultNodeStorage().mkdirs();
 
         return ft;
     }

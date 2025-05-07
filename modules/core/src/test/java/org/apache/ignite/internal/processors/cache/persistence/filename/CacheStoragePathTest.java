@@ -44,10 +44,10 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
- * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePath(String...)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
-public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
+public class CacheStoragePathTest extends GridCommonAbstractTest {
     /** Custom storage path for default data region. */
     private static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
 
@@ -94,11 +94,12 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.getDefaultDataRegionConfiguration().setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH)).setPersistenceEnabled(true);
+        dsCfg.setExtraStoragePathes(storagePath(DEFAULT_DR_STORAGE_PATH), storagePath(CUSTOM_STORAGE_PATH));
+
+        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
         dsCfg.setDataRegionConfigurations(
             new DataRegionConfiguration().setName(DR_WITH_STORAGE)
-                .setStoragePath(storagePath(CUSTOM_STORAGE_PATH))
                 .setPersistenceEnabled(true),
             new DataRegionConfiguration()
                 .setName(DR_WITH_DFLT_STORAGE)
@@ -170,7 +171,7 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
 
         checkFileTrees(fts);
 
-        fts.forEach(ft -> ft.dataRegionStorages().values().forEach(U::delete));
+        fts.forEach(ft -> ft.nodeStorages().forEach(U::delete));
 
         U.delete(F.first(fts).db());
 

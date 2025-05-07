@@ -575,7 +575,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         AtomicReference<File> cachePartFile = new AtomicReference<>();
         AtomicReference<File> defragCachePartFile = new AtomicReference<>();
 
-        Files.walkFileTree(ft.nodeStorage().toPath(), new FileVisitor<Path>() {
+        Files.walkFileTree(ft.defaultNodeStorage().toPath(), new FileVisitor<Path>() {
             @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
                 return FileVisitResult.CONTINUE;
             }

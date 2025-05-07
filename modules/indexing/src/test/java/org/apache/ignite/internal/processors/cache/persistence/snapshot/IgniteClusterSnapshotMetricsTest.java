@@ -186,7 +186,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
 
         String failingFilePath = sft.partitionFile(dfltCacheCfg, primaries[0]).getAbsolutePath()
-            .replace(sft.nodeStorage().getAbsolutePath(), "");
+            .replace(sft.defaultNodeStorage().getAbsolutePath(), "");
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
@@ -286,7 +286,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         assertEquals(-1, processedSize.value());
 
         // Calculate transfer rate limit.
-        long rate = FileUtils.sizeOfDirectory(ignite.context().pdsFolderResolver().fileTree().nodeStorage()) / 5;
+        long rate = FileUtils.sizeOfDirectory(ignite.context().pdsFolderResolver().fileTree().defaultNodeStorage()) / 5;
 
         // Limit snapshot transfer rate.
         DistributedChangeableProperty<Serializable> rateProp =

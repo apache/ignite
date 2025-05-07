@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -240,8 +241,8 @@ public class NodeFileTree extends SharedFileTree {
     /** Path to the directory containing binary metadata. */
     private final File binaryMeta;
 
-    /** Path to the storage directory. */
-    private final File nodeStorage;
+    /** Path to the default storage directory. */
+    private final File dfltNodeStorage;
 
     /**
      * Key is the name of data region({@link DataRegionConfiguration#getName()}), value is node storage for this data region.
@@ -250,12 +251,12 @@ public class NodeFileTree extends SharedFileTree {
     protected final Map<String, File> drStorages;
 
     /**
-     * Name of the default data region.
-     * @see DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME
-     * @see DataStorageConfiguration#setDefaultDataRegionConfiguration(DataRegionConfiguration)
-     * @see DataRegionConfiguration#setName(String)
+     * All node storages, including default.
+     * @see DataStorageConfiguration#setExtraStoragePathes(String...)
+     * @see CacheConfiguration#setStoragePath(String...)
+     * @see CacheConfiguration#setIndexPath(String)
      */
-    private final String dfltDrName;
+    private final Set<File> nodeStorages;
 
     /** Path to the checkpoint directory. */
     private final File checkpoint;
@@ -290,13 +291,13 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
-        nodeStorage = rootRelative(DB_DIR);
-        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+        dfltNodeStorage = rootRelative(DB_DIR);
+        checkpoint = new File(dfltNodeStorage, CHECKPOINT_DIR);
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         drStorages = Collections.emptyMap();
+        nodeStorages = Collections.emptySet();
     }
 
     /**
@@ -342,38 +343,46 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
+            dfltNodeStorage = dsCfg.getStoragePath() == null
                 ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
-            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+            checkpoint = new File(dfltNodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
-            dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
         }
         else {
-            nodeStorage = rootRelative(DB_DIR);
-            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+            dfltNodeStorage = rootRelative(DB_DIR);
+            checkpoint = new File(dfltNodeStorage, CHECKPOINT_DIR);
             wal = rootRelative(DFLT_WAL_PATH);
             walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-            dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         }
 
-        drStorages = dataRegionStorages(
-            dsCfg,
-            (drName, drStoragePath) -> resolveDirectory(Path.of(drStoragePath, DB_DIR).toString())
-        );
+        nodeStorages = F.isEmpty(dsCfg.getExtraStoragePathes())
+            ? Collections.emptySet()
+            : Arrays.stream(dsCfg.getExtraStoragePathes())
+                .map(sp -> resolveDirectory(Path.of(sp, DB_DIR).toString()))
+                .collect(Collectors.toSet());
+
+        assert nodeStorages.size() == dsCfg.getExtraStoragePathes().length : "Duplicate entries in extraStoragePathes";
+
+        nodeStorages.add(dfltNodeStorage);
     }
 
     /** @return Node storage directory. */
-    public File nodeStorage() {
-        return nodeStorage;
+    public File defaultNodeStorage() {
+        return dfltNodeStorage;
     }
 
     /** @return Storages for data regions. */
     public Map<String, File> dataRegionStorages() {
         return drStorages;
+    }
+
+    /** @return All storage for node. */
+    public Set<File> nodeStorages() {
+        return nodeStorages;
     }
 
     /** @return Folder name. */
@@ -451,7 +460,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Path to the directories for temp snapshot files. */
     public List<File> snapshotsTempRoots() {
-        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream())
+        return nodeStorages.stream()
             .map(this::snapshotTempRoot)
             .collect(Collectors.toList());
     }
@@ -603,7 +612,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Path to the metastorage directory. */
     public File metaStorage() {
-        return new File(nodeStorage, METASTORAGE_DIR_NAME);
+        return new File(dfltNodeStorage, METASTORAGE_DIR_NAME);
     }
 
     /**
@@ -777,7 +786,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Data region storage.
      */
     private File dataRegionStorage(@Nullable String drName) {
-        return drStorages.getOrDefault(drName == null ? dfltDrName : drName, nodeStorage);
+        return drStorages.getOrDefault(drName == null ? dfltDrName : drName, dfltNodeStorage);
     }
 
     /**
@@ -852,12 +861,12 @@ public class NodeFileTree extends SharedFileTree {
      * @return All files from all {@link #drStorages} matching the filter.
      */
     private Stream<File> filesInStorages(FileFilter filter) {
-        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream()).flatMap(drStorage -> {
-            File[] drStorageFiles = drStorage.listFiles(filter);
+        return nodeStorages.stream().flatMap(nodeStorage -> {
+            File[] files = nodeStorage.listFiles(filter);
 
-            return drStorageFiles == null
+            return files == null
                 ? Stream.empty()
-                : Arrays.stream(drStorageFiles);
+                : Arrays.stream(files);
         });
     }
 
