@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -895,6 +896,22 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int typeId(String fileName) {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
+    }
+
+    /**
+     * @param dsCfg Data storage configuration.
+     * @return List of all node storages.
+     */
+    public static List<String> nodeStorages(DataStorageConfiguration dsCfg) {
+        List<String> ns = new ArrayList<>();
+
+        if (!F.isEmpty(dsCfg.getStoragePath()))
+            ns.add(dsCfg.getStoragePath());
+
+        if (!F.isEmpty(dsCfg.getExtraStoragePathes()))
+            Collections.addAll(ns, dsCfg.getExtraStoragePathes());
+
+        return ns;
     }
 
     /** {@inheritDoc} */

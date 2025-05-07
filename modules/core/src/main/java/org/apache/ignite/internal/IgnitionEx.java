@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
@@ -1943,17 +1944,28 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            if (cfg.getDataStorageConfiguration() != null &&
-                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
-                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
-                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
-                    "but not both.");
+            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+            if (dsCfg != null) {
+                if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null) {
+                    throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                        "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                        "but not both.");
+                }
+
+                if (F.isEmpty(dsCfg.getStoragePath()) && !F.isEmpty(dsCfg.getExtraStoragePathes()))
+                    throw new IgniteCheckedException("Extra storage pathes can be used only if storagePath set.");
+
+                List<String> nodeStorages = NodeFileTree.nodeStorages(dsCfg);
+
+                if (nodeStorages.size() != new HashSet<>(nodeStorages).size())
+                    throw new IgniteCheckedException("Data storage configuration constains duplicates: " + nodeStorages);
             }
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
                 convertLegacyDataStorageConfigurationToNew(cfg);
 
-            if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
+            if (!cfg.isClientMode() && dsCfg == null)
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
