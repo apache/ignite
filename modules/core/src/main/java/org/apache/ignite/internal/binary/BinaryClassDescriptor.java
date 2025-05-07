@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 /**
  * Binary class descriptor.
  */
-public class BinaryClassDescriptor {
+class BinaryClassDescriptor {
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -769,7 +769,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case OBJECT_ARR:
-                    if (obj instanceof BinaryArray)
+                    if (BinaryUtils.isBinaryArray(obj))
                         writer.writeBinaryArray(((BinaryArray)obj));
                     else
                         writer.writeObjectArray((Object[])obj);
@@ -797,7 +797,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case ENUM_ARR:
-                    if (obj instanceof BinaryArray)
+                    if (BinaryUtils.isBinaryArray(obj))
                         writer.writeBinaryArray(((BinaryArray)obj));
                     else
                         writer.doWriteEnumArray((Object[])obj);

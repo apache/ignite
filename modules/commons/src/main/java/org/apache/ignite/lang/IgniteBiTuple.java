@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +74,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      * @return New tuple with swapped values.
      */
     public IgniteBiTuple<V2, V1> swap() {
-        return CF.t(val2, val1);
+        return F.t(val2, val1);
     }
 
     /**

@@ -83,6 +83,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition topology.
@@ -1302,7 +1303,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionState state,
         GridDhtPartitionState... states
     ) {
-        Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
+        Collection<UUID> allIds = nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
 
         lock.readLock().lock();
 
@@ -2143,7 +2144,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return;
 
         if (FAST_DIFF_REBUILD) {
-            Collection<UUID> affNodes = F.nodeIds(ctx.discovery().cacheGroupAffinityNodes(grp.groupId(),
+            Collection<UUID> affNodes = nodeIds(ctx.discovery().cacheGroupAffinityNodes(grp.groupId(),
                 affAssignment.topologyVersion()));
 
             for (Map.Entry<Integer, Set<UUID>> e : diffFromAffinity.entrySet()) {
@@ -2578,10 +2579,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 continue;
 
             List<ClusterNode> nodes = nodes(p, aff.topologyVersion(), OWNING);
-            Collection<UUID> nodeIds = F.nodeIds(nodes);
+            Collection<UUID> nodeIds = nodeIds(nodes);
 
             // If all affinity nodes are owners, then evict partition from local node.
-            if (nodeIds.containsAll(F.nodeIds(affNodes))) {
+            if (nodeIds.containsAll(nodeIds(affNodes))) {
                 GridDhtPartitionState state0 = part.state();
 
                 part.rent();

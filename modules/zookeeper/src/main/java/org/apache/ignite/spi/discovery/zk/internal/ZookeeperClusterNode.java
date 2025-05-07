@@ -41,6 +41,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Zookeeper Cluster Node.
@@ -373,7 +374,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return F.eqNodes(this, obj);
+        return eqNodes(this, obj);
     }
 
     /** {@inheritDoc} */

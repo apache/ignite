@@ -29,9 +29,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.IgniteServicesImpl;
-import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -201,7 +201,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_SERVICES: {
@@ -209,7 +209,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 PlatformUtils.writeNullableCollection(writer, svcs,
                     new PlatformWriterClosure<Service>() {
-                        @Override public void write(BinaryRawWriterEx writer, Service svc) {
+                        @Override public void write(BinaryWriterEx writer, Service svc) {
                             writer.writeLong(((PlatformService)svc).pointer());
                         }
                     },
@@ -268,7 +268,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, PlatformTarget arg,
-        BinaryReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        BinaryReaderEx reader, BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_INVOKE: {
                 assert arg != null;
@@ -308,13 +308,13 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_DESCRIPTORS: {
                 Collection<ServiceDescriptor> descs = services.serviceDescriptors();
 
                 PlatformUtils.writeCollection(writer, descs, new PlatformWriterClosure<ServiceDescriptor>() {
-                    @Override public void write(BinaryRawWriterEx writer, ServiceDescriptor d) {
+                    @Override public void write(BinaryWriterEx writer, ServiceDescriptor d) {
                         writer.writeString(d.name());
                         writer.writeString(d.cacheName());
                         writer.writeInt(d.maxPerNodeCount());
@@ -330,7 +330,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                         Map<UUID, Integer> top = d.topologySnapshot();
 
                         PlatformUtils.writeMap(writer, top, new PlatformWriterBiClosure<UUID, Integer>() {
-                            @Override public void write(BinaryRawWriterEx writer, UUID key, Integer val) {
+                            @Override public void write(BinaryWriterEx writer, UUID key, Integer val) {
                                 writer.writeUuid(key);
                                 writer.writeInt(val);
                             }
@@ -638,7 +638,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
-                if (!BinaryArray.useBinaryArrays())
+                if (!BinaryUtils.useBinaryArrays())
                     convertArrayArgs(args, mtd);
 
                 return ((GridServiceProxy)proxy).invokeMethod(mtd, args, callAttrs);
@@ -778,7 +778,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      */
     private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryWriterEx writer, Object obj, Throwable err) {
             writeDeploymentResult(writer, err);
         }
 
@@ -794,7 +794,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param err Error.
       */
-    private static void writeDeploymentResult(BinaryRawWriterEx writer, Throwable err) {
+    private static void writeDeploymentResult(BinaryWriterEx writer, Throwable err) {
         PlatformUtils.writeInvocationResult(writer, null, err);
 
         Collection<ServiceConfiguration> failedCfgs = null;
@@ -804,7 +804,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         // write a collection of failed service configurations
         PlatformUtils.writeNullableCollection(writer, failedCfgs, new PlatformWriterClosure<ServiceConfiguration>() {
-            @Override public void write(BinaryRawWriterEx writer, ServiceConfiguration svcCfg) {
+            @Override public void write(BinaryWriterEx writer, ServiceConfiguration svcCfg) {
                 writeFailedConfiguration(writer, svcCfg);
             }
         });
@@ -816,7 +816,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param w Writer
      * @param svcCfg Service configuration
      */
-    private static void writeFailedConfiguration(BinaryRawWriterEx w, ServiceConfiguration svcCfg) {
+    private static void writeFailedConfiguration(BinaryWriterEx w, ServiceConfiguration svcCfg) {
         Object dotnetSvc = null;
         Object dotnetFilter = null;
         Object dotnetInterceptors = null;

@@ -22,15 +22,16 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -62,9 +63,9 @@ class BinaryBuilderReader implements BinaryPositionReadable {
      *
      * @param objImpl Binary object
      */
-    BinaryBuilderReader(BinaryObjectImpl objImpl) {
+    BinaryBuilderReader(BinaryObjectEx objImpl) {
         ctx = objImpl.context();
-        arr = objImpl.array();
+        arr = objImpl.bytes();
         pos = objImpl.start();
 
         reader = BinaryUtils.reader(ctx,
@@ -89,7 +90,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         reader = BinaryUtils.reader(ctx,
             BinaryStreams.inputStream(arr, start),
             null,
-            other.reader.handles(),
+            other.reader,
             false);
 
         this.objMap = other.objMap;
@@ -492,7 +493,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readIntPositioned(pos + 4 + size);
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
+                BinaryObject binaryObj = BinaryUtils.binaryObject(ctx, arr, pos + 4 + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }
@@ -844,7 +845,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos - 4 - size + start);
+                BinaryObject binaryObj = BinaryUtils.binaryObject(ctx, arr, pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }
@@ -941,7 +942,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

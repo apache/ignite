@@ -62,9 +62,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
@@ -442,7 +442,7 @@ public class IgniteMock implements IgniteEx {
 
         if (ctx == null) {
             /** {@inheritDoc} */
-            ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), configuration(), new NullLogger()) {
+            ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), configuration(), new NullLogger()) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }

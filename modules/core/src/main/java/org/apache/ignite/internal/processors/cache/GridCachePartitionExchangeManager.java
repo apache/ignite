@@ -169,6 +169,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.remot
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition exchange manager.
@@ -1307,7 +1308,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (log.isTraceEnabled())
-            log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", cacheGroups=" + grps +
+            log.trace("Sending all partitions [nodeIds=" + nodeIds(nodes) + ", cacheGroups=" + grps +
                 ", msg=" + m + ']');
 
         time = System.currentTimeMillis();
@@ -1338,7 +1339,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (latency > 50 || log.isDebugEnabled()) {
                 log.info("Finished sending full message [msgTopVer=" + msgTopVer + ", groups=" + grps +
-                    (failedNodes.isEmpty() ? "" : (", skipped=" + U.nodeIds(failedNodes))) +
+                    (failedNodes.isEmpty() ? "" : (", skipped=" + nodeIds(failedNodes))) +
                     ", latency=" + latency + "ms]");
             }
         }

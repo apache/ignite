@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +38,7 @@ public class JdbcClientInfoAwareRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.writeBinary(writer, protoCtx);

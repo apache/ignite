@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * JDBC primary key metadata.
@@ -90,7 +90,7 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeString(schemaName);

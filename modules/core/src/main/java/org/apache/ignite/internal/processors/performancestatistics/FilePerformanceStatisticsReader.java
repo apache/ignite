@@ -25,6 +25,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.ByteBuffer.allocateDirect;
@@ -55,6 +57,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_SCHEMA;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
@@ -86,7 +90,7 @@ public class FilePerformanceStatisticsReader {
         "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /** File name pattern. */
-    private static final Pattern FILE_PATTERN = Pattern.compile("^node-(" + UUID_STR_PATTERN + ")(-\\d+)?.prf$");
+    private static final Pattern FILE_NODE_ID_PATTERN = Pattern.compile("^node-(" + UUID_STR_PATTERN + ")[^.]*\\.prf$");
 
     /** No-op handler. */
     private static final PerformanceStatisticsHandler[] NOOP_HANDLER = {};
@@ -111,6 +115,9 @@ public class FilePerformanceStatisticsReader {
 
     /** Forward read mode. */
     private ForwardRead forwardRead;
+
+    /** Reads system view records. */
+    private SystemViewEntry sysViewEntry;
 
     /** @param handlers Handlers to process deserialized operations. */
     public FilePerformanceStatisticsReader(PerformanceStatisticsHandler... handlers) {
@@ -284,6 +291,38 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler hnd : curHnd)
                 hnd.query(nodeId, qryType, text.str, id, startTime, duration, success);
+
+            return true;
+        }
+        else if (opType == SYSTEM_VIEW_SCHEMA) {
+            ForwardableString viewName = readString(buf);
+            if (viewName == null)
+                return false;
+
+            ForwardableString walkerName = readString(buf);
+            if (walkerName == null)
+                return false;
+
+            assert viewName.str != null : "Views are written by single thread, no string cache misses are possible";
+            assert walkerName.str != null : "Views are written by single thread, no string cache misses are possible";
+
+            try {
+                sysViewEntry = new SystemViewEntry(viewName.str, walkerName.str);
+            }
+            catch (ReflectiveOperationException e) {
+                throw new IgniteException("Could not find walker: " + walkerName);
+            }
+
+            return true;
+        }
+        else if (opType == SYSTEM_VIEW_ROW) {
+            List<Object> row = sysViewEntry.nextRow();
+
+            if (row == null)
+                return false;
+
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.systemView(nodeId, sysViewEntry.viewName, sysViewEntry.schema, row);
 
             return true;
         }
@@ -512,7 +551,7 @@ public class FilePerformanceStatisticsReader {
 
     /** @return UUID node of file. {@code Null} if this is not a statistics file. */
     @Nullable private static UUID nodeId(File file) {
-        Matcher matcher = FILE_PATTERN.matcher(file.getName());
+        Matcher matcher = FILE_NODE_ID_PATTERN.matcher(file.getName());
 
         if (matcher.matches())
             return UUID.fromString(matcher.group(1));
@@ -619,6 +658,159 @@ public class FilePerformanceStatisticsReader {
             this.curRecPos = curRecPos;
             this.nextRecPos = nextRecPos;
             this.bufPos = bufPos;
+        }
+    }
+
+    /** Reads views from buf. */
+    private class SystemViewEntry {
+        /** */
+        private final String viewName;
+
+        /** Attribute names of system view. */
+        private final List<String> schema;
+
+        /**  */
+        private final SystemViewRowAttributeWalker<?> walker;
+
+        /**  */
+        private final RowReaderVisitor rowVisitor;
+
+        /**
+         * @param viewName System view name.
+         * @param walkerName Name of walker to visist system view attributes.
+         */
+        public SystemViewEntry(String viewName, String walkerName) throws ReflectiveOperationException {
+            walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
+
+            this.viewName = viewName;
+
+            List<String> schemaList = new ArrayList<>();
+
+            walker.visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
+                @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                    schemaList.add(name);
+                }
+            });
+
+            schema = Collections.unmodifiableList(schemaList);
+
+            rowVisitor = new RowReaderVisitor(schema.size());
+        }
+
+        /**
+         * @return System view row.
+         */
+        public List<Object> nextRow() {
+            rowVisitor.clear();
+            walker.visitAll(rowVisitor);
+            return rowVisitor.row();
+        }
+    }
+
+    /** */
+    private class RowReaderVisitor implements SystemViewRowAttributeWalker.AttributeVisitor {
+        /** Number of system view attributes. */
+        private final int size;
+
+        /** Row. */
+        private List<Object> row;
+
+        /** Not enough bytes flag. */
+        private boolean notEnoughBytes;
+
+        /**
+         * @param size Size of row.
+         */
+        public RowReaderVisitor(int size) {
+            this.size = size;
+
+            row = new ArrayList<>(size);
+        }
+
+        /**  */
+        public List<Object> row() {
+            if (notEnoughBytes)
+                return null;
+
+            return Collections.unmodifiableList(row);
+        }
+
+        /** */
+        public void clear() {
+            row = new ArrayList<>(size);
+
+            notEnoughBytes = false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+            if (notEnoughBytes)
+                return;
+
+            if (clazz == int.class) {
+                if (buf.remaining() < 4) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.getInt());
+            }
+            else if (clazz == byte.class) {
+                if (buf.remaining() < 1) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.get());
+            }
+            else if (clazz == short.class) {
+                if (buf.remaining() < 2) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.getShort());
+            }
+            else if (clazz == long.class) {
+                if (buf.remaining() < 8) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.getLong());
+            }
+            else if (clazz == float.class) {
+                if (buf.remaining() < 4) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.getFloat());
+            }
+            else if (clazz == double.class) {
+                if (buf.remaining() < 8) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.getDouble());
+            }
+            else if (clazz == char.class) {
+                if (buf.remaining() < 2) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.getChar());
+            }
+            else if (clazz == boolean.class) {
+                if (buf.remaining() < 1) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(buf.get() != 0);
+            }
+            else {
+                ForwardableString str = readString(buf);
+                if (str == null) {
+                    notEnoughBytes = true;
+                    return;
+                }
+                row.add(str.str);
+            }
         }
     }
 }

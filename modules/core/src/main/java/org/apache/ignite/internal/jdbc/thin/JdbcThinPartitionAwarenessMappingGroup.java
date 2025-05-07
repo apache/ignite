@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcProtocolContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
 import org.jetbrains.annotations.NotNull;
@@ -110,7 +110,7 @@ public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinaryliza
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     )
         throws BinaryObjectException {

@@ -24,9 +24,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
@@ -117,7 +115,7 @@ public class ClientBinary implements IgniteBinary {
 
         int typeId = ctx.typeId(typeName);
 
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ord);
+        return BinaryUtils.binaryEnum(ord, ctx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -149,7 +147,7 @@ public class ClientBinary implements IgniteBinary {
                 name
             ));
 
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ordinal);
+        return BinaryUtils.binaryEnum(ordinal, ctx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -168,9 +166,9 @@ public class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
-        BinaryClassDescriptor clsDesc = binaryContext().registerClass(cls, true, false);
+        int typeId = binaryContext().registerType(cls, true, false);
 
-        return binaryContext().metadata(clsDesc.typeId());
+        return binaryContext().metadata(typeId);
     }
 
     /** @return Binary context. */

@@ -29,12 +29,11 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -358,7 +357,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -384,7 +383,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, BinaryStreams.outputStream(8), null, null);
+        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(8), null);
 
         byte clientType = reader.readByte();
 

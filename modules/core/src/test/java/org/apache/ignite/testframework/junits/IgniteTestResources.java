@@ -28,9 +28,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -251,7 +251,7 @@ public class IgniteTestResources {
 
         marsh.setContext(new MarshallerContextTestImpl());
         marsh.setBinaryContext(
-            new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger()),
+            new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), new NullLogger()),
             new IgniteConfiguration()
         );
 

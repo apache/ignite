@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -256,7 +256,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     @Override public void processInStreamOutStream(
         int type,
         BinaryReaderEx reader,
-        BinaryRawWriterEx writer
+        BinaryWriterEx writer
     ) throws IgniteCheckedException {
         switch (type) {
             case OP_START: {
@@ -282,7 +282,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();
@@ -308,7 +308,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 Collection<Transaction> activeTxs = txs.localActiveTransactions();
 
                 PlatformUtils.writeCollection(writer, activeTxs, new PlatformWriterClosure<Transaction>() {
-                    @Override public void write(BinaryRawWriterEx writer, Transaction tx) {
+                    @Override public void write(BinaryWriterEx writer, Transaction tx) {
                         writer.writeLong(registerTx(tx));
 
                         writer.writeInt(tx.concurrency().ordinal());

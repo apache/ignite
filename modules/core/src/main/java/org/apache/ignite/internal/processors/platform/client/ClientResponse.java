@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
@@ -71,7 +71,7 @@ public class ClientResponse extends ClientListenerResponse implements ClientOutg
      * @param writer Writer.
      * @param affinityVer Affinity version.
      */
-    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer,
+    public void encode(ClientConnectionContext ctx, BinaryWriterEx writer,
         ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
 
@@ -106,7 +106,7 @@ public class ClientResponse extends ClientListenerResponse implements ClientOutg
      * @param ctx Connection context.
      * @param writer Writer.
      */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         encode(ctx, writer, ctx.checkAffinityTopologyVersion());
     }
 

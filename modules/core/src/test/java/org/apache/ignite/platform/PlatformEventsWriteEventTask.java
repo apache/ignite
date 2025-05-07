@@ -36,7 +36,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -92,7 +92,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
 
             try (PlatformMemory mem = ctx.memory().get(ptr)) {
                 PlatformOutputStream out = mem.output();
-                BinaryRawWriterEx writer = ctx.writer(out);
+                BinaryWriterEx writer = ctx.writer(out);
 
                 int evtType = EventType.EVT_NODE_FAILED;
                 String msg = "msg";

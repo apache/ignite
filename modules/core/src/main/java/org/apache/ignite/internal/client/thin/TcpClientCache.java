@@ -55,9 +55,9 @@ import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -1254,7 +1254,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
             BinaryOutputStream out = payloadCh.out();
 
-            try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+            try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
                 w.writeInt(qry.getPageSize());
                 w.writeBoolean(qry.isLocal());
                 w.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());

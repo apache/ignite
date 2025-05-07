@@ -29,8 +29,8 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -128,7 +128,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriterEx rawWriter = (BinaryRawWriterEx)writer.rawWriter();
+        BinaryWriterEx rawWriter = (BinaryWriterEx)writer.rawWriter();
 
         rawWriter.writeInt(factoryTyp);
         rawWriter.writeString(clsName);

@@ -21,6 +21,8 @@ import java.util.Objects;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
+
 /**
  * Compares fiels in serialized form when possible.
  */
@@ -246,7 +248,7 @@ class BinarySerializedFieldComparator {
                 Object val1 = c1.currentField();
                 Object val2 = c2.currentField();
 
-                return (F.isArray(val1) || val1 instanceof BinaryArray) ? F.arrayEq(val1, val2) : Objects.equals(val1, val2);
+                return (F.isArray(val1) || BinaryUtils.isBinaryArray(val1)) ? arrayEq(val1, val2) : Objects.equals(val1, val2);
         }
     }
 

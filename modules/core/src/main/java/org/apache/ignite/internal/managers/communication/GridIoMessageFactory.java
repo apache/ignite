@@ -25,8 +25,7 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -293,13 +292,14 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)109, GridQueryNextPageResponse::new);
         factory.register((short)111, AffinityTopologyVersion::new);
         factory.register((short)112, GridCacheSqlQuery::new);
-        factory.register((short)113, BinaryObjectImpl::new);
+        // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);
         factory.register((short)115, UUIDCollectionMessage::new);
         factory.register((short)116, GridNearSingleGetRequest::new);
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);
-        factory.register((short)119, BinaryEnumObjectImpl::new);
+        // 119 - BinaryEnumObjectImpl
+        BinaryUtils.registerMessages(factory::register);
 
         // [120..123] - DR
         factory.register((short)124, GridMessageCollection::new);

@@ -66,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition topology for node which does not have any local partitions.
@@ -588,7 +589,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
+        Collection<UUID> allIds = nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
 
         lock.readLock().lock();
 

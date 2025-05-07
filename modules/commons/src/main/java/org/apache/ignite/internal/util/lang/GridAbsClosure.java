@@ -17,38 +17,32 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.util.TreeMap;
-import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.apache.ignite.lang.IgniteRunnable;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-/** */
-public class GridFuncSelfTest {
+/**
+ * Defines a convenient absolute, i.e. {@code no-arg} and {@code no return value} closure. This closure
+ * that has {@code void} return type and no arguments (free variables).
+ * <h2 class="header">Thread Safety</h2>
+ * Note that this interface does not impose or assume any specific thread-safety by its
+ * implementations. Each implementation can elect what type of thread-safety it provides,
+ * if any.
+ * @see GridFunc
+ */
+public abstract class GridAbsClosure implements IgniteRunnable {
     /** */
-    @Test
-    public void testMapEqNotOrdered() {
-        String str = "mystring";
+    private static final long serialVersionUID = 0L;
 
-        TreeMap<String, Object> m1 = new TreeMap<>();
+    /**
+     * Absolute closure body.
+     */
+    public abstract void apply();
 
-        TreeMap<String, Object> m2 = new TreeMap<>();
-
-        m1.put("1", str);
-        m2.put("1", str);
-
-        m1.put("2", "2");
-        m2.put("3", "3");
-
-        assertFalse(F.eqNotOrdered(m1, m2));
-
-        m1.remove("2");
-        m2.remove("3");
-
-        m1.put("arr", new byte[] {1, 2, 3});
-        m2.put("arr", new byte[] {1, 2, 3});
-
-        assertTrue(F.eqNotOrdered(m1, m2));
+    /**
+     * Delegates to {@link #apply()} method.
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override public final void run() {
+        apply();
     }
 }

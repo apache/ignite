@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform.messaging;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -143,7 +143,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN: {
