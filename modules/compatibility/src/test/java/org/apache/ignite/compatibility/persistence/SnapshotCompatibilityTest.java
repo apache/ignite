@@ -278,6 +278,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
+    private String consId(int nodeIdx) {
+        return customConsId ? "node-" + nodeIdx : null;
+    }
+
+    /** */
     private static String customSnapshotPath(String relativePath, boolean delIfExist) throws IgniteCheckedException {
         return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, delIfExist).getAbsolutePath();
     }
@@ -285,11 +290,6 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     private static String calcValue(String cacheName, int key) {
         return cacheName + "-organization-" + key;
-    }
-
-    /** */
-    private String consId(int nodeIdx) {
-        return customConsId ? "node-" + nodeIdx : null;
     }
 
     /**
