@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.internal.binary.builder;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -57,9 +57,11 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
+import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
-import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
@@ -939,7 +941,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         BinaryObject bo = mutableObj.build();
 
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
+        assertEquals(BinaryObjectTestUtils.binaryArrayIdentityResolverHashCode(bo), bo.hashCode());
     }
 
     /**
@@ -1653,7 +1655,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+            useBinaryArrays ? extObj.<BinaryObjectEx>field("extArr").array() : extObj.field("extArr")
         );
 
         builder = extObj.toBuilder();
@@ -1663,7 +1665,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+            useBinaryArrays ? extObj.<BinaryObjectEx>field("extArr").array() : extObj.field("extArr")
         );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
@@ -1674,7 +1676,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useBinaryArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
+            useBinaryArrays ? extObj.<BinaryObjectEx>field("extArr").array() : extObj.field("extArr")
         );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
@@ -1788,7 +1790,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
             BiConsumer<TestClass1[], BinaryObject> checker = (arr, bobj) -> {
                 Object[] val = useBinaryArrays
-                    ? bobj.<BinaryArray>field("arr").deserialize()
+                    ? bobj.<BinaryObjectEx>field("arr").deserialize()
                     : PlatformUtils.unwrapBinariesInArray(bobj.field("arr"));
 
                 Assert.assertArrayEquals(arr, val);
@@ -1836,7 +1838,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
      */
     private TestEnum[] deserializeEnumBinaryArray(Object obj) {
         if (useBinaryArrays)
-            return ((BinaryArray)obj).deserialize();
+            return ((BinaryObject)obj).deserialize();
 
         Object[] arr;
 

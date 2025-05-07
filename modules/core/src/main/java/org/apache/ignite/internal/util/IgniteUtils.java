@@ -2270,7 +2270,7 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Gets a hex string representation of the given long value.
+     * Gets a hex string representation of the given int value.
      *
      * @param val Value to convert to string.
      * @return Hex string.
@@ -6625,16 +6625,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
             throw new IgniteInterruptedCheckedException(e);
         }
-    }
-
-    /**
-     * Converts collection of nodes to collection of node IDs.
-     *
-     * @param nodes Nodes.
-     * @return Node IDs.
-     */
-    public static Collection<UUID> nodeIds(@Nullable Collection<? extends ClusterNode> nodes) {
-        return F.viewReadOnly(nodes, F.node2id());
     }
 
     /**

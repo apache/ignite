@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -189,7 +189,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
 
         assertEquals(expVal.ordinal(), enumObj.enumOrdinal());
         assertTrue(enumObj.type().isEnum());
-        assertTrue(enumObj instanceof BinaryEnumObjectImpl);
+        assertTrue(BinaryUtils.isBinaryEnumObject(enumObj));
     }
 
     /**

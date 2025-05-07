@@ -588,6 +588,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
+    @Override public String pageLockStateInfo(long page) {
+        return rwLock.stateInfo(page + LOCK_OFFSET);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isDirty(int cacheId, long pageId, long page) {
         // always false for page no store.
         return false;

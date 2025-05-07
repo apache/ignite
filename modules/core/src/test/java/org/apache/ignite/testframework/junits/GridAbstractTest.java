@@ -82,10 +82,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -2025,7 +2024,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected BinaryMarshaller createStandaloneBinaryMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), cfg, new NullLogger());
 
         marsh.setContext(new MarshallerContextTestImpl());
 
@@ -2240,7 +2239,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         GridClassLoaderCache.clear();
         U.clearClassCache();
         MarshallerExclusions.clearCache();
-        BinaryEnumCache.clear();
+        BinaryUtils.clearCache();
         serializedObj.clear();
 
         if (err != null)

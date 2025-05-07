@@ -17,10 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Initial message sent by a node that wants to enter topology.
@@ -87,7 +88,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
 
         TcpDiscoveryJoinRequestMessage other = (TcpDiscoveryJoinRequestMessage)obj;
 
-        return F.eqNodes(other.node, node);
+        return eqNodes(other.node, node);
     }
 
     /** {@inheritDoc} */

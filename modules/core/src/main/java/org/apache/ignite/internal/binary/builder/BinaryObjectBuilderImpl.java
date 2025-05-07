@@ -30,18 +30,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumArray;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -49,12 +43,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
-
 /**
  *
  */
-public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
+class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private static final Object REMOVED_FIELD_MARKER = new Object();
 
@@ -123,7 +115,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /**
      * @param obj Object to wrap.
      */
-    public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
+    public BinaryObjectBuilderImpl(BinaryObjectEx obj) {
         this(new BinaryBuilderReader(obj), obj.start());
         reader.registerObject(this);
     }
@@ -162,7 +154,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
             }
 
-            this.typeId = ctx.registerClass(cls, true, false).typeId();
+            this.typeId = ctx.registerType(cls, true, false);
 
             registeredType = false;
 
@@ -178,7 +170,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
             Thread curThread = Thread.currentThread();
 
             if (curThread instanceof IgniteThread)
@@ -194,7 +186,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             byte[] arr = writer.array();
 
-            return new BinaryObjectImpl(ctx, arr, 0);
+            return BinaryUtils.binaryObject(ctx, arr, 0);
         }
     }
 
@@ -202,7 +194,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
+    void serializeTo(BinaryWriterEx writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
 
@@ -344,34 +336,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             writer.postWrite(true, registeredType);
 
-            // Update metadata if needed.
-            int schemaId = writer.schemaId();
-
-            BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
-
-            if (schemaReg.schema(schemaId) == null) {
-                String typeName = this.typeName;
-
-                if (typeName == null) {
-                    assert meta != null;
-
-                    typeName = meta.typeName();
-                }
-
-                BinarySchema curSchema = writer.currentSchema();
-
-                String affFieldName0 = affFieldName;
-
-                if (affFieldName0 == null)
-                    affFieldName0 = ctx.affinityKeyFieldName(typeId);
-
-                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
-
-                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
-                    Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
-
-                schemaReg.addSchema(curSchema.schemaId(), curSchema);
-            }
+            ctx.updateMetaIfNeeded(writer, meta, typeId, typeName, affFieldName, fieldsMeta);
 
             // Update hash code after schema is written.
             writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
@@ -405,19 +370,20 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 nullFieldVal = true;
         }
         // Detect Enum and Enum array type.
-        else if (newVal instanceof BinaryEnumObjectImpl)
+        else if (BinaryUtils.isBinaryEnumObject(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM;
 
-        else if (newVal.getClass().isArray() && BinaryEnumObjectImpl.class.isAssignableFrom(newVal.getClass().getComponentType()))
+        else if (newVal.getClass().isArray() &&
+            BinaryUtils.isAssignableToBinaryEnumObject(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
         else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
-        else if (newVal instanceof BinaryEnumArray)
+        else if (BinaryUtils.isBinaryEnumArray(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
-        else if (newVal instanceof BinaryArray)
+        else if (BinaryUtils.isBinaryArray(newVal))
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
         else
@@ -620,14 +586,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @return New builder.
      */
     public static BinaryObjectBuilderImpl wrap(BinaryObject obj) {
-        BinaryObjectImpl heapObj;
-
-        if (obj instanceof BinaryObjectOffheapImpl)
-            heapObj = (BinaryObjectImpl)((BinaryObjectOffheapImpl)obj).heapCopy();
-        else
-            heapObj = (BinaryObjectImpl)obj;
-
-        return new BinaryObjectBuilderImpl(heapObj);
+        return new BinaryObjectBuilderImpl((BinaryObjectEx)BinaryUtils.unwrapTemporary(obj));
     }
 
     /**

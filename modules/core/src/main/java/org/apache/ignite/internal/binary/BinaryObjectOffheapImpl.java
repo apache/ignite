@@ -33,8 +33,9 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -48,7 +49,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  *  Binary object implementation over offheap memory
  */
-public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
+class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -98,7 +99,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
+            String clsName = BinaryUtils.doReadClassName(BinaryStreams.inputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -144,11 +145,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] array() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }
@@ -175,7 +171,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasArray() {
+    @Override public boolean hasBytes() {
         return false;
     }
 
@@ -388,7 +384,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             default:
-                BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+                BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
                 stream.position(fieldPos);
 
@@ -442,7 +438,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilderImpl.wrap(heapCopy());
+        return BinaryObjectBuilders.builder(heapCopy());
     }
 
     /** {@inheritDoc} */
@@ -539,7 +535,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, ctx.configuration().getClassLoader(), forUnmarshal);
     }
 
@@ -551,13 +547,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
-        BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+        BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
 
-        return new BinaryReaderExImpl(ctx,
+        return BinaryUtils.reader(ctx,
             stream,
             ldr,
             rCtx,

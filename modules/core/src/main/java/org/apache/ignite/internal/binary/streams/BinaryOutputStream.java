@@ -265,4 +265,11 @@ public interface BinaryOutputStream extends BinaryStream, AutoCloseable {
      * @param val Value.
      */
     public void unsafeWriteDouble(double val);
+
+    /**
+     * Releases memory.
+     */
+    public default void release() {
+        throw new UnsupportedOperationException();
+    }
 }

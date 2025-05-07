@@ -20,9 +20,14 @@ package org.apache.ignite.internal.binary;
 /**
  * Simple holder for handles.
  */
-public class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder {
+class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder {
     /** Handles. */
     private BinaryReaderHandles hnds;
+
+    /** {@inheritDoc} */
+    @Override public void setHandle(Object obj) {
+        throw new UnsupportedOperationException();
+    }
 
     /** {@inheritDoc} */
     @Override public void setHandle(Object obj, int pos) {

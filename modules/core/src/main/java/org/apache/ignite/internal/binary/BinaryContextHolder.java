@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  * Binary context holder. We use to avoid {@code ThreadLocal.clear()} and/or {{}}ThreadLocal.set()}} operations on
  * every serialization/deserialization, as they may take considerable amount of CPU time (confirmed by benchmarks).
  */
-public class BinaryContextHolder {
+class BinaryContextHolder {
     /** Context. */
     private BinaryContext ctx;
 

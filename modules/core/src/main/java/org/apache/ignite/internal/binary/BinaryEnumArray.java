@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Ignite distinguishes between array of objects and array of enums.
  * This extension of {@link BinaryArray} intended to keep correct typeId for binary enum arrays.
  */
-public class BinaryEnumArray extends BinaryArray {
+class BinaryEnumArray extends BinaryArray {
     /** */
     private static final long serialVersionUID = 0L;
 

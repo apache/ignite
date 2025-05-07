@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -437,11 +437,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg.payload());
+        BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), inStream,
-                null, null, true, true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), inStream, null, true, true);
 
         ClientListenerRequest req = decode(reader);
 
@@ -457,7 +456,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
      * @param reader Reader.
      * @return Request.
      */
-    public ClientListenerRequest decode(BinaryReaderExImpl reader) {
+    public ClientListenerRequest decode(BinaryReaderEx reader) {
         short opCode = reader.readShort();
 
         switch (opCode) {
@@ -741,9 +740,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientMessage encode(ClientListenerResponse resp) {
         assert resp != null;
 
-        BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32, BinaryMemoryAllocator.POOLED.chunk());
+        BinaryOutputStream outStream = BinaryStreams.createPooledOutputStream(32, false);
 
-        BinaryRawWriterEx writer = marsh.writer(outStream);
+        BinaryWriterEx writer = marsh.writer(outStream);
 
         assert resp instanceof ClientOutgoingMessage : "Unexpected response type: " + resp.getClass();
 
@@ -756,7 +755,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public int decodeCommandType(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg.payload());
+        BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         return inStream.readShort();
     }

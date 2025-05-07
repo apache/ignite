@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.typedef;
 
 import java.io.Externalizable;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.GridTuple4;
 
