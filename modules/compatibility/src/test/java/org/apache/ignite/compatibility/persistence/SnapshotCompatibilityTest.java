@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -143,20 +145,23 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
         }
 
         try {
-            for (int i = 1; i < oldNodesCnt; ++i) {
-                startGrid(
-                    i,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo)
-                );
+            for (int i = 1; i <= oldNodesCnt; ++i) {
+                if (i == oldNodesCnt) {
+                    startGrid(
+                            oldNodesCnt,
+                            OLD_IGNITE_VERSION,
+                        oldConfigurationClosure(oldNodesCnt),
+                        new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
+                    );
+                }
+                else {
+                    startGrid(
+                        i,
+                        OLD_IGNITE_VERSION,
+                        oldConfigurationClosure(i)
+                    );
+                }
             }
-
-            startGrid(
-                oldNodesCnt,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(oldNodesCnt), customSnpPath, true, cacheGrpInfo),
-                new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
-            );
 
             stopAllGrids();
 
@@ -178,6 +183,11 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             cleanPersistenceDir();
         }
+    }
+
+    /** */
+    private ConfigurationClosure oldConfigurationClosure(int i) {
+        return new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo);
     }
 
     /** */
