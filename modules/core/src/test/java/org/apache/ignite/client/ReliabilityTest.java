@@ -718,7 +718,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
         });
 
         // Use Ignite while nodes keep failing.
-
         try {
             while (!stopFlag.get())
                 clo.run();
