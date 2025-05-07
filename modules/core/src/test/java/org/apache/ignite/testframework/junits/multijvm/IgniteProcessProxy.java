@@ -78,6 +78,7 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
@@ -220,7 +221,7 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     private static void validateRemoteJre(@Nullable String javaHome) throws IOException, InterruptedException {
         int remoteMajorVer = new JavaVersionCommand().majorVersion(javaHome);
-        int locMajorVer = U.majorJavaVersion(System.getProperty("java.version"));
+        int locMajorVer = CommonUtils.majorJavaVersion(System.getProperty("java.version"));
 
         if (locMajorVer != remoteMajorVer) {
             fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVer +
