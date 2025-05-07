@@ -168,6 +168,7 @@ public class PlannerHelper {
         }
         catch (Throwable ex) {
             log.error("Unexpected error at query optimizer.", ex);
+            log.error("after ex and before dump");
             log.error(planner.dump());
 
             throw ex;

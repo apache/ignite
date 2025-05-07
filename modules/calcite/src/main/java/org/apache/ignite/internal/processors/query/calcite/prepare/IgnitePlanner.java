@@ -416,6 +416,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     public String dump() {
+        System.out.println("IgnitePlanner.dump");
+
         StringWriter w = new StringWriter();
 
         ((VolcanoPlanner)planner).dump(new PrintWriter(w));
@@ -423,6 +425,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         String result = w.toString();
 
         if (!CalciteSystemProperty.DEBUG.value()) {
+            System.out.println("calcite.debug == false");
+
             int idxOfSets = result.indexOf("\n\nSets:\n");
 
             if (idxOfSets > 0)
