@@ -145,21 +145,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
         try {
             for (int i = 1; i <= oldNodesCnt; ++i) {
-                if (i == oldNodesCnt) {
-                    startGrid(
-                        oldNodesCnt,
-                        OLD_IGNITE_VERSION,
-                        oldConfigurationClosure(oldNodesCnt),
-                        new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
-                    );
-                }
-                else {
-                    startGrid(
-                        i,
-                        OLD_IGNITE_VERSION,
-                        oldConfigurationClosure(i)
-                    );
-                }
+                startGrid(
+                    i,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
+                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
+                );
             }
 
             stopAllGrids();
@@ -182,11 +173,6 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
             cleanPersistenceDir();
         }
-    }
-
-    /** */
-    private ConfigurationClosure oldConfigurationClosure(int i) {
-        return new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo);
     }
 
     /** */
