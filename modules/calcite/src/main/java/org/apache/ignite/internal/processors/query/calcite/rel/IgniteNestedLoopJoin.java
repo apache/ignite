@@ -45,6 +45,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * inputs; precisely which subset depends on the join condition.
  */
 public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
+    /** */
+    private static final double NL_COST_FACTOR = 2.5d;
+
     /**
      * Creates a Join.
      *
@@ -91,9 +94,9 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
         double rows = leftCnt * rightCnt;
 
         double rightSize = rightCnt * getRight().getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double cpuCost = rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST);
 
-        return costFactory.makeCost(rows,
-            rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0, rightSize, 0);
+        return costFactory.makeCost(rows, cpuCost, 0, rightSize, 0).multiplyBy(NL_COST_FACTOR);
     }
 
     /** {@inheritDoc} */
