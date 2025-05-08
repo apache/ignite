@@ -602,6 +602,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "Operator satisfies distribution" condition.
+     */
+    protected <T extends IgniteRel> Predicate<IgniteRel> distributionSatisfies(IgniteDistribution distribution) {
+        return node -> node.distribution().satisfies(distribution);
+    }
+
+    /**
      * Predicate builder for "Current node or any child satisfy predicate" condition.
      */
     protected Predicate<RelNode> nodeOrAnyChild(Predicate<? extends RelNode> predicate) {

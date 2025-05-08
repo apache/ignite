@@ -45,7 +45,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Optionality;
-import org.apache.ignite.internal.processors.query.calcite.rule.CollectRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.CollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateCon
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
@@ -266,7 +267,8 @@ public enum PlannerPhase {
                     LogicalScanConverterRule.TABLE_SCAN,
                     IndexCountRule.INSTANCE,
                     IndexMinMaxRule.INSTANCE,
-                    CollectRule.INSTANCE,
+                    CollectConverterRule.INSTANCE,
+                    UncollectConverterRule.INSTANCE,
                     HashAggregateConverterRule.COLOCATED,
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.COLOCATED,
