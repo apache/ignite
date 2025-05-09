@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
@@ -366,7 +367,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             SEQUENCES_VIEW,
             SEQUENCES_VIEW_DESC,
             new AtomicSequenceViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
             AtomicSequenceView::new
         );
 
@@ -374,7 +375,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             LONGS_VIEW,
             LONGS_VIEW_DESC,
             new AtomicLongViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicLong),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteAtomicLong),
             AtomicLongView::new
         );
 
@@ -382,7 +383,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             REFERENCES_VIEW,
             REFERENCES_VIEW_DESC,
             new AtomicReferenceViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicReference),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteAtomicReference),
             AtomicReferenceView::new
         );
 
@@ -390,7 +391,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             STAMPED_VIEW,
             STAMPED_VIEW_DESC,
             new AtomicStampedViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
             AtomicStampedView::new
         );
 
@@ -398,7 +399,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             LATCHES_VIEW,
             LATCHES_VIEW_DESC,
             new CountDownLatchViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteCountDownLatch),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteCountDownLatch),
             CountDownLatchView::new
         );
 
@@ -406,7 +407,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             SEMAPHORES_VIEW,
             SEMAPHORES_VIEW_DESC,
             new SemaphoreViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteSemaphore),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteSemaphore),
             SemaphoreView::new
         );
 
@@ -414,20 +415,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             LOCKS_VIEW,
             LOCKS_VIEW_DESC,
             new ReentrantLockViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteLock),
+            new PredicateCollectionView<GridCacheRemovable>(dsMap.values(), v -> v instanceof IgniteLock),
             ReentrantLockView::new
-        );
-
+        );        
+        
         ctx.systemView().registerInnerCollectionView(
             QUEUES_VIEW,
             QUEUES_VIEW_DESC,
             new QueueViewWalker(),
-            new TransformCollectionView<>(
+            new TransformCollectionView<CacheDataStructuresManager,DynamicCacheDescriptor>(
                 ctx.cache().cacheDescriptors().values(),
-                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
-                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
-            cctx -> cctx.queues().values(),
-            (cctx, queue) -> new QueueView(queue)
+                (DynamicCacheDescriptor desc) -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
+                (DynamicCacheDescriptor desc) -> desc.cacheType() == CacheType.DATA_STRUCTURES),
+            (CacheDataStructuresManager cctx) -> cctx.queues().values(),
+            (CacheDataStructuresManager cctx,GridCacheQueueProxy queue) -> new QueueView(queue)
         );
 
         ctx.systemView().registerInnerCollectionView(

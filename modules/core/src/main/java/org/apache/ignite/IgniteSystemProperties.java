@@ -698,8 +698,8 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      *
      * Default is {@code false}
      */
-    @SystemProperty("Disable MBeans registration. This may be helpful if MBeans are not allowed " +
-        "e.g. for security reasons")
+    @SystemProperty(value = "Disable MBeans registration. This may be helpful if MBeans are not allowed " +
+        "e.g. for security reasons", defaults= "true")
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**
@@ -715,7 +715,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      */
     @SystemProperty(value = "Size of buffer holding last exception", type = Integer.class,
         defaults = "" + DEFAULT_QUEUE_SIZE)
-
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
 
     /**

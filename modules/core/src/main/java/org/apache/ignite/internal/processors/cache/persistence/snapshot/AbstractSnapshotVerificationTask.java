@@ -34,6 +34,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
@@ -77,7 +78,7 @@ public abstract class AbstractSnapshotVerificationTask extends
 
         while (!allMetas.isEmpty()) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
-                SnapshotMetadata meta = F.find(e.getValue(), null, allMetas::remove);
+                SnapshotMetadata meta = F.find(e.getValue(), null, (IgnitePredicate) allMetas::remove);
 
                 if (meta == null)
                     continue;

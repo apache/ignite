@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -90,6 +91,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 
 /**
  * Binary context.
@@ -107,7 +109,7 @@ public class BinaryContext {
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
-    private static final Set<String> BINARYLIZABLE_SYS_CLSS;
+    public static final Set<String> BINARYLIZABLE_SYS_CLSS = new HashSet<>();
 
     /* Binarylizable system classes set initialization. */
     static {
@@ -128,7 +130,7 @@ public class BinaryContext {
         sysClss.add(TreeMap.class.getName());
         sysClss.add(TreeSet.class.getName());
 
-        BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
+        BINARYLIZABLE_SYS_CLSS.addAll(sysClss);
     }
 
     /** */
@@ -316,7 +318,12 @@ public class BinaryContext {
         if (desc == null) {
             if (cls == TreeMap.class || cls == TreeSet.class)
                 return false;
-
+            
+            // add@byron
+            if(BINARYLIZABLE_SYS_CLSS.contains(cls.getName())) {
+            	return false;
+            }
+            // end@
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
                 QueryUtils.isGeometryClass(cls);
         }
@@ -1135,8 +1142,8 @@ public class BinaryContext {
         descByCls.put(cls, desc);
 
         if (affFieldName != null)
-            affKeyFieldNames.putIfAbsent(id, affFieldName);
-
+            affKeyFieldNames.putIfAbsent(id, affFieldName);        
+       
         return desc;
     }
 

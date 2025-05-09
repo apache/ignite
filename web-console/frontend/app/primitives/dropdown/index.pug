@@ -1,0 +1,28 @@
+
+
+mixin ignite-form-field-bsdropdown({label, model, name, disabled, required, options, tip})
+    .dropdown--ignite.ignite-form-field
+        .btn-ignite.btn-ignite--primary-outline(
+            ng-model=model
+
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}` || `!${options}.length`
+
+            bs-dropdown=''
+
+            data-trigger='hover focus'
+            data-placement='bottom-right'
+            data-container='self'
+
+            tabindex='0'
+            aria-haspopup='true'
+            aria-expanded='false'
+        )&attributes(attributes)
+            | !{label}
+            span.icon-right.fa.fa-caret-down
+
+        ul.dropdown-menu(role='menu')
+            li(ng-repeat=`item in ${options}` ng-if='item.available')
+                a(ng-if='item.click' ng-click='item.click()') {{ item.action }}
+                a(ng-if='item.sref' ui-sref='{{:: item.sref}}') {{ item.action }}
+

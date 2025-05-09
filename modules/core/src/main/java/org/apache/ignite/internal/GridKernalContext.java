@@ -52,6 +52,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.igfs.IgfsHelper;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
@@ -326,6 +328,17 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Pool processor.
      */
     public PoolProcessor pools();
+
+
+    /**
+     * Gets file system processor.
+     *
+     * @return File system processor.
+     */
+    public IgfsProcessorAdapter igfs();
+    
+    
+    public IgfsHelper igfsHelper();
 
     /**
      * Gets grid marshaller mapping processor.

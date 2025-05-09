@@ -780,6 +780,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private boolean deactivateCluster() {
         return exchActions != null && exchActions.deactivate();
     }
+    
+    /**
+     * @return {@code True} if changedClusterState exchange.
+     */
+    public boolean changedClusterState() {
+        return exchActions != null && exchActions.changedClusterState();
+    }
 
     /** */
     public boolean changedBaseline() {
@@ -2448,7 +2455,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                if (exchCtx.events().hasServerLeft() || activateCluster())
+                if (exchCtx.events().hasServerLeft() || activateCluster() || changedClusterState())
                     detectLostPartitions(res);
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());

@@ -158,15 +158,9 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      */
     @Test
     public void testMetadataForInternalClassesIsNotRegistered() {
-        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary();
+        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        String typeName = TestValue.class.getName() + commandHandler;
-
-        BinaryObjectBuilder bldr = grid(0).binary().builder(typeName);
-
-        bldr.setField("val", 3);
-
-        dfltCache.put(1, bldr.build());
+        dfltCache.put(1, new TestValue());
 
         Collection<BinaryType> metadata = crd.context().cacheObjects().metadata();
 
@@ -174,7 +168,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
-        assertContains(log, testOut.toString(), "typeName=" + typeName);
+        assertContains(log, testOut.toString(), "typeName=" + TestValue.class.getTypeName());
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -182,7 +176,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
-        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", typeName));
+        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", TestValue.class.getTypeName()));
 
         metadata = crd.context().cacheObjects().metadata();
 
@@ -266,7 +260,9 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove"));
         out = testOut.toString();
-        assertContains(log, out, "Check arguments. One of [--typeName, --typeId] required");
+        assertContains(log, out, "Check arguments.");
+        assertContains(log, out, "Type to remove is not specified");
+        assertContains(log, out, "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", outDirName));
         out = testOut.toString();
@@ -333,7 +329,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
             String out = testOut.toString();
 
-            assertContains(log, out, "Failed to perform operation.");
+            assertContains(log, out, "Failed to execute metadata command='update'");
             assertContains(log, out, "Type 'Type0' with typeId 110843958 has a " +
                 "different/incorrect type for field 'fld'.");
             assertContains(log, out, "Expected 'String' but 'int' was provided. " +
@@ -622,8 +618,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
     /** */
     protected ClientConfiguration clientConfiguration() {
         return new ClientConfiguration()
-            .setAddressesFinder(() -> new String[] {"127.0.0.1:10800"})
-            .setPartitionAwarenessEnabled(false);
+            .setAddresses("127.0.0.1:10800");
     }
 
     /** */

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+ Copyright 2019 GridGain Systems, Inc. and Contributors.
+
+ Licensed under the GridGain Community Edition License (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!--
+    POM file.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+
+    <parent>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>2.16.999-SNAPSHOT</version>
+        <relativePath>../parent-internal/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>ignite-web-console</artifactId>    
+    <packaging>pom</packaging>
+    <url>http://ignite.apache.org</url>
+
+    <properties>
+        <java.version>11</java.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>        
+        <spring.boot.version>2.7.13</spring.boot.version>
+        <web-console.ignite.version>2.16.999-SNAPSHOT</web-console.ignite.version>
+        <commons.lang3.version>3.12.0</commons.lang3.version>        
+        <commons.compress.version>1.20</commons.compress.version>
+        <vertx.version>4.4.5</vertx.version>
+        <tinkerpop.version>3.7.2</tinkerpop.version>
+    </properties>
+
+    <modules>
+        <module>web-console-common</module>
+        <module>web-console-server</module>        
+        <module>web-agent</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>com.github.eirslett</groupId>
+                            <artifactId>frontend-maven-plugin</artifactId>
+                            <version>1.6</version>
+                            <configuration>
+                                <nodeVersion>${node.version}</nodeVersion>
+                                <installDirectory>target</installDirectory>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+
+                        <executions>
+                            <execution>
+                                <id>build frontend</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+
+                                <phase>compile</phase>
+
+                                <configuration>
+                                    <skip>true</skip>
+                                    <workingDirectory>frontend</workingDirectory>
+                                    <arguments>run build</arguments>
+                                    <environmentVariables>
+                                        <NODE_ENV>production</NODE_ENV>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <version>2.5</version>
+                        <executions>
+                            <execution>
+                                <id>clean-frontend-build</id>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${project.basedir}/frontend/build</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>release-web-console</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-web-console.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>ignite-web-console-${project.version}</finalName>
+                                    <outputDirectory>target</outputDirectory>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>                            
+                        </executions>
+
+                        
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>        
+	         <plugin>
+		          <artifactId>maven-javadoc-plugin</artifactId>		          
+		          <configuration>
+		            <skip>true</skip>
+	              </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

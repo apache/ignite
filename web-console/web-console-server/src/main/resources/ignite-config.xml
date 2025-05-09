@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    	<property name="igniteInstanceName" value="admin" />	
+        <property name="consistentId" value="web-console-data"/>
+        <property name="peerClassLoadingEnabled" value="false"/>
+        <property name="metricsLogFrequency" value="0"/>
+        <property name="queryThreadPoolSize" value="8"/>
+        <property name="failureDetectionTimeout" value="10000"/>
+        <property name="networkTimeout" value="10000"/>
+		
+		 <!-- Set to local host address just for examples. -->
+        <property name="localHost" value="127.0.0.1"/>
+        
+        <property name="binaryConfiguration">
+	        <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+	            <property name="nameMapper">
+	                <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+	                    <property name="simpleName" value="true"/>
+	                </bean>
+	            </property>
+				<property name="compactFooter" value="false"/>
+	        </bean>
+	    </property>
+
+        <!-- Disable all clients. 
+        <property name="connectorConfiguration"><null/></property>
+        <property name="clientConnectorConfiguration"><null/></property>
+		-->
+        <!-- Recommended by CS team. -->
+        <property name="transactionConfiguration">
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <property name="txTimeoutOnPartitionMapExchange" value="#{60L * 1000L}"/>
+            </bean>
+        </property>
+
+        <!-- Persistence required to store user data on disk. -->
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true"/>
+                        <!-- Set region size, because default size is 20% of physical memory available on current machine. -->
+                        <property name="maxSize" value="#{256 * 1024 * 1024}"/>
+                    </bean>
+                </property>
+
+                <property name="maxWalArchiveSize" value="#{128 * 1024 * 1024}"/>
+
+                <!-- Disabling WAL archiving. -->
+                <property name="walArchivePath" value="db/wal"/>
+
+                <!-- Web Console must survive power loss. -->
+                <property name="walMode" value="FSYNC"/>
+            </bean>
+        </property>       
+
+        <property name="failureHandler">
+            <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
+        </property>        
+		<!--
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
+                <property name="zkConnectionString" value="localhost:2181" />                
+            </bean>
+        </property>
+		-->
+		<property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryWebConsoleServerIpFinder">
+                    	<property name="masterUrl" value="file://disco/admin" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

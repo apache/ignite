@@ -1,0 +1,35 @@
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+- const model = '$ctrl.clonedDatasource'
+- let form = '$ctrl.form'
+
+form(novalidate name=form)
+    h2.pcb-section-header.pcb-inner-padding 1. Basic Settings
+    
+    .panel-group
+        include ./basic-form
+    
+    .panel-group        
+        include ./client-connector
+
+    .pc-form-actions-panel        
+        span.message {{ $ctrl.$scope.message }}
+        .pc-form-actions-panel__right-after
+       
+        button.btn-ignite.btn-ignite--link-success(
+        type='button'
+           ng-click='$ctrl.pingDatasource()'
+           ng-show='$ctrl.$scope.status!="connected"'
+        ) 
+           | Test Datasource
+  
+        button.btn-ignite.btn-ignite--link-success(
+            type='button'
+            ng-click='$ctrl.confirmAndDisconnect()'
+            ng-show='$ctrl.$scope.status=="connected"'
+        ) 
+           | Disconnect Datasource
+       
+        pc-split-button(actions=`::$ctrl.formActionsMenu`)

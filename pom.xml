@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>parent/pom.xml</relativePath>
     </parent>
 
@@ -42,6 +42,7 @@
         <module>modules/commons</module>
         <module>modules/binary/api</module>
         <module>modules/core</module>
+        <module>modules/igfs</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
@@ -50,20 +51,18 @@
         <module>modules/extdata/platform</module>
         <module>modules/extdata/pluggable</module>
         <module>modules/clients</module>
-        <module>modules/spring</module>
-        <module>modules/web</module>
+        <module>modules/spring</module>        
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/json</module>
-        <module>modules/rest-http</module>
+        <!-- <module>modules/rest-http</module> -->
+        <module>modules/vertx-rest</module>
         <module>modules/jta</module>
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/zookeeper</module>
-        <module>modules/web/ignite-appserver-test</module>
-        <module>modules/web/ignite-websphere-test</module>
+        <module>modules/zookeeper</module>        
         <module>modules/kubernetes</module>
         <module>modules/sqlline</module>
         <module>modules/opencensus</module>
@@ -76,8 +75,7 @@
             <id>all-java</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
-                <module>modules/benchmarks</module>
-                <module>modules/compatibility</module>
+                <module>modules/benchmarks</module>                
                 <module>modules/ducktests</module>
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
@@ -699,3 +697,4 @@
         </plugins>
     </build>
 </project>
+

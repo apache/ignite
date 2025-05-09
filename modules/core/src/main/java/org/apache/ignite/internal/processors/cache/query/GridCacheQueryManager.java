@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,13 +45,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -569,7 +574,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     break;
 
-                case TEXT:
+                case TEXT:                	
                     if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
@@ -586,8 +591,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
+                    //add@byron use TextQuery insteads text string
+                    TextQuery<K, V> tq = new TextQuery<K, V>(qry.queryClassName(),qry.clause());
+                    tq.setPageSize(qry.pageSize());
+                    tq.setLocal(qry.forceLocal());
+                    tq.setFitler(qry.scanFilter());
+					tq.setLimit(qry.limit());
+                    // iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
                     iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
-
+					//end@
                     break;
 
                 case SET:
@@ -1213,9 +1225,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         K key0 = null;
                         V val0 = null;
+  						//add@byron support scanfilter:
+                        if(qry.scanFilter()!=null){                        	
+                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);                            
+                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
+                            
+                            if(!qry.scanFilter().apply(key0,val0))
+                            	continue;
+                        }
+                        //end@
 
                         if (type == TEXT && readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
+                        	if (key0 == null)
                             key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
+                        	if (val0 == null)
                             val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
 
                             cctx.gridEvents().record(new CacheQueryReadEvent<>(
@@ -2908,6 +2931,61 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             .limit(limit)
             .pageSize(pageSize);
     }
+	
+	//add@byron support text search filter
+    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+        String search, IgniteBiPredicate<Object, Object> filter, int limit,  int pageSize, boolean keepBinary) {        
+        A.notNull("search", search);
+        // add@byron
+    	if(clsName==null || clsName.isBlank()) {
+    		clsName = typeName(this.cctx.config());
+    	}
+
+    	return new CacheQuery<Map.Entry<K, V>>(cctx,
+            TEXT,
+            clsName,
+            search,
+            filter,
+            null,
+            false,
+            keepBinary,
+            null,
+            null,
+            null)
+            .limit(limit)
+            .pageSize(pageSize);
+    }
+    
+    private String typeName(CacheConfiguration cfg) {    	
+    	String typeName = tableOfCache(this.cacheName());
+    	String shortName = typeName;
+    	int pos = typeName.lastIndexOf('.');
+    	if(pos>0) {    		
+    		shortName = typeName.substring(pos+1);
+    	}    	
+    	if(!cfg.getQueryEntities().isEmpty()) {
+    		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
+    		while(qeit.hasNext()) {
+	    		QueryEntity entity = qeit.next();
+	    		if(typeName.equalsIgnoreCase(entity.getValueType()) || shortName.equalsIgnoreCase(entity.getTableName())){
+	    			break;
+	    		}
+	    		else {
+	    			typeName = entity.getValueType();
+	    		}
+    		}
+    	}    	  	
+    	return typeName;
+    }
+	
+    private String tableOfCache(String cacheName) {
+		if(cacheName.startsWith("SQL_")) {
+			int pos = cacheName.lastIndexOf('_',5);
+			if(pos>0)
+				return cacheName.substring(pos+1);
+		}
+		return cacheName;
+	}
 
     /**
      * Creates index query.

@@ -1,0 +1,159 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+- const model = '$ctrl.clonedCluster'
+- const modelDiscoveryKind = `${model}.discovery.kind`
+- let basicForm = '$ctrl.form'
+- basicForm.ngDisabled=true
+
+form(novalidate name=basicForm)
+    h2.pcb-section-header.pcb-inner-padding 1. Cluster Metric
+
+    .pcb-section-notification.pcb-inner-padding(ng-if='!$ctrl.shortClusters')
+        | You have no clusters.
+        | Let configure your first and associate it with caches.
+    .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
+        | Configure cluster properties and associate your cluster with caches.
+
+    .pca-form-row
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Name:',
+                    model: `${model}.name`,
+                    name: '"clusterName"',
+                    placeholder: 'Input name',
+                    required: true,
+                    disabled: true,             
+                    tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
+                })(
+                    ignite-unique='$ctrl.shortClusters'
+                    ignite-unique-property='name'
+                    ignite-unique-skip=`["id", ${model}]`
+                )
+                    +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
+
+            .pc-form-grid__break
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Discovery:',
+                    model: modelDiscoveryKind,
+                    name: '"discovery"',               
+                    placeholder: 'Choose discovery',
+                    options: '$ctrl.Clusters.discoveries',
+                    disabled: true,
+                    tip: 'Discovery allows to discover remote nodes in grid\
+                    <ul>\
+                        <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                        <li>Multicast - Multicast based IP finder</li>\
+                        <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                        <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
+                    </ul>'
+                })
+            .pc-form-grid__break
+
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__ip-address({
+                    label: 'Local host:',
+                    model: `${model}.localHost`,
+                    name: '"localHost"',
+                    disabled: 'true',
+                    placeholder: '0.0.0.0',
+                    tip: 'System-wide local address or host for all Ignite components to bind to<br/>\
+                          If not defined then Ignite tries to use local wildcard address<br/>\
+                          That means that all services will be available on all network interfaces of the host machine'
+                })
+
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 2. Client Configuration
+        .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
+            | Configure client properties and associate your cluster with thin client api.
+    
+    .pca-form-row
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
+            .pc-form-grid-col-120    
+                .panel-group
+                    //- Since ignite 2.3
+                    include ./client-connector
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
+            .pc-form-grid-col-120 
+                .panel-group
+                    //- Since ignite 2.3
+                    include ./communication
+        
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 3. Caches Matric
+
+    .pcb-form-grid-row.pc-form-grid-row
+        
+        .pc-form-grid-col-120
+            .ignite-form-field
+                list-editable.pcb-caches-list(
+                    ng-model='$ctrl.shortCaches'
+                    list-editable-one-way
+                    on-item-change='$ctrl.changeCache($event)'                    
+                    list-editable-cols='::$ctrl.cachesColDefs'
+                    list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
+                )
+                    list-editable-item-view
+                        div {{ $item.name }}
+                        div {{ $item.cacheMode }}
+                        div {{ $item.atomicityMode }}
+                        div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
+                        div {{ $ctrl.getCacheMetrics($item) }}
+                    list-editable-item-edit
+                        div
+                            +form-field__text({
+                                label: 'Name',
+                                model: '$item.name',
+                                name: '"name"',
+                                disabled: true,
+                                required: true
+                            })(
+                                ignite-unique='$ctrl.shortCaches'
+                                ignite-unique-property='name'
+                                ignite-form-field-input-autofocus='true'
+                            )
+                                +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unqiue' })
+                        div
+                            +form-field__cache-modes({
+                                label: 'Mode:',
+                                model: '$item.cacheMode',
+                                name: '"cacheMode"',
+                                placeholder: 'PARTITIONED'
+                            })
+                        div
+                            +form-field__dropdown({
+                                label: 'Atomicity:',
+                                model: '$item.atomicityMode',
+                                name: '"atomicityMode"',
+                                placeholder: 'ATOMIC',
+                                disabled: true,
+                                options: '::$ctrl.Caches.atomicityModes'
+                            })
+                        div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
+                            +form-field__number({
+                                label: 'Backups:',
+                                model: '$item.backups',
+                                name: '"backups"',
+                                placeholder: '0',
+                                disabled: false,
+                                min: 0
+                            })
+                        div
+                            +form-field__number({
+                                label: 'Rows:',
+                                model: '$item.rows',
+                                name: '"rows"',
+                                placeholder: '0',
+                                disabled: true,
+                                min: 0
+                            })
+                    
+
+    .pc-form-actions-panel        
+        span.message {{ $ctrl.$scope.message }}
+        .pc-form-actions-panel__right-after
+        
+        pc-split-button(actions=`formActionsMenu`)

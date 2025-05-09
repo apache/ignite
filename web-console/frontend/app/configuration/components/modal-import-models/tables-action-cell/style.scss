@@ -1,0 +1,33 @@
+
+
+tables-action-cell {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    .table-action-cell__edit-button {
+        background: none;
+        border: 1px solid transparent;
+
+        &:hover {
+            background: white;
+            border: solid 1px #c5c5c5;
+        }
+    }
+    .table-action-cell__edit-form {
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        width: 100%;
+    }
+    .table-action-cell__action-select {
+        flex: 3;
+        margin-right: 5px;
+    }
+    .table-action-cell__cache-select {
+        flex: 6;
+        margin-right: 0;
+    }
+}

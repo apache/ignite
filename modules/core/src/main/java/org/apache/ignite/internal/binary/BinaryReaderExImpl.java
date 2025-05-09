@@ -577,7 +577,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException If failed.
      */
     short readShort(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(SHORT) == Flag.NORMAL ? in.readShort() : 0;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(SHORT) == Flag.NORMAL ? in.readShort() : 0;
+        if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(SHORT);
+    		if(flag == Flag.NORMAL) return in.readShort();
+    		if(flag == Flag.UPWARD) return in.readByte();
+    	}
+        return 0;
     }
 
     /**
@@ -586,7 +592,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Short readShortNullable(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(SHORT) == Flag.NORMAL ? in.readShort() : null;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(SHORT) == Flag.NORMAL ? in.readShort() : null;
+    	if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(SHORT);
+    		if(flag == Flag.NORMAL) return in.readShort();
+    		if(flag == Flag.UPWARD) return Short.valueOf(in.readByte());
+    	}
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -709,7 +721,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException If failed.
      */
     int readInt(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : 0;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : 0;
+    	if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(INT);
+    		if(flag == Flag.NORMAL) return in.readInt();
+    		if(flag == Flag.UPWARD) return in.readShort();
+    	}
+        return 0;
     }
 
     /**
@@ -718,7 +736,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Integer readIntNullable(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : null;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : null;
+    	if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(INT);
+    		if(flag == Flag.NORMAL) return in.readInt();
+    		if(flag == Flag.UPWARD) return Integer.valueOf(in.readShort());
+    	}
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -775,7 +799,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException If failed.
      */
     long readLong(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : 0;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : 0;
+    	if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(LONG);
+    		if(flag == Flag.NORMAL) return in.readLong();
+    		if(flag == Flag.UPWARD) return in.readInt();
+    	}
+        return 0;
     }
 
     /**
@@ -784,7 +814,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Long readLongNullable(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : null;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : null;
+    	if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(LONG);
+    		if(flag == Flag.NORMAL) return in.readLong();
+    		if(flag == Flag.UPWARD) return Long.valueOf(in.readInt());
+    	}
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -907,7 +943,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException If failed.
      */
     double readDouble(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(DOUBLE) == Flag.NORMAL ? in.readDouble() : 0;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(DOUBLE) == Flag.NORMAL ? in.readDouble() : 0;
+        if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(DOUBLE);
+    		if(flag == Flag.NORMAL) return in.readDouble();
+    		if(flag == Flag.UPWARD) return in.readFloat();
+    	}
+        return 0;
     }
 
     /**
@@ -916,7 +958,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Double readDoubleNullable(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(DOUBLE) == Flag.NORMAL ? in.readDouble() : null;
+        //- return findFieldById(fieldId) && checkFlagNoHandles(DOUBLE) == Flag.NORMAL ? in.readDouble() : null;
+        if(findFieldById(fieldId)) {
+    		Flag flag = checkFlagNoHandles(DOUBLE);
+    		if(flag == Flag.NORMAL) return in.readDouble();
+    		if(flag == Flag.UPWARD) return Double.valueOf(in.readFloat());
+    	}
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1646,6 +1694,29 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             return Flag.NULL;
         else if (flag == HANDLE)
             return Flag.HANDLE;
+        
+        // add@byron
+        if(flag<=6 && expFlag<=6) {
+        	if (flag == 3 && expFlag==2) { // readShort for int value
+	        	return Flag.NORMAL;
+	        }
+        	if (flag == 2 && expFlag==3) { // readInt for short value
+	        	return Flag.UPWARD;
+	        }
+	        if (flag == 4 && expFlag==3) { // readInt for long value
+	        	return Flag.NORMAL;
+	        }
+	        if (flag == 3 && expFlag==4) { // readLong for int value
+	        	return Flag.UPWARD;
+	        }
+	        if (flag == 6 && expFlag==5) { // readFloat for double value
+	        	return Flag.NORMAL;
+	        }
+	        if (flag == 5 && expFlag==6) { // readDouble for float value
+	        	return Flag.UPWARD;
+	        }
+        }
+        // end@
 
         int pos = BinaryUtils.positionForHandle(in);
 
@@ -1667,7 +1738,35 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             return Flag.NORMAL;
         else if (flag == NULL)
             return Flag.NULL;
-
+        
+        // add@byron
+        if(flag<=6 && expFlag<=6) {
+        	if (flag == 3 && expFlag==2) { // readShort for int value
+	        	return Flag.NORMAL;
+	        }
+        	if (flag == 2 && expFlag==3) { // readInt for short value
+	        	return Flag.UPWARD;
+	        }
+	        if (flag == 4 && expFlag==3) { // readInt for long value
+	        	return Flag.NORMAL;
+	        }
+	        if (flag == 3 && expFlag==4) { // readLong for int value
+	        	return Flag.UPWARD;
+	        }
+	        if (flag == 6 && expFlag==5) { // readFloat for double value
+	        	return Flag.NORMAL;
+	        }
+	        if (flag == 5 && expFlag==6) { // readDouble for float value
+	        	return Flag.UPWARD;
+	        }
+	        if (flag == 2 && expFlag==1) { // readByte for short value
+	        	return Flag.NORMAL;
+	        }
+        	if (flag == 1 && expFlag==2) { // readShort for byte value
+	        	return Flag.UPWARD;
+	        }
+        }
+        // end@
         int pos = BinaryUtils.positionForHandle(in);
 
         throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + fieldFlagName(expFlag) +
@@ -2365,6 +2464,9 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         HANDLE,
 
         /** Null. */
-        NULL
+        NULL,
+        
+        /** Upward compatibility */
+        UPWARD,
     }
 }

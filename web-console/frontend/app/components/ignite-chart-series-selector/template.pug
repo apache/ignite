@@ -1,0 +1,15 @@
+
+
+button.btn-ignite.btn-ignite--link-dashed-secondary(
+    protect-from-bs-select-render
+    bs-select
+    ng-model='$ctrl.selectedCharts'
+    ng-change='$ctrl.setSelectedCharts()'
+    ng-model-options='{debounce: {default: 5}}',
+    bs-options='chart.key as chart.label for chart in $ctrl.charts'
+    bs-on-before-show='$ctrl.onShow'
+    data-multiple='true'
+    ng-transclude
+    ng-disabled='!($ctrl.charts.length)'
+)
+    svg(ignite-icon='gear').icon

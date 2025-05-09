@@ -1,0 +1,21 @@
+
+
+@import "./../primitives/btn/index.scss";
+
+#buorg.buorg {
+    background-color: $brand-warning;
+    line-height: 16px;
+    font-family: inherit;
+
+    a {
+        @extend .btn-ignite;
+
+        &#buorgul {
+            @extend .btn-ignite--success;
+        }
+
+        &#buorgig {
+            @extend .btn-ignite--primary;
+        }
+    }
+}
