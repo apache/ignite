@@ -37,6 +37,7 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * IGFS directory info.
@@ -152,7 +153,7 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
             IgfsListingEntry entry = listing.get(name);
 
             if (entry != null)
-                return F.eq(expId, entry.fileId());
+                return Objects.equals(expId, entry.fileId());
         }
 
         return false;
@@ -273,7 +274,7 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
 
         IgfsDirectoryInfo that = (IgfsDirectoryInfo)obj;
 
-        return id.equals(that.id) && F.eq(props, that.props);
+        return id.equals(that.id) && Objects.equals(props, that.props);
     }
 
     /** {@inheritDoc} */

@@ -37,8 +37,7 @@
     <properties>
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <node.version>v16.13.2</node.version>
+        <maven.compiler.target>11</maven.compiler.target>        
         <spring.boot.version>2.7.13</spring.boot.version>
         <web-console.ignite.version>2.16.999-SNAPSHOT</web-console.ignite.version>
         <commons.lang3.version>3.12.0</commons.lang3.version>        

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.igfs;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -45,7 +46,7 @@ public abstract class IgfsUserContext {
 
         final String ctxUser = userStackThreadLocal.get();
 
-        if (F.eq(ctxUser, user))
+        if (Objects.equals(ctxUser, user))
             return c.apply(); // correct context is already there
 
         userStackThreadLocal.set(user);
@@ -92,7 +93,7 @@ public abstract class IgfsUserContext {
 
         final String ctxUser = userStackThreadLocal.get();
 
-        if (F.eq(ctxUser, user))
+        if (Objects.equals(ctxUser, user))
             return c.call(); // correct context is already there
 
         userStackThreadLocal.set(user);

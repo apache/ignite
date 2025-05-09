@@ -47,6 +47,7 @@ import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -273,7 +274,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @throws IgniteCheckedException In case of handshake failure.
      */
     private IgfsMessage processHandshakeRequest(IgfsHandshakeRequest req) throws IgniteCheckedException {
-        if (req.igfsName() != null && !F.eq(igfs.name(), req.igfsName()))
+        if (req.igfsName() != null && !Objects.equals(igfs.name(), req.igfsName()))
             throw new IgniteCheckedException("Failed to perform handshake because existing IGFS name " +
                 "differs from requested [requested=" + req.igfsName() + ", existing=" + igfs.name() + ']');
 

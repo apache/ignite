@@ -24,6 +24,8 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -271,7 +273,7 @@ public class IgfsFileMap implements Externalizable, Binarylizable {
      */
     private void updateRangeStatus0(int origIdx, IgfsFileAffinityRange orig, IgfsFileAffinityRange update,
         int status) {
-        assert F.eq(orig.affinityKey(), update.affinityKey());
+        assert Objects.equals(orig.affinityKey(), update.affinityKey());
         assert ranges.get(origIdx) == orig;
 
         if (orig.regionEqual(update))

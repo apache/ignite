@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -206,8 +207,8 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
 
         IgfsBlockLocationImpl that = (IgfsBlockLocationImpl)o;
 
-        return len == that.len && start == that.start && F.eq(nodeIds, that.nodeIds) && F.eq(names, that.names) &&
-            F.eq(hosts, that.hosts);
+        return len == that.len && start == that.start && Objects.equals(nodeIds, that.nodeIds) && Objects.equals(names, that.names) &&
+        		Objects.equals(hosts, that.hosts);
     }
 
     /** {@inheritDoc} */

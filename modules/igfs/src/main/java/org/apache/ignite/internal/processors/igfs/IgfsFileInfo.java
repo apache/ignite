@@ -36,6 +36,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * IGFS file info.
@@ -279,8 +280,8 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         IgfsFileInfo that = (IgfsFileInfo)obj;
 
-        return id.equals(that.id) && blockSize == that.blockSize && len == that.len && F.eq(affKey, that.affKey) &&
-            F.eq(props, that.props) && F.eq(lockId, that.lockId);
+        return id.equals(that.id) && blockSize == that.blockSize && len == that.len && Objects.equals(affKey, that.affKey) &&
+        		Objects.equals(props, that.props) && Objects.equals(lockId, that.lockId);
     }
 
     /** {@inheritDoc} */

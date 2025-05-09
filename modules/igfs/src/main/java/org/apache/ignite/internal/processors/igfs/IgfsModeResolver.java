@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
@@ -101,7 +102,7 @@ public class IgfsModeResolver implements Externalizable {
 
             if (mode == null) {
                 for (T2<IgfsPath, IgfsMode> entry : modes) {
-                    if (F.eq(path, entry.getKey()) || path.isSubDirectoryOf(entry.getKey())) {
+                    if (Objects.equals(path, entry.getKey()) || path.isSubDirectoryOf(entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
 

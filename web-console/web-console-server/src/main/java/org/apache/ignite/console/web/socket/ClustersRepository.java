@@ -27,6 +27,7 @@ import org.apache.ignite.console.db.CacheHolder;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.websocket.TopologySnapshot;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.slf4j.Logger;
@@ -199,7 +200,7 @@ public class ClustersRepository {
      * Cleanup cluster index.
      */
     void cleanupClusterIndex() {
-        Collection<UUID> nids = U.nodeIds(ignite.cluster().nodes());
+        Collection<UUID> nids = ClusterNodeFunc.nodeIds(ignite.cluster().nodes());
 
         stream(clusterIdsByUser.cache().spliterator(), false)
             .peek(entry -> {

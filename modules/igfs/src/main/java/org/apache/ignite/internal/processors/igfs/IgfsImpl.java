@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
@@ -236,7 +237,7 @@ public final class IgfsImpl implements IgfsEx {
         String dataCacheName = igfsCtx.configuration().getDataCacheConfiguration().getName();
 
         for (CacheConfiguration cacheCfg : igfsCtx.kernalContext().config().getCacheConfiguration()) {
-            if (F.eq(dataCacheName, cacheCfg.getName())) {
+            if (Objects.equals(dataCacheName, cacheCfg.getName())) {
                 EvictionPolicy evictPlc = cacheCfg.getEvictionPolicyFactory() != null ?
                     (EvictionPolicy)cacheCfg.getEvictionPolicyFactory().create()
                     : cacheCfg.getEvictionPolicy();
@@ -349,7 +350,7 @@ public final class IgfsImpl implements IgfsEx {
             boolean await = false;
 
             for (IgfsPath path : paths) {
-                if (workerPath.isSubDirectoryOf(path) || F.eq(workerPath, path)) {
+                if (workerPath.isSubDirectoryOf(path) || Objects.equals(workerPath, path)) {
                     await = true;
 
                     break;
@@ -692,7 +693,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
-                if (F.eq(IgfsPath.ROOT, path))
+                if (Objects.equals(IgfsPath.ROOT, path))
                     return false;
 
                 IgfsMode mode = resolveMode(path);
@@ -1358,7 +1359,7 @@ public final class IgfsImpl implements IgfsEx {
         assert sum != null;
 
         if (file.isDirectory()) {
-            if (!F.eq(IgfsPath.ROOT, file.path()))
+            if (!Objects.equals(IgfsPath.ROOT, file.path()))
                 sum.directoriesCount(sum.directoriesCount() + 1);
 
             for (IgfsFile childFile : listFiles(file.path()))

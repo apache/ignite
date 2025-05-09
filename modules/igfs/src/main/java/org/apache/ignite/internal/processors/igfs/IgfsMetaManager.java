@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -693,7 +694,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not " +
                                     "found): " + fileId));
 
-                            if (!F.eq(lockId, oldInfo.lockId()))
+                            if (!Objects.equals(lockId, oldInfo.lockId()))
                                 throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) " +
                                     "[fileId=" + fileId + ", lockId=" + lockId + ", actualLockId=" +
                                     oldInfo.lockId() + ']');
@@ -1705,7 +1706,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     tx.commit();
 
-                    return !F.eq(prev, val);
+                    return !Objects.equals(prev, val);
                 }
             }
             finally {
@@ -1772,7 +1773,7 @@ public class IgfsMetaManager extends IgfsManager {
         IgniteUuid destId, String destName) throws IgniteCheckedException {
         validTxState(true);
 
-        if (F.eq(srcId, destId))
+        if (Objects.equals(srcId, destId))
             id2InfoPrj.invoke(srcId, new IgfsMetaDirectoryListingRenameProcessor(srcName, destName));
         else {
 
@@ -2655,7 +2656,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 for (Map.Entry<IgfsPath, IgniteUuid> entry : pathToId.entrySet()) {
                     if (!idToInfo.containsKey(entry.getValue()) ||
-                        !F.eq(entry.getValue(), fileId(entry.getKey(), true))) {
+                        !Objects.equals(entry.getValue(), fileId(entry.getKey(), true))) {
                         changed = entry.getKey();
 
                         break;

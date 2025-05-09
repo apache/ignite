@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -103,7 +104,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             if (cacheCfgs != null) {
                 for (CacheConfiguration cacheCfg : cacheCfgs) {
-                    if (F.eq(cacheCfg.getName(), metaCacheName)) {
+                    if (Objects.equals(cacheCfg.getName(), metaCacheName)) {
                         metaClient = false;
 
                         break;
@@ -306,8 +307,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (IgfsAttributes rmtAttr : rmtAttrs)
             for (IgfsAttributes locAttr : locAttrs) {
                 // Checking the use of different caches on the different IGFSes.
-                if (!F.eq(rmtAttr.igfsName(), locAttr.igfsName())) {
-                    if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
+                if (!Objects.equals(rmtAttr.igfsName(), locAttr.igfsName())) {
+                    if (Objects.equals(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new IgniteCheckedException("Meta cache names should be different for different IGFS instances " +
                             "configuration (fix configuration or set " +
                             "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
@@ -317,7 +318,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                             ", locIgfsName=" + locAttr.igfsName() +
                             ", rmtIgfsName=" + rmtAttr.igfsName() + ']');
 
-                    if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
+                    if (Objects.equals(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new IgniteCheckedException("Data cache names should be different for different IGFS instances " +
                             "configuration (fix configuration or set " +
                             "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
@@ -368,7 +369,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      */
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String igfsName)
         throws IgniteCheckedException {
-        if (!F.eq(rmtVal, locVal))
+        if (!Objects.equals(rmtVal, locVal))
             throw new IgniteCheckedException(name + " should be the same on all nodes in grid for IGFS configuration " +
                 "(fix configuration or set " +
                 "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +

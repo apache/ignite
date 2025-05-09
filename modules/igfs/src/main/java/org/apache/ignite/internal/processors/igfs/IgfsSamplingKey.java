@@ -21,6 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
+
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -66,7 +68,7 @@ class IgfsSamplingKey implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return this == obj || (obj instanceof IgfsSamplingKey && F.eq(name, ((IgfsSamplingKey)obj).name));
+        return this == obj || (obj instanceof IgfsSamplingKey && Objects.equals(name, ((IgfsSamplingKey)obj).name));
     }
 
     /** {@inheritDoc} */

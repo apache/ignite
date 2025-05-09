@@ -33,6 +33,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 
 /**
  * Directory listing entry.
@@ -126,7 +127,7 @@ public class IgfsListingEntry implements Externalizable, Binarylizable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object other) {
-        return this == other || other instanceof IgfsListingEntry && F.eq(id, ((IgfsListingEntry)other).id);
+        return this == other || other instanceof IgfsListingEntry && Objects.equals(id, ((IgfsListingEntry)other).id);
     }
 
     /** {@inheritDoc} */

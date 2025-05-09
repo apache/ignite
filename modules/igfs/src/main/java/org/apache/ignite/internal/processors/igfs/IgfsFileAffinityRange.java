@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -226,7 +227,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
      * @return Concatenation result or {@code null} if ranges are not adjacent.
      */
     @Nullable public IgfsFileAffinityRange concat(IgfsFileAffinityRange range) {
-        if (endOff + 1 != range.startOff || !F.eq(affKey, range.affKey) || status != RANGE_STATUS_INITIAL)
+        if (endOff + 1 != range.startOff || !Objects.equals(affKey, range.affKey) || status != RANGE_STATUS_INITIAL)
             return null;
 
         return new IgfsFileAffinityRange(startOff, range.endOff, affKey);

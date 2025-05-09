@@ -1170,7 +1170,7 @@ public class FullTextLucene {
            }
            else if(row[i] instanceof BinaryObjectImpl){
         	   BinaryObjectImpl _key = (BinaryObjectImpl)row[i];
-        	   keyByteRef = new BytesRef(_key.array());
+        	   keyByteRef = new BytesRef(_key.bytes(),_key.start(),_key.size());
            }
            else{           
         	   keyByteRef = new BytesRef(row[i].toString());

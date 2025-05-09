@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -193,7 +194,7 @@ public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externaliz
 
         IgfsBlockKey that = (IgfsBlockKey)o;
 
-        return blockId == that.blockId && fileId.equals(that.fileId) && F.eq(affKey, that.affKey) &&
+        return blockId == that.blockId && fileId.equals(that.fileId) && Objects.equals(affKey, that.affKey) &&
             evictExclude == that.evictExclude;
     }
 

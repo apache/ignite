@@ -98,9 +98,6 @@ public enum OperationType {
 
     /** Cache remove all conflict. */
     CACHE_REMOVE_ALL_CONFLICT(23),
-    
-    /** System view row. */
-    SYSTEM_VIEW_ROW(25),
 
     /** System view schema. */
     SYSTEM_VIEW_SCHEMA(24),

@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -795,10 +796,10 @@ public class IgfsDataManager extends IgfsManager {
 
                 if (log.isDebugEnabled())
                     log.debug("Calculated affinity for range [start=" + pos + ", end=" + partEnd +
-                        ", nodes=" + F.nodeIds(affNodes) + ", range=" + range +
-                        ", affNodes=" + F.nodeIds(affNodes) + ']');
+                        ", nodes=" + ClusterNodeFunc.nodeIds(affNodes) + ", range=" + range +
+                        ", affNodes=" + ClusterNodeFunc.nodeIds(affNodes) + ']');
 
-                if (last != null && equal(last.nodeIds(), F.viewReadOnly(affNodes, F.node2id()))) {
+                if (last != null && equal(last.nodeIds(), F.viewReadOnly(affNodes, ClusterNodeFunc.node2id()))) {
                     // Merge with the previous block in result.
                     res.removeLast();
 
@@ -874,13 +875,13 @@ public class IgfsDataManager extends IgfsManager {
             Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
 
             if (log.isDebugEnabled())
-                log.debug("Mapped key to nodes [key=" + key + ", nodes=" + F.nodeIds(affNodes) +
+                log.debug("Mapped key to nodes [key=" + key + ", nodes=" + ClusterNodeFunc.nodeIds(affNodes) +
                 ", blockStart=" + blockStart + ", blockLen=" + blockLen + ']');
 
             IgfsBlockLocation last = res.peekLast();
 
             // Merge with previous affinity block location?
-            if (last != null && equal(last.nodeIds(), F.viewReadOnly(affNodes, F.node2id()))) {
+            if (last != null && equal(last.nodeIds(), F.viewReadOnly(affNodes, ClusterNodeFunc.node2id()))) {
                 // Remove previous incomplete value.
                 res.removeLast();
 

@@ -29,10 +29,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.commandline.CommandsProvider;
+
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;

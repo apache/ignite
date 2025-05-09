@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeletePr
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -523,7 +524,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
             Collection<UUID> startSync0 = startSync = new GridConcurrentHashSet<>(
                 F.viewReadOnly(
                     igfsCtx.kernalContext().discovery().allNodes(),
-                    F.node2id(),
+                    ClusterNodeFunc.node2id(),
                     new P1<ClusterNode>() {
                         @Override public boolean apply(ClusterNode n) {
                             return igfsCtx.igfsNode(n);

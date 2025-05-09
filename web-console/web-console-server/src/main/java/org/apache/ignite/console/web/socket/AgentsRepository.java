@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.tx.TransactionManager;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.stereotype.Repository;
 
@@ -122,7 +123,7 @@ public class AgentsRepository {
      * Cleanup backend index.
      */
     void cleanupBackendIndex() {
-        Collection<UUID> nids = U.nodeIds(ignite.cluster().nodes());
+        Collection<UUID> nids = ClusterNodeFunc.nodeIds(ignite.cluster().nodes());
 
         stream(backendByAgent.cache().spliterator(), false)
             .peek(entry -> entry.getValue().retainAll(nids))

@@ -70,6 +70,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -994,7 +995,7 @@ public class IgfsUtils {
 
         if (igfs != null)
             for (IgfsAttributes attrs : igfs)
-                if (F.eq(igfsName, attrs.igfsName()))
+                if (Objects.equals(igfsName, attrs.igfsName()))
                     return true;
 
         return false;
