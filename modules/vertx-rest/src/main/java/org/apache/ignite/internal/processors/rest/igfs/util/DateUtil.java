@@ -6,7 +6,6 @@ import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
 import java.math.BigDecimal;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.Duration;
@@ -213,7 +212,7 @@ public class DateUtil {
     }
 	
     public static String getDateFormatToSecond(Date date) {
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String tag = df.format(date);
         return tag;
     }
@@ -231,13 +230,13 @@ public class DateUtil {
     }
 
     public static String getDateTagToSecond() {
-        DateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+    	SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
         String tag = df.format(new Date());
         return tag;
     }
 
     public static String getUTCDateFormat() {
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    	SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         String tag = df.format(new Date());
         return tag;
     }    

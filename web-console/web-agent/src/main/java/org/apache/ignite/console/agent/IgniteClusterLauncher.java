@@ -236,7 +236,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
          log.info("Cluster: Started embedded node for data analysis purpose [TCP binary port={}, Jetty REST port={}]", ignite.configuration().getConnectorConfiguration().getPort(), jettyPort);
 
-         String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
+         String nodeUrl = String.format("http://%s:%d", jettyHost, jettyPort);
 
          RestClusterHandler.registerNodeUrl(clusterId,nodeUrl,ignite.name());
          

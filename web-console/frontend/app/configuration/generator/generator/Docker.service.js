@@ -62,7 +62,7 @@ export default class IgniteDockerGenerator {
 
     optionLibs(cluster, targetVer) {
         return [
-            'ignite-rest-http',
+            'ignite-vertx-rest',
             get(POM_DEPENDENCIES, [get(cluster, 'discovery.kind'), 'artifactId'])
         ].filter(Boolean);
     }

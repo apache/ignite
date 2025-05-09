@@ -22,8 +22,12 @@ const JDBC_TYPE_ALIASES = {
     "DATETIME":{"dbName": "DATE", "dbType": 91, "signed": {"javaType": "Date"}},
     "UUID": {"dbName": "VARCHAR", "dbType": 12, "signed": {"javaType": "UUID"}},
     "JSON": {"dbName": "LONGVARCHAR", "dbType": -16, "signed": {"javaType": "String"}},
+    "JSONB": {"dbName": "LONGVARCHAR", "dbType": -16, "signed": {"javaType": "String"}},
     "STRING": {"dbName": "VARCHAR", "dbType": 12, "signed": {"javaType": "String"}},
     "VARCHAR2": {"dbName": "VARCHAR", "dbType": 12, "signed": {"javaType": "String"}},
+    "INT8": {"dbName": "BIGINT", "dbType": -5, "signed": {"javaType": "Long","primitiveType": "long"}},
+    "INT4": {"dbName": "INTEGER", "dbType": 4, "signed": {"javaType": "Integer","primitiveType": "int"}},
+    "INT2": {"dbName": "SMALLINT", "dbType": 5, "signed": {"javaType": "Short","primitiveType": "short"}},
 };
 
 /**
@@ -59,7 +63,8 @@ export default class SqlTypes {
     findJdbcType(dbType,dbTypeName) {
         let jdbcType = undefined;
         if(dbType==1111 || dbType==0 || dbType==undefined){
-            jdbcType = JDBC_TYPE_ALIASES[dbTypeName.toUpperCase()]
+            dbTypeName = dbTypeName.toUpperCase()
+            jdbcType = JDBC_TYPE_ALIASES[dbTypeName]
             if (jdbcType){
                 return jdbcType;
             }

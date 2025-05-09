@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
@@ -71,9 +70,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     private GridJettyRestHandler jettyHnd;
 
     /** HTTP server. */
-    private static WebApiCreater httpSrv;
+    private WebApiCreater httpSrv;
     
-    private static VertXStarter starter;
+    private VertXStarter starter;
     
     private static int handlerCount = 0;    
 
@@ -117,10 +116,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      	}
         else {
         	jettyHnd.index = ++handlerCount;
-        }  
-        
-        override(httpSrv.options);
-        
+        }        
     }
     
     public static boolean isPortInUse(int port) {
@@ -159,16 +155,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      	}
     	
     	if(handlerCount==0) {
-    		httpSrv.getRouter().route("/ignite").blockingHandler(jettyHnd);
+    		httpSrv.getRouter().route("/ignite*").blockingHandler(jettyHnd);
     		httpSrv.getRouter().route("/*").blockingHandler(jettyHnd);
     	}
     	
-    	if(ctx.igniteInstanceName()==null || ctx.igniteInstanceName().isBlank()) {
-        	httpSrv.getRouter().route("/ignite").blockingHandler(jettyHnd);
-        }
-        else {
-        	httpSrv.getRouter().route("/"+ctx.igniteInstanceName()).blockingHandler(jettyHnd);
-        }
     }   
     
     private void override(HttpServerOptions con) {
@@ -270,6 +260,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 srvPort = Integer.parseInt(srvPortStr);
             }
             catch (NumberFormatException ignore) {
+            	context.close();
                 throw new IgniteCheckedException("Failed to start Vertx server because IGNITE_JETTY_PORT system property cannot be cast to integer: " + srvPortStr);
             }            
 
@@ -291,15 +282,18 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 }
             }
             catch (FileNotFoundException e) {
+            	context.close();
                 throw new IgniteSpiException("Failed to find configuration file: " + cfgUrl, e);
             }            
             catch (IOException e) {
+            	context.close();
                 throw new IgniteSpiException("Failed to load configuration file: " + cfgUrl, e);
             }
             catch (Exception e) {
+            	context.close();
                 throw new IgniteSpiException("Failed to start HTTP server with configuration file: " + cfgUrl, e);
             }
-
+            
             try {
             	httpSrv = new WebApiCreater(context,this.props);
             }
@@ -322,12 +316,16 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             break;
         }
         
+        override(httpSrv.options);
+        
         starter = new VertXStarter();
         starter.setApplicationContext(context);
-        starter.setWebApiCreater(httpSrv);
+        starter.setWebApiCreater(httpSrv);        
+        
     }
 
-    /**     Stops Vertx.
+    /**     
+     * Stops Vertx.
      */
     private void stopJetty() {
         // Vertx does not really stop the server if port is busy.
@@ -362,12 +360,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	
 
     	if(httpSrv!=null && httpSrv.isStarted()) {  
-    		if(ctx.igniteInstanceName()==null || ctx.igniteInstanceName().isBlank()) {            	
-            	httpSrv.getRouter().delete("/ignite");
-            }
-            else {            	
-            	httpSrv.getRouter().delete("/"+ctx.igniteInstanceName());
-            }
+    		httpSrv.getRouter().delete("/ignite");
     		
     		if(handlerCount <= 0) {
     	        stopJetty();	

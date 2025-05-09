@@ -22,8 +22,8 @@
 		var ticket = '';
 		var authUrl = '/api/v1/user';
 		var loginUrl = '/login';
-		var storageHost = 'http://localhost:18080';
-		var servicePath = '/filemanager/file/';
+		var storageHost = 'http://localhost:8787';
+		var servicePath = '/filemanager/file';
     const currentStorageHost = localStorage.getItem('currentStorageHost');
     if (currentStorageHost) {     
         storageHost = currentStorageHost;
@@ -35,9 +35,9 @@
 		    async:false,
 		    dataType: "json",
 		    xhrFields: {
-                withCredentials: true
-            },
-            crossDomain: true
+            withCredentials: true
+          },
+        crossDomain: true
 	    });
 	    
 	    if(xhr0.status==404){
@@ -58,57 +58,57 @@
 				        ticket: ticket,
                 appName: 'File Manager',
                 defaultLang: 'zh',
-                listUrl: storageUrl+'list/',
-                uploadUrl: storageUrl+'upload/',
-                downloadFileUrl: storageUrl+'preview/',
-                createFolderUrl: storageUrl+'createFolder/',
-                permissionsUrl: storageUrl+'changePermissions/',
-                copyUrl: storageUrl+'copy/',
-                moveUrl: storageUrl+'move/',
-                removeUrl: storageUrl+'remove/',
-                renameUrl: storageUrl+'rename/',
-                getContentUrl: storageUrl+'getContent/',
-                editUrl: storageUrl+'edit/',
-                compressUrl: storageUrl+'compress/',
-                extractUrl: storageUrl+'extract/',
+                listUrl: storageUrl,
+                uploadUrl: storageUrl,
+                downloadFileUrl: storageUrl,
+                createFolderUrl: storageUrl,
+                permissionsUrl: storageUrl,
+                copyUrl: storageUrl,
+                moveUrl: storageUrl,
+                removeUrl: storageUrl,
+                renameUrl: storageUrl,
+                getContentUrl: storageUrl,
+                editUrl: storageUrl,
+                compressUrl: storageUrl,
+                extractUrl: storageUrl,
                 documentViewUrl: storageUrl+'office/',
                 pickCallback: function (item) {
 				    if(item.type!='file')
-					   return ;
+					    return ;
                     
-					if(item.name.endsWith('.zpln') ){
-					  var pos = item.name.lastIndexOf('_');
-					  var paphid = item.name.substring(pos+1,item.name.length-5);
-					  window.location='/#/notebook/'+paphid;
-					  return ;
-					}
-					else if(item.name.endsWith('.ipynb') ){
-					  var msg = 'Use %s "filemanager/file%s" as url for import external jupiter nodebook to zeppelin'
-                            .replace('%s', item.type)
-                            .replace('%s', item.fullPath());
-					  window.alert(msg);
-					  return false;
-					}
-					else if(item.name.endsWith('.sheet') || item.name.endsWith('.csv') || item.name.endsWith('.tsv') ){
-					  window.location='dist/xspreadsheet/?ref='+storageUrl+'view'+item.fullPath();
-					  return false;
-					}
-					
-					
-					var msg = 'Picked %s "filemanager/file%s" for external use'
-                            .replace('%s', item.type)
-                            .replace('%s', item.fullPath());
-                    window.alert(msg);
-                },
+            if(item.name.endsWith('.zpln') ){
+              var pos = item.name.lastIndexOf('_');
+              var paphid = item.name.substring(pos+1,item.name.length-5);
+              window.location='/#/notebook/'+paphid;
+              return ;
+            }
+            else if(item.name.endsWith('.ipynb') ){
+              var msg = 'Use %s "filemanager/file%s" as url for import external jupiter nodebook to zeppelin'
+                              .replace('%s', item.type)
+                              .replace('%s', item.fullPath());
+              window.alert(msg);
+              return false;
+            }
+            else if(item.name.endsWith('.sheet') || item.name.endsWith('.csv') || item.name.endsWith('.tsv') ){
+              window.location='dist/xspreadsheet/?ref='+storageUrl+item.fullPath();
+              return false;
+            }
+            
+            
+            var msg = 'Picked %s "filemanager/file%s" for external use'
+                              .replace('%s', item.type)
+                              .replace('%s', item.fullPath());
+                      window.alert(msg);
+                  },
 
-                allowedActions: angular.extend(defaults.allowedActions, {
-                    pickFiles: true,
-                    pickFolders: false,
-                    downloadMultiple: false
-                }),
-                tplPath: 'app/templates'
-            });
-        }]);
+                  allowedActions: angular.extend(defaults.allowedActions, {
+                      pickFiles: true,
+                      pickFolders: false,
+                      downloadMultiple: false
+                  }),
+                  tplPath: 'app/templates'
+              });
+          }]);
     </script>
 </head>
 

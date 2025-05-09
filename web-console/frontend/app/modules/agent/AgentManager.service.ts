@@ -687,9 +687,15 @@ export default class AgentManager {
         return this.collectCacheNames(null)
             .then((data) => {
                 let caches = _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
-                let cacheNames= _.filter(caches,(cache:string)=>{ 
+                let cacheNames = _.filter(caches,(cache:string)=>{ 
                     return !cache.startsWith('INDEXES.') && !cache.startsWith('igfs-internal-')
                 });
+                
+                if(data.hasOwnProperty('types')){
+                    cacheNames = _.filter(cacheNames,(cache:string)=>{ 
+                        return cache in data.types
+                    });
+                }
                 let cachesInfo = _.map(cacheNames, (cacheName) => {
                     const schema = data.sqlSchemas && data.sqlSchemas[cacheName] || cacheName;
                     let comment = data.cachesComment && data.cachesComment[cacheName] || '';

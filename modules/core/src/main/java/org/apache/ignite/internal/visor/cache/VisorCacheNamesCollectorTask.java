@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -68,7 +73,7 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
             Map<String, IgniteUuid> caches = new HashMap<>();
             Map<String, String> cachesComment = new HashMap<>();
             Map<String, String> sqlSchemas = new HashMap<>();
-            Set<String> groups = new HashSet<>();
+            Map<String, String> groups = new HashMap<>();
 
             for (Map.Entry<String, DynamicCacheDescriptor> item : cacheProc.cacheDescriptors().entrySet()) {
                 DynamicCacheDescriptor cd = item.getValue();
@@ -82,10 +87,12 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
                 if (!F.isEmpty(sqlSchema))
                 	sqlSchemas.put(item.getKey(),sqlSchema);
 
-                String grp = cd.groupDescriptor().groupName();
+                Collection<QueryEntity> grp = cd.schema().entities();
 
-                if (!F.isEmpty(grp))
-                    groups.add(grp);
+                if (!F.isEmpty(grp)) {
+                	List<String> types = grp.stream().map(s->s.getTableName()).collect(Collectors.toList());
+                    groups.put(item.getKey(),String.join(",", types));
+                }
             }
 
             return new VisorCacheNamesCollectorTaskResult(caches, cachesComment, sqlSchemas, groups);

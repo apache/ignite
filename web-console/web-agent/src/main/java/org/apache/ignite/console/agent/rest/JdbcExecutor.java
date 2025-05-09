@@ -255,7 +255,7 @@ public class JdbcExecutor implements AutoCloseable {
                     		catch(DbException e) {
                     			log.warning(e.getMessage());
                     		}
-                    		column.put(col.getName(), col.getComment()!=null? aClass+" //"+col.getComment(): aClass);
+                    		column.put(col.getName(), !StringUtil.isBlank(col.getComment())? aClass+" //"+col.getComment(): aClass);                    		
                     	}                    	
                     	fields.set(typeName, column);
                     	
@@ -276,11 +276,7 @@ public class JdbcExecutor implements AutoCloseable {
                     		}
                     		
                     	}
-                    	indexes.set(typeName, index);                    	
-                    	
-                    	//caches.put("keyClasses",fields);
-                    	//caches.put("valClasses",fields);
-                    	
+                    	indexes.set(typeName, index);                    	                    	
                     }
                     
                     return RestResult.success(arr.toString(), params.getString("sessionToken"));

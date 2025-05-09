@@ -257,7 +257,12 @@ public class DBInfoController {
             	}
             	else {
 	            	String cname = column.getString("name").toLowerCase();
+	            	String ccomment = column.getString("comment").toLowerCase();
 	            	if(cname.equals("id") || cname.equals("_id") || cname.equals("_key") || cname.equalsIgnoreCase(name+"_id")) {
+	            		column.put("key", true);
+	            		column.put("nullable", false);
+	            	}
+	            	else if(ccomment.equals("id") || ccomment.equals("_id") || ccomment.equals("_key") || ccomment.equalsIgnoreCase(name+"_id")) {
 	            		column.put("key", true);
 	            		column.put("nullable", false);
 	            	}

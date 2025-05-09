@@ -9,6 +9,8 @@
     "JCL": {"artifactId": "ignite-jcl"},
     "SLF4J": {"artifactId": "ignite-slf4j"},
 
+    "VAADIN": {"groupId": "org.apache.ignite", "artifactId": "ignite-crudui", "version": "2.16.999-SNAPSHOT"},
+
     "Generic": [
         {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.4"},
         {"groupId": "com.mchange", "artifactId": "mchange-commons-java", "version": "0.2.15"}

@@ -41,9 +41,8 @@ public class WebSocketRequest implements WebSocketEvent<String> {
     @GridToStringInclude
     private String payload;
     
-    private int nodeSeq = 0;
-    
-    private boolean isLastNode = false;
+    /** account token */
+    private String token;
 
     /** {@inheritDoc} */
     @Override public String getRequestId() {
@@ -105,19 +104,11 @@ public class WebSocketRequest implements WebSocketEvent<String> {
         return S.toString(WebSocketRequest.class, this);
     }
 
-	public int getNodeSeq() {
-		return nodeSeq;
+	public String getToken() {
+		return token;
 	}
 
-	public void setNodeSeq(int nodeSeq) {
-		this.nodeSeq = nodeSeq;
-	}
-
-	public boolean isLastNode() {
-		return isLastNode;
-	}
-
-	public void setLastNode(boolean isLastNode) {
-		this.isLastNode = isLastNode;
+	public void setToken(String token) {
+		this.token = token;
 	}
 }

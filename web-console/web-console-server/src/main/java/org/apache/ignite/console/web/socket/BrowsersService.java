@@ -155,21 +155,25 @@ public class BrowsersService extends AbstractSocketHandler {
     /** {@inheritDoc} */
     @Override public void handleEvent(WebSocketSession ses, WebSocketRequest evt) {
         try {
+        	Account account = this.getAccount(ses);
         	JsonObject payload = null;
         	String clusterId;
-            UUID accId = getAccountId(ses);
-
+            UUID accId = account.getId();
+            
+            evt.setToken(account.getToken());
+            
             switch (evt.getEventType()) {
                 case SCHEMA_IMPORT_DRIVERS:
                 case SCHEMA_IMPORT_SCHEMAS:
-                case SCHEMA_IMPORT_METADATA:
-
+                case SCHEMA_IMPORT_METADATA:                	
+                	
                     sendToAgent(new AgentKey(accId), evt);
 
                     break;
 
                 case NODE_REST:
-                case NODE_VISOR:
+                case NODE_VISOR:                	
+                	
                     payload = fromJson(evt.getPayload());
 
                     clusterId = payload.getString("clusterId");
@@ -186,7 +190,8 @@ public class BrowsersService extends AbstractSocketHandler {
                     
                 case AGENT_START_CLUSTER:
                 case AGENT_STOP_CLUSTER:
-                	try {
+                	try {                		
+                		
                 		payload = fromJson(evt.getPayload());
 
                         clusterId = payload.getString("id");
@@ -199,10 +204,11 @@ public class BrowsersService extends AbstractSocketHandler {
                         AgentKey key = new AgentKey(accId);
                         List<WebSocketSession> nids = agentsSrvc.findLocalAgents(key);
                         if (!nids.isEmpty()) {
-                        	for(WebSocketSession sess: nids) {
-                        		evt.setNodeSeq(nodeIndex);
+                        	for(WebSocketSession sess: nids) {                        		
                         		if(nodeIndex==nids.size()-1) {
-                        			evt.setLastNode(true);
+                        			payload.put("nodeSeq",nodeIndex);
+                        			payload.put("isLastNode",true);
+                        			evt.setPayload(payload.encode());
                         			agentsSrvc.sendMessageWithResponse(sess, evt, this.transitionSrvc.localNodeId());
                         		}
                         		else {
@@ -335,6 +341,24 @@ public class BrowsersService extends AbstractSocketHandler {
 
             if (tp instanceof Account)
                 return ((Account)tp).getId();
+        }
+
+        throw new IllegalStateException(messages.getMessageWithArgs("err.account-cant-be-found-in-ws-session", ses));
+    }
+    
+    /**
+     * @param ses Session.
+     */
+    protected Account getAccount(WebSocketSession ses) {
+        Principal p = ses.getPrincipal();
+
+        if (p instanceof Authentication) {
+            Authentication t = (Authentication)p;
+
+            Object tp = t.getPrincipal();
+
+            if (tp instanceof Account)
+                return ((Account)tp);
         }
 
         throw new IllegalStateException(messages.getMessageWithArgs("err.account-cant-be-found-in-ws-session", ses));

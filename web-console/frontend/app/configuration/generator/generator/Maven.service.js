@@ -137,10 +137,10 @@ export default class IgniteMavenGenerator {
 
         sb.startBlock('<plugin>');
         this.addProperty(sb, 'artifactId', 'maven-compiler-plugin');
-        this.addProperty(sb, 'version', '3.6');
+        this.addProperty(sb, 'version', '3.8.1');
         sb.startBlock('<configuration>');
-        this.addProperty(sb, 'source', '11');
-        this.addProperty(sb, 'target', '11');
+        this.addProperty(sb, 'source', '17');
+        this.addProperty(sb, 'target', '17');
         sb.endBlock('</configuration>');
         sb.endBlock('</plugin>');
 
@@ -163,7 +163,7 @@ export default class IgniteMavenGenerator {
     }
 
     collectDependencies(artifactGrp, cluster, targetVer) {
-        const igniteVer = targetVer.ignite;
+        const igniteVer = '${ignite.version}';
 
         const deps = [];
         const storeDeps = [];
@@ -172,10 +172,14 @@ export default class IgniteMavenGenerator {
         this.addDependency(deps, artifactGrp, 'ignite-igfs', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-spring', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-indexing', igniteVer);
-        this.addDependency(deps, artifactGrp, 'ignite-rest-http', igniteVer);
+        this.addDependency(deps, artifactGrp, 'ignite-vertx-rest', igniteVer);
+        this.addDependency(deps, artifactGrp, 'ignite-web-console-common', igniteVer);        
 
         if (_.get(cluster, 'deploymentSpi.kind') === 'URI')
             this.addDependency(deps, artifactGrp, 'ignite-urideploy', igniteVer);
+
+        if (_.get(cluster, 'crudui.kind') !== '')
+            this.pickDependency(deps, 'ignite-crudui', artifactGrp, igniteVer);
 
         this.pickDependency(deps, cluster.discovery.kind, artifactGrp, igniteVer);
 
@@ -243,6 +247,17 @@ export default class IgniteMavenGenerator {
         sb.emptyLine();
 
         this.artifactSection(sb, artifactGrp, cluster, targetVer);
+
+        sb.emptyLine();
+
+        const igniteVer = targetVer.ignite;
+        sb.startBlock('<properties>');
+        this.addProperty(sb, 'maven.compiler.source', '17');
+        this.addProperty(sb, 'maven.compiler.target', '17');
+        this.addProperty(sb, 'project.build.sourceEncoding', 'UTF-8');
+        this.addProperty(sb, 'project.reporting.outputEncoding', 'UTF-8');
+        this.addProperty(sb, 'ignite.version', igniteVer);
+        sb.endBlock('</properties>');
 
         sb.emptyLine();
 

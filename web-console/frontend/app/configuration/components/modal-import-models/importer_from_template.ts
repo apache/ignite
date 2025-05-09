@@ -249,14 +249,15 @@ export class ModalImportModelsFromTemplate {
 
                 this.$scope.importDomain.original_tables = tables;
                 this.$scope.importDomain.tables = meta_tables;
-                this.$scope.importDomain.tablesToUse = meta_tables;
+                let tablesToUse = meta_tables                
                 this.selectedTablesIDs = [];
+                this.$scope.importDomain.tablesToUse = tablesToUse;
                 this.$scope.importDomain.action = 'meta_tables';
             }
             else{
                 this.$scope.importDomain.tables = this.$scope.importDomain.original_tables;
                 let tablesToUse = this.$scope.importDomain.tables.filter((t) => this.LegacyUtils.isDefined(t.idIndex));                    
-                this.selectedTablesIDs = tablesToUse.map((t) => t.name);
+                this.selectedTablesIDs = tablesToUse.map((t) => t.id);
                 this.$scope.importDomain.action = 'tables';
             }
             
@@ -501,7 +502,7 @@ export class ModalImportModelsFromTemplate {
                     $scope.importDomain.tables = tables;
                     let tablesToUse = tables.filter((t) => LegacyUtils.isDefined(t.idIndex));
                     
-                    this.selectedTablesIDs = tablesToUse.map((t) => t.name);
+                    this.selectedTablesIDs = tablesToUse.map((t) => t.id);
                     this.$scope.importDomain.tablesToUse = tablesToUse;                    
 
                     $scope.importDomain.info = INFO_SELECT_TABLES;
@@ -539,15 +540,23 @@ export class ModalImportModelsFromTemplate {
                         tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.name), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.name;
-                        tbl.edit = false;                        
-                        
+                        tbl.edit = false;
+                        let idIndex = [];
+                        _.forEach(tbl.columns, function(col) {                           
+                            const columu_name = col.name.toLowerCase();
+                            if (col.key || columu_name==='id' || columu_name==='_id' || columu_name==='_key') {
+                                idIndex.push(col.name);        
+                            }
+                        });
+                        if(idIndex.length>0){
+                            tbl.idIndex = idIndex;
+                        }
                     });
 
                     $scope.importDomain.action = 'tables';
                     $scope.importDomain.tables = tables;
-                    let tablesToUse = tables; //.filter((t) => LegacyUtils.isDefined(t.idIndex));
-                    
-                    this.selectedTablesIDs = tablesToUse.map((t) => t.name);
+                    let tablesToUse = tables.filter((t) => LegacyUtils.isDefined(t.idIndex));       
+                    this.selectedTablesIDs = tablesToUse.map((t) => t.id);
                     this.$scope.importDomain.tablesToUse = tablesToUse;                    
 
                     $scope.importDomain.info = INFO_SELECT_TABLES;

@@ -118,7 +118,7 @@ import io.vertx.webmvc.common.VertxletException;
  *
  * @author Paolo Biavati https://github.com/paolobiavati
  */
-@VertxletMapping(url="/filemanager/file")
+@VertxletMapping(url="/filemanager/file*")
 public class AngularIgfsFileManagerVertxlet extends Vertxlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(AngularIgfsFileManagerVertxlet.class);
@@ -150,11 +150,7 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
         }
         String configValue = getInitParameter("date.format");
         if (configValue != null) {
-            if (new SimpleDateFormat(DATE_FORMAT).format(new Date()) == null) {
-                // Invalid date format
-                LOG.error("throw invalid date.format");
-                throw new VertxletException(500,"invalid date.format");
-            }
+        	SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT);            
             DATE_FORMAT = configValue;
         }
         if (getInitParameter("enabled.action") == null) {
@@ -260,17 +256,17 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
     	// Catch download requests    	
     	if(action==null) { // view
     		action = "download";
-    		String uri = request.uri()+"/";
+    		String uri = request.uri();
     		pathName = uri.replaceFirst(contextPath, "");
     	}
-    	Mode mode = Mode.valueOf(action);
+    	
     	pathName = URLDecoder.decode(pathName,"UTF-8");
 
         // [$config.downloadFileUrl]?mode=download&preview=true&path=/public_html/image.jpg
         String[] tokens = getFileToken(pathName);
         IgniteFileSystem fs = fs(tokens[0]);
         pathName = tokens[1];
-        if (mode==Mode.list) {
+        if (Mode.list.name().equals(action)) {
         	JsonObject params = new JsonObject();
         	request.params().forEach((k,v)->{
         		params.put(k, v);
@@ -280,7 +276,7 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
         	setContentType(response,"application/json;charset=UTF-8");        
             response.end(responseJsonObject.encodePrettily());
         }
-        else if (mode==Mode.getContent) {
+        else if (Mode.getContent.name().equals(action)) {
         	JsonObject params = new JsonObject();
         	request.params().forEach((k,v)->{
         		params.put(k, v);
@@ -293,9 +289,14 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
         else if ("download".equals(action)) {
         	IgfsPath fspath = new IgfsPath(pathName);
             IgfsFile file = fs.info(fspath);
-            if (file==null || !file.isFile()) {
+            if (file==null) {
                 // if not a file, it is a folder, show this error.  
                 response.setStatusCode(HttpStatus.NOT_FOUND.value()).end("Resource Not Found");
+                return;
+            }
+            if (!file.isFile()) {
+                // if not a file, it is a folder, show this error.  
+                response.setStatusCode(HttpStatus.NOT_FOUND.value()).end("Resource Is isDirectory");
                 return;
             }
 
@@ -310,7 +311,9 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
             
             
             try {
-            	IgfsUtils.pipe(fs, fspath, getOutputStream(response));
+            	OutputStream output = getOutputStream(response);
+            	IgfsUtils.pipe(fs, fspath, output);
+            	output.close();
             } catch (IOException ex) {
                 LOG.error(ex.getMessage(), ex);
                 throw ex;
@@ -329,7 +332,7 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
                         ZipEntry zipEntry = new ZipEntry(fspath.name());
                         zos.putNextEntry(zipEntry);                       
                         try {
-                        	IgfsUtils.pipe(fs, fspath,zos);                       
+                        	IgfsUtils.pipe(fs, fspath, zos);                       
 	                    } catch (IOException ex) {
 	                        LOG.error(ex.getMessage(), ex);
 	                        throw ex;
@@ -344,7 +347,7 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
             response.putHeader("Content-Disposition", "inline; filename=\"" + MimeUtility.encodeWord(toFilename) + "\"");
             OutputStream output = getOutputStream(response);
             output.write(baos.toByteArray());
-            output.flush();
+            output.close();
         }
     }
 
@@ -434,9 +437,7 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
                   response.end(responseJsonObject.encodePrettily());
                   
                 } else {
-                  response
-                      .putHeader("Content-Type", "text/plain")
-                      .end("没有文件上传");
+                  response.putHeader("Content-Type", "text/plain").end("没有文件上传");
                   LOG.debug("file size  = 0");
                   throw new VertxletException(HttpStatus.BAD_REQUEST.value(),"file size  = 0");
                 }                

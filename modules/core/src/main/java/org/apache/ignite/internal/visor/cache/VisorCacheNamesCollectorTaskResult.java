@@ -44,8 +44,8 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
     /** Cache sqlSchemas. */
     private Map<String, String> sqlSchemas;
     
-    /** Cache groups. */
-    private Set<String> groups;
+    /** Cache types. */
+    private Map<String, String> types;
 
     /**
      * Default constructor.
@@ -57,11 +57,11 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
     /**
      * @param caches Cache names and deployment IDs.
      */
-    public VisorCacheNamesCollectorTaskResult(Map<String, IgniteUuid> caches, Map<String, String> cachesComment, Map<String, String> sqlSchemas, Set<String> groups) {
+    public VisorCacheNamesCollectorTaskResult(Map<String, IgniteUuid> caches, Map<String, String> cachesComment, Map<String, String> sqlSchemas, Map<String, String> types) {
         this.caches = caches;
         this.cachesComment = cachesComment;
         this.sqlSchemas = sqlSchemas;
-        this.groups = groups;
+        this.types = types;
     }
 
     /**
@@ -88,8 +88,8 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
     /**
      * @return Value for specified key or number of modified rows..
      */
-    public Set<String> getGroups() {
-        return groups;
+    public Map<String, String> getTypes() {
+        return types;
     }
 
 
@@ -98,7 +98,7 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
         U.writeMap(out, caches);
         U.writeMap(out, cachesComment);
         U.writeMap(out, sqlSchemas);
-        U.writeCollection(out, groups);
+        U.writeMap(out, types);
     }
 
     /** {@inheritDoc} */
@@ -106,7 +106,7 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
         caches = U.readMap(in);
         cachesComment = U.readMap(in);
         sqlSchemas = U.readMap(in);
-        groups = U.readSet(in);
+        types = U.readMap(in);
     }
 
     /** {@inheritDoc} */

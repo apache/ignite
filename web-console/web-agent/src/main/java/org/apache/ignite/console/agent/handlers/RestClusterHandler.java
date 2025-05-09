@@ -23,6 +23,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 import java.net.ConnectException;
+import java.net.http.HttpResponse;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.util.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -75,6 +77,8 @@ public class RestClusterHandler extends AbstractClusterHandler {
 
     /** Latest topology snapshot. */
     private TopologySnapshot latestTop;
+    
+    private String serverUri;
 
     /**
      * @param cfg Web agent configuration.
@@ -82,6 +86,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
     public RestClusterHandler(AgentConfiguration cfg) {
         super(cfg, createNodeSslFactory(cfg));
         clusterUrlMap.put("",cfg.nodeURIs());
+        serverUri = cfg.serverUri();
     }
     
     public static void registerNodeUrl(String clusterId,String url,String clusterName) {
@@ -108,7 +113,8 @@ public class RestClusterHandler extends AbstractClusterHandler {
 
         int urlsCnt = nodeURIs.size();       
         
-
+        String cmd = params.getString("cmd");
+        String token = (String)params.remove("token");
         for (int i = 0;  i < urlsCnt; i++) {
             int currIdx = (startIdx + i) % urlsCnt;
 
@@ -122,6 +128,48 @@ public class RestClusterHandler extends AbstractClusterHandler {
                     log.info("Connected to node [url=" + nodeUrl + "]");
 
                 startIdxs.put(nodeURIs, currIdx);
+                
+                if(res.getStatus()==0 && "metadata".equals(cmd)) {
+                	try {
+                		String cacheName = params.getString("cacheName");
+                		
+                		JsonObject models = restExecutor.getCachedMetadata(serverUri,clusterId,token);
+	                	
+	                	JsonArray response = new JsonArray(res.getData());
+	                	for(int n=0;n<response.size();n++) {
+	                		JsonObject meta = response.getJsonObject(i);
+	                		JsonObject comments = new JsonObject();
+	                		
+	                		JsonObject fields = meta.getJsonObject("fields");
+	                		for(String type: fields.fieldNames()) {
+	                			JsonObject typeConfig = models.getJsonObject(type);
+	                			if(typeConfig!=null) {
+	                				JsonArray metaFields = typeConfig.getJsonArray("fields");
+	                				JsonObject typeComment = new JsonObject();
+	                				for(int j=0;j<metaFields.size();j++) {
+	                					String comment = metaFields.getJsonObject(j).getString("comment");
+	                					String name = metaFields.getJsonObject(j).getString("name");
+	                					typeComment.put(name.toLowerCase(), comment);
+	                				}
+	                				comments.put(type, typeConfig.getString("tableComment"));
+	                				JsonObject queryFields = fields.getJsonObject(type);
+	                				for(String fieldName: queryFields.fieldNames()) {
+	                					String aClass = queryFields.getString(fieldName);
+	                					String comment = typeComment.getString(fieldName.toLowerCase());
+	                					queryFields.put(fieldName, !StringUtil.isBlank(comment)? aClass+" //"+comment: aClass);   
+	                				}
+	                			}
+	                		}
+	                		
+	                		meta.put("comments", comments);
+	                	}
+	                	
+	                	return RestResult.success(response.encodePrettily(), res.getSessionToken());
+                	}catch(Exception e) {
+                		LT.error(log, e, "Failed execute meta request on server [url=" + serverUri + ", parameters=" + params + "]");
+                	}               	
+                	
+                }
 
                 return res;
             }

@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.shareddata.ClusterSerializable;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -52,10 +53,20 @@ public abstract class SingleRouterHandler {
     }
 
     public static void out(RoutingContext ctx, Object msg) {
+    	if(msg==null) {
+    		return;
+    	}
+    	
         if(msg instanceof byte[]) {
             Buffer data = Buffer.buffer((byte[]) msg);
             ctx.response()
                     .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.OCTET_MEDIA_TYPE)
+                    .end(data);
+        }
+        else if(msg instanceof char[]) {
+            String data = String.valueOf((char[]) msg);
+            ctx.response()
+                    .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.TEXT_MEDIA_TYPE)
                     .end(data);
         }
         else if(msg instanceof CharSequence){
@@ -63,12 +74,39 @@ public abstract class SingleRouterHandler {
             ctx.response()                    
                     .end(output);
         }
-        else if(msg.getClass().isArray() && !msg.getClass().getComponentType().isPrimitive()) {
-        	Object[] list = (Object[]) msg;
-    		String output = JsonArray.of(list).encodePrettily();
-    		ctx.response()
-    			.putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
-    			.end(output);
+        else if(msg.getClass().isArray()) {
+        	if(!msg.getClass().getComponentType().isPrimitive()) {
+            	Object[] list = (Object[]) msg;
+        		String output = JsonArray.of(list).encodePrettily();
+        		ctx.response()
+        			.putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
+        			.end(output);
+        	}
+        	else {
+        		Class<?> comType= msg.getClass().getComponentType();
+        		String output = "";
+        		if(comType==int.class) {
+        			output = Arrays.toString((int[])msg);
+        		}
+        		else if(comType==long.class) {
+        			output = Arrays.toString((long[])msg);
+        		}
+        		else if(comType==short.class) {
+        			output = Arrays.toString((short[])msg);
+        		}
+        		else if(comType==float.class) {
+        			output = Arrays.toString((float[])msg);
+        		}
+        		else if(comType==double.class) {
+        			output = Arrays.toString((double[])msg);
+        		}
+        		else if(comType==boolean.class) {
+        			output = Arrays.toString((boolean[])msg);
+        		}
+                ctx.response()
+                        .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
+                        .end(output);
+        	}
     	}
         else if(msg instanceof List) {
         	List list = (List) msg;
@@ -88,7 +126,15 @@ public abstract class SingleRouterHandler {
         	
         	out(ctx,res.getBody());
         }
-        else if(msg!=null){
+        else if(msg instanceof ClusterSerializable){
+        	ClusterSerializable json = (ClusterSerializable)msg;
+        	Buffer buffer = Buffer.buffer(1024);
+        	json.writeToBuffer(buffer);
+            ctx.response()
+                    .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)
+                    .end(buffer);
+        }
+        else{
             String output = JsonObject.mapFrom(msg).encodePrettily();
             ctx.response()
                     .putHeader(WebConstant.HTTP_HEADER_CONTENT_TYPE, WebConstant.JSON_MEDIA_TYPE)

@@ -8,12 +8,15 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.webmvc.Vertxlet;
 import io.vertx.webmvc.annotation.VertxletMapping;
 import io.vertx.webmvc.creater.handler.InitSingleRouterHandler;
 import io.vertx.webmvc.utils.SpringUtils;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.ignite.internal.processors.rest.igfs.util.FileUtil;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -120,6 +123,7 @@ public class WebApiCreater extends AbstractVerticle {
 
         router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
+        router.route().last().failureHandler(ErrorHandler.create(vertx));
 
         cros(router);
         //将所有的controller转换成router
@@ -167,7 +171,8 @@ public class WebApiCreater extends AbstractVerticle {
             if(staticDirs!=null && !staticDirs.isEmpty()) {
                 java.util.Arrays.stream(staticDirs.split(",")).forEach(staticDir -> {
                     log.info("[vertx web] staticDir:" + staticDir);
-                    router.route().blockingHandler(StaticHandler.create(staticDir.trim()));
+                    String contextPath = FileUtil.getFilename(staticDir);
+                    router.route(contextPath).blockingHandler(StaticHandler.create(staticDir.trim()));
                 });
             }
 

@@ -119,8 +119,7 @@ public class S3VertxletHandler {
         }
         OutputFormat format = OutputFormat.createPrettyPrint();
         format.setEncoding("utf-8");
-        StringWriter out;
-        out = new StringWriter();
+        StringWriter out = new StringWriter();
         XMLWriter writer = new XMLWriter(out, format);
         writer.write(doc);
         writer.close();

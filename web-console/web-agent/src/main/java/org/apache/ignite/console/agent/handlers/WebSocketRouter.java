@@ -451,11 +451,13 @@ public class WebSocketRouter implements AutoCloseable {
      * @param tok Token to revoke.
      */
     private JsonObject processClusterStart(WebSocketRequest evt) {
-        log.info("Cluster start msg has been revoked: " + evt.getNodeSeq());
+        
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
         
-        boolean isLastNode = evt.isLastNode();       
+        log.info("Cluster start msg has been revoked: " + evt.getPayload());
+        
+        boolean isLastNode = json.getBoolean("isLastNode",false);       
         String clusterId = json.getString("id");
         if(clusterId.equals(DEMO_CLUSTER_ID) || AgentClusterDemo.SRV_NODE_NAME.equals(clusterId)) {
         	json.put("demo", true);
@@ -585,7 +587,7 @@ public class WebSocketRouter implements AutoCloseable {
         log.info("Cluster stop msg has been revoked: " + evt.getPayload());
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
-        boolean isLastNode = evt.isLastNode();
+        boolean isLastNode = json.getBoolean("isLastNode",false);     
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(json.getBoolean("demo",false)) {
         	AgentClusterDemo.stop();
@@ -842,6 +844,7 @@ public class WebSocketRouter implements AutoCloseable {
                 		}                    	
                     	else if(DEMO_CLUSTER_ID!=null && DEMO_CLUSTER_ID.equals(reqRest.getClusterId())) {
                     		// demo grid cmd
+                    		params.put("token", evt.getToken());
                     		res = demoClusterHnd.restCommand(reqRest.getClusterId(),params);
                     	}
                     	else if(dbHnd.isDBCluster(reqRest.getClusterId())) {
@@ -852,7 +855,8 @@ public class WebSocketRouter implements AutoCloseable {
                     		// inner task call
                     		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);
                 		} 
-                    	else {                    		
+                    	else {
+                    		params.put("token", evt.getToken());
                     		res = clusterHnd.restCommand(reqRest.getClusterId(),params);
                     	}
                     	

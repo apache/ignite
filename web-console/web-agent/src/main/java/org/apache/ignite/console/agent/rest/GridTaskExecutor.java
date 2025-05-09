@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-
+import org.apache.ignite.internal.processors.rest.protocols.http.jetty.StringConverter;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestBaselineRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
@@ -467,7 +467,7 @@ public class GridTaskExecutor {
                 String keyType = params.get("keyType");
                 String valType = params.get("valueType");
 
-                Converter converter = new Converter(cacheName);
+                StringConverter converter = new StringConverter(cacheName,this.jsonMapper);
 
                 restReq0.key(converter.convert(keyType, params.get("key")));
                 restReq0.value(converter.convert(valType, params.get("val")));
@@ -533,7 +533,7 @@ public class GridTaskExecutor {
                 restReq0.taskId(params.get("id"));
                 restReq0.taskName(params.get("name"));
 
-                restReq0.params(new Converter().values(null, "p", params));
+                restReq0.params(new StringConverter(this.jsonMapper).values(null, "p", params));
 
                 restReq0.async(Boolean.parseBoolean(params.get("async")));
 
@@ -619,7 +619,7 @@ public class GridTaskExecutor {
                 GridRestBaselineRequest restReq0 = new GridRestBaselineRequest();
 
                 restReq0.topologyVersion(longValue("topVer", params, null));
-                restReq0.consistentIds(new Converter().values(null, "consistentId", params));
+                restReq0.consistentIds(new StringConverter(this.jsonMapper).values(null, "consistentId", params));
 
                 restReq = restReq0;
 
@@ -653,7 +653,7 @@ public class GridTaskExecutor {
 
                 restReq0.sqlQuery(params.get("qry"));
 
-                restReq0.arguments(new Converter(cacheName).values(null, "arg", params).toArray());
+                restReq0.arguments(new StringConverter(cacheName,this.jsonMapper).values(null, "arg", params).toArray());
 
                 restReq0.typeName(params.get("type"));
 
@@ -840,137 +840,6 @@ public class GridTaskExecutor {
         String cmd = req.getString("cmd");
 
         return cmd == null ? null : GridRestCommand.fromKey(cmd.toLowerCase());
-    }    
-
-    /**
-     * Converter from string into specified type.
-     */
-    private class Converter {
-        /** Cache name. */
-        private final String cacheName;
-
-        /**
-         * @param cacheName Cache name.
-         */
-        private Converter(String cacheName) {
-            this.cacheName = cacheName;
-        }
-
-        /** */
-        private Converter() {
-            this(null);
-        }
-
-        /**
-         * Gets and converts values referenced by sequential keys, e.g. {@code key1...keyN}.
-         *
-         * @param type Optional value type.
-         * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
-         * @param params Parameters map.
-         * @return Values.
-         * @throws IgniteCheckedException If failed to convert.
-         */
-        private List<Object> values(String type, String keyPrefix,
-            Map<String, String> params) throws IgniteCheckedException {
-            assert keyPrefix != null;
-
-            List<Object> vals = new LinkedList<>();
-
-            for (int i = 1; ; i++) {
-                String key = keyPrefix + i;
-
-                if (params.containsKey(key))
-                    vals.add(convert(type, params.get(key)));
-                else
-                    break;
-            }
-
-            return vals;
-        }
-
-        /**
-         * @param type Optional value type.
-         * @param str String to convert.
-         * @return Converted value.
-         * @throws IgniteCheckedException If failed to convert.
-         */
-        private Object convert(@Nullable String type, @Nullable String str) throws IgniteCheckedException {
-            if (F.isEmpty(type) || str == null)
-                return str;
-
-            try {
-                switch (type.toLowerCase()) {
-                    case "boolean":
-                    case "java.lang.boolean":
-                        return Boolean.valueOf(str);
-
-                    case "byte":
-                    case "java.lang.byte":
-                        return Byte.valueOf(str);
-
-                    case "short":
-                    case "java.lang.short":
-                        return Short.valueOf(str);
-
-                    case "int":
-                    case "integer":
-                    case "java.lang.integer":
-                        return Integer.valueOf(str);
-
-                    case "long":
-                    case "java.lang.long":
-                        return Long.valueOf(str);
-
-                    case "float":
-                    case "java.lang.float":
-                        return Float.valueOf(str);
-
-                    case "double":
-                    case "java.lang.double":
-                        return Double.valueOf(str);
-
-                    case "date":
-                    case "java.sql.date":
-                        return Date.valueOf(str);
-
-                    case "time":
-                    case "java.sql.time":
-                        return Time.valueOf(str);
-
-                    case "timestamp":
-                    case "java.sql.timestamp":
-                        return Timestamp.valueOf(str);
-
-                    case "uuid":
-                    case "java.util.uuid":
-                        return UUID.fromString(str);
-
-                    case "igniteuuid":
-                    case "org.apache.ignite.lang.igniteuuid":
-                        return IgniteUuid.fromString(str);
-
-                    case "string":
-                    case "java.lang.string":
-                        return str;
-                }
-
-                // Creating an object of the specified type, if its class is available.
-                Class<?> cls = U.classForName(type, null);
-
-                if (cls != null)
-                    return jsonMapper.readValue(str, cls);
-
-                // Creating a binary object if the type is not a class name or it cannot be loaded.
-                InjectableValues.Std prop = new InjectableValues.Std()
-                    .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
-                    .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
-
-                return jsonMapper.reader(prop).forType(BinaryObject.class).readValue(str);
-            }
-            catch (Throwable e) {
-                throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
-                    ", val=" + str + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
-            }
-        }
-    }    
+    }
+      
 }

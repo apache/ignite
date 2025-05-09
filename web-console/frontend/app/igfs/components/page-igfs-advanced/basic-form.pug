@@ -19,10 +19,10 @@
 
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Storage URL:',
+                label: 'Storage Rest URL:',
                 model: `${model}.url`,
                 name: '"url"',                        
-                placeholder: 's3://'
+                placeholder: 'http://localhost:8787'
             })
          
         .pc-form-grid-col-30
@@ -30,11 +30,12 @@
                 label: 'Storage Access Mode:',
                 model: `${model}.accessMode`,
                 name: '"accessMode"',
-                placeholder: 's3-rest',
+                placeholder: '',
                 options: '[\
-                    {value: "s3-rest", label: "s3-rest"},\
-                    {value: "files", label: "ignite filesystem"},\
-                    {value: "logs", label: "ignite logs"},\
+                    {value: "s3", label: "S3 file manager"},\
+                    {value: "index", label: "Basice igfs file manager"},\
+                    {value: "advance", label: "Advance igfs file manager"},\
+                    {value: "logs", label: "Ignite logs"},\
                 ]',
                 tip: 'Object storage access mode'
             })

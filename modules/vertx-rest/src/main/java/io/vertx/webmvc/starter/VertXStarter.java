@@ -28,7 +28,7 @@ import javax.annotation.PostConstruct;
  */
 @Slf4j
 public class VertXStarter implements ApplicationContextAware {
-    public static Vertx vertx;
+    public Vertx vertx;
     private ApplicationContext springContext;   
     private WebApiCreater webApiCreater;
     

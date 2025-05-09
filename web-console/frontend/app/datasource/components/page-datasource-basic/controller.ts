@@ -235,12 +235,17 @@ export default class PageDatasourceBasicController {
             );   
             stat.subscribe(
                 (next) => {
-                    this.$scope.message = 'Save successful.'
-                    if(redirect){                
-                        setTimeout(() => {
-                            this.$uiRouter.stateService.go('base.datasource.overview');
-                        },100)
+                    if(next.type === 'SAVE_AND_EDIT_DATASOURCE_OK'){
+                        this.$scope.message = 'Save successful.'
+                        if(redirect){                
+                            setTimeout(() => {
+                                this.$uiRouter.stateService.go('base.datasource.overview');
+                            },100)
+                        }
                     }
+                    else if(next.type === 'SAVE_AND_EDIT_DATASOURCE_ERR'){
+                        this.$scope.message = next.error.message;
+                    }                    
                 }
             );            
         }        

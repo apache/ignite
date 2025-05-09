@@ -37,20 +37,20 @@
 		    async:false,
 		    dataType: "json",
 		    xhrFields: {
-                withCredentials: true
-            },
-            crossDomain: true
+          withCredentials: true
+        },
+        crossDomain: true
 	    });
 	    
 	    if(xhr0.status==404){
 	       
 	    }
 	    else if(xhr0.status!=200){
-	    	window.location=loginUrl;
+	    	  window.location=loginUrl;
 	    }
 	    else if(xhr0.status==200){    
-	       user = JSON.parse(xhr0.responseText);
-	       ticket = user.token;
+	        user = JSON.parse(xhr0.responseText);
+	        ticket = user.token;
 	    }
 	
         // 重写默认Config配置
@@ -75,8 +75,8 @@
                 extractUrl: storageUrl+'extract/',
                 documentViewUrl: storageUrl+'office/',
                 pickCallback: function (item) {
-				    if(item.type!='file')
-					   return ;
+				  if(item.type!='file')
+					  return ;
                     
 					if(item.name.endsWith('.zpln') ){
 					  var pos = item.name.lastIndexOf('_');

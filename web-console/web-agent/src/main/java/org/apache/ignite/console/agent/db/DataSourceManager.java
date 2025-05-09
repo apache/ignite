@@ -261,7 +261,7 @@ public class DataSourceManager {
 		try {
 			for(String token: serverTokens) {
 				Request req = serverClient.newRequest(url);
-				req.header("Authorization", "token "+token);
+				req.header("Authorization", "Token "+token);
 				req.method(HttpMethod.GET);
 				ContentResponse response = req.send();
 				String body = response.getContentAsString();

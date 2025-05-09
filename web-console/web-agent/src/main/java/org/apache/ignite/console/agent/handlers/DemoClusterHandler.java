@@ -61,6 +61,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
 
     /** {@inheritDoc} */
     @Override public RestResult restCommand(String clusterId,JsonObject params) throws Throwable {
+    	String token = (String)params.remove("token");
         if (AgentClusterDemo.getDemoUrl() == null) {
             if (cfg.disableDemo())
                 return RestResult.fail(404, "Demo mode disabled by administrator.");
