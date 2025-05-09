@@ -130,7 +130,6 @@
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
                 <exclude>${project.groupId}:ignite-yardstick</exclude>
                 <exclude>${project.groupId}:ignite-benchmarks</exclude>
-                <exclude>${project.groupId}:ignite-dev-utils</exclude>
                 <exclude>${project.groupId}:ignite-extdata-platform</exclude>
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
