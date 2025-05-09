@@ -1513,7 +1513,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @param obj Object to write.
      * @return {@code true} if the object has been written as a handle.
      */
-    public boolean tryWriteAsHandle(Object obj) {
+    @Override public boolean tryWriteAsHandle(Object obj) {
         assert obj != null;
 
         int pos = out.position();
