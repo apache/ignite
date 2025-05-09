@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -58,9 +58,9 @@ import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
-import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
@@ -953,19 +953,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "but it will be incompatible with old versions of Ignite")
     public static final String IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE =
         "IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE";
-
-    /**
-     * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
-     * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
-     * interface on {@code BinaryObject}.
-     * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
-     */
-    @Deprecated
-    @SystemProperty("If enabled then tree-based data structures - TreeMap and TreeSet - will " +
-        "not be wrapped into special holders introduced to overcome serialization issue caused by missing " +
-        "Comparable interface on BinaryObject")
-    public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
      * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
@@ -2063,7 +2050,7 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
 
     /**
      * Enables storage of typed arrays.
-     * The default value is {@link BinaryArray#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     * The default value is {@link BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
      */
     @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
         defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)

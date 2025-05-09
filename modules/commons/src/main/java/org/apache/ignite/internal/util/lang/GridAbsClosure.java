@@ -15,26 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * Extended reader interface.
+ * Defines a convenient absolute, i.e. {@code no-arg} and {@code no return value} closure. This closure
+ * that has {@code void} return type and no arguments (free variables).
+ * <h2 class="header">Thread Safety</h2>
+ * Note that this interface does not impose or assume any specific thread-safety by its
+ * implementations. Each implementation can elect what type of thread-safety it provides,
+ * if any.
+ * @see GridFunc
  */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
+public abstract class GridAbsClosure implements IgniteRunnable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * Absolute closure body.
      */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    public abstract void apply();
+
+    /**
+     * Delegates to {@link #apply()} method.
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override public final void run() {
+        apply();
+    }
 }

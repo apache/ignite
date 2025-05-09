@@ -70,7 +70,7 @@ import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -1791,7 +1791,7 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
-            BinaryArray.initUseBinaryArrays();
+            BinaryUtils.initUseBinaryArrays();
 
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 

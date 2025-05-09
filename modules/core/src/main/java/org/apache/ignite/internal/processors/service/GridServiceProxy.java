@@ -44,8 +44,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -344,7 +344,7 @@ public class GridServiceProxy<T> implements Serializable {
     private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
         BinaryMarshaller marsh = ctx.marshaller();
 
-        if (keepBinary && BinaryArray.useBinaryArrays()) {
+        if (keepBinary && BinaryUtils.useBinaryArrays()) {
             // To avoid deserializing of enum types and BinaryArrays.
             return marsh.binaryMarshaller().unmarshal(res, null);
         }

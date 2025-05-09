@@ -19,7 +19,7 @@ package org.apache.ignite.internal.binary.builder;
 
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -56,7 +56,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            compTypeId = reader.binaryContext().registerClass(cls, false, false).typeId();
+            compTypeId = reader.binaryContext().registerType(cls, false, false);
         }
         else {
             compTypeId = typeId;
@@ -98,7 +98,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
         if (val != null) {
             if (clsName != null)
                 ctx.writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, clsName);

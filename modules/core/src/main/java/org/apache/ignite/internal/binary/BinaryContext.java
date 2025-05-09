@@ -51,9 +51,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -125,11 +127,8 @@ public class BinaryContext {
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
         sysClss.add(BinaryTreeMap.class.getName());
-
-        if (BinaryUtils.wrapTrees()) {
-            sysClss.add(TreeMap.class.getName());
-            sysClss.add(TreeSet.class.getName());
-        }
+        sysClss.add(TreeMap.class.getName());
+        sysClss.add(TreeSet.class.getName());
 
         BINARYLIZABLE_SYS_CLSS.addAll(sysClss);
     }
@@ -184,6 +183,14 @@ public class BinaryContext {
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
+
+    /**
+     * @param igniteCfg Ignite configuration.
+     * @param log Logger.
+     */
+    public BinaryContext(IgniteConfiguration igniteCfg, IgniteLogger log) {
+        this(BinaryNoopMetadataHandler.instance(), igniteCfg, log);
+    }
 
     /**
      * @param metaHnd Meta data handler.
@@ -309,7 +316,7 @@ public class BinaryContext {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null) {
-            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
+            if (cls == TreeMap.class || cls == TreeSet.class)
                 return false;
             
             // add@byron
@@ -573,10 +580,43 @@ public class BinaryContext {
      * @param cls Class to register.
      * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param failIfUnregistered Throw exception if class isn't registered.
+     * @return Class descriptor ID.
+     * @throws BinaryObjectException In case of error.
+     */
+    public int registerType(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
+        return registerClass(cls, registerMeta, failIfUnregistered).typeId();
+    }
+
+    /**
+     * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @return Class descriptor ID.
+     * @throws BinaryObjectException In case of error.
+     */
+    public int registerTypeLocally(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
+        return registerClass(cls, registerMeta, failIfUnregistered, true).typeId();
+    }
+
+    /**
+     * Attempts registration of the provided class. If the type is already registered, then an existing descriptor is
+     * returned.
+     *
+     * @param cls Class to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    @NotNull public BinaryClassDescriptor registerClass(
+    @NotNull BinaryClassDescriptor registerClass(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered
@@ -592,7 +632,7 @@ public class BinaryContext {
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    @NotNull public BinaryClassDescriptor registerClass(
+    @NotNull BinaryClassDescriptor registerClass(
         Class<?> cls,
         boolean registerMeta,
         boolean failIfUnregistered,
@@ -629,7 +669,7 @@ public class BinaryContext {
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
      */
-    @NotNull public BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
@@ -700,7 +740,7 @@ public class BinaryContext {
      * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
-    public BinaryClassDescriptor descriptorForTypeId(
+    BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
@@ -806,7 +846,7 @@ public class BinaryContext {
      * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
      * @return Registered class descriptor.
      */
-    @NotNull public BinaryClassDescriptor registerDescriptor(
+    @NotNull BinaryClassDescriptor registerDescriptor(
         BinaryClassDescriptor desc,
         boolean registerMeta,
         boolean onlyLocReg
@@ -1067,7 +1107,7 @@ public class BinaryContext {
      * @param id Type ID.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+    BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         return registerPredefinedType(cls, id, null, true);
     }
 
@@ -1077,7 +1117,7 @@ public class BinaryContext {
      * @param affFieldName Affinity field name.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
+    BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
         String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
@@ -1282,7 +1322,7 @@ public class BinaryContext {
      * @param fieldName Field name.
      * @return Binary field.
      */
-    public BinaryFieldImpl createField(int typeId, String fieldName) {
+    public BinaryField createField(int typeId, String fieldName) {
         BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
         BinaryInternalMapper mapper = userTypeMapper(typeId);
@@ -1373,13 +1413,48 @@ public class BinaryContext {
         return compactFooter;
     }
 
+    /** */
+    public void updateMetaIfNeeded(
+        BinaryWriterEx writer,
+        BinaryType meta,
+        int typeId,
+        String typeName,
+        String affFieldName,
+        Map<String, BinaryFieldMetadata> fieldsMeta
+    ) {
+        BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
+
+        // Update metadata if needed.
+        int schemaId = writer.schemaId();
+
+        if (schemaReg.schema(schemaId) == null) {
+            if (typeName == null) {
+                assert meta != null;
+
+                typeName = meta.typeName();
+            }
+
+            BinarySchema curSchema = writer.currentSchema();
+
+            if (affFieldName == null)
+                affFieldName = affinityKeyFieldName(typeId);
+
+            registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
+
+            updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName,
+                Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
+
+            schemaReg.addSchema(curSchema.schemaId(), curSchema);
+        }
+    }
+
     /**
      * Get schema registry for type ID.
      *
      * @param typeId Type ID.
      * @return Schema registry for type ID.
      */
-    public BinarySchemaRegistry schemaRegistry(int typeId) {
+    BinarySchemaRegistry schemaRegistry(int typeId) {
         Map<Integer, BinarySchemaRegistry> schemas0 = schemas;
 
         if (schemas0 == null) {
@@ -1487,6 +1562,34 @@ public class BinaryContext {
     /** */
     Collection<BinaryClassDescriptor> predefinedTypes() {
         return Collections.unmodifiableCollection(predefinedTypes.values());
+    }
+
+    /** Creates instance of {@link BinaryArray}. */
+    public BinaryObject createBinaryArray(Class<?> compCls, Object[] pArr) {
+        boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
+
+        String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+        // In case of interface or multidimensional array rely on class name.
+        // Interfaces and array not registered as binary types.
+        BinaryClassDescriptor desc = descriptorForClass(compCls);
+
+        if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+            return new BinaryEnumArray(
+                this,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                pArr
+            );
+        }
+        else {
+            return new BinaryArray(
+                this,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                pArr
+            );
+        }
     }
 
     /**
@@ -1618,40 +1721,6 @@ public class BinaryContext {
             }
             else if (!other.canOverride)
                 throw new BinaryObjectException("Duplicate explicit class definition in configuration: " + clsName);
-        }
-    }
-
-    /**
-     * Type id wrapper.
-     */
-    static class Type {
-        /** Type id */
-        private final int id;
-
-        /** Whether the following type is registered in a cache or not */
-        private final boolean registered;
-
-        /**
-         * @param id Id.
-         * @param registered Registered.
-         */
-        public Type(int id, boolean registered) {
-            this.id = id;
-            this.registered = registered;
-        }
-
-        /**
-         * @return Type ID.
-         */
-        public int id() {
-            return id;
-        }
-
-        /**
-         * @return Registered flag value.
-         */
-        public boolean registered() {
-            return registered;
         }
     }
 }

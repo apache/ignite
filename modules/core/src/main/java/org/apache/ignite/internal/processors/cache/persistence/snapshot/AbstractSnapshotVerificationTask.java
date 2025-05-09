@@ -39,6 +39,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+
 /**
  * The task for checking the consistency of snapshots in the cluster.
  */
@@ -65,8 +67,8 @@ public abstract class AbstractSnapshotVerificationTask extends
         if (!subgrid.containsAll(clusterMetas.keySet())) {
             throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
                 new IgniteException("Some of Ignite nodes left the cluster during the snapshot verification " +
-                    "[curr=" + F.viewReadOnly(subgrid, F.node2id()) +
-                    ", init=" + F.viewReadOnly(clusterMetas.keySet(), F.node2id()) + ']')));
+                    "[curr=" + F.viewReadOnly(subgrid, node2id()) +
+                    ", init=" + F.viewReadOnly(clusterMetas.keySet(), node2id()) + ']')));
         }
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();

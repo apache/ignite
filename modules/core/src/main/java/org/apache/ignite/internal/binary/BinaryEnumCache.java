@@ -24,7 +24,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 /**
  * Cache for enum constants.
  */
-public class BinaryEnumCache {
+class BinaryEnumCache {
     /** Cache for enum constants. */
     private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap<>();
 
@@ -36,7 +36,7 @@ public class BinaryEnumCache {
      * @return Value.
      * @throws BinaryObjectException In case of invalid ordinal.
      */
-    public static <T> T get(Class<?> cls, int ord) throws BinaryObjectException {
+    static <T> T get(Class<?> cls, int ord) throws BinaryObjectException {
         assert cls != null;
 
         if (ord >= 0) {
@@ -61,7 +61,7 @@ public class BinaryEnumCache {
     /**
      * Clears cache.
      */
-    public static void clear() {
+    static void clear() {
         ENUM_CACHE.clear();
     }
 }

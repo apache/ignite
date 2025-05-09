@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -70,7 +69,7 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
         BinaryObjectBuilder holdBuilder = grid(0).binary().builder(HolderKey.class.getName());
 
         //Creating attached key which stores as byte array.
-        BinaryObjectImpl attachedKey = holdBuilder.setField("id", new AttachedKey(1))
+        BinaryObject attachedKey = holdBuilder.setField("id", new AttachedKey(1))
             .build()
             .field("id");
 

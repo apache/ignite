@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * Interface that allows to implement custom serialization
@@ -33,7 +33,7 @@ public interface JdbcRawBinarylizable {
      * @param protoCtx JDBC protocol context.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeBinary(BinaryWriterExImpl writer, JdbcProtocolContext protoCtx) throws BinaryObjectException;
+    public void writeBinary(BinaryWriterEx writer, JdbcProtocolContext protoCtx) throws BinaryObjectException;
 
     /**
      * Reads fields from provided reader.
@@ -42,5 +42,5 @@ public interface JdbcRawBinarylizable {
      * @param protoCtx JDBC protocol context.
      * @throws BinaryObjectException In case of error.
      */
-    public void readBinary(BinaryReaderExImpl reader, JdbcProtocolContext protoCtx) throws BinaryObjectException;
+    public void readBinary(BinaryReaderEx reader, JdbcProtocolContext protoCtx) throws BinaryObjectException;
 }

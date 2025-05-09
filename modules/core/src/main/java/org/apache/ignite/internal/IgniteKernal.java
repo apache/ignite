@@ -85,7 +85,6 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -1856,7 +1855,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             U.clearClassCache();
             MarshallerExclusions.clearCache();
-            BinaryEnumCache.clear();
+            BinaryUtils.clearCache();
 
             gw.writeLock();
 

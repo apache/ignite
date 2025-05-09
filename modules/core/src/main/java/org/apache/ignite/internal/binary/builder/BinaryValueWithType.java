@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -41,7 +41,7 @@ class BinaryValueWithType implements BinaryLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
         if (val instanceof BinaryBuilderSerializationAware)
             ((BinaryBuilderSerializationAware)val).writeTo(writer, ctx);
         else

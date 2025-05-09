@@ -65,7 +65,7 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
         groupName = cfg.getGroupName() == null ? EMPTY_GROUP_NAME : cfg.getGroupName();
         cacheName = cfg.getName();
         indexBuildPartitionsLeftCount = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
-        totalPartitionsCount = cctx.topology().localPartitions().size();
+        totalPartitionsCount = cctx.topology().localPartitionsNumber();
     }
 
     /** {@inheritDoc} */

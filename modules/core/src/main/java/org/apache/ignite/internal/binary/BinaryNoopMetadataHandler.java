@@ -24,14 +24,14 @@ import org.apache.ignite.binary.BinaryType;
 /**
  * No-op metadata handler.
  */
-public class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
+class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
     /** Cached singleton instance. */
     private static final BinaryNoopMetadataHandler INSTANCE = new BinaryNoopMetadataHandler();
 
     /**
      * @return Instance.
      */
-    public static BinaryNoopMetadataHandler instance() {
+    static BinaryNoopMetadataHandler instance() {
         return INSTANCE;
     }
 

@@ -108,6 +108,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
@@ -656,7 +657,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (topPred == null) {
             final Collection<ClusterNode> nodes = opts.projection();
 
-            top = nodes != null ? F.nodeIds(nodes) : null;
+            top = nodes != null ? nodeIds(nodes) : null;
         }
 
         boolean internal = false;

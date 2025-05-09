@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 /**
  * Abstract identity resolver with common routines.
  */
-public abstract class BinaryAbstractIdentityResolver implements BinaryIdentityResolver {
+abstract class BinaryAbstractIdentityResolver implements BinaryIdentityResolver {
     /** {@inheritDoc} */
     @Override public int hashCode(BinaryObject obj) {
         if (obj == null)

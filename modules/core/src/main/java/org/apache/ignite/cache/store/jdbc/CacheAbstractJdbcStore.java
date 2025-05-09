@@ -60,7 +60,8 @@ import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1361,8 +1362,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         fieldVal = NUMERIC_TYPES.contains(field.getDatabaseFieldType()) ? val.ordinal() : val.name();
                     }
-                    else if (fieldVal instanceof BinaryEnumObjectImpl) {
-                        BinaryEnumObjectImpl val = (BinaryEnumObjectImpl)fieldVal;
+                    else if (BinaryUtils.isBinaryEnumObject(fieldVal)) {
+                        BinaryObjectEx val = (BinaryObjectEx)fieldVal;
 
                         fieldVal = val.enumOrdinal();
                     }

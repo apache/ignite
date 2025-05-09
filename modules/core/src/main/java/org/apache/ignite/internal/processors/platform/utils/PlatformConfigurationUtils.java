@@ -76,8 +76,8 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
@@ -130,7 +130,7 @@ public class PlatformConfigurationUtils {
      * @param writer Writer.
      * @param cfg Configuration.
      */
-    public static void writeDotNetConfiguration(BinaryRawWriterEx writer, PlatformDotNetConfiguration cfg) {
+    public static void writeDotNetConfiguration(BinaryWriterEx writer, PlatformDotNetConfiguration cfg) {
         // 1. Write assemblies.
         PlatformUtils.writeNullableCollection(writer, cfg.getAssemblies());
 
@@ -141,7 +141,7 @@ public class PlatformConfigurationUtils {
 
             PlatformUtils.writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
                 new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                    @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
+                    @Override public void write(BinaryWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
                         writer.writeString(typ.getTypeName());
                         writer.writeString(typ.getNameMapper());
                         writer.writeString(typ.getIdMapper());
@@ -168,7 +168,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Cache configuration.
      */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
+    public static CacheConfiguration readCacheConfiguration(BinaryReaderEx in) {
         assert in != null;
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -345,7 +345,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return PlatformCacheConfiguration.
      */
-    public static PlatformCacheConfiguration readPlatformCacheConfiguration(BinaryRawReaderEx in) {
+    public static PlatformCacheConfiguration readPlatformCacheConfiguration(BinaryReaderEx in) {
         return new PlatformCacheConfiguration()
                 .setKeyTypeName(in.readString())
                 .setValueTypeName(in.readString())
@@ -433,7 +433,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Affinity function.
      */
-    public static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+    public static PlatformAffinityFunction readAffinityFunction(BinaryReaderEx in) {
         byte plcTyp = in.readByte();
 
         if (plcTyp == 0)
@@ -714,7 +714,7 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     @SuppressWarnings("deprecation")
-    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    public static void readIgniteConfiguration(BinaryReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] evtTypes = in.readIntArray();
@@ -956,7 +956,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readCacheConfigurations(BinaryReaderEx in, IgniteConfiguration cfg) {
         int len = in.readInt();
 
         if (len == 0)
@@ -1063,7 +1063,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param cfg Configuration.
      */
-    private static void readEncryptionConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readEncryptionConfiguration(BinaryReaderEx in, IgniteConfiguration cfg) {
         if (!in.readBoolean()) {
             cfg.setEncryptionSpi(new NoopEncryptionSpi());
 

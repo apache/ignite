@@ -48,8 +48,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -62,7 +60,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
@@ -104,7 +101,6 @@ import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -132,6 +128,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Cache context.
@@ -1505,9 +1503,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
-            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+            log.debug("Mapping entry to DHT nodes [nodes=" + nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
-        Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
+        Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, remoteNodes(nodeId())); // Exclude local node.
 
         map(entry, dhtRemoteNodes, dhtMap);
 
@@ -1522,7 +1520,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
 
                 if (log.isDebugEnabled())
-                    log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');
+                    log.debug("Mapping entry to near nodes [nodes=" + nodeIds(nearNodes) + ", entry=" + entry + ']');
             }
             else if (log.isDebugEnabled())
                 log.debug("Entry has no near readers: " + entry);
@@ -1564,7 +1562,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             Collection<ClusterNode> dhtNodes = cand.mappedDhtNodes();
 
             if (log.isDebugEnabled())
-                log.debug("Mapping explicit lock to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+                log.debug("Mapping explicit lock to DHT nodes [nodes=" + nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
             Collection<ClusterNode> nearNodes = cand.mappedNearNodes();
 
@@ -2226,30 +2224,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
-    }
-
-    /**
-     * Prepare affinity field for builder (if possible).
-     *
-     * @param builder Builder.
-     */
-    public void prepareAffinityField(BinaryObjectBuilder builder) {
-        assert builder instanceof BinaryObjectBuilderImpl;
-
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
-
-        if (!cacheObjCtx.customAffinityMapper()) {
-            CacheDefaultBinaryAffinityKeyMapper mapper =
-                (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
-
-            BinaryField field = mapper.affinityKeyField(builder0.typeId());
-
-            if (field != null) {
-                String fieldName = field.name();
-
-                builder0.affinityFieldName(fieldName);
-            }
-        }
     }
 
     /**

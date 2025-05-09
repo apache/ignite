@@ -105,6 +105,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.blockSingleExhangeMessage;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -2665,8 +2666,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (!aff1.equals(aff2)) {
             for (int i = 0; i < aff1.size(); i++) {
-                Collection<UUID> n1 = new ArrayList<>(F.nodeIds(aff1.get(i)));
-                Collection<UUID> n2 = new ArrayList<>(F.nodeIds(aff2.get(i)));
+                Collection<UUID> n1 = new ArrayList<>(nodeIds(aff1.get(i)));
+                Collection<UUID> n2 = new ArrayList<>(nodeIds(aff2.get(i)));
 
                 assertEquals("Wrong affinity [node=" + node.name() +
                     ", topVer=" + topVer +
@@ -2889,8 +2890,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                                 log.info("Primary changed [cache=" + cacheDesc.cacheConfiguration().getName() +
                                     ", part=" + p +
-                                    ", prev=" + F.nodeIds(nodes0) +
-                                    ", new=" + F.nodeIds(nodes1) + ']');
+                                    ", prev=" + nodeIds(nodes0) +
+                                    ", new=" + nodeIds(nodes1) + ']');
 
                                 break;
                             }

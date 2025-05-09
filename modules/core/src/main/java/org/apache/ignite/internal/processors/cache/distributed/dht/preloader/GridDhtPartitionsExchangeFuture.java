@@ -149,6 +149,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Future for exchanging partition maps.
@@ -912,7 +915,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             srvNodes = new ArrayList<>(firstEvtDiscoCache.serverNodes());
 
-            remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
+            remaining.addAll(nodeIds(F.view(srvNodes, remoteNodes(cctx.localNodeId()))));
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
@@ -2211,7 +2214,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !nodes.contains(cctx.localNode());
 
         if (log.isTraceEnabled()) {
-            log.trace("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
+            log.trace("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, node2id()) +
                 ", exchId=" + exchId + ", msg=" + fullMsg + ']');
         }
 
@@ -5225,7 +5228,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (log.isInfoEnabled()) {
                     log.info("New coordinator sends full message [ver=" + initialVersion() +
                         ", resVer=" + fullMsg.resultTopologyVersion() +
-                        ", nodes=" + F.nodeIds(msgs.keySet()) +
+                        ", nodes=" + nodeIds(msgs.keySet()) +
                         ", mergedJoins=" + (mergedJoins != null ? mergedJoins.keySet() : null) + ']');
                 }
 

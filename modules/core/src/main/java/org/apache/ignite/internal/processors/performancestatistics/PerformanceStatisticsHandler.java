@@ -165,7 +165,7 @@ public interface PerformanceStatisticsHandler {
      * @param duration Duration in milliseconds.
      */
     void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
-    
+
     /**
      * @param id Node id.
      * @param name Name of system view.

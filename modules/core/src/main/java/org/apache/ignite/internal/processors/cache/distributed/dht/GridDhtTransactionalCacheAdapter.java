@@ -69,6 +69,7 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -86,6 +87,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
@@ -1523,7 +1525,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Collection<ClusterNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
-            nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
+            nearNodes = ctx.discovery().nodes(readers, F0.not(ClusterNodeFunc.idForNodeId(nodeId)));
 
             if (log.isDebugEnabled())
                 log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) + ", entry=" + cached +
@@ -1534,7 +1536,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 log.debug("Entry has no near readers: " + cached);
         }
 
-        map(cached, F.view(dhtNodes, F.remoteNodes(ctx.nodeId())), dhtMap); // Exclude local node.
+        map(cached, F.view(dhtNodes, remoteNodes(ctx.nodeId())), dhtMap); // Exclude local node.
         map(cached, nearNodes, nearMap);
     }
 

@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -85,7 +86,7 @@ public class IndexKeyFactory {
             case UUID:
                 return new UuidIndexKey((UUID)o);
             case JAVA_OBJECT:
-                if (BinaryObjectImpl.class == o.getClass())
+                if (BinaryUtils.isBinaryObjectImpl(o))
                     return new CacheJavaObjectIndexKey((CacheObject)o, coctx);
 
                 return new PlainJavaObjectIndexKey(o, null);

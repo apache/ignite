@@ -280,7 +280,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
     private void checkRebuildStartOutput(String output, int nodeIdx, String grpName, String cacheName) {
         IgniteEx ignite = grid(nodeIdx);
 
-        int locPartsCnt = ignite.context().cache().cache(cacheName).context().topology().localPartitions().size();
+        int locPartsCnt = ignite.context().cache().cache(cacheName).context().topology().localPartitionsNumber();
 
         assertContains(
             log,
