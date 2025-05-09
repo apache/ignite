@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains utilities classes for {@link org.apache.ignite.internal.util.lang.GridFunc}.
+ * Contains utilities classes for {@link org.apache.ignite.internal.util.lang.ClusterNodeFunc}.
  */
 
 package org.apache.ignite.internal.util.lang.gridfunc;

@@ -145,11 +145,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] bytes() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }

@@ -32,7 +32,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -115,7 +115,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /**
      * @param obj Object to wrap.
      */
-    public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
+    public BinaryObjectBuilderImpl(BinaryObjectEx obj) {
         this(new BinaryBuilderReader(obj), obj.start());
         reader.registerObject(this);
     }
@@ -186,7 +186,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             byte[] arr = writer.array();
 
-            return new BinaryObjectImpl(ctx, arr, 0);
+            return BinaryUtils.binaryObject(ctx, arr, 0);
         }
     }
 
@@ -586,7 +586,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @return New builder.
      */
     public static BinaryObjectBuilderImpl wrap(BinaryObject obj) {
-        return new BinaryObjectBuilderImpl((BinaryObjectImpl)BinaryUtils.unwrapTemporary(obj));
+        return new BinaryObjectBuilderImpl((BinaryObjectEx)BinaryUtils.unwrapTemporary(obj));
     }
 
     /**

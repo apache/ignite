@@ -600,7 +600,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+    @Override public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {

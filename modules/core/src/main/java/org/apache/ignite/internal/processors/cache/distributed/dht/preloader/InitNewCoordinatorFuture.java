@@ -40,10 +40,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  *
@@ -154,8 +154,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
         if (log.isInfoEnabled()) {
             log.info("Try restore exchange result [awaited=" + awaited +
                 ", joined=" + joinedNodes.keySet() +
-                ", nodes=" + U.nodeIds(nodes) +
-                ", discoAllNodes=" + U.nodeIds(discoCache.allNodes()) + ']');
+                ", nodes=" + nodeIds(nodes) +
+                ", discoAllNodes=" + nodeIds(discoCache.allNodes()) + ']');
         }
 
         if (!nodes.isEmpty()) {

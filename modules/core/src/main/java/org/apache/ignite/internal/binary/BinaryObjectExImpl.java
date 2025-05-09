@@ -48,21 +48,6 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
     public abstract int length();
 
     /**
-     * @return Object start.
-     */
-    public abstract int start();
-
-    /**
-     * @return {@code True} if object has bytes array.
-     */
-    public abstract boolean hasBytes();
-
-    /**
-     * @return Object array if object has byte array based, otherwise {@code null}.
-     */
-    public abstract byte[] bytes();
-
-    /**
      * @return Object offheap address is object is offheap based, otherwise 0.
      */
     public abstract long offheapAddress();
@@ -149,13 +134,6 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @return Schema.
      */
     public abstract BinarySchema createSchema();
-
-    /**
-     * Get binary context.
-     *
-     * @return Binary context.
-     */
-    public abstract BinaryContext context();
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {

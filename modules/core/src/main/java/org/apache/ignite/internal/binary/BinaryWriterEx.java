@@ -211,5 +211,5 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @param po Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException;
+    public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException;
 }

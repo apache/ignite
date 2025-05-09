@@ -47,6 +47,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partitioned affinity test.
@@ -135,7 +136,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
             Collection<? extends ClusterNode> affNodes = nodes(aff, i);
 
             X.println(">>> Affinity nodes [key=" + i + ", partition=" + aff.partition(i) +
-                ", nodes=" + U.nodes2names(affNodes) + ", ids=" + U.nodeIds(affNodes) + ']');
+                ", nodes=" + U.nodes2names(affNodes) + ", ids=" + nodeIds(affNodes) + ']');
         }
 
         partitionMap(g);
