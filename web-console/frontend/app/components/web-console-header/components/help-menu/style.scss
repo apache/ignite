@@ -1,0 +1,17 @@
+
+
+help-menu {
+    font-size: 14px;
+    max-height: 100%;
+    display: flex;
+
+    .caret {
+        margin-left: 8px;
+        margin-top: 3px;
+        align-self: center;
+    }
+    .help-menu__trigger {
+        display: flex;
+        max-height: 100%;
+    }
+}

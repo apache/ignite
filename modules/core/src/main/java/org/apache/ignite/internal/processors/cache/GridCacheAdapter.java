@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -41,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -73,6 +75,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -118,6 +122,7 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.GridSerializableMap;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -271,7 +276,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Cache configuration. */
     @GridToStringExclude
-    protected CacheConfiguration cacheCfg;
+    protected CacheConfiguration<K, V> cacheCfg;
 
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
@@ -284,6 +289,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Affinity impl. */
     private Affinity<K> aff;
+    
+    /** Whether this cache is IGFS data cache. */
+    private boolean igfsDataCache;
+
+    /** Current IGFS data cache size. */
+    private LongAdder igfsDataCacheSize;
 
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
@@ -334,6 +345,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         metrics = new CacheMetricsImpl(ctx, isNear());
 
+        //locMxBean = new CacheLocalMetricsMXBeanImpl(this);
+        //clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
+
+        FileSystemConfiguration[] igfsCfgs = ctx.gridConfig().getFileSystemConfiguration();
+
+        if (igfsCfgs != null) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
+                if (Objects.equals(ctx.name(), igfsCfg.getDataCacheConfiguration().getName())) {
+                    if (!ctx.isNear()) {
+                        igfsDataCache = true;
+                        igfsDataCacheSize = new LongAdder();
+                    }
+
+                    break;
+                }
+            }
+        }
         if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
 
@@ -4021,6 +4049,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return ctx.preloader().forceRebalance();
     }
 
+
+    /** {@inheritDoc} */
+    @Override public boolean isIgfsDataCache() {
+        return igfsDataCache;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long igfsDataSpaceUsed() {
+        assert igfsDataCache;
+
+        return igfsDataCacheSize.longValue();
+    }
+
+    /**
+     * Callback invoked when data is added to IGFS cache.
+     *
+     * @param delta Size delta.
+     */
+    public void onIgfsDataSizeChanged(long delta) {
+        assert igfsDataCache;
+
+        igfsDataCacheSize.add(delta);
+    }
+	
     /**
      * @param key Key.
      * @param readers Whether to clear readers.

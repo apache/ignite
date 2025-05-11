@@ -1,0 +1,71 @@
+
+.pca-form-row
+    .pca-form-column-6.pc-form-grid-row
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Storage Name:',
+                model: `${model}.id`,
+                name: '"id"',
+                placeholder: ''
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Display Name:',
+                model: `${model}.clusterName`,
+                name: '"clusterName"',
+                placeholder: ''
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Storage Rest URL:',
+                model: `${model}.url`,
+                name: '"url"',                        
+                placeholder: 'http://localhost:8787'
+            })
+         
+        .pc-form-grid-col-30
+            +form-field__dropdown({
+                label: 'Storage Access Mode:',
+                model: `${model}.accessMode`,
+                name: '"accessMode"',
+                placeholder: '',
+                options: '[\
+                    {value: "s3", label: "S3 file manager"},\
+                    {value: "index", label: "Basice igfs file manager"},\
+                    {value: "advance", label: "Advance igfs file manager"},\
+                    {value: "logs", label: "Ignite logs"},\
+                ]',
+                tip: 'Object storage access mode'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Default Bucket:',
+                model: `${model}.bucketName`,
+                name: '"bucketName"',
+                placeholder: 'public'
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Ping status:',
+                model: `${model}.status`,
+                name: '"status"',
+                placeholder: 'no ping'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'User name:',
+                model: `${model}.userName`,
+                name: '"userName"'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__password({
+                label: 'Password:',
+                model: `${model}.password`,
+                name: '"password"'
+            })

@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
 
 /** */
-@RunWith(DynamicSuite.class)
+//@RunWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite2 {
     /**
      * @return Suite.

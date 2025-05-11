@@ -1,0 +1,32 @@
+
+
+.pco-relative-root
+    pc-items-table(
+        table-title='::"Choose Data Provider Cluster"'
+        column-defs='$ctrl.clustersColumnDefs'
+        items='$ctrl.shortClusters$|async:this'        
+        max-rows-to-show='10'
+        one-way-selection='::false'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
+        on-selection-change='$ctrl.selectedRows$.next($event)'
+        actions-menu='$ctrl.actions$|async:this'
+    )
+        footer-slot(ng-hide='($ctrl.shortClusters$|async:this).length' style='font-style: italic')
+            | You have no cluster configurations.
+            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})') Create one?
+    
+
+h2.pc-page-header.ng-animate-disabled(ng-if='!(($ctrl.selectedRowsIDs$|async:this).length==1)')
+    | {{ ($ctrl.selectedRowsIDs$|async:this).length>1 ? 'Multiple' : 'No' }} clusters selected
+    span.pc-page-header-sub Select only one cluster to see settings and save it
+
+task-flow-edit-form(
+    target-cluster-id='$ctrl.clusterID$|async:this'
+    target-cluster='$ctrl.cluster'    
+    source-cluster='$ctrl.selectedRows$'
+    target-caches='$ctrl.targetCaches'
+    models='$ctrl.models'
+    on-save='$ctrl.onSave($event)'
+    ng-class='{"pca-form-blocked": !(($ctrl.selectedRowsIDs$|async:this).length==1)}'
+   
+)

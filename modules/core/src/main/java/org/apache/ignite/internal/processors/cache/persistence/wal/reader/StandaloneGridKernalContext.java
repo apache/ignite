@@ -73,6 +73,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.igfs.IgfsHelper;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
@@ -455,6 +457,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
         return null;
     }
+	
+	 /** {@inheritDoc} */
+    @Override public IgfsProcessorAdapter igfs() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgfsHelper igfsHelper() {
+        return null;
+    }
+	
 
     /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {

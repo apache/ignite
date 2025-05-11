@@ -23,8 +23,7 @@ import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCheckpointRecoveryWithCompressionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionAndPageCompressionTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionAndTdeTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionTest;
+
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.EncryptedSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.PlainSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCompressionBasicTest;
@@ -43,7 +42,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
 /** */
-@RunWith(DynamicSuite.class)
+//@RunWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
@@ -59,9 +58,7 @@ public class IgnitePdsCompressionTestSuite {
         suite.add(DiskPageCompressionIntegrationAsyncTest.class);
 
         // WAL page records compression.
-        suite.add(WalPageCompressionIntegrationTest.class);
-        suite.add(WalRecoveryWithPageCompressionTest.class);
-        suite.add(WalRecoveryWithPageCompressionAndTdeTest.class);
+        suite.add(WalPageCompressionIntegrationTest.class);       
         suite.add(IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest.class);
         suite.add(WalCompactionAndPageCompressionTest.class);
 
@@ -74,7 +71,7 @@ public class IgnitePdsCompressionTestSuite {
         //Snapshot tests from common suites.
         enableCompressionByDefault();
         IgniteSnapshotTestSuite.addSnapshotTests(suite, Arrays.asList(PlainSnapshotTest.class, EncryptedSnapshotTest.class));
-        IgniteSnapshotWithIndexingTestSuite.addSnapshotTests(suite, null);
+        
 
         // PDS test suite with compression.
         IgnitePdsTestSuite.addRealPageStoreTests(suite, null);

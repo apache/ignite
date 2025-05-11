@@ -98,17 +98,17 @@ public class DdlSqlToCommandConverter {
 
     /** Map of the supported table option processors. */
     private final Map<IgniteSqlCreateTableOptionEnum, TableOptionProcessor<?>> tblOptionProcessors = Stream.of(
-        new TableOptionProcessor<>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
-        new TableOptionProcessor<>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
-        new TableOptionProcessor<>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
-        new TableOptionProcessor<>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
-        new TableOptionProcessor<>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
-        new TableOptionProcessor<>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
-        new TableOptionProcessor<>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
-        new TableOptionProcessor<>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
-        new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
+        new TableOptionProcessor<String>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
+        new TableOptionProcessor<String>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
+        new TableOptionProcessor<String>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
+        new TableOptionProcessor<String>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
+        new TableOptionProcessor<String>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
+        new TableOptionProcessor<String>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
+        new TableOptionProcessor<String>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
+        new TableOptionProcessor<CacheAtomicityMode>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
+        new TableOptionProcessor<CacheWriteSynchronizationMode>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
             CreateTableCommand::writeSynchronizationMode),
-        new TableOptionProcessor<>(BACKUPS, (opt, ctx) -> {
+        new TableOptionProcessor<Integer>(BACKUPS, (opt, ctx) -> {
             if (opt.value() instanceof SqlIdentifier) {
                 String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
 
@@ -133,7 +133,7 @@ public class DdlSqlToCommandConverter {
 
             return ((SqlLiteral)opt.value()).intValue(true);
         }, CreateTableCommand::backups),
-        new TableOptionProcessor<>(ENCRYPTED, (opt, ctx) -> {
+        new TableOptionProcessor<Boolean>(ENCRYPTED, (opt, ctx) -> {
             if (opt.value() instanceof SqlIdentifier) {
                 String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
 

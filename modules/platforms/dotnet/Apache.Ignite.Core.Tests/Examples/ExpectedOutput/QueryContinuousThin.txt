@@ -1,6 +1,0 @@
->>> Cache continuous query example started.
-Queried entry [key=22, val=22]
-Queried entry [key=20, val=20]
-Queried entry [key=21, val=21]
-Queried entry [key=23, val=23]
-Queried entry [key=24, val=24]

@@ -1,0 +1,36 @@
+
+
+header.header-with-selector
+    div
+        h1 {{ $ctrl.clusterName$|async:this }}
+        
+
+div.pc-content-container
+    ul.tabs.tabs--blue
+        li(role='presentation' ui-sref-active='active')
+            a(ui-sref='base.igfs.edit.basic') Basic Configuration        
+        li(role='presentation' ui-sref-active='{active: "base.igfs.edit.advanced"}')
+            a(ui-sref='base.igfs.edit.advanced') Advanced
+        li(role='presentation' ui-sref-active='{active: "base.igfs.edit.china-map"}')
+            a(ui-sref='base.igfs.edit.china-map') Data Map
+        
+
+    label.pc-tooltips-toggle.switcher--ignite
+        svg.icon-left(
+            ignite-icon='info'
+            bs-tooltip=''
+            data-title='Use this setting to hide or show tooltips with hints.'
+            data-placement='left'
+        )
+        span Tooltips
+        input(type='checkbox' ng-model='$ctrl.tooltipsVisible')
+        div
+
+    ui-view.theme--ignite.theme--ignite-errors-horizontal(
+        ignite-loading='configuration'
+        ignite-loading-text='{{ $ctrl.loadingText }}'
+        ignite-loading-position='top'
+        ng-class=`{
+            'pc-hide-tooltips': !$ctrl.tooltipsVisible
+        }`
+    )

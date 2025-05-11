@@ -115,7 +115,7 @@ public class IndexCountScan<Row> extends AbstractCacheScan<Row> {
 
             BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
-            return new BPlusTree.TreeRowClosure<>() {
+            return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
                 @Override public boolean apply(
                     BPlusTree<IndexRow, IndexRow> tree,
                     BPlusIO<IndexRow> io,
@@ -153,7 +153,7 @@ public class IndexCountScan<Row> extends AbstractCacheScan<Row> {
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
         TransactionChanges<CacheDataRow> txChanges
     ) {
-        return new BPlusTree.TreeRowClosure<>() {
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
             @Override public boolean apply(
                 BPlusTree<IndexRow, IndexRow> tree,
                 BPlusIO<IndexRow> io,

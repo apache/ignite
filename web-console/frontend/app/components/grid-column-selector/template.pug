@@ -1,0 +1,15 @@
+
+
+button.btn-ignite.btn-ignite--link-dashed-secondary(
+    protect-from-bs-select-render
+    bs-select
+    ng-model='$ctrl.selectedColumns'
+    ng-change='$ctrl.setSelectedColumns()'
+    ng-model-options='{debounce: {default: 5}}',
+    bs-options='column.name as column.name for column in $ctrl.columnsMenu'
+    bs-on-before-show='$ctrl.onShow'
+    data-multiple='true'
+    ng-transclude
+    ng-show='$ctrl.columnsMenu.length'
+)
+    svg(ignite-icon='gear').icon

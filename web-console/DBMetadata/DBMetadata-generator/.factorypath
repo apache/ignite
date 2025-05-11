@@ -1,0 +1,12 @@
+<factorypath>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/postgresql/postgresql/42.2.2.jre7/postgresql-42.2.2.jre7.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/mysql/mysql-connector-java/5.1.44/mysql-connector-java-5.1.44.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/beetl/beetl-core/2.1.4/beetl-core-2.1.4.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/antlr/antlr4-runtime/4.2/antlr4-runtime-4.2.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/abego/treelayout/org.abego.treelayout.core/1.0.1/org.abego.treelayout.core-1.0.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/antlr/antlr4-annotations/4.2/antlr4-annotations-4.2.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/slf4j-api/1.7.33/slf4j-api-1.7.33.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/alibaba/fastjson/1.2.28/fastjson-1.2.28.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar" enabled="true" runInBatchMode="false"/>
+</factorypath>

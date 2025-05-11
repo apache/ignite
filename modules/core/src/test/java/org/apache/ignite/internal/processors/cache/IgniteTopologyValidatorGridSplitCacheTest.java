@@ -31,7 +31,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitAbstractTest;
@@ -157,10 +157,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 cfg.setActiveOnStart(false);
         }
         cfg.setUserAttributes(userAttrs);
-
-        cfg.setMemoryConfiguration(new MemoryConfiguration().
-            setDefaultMemoryPolicySize((50L << 20) + (100L << 20) * CACHES_CNT / GRID_CNT));
-
+       
         return cfg;
     }
 

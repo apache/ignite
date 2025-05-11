@@ -41,7 +41,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -543,18 +542,6 @@ public class ValidationOnNodeJoinUtils {
 
         if (dsCfgBytes instanceof byte[])
             dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
-
-        if (dsCfg == null) {
-            // Try to use legacy memory configuration.
-            MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
-
-            if (memCfg != null) {
-                dsCfg = new DataStorageConfiguration();
-
-                // All properties that are used in validation should be converted here.
-                dsCfg.setPageSize(memCfg.getPageSize());
-            }
-        }
 
         if (dsCfg != null) {
             DataStorageConfiguration locDsCfg = ctx.config().getDataStorageConfiguration();

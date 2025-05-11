@@ -404,7 +404,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
                 cb.accept(key, val);
             }
             else
-                cb.accept(key, valBytes);
+                cb.accept(key,(Serializable)valBytes);
         }
     }
 

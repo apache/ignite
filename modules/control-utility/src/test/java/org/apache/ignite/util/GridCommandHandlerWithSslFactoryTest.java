@@ -29,7 +29,7 @@ import org.junit.Assume;
 /**
  *
  */
-public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWithSslTest {
+public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWithSSLTest {
     /** Keystore path. */
     private static final String KEYSTORE_PATH = "KEYSTORE_PATH";
 

@@ -1,0 +1,17 @@
+
+
+.ignite-nodes-dialog {
+    .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child,
+    .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:last-child,
+    .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+      border-right: none;
+    }
+
+    .modal-dialog {
+        width: 900px;
+    }
+
+    button.pull-left.btn-ignite {
+        background: none;
+    }
+}

@@ -38,9 +38,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
@@ -73,6 +79,8 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_MAP;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_SET;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_LIST;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.CONCURRENT_MAP;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.CONCURRENT_QUEUE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LONG;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LONG_ARR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.NULL;
@@ -318,7 +326,13 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             case LINKED_HASH_MAP:
                 return readLinkedHashMap(false);
-
+                
+            case CONCURRENT_MAP:
+            	return readConcurrentMap(false);
+            	
+            case CONCURRENT_QUEUE:
+            	return readConcurrentQueue();
+            
             case LINKED_HASH_SET:
                 return readLinkedHashSet(HASH_SET_MAP_OFF);
 
@@ -754,6 +768,75 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         }
 
         return map;
+    }
+    
+    /**
+     * Reads {@link LinkedHashMap}.
+     *
+     * @param set Whether reading underlying map from {@link LinkedHashSet}.
+     * @return Map.
+     * @throws ClassNotFoundException If class not found.
+     * @throws IOException In case of error.     
+     
+     */
+    @SuppressWarnings("unchecked")
+	Map<?, ?> readConcurrentMap(boolean set) throws ClassNotFoundException, IOException{    	
+    	Class<?> loadCls = U.forName(readUTF(), clsLdr, null, useCache);
+        int size = readInt();     
+
+        Map<Object, Object> map;
+		try {
+			map = (Map)loadCls.getDeclaredConstructor().newInstance();
+			
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {			
+			e.printStackTrace();
+			map = new ConcurrentHashMap<>();
+		}
+		
+		if (!set)
+            handles.assign(map);
+
+        for (int i = 0; i < size; i++) {
+            Object key = readObject();
+            Object val = !set ? readObject() : DUMMY;
+
+            map.put(key, val);
+        }
+
+        return map;
+        
+    }
+    
+    /**
+     * Reads {@link BlockingQueue}.
+     *
+     * @return List.
+     * @throws ClassNotFoundException If class not found.
+     * @throws IOException In case of error.
+     */
+    @SuppressWarnings("unchecked")
+	BlockingQueue<?> readConcurrentQueue() throws ClassNotFoundException, IOException {
+    	Class<?> loadCls = U.forName(readUTF(), clsLdr, null, useCache);
+        int size = readInt();        
+        int cap = readInt();
+
+        BlockingQueue<Object> list;
+		try {
+			list = (BlockingQueue<Object>)loadCls.getDeclaredConstructor(int.class).newInstance();
+			
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {			
+			e.printStackTrace();
+			list = new LinkedBlockingQueue<>(cap);
+		}        
+
+        handles.assign(list);
+
+        for (int i = 0; i < size; i++)
+            list.add(readObject());
+
+        return list;
     }
 
     /**

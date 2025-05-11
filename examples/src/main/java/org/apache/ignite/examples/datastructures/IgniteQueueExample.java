@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.lang.IgniteRunnable;
 
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -52,7 +53,7 @@ public class IgniteQueueExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Ignite queue example started.");
 
@@ -64,6 +65,18 @@ public class IgniteQueueExample {
             readFromQueue(ignite);
 
             writeToQueue(ignite);
+            
+            queue.clear();
+            
+            testAddFirstQueue();
+            
+            queue.clear();
+            
+            testPollLastQueue();
+            
+            for(String item: queue) {
+            	System.out.println(item);
+            }
 
             clearAndRemoveQueue();
         }
@@ -204,4 +217,55 @@ public class IgniteQueueExample {
             }
         }
     }
+    
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */    
+    public static void testAddFirstQueue() throws Exception {        
+        
+        
+        queue.addFirst("-1");
+        
+        for(String item: queue) {
+        	System.out.println(item);
+        }
+        
+        assert(1 == queue.size());
+        
+        queue.add("0");
+        
+        for(String item: queue) {
+        	System.out.println(item);
+        }
+        
+        assert(2==queue.size());
+        
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */   
+    public static void testPollLastQueue() throws Exception {
+        // Random queue name.       
+
+        String val1 = UUID.randomUUID().toString();
+        String val2 = UUID.randomUUID().toString();
+        String val3 = UUID.randomUUID().toString();
+
+        assert queue.addFirst(val1);
+
+        assert val1.equals(queue.pollLast());
+        
+        queue.addFirst(val1);
+        queue.addFirst(val2);
+        queue.addFirst(val3);
+
+        assert val1.equals(queue.pollLast());
+    }
+
 }

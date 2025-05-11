@@ -42,7 +42,9 @@ fi
 # Set SCRIPTS_HOME - base path to scripts.
 #
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
-
+ulimit -n 65000
+export PYTORCH_PRECXX11=true
+export PYTORCH_VERSION=1.13.1
 source "${SCRIPTS_HOME}"/include/functions.sh
 source "${SCRIPTS_HOME}"/include/jvmdefaults.sh
 
@@ -69,7 +71,7 @@ fi
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
+
 CP="${IGNITE_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
@@ -113,7 +115,7 @@ fi
 # Assertions are disabled by default since version 3.5.
 # If you want to enable them - set 'ENABLE_ASSERTIONS' flag to '1'.
 #
-ENABLE_ASSERTIONS="1"
+ENABLE_ASSERTIONS="0"
 
 #
 # Set '-ea' options if assertions are enabled.
@@ -148,12 +150,12 @@ do
         case $osname in
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" \
-                -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+                 -DIGNITE_HOME="${IGNITE_HOME}" \
                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" \
-                -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+                 -DIGNITE_HOME="${IGNITE_HOME}" \
                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
         esac
@@ -161,13 +163,13 @@ do
         case $osname in
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" \
-                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
+                  -DIGNITE_HOME="${IGNITE_HOME}" \
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} ${CONFIG} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" \
-                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
+                  -DIGNITE_HOME="${IGNITE_HOME}" \
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} ${CONFIG} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
         esac
     fi

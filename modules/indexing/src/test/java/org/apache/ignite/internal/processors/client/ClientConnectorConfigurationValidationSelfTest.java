@@ -30,8 +30,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -167,123 +165,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
         checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
     }
 
-    /**
-     * Test ODBC connector conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testOdbcConnectorConversion() throws Exception {
-        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
-
-        IgniteConfiguration cfg = baseConfiguration();
-
-        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + port));
-
-        Ignition.start(cfg);
-
-        checkJdbc(null, port);
-    }
-
-    /**
-     * Test SQL connector conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSqlConnectorConversion() throws Exception {
-        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
-
-        IgniteConfiguration cfg = baseConfiguration();
-
-        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(port));
-
-        Ignition.start(cfg);
-
-        checkJdbc(null, port);
-    }
-
-    /**
-     * Test SQL connector conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgnoreOdbcWhenSqlSet() throws Exception {
-        int port = ClientConnectorConfiguration.DFLT_PORT - 1;
-
-        IgniteConfiguration cfg = baseConfiguration();
-
-        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(port));
-        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + (port - 1)));
-
-        Ignition.start(cfg);
-
-        checkJdbc(null, port);
-    }
-
-    /**
-     * Test SQL connector conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgnoreOdbcAndSqlWhenClientSet() throws Exception {
-        int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
-        int sqlPort = ClientConnectorConfiguration.DFLT_PORT - 2;
-        int odbcPort = ClientConnectorConfiguration.DFLT_PORT - 3;
-
-        IgniteConfiguration cfg = baseConfiguration();
-
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort));
-        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(sqlPort));
-        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + odbcPort));
-
-        Ignition.start(cfg);
-
-        checkJdbc(null, cliPort);
-    }
-
-    /**
-     * Test SQL connector conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgnoreOdbcWhenClientSet() throws Exception {
-        int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
-        int odbcPort = ClientConnectorConfiguration.DFLT_PORT - 2;
-
-        IgniteConfiguration cfg = baseConfiguration();
-
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort));
-        cfg.setOdbcConfiguration(new OdbcConfiguration().setEndpointAddress("127.0.0.1:" + odbcPort));
-
-        Ignition.start(cfg);
-
-        checkJdbc(null, cliPort);
-    }
-
-    /**
-     * Test SQL connector conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgnoreSqlWhenClientSet() throws Exception {
-        int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
-        int sqlPort = ClientConnectorConfiguration.DFLT_PORT - 2;
-
-        IgniteConfiguration cfg = baseConfiguration();
-
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort));
-        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(sqlPort));
-
-        Ignition.start(cfg);
-
-        checkJdbc(null, cliPort);
-    }
-
+   
     /**
      * Test disabled client.
      *

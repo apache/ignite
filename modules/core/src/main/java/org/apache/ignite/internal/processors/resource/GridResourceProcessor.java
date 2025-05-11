@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -221,6 +222,27 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         obj = unwrapTarget(obj);
 
         return inject(obj, GridResourceIoc.ResourceAnnotation.CACHE_STORE_SESSION, null, null, ses);
+    }
+    
+
+    /**
+     * Injects filesystem instance into given object.
+     *
+     * @param obj Object.
+     * @param igfs Ignite filesystem to inject.
+     * @return {@code True} if filesystem was injected.
+     * @throws IgniteCheckedException If failed to inject.
+     */
+    public boolean injectFileSystem(Object obj, IgniteFileSystem igfs) throws IgniteCheckedException {
+        assert obj != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Injecting cache store session: " + obj);
+
+        // Unwrap Proxy object.
+        obj = unwrapTarget(obj);
+
+        return inject(obj, GridResourceIoc.ResourceAnnotation.FILESYSTEM_RESOURCE, null, null, igfs);
     }
 
     /**

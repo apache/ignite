@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-internal</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
@@ -64,13 +64,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-calcite</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-calcite</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
         </dependency>
 
         <dependency>

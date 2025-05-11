@@ -361,7 +361,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Throwable failReason = null;
             try {
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters, limit);
+                return tbl.luceneIndex().query(qry, filters, limit);
             }
             catch (Throwable t) {
                 failReason = t;

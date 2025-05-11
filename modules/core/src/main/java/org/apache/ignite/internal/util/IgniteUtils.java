@@ -50,6 +50,7 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -6456,7 +6457,7 @@ public abstract class IgniteUtils extends CommonUtils {
             try {
                 synchronized (urlClsLdrField) {
                     // Backup accessible field state.
-                    boolean accessible = urlClsLdrField.isAccessible();
+                    boolean accessible = urlClsLdrField.canAccess(clsLdr);
 
                     try {
                         if (!accessible)
@@ -6478,7 +6479,7 @@ public abstract class IgniteUtils extends CommonUtils {
                     }
                 }
             }
-            catch (InvocationTargetException | IllegalAccessException e) {
+            catch (InvocationTargetException | IllegalAccessException | InaccessibleObjectException e) {
                 e.printStackTrace(System.err);
 
                 return EMPTY_URL_ARR;

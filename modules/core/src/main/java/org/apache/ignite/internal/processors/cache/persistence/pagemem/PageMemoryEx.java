@@ -148,8 +148,8 @@ public interface PageMemoryEx extends PageMemory {
         boolean keepDirty
     ) throws IgniteCheckedException;
 
-    /** */
-    public PageReadWriteManager pageManager();
+     /** */
+     public PageReadWriteManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.

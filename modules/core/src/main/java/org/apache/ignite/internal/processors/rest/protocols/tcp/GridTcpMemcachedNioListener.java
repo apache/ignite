@@ -86,14 +86,12 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
-        // No-op, never called.
-        assert false;
+        // No-op, never called.        
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-        // No-op, never called.
-        assert false;
+        // No-op, never called.        
     }
 
     /** {@inheritDoc} */

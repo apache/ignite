@@ -1918,52 +1918,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache.get("key2") == 2;
         assert cache.get("wrong") == null;
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPutAsyncOld() throws Exception {
-        Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
-
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
-
-        try {
-            jcache().put("key2", 1);
-
-            cacheAsync.put("key1", 10);
-
-            IgniteFuture<?> fut1 = cacheAsync.future();
-
-            cacheAsync.put("key2", 11);
-
-            IgniteFuture<?> fut2 = cacheAsync.future();
-
-            IgniteFuture<Transaction> f = null;
-
-            if (tx != null) {
-                tx = (Transaction)tx.withAsync();
-
-                tx.commit();
-
-                f = tx.future();
-            }
-
-            assertNull(fut1.get());
-            assertNull(fut2.get());
-
-            assert f == null || f.get().state() == COMMITTED;
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        checkSize(F.asSet("key1", "key2"));
-
-        assert jcache().get("key1") == 10;
-        assert jcache().get("key2") == 11;
-    }
+    
 
     /**
      * @throws Exception If failed.

@@ -1,0 +1,61 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'general'
+-var model = '$ctrl.clonedService'
+
+panel-collapsible(opened=`::true` ng-form=form)
+    panel-title General
+    panel-description
+        | {{ $ctrl.clonedService.text }}
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+                            
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Command text and args:',
+                    placeholder: '--cmd --port --host ',
+                    name: '"input"',
+                    model: `${model}.input`,
+                    required: true,  
+                    tip: '{{ $ctrl.clonedService.usage }}'                  
+                })           
+            
+            .pc-form-grid-col-30
+                +form-field__cache-modes({
+                    label: 'Mode:',
+                    model: `${model}.mode`,
+                    name: '"mode"',
+                    placeholder: 'PARTITIONED'
+                })
+
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Atomicity:',
+                    model: `${model}.atomicityMode`,
+                    name: '"atomicityMode"',
+                    placeholder: 'ATOMIC',
+                    options: '[\
+                        {value: "ATOMIC", label: "ATOMIC"},\
+                        {value: "TRANSACTIONAL", label: "TRANSACTIONAL"}]',
+                    tip: 'Atomicity:\
+                        <ul>\
+                            <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
+                            <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
+                        </ul>'
+                })
+           
+            
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Copy on read',
+                    model: `${model}.copyOnRead`,
+                    name: '"copyOnRead"',
+                    tip: 'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
+                          Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor'
+                })
+           
+
+        

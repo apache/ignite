@@ -66,13 +66,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.PlatformCacheConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
-import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -213,7 +208,7 @@ public class PlatformConfigurationUtils {
 
         if (dataRegionName != null)
             //noinspection deprecation
-            ccfg.setMemoryPolicyName(dataRegionName);
+            ccfg.setDataRegionName(dataRegionName);
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
         ccfg.setGroupName(in.readString());
@@ -280,8 +275,7 @@ public class PlatformConfigurationUtils {
                 if (in.readBoolean()) {
                     // Java cache plugin.
                     readCachePluginConfiguration(ccfg, in);
-                }
-                else {
+                } else {
                     // Platform cache plugin.
                     plugins.add(new PlatformCachePluginConfiguration(in.readObjectDetached()));
                 }
@@ -751,7 +745,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
-            cfg.setLongQueryWarningTimeout(in.readLong());
+            //cfg.setLongQueryWarningTimeout(in.readLong());
+        	in.readLong();
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
         if (in.readBoolean())
@@ -780,8 +775,7 @@ public class PlatformConfigurationUtils {
 
         if (consId instanceof Serializable) {
             cfg.setConsistentId((Serializable)consId);
-        }
-        else if (consId != null) {
+        } else if (consId != null) {
             throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
         }
 
@@ -897,11 +891,11 @@ public class PlatformConfigurationUtils {
                 break;
         }
 
-        if (in.readBoolean())
-            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+        //if (in.readBoolean())
+        //    cfg.setMemoryConfiguration(readMemoryConfiguration(in));
 
-        if (in.readBoolean())
-            cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
+        //if (in.readBoolean())
+        //    cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         if (in.readBoolean())
             cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
@@ -909,8 +903,8 @@ public class PlatformConfigurationUtils {
         if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
             cfg.setClientConnectorConfiguration(null);
 
-        if (in.readBoolean())
-            cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
+        //if (in.readBoolean())
+        //    cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         if (in.readBoolean())
             cfg.setDataStorageConfiguration(readDataStorageConfiguration(in));
@@ -1127,7 +1121,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
         //noinspection deprecation
-        writer.writeString(ccfg.getMemoryPolicyName());
+        writer.writeString(ccfg.getDataRegionName());
         writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
         writer.writeString(ccfg.getGroupName());
 
@@ -1183,8 +1177,7 @@ public class PlatformConfigurationUtils {
                 writer.writeString(key.getTypeName());
                 writer.writeString(key.getAffinityKeyFieldName());
             }
-        }
-        else {
+        } else {
             writer.writeInt(0);
         }
 
@@ -1347,8 +1340,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
-        w.writeBoolean(true);
-        w.writeLong(cfg.getLongQueryWarningTimeout());
+        w.writeBoolean(false);
+        //w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);
@@ -1356,8 +1349,7 @@ public class PlatformConfigurationUtils {
         if (cfg.getSystemWorkerBlockedTimeout() != null) {
             w.writeBoolean(true);
             w.writeLong(cfg.getSystemWorkerBlockedTimeout());
-        }
-        else {
+        } else {
             w.writeBoolean(false);
         }
         w.writeBoolean(true);
@@ -1509,15 +1501,15 @@ public class PlatformConfigurationUtils {
             w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
-        writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
+        //writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
-        writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
+        //writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
 
         w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
 
-        writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
+        //writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
         writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
 
@@ -1543,8 +1535,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(((StopNodeOrHaltFailureHandler)failureHnd).tryStop());
 
             w.writeLong(((StopNodeOrHaltFailureHandler)failureHnd).timeout());
-        }
-        else
+        } else
             w.writeBoolean(false);
 
         ExecutorConfiguration[] execCfgs = cfg.getExecutorConfiguration();
@@ -1556,8 +1547,7 @@ public class PlatformConfigurationUtils {
                 w.writeString(execCfg.getName());
                 w.writeInt(execCfg.getSize());
             }
-        }
-        else
+        } else
             w.writeInt(0);
 
         w.writeString(cfg.getIgniteHome());
@@ -1785,136 +1775,9 @@ public class PlatformConfigurationUtils {
         return factory.create();
     }
 
-    /**
-     * Reads the memory configuration.
-     *
-     * @param in Reader
-     * @return Config.
-     */
-    @SuppressWarnings("deprecation")
-    private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
-        MemoryConfiguration res = new MemoryConfiguration();
+    
 
-        res.setSystemCacheInitialSize(in.readLong())
-                .setSystemCacheMaxSize(in.readLong())
-                .setPageSize(in.readInt())
-                .setConcurrencyLevel(in.readInt())
-                .setDefaultMemoryPolicyName(in.readString());
 
-        int cnt = in.readInt();
-
-        if (cnt > 0) {
-            MemoryPolicyConfiguration[] plcs = new MemoryPolicyConfiguration[cnt];
-
-            for (int i = 0; i < cnt; i++) {
-                MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
-
-                cfg.setName(in.readString())
-                        .setInitialSize(in.readLong())
-                        .setMaxSize(in.readLong())
-                        .setSwapFilePath(in.readString())
-                        .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
-                        .setEvictionThreshold(in.readDouble())
-                        .setEmptyPagesPoolSize(in.readInt())
-                        .setMetricsEnabled(in.readBoolean())
-                        .setSubIntervals(in.readInt())
-                        .setRateTimeInterval(in.readLong());
-
-                plcs[i] = cfg;
-            }
-
-            res.setMemoryPolicies(plcs);
-        }
-
-        return res;
-    }
-
-    /**
-     * Writes the memory configuration.
-     *
-     * @param w Writer.
-     * @param cfg Config.
-     */
-    @SuppressWarnings("deprecation")
-    private static void writeMemoryConfiguration(BinaryRawWriter w, MemoryConfiguration cfg) {
-        if (cfg == null) {
-            w.writeBoolean(false);
-            return;
-        }
-
-        w.writeBoolean(true);
-
-        w.writeLong(cfg.getSystemCacheInitialSize());
-        w.writeLong(cfg.getSystemCacheMaxSize());
-        w.writeInt(cfg.getPageSize());
-        w.writeInt(cfg.getConcurrencyLevel());
-        w.writeString(cfg.getDefaultMemoryPolicyName());
-
-        MemoryPolicyConfiguration[] plcs = cfg.getMemoryPolicies();
-
-        if (plcs != null) {
-            w.writeInt(plcs.length);
-
-            for (MemoryPolicyConfiguration plc : plcs) {
-                w.writeString(plc.getName());
-                w.writeLong(plc.getInitialSize());
-                w.writeLong(plc.getMaxSize());
-                w.writeString(plc.getSwapFilePath());
-                w.writeInt(plc.getPageEvictionMode().ordinal());
-                w.writeDouble(plc.getEvictionThreshold());
-                w.writeInt(plc.getEmptyPagesPoolSize());
-                w.writeBoolean(plc.isMetricsEnabled());
-                w.writeInt(plc.getSubIntervals());
-                w.writeLong(plc.getRateTimeInterval());
-            }
-        }
-        else
-            w.writeInt(0);
-    }
-
-    /**
-     * Reads the SQL connector configuration.
-     *
-     * @param in Reader.
-     * @return Config.
-     */
-    @SuppressWarnings("deprecation")
-    private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
-        return new SqlConnectorConfiguration()
-                .setHost(in.readString())
-                .setPort(in.readInt())
-                .setPortRange(in.readInt())
-                .setSocketSendBufferSize(in.readInt())
-                .setSocketReceiveBufferSize(in.readInt())
-                .setTcpNoDelay(in.readBoolean())
-                .setMaxOpenCursorsPerConnection(in.readInt())
-                .setThreadPoolSize(in.readInt());
-    }
-
-    /**
-     * Writes the SQL connector configuration.
-     *
-     * @param w Writer.
-     */
-    @SuppressWarnings("deprecation")
-    private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
-        assert w != null;
-
-        if (cfg != null) {
-            w.writeBoolean(true);
-
-            w.writeString(cfg.getHost());
-            w.writeInt(cfg.getPort());
-            w.writeInt(cfg.getPortRange());
-            w.writeInt(cfg.getSocketSendBufferSize());
-            w.writeInt(cfg.getSocketReceiveBufferSize());
-            w.writeBoolean(cfg.isTcpNoDelay());
-            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
-            w.writeInt(cfg.getThreadPoolSize());
-        }
-        else
-            w.writeBoolean(false);
-    }
 
     /**
      * Reads the client connector configuration.
@@ -1943,7 +1806,6 @@ public class PlatformConfigurationUtils {
             cfg.setThinClientConfiguration(new ThinClientConfiguration()
                 .setMaxActiveTxPerConnection(in.readInt())
                 .setMaxActiveComputeTasksPerConnection(in.readInt())
-                .sendServerExceptionStackTraceToClient(in.readBoolean())
             );
         }
 
@@ -1983,47 +1845,14 @@ public class PlatformConfigurationUtils {
                 w.writeBoolean(true);
                 w.writeInt(thinCfg.getMaxActiveTxPerConnection());
                 w.writeInt(thinCfg.getMaxActiveComputeTasksPerConnection());
-                w.writeBoolean(thinCfg.sendServerExceptionStackTraceToClient());
             }
             else
                 w.writeBoolean(false);
-        }
-        else
+        } else
             w.writeBoolean(false);
     }
 
-    /**
-     * Reads the persistence store connector configuration.
-     *
-     * @param in Reader.
-     * @return Config.
-     */
-    @SuppressWarnings("deprecation")
-    private static PersistentStoreConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
-        return new PersistentStoreConfiguration()
-                .setPersistentStorePath(in.readString())
-                .setCheckpointingFrequency(in.readLong())
-                .setCheckpointingPageBufferSize(in.readLong())
-                .setCheckpointingThreads(in.readInt())
-                .setLockWaitTime((int)in.readLong())
-                .setWalHistorySize(in.readInt())
-                .setWalSegments(in.readInt())
-                .setWalSegmentSize(in.readInt())
-                .setWalStorePath(in.readString())
-                .setWalArchivePath(in.readString())
-                .setWalMode(WALMode.fromOrdinal(in.readInt()))
-                .setWalBufferSize(in.readInt())
-                .setWalFlushFrequency((int)in.readLong())
-                .setWalFsyncDelayNanos(in.readLong())
-                .setWalRecordIteratorBufferSize(in.readInt())
-                .setAlwaysWriteFullPages(in.readBoolean())
-                .setMetricsEnabled(in.readBoolean())
-                .setSubIntervals(in.readInt())
-                .setRateTimeInterval(in.readLong())
-                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
-                .setWriteThrottlingEnabled(in.readBoolean());
-    }
-
+    
     /**
      * Reads the data storage configuration.
      *
@@ -2083,9 +1912,6 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
 
-        if (in.readBoolean())
-            res.setSystemDataRegionConfiguration(readSystemDataRegionConfiguration(in));
-
         return res;
     }
 
@@ -2121,43 +1947,6 @@ public class PlatformConfigurationUtils {
         return f;
     }
 
-    /**
-     * Writes the persistent store configuration.
-     *
-     * @param w Writer.
-     */
-    @SuppressWarnings("deprecation")
-    private static void writePersistentStoreConfiguration(BinaryRawWriter w, PersistentStoreConfiguration cfg) {
-        assert w != null;
-
-        if (cfg != null) {
-            w.writeBoolean(true);
-
-            w.writeString(cfg.getPersistentStorePath());
-            w.writeLong(cfg.getCheckpointingFrequency());
-            w.writeLong(cfg.getCheckpointingPageBufferSize());
-            w.writeInt(cfg.getCheckpointingThreads());
-            w.writeLong(cfg.getLockWaitTime());
-            w.writeInt(cfg.getWalHistorySize());
-            w.writeInt(cfg.getWalSegments());
-            w.writeInt(cfg.getWalSegmentSize());
-            w.writeString(cfg.getWalStorePath());
-            w.writeString(cfg.getWalArchivePath());
-            w.writeInt(cfg.getWalMode().ordinal());
-            w.writeInt(cfg.getWalBufferSize());
-            w.writeLong(cfg.getWalFlushFrequency());
-            w.writeLong(cfg.getWalFsyncDelayNanos());
-            w.writeInt(cfg.getWalRecordIteratorBufferSize());
-            w.writeBoolean(cfg.isAlwaysWriteFullPages());
-            w.writeBoolean(cfg.isMetricsEnabled());
-            w.writeInt(cfg.getSubIntervals());
-            w.writeLong(cfg.getRateTimeInterval());
-            w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
-            w.writeBoolean(cfg.isWriteThrottlingEnabled());
-        }
-        else
-            w.writeBoolean(false);
-    }
 
     /**
      * Writes the data storage configuration.
@@ -2231,13 +2020,6 @@ public class PlatformConfigurationUtils {
             }
             else
                 w.writeBoolean(false);
-
-            if (cfg.getSystemDataRegionConfiguration() != null) {
-                w.writeBoolean(true);
-                writeSystemDataRegionConfiguration(w, cfg.getSystemDataRegionConfiguration());
-            }
-            else
-                w.writeBoolean(false);
         }
         else
             w.writeBoolean(false);
@@ -2265,20 +2047,6 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMetricsRateTimeInterval());
         w.writeLong(cfg.getCheckpointPageBufferSize());
         w.writeBoolean(cfg.isLazyMemoryAllocation());
-    }
-
-    /**
-     * Writes the system data region configuration.
-     *
-     * @param w Writer.
-     * @param cfg System data region configuration.
-     */
-    private static void writeSystemDataRegionConfiguration(BinaryRawWriter w, SystemDataRegionConfiguration cfg) {
-        assert w != null;
-        assert cfg != null;
-
-        w.writeLong(cfg.getInitialSize());
-        w.writeLong(cfg.getMaxSize());
     }
 
     /**
@@ -2337,19 +2105,6 @@ public class PlatformConfigurationUtils {
         cfg.setLazyMemoryAllocation(r.readBoolean());
 
         return cfg;
-    }
-
-    /**
-     * Reads the system data region configuration.
-     *
-     * @param r Reader.
-     */
-    private static SystemDataRegionConfiguration readSystemDataRegionConfiguration(BinaryRawReader r) {
-        assert r != null;
-
-        return new SystemDataRegionConfiguration()
-                .setInitialSize(r.readLong())
-                .setMaxSize(r.readLong());
     }
 
     /**

@@ -28,7 +28,10 @@ import java.util.stream.Collectors;
  * The simple map for primitive types base on Robin-hood hashing with backward shift.
  */
 public class IntHashMap<V> implements IntMap<V> {
-    /** Initial capacity. */
+    
+	private static final long serialVersionUID = 1L;
+
+	/** Initial capacity. */
     public static final int INITIAL_CAPACITY = 8;
 
     /** Maximum capacity. */

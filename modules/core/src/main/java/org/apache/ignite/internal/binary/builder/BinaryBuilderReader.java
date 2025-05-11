@@ -361,7 +361,12 @@ class BinaryBuilderReader implements BinaryPositionReadable {
                 len = readInt() + 4;
 
                 break;
+           //add@byron
+            case GridBinaryMarshaller.OPTM_MARSH:
+            	len = readInt();
 
+                break;
+           //end@
             default:
                 throw new BinaryObjectException("Invalid flag value: " + type);
         }

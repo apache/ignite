@@ -535,11 +535,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         /** Incorrect row length. */
         @QuerySqlTableFunction(columnTypes = {int.class, String.class, double.class}, columnNames = {"INT_COL", "STR_COL", "DBL_COL"})
         public static Collection<?> wrongRowLength(int i) {
+        	List<?> row3 = Arrays.asList(i * 100, i * 100000.0d);
             return Arrays.asList(
                 Arrays.asList(i, "code_" + i, i * 1000.0d),
                 Arrays.asList(i + 15, "code_" + (i + 15), (i + 15) * 1000.0d),
                 // Mismatched length.
-                Arrays.asList(i * 100, i * 100000.0d)
+                row3
             );
         }
 

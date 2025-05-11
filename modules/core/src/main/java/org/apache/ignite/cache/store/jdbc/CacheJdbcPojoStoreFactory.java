@@ -144,7 +144,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     private Factory<DataSource> dataSrcFactory;
 
     /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
-    private boolean sqlEscapeAll;
+    private boolean sqlEscapeAll = true;
 
     /** Application context. */
     @SpringApplicationContextResource

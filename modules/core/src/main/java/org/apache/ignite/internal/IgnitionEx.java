@@ -66,9 +66,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -85,6 +82,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
@@ -144,8 +142,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
@@ -182,7 +179,7 @@ public class IgnitionEx {
     /** Key to store list of gracefully stopping nodes within metastore. */
     private static final String GRACEFUL_SHUTDOWN_METASTORE_KEY =
         DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown";
-
+    
     /** Map of named Ignite instances. */
     private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
 
@@ -1943,16 +1940,7 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            if (cfg.getDataStorageConfiguration() != null &&
-                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
-                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
-                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
-                    "but not both.");
-            }
-
-            if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
-                convertLegacyDataStorageConfigurationToNew(cfg);
-
+           
             if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
@@ -2056,7 +2044,7 @@ public class IgnitionEx {
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
             if (F.isEmpty(cfg.getMetricExporterSpi())) {
-                cfg.setMetricExporterSpi(IGNITE_MBEANS_DISABLED
+                cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
                     ? new NoopMetricExporterSpi()
                     : new JmxMetricExporterSpi());
             }
@@ -2400,7 +2388,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
-            if (IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             assert srv != null;
@@ -2455,7 +2443,7 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
-            if (IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             synchronized (mbeans) {
@@ -2585,120 +2573,9 @@ public class IgnitionEx {
 
     /** Initialize default mbean server. */
     public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
-        if (myCfg.getMBeanServer() == null && !IGNITE_MBEANS_DISABLED)
+        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
     }
 
-    /**
-     * @param cfg Ignite Configuration with legacy data storage configuration.
-     */
-    private static void convertLegacyDataStorageConfigurationToNew(
-        IgniteConfiguration cfg) throws IgniteCheckedException {
-        PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
-
-        boolean persistenceEnabled = psCfg != null;
-
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration() != null ?
-            cfg.getMemoryConfiguration() : new MemoryConfiguration();
-
-        dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
-        dsCfg.setPageSize(memCfg.getPageSize());
-
-        dsCfg.setSystemDataRegionConfiguration(
-                new SystemDataRegionConfiguration()
-                        .setInitialSize(memCfg.getSystemCacheInitialSize())
-                        .setMaxSize(memCfg.getSystemCacheMaxSize())
-        );
-
-        List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
-
-        boolean customDfltPlc = false;
-
-        if (memCfg.getMemoryPolicies() != null) {
-            for (MemoryPolicyConfiguration mpc : memCfg.getMemoryPolicies()) {
-                DataRegionConfiguration region = new DataRegionConfiguration();
-
-                region.setPersistenceEnabled(persistenceEnabled);
-
-                if (mpc.getInitialSize() != 0L)
-                    region.setInitialSize(mpc.getInitialSize());
-
-                region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
-                region.setEvictionThreshold(mpc.getEvictionThreshold());
-                region.setMaxSize(mpc.getMaxSize());
-                region.setName(mpc.getName());
-                region.setPageEvictionMode(mpc.getPageEvictionMode());
-                region.setMetricsRateTimeInterval(mpc.getRateTimeInterval());
-                region.setMetricsSubIntervalCount(mpc.getSubIntervals());
-                region.setSwapPath(mpc.getSwapFilePath());
-                region.setMetricsEnabled(mpc.isMetricsEnabled());
-
-                if (persistenceEnabled)
-                    region.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
-
-                if (mpc.getName() == null) {
-                    throw new IgniteCheckedException(new IllegalArgumentException(
-                        "User-defined MemoryPolicyConfiguration must have non-null and non-empty name."));
-                }
-
-                if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
-                    customDfltPlc = true;
-
-                    dsCfg.setDefaultDataRegionConfiguration(region);
-                }
-                else
-                    optionalDataRegions.add(region);
-            }
-        }
-
-        if (!optionalDataRegions.isEmpty())
-            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(
-                new DataRegionConfiguration[optionalDataRegions.size()]));
-
-        if (!customDfltPlc) {
-            if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(memCfg.getDefaultMemoryPolicyName())) {
-                throw new IgniteCheckedException(new IllegalArgumentException("User-defined default MemoryPolicy " +
-                    "name must be presented among configured MemoryPolices: " + memCfg.getDefaultMemoryPolicyName()));
-            }
-
-            dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(memCfg.getDefaultMemoryPolicySize())
-                .setName(memCfg.getDefaultMemoryPolicyName())
-                .setPersistenceEnabled(persistenceEnabled));
-        }
-        else {
-            if (memCfg.getDefaultMemoryPolicySize() != DFLT_MEMORY_POLICY_MAX_SIZE)
-                throw new IgniteCheckedException(new IllegalArgumentException("User-defined MemoryPolicy " +
-                    "configuration and defaultMemoryPolicySize properties are set at the same time."));
-        }
-
-        if (persistenceEnabled) {
-            dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
-            dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
-            dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
-            dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
-            dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
-            dsCfg.setStoragePath(psCfg.getPersistentStorePath());
-            dsCfg.setMetricsRateTimeInterval(psCfg.getRateTimeInterval());
-            dsCfg.setMetricsSubIntervalCount(psCfg.getSubIntervals());
-            dsCfg.setWalThreadLocalBufferSize(psCfg.getTlbSize());
-            dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
-            dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
-            dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());
-            dsCfg.setWalFsyncDelayNanos(psCfg.getWalFsyncDelayNanos());
-            dsCfg.setWalHistorySize(psCfg.getWalHistorySize());
-            dsCfg.setWalMode(psCfg.getWalMode());
-            dsCfg.setWalRecordIteratorBufferSize(psCfg.getWalRecordIteratorBufferSize());
-            dsCfg.setWalSegments(psCfg.getWalSegments());
-            dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
-            dsCfg.setWalPath(psCfg.getWalStorePath());
-            dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
-            dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
-            dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
-        }
-
-        cfg.setDataStorageConfiguration(dsCfg);
-    }
+    
 }

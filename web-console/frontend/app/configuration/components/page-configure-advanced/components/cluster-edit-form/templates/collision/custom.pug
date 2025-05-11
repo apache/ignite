@@ -1,0 +1,16 @@
+
+
+include /app/helpers/jade/mixins
+
+-var model = '$ctrl.clonedCluster.collision.Custom'
+-var required = '$ctrl.clonedCluster.collision.kind === "Custom"'
+
+.pc-form-grid-col-60
+    +form-field__java-class({
+        label: 'Class:',
+        model: `${model}.class`,
+        name: '"collisionCustom"',
+        required: required,
+        tip: 'CollisionSpi implementation class',
+        validationActive: required
+    })

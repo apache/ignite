@@ -21,21 +21,28 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.engine.Database;
+import org.h2.engine.DbSettings;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
+import org.h2.mvstore.db.MVTableEngine;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
+import org.h2.table.TableView;
+import org.h2.util.New;
+import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
 
 /**
  * System H2 table over a view.
  */
-public class SystemViewH2Adapter extends TableBase {
+public class SystemViewH2Adapter extends TableBase { // to modify@byron TableView
     /** Scan index. */
     protected final SqlSystemIndex scanIdx;
 
@@ -48,17 +55,18 @@ public class SystemViewH2Adapter extends TableBase {
      * Note: We need ArrayList here by H2 {@link #getIndexes()} method contract.
      */
     protected final ArrayList<Index> indexes;
-
+    
     /**
      * @param data Data.
      * @param view Meta view.
      */
     public SystemViewH2Adapter(CreateTableData data, SqlSystemView view) {
-        super(data);
-
+    	// to modify@byron
+        // super(data.schema,data.id,data.tableName,"SELECT 0 ",null,view.getColumns(),data.session,false,true,false,data.persistData);
+    	super(data);
         assert view != null;
 
-        this.view = view;
+        this.view = view;       
 
         setColumns(view.getColumns());
 
@@ -81,6 +89,20 @@ public class SystemViewH2Adapter extends TableBase {
                 indexes.add(idx);
             }
         }
+    }
+    
+
+    @Override
+    public String getDropSQL() {
+        return "DROP TABLE IF EXISTS " + getSQL() + " CASCADE";
+    }
+
+    @Override
+    public String getCreateSQL() {
+    	if(this.view==null) {
+    		return super.getCreateSQL();
+    	}
+        return this.view.getCreateSQL();
     }
 
     /** {@inheritDoc} */
@@ -161,7 +183,9 @@ public class SystemViewH2Adapter extends TableBase {
 
     /** {@inheritDoc} */
     @Override public TableType getTableType() {
-        return TableType.VIEW;
+    	// modify@byron
+    	return TableType.SYSTEM_TABLE;
+        //-return TableType.VIEW;
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,122 @@
+<!doctype html>
+<html data-ng-app="FileManagerApp">
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>igfs-filemanager</title>
+
+    <!-- 第三方插件 -->
+    <script src="webjars/angularjs/1.5.0/angular.min.js"></script>
+    <script src="webjars/angular-translate/2.9.1/angular-translate.js"></script>
+    <script src="webjars/ng-file-upload/12.0.1/ng-file-upload.js"></script>
+    <script src="libs/jquery-3.2.1.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+
+    <link href="dist/angular-filemanager.min.css" rel="stylesheet">
+    <script src="dist/angular-filemanager.min.js"></script>
+
+    <script type="text/javascript">
+	
+		var user = {};		
+		var ticket = '';
+		var authUrl = '/api/v1/user';
+		var loginUrl = '/login';
+		var storageHost = 'http://localhost:18080';
+		var servicePath = '/filemanager/s3-rest/';
+
+    const currentStorageHost = localStorage.getItem('currentStorageHost');
+    if (currentStorageHost) {     
+        storageHost = currentStorageHost;
+    }
+
+		var storageUrl = storageHost+ servicePath;
+	    
+    var xhr0 = $.ajax({
+		    url:authUrl,
+		    async:false,
+		    dataType: "json",
+		    xhrFields: {
+          withCredentials: true
+        },
+        crossDomain: true
+	    });
+	    
+	    if(xhr0.status==404){
+	       
+	    }
+	    else if(xhr0.status!=200){
+	    	  window.location=loginUrl;
+	    }
+	    else if(xhr0.status==200){    
+	        user = JSON.parse(xhr0.responseText);
+	        ticket = user.token;
+	    }
+	
+        // 重写默认Config配置
+        angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (config) {
+            var defaults = config.$get();
+            config.set({
+				        ticket: ticket,
+                appName: 'File Manager',
+                defaultLang: 'zh',
+                listUrl: storageUrl+'list/',
+                uploadUrl: storageUrl+'upload/',
+                downloadFileUrl: storageUrl+'preview/',
+                createFolderUrl: storageUrl+'createFolder/',
+                permissionsUrl: storageUrl+'changePermissions/',
+                copyUrl: storageUrl+'copy/',
+                moveUrl: storageUrl+'move/',
+                removeUrl: storageUrl+'remove/',
+                renameUrl: storageUrl+'rename/',
+                getContentUrl: storageUrl+'getContent/',
+                editUrl: storageUrl+'edit/',
+                compressUrl: storageUrl+'compress/',
+                extractUrl: storageUrl+'extract/',
+                documentViewUrl: storageUrl+'office/',
+                pickCallback: function (item) {
+				  if(item.type!='file')
+					  return ;
+                    
+					if(item.name.endsWith('.zpln') ){
+					  var pos = item.name.lastIndexOf('_');
+					  var paphid = item.name.substring(pos+1,item.name.length-5);
+					  window.location='/#/notebook/'+paphid;
+					  return ;
+					}
+					else if(item.name.endsWith('.ipynb') ){
+					  var msg = 'Use %s "filemanager/s3-rest%s" as url for import external jupiter nodebook to zeppelin'
+                            .replace('%s', item.type)
+                            .replace('%s', item.fullPath());
+					  window.alert(msg);
+					  return false;
+					}
+					else if(item.name.endsWith('.sheet') || item.name.endsWith('.csv') || item.name.endsWith('.tsv') ){
+					  window.location='dist/xspreadsheet/?ref='+storageUrl+'view'+item.fullPath();
+					  return false;
+					}
+					
+					
+					var msg = 'Picked %s "filemanager/s3%s" for external use'
+                            .replace('%s', item.type)
+                            .replace('%s', item.fullPath());
+                    window.alert(msg);
+                },
+
+                allowedActions: angular.extend(defaults.allowedActions, {
+                    pickFiles: true,
+                    pickFolders: false,
+                    downloadMultiple: false
+                }),
+                tplPath: 'app/templates'
+            });
+        }]);
+		
+		
+    </script>
+</head>
+
+<body class="ng-cloak">
+<angular-filemanager></angular-filemanager>
+</body>
+</html>

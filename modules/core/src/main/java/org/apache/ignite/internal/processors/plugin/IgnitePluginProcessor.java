@@ -245,7 +245,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         else {
             for (PluginProvider plugin : plugins.values()) {
                 U.quietAndInfo(log, "  ^-- " + plugin.name() + " " + plugin.version());
-                U.quietAndInfo(log, "  ^-- " + plugin.copyright());
+                if(plugin.copyright()!=null) {
+                	U.quietAndInfo(log, "\t  ^-- " + plugin.copyright());
+                }
                 U.quietAndInfo(log, "");
             }
         }

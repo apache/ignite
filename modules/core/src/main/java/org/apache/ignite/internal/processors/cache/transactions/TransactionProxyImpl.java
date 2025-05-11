@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -270,22 +269,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     /** {@inheritDoc} */
     @Override public long timeout(long timeout) {
         return tx.timeout(timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport withAsync() {
-        return new TransactionProxyImpl<>(tx, cctx, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return async;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <R> IgniteFuture<R> future() {
-        return asyncRes;
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,62 @@
+
+
+@import '../../../public/stylesheets/variables';
+
+.ignite-form-field {
+    font-style: normal;
+
+    ul.dropdown-menu {
+        min-width: calc(100% + 2px);
+        margin-top: 2px;
+        padding: 0;
+
+        border-color: #c5c5c5;
+        box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
+
+        li {
+            a {
+                padding-left: 15px;
+                padding-right: 15px;
+
+                color: $text-color;
+                line-height: 26px;
+
+                &:hover {
+                    color: #a8110f;
+                }
+
+                &.active {
+                    background-color: #fff;
+                    font-weight: normal;
+                }
+            }
+        }
+
+        li:not(:last-child) {
+            border-bottom: 1px solid $table-border-color;
+        }
+    }
+}
+
+.dropdown--ignite {
+    .btn-ignite {
+        position: relative;
+
+        &::after {
+            content: '';
+
+            position: absolute;
+            bottom: -4px;
+
+            display: block;
+            height: 4px;
+            width: 100%;
+        }
+
+        &[disabled='disabled'] {
+            ul.dropdown-menu {
+                display: none !important;
+            }
+        }
+    }
+}

@@ -1,0 +1,18 @@
+
+
+.btn-ignite.btn-ignite--primary(
+    bs-dropdown='$ctrl.dropdown'
+    data-trigger='hover focus'
+    bs-on-before-show='$ctrl.onDropdownShow'
+    bs-on-before-hide='$ctrl.onDropdownHide'
+    data-container='self'
+    ng-class='{"active": $ctrl.isActive }'
+)
+    | {{$ctrl.currentVersion}}
+    span.icon-right.fa.fa-caret-down
+
+svg.icon-help(
+    ignite-icon='info'
+    bs-tooltip='::{title: ("versionPickerComponent.tooltip"|translate)}'
+    data-placement='right'
+)

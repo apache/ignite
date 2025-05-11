@@ -17,12 +17,21 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
+
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
@@ -37,45 +46,49 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
-import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
-
 /**
  * Jetty REST protocol implementation.
+ * 
  */
 public class GridJettyRestProtocol extends GridRestProtocolAdapter {
-    /**
-     *
-     */
+   
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            // See also https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging
+            // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
             // It seems that using system properties should be fine.
             System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
-            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
-            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
+            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "ON");
+            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "ON");
         }
+        
+        System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", ""+Integer.MAX_VALUE);
+        System.setProperty("org.eclipse.jetty.server.Request.maxFormKeys", ""+Integer.MAX_VALUE);
+
     }
 
-    /** Jetty handler. */
     private GridJettyRestHandler jettyHnd;
 
     /** HTTP server. */
-    private Server httpSrv;
+    private static Server httpSrv;
+    
+    private static int handlerCount = 0;    
 
     /**
      * @param ctx Context.
@@ -86,12 +99,12 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Jetty REST";
+        return "Jetty REST for Ignite Intstance "+ ctx.igniteInstanceName();
     }
 
     /** {@inheritDoc} */
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
-        assert ctx.config().getConnectorConfiguration() != null;
+        assert ctx.config().getConnectorConfiguration() != null;        
 
         String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
@@ -106,87 +119,125 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             @Override public Boolean apply(String tok) {
                 return F.isEmpty(secretKey) || authenticate(tok);
             }
-        }, ctx);
-
-        String jettyPath = config().getJettyPath();
-
-        final URL cfgUrl;
-
-        if (jettyPath == null) {
-            cfgUrl = null;
-
-            if (log.isDebugEnabled())
-                log.debug("Jetty configuration file is not provided, using defaults.");
-        }
+        }, ctx);    
+        
+        
+        // first start instance
+        if(httpSrv==null) {
+        	configSingletonJetty();
+        	jettyHnd.index = 0;
+     	}
         else {
-            cfgUrl = U.resolveIgniteUrl(jettyPath);
-
-            if (cfgUrl == null)
-                throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
-            else if (log.isDebugEnabled())
-                log.debug("Jetty configuration file: " + cfgUrl);
+        	jettyHnd.index = ++handlerCount;
         }
+        
+        HandlerList handlers = (HandlerList)httpSrv.getHandler();    		
+		if(handlers!=null) {			
+			handlers.prependHandler(jettyHnd); 
+		}
+		else {
+			httpSrv.setHandler(jettyHnd);
+		}
+        
+        override(getJettyConnector());
+    }
+    
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {    	
+		
+    	if(!httpSrv.isStarting() && !httpSrv.isStarted()) {
+    		
+			try {
+				AbstractNetworkConnector connector = getJettyConnector();
+				
+				try {
+		            host = InetAddress.getByName(connector.getHost());
+		        }
+		        catch (UnknownHostException e) {
+		            throw new IgniteCheckedException("Failed to resolve Jetty host address: " + connector.getHost(), e);
+		        }
 
-        loadJettyConfiguration(cfgUrl);
+	            int initPort = connector.getPort();
+	            int portRange = config().getPortRange();
+	            int lastPort = portRange == 0 ? initPort : initPort + portRange - 1;
 
-        AbstractNetworkConnector connector = getJettyConnector();
+	            for (port = initPort; port <= lastPort; port++) {
+	                connector.setPort(port);
 
-        try {
-            host = InetAddress.getByName(connector.getHost());
-        }
-        catch (UnknownHostException e) {
-            throw new IgniteCheckedException("Failed to resolve Jetty host address: " + connector.getHost(), e);
-        }
+	                if (startJetty()) {
+	                    if (log.isInfoEnabled())
+	                        log.info(startInfo());
 
-        int initPort = connector.getPort();
-        int portRange = config().getPortRange();
-        int lastPort = portRange == 0 ? initPort : initPort + portRange - 1;
-
-        for (port = initPort; port <= lastPort; port++) {
-            connector.setPort(port);
-
-            if (startJetty()) {
-                if (log.isInfoEnabled())
-                    log.info(startInfo());
-
-                return;
-            }
-        }
-
-        U.warn(log, "Failed to start Jetty REST server (possibly all ports in range are in use) " +
-            "[firstPort=" + initPort + ", lastPort=" + lastPort + ']');
+	                    return;
+	                }
+	            }
+	            U.warn(log, "Failed to start Jetty REST server (possibly all ports in range are in use) " +
+	                    "[firstPort=" + initPort + ", lastPort=" + lastPort + ']');
+	            
+			} catch (IgniteCheckedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}            
+     	}
     }
 
-    /**
-     * Checks {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT} system property
-     * and overrides default connector port if it present.
-     * Then initializes {@code port} with the found value.
-     *
-     * @param con Jetty connector.
-     */
+  
     private void override(AbstractNetworkConnector con) {
-        String host = System.getProperty(IGNITE_JETTY_HOST);
-
-        if (!F.isEmpty(host))
-            con.setHost(host);
-
         int currPort = con.getPort();
-
-        Integer overridePort = Integer.getInteger(IGNITE_JETTY_PORT);
-
-        if (overridePort != null && overridePort != 0)
-            currPort = overridePort;
-
-        con.setPort(currPort);
-        port = currPort;
+        try {        	
+        	this.port = currPort; 
+            this.host = InetAddress.getByName(con.getHost());
+        }
+        catch (UnknownHostException e) {
+           
+        }
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if Jetty started.
      */
+    private boolean configSingletonJetty() throws IgniteCheckedException {
+    	
+    	String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
+
+        try {
+            System.setProperty(IGNITE_JETTY_HOST, U.resolveLocalHost(jettyHost).getHostAddress());
+            String jettyPath = config().getJettyPath();
+	        final URL cfgUrl;
+	
+	        if (jettyPath == null) {
+	            cfgUrl = null;
+	
+	            if (log.isDebugEnabled())
+	                log.debug("Jetty configuration file is not provided, using defaults.");
+	        }
+	        else {
+	            cfgUrl = U.resolveIgniteUrl(jettyPath);
+	
+	            if (cfgUrl == null)
+	                throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
+	            else if (log.isDebugEnabled())
+	                log.debug("Jetty configuration file: " + cfgUrl);
+	        }
+	
+	        loadJettyConfiguration(cfgUrl);
+        
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to resolve host to bind address: " + jettyHost, e);
+        }
+
+        return true;
+    }
+        
+    /**
+     * @throws IgniteCheckedException If failed.
+     * @return {@code True} if Jetty started.
+     */
     private boolean startJetty() throws IgniteCheckedException {
         try {
+        	
             httpSrv.start();
 
             if (httpSrv.isStarted()) {
@@ -200,7 +251,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 return true;
             }
 
-            return false;
+            return  false;
         }
         catch (Exception e) {
             boolean failedToBind = e instanceof SocketException;
@@ -237,15 +288,16 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      *
      * @param cfgUrl URL to load configuration from.
      * @throws IgniteCheckedException if load failed.
+     * @throws IOException 
      */
-    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException {
-        if (cfgUrl == null) {
+    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException, IOException {
+        if (cfgUrl == null) {        	
             HttpConfiguration httpCfg = new HttpConfiguration();
 
             httpCfg.setSecureScheme("https");
             httpCfg.setSecurePort(8443);
             httpCfg.setSendServerVersion(true);
-            httpCfg.setSendDateHeader(true);
+            httpCfg.setSendDateHeader(true);           
 
             String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, "8080");
 
@@ -259,13 +311,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                     "cannot be cast to integer: " + srvPortStr);
             }
 
-            httpSrv = new Server(new QueuedThreadPool(200, 20));
+            httpSrv = new Server(new QueuedThreadPool(64, 4));
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);
-            srvConn.setIdleTimeout(30000L);
+            srvConn.setIdleTimeout(60000L);
             srvConn.setReuseAddress(true);
 
             httpSrv.addConnector(srvConn);
@@ -276,9 +328,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             XmlConfiguration cfg;
 
             try {
-                Resource rsrc = Resource.newResource(cfgUrl);
-
-                cfg = new XmlConfiguration(rsrc);
+                cfg = new XmlConfiguration(Resource.newResource(cfgUrl));
             }
             catch (FileNotFoundException e) {
                 throw new IgniteSpiException("Failed to find configuration file: " + cfgUrl, e);
@@ -299,13 +349,76 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
             }
-        }
-
+        }        
+        
         assert httpSrv != null;
+        
+        //add@byron support custom rest cmd handler        
+        String webAppDirs = "webapps"; 
+		if(ctx.config().getIgniteHome()!=null){
+			webAppDirs = ctx.config().getIgniteHome()+File.separatorChar+webAppDirs; 
+		}		
+		
 
-        httpSrv.setHandler(jettyHnd);
+		List<Handler> plugins = new ArrayList<>();
+		File webPlugins = new File(webAppDirs);
+		if(webPlugins.isDirectory()) {
+					    
+			for(File warFile: webPlugins.listFiles()) {
+			    String warPath = warFile.getPath();
+			    int pos = warFile.getName().indexOf('.');
+			    String contextPath =  pos>0? warFile.getName().substring(0,pos): warFile.getName();
+			    WebAppContext webApp = new WebAppContext();
+			    webApp.setContextPath("/"+contextPath);
+			    webApp.setConfigurationDiscovered(true);
+			    
+			    if (warFile.isDirectory()) {
+			        // Development mode, read from FS
+			    	webApp.setResourceBase(warFile.getPath());
+			        webApp.setDescriptor(warPath+"/WEB-INF/web.xml");
+			        webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");	        
+			       
+		        } else if(warFile.getName().endsWith(".war")) {
+			        // use packaged WAR
+			        webApp.setWar(warFile.getAbsolutePath());
+			        webApp.setExtractWAR(true);
+			       
+			    }
+		        else {
+		        	continue;
+		        }
+			    
+			    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+			    WebAppClassLoader loader = new WebAppClassLoader(cl,webApp);			   
+			    webApp.setClassLoader(loader);
+			    
+				webApp.setParentLoaderPriority(true);
+				webApp.setServer(httpSrv);
+				webApp.setErrorHandler(new ErrorHandler());
+				webApp.setAttribute("gridKernalContext", ctx);
+				
+				log.info("start webapp: "+contextPath);
+				plugins.add(webApp);
+			
+		    }
+		}
+	    
+		// Create a handler list to store our static and servlet context handlers.
+	    Handler hnd = httpSrv.getHandler();
+		HandlerList handlers = new HandlerList();
+		if(hnd!=null) {
+			plugins.add(hnd);
+			handlers.setHandlers(plugins.toArray(new Handler[plugins.size()]));	
+		}
+		else {
+			handlers.setHandlers(plugins.toArray(new Handler[plugins.size()]));	
+		}
+        //-httpSrv.setHandler(jettyHnd);
+        httpSrv.setHandler(handlers);
+        
+        //end@
 
-        override(getJettyConnector());
+        
     }
 
     /**
@@ -367,13 +480,20 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        stopJetty();
-
-        httpSrv = null;
-        jettyHnd = null;
-
-        if (log.isInfoEnabled())
-            log.info(stopInfo());
+    	if(httpSrv!=null) {  
+    		HandlerList handlers = (HandlerList)httpSrv.getHandler();
+    		handlers.removeHandler(jettyHnd);
+    		
+    		if(jettyHnd.index == 0) {
+    	        stopJetty();	
+    	        httpSrv = null;
+        	}
+        	 
+        
+        	if (log.isInfoEnabled())
+                log.info(stopInfo());
+    	}  
+    	
     }
 
     /** {@inheritDoc} */

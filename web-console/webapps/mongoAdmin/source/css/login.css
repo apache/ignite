@@ -1,0 +1,176 @@
+/* Bootstrap reset */
+
+.form-control:focus, .btn.focus, .btn:focus {
+
+    box-shadow: unset;
+    
+}
+
+.input-group-text {
+
+    border: unset;
+
+}
+
+/**
+ * Shake effect.
+ * 
+ * @see https://teamtreehouse.com/community/shake-effect-with-javascript-only
+ */
+ 
+@keyframes shake {
+
+    10%, 90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%, 80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%, 50%, 70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%, 60% {
+        transform: translate3d(4px, 0, 0);
+    }
+
+}
+
+.shake {
+
+    animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) both;
+    
+}
+
+/**
+ * Template based on a snippet created by Mutiullah Samim.
+ *
+ * @see https://bootsnipp.com/snippets/vl4R7
+ */
+
+#mpg-background {
+
+    background-image: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"); /* Transition hack */
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    transition: background-image 1s;
+    width: 100%;
+
+}
+
+#mpg-background.fallback {
+
+    background-image: url("../../assets/images/login-background.jpg");
+
+}
+
+#mpg-background .credit-link {
+    
+    bottom: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    position: absolute;
+    right: 10px;
+
+}
+
+html, body {
+
+    height: 100%;
+
+}
+
+body {
+
+    font-family: Arial, sans-serif;
+    
+}
+
+.alert {
+
+    max-width: 290px;
+    margin: 15px auto;
+
+}
+
+#mpg-cards {
+
+    min-height: 191px;
+    opacity: 0;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    transition: opacity 1s;
+    width: 322px;
+
+}
+
+#mpg-cards.reveal {
+
+    opacity: 1;
+
+}
+
+.card {
+
+    background-color: rgba(255, 255, 255, 0.7);
+
+}
+
+.mpg-card-front, .mpg-card-back {
+
+    -webkit-backface-visibility: hidden; /* For Safari */
+    backface-visibility: hidden;
+    position: absolute;
+    transition: transform 0.6s;
+
+}
+
+.mpg-card-front {
+
+    transform: rotateY(0deg);
+
+}
+
+#mpg-cards.flipped .mpg-card-front {
+
+    transform: rotateY(-180deg);
+
+}
+
+.mpg-card-back {
+
+    transform: rotateY(180deg);
+
+}
+
+#mpg-cards.flipped .mpg-card-back {
+
+    transform: rotateY(0deg);
+
+}
+
+.mpg-card-header-title {
+
+    font-family: Ubuntu, ubuntu-medium;
+
+}
+
+.input-group-text {
+
+    width: 40px;
+
+    background-color: #5dad1d;
+    color: white;
+
+}
+
+.mpg-flip-card-button {
+
+    padding-left: 0;
+
+}

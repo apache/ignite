@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -196,4 +200,10 @@ public interface GridNioSession {
      * @param msg System message to send.
      */
     public void systemMessage(Object msg);
+
+    /**
+     * @return Redis message pubsub listener
+     */
+    public IgniteBiPredicate<UUID, ByteBuffer> messageListener();
+    
 }

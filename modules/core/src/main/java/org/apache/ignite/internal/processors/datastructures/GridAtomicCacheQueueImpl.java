@@ -174,4 +174,63 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
         throws IgniteCheckedException {
         return (Long)cache.invoke(queueKey, c).get();
     }
+    
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public boolean addFirst(T item) throws IgniteException {
+        try {
+            Long idx = transformHeader(new AddFirstProcessor(id, 1));
+
+            if (idx == null)
+                return false;
+
+            checkRemoved(idx);
+
+            QueueItemKey key = itemKey(idx);
+
+            cache.getAndPut(key, item);
+
+            return true;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public T pollLast() throws IgniteException {
+        try {
+            while (true) {
+                Long idx = transformHeader(new PollLastProcessor(id));
+
+                if (idx == null)
+                    return null;
+
+                checkRemoved(idx);
+
+                QueueItemKey key = itemKey(idx);
+
+                T data = (T)cache.getAndRemove(key);
+
+                if (data != null)
+                    return data;
+
+                long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
+
+                while (U.currentTimeMillis() < stop) {
+                    data = (T)cache.getAndRemove(key);
+
+                    if (data != null)
+                        return data;
+                }
+
+                U.warn(log, "Failed to get item due to poll timeout [queue=" + queueName + ", idx=" + idx + "]. " +
+                    "Poll timeout can be redefined by 'IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT' system property.");
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
 }

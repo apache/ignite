@@ -249,7 +249,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     data = Collections.emptyList();
 
                 if (qry.query().type() == GridCacheQueryType.TEXT) {
-                    ArrayList unwrapped = new ArrayList();
+                    ArrayList<Object> unwrapped = new ArrayList<>();
 
                     for (Object o: data) {
                         ScoredCacheEntry e = (ScoredCacheEntry)o;

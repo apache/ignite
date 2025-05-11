@@ -116,7 +116,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
         if (F.isEmpty(dfltVals))
             return new GridFinishedFuture<>();
 
-        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>() {
+        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<Void, Void>() {
             @Override protected boolean ignoreFailure(Throwable err) {
                 // Do not complete the entire compound future if any property failed.
                 return true;

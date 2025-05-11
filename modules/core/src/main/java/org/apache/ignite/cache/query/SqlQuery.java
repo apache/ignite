@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @deprecated Since 2.8, please use {@link SqlFieldsQuery} instead.
  */
-@Deprecated
+//-@Deprecated
 public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;

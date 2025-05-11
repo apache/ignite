@@ -1,0 +1,28 @@
+
+
+connected-clusters {
+    @import "./../../../public/stylesheets/variables.scss";
+
+    height: 100%;
+    display: flex;
+
+    .connected-cluster-badge__count {
+        color: $ignite-brand-success;
+        margin-left: 5px;
+    }
+
+    button {
+        height: 100%;
+        width: 100%;
+        background: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        outline: none !important;
+
+        display: flex;
+        align-items: center;
+
+        font-size: 14px;
+    }
+}
