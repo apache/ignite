@@ -667,6 +667,36 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Checks for no extra tryOtherChannels calls.
+     */
+    @Test
+    public void testTryOtherChannelsInvocationLimit() throws Exception {
+        Assume.assumeFalse(partitionAware);
+
+        final int CLUSTER_SIZE = 3;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryLimit(CLUSTER_SIZE)
+                 .setReconnectThrottlingRetries(0)
+                 .setClusterDiscoveryEnabled(false)
+                 .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
+        ) {
+            ClientCache<Integer, Integer> cache = client.getOrCreateCache("tryOtherChannels");
+
+            cluster.close();
+
+            ClientConnectionException ex = (ClientConnectionException)GridTestUtils.assertThrows(null, () -> {
+                cachePut(cache, 0, 0);
+                return null;
+            }, ClientConnectionException.class, null);
+
+            assertEquals("Unexpected number of suppressed exceptions",
+                (CLUSTER_SIZE - 1) * 2, ex.getSuppressed().length);
+        }
+    }
+
+    /**
      * Performs cache put.
      *
      * @param cache Cache.
