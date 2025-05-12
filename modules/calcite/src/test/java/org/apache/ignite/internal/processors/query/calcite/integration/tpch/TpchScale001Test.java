@@ -26,7 +26,7 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class SmallScaleTpchTest extends AbstractBasicIntegrationTest {
+public class TpchScale001Test extends AbstractBasicIntegrationTest {
     /** Query ID. */
     @Parameterized.Parameter
     public int qryId;
@@ -34,12 +34,12 @@ public class SmallScaleTpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Object> params() {
-        return F.asList(16, 19, 20, 17003);
+        return F.asList(16, 17, 19, 20);
     }
 
     /** */
     protected double scale() {
-        return 0.1;
+        return 0.01;
     }
 
     /** {@inheritDoc} */
