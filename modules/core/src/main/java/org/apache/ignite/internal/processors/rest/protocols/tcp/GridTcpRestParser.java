@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridRouterRespo
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.util.GridByteArrayList;
-import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -385,7 +385,7 @@ public class GridTcpRestParser implements GridNioParser {
                 tmp.write(b);
 
                 if (i == 11) {
-                    req.totalLength(U.bytesToInt(tmp.toByteArray(), 0));
+                    req.totalLength(trimmedBytesToInt(tmp.toByteArray()));
 
                     tmp.reset();
                 }
@@ -517,7 +517,7 @@ public class GridTcpRestParser implements GridNioParser {
                 byte[] lenBytes = statefulRead(buf, tmp, 4);
 
                 if (lenBytes != null) {
-                    len = U.bytesToInt(lenBytes, 0);
+                    len = trimmedBytesToInt(lenBytes);
 
                     if (len == 0)
                         return GridClientPingPacket.PING_MESSAGE;
@@ -533,9 +533,9 @@ public class GridTcpRestParser implements GridNioParser {
                 byte[] hdrBytes = statefulRead(buf, tmp, 40);
 
                 if (hdrBytes != null) {
-                    long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
-                    UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
-                    UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
+                    long reqId = IgniteUtils.bytesToLong(hdrBytes, 0);
+                    UUID clientId = IgniteUtils.bytesToUuid(hdrBytes, 8);
+                    UUID destId = IgniteUtils.bytesToUuid(hdrBytes, 24);
 
                     state.header(new HeaderData(reqId, clientId, destId));
                 }
@@ -801,7 +801,7 @@ public class GridTcpRestParser implements GridNioParser {
                 throw new IOException("Failed to parse incoming packet (delta value required for command) [ses=" +
                     ses + ", opCode=" + Integer.toHexString(req.operationCode() & 0xFF) + ']');
 
-            req.delta(U.bytesToLong(extras, 0));
+            req.delta(trimmedBytesToLong(extras));
         }
 
         if (extras != null) {
@@ -849,22 +849,36 @@ public class GridTcpRestParser implements GridNioParser {
             case BOOLEAN_FLAG:
                 return bytes[0] == '1';
             case INT_FLAG:
-                return U.bytesToInt(bytes, 0);
+                return trimmedBytesToInt(bytes);
             case LONG_FLAG:
-                return U.bytesToLong(bytes, 0);
+                return trimmedBytesToLong(bytes);
             case DATE_FLAG:
-                return new Date(U.bytesToLong(bytes, 0));
+                return new Date(trimmedBytesToLong(bytes));
             case BYTE_FLAG:
                 return bytes[0];
             case FLOAT_FLAG:
-                return Float.intBitsToFloat(U.bytesToInt(bytes, 0));
+                return Float.intBitsToFloat(trimmedBytesToInt(bytes));
             case DOUBLE_FLAG:
-                return Double.longBitsToDouble(U.bytesToLong(bytes, 0));
+                return Double.longBitsToDouble(trimmedBytesToLong(bytes));
             case BYTE_ARR_FLAG:
                 return bytes;
             default:
                 return new String(bytes, UTF_8);
         }
+    }
+
+    /**
+     * @param bytes Bytes.
+     */
+    private static int trimmedBytesToInt(byte[] bytes) {
+        return (int)U.fromBytes(bytes, 0, Math.min(bytes.length, 4));
+    }
+
+    /**
+     * @param bytes Bytes.
+     */
+    private static long trimmedBytesToLong(byte[] bytes) {
+        return U.fromBytes(bytes, 0, Math.min(bytes.length, 8));
     }
 
     /**
