@@ -157,7 +157,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
             }
 
             BinaryInputStream res = BinaryStreams.inputStream(msg);
-            try (BinaryReaderEx reader = BinaryUtils.reader(null, res, null, null, true, true)) {
+            try (BinaryReaderEx reader = BinaryUtils.reader(null, res, null, true, true)) {
                 byte reqType = reader.readByte();
 
                 assertEquals(ClientListenerRequest.HANDSHAKE, reqType);

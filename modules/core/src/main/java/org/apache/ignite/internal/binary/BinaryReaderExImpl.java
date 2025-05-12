@@ -1349,7 +1349,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             case HANDLE:
                 Object arr = readHandleField();
 
-                if (arr instanceof BinaryArray)
+                if (BinaryUtils.isBinaryArray(arr))
                     return ((BinaryArray)arr).deserialize(ldr);
                 else
                     return (Object[])arr;
@@ -1462,7 +1462,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             case HANDLE:
                 Object arr = readHandleField();
 
-                if (arr instanceof BinaryArray)
+                if (BinaryUtils.isBinaryArray(arr))
                     return ((BinaryArray)arr).deserialize(ldr);
                 else
                     return (Object[])arr;

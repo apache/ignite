@@ -257,7 +257,7 @@ public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
         BinaryEnumObjectImpl binEnum = new BinaryEnumObjectImpl(binCtx, bytes);
 
         assertEquals(srcBinEnum.size(), binEnum.size());
-        assertEquals(clsName, binEnum.className());
+        assertEquals(clsName, binEnum.enumClassName());
         assertEquals(typeId, binEnum.typeId());
         assertEquals(ord, binEnum.enumOrdinal());
     }

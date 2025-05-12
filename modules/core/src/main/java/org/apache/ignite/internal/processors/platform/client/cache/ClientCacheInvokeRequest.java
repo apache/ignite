@@ -21,7 +21,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
@@ -129,7 +129,7 @@ public class ClientCacheInvokeRequest extends ClientCacheKeyRequest {
                     "Entry processor should be marshalled as a BinaryObject: " + entryProc.getClass());
             }
 
-            BinaryObjectImpl bo = (BinaryObjectImpl)entryProc;
+            BinaryObjectEx bo = (BinaryObjectEx)entryProc;
 
             if (entryProcPlatform == ClientPlatform.JAVA)
                 return bo.deserialize();

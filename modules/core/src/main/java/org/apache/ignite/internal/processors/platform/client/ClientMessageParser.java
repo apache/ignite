@@ -440,8 +440,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
-        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), inStream,
-                null, null, true, true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), inStream, null, true, true);
 
         ClientListenerRequest req = decode(reader);
 

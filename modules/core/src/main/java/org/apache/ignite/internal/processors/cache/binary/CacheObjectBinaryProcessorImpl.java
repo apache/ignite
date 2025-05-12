@@ -58,15 +58,12 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -459,7 +456,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            if (!BinaryArray.useBinaryArrays())
+            if (!BinaryUtils.useBinaryArrays())
                 return pArr;
 
             return binaryCtx.createBinaryArray(obj.getClass().getComponentType(), pArr);
@@ -520,8 +517,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         Object obj0 = binaryMarsh.unmarshal(arr, null);
 
         // Possible if a class has writeObject method.
-        if (obj0 instanceof BinaryObjectImpl)
-            ((BinaryObjectImpl)obj0).detachAllowed(true);
+        BinaryUtils.detachAllowedIfPossible(obj0);
 
         return obj0;
     }
@@ -1017,7 +1013,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         updateMetadata(typeId, typeName, null, null, true, null);
 
-        return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);
+        return BinaryUtils.binaryEnum(ord, binaryCtx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -1041,7 +1037,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
 
-        return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ordinal);
+        return BinaryUtils.binaryEnum(ordinal, binaryCtx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -1194,7 +1190,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
-            if (key instanceof BinaryObjectImpl) {
+            if (BinaryUtils.isBinaryObjectImpl(key)) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
             }
@@ -1207,7 +1203,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         obj = toBinary(obj, false);
 
-        if (obj instanceof BinaryObjectImpl) {
+        if (BinaryUtils.isBinaryObjectImpl(obj)) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
@@ -1299,11 +1295,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
-            case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes, ctx);
+            case CacheObject.TYPE_BINARY:
+                return (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
 
-            case BinaryObjectImpl.TYPE_BINARY_ENUM:
-                return new BinaryEnumObjectImpl(binaryContext(), bytes);
+            case CacheObject.TYPE_BINARY_ENUM:
+                return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);
@@ -1319,8 +1315,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
         throws IgniteCheckedException {
         switch (type) {
-            case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes);
+            case CacheObject.TYPE_BINARY:
+                return (KeyCacheObject)BinaryUtils.binaryObject(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");

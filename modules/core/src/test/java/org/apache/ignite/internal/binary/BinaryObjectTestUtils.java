@@ -38,4 +38,19 @@ public class BinaryObjectTestUtils {
     public static int binaryArrayIdentityResolverHashCode(BinaryObject obj) {
         return BinaryArrayIdentityResolver.instance().hashCode(obj);
     }
+
+    /**
+     * @return Binary object instance.
+     */
+    public static BinaryObject binaryObject() {
+        return new BinaryObjectImpl();
+    }
+
+    /**
+     * @param o Object.
+     * @return {@link BinaryObjectImpl#detached()} value.
+     */
+    public static boolean isDetached(Object o) {
+        return ((BinaryObjectImpl)o).detached();
+    }
 }

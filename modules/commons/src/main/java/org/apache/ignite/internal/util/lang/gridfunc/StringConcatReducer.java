@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import org.apache.ignite.internal.util.typedef.CF;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteReducer;
@@ -54,7 +54,7 @@ public class StringConcatReducer implements IgniteReducer<String, String> {
     /** {@inheritDoc} */
     @Override public boolean collect(String s) {
         synchronized (lock) {
-            if (!first && !CF.isEmpty(delim))
+            if (!first && !GridFunc.isEmpty(delim))
                 sb.a(delim);
 
             sb.a(s);

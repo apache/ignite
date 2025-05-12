@@ -56,8 +56,8 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
             int start = ex.dataStartOffset();
             int end = ex.footerStartOffset();
 
-            if (ex.hasArray())
-                return hashCode(ex.array(), start, end);
+            if (ex.hasBytes())
+                return hashCode(ex.bytes(), start, end);
             else {
                 // Handle offheap object.
                 int hash = 1;
@@ -70,7 +70,7 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
                 return hash;
             }
         }
-        else if (obj instanceof BinaryEnumObjectImpl) {
+        else if (BinaryUtils.isBinaryEnumObject(obj)) {
             int hash = 1;
 
             int ord = obj.enumOrdinal();
@@ -114,15 +114,15 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
                 BinaryObjectExImpl exx1 = (BinaryObjectExImpl)ex1;
                 BinaryObjectExImpl exx2 = (BinaryObjectExImpl)ex2;
 
-                if (exx1.hasArray())
-                    return exx2.hasArray() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
+                if (exx1.hasBytes())
+                    return exx2.hasBytes() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
                 else
-                    return exx2.hasArray() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
+                    return exx2.hasBytes() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
             }
             else {
                 // Handle enums.
-                assert ex1 instanceof BinaryEnumObjectImpl;
-                assert ex2 instanceof BinaryEnumObjectImpl;
+                assert BinaryUtils.isBinaryEnumObject(ex1);
+                assert BinaryUtils.isBinaryEnumObject(ex2);
 
                 return ex1.enumOrdinal() == ex2.enumOrdinal();
             }
@@ -142,8 +142,8 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
      * @return Result.
      */
     private static boolean equalsHeap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
-        byte[] arr1 = o1.array();
-        byte[] arr2 = o2.array();
+        byte[] arr1 = o1.bytes();
+        byte[] arr2 = o2.bytes();
 
         assert arr1 != null && arr2 != null;
 
@@ -172,7 +172,7 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
      * @return Result.
      */
     private static boolean equalsHeapOffheap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
-        byte[] arr1 = o1.array();
+        byte[] arr1 = o1.bytes();
         long ptr2 = o2.offheapAddress();
 
         assert arr1 != null && ptr2 != 0;
