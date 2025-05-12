@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -871,7 +872,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 return;
 
             if (log.isDebugEnabled())
-                log.debug("Mapped DHT lock future [dhtMap=" + F.nodeIds(dhtMap.keySet()) +
+                log.debug("Mapped DHT lock future [dhtMap=" + ClusterNodeFunc.nodeIds(dhtMap.keySet()) +
                     ", dhtLockFut=" + this + ']');
 
             long timeout = inTx() ? tx.remainingTime() : this.timeout;

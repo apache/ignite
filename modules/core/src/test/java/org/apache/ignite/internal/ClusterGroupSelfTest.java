@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -39,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
 
 /**
  * Test for {@link ClusterGroup}.
@@ -90,7 +90,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
-        return grid(0).cluster().forPredicate(F.nodeForNodeIds(ids));
+        return grid(0).cluster().forPredicate(nodeForNodeIds(ids));
     }
 
     /** {@inheritDoc} */

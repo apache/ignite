@@ -109,6 +109,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_STOP;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
  * Distributed process to restore cache group from the snapshot.
@@ -321,7 +322,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx, check).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, incIdx < 1, incIdx, check).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -393,7 +394,7 @@ public class SnapshotRestoreProcess {
             assert reqGrpIds.isEmpty() : "Cache group(s) was not found in the snapshot [groups=" + reqGrpIds.values()
                 + ", snapshot=" + snpName + ']';
 
-            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
+            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), node2id());
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
                 fut0.rqId,

@@ -63,6 +63,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -386,11 +387,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
         Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ);
 
-        log.info("Put key1 [key1=" + key1 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key1)) + ']');
+        log.info("Put key1 [key1=" + key1 + ", nodes=" + nodeIds(aff.mapKeyToPrimaryAndBackups(key1)) + ']');
 
         origCache.put(key1, key1);
 
-        log.info("Put key2 [key2=" + key2 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key2)) + ']');
+        log.info("Put key2 [key2=" + key2 + ", nodes=" + nodeIds(aff.mapKeyToPrimaryAndBackups(key2)) + ']');
 
         origCache.put(key2, key2);
 

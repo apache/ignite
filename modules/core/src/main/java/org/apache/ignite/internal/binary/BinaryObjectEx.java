@@ -74,4 +74,34 @@ public interface BinaryObjectEx extends BinaryObject {
     @Nullable public default String enumClassName() {
         throw new UnsupportedOperationException("Not enum");
     }
+
+    /**
+     * @return {@code True} if object has bytes array.
+     */
+    public default boolean hasBytes() {
+        return false;
+    }
+
+    /**
+     * @return Object array if object is byte array based, otherwise {@code null}.
+     */
+    public default byte[] bytes() {
+        return null;
+    }
+
+    /**
+     * @return Object start.
+     */
+    public default int start() {
+        throw new UnsupportedOperationException("Has no array");
+    }
+
+    /**
+     * Get binary context.
+     *
+     * @return Binary context.
+     */
+    public default BinaryContext context() {
+        throw new UnsupportedOperationException("Context unknown");
+    }
 }

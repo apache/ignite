@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 
 /**
  *
@@ -692,7 +693,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             if (ctx.isStopping() || ctx.clientDisconnected())
                 return -1;
 
-            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+            Collection<Object> srvIds = nodeConsistentIds(cluster.forServers().nodes());
 
             return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
         }, "Active baseline nodes count.");
