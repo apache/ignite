@@ -305,7 +305,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
 
-        GridTestUtils.invoke(spi, "onNodeLeft", clientNode.consistentId(), clientNode.id());
+        onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
@@ -357,7 +357,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
 
-        GridTestUtils.invoke(spi, "onNodeLeft", clientNode.consistentId(), clientNode.id());
+        onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get()

@@ -438,17 +438,6 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         return 3;
     }
 
-    /**
-     * @param consistentId Consistent id of the node.
-     * @param nodeId Left node ID.
-     */
-    private void onNodeLeft(TcpCommunicationSpi spi, Object consistentId, UUID nodeId) {
-        assert nodeId != null;
-
-        ((TcpCommunicationMetricsListener)U.field(spi, "metricsLsnr")).onNodeLeft(consistentId);
-        ((ConnectionClientPool)U.field(spi, "clientPool")).onNodeLeft(nodeId);
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         spis.clear();
