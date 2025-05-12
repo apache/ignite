@@ -506,7 +506,11 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(dataRegionStorage(ccfg.getDataRegionName()), ccfg.getGroupName() != null
+        File cacheStorageRoot = F.isEmpty(ccfg.getStoragePath())
+            ? dfltNodeStorage
+            : rootRelative(ccfg.getStoragePath()[0]);
+
+        return new File(cacheStorageRoot, ccfg.getGroupName() != null
             ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
             : CACHE_DIR_PREFIX + ccfg.getName());
     }

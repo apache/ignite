@@ -22,11 +22,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.internal.GridKernalContext;
@@ -133,7 +135,7 @@ public class SnapshotFileTree extends NodeFileTree {
         this.path = path;
         this.consId = consId;
 
-        Map<String, File> snpDrStorages = snapshotDataRegionStorages(ft, cfg.getSnapshotPath());
+        Set<File> snpDrStorages = snapshotNodeStorages(ft, cfg.getSnapshotPath());
 
         if (snpDrStorages.isEmpty())
             drStorages.clear();
@@ -373,33 +375,30 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * Modifies {@link #drStorages} for this tree to reflect snapshot options.
+     * Modifies {@link #nodeStorages()} for this tree to reflect snapshot options.
      * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
      * then all snapshot files must be stored inside one folder.
-     * Otherwise, we use configured by {@link DataRegionConfiguration#getStoragePath()} structure to save snapshot.
+     * Otherwise, we use configured by {@link DataStorageConfiguration#getStoragePath()},
+     * {@link DataStorageConfiguration#getExtraStoragePathes()} structure to save snapshot.
      * This will distribute workload to all physical device on host.
      *
      * @param ft Node file tree.
      * @param snpDfltPath Snapshot default path.
      */
-    private Map<String, File> snapshotDataRegionStorages(NodeFileTree ft, String snpDfltPath) {
+    private Set<File> snapshotNodeStorages(NodeFileTree ft, String snpDfltPath) {
         // If path provided then create snapshot inside it, only.
         // Same rule applies if absolute path to the snapshot root dir configured.
         if (path != null || new File(snpDfltPath).isAbsolute())
-            return Collections.emptyMap();
+            return Collections.emptySet();
 
-        Map<String, File> snpDrStorages = new HashMap<>();
+        Set<File> snpDrStorages = new HashSet<>();
 
-        ft.dataRegionStorages().forEach((drName, drStoragePath) -> {
-            // drStorages contains path with the DB and folderName.
-            File drStorage = ft.dataRegionStorages().get(drName);
-
+        ft.nodeStorages().forEach(nodeStorage -> {
             // In case we want to make snapshot in several folders the pathes will be the following:
             // {dr_storage_path}/db/{folder_name} - node cache storage.
             // {dr_storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
-            snpDrStorages.put(
-                drName,
-                new File(drStorage.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
+            snpDrStorages.add(
+                new File(nodeStorage.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
             );
         });
 
