@@ -430,17 +430,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
-     * @param consistentId Consistent id of the node.
-     * @param nodeId Left node ID.
-     */
-    void onNodeLeft(Object consistentId, UUID nodeId) {
-        assert nodeId != null;
-
-        metricsLsnr.onNodeLeft(consistentId);
-        clientPool.onNodeLeft(nodeId);
-    }
-
-    /**
      * @param nodeId Target node ID.
      * @return Future.
      */
@@ -1130,22 +1119,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      */
     protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         return nioSrvWrapper.createTcpClient(node, connIdx, false);
-    }
-
-    /**
-     * Process errors if TCP/IP {@link GridNioSession} creation to remote node hasn't been performed.
-     *
-     * @param node Remote node.
-     * @param addrs Remote node addresses.
-     * @param errs TCP client creation errors.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void processSessionCreationError(
-        ClusterNode node,
-        Collection<InetSocketAddress> addrs,
-        IgniteCheckedException errs
-    ) throws IgniteCheckedException {
-        nioSrvWrapper.processSessionCreationError(node, addrs, errs);
     }
 
     /**

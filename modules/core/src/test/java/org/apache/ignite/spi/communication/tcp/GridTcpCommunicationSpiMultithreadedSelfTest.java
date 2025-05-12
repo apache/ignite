@@ -54,6 +54,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
@@ -328,7 +329,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 while (run.get() && !Thread.currentThread().isInterrupted()) {
                     U.sleep(interval * 3 / 2);
 
-                    ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.consistentId(), to.id());
+                    onNodeLeft((TcpCommunicationSpi)spis.get(from.id()), to.consistentId(), to.id());
                 }
             }
             catch (IgniteInterruptedCheckedException ignored) {
@@ -435,6 +436,17 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
      */
     private int getSpiCount() {
         return 3;
+    }
+
+    /**
+     * @param consistentId Consistent id of the node.
+     * @param nodeId Left node ID.
+     */
+    private void onNodeLeft(TcpCommunicationSpi spi, Object consistentId, UUID nodeId) {
+        assert nodeId != null;
+
+        ((TcpCommunicationMetricsListener)U.field(spi, "metricsLsnr")).onNodeLeft(consistentId);
+        ((ConnectionClientPool)U.field(spi, "clientPool")).onNodeLeft(nodeId);
     }
 
     /** {@inheritDoc} */
