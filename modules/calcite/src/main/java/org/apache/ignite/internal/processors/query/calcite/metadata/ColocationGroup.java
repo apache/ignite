@@ -92,8 +92,8 @@ public class ColocationGroup implements MarshalableMessage {
                     .collect(Collectors.toList());
         }
 
-        return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), Collections.singletonList(nodeId),
-                locAssignments);
+        return new ColocationGroup(sourceIds == null ? null : Arrays.copyOf(sourceIds, sourceIds.length),
+            Collections.singletonList(nodeId), locAssignments);
     }
 
     /** */

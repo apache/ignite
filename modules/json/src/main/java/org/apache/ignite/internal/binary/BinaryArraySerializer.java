@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang.gridfunc;
+package org.apache.ignite.internal.binary;
 
-import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteClosure;
+import java.io.IOException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * Grid node to node ID transformer closure.
+ * Custom serializer for {@link BinaryArray}.
  */
-public class ClusterNodeGetIdClosure implements IgniteClosure<ClusterNode, UUID> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+class BinaryArraySerializer extends JsonSerializer<BinaryArray> {
     /** {@inheritDoc} */
-    @Override public UUID apply(ClusterNode n) {
-        return n.id();
-    }
+    @Override public void serialize(BinaryArray val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        gen.writeStartArray();
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ClusterNodeGetIdClosure.class, this);
+        for (Object o : val.array())
+            gen.writeObject(o);
+
+        gen.writeEndArray();
     }
 }

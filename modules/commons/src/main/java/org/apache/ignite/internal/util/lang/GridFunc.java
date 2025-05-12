@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,16 +31,10 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
-import org.apache.ignite.cluster.BaselineNode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridCommonFunc;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -51,22 +44,14 @@ import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTrueReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
-import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.EqualsUuidPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.FlatCollectionWrapper;
 import org.apache.ignite.internal.util.lang.gridfunc.FlatIterator;
-import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
-import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IdentityClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsNotAllPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.IsNotNullPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.MultipleIterator;
-import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.NotEqualPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateCollectionView;
@@ -75,11 +60,13 @@ import org.apache.ignite.internal.util.lang.gridfunc.PredicateSetView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.lang.gridfunc.SetFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -104,11 +91,7 @@ import org.jetbrains.annotations.Nullable;
  * Also note, that in all methods with predicates, null predicate has a {@code true} meaning. So does
  * the empty predicate array.
  */
-@SuppressWarnings("unchecked")
-public class GridFunc extends GridCommonFunc {
-    /** */
-    private static final GridAbsClosure NOOP = new NoOpClosure();
-
+public class GridFunc {
     /** */
     private static final IgniteClosure IDENTITY = new IdentityClosure();
 
@@ -136,35 +119,6 @@ public class GridFunc extends GridCommonFunc {
     /** */
     private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new CacheEntryHasPeekPredicate();
 
-    /** */
-    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
-
-    /** */
-    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
-        BaselineNode::consistentId;
-
-    /**
-     * Gets predicate that evaluates to {@code true} only for given local node ID.
-     *
-     * @param locNodeId Local node ID.
-     * @param <T> Type of the node.
-     * @return Return {@code true} only for the node with given local node ID.
-     */
-    public static <T extends ClusterNode> IgnitePredicate<T> localNode(final UUID locNodeId) {
-        return new HasEqualIdPredicate<>(locNodeId);
-    }
-
-    /**
-     * Gets predicate that evaluates to {@code false} for given local node ID.
-     *
-     * @param locNodeId Local node ID.
-     * @param <T> Type of the node.
-     * @return Return {@code false} for the given local node ID.
-     */
-    public static <T extends ClusterNode> IgnitePredicate<T> remoteNodes(final UUID locNodeId) {
-        return new HasNotEqualIdPredicate<>(locNodeId);
-    }
-
     /**
      * Calculates sum of all elements.
      * <p>
@@ -185,10 +139,10 @@ public class GridFunc extends GridCommonFunc {
     }
 
     /**
-     * Gets reducer which always returns {@code true} from {@link org.apache.ignite.lang.IgniteReducer#collect(Object)}
-     * method and passed in {@code element} from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
+     * Gets reducer which always returns {@code true} from {@link IgniteReducer#collect(Object)}
+     * method and passed in {@code element} from {@link IgniteReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
+     * @param elem Element to return from {@link IgniteReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @return Passed in element.
      */
@@ -197,37 +151,22 @@ public class GridFunc extends GridCommonFunc {
     }
 
     /**
-     * Convenient utility method that returns collection of node IDs for a given
-     * collection of grid nodes.
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates
-     * over the input one.
+     * Concatenates strings using provided delimiter.
      *
-     * @param nodes Collection of grid nodes.
-     * @return Collection of node IDs for given collection of grid nodes.
+     * @param c Input collection.
+     * @param delim Delimiter (optional).
+     * @return Concatenated string.
      */
-    public static Collection<UUID> nodeIds(@Nullable Collection<? extends ClusterNode> nodes) {
-        if (nodes == null || nodes.isEmpty())
-            return Collections.emptyList();
+    public static String concat(Iterable<?> c, @Nullable String delim) {
+        A.notNull(c, "c");
 
-        return viewReadOnly(nodes, node2id());
-    }
+        IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-    /**
-     * Convenient utility method that returns collection of node consistent IDs for a given
-     * collection of grid nodes.
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates
-     * over the input one.
-     *
-     * @param nodes Collection of grid nodes.
-     * @return Collection of node consistent IDs for given collection of grid nodes.
-     */
-    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
-        if (nodes == null || nodes.isEmpty())
-            return Collections.emptyList();
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
+                break;
 
-        return viewReadOnly(nodes, NODE2CONSISTENTID);
+        return f.reduce();
     }
 
     /**
@@ -475,72 +414,6 @@ public class GridFunc extends GridCommonFunc {
         }
 
         return res;
-    }
-
-    /**
-     * Gets closure which converts node to node ID.
-     *
-     * @return Closure which converts node to node ID.
-     */
-    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
-        return NODE2ID;
-    }
-
-    /**
-     * Creates grid node predicate evaluating on the given node ID.
-     *
-     * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
-     * @return Grid node predicate evaluating on the given node ID.
-     * @see #idForNodeId(UUID)
-     * @see #nodeIds(Collection)
-     */
-    public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeId(final UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
-        return new EqualsClusterNodeIdPredicate<>(nodeId);
-    }
-
-    /**
-     * Creates grid node predicate evaluating on the given node IDs.
-     *
-     * @param nodeIds Collection of node IDs.
-     * @return Grid node predicate evaluating on the given node IDs.
-     * @see #idForNodeId(UUID)
-     * @see #nodeIds(Collection)
-     */
-    public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
-        nodeIds) {
-        if (isEmpty(nodeIds))
-            return alwaysFalse();
-
-        return new ContainsNodeIdsPredicate<>(nodeIds);
-    }
-
-    /**
-     * Creates {@link UUID} predicate evaluating on the given node ID.
-     *
-     * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
-     * @return {@link UUID} predicate evaluating on the given node ID.
-     * @see #nodeForNodeId(UUID)
-     * @see #nodeIds(Collection)
-     */
-    public static IgnitePredicate<UUID> idForNodeId(final UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
-        return new EqualsUuidPredicate(nodeId);
-    }
-
-    /**
-     * Creates predicates that evaluates to {@code true} for each node in given collection.
-     * Note that if collection is empty the result predicate will always evaluate to {@code false}.
-     * Implementation simply creates {@link GridNodePredicate} instance.
-     *
-     * @param nodes Collection of nodes. If none provided - result predicate will always
-     *      return {@code false}.
-     * @return Predicates that evaluates to {@code true} for each node in given collection.
-     */
-    public static IgnitePredicate<ClusterNode> nodeForNodes(ClusterNode... nodes) {
-        return new GridNodePredicate(nodes);
     }
 
     /**
@@ -793,6 +666,113 @@ public class GridFunc extends GridCommonFunc {
     }
 
     /**
+     * Tests if given string is {@code null} or empty.
+     *
+     * @param s String to test.
+     * @return Whether or not the given string is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable String s) {
+        return s == null || s.isEmpty();
+    }
+
+    /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static <T> boolean isEmpty(@Nullable T[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
+     * Tests if the given array is {@code null}, empty or contains only {@code null} values.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null}, empty or contains only {@code null} values.
+     */
+    public static <T> boolean isEmptyOrNulls(@Nullable T[] c) {
+        if (isEmpty(c))
+            return true;
+
+        for (T element : c)
+            if (element != null)
+                return false;
+
+        return true;
+    }
+
+    /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable int[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable byte[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable long[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable char[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
+     * Tests if the given collection is either {@code null} or empty.
+     *
+     * @param c Collection to test.
+     * @return Whether or not the given collection is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable Iterable<?> c) {
+        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
+    }
+
+    /**
+     * Tests if the given collection is either {@code null} or empty.
+     *
+     * @param c Collection to test.
+     * @return Whether or not the given collection is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable Collection<?> c) {
+        return c == null || c.isEmpty();
+    }
+
+    /**
+     * Tests if the given map is either {@code null} or empty.
+     *
+     * @param m Map to test.
+     * @return Whether or not the given collection is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable Map<?, ?> m) {
+        return m == null || m.isEmpty();
+    }
+
+    /**
      * Returns a factory closure that creates new {@link Set} instance. Note that this
      * method does not create a new closure but returns a static one.
      *
@@ -986,7 +966,7 @@ public class GridFunc extends GridCommonFunc {
      */
     @SafeVarargs
     public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
-        return isAlwaysFalse(p) ? GridFunc.<T>alwaysTrue() : isAlwaysTrue(p) ? GridFunc.<T>alwaysFalse() : new IsNotAllPredicate<>(p);
+        return isAlwaysFalse(p) ? alwaysTrue() : isAlwaysTrue(p) ? alwaysFalse() : new IsNotAllPredicate<>(p);
     }
 
     /**
@@ -1092,51 +1072,6 @@ public class GridFunc extends GridCommonFunc {
     }
 
     /**
-     * Get a predicate that evaluates to {@code true} if each of its component predicates
-     * evaluates to {@code true}. The components are evaluated in order they are supplied.
-     * Evaluation will be stopped as soon as first predicate evaluates to {@code false}.
-     * Passed in predicates are NOT copied. If no predicates are passed in the returned
-     * predicate will always evaluate to {@code false}.
-     *
-     * @param ps Passed in predicate. If none provided - always-{@code false} predicate is
-     *      returned.
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if each of its component predicates
-     *      evaluates to {@code true}.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
-        if (isEmpty(ps))
-            return alwaysTrue();
-
-        if (isAlwaysFalse(ps))
-            return alwaysFalse();
-
-        if (isAlwaysTrue(ps))
-            return alwaysTrue();
-
-        if (F0.isAllNodePredicates(ps)) {
-            Set<UUID> ids = new HashSet<>();
-
-            for (IgnitePredicate<? super T> p : ps) {
-                if (p != null) {
-                    Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
-
-                    if (ids.isEmpty())
-                        ids.addAll(list);
-                    else
-                        ids.retainAll(list);
-                }
-            }
-
-            // T must be <T extends ClusterNode>.
-            return (IgnitePredicate<T>)new GridNodePredicate(ids);
-        }
-        else
-            return new IsAllPredicate<>(ps);
-    }
-
-    /**
      * Gets identity closure, i.e. the closure that returns its variable value.
      *
      * @param <T> Type of the variable and return value for the closure.
@@ -1158,7 +1093,7 @@ public class GridFunc extends GridCommonFunc {
      *      contained in given collection.
      */
     public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
-        return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new NotContainsPredicate<>(c);
+        return isEmpty(c) ? alwaysTrue() : new NotContainsPredicate<>(c);
     }
 
     /**
@@ -1346,15 +1281,6 @@ public class GridFunc extends GridCommonFunc {
     }
 
     /**
-     * Creates an absolute (no-arg) closure that does nothing.
-     *
-     * @return Absolute (no-arg) closure that does nothing.
-     */
-    public static GridAbsClosure noop() {
-        return NOOP;
-    }
-
-    /**
      * Finds and returns first element in given collection for which any of the
      * provided predicates evaluates to {@code true}.
      *
@@ -1476,6 +1402,105 @@ public class GridFunc extends GridCommonFunc {
             }
 
         return b;
+    }
+
+    /**
+     * Factory method returning new tuple with given parameter.
+     *
+     * @param v Parameter for tuple.
+     * @param <V> Type of the tuple.
+     * @return Newly created tuple.
+     */
+    public static <V> GridTuple<V> t(@Nullable V v) {
+        return new GridTuple<>(v);
+    }
+
+    /**
+     * Factory method returning new tuple with given parameters.
+     *
+     * @param v1 1st parameter for tuple.
+     * @param v2 2nd parameter for tuple.
+     * @param <V1> Type of the 1st tuple parameter.
+     * @param <V2> Type of the 2nd tuple parameter.
+     * @return Newly created tuple.
+     */
+    public static <V1, V2> IgniteBiTuple<V1, V2> t(@Nullable V1 v1, @Nullable V2 v2) {
+        return new IgniteBiTuple<>(v1, v2);
+    }
+
+    /**
+     * Factory method returning new tuple with given parameters.
+     *
+     * @param v1 1st parameter for tuple.
+     * @param v2 2nd parameter for tuple.
+     * @param v3 3rd parameter for tuple.
+     * @param <V1> Type of the 1st tuple parameter.
+     * @param <V2> Type of the 2nd tuple parameter.
+     * @param <V3> Type of the 3rd tuple parameter.
+     * @return Newly created tuple.
+     */
+    public static <V1, V2, V3> GridTuple3<V1, V2, V3> t(@Nullable V1 v1, @Nullable V2 v2, @Nullable V3 v3) {
+        return new GridTuple3<>(v1, v2, v3);
+    }
+
+    /**
+     * Factory method returning new tuple with given parameters.
+     *
+     * @param v1 1st parameter for tuple.
+     * @param v2 2nd parameter for tuple.
+     * @param v3 3rd parameter for tuple.
+     * @param v4 4th parameter for tuple.
+     * @param <V1> Type of the 1st tuple parameter.
+     * @param <V2> Type of the 2nd tuple parameter.
+     * @param <V3> Type of the 3rd tuple parameter.
+     * @param <V4> Type of the 4th tuple parameter.
+     * @return Newly created tuple.
+     */
+    public static <V1, V2, V3, V4> GridTuple4<V1, V2, V3, V4> t(@Nullable V1 v1, @Nullable V2 v2, @Nullable V3 v3,
+        @Nullable V4 v4) {
+        return new GridTuple4<>(v1, v2, v3, v4);
+    }
+
+    /**
+     * Factory method returning new tuple with given parameters.
+     *
+     * @param v1 1st parameter for tuple.
+     * @param v2 2nd parameter for tuple.
+     * @param v3 3rd parameter for tuple.
+     * @param v4 4th parameter for tuple.
+     * @param v5 5th parameter for tuple.
+     * @param <V1> Type of the 1st tuple parameter.
+     * @param <V2> Type of the 2nd tuple parameter.
+     * @param <V3> Type of the 3rd tuple parameter.
+     * @param <V4> Type of the 4th tuple parameter.
+     * @param <V5> Type of the 5th tuple parameter.
+     * @return Newly created tuple.
+     */
+    public static <V1, V2, V3, V4, V5> GridTuple5<V1, V2, V3, V4, V5> t(@Nullable V1 v1, @Nullable V2 v2,
+        @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5) {
+        return new GridTuple5<>(v1, v2, v3, v4, v5);
+    }
+
+    /**
+     * Factory method returning new tuple with given parameters.
+     *
+     * @param v1 1st parameter for tuple.
+     * @param v2 2nd parameter for tuple.
+     * @param v3 3rd parameter for tuple.
+     * @param v4 4th parameter for tuple.
+     * @param v5 5th parameter for tuple.
+     * @param v6 5th parameter for tuple.
+     * @param <V1> Type of the 1st tuple parameter.
+     * @param <V2> Type of the 2nd tuple parameter.
+     * @param <V3> Type of the 3rd tuple parameter.
+     * @param <V4> Type of the 4th tuple parameter.
+     * @param <V5> Type of the 5th tuple parameter.
+     * @param <V6> Type of the 6th tuple parameter.
+     * @return Newly created tuple.
+     */
+    public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t(@Nullable V1 v1, @Nullable V2 v2,
+        @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5, @Nullable V6 v6) {
+        return new GridTuple6<>(v1, v2, v3, v4, v5, v6);
     }
 
     /**
@@ -1689,7 +1714,7 @@ public class GridFunc extends GridCommonFunc {
      *  that is not contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new NotContainsPredicate(c);
+        return c == null || c.isEmpty() ? alwaysTrue() : new NotContainsPredicate(c);
     }
 
     /**
@@ -1734,17 +1759,6 @@ public class GridFunc extends GridCommonFunc {
         }
 
         return false;
-    }
-
-    /**
-     * Tests whether specified arguments are equal, or both {@code null}.
-     *
-     * @param o1 Object to compare.
-     * @param o2 Object to compare.
-     * @return Returns {@code true} if the specified arguments are equal, or both {@code null}.
-     */
-    public static boolean eq(@Nullable Object o1, @Nullable Object o2) {
-        return o1 == null ? o2 == null : o2 != null && (o1 == o2 || o1.equals(o2));
     }
 
     /**
@@ -1861,75 +1875,6 @@ public class GridFunc extends GridCommonFunc {
     }
 
     /**
-     * Compares two maps. Unlike {@code java.util.AbstractMap#equals(...)} method this implementation
-     * checks not only entry sets, but also the keys. Some optimization checks are also used.
-     *
-     * @param m1 First map to check.
-     * @param m2 Second map to check
-     * @return {@code True} is maps are equal, {@code False} otherwise.
-     */
-    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
-        if (m1 == m2)
-            return true;
-
-        if (m1 == null || m2 == null)
-            return false;
-
-        if (m1.size() != m2.size())
-            return false;
-
-        for (Map.Entry<K, V> e : m1.entrySet()) {
-            V v1 = e.getValue();
-            V v2 = m2.get(e.getKey());
-
-            if (v1 == v2)
-                continue;
-
-            if (v1 == null || v2 == null)
-                return false;
-
-            if (v1 instanceof Collection && v2 instanceof Collection) {
-                if (!eqNotOrdered((Collection)v1, (Collection)v2))
-                    return false;
-            }
-            else {
-                if (v1 instanceof Map && v2 instanceof Map) {
-                    if (!eqNotOrdered((Map)v1, (Map)v2))
-                        return false;
-                }
-                else {
-                    if (!(v1.getClass().isArray() ? arrayEq(v1, v2) : Objects.equals(v1, v2)))
-                        return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
-     * <p>
-     * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in Apache Ignite 3.0 the semantic of equality between
-     * grid nodes has changed. Since rich node wraps thin node instance and in the same time
-     * implements {@link org.apache.ignite.cluster.ClusterNode} interface, the proper semantic of comparing two grid node is
-     * to ignore their runtime types and compare only by their IDs. This method implements this logic.
-     * <p>
-     * End users rarely, if ever, need to directly compare two grid nodes for equality. This method is
-     * intended primarily for discovery SPI developers that provide implementations of {@link org.apache.ignite.cluster.ClusterNode}
-     * interface.
-     *
-     * @param n1 Grid node 1.
-     * @param n2 Grid node 2
-     * @return {@code true} if two grid node have the same IDs (ignoring their runtime types),
-     *      {@code false} otherwise.
-     */
-    public static boolean eqNodes(Object n1, Object n2) {
-        return n1 == n2 || !(n1 == null || n2 == null) && !(!(n1 instanceof ClusterNode) || !(n2 instanceof ClusterNode))
-            && ((ClusterNode)n1).id().equals(((ClusterNode)n2).id());
-    }
-
-    /**
      * Gets closure that returns value for an entry. The closure internally
      * delegates to {@link javax.cache.Cache.Entry#get(Object)} method.
      *
@@ -2000,45 +1945,6 @@ public class GridFunc extends GridCommonFunc {
      */
     public static boolean isArray(Object val) {
         return val != null && val.getClass().isArray();
-    }
-
-    /**
-     * Check for arrays equality.
-     *
-     * @param a1 Value 1.
-     * @param a2 Value 2.
-     * @return {@code True} if arrays equal.
-     */
-    public static boolean arrayEq(Object a1, Object a2) {
-        if (a1 == a2)
-            return true;
-
-        if (a1 == null || a2 == null)
-            return a1 != null || a2 != null;
-
-        if (a1.getClass() != a2.getClass())
-            return false;
-
-        if (a1 instanceof byte[])
-            return Arrays.equals((byte[])a1, (byte[])a2);
-        else if (a1 instanceof boolean[])
-            return Arrays.equals((boolean[])a1, (boolean[])a2);
-        else if (a1 instanceof short[])
-            return Arrays.equals((short[])a1, (short[])a2);
-        else if (a1 instanceof char[])
-            return Arrays.equals((char[])a1, (char[])a2);
-        else if (a1 instanceof int[])
-            return Arrays.equals((int[])a1, (int[])a2);
-        else if (a1 instanceof long[])
-            return Arrays.equals((long[])a1, (long[])a2);
-        else if (a1 instanceof float[])
-            return Arrays.equals((float[])a1, (float[])a2);
-        else if (a1 instanceof double[])
-            return Arrays.equals((double[])a1, (double[])a2);
-        else if (a1 instanceof BinaryArray)
-            return a1.equals(a2);
-
-        return Arrays.deepEquals((Object[])a1, (Object[])a2);
     }
 
     /**

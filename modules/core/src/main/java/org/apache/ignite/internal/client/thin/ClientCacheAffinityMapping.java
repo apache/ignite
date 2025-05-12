@@ -29,12 +29,13 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 
 /**
@@ -97,9 +98,9 @@ public class ClientCacheAffinityMapping {
             Integer fieldId = affInfo.keyCfg.get(typeId);
 
             if (fieldId != null) {
-                if (binaryKey instanceof BinaryObjectExImpl)
-                    binaryKey = ((BinaryObjectExImpl)binaryKey).field(fieldId);
-                else // Can't get field value, affinity node can't be determined in this case.
+                binaryKey = BinaryUtils.field(binaryKey, fieldId);
+
+                if (binaryKey == null)
                     return null;
             }
         }

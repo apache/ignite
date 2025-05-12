@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.typedef;
+package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.util.GridCommonFunc;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
- * Defines {@code alias} for {@link GridCommonFunc} by extending it. Since Java doesn't provide type aliases
- * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
- * concise code in cases when readability won't be sacrificed. For more information see {@link GridCommonFunc}.
- * @see GridCommonFunc
+ * Simple utility class to init binary related serializers.
  */
-public class CF extends GridCommonFunc { /* No-op. */ }
+public class BinarySerializers {
+    /** Adds binary serializers to module. */
+    public static void init(SimpleModule module) {
+        module.addSerializer(BinaryObjectImpl.class, new BinaryObjectImplSerializer());
+        module.addSerializer(BinaryArray.class, new BinaryArraySerializer());
+    }
+}

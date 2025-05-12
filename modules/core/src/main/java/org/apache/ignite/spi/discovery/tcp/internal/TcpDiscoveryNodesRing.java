@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -153,7 +154,7 @@ public class TcpDiscoveryNodesRing {
      * @return Collection of remote nodes in grid.
      */
     public Collection<TcpDiscoveryNode> remoteNodes() {
-        return nodes(F.remoteNodes(locNode.id()));
+        return nodes(ClusterNodeFunc.remoteNodes(locNode.id()));
     }
 
     /**
@@ -162,7 +163,7 @@ public class TcpDiscoveryNodesRing {
      * @return Collection of visible remote nodes.
      */
     public Collection<TcpDiscoveryNode> visibleRemoteNodes() {
-        return nodes(F.remoteNodes(locNode.id()), VISIBLE_NODES);
+        return nodes(ClusterNodeFunc.remoteNodes(locNode.id()), VISIBLE_NODES);
     }
 
     /**

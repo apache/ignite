@@ -96,6 +96,7 @@ class SystemViewFileWriter extends GridWorker {
 
         // System views that won't be recorded. They may be large or copy another PerfStat values.
         Set<String> ignoredViews = Set.of("baseline.node.attributes",
+            "node.attributes",
             "metrics",
             "caches",
             "sql.queries",
