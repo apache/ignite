@@ -333,7 +333,7 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures,
         ClientConnectionException failure0
     ) {
-        if (fut.isDone())
+        if (fut.isDone() || failure0 == null)
             return;
 
         if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0))
