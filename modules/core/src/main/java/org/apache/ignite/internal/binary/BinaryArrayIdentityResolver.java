@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <p>
  * Hash code is calculated in the same way as {@link Arrays#hashCode(byte[])} does.
  */
-public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
+class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Singleton instance */
     private static final BinaryArrayIdentityResolver INSTANCE = new BinaryArrayIdentityResolver();
 
@@ -44,7 +44,7 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
     /**
      * Default constructor.
      */
-    public BinaryArrayIdentityResolver() {
+    private BinaryArrayIdentityResolver() {
         // No-op.
     }
 

@@ -24,13 +24,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
 /**
  * Thin client implementation of {@link IgniteBinary}.
@@ -61,7 +60,7 @@ public class ClientBinary implements IgniteBinary {
 
         byte[] objBytes = marsh.marshal(obj);
 
-        return (T)marsh.unmarshal(new BinaryHeapInputStream(objBytes));
+        return (T)marsh.unmarshal(BinaryStreams.inputStream(objBytes));
     }
 
     /** {@inheritDoc} */
@@ -69,7 +68,7 @@ public class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        return new BinaryObjectBuilderImpl(binaryContext(), typeName);
+        return BinaryObjectBuilders.builder(binaryContext(), typeName);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +76,7 @@ public class ClientBinary implements IgniteBinary {
         if (binaryObj == null)
             throw new NullPointerException("binaryObj");
 
-        return BinaryObjectBuilderImpl.wrap(binaryObj);
+        return BinaryObjectBuilders.builder(binaryObj);
     }
 
     /** {@inheritDoc} */
@@ -168,9 +167,9 @@ public class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
-        BinaryClassDescriptor clsDesc = binaryContext().registerClass(cls, true, false);
+        int typeId = binaryContext().registerType(cls, true, false);
 
-        return binaryContext().metadata(clsDesc.typeId());
+        return binaryContext().metadata(typeId);
     }
 
     /** @return Binary context. */

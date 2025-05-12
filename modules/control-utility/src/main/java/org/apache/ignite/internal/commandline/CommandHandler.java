@@ -82,7 +82,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
-import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.executable;
 import static org.apache.ignite.internal.management.api.CommandUtils.hasDescription;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
@@ -191,29 +190,6 @@ public class CommandHandler {
      */
     public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
-        Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
-
-        if (!F.isEmpty(it)) {
-            for (CommandsProvider provider : it) {
-                if (logger.isDebugEnabled())
-                    logger.debug("Registering pluggable commands provider: " + provider);
-
-                provider.commands().forEach(cmd -> {
-                    String k = cmdText(cmd);
-
-                    if (logger.isDebugEnabled())
-                        logger.debug("Registering command: " + k);
-
-                    if (registry.command(k) != null) {
-                        throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
-                            provider + " tries to register command " + cmd + ", but this command has already been " +
-                            "registered " + registry.command(k));
-                    }
-                    else
-                        registry.register(cmd);
-                });
-            }
-        }
     }
 
     /**

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * Interop writer closure.
@@ -29,5 +29,5 @@ public interface PlatformWriterClosure<T> {
      * @param writer Writer.
      * @param val Value.
      */
-    public void write(BinaryRawWriterEx writer, T val);
+    public void write(BinaryWriterEx writer, T val);
 }

@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridCommonFunc;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -74,13 +75,11 @@ import org.apache.ignite.internal.util.lang.gridfunc.PredicateSetView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.lang.gridfunc.SetFactoryCallable;
-import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -106,7 +105,7 @@ import org.jetbrains.annotations.Nullable;
  * the empty predicate array.
  */
 @SuppressWarnings("unchecked")
-public class GridFunc {
+public class GridFunc extends GridCommonFunc {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
@@ -195,25 +194,6 @@ public class GridFunc {
      */
     public static <T> IgniteReducer<T, T> identityReducer(final T elem) {
         return new AlwaysTrueReducer<>(elem);
-    }
-
-    /**
-     * Concatenates strings using provided delimiter.
-     *
-     * @param c Input collection.
-     * @param delim Delimiter (optional).
-     * @return Concatenated string.
-     */
-    public static String concat(Iterable<?> c, @Nullable String delim) {
-        A.notNull(c, "c");
-
-        IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
-
-        for (Object x : c)
-            if (!f.collect(x == null ? null : x.toString()))
-                break;
-
-        return f.reduce();
     }
 
     /**
@@ -813,113 +793,6 @@ public class GridFunc {
     }
 
     /**
-     * Tests if given string is {@code null} or empty.
-     *
-     * @param s String to test.
-     * @return Whether or not the given string is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable String s) {
-        return s == null || s.isEmpty();
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static <T> boolean isEmpty(@Nullable T[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is {@code null}, empty or contains only {@code null} values.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null}, empty or contains only {@code null} values.
-     */
-    public static <T> boolean isEmptyOrNulls(@Nullable T[] c) {
-        if (isEmpty(c))
-            return true;
-
-        for (T element : c)
-            if (element != null)
-                return false;
-
-        return true;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable int[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable byte[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable long[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given array is either {@code null} or empty.
-     *
-     * @param c Array to test.
-     * @return Whether or not the given array is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable char[] c) {
-        return c == null || c.length == 0;
-    }
-
-    /**
-     * Tests if the given collection is either {@code null} or empty.
-     *
-     * @param c Collection to test.
-     * @return Whether or not the given collection is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable Iterable<?> c) {
-        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
-    }
-
-    /**
-     * Tests if the given collection is either {@code null} or empty.
-     *
-     * @param c Collection to test.
-     * @return Whether or not the given collection is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable Collection<?> c) {
-        return c == null || c.isEmpty();
-    }
-
-    /**
-     * Tests if the given map is either {@code null} or empty.
-     *
-     * @param m Map to test.
-     * @return Whether or not the given collection is {@code null} or empty.
-     */
-    public static boolean isEmpty(@Nullable Map<?, ?> m) {
-        return m == null || m.isEmpty();
-    }
-
-    /**
      * Returns a factory closure that creates new {@link Set} instance. Note that this
      * method does not create a new closure but returns a static one.
      *
@@ -1205,7 +1078,7 @@ public class GridFunc {
     }
 
     /**
-     * Gets first key from given map or returns {@code null} if the map is empty.
+     * Gets first entry from given map or returns {@code null} if the map is empty.
      *
      * @param m A map.
      * @param <K> Key type.
@@ -1603,105 +1476,6 @@ public class GridFunc {
             }
 
         return b;
-    }
-
-    /**
-     * Factory method returning new tuple with given parameter.
-     *
-     * @param v Parameter for tuple.
-     * @param <V> Type of the tuple.
-     * @return Newly created tuple.
-     */
-    public static <V> GridTuple<V> t(@Nullable V v) {
-        return new GridTuple<>(v);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2> IgniteBiTuple<V1, V2> t(@Nullable V1 v1, @Nullable V2 v2) {
-        return new IgniteBiTuple<>(v1, v2);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3> GridTuple3<V1, V2, V3> t(@Nullable V1 v1, @Nullable V2 v2, @Nullable V3 v3) {
-        return new GridTuple3<>(v1, v2, v3);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param v4 4th parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3, V4> GridTuple4<V1, V2, V3, V4> t(@Nullable V1 v1, @Nullable V2 v2, @Nullable V3 v3,
-        @Nullable V4 v4) {
-        return new GridTuple4<>(v1, v2, v3, v4);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param v4 4th parameter for tuple.
-     * @param v5 5th parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @param <V5> Type of the 5th tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3, V4, V5> GridTuple5<V1, V2, V3, V4, V5> t(@Nullable V1 v1, @Nullable V2 v2,
-        @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5) {
-        return new GridTuple5<>(v1, v2, v3, v4, v5);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
-     * @param v3 3rd parameter for tuple.
-     * @param v4 4th parameter for tuple.
-     * @param v5 5th parameter for tuple.
-     * @param v6 5th parameter for tuple.
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @param <V5> Type of the 5th tuple parameter.
-     * @param <V6> Type of the 6th tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t(@Nullable V1 v1, @Nullable V2 v2,
-        @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5, @Nullable V6 v6) {
-        return new GridTuple6<>(v1, v2, v3, v4, v5, v6);
     }
 
     /**

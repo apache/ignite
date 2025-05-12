@@ -678,7 +678,7 @@ public class CdcMain implements Runnable {
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
                 .filter(NodeFileTree::binFile)
                 .map(f -> {
-                    int typeId = BinaryUtils.typeId(f.getName());
+                    int typeId = NodeFileTree.typeId(f.getName());
                     long lastModified = f.lastModified();
 
                     // Filter out files already in `typesState` with the same last modify date.

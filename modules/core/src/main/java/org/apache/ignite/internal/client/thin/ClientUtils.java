@@ -53,20 +53,19 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -165,7 +164,7 @@ public final class ClientUtils {
 
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
-        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
+        try (BinaryReaderEx reader = createBinaryReader(in)) {
             int typeId = reader.readInt();
             String typeName = reader.readString();
             String affKeyFieldName = reader.readString();
@@ -202,7 +201,7 @@ public final class ClientUtils {
 
     /** Serialize binary type metadata to stream. */
     void binaryMetadata(BinaryMetadata meta, BinaryOutputStream out) {
-        try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
             w.writeInt(meta.typeId());
             w.writeString(meta.typeName());
             w.writeString(meta.affinityKeyFieldName());
@@ -247,7 +246,7 @@ public final class ClientUtils {
 
     /** Serialize configuration to stream. */
     void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
-        try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), out, null)) {
             int origPos = out.position();
 
             writer.writeInt(0); // configuration length is to be assigned in the end
@@ -381,7 +380,7 @@ public final class ClientUtils {
     /** Deserialize configuration from stream. */
     ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolCtx)
         throws IOException {
-        try (BinaryReaderExImpl reader = createBinaryReader(in)) {
+        try (BinaryReaderEx reader = createBinaryReader(in)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
 
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
@@ -544,14 +543,14 @@ public final class ClientUtils {
     /**
      * @param out Output stream.
      */
-    BinaryRawWriterEx createBinaryWriter(BinaryOutputStream out) {
-        return new BinaryWriterExImpl(marsh.context(), out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    BinaryWriterEx createBinaryWriter(BinaryOutputStream out) {
+        return BinaryUtils.writer(marsh.context(), out);
     }
 
     /**
      * @param in Input stream.
      */
-    BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+    BinaryReaderEx createBinaryReader(BinaryInputStream in) {
         return createBinaryReader(marsh.context(), in);
     }
 
@@ -559,8 +558,8 @@ public final class ClientUtils {
      * @param binaryCtx Binary context.
      * @param in Input stream.
      */
-    static BinaryReaderExImpl createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
-        return new BinaryReaderExImpl(binaryCtx, in, null, null, true, true);
+    static BinaryReaderEx createBinaryReader(@Nullable BinaryContext binaryCtx, BinaryInputStream in) {
+        return BinaryUtils.reader(binaryCtx, in, null, null, true, true);
     }
 
     /** Read Ignite binary object from input stream. */
@@ -586,7 +585,7 @@ public final class ClientUtils {
         if (obj instanceof BinaryObjectImpl) {
             BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
 
-            return marsh.deserialize(BinaryHeapInputStream.create(obj0.array(), obj0.start()), hnds);
+            return marsh.deserialize(BinaryStreams.inputStream(obj0.array(), obj0.start()), hnds);
         }
         else if (obj instanceof BinaryObject)
             return ((BinaryObject)obj).deserialize();

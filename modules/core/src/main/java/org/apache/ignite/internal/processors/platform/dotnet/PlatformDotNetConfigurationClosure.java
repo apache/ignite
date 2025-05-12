@@ -23,8 +23,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
@@ -120,7 +120,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 PlatformOutputStream out = outMem.output();
 
                 GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
-                BinaryRawWriterEx writer = marshaller.writer(out);
+                BinaryWriterEx writer = marshaller.writer(out);
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
@@ -159,7 +159,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(BinaryReaderExImpl in) {
+    private void processPrepareResult(BinaryReaderEx in) {
         assert cfg != null;
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);

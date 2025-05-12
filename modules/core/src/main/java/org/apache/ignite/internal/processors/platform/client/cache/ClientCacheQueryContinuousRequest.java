@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
@@ -56,7 +56,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
      *
      * @param reader Reader.
      */
-    public ClientCacheQueryContinuousRequest(BinaryRawReaderEx reader) {
+    public ClientCacheQueryContinuousRequest(BinaryReaderEx reader) {
         super(reader);
 
         int pageSize = reader.readInt();

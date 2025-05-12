@@ -225,7 +225,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         log.info("SQL: " + sql + (param ? "params=" + Arrays.toString(params) : ""));
 
-        List<List<?>> res = sql(sql, params);
+        List<List<?>> res = sql(sql, param ? params : X.EMPTY_OBJECT_ARRAY);
 
         assertEquals("Invalid results size. [rows=" + rows + ", limit=" + lim + ", off=" + off
             + ", res=" + res.size() + ']', expectedSize(rows, lim, off), res.size());
@@ -253,7 +253,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
     /**
      * @param lim Limit.
      * @param off Offset.
-     * @param param Flag to place limit/offset  by parameter or literal.
+     * @param param Flag to place limit/offset by parameter or literal.
      * @return SQL query string.
      */
     private String createSql(int lim, int off, boolean param, boolean sorted) {

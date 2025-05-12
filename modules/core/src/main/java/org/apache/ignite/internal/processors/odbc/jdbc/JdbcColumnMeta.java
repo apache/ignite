@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.Objects;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -159,7 +159,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) {
         writer.writeString(schemaName);
@@ -173,7 +173,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) {
         schemaName = reader.readString();

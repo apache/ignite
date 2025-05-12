@@ -34,7 +34,7 @@ public class SmallScaleTpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Object> params() {
-        return F.asList(16, 20, 17003);
+        return F.asList(16, 19, 20, 17003);
     }
 
     /** */

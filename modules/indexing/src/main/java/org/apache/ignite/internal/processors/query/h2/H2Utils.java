@@ -781,7 +781,9 @@ public class H2Utils {
             if (cmp.compare(arr[i], arr[i + 1]) <= 0)
                 break;
 
-            U.swap(arr, i, i + 1);
+            Z tmp = arr[i];
+            arr[i] = arr[i + 1];
+            arr[i + 1] = tmp;
         }
     }
 
