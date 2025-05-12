@@ -17,47 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
-import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-/** */
+/** The Tpch test with scale 0.5. */
 @RunWith(Parameterized.class)
-public class TpchTest extends AbstractBasicIntegrationTest {
-    /** Query ID. */
-    @Parameterized.Parameter
-    public int qryId;
-
-    /** */
-    @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<Object> params() {
-        return F.asList(16, 19, 20);
-    }
-
+public class HalfScaleTpchTest extends AbstractTpchTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        TpchHelper.createTables(client);
-
-        TpchHelper.fillTables(client, 0.1);
-
-        TpchHelper.collectSqlStatistics(client);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean destroyCachesAfterTest() {
-        return false;
-    }
-
-    /**
-     * Test the TPC-H query can be planned and executed.
-     */
-    @Test
-    public void test() {
-        sql(TpchHelper.getQuery(qryId));
+    @Override protected double scale() {
+        return 0.5;
     }
 }
