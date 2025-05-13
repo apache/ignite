@@ -83,11 +83,21 @@ public class ClusterStateChangeOnNodeJoinTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /**
+     * Tests joining a client node to the cluster that is in transition state.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoiningClientNodeToClusterInTransitionState() throws Exception {
         joiningNodeToClusterInTransitionState(true);
     }
 
+    /**
+     * Tests joining a server node to the cluster that is in transition state.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoiningServerNodeToClusterInTransitionState() throws Exception {
         joiningNodeToClusterInTransitionState(false);
@@ -159,7 +169,7 @@ public class ClusterStateChangeOnNodeJoinTest extends GridCommonAbstractTest {
      */
     static final class TestTask extends ComputeTaskAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,@Nullable String arg) {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable String arg) {
             return Collections.singletonMap(new ComputeJobAdapter() {
                 /** {@inheritDoc} */
                 @Override public Object execute() throws IgniteException {
