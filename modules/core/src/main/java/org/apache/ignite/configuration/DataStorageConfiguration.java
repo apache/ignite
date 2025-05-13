@@ -213,7 +213,10 @@ public class DataStorageConfiguration implements Serializable {
     /** Default directory where index and partition files are stored. */
     private String storagePath;
 
-    /** Additional directories where index and partition files are stored. */
+    /** 
+     * Additional directories where index and partition files are stored. 
+     * @see CacheConfiguration#setStoragePath(String)
+     */
     private String[] extraStoragePathes;
 
     /** Checkpoint frequency. */

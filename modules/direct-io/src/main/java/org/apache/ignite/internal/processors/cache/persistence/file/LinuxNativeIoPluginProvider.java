@@ -175,7 +175,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
 
         final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(
             ignite.log(),
-            ignite.context().pdsFolderResolver().fileTree().defaultNodeStorage(),
+            ignite.context().pdsFolderResolver().fileTree().nodeStorage(),
             pageStore.pageSize(),
             backupIoFactory);
 

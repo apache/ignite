@@ -146,13 +146,13 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             for (String dir : cacheDirs) {
                 String backupDirName = BACKUP_FOLDER_PREFIX + dir;
 
-                File backupDir = new File(ft.defaultNodeStorage(), backupDirName);
+                File backupDir = new File(ft.nodeStorage(), backupDirName);
 
                 if (!backupDir.exists()) {
                     try {
                         U.ensureDirectory(backupDir, backupDirName, null);
 
-                        copyCacheFiles(ft.defaultNodeStorage().toPath().resolve(dir).toFile(), backupDir);
+                        copyCacheFiles(ft.nodeStorage().toPath().resolve(dir).toFile(), backupDir);
 
                         backupCompletedCaches.add(backupDirName);
                     }

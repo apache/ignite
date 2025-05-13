@@ -966,31 +966,24 @@ public class GridCacheUtils {
         Object val1,
         Object val2,
         boolean fail) throws IgniteCheckedException {
-        if (F.isArray(val1) || F.isArray(val2)) {
-            if (F.compareArrays(val1, val2) == 0)
-                return;
-        }
-        else if (Objects.equals(val1, val2))
+        if (Objects.equals(val1, val2))
             return;
-
-        Object val1Str = F.isArray(val1) ? S.arrayToString(val1) : val1;
-        Object val2Str = F.isArray(val2) ? S.arrayToString(val2) : val2;
 
         if (fail) {
             throw new IgniteCheckedException(attrMsg + " mismatch for caches related to the same group " +
                 "[groupName=" + cfg1.getGroupName() +
                 ", existingCache=" + cfg1.getName() +
-                ", existing" + capitalize(attrName) + "=" + val1Str +
+                ", existing" + capitalize(attrName) + "=" + val1 +
                 ", startingCache=" + cfg2.getName() +
-                ", starting" + capitalize(attrName) + "=" + val2Str + ']');
+                ", starting" + capitalize(attrName) + "=" + val2 + ']');
         }
         else {
             U.warn(log, attrMsg + " mismatch for caches related to the same group " +
                 "[groupName=" + cfg1.getGroupName() +
                 ", existingCache=" + cfg1.getName() +
-                ", existing" + capitalize(attrName) + "=" + val1Str +
+                ", existing" + capitalize(attrName) + "=" + val1 +
                 ", startingCache=" + cfg2.getName() +
-                ", starting" + capitalize(attrName) + "=" + val2Str + ']');
+                ", starting" + capitalize(attrName) + "=" + val2 + ']');
         }
     }
 

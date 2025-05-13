@@ -462,11 +462,11 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         lsnr = LogListener.matches("Found locked dump dir. " +
             "This means, dump creation not finished prior to node fail. " +
-            "Directory will be deleted: " + sft.defaultNodeStorage().getAbsolutePath()).build();
+            "Directory will be deleted: " + sft.nodeStorage().getAbsolutePath()).build();
 
         startGridsMultiThreaded(1);
 
-        assertFalse(sft.defaultNodeStorage().exists());
+        assertFalse(sft.nodeStorage().exists());
         assertTrue(lsnr.check());
     }
 

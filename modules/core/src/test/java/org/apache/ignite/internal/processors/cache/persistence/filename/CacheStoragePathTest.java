@@ -44,7 +44,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String...)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
 public class CacheStoragePathTest extends GridCommonAbstractTest {
@@ -171,7 +171,7 @@ public class CacheStoragePathTest extends GridCommonAbstractTest {
 
         checkFileTrees(fts);
 
-        fts.forEach(ft -> ft.nodeStorages().forEach(U::delete));
+        fts.forEach(ft -> ft.extraStorages().values().forEach(U::delete));
 
         U.delete(F.first(fts).db());
 

@@ -397,8 +397,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private void createDumpLock() throws IgniteCheckedException, IOException {
-        if (!sft.defaultNodeStorage().mkdirs())
-            throw new IgniteCheckedException("Can't create node dump directory: " + sft.defaultNodeStorage().getAbsolutePath());
+        if (!sft.nodeStorage().mkdirs())
+            throw new IgniteCheckedException("Can't create node dump directory: " + sft.nodeStorage().getAbsolutePath());
 
         if (!sft.dumpLock().createNewFile())
             throw new IgniteCheckedException("Lock file can't be created or already exists: " + sft.dumpLock().getAbsolutePath());

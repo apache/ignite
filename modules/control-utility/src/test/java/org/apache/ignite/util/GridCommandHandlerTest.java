@@ -369,7 +369,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertThrows(log, () -> startGrid(1), Exception.class, null);
 
-        return ft1.defaultNodeStorage();
+        return ft1.nodeStorage();
     }
 
     /**

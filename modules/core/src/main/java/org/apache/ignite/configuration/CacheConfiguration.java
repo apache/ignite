@@ -439,10 +439,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see DataStorageConfiguration#setStoragePath(String)
      * @see DataStorageConfiguration#setExtraStoragePathes(String[])
      */
-    @Nullable private String[] storagePath;
-
-    /** Root Directory where partition files are stored. */
-    @Nullable private String idxPath;
+    @Nullable private String storagePath;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -543,7 +540,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
         storagePath = cc.getStoragePath();
-        idxPath = cc.getIndexPath();
     }
 
     /**
@@ -2472,7 +2468,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
      */
-    @Nullable public String[] getStoragePath() {
+    @Nullable public String getStoragePath() {
         return storagePath;
     }
 
@@ -2483,28 +2479,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param storagePath Persistence store path.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setStoragePath(String... storagePath) {
+    public CacheConfiguration<K, V> setStoragePath(String storagePath) {
         this.storagePath = storagePath;
-
-        return this;
-    }
-
-    /**
-     * @return A path to the root directory where the Persistent Store for cache group will persist indexes.
-     */
-    @Nullable public String getIndexPath() {
-        return idxPath;
-    }
-
-    /**
-     * Sets a path to the root directory where the Persistent Store will persist data and indexes.
-     * By default, the Persistent Store's files are located under Ignite work directory.
-     *
-     * @param idxPath Persistence store path.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setIndexPath(String idxPath) {
-        this.idxPath = idxPath;
 
         return this;
     }

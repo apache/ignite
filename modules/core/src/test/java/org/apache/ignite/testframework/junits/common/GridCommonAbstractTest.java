@@ -1995,7 +1995,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         NodeFileTree ft = nodeFileTree(dn2DirName);
 
-        U.delete(ft.defaultNodeStorage());
+        U.delete(ft.nodeStorage());
         U.delete(ft.wal());
         U.delete(ft.walArchive());
     }

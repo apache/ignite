@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +46,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -393,46 +391,24 @@ public class ValidationOnNodeJoinUtils {
         }
 
         boolean storagePathSet = !F.isEmpty(cc.getStoragePath());
-        boolean idxPathSet = cc.getIndexPath() != null;
 
-        if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration()) && (storagePathSet || idxPathSet))
+        if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration()) && storagePathSet)
             throw new IgniteCheckedException("Storage path not allowed for in-memory cache");
 
         if (storagePathSet) {
             DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
 
-            if (dsCfg == null) {
-                throw new IgniteCheckedException(
-                    "Data storage must be configured when cache storage path set: " + Arrays.toString(cc.getStoragePath())
-                );
-            }
-
-            List<String> nodeStorages = NodeFileTree.nodeStorages(dsCfg);
-
-            for (String cs : cc.getStoragePath()) {
-                if (!nodeStorages.contains(cs)) {
-                    throw new IgniteCheckedException(
-                        "Unknown storage path. Storage path must be from DataStorageConfiguration " +
-                            "[cacheStorage=" + cs + ", nodeStorages=" + nodeStorages + ']'
-                    );
-                }
-            }
-        }
-
-        if (idxPathSet) {
-            DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
-
-            String idxPath = cc.getIndexPath();
+            String cs = cc.getStoragePath();
 
             if (dsCfg == null)
-                throw new IgniteCheckedException("Data storage must be configured when index path set: " + idxPath);
+                throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + cs);
 
-            List<String> nodeStorages = NodeFileTree.nodeStorages(dsCfg);
+            List<String> extraNodeStorages = F.asList(dsCfg.getExtraStoragePathes());
 
-            if (!nodeStorages.contains(idxPath)) {
+            if (!extraNodeStorages.contains(cs) && !Objects.equals(cs, dsCfg.getStoragePath())) {
                 throw new IgniteCheckedException(
-                    "Unknown index path. Index path must be from DataStorageConfiguration " +
-                        "[indexStorage=" + idxPath + ", nodeStorages=" + nodeStorages + ']'
+                    "Unknown storage path. Storage path must be from DataStorageConfiguration " +
+                        "[cacheStorage=" + cs + ", nodeStorages=" + extraNodeStorages + ']'
                 );
             }
         }

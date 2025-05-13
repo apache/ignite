@@ -746,7 +746,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return;
 
         fileLockHolder = preLocked == null
-            ? new NodeFileLockHolder(cctx.kernalContext().pdsFolderResolver().fileTree().defaultNodeStorage().getPath(), cctx.kernalContext(), log)
+            ? new NodeFileLockHolder(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().getPath(), cctx.kernalContext(), log)
             : preLocked;
 
         if (!fileLockHolder.isLocked()) {
@@ -1888,7 +1888,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.warning("Maintenance task found, stop restoring memory");
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree().defaultNodeStorage(),
+                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage(),
                     Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 

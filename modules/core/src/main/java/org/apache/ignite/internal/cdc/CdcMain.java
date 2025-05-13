@@ -450,7 +450,7 @@ public class CdcMain implements Runnable {
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
         if (lock == null) {
-            File consIdDir = ft.defaultNodeStorage();
+            File consIdDir = ft.nodeStorage();
 
             lock = tryLock(consIdDir);
 
@@ -745,7 +745,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
-            if (!ft.defaultNodeStorage().exists())
+            if (!ft.nodeStorage().exists())
                 return;
 
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
