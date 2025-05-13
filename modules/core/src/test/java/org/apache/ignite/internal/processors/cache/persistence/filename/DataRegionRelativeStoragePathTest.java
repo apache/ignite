@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -91,6 +92,8 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        U.delete(new File(U.defaultWorkDirectory()));
 
         ccfgs = new CacheConfiguration[]{
             ccfg("cache0", null, null),
@@ -200,8 +203,10 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
                 File db;
 
-                if (Objects.equals(ccfg.getStoragePath(), storagePath(DEFAULT_DR_STORAGE_PATH))) {
-                    db = ensureExists(new File(ft.root(), DB_DIR));
+                if (ccfg.getStoragePath() == null || Objects.equals(ccfg.getStoragePath(), storagePath(DEFAULT_DR_STORAGE_PATH))) {
+                    ensureExists(new File(ft.root(), DB_DIR));
+
+                    db = ensureExists(Path.of(storagePath(DEFAULT_DR_STORAGE_PATH), ft.folderName()).toFile());
 
                     flags[0] = true;
                 }

@@ -301,7 +301,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        this(cfg, resolveRoot(cfg), folderName);
+        this(cfg, resolveRoot(cfg), folderName, false);
     }
 
     /**
@@ -318,7 +318,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName) {
+    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName, boolean isSnapshot) {
         super(root, cfg.getSnapshotPath());
 
         A.notNull(folderName, "Node directory");
@@ -330,9 +330,9 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
+            nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
-                : resolveDirectory(dsCfg.getStoragePath());
+                : new File(resolveDirectory(dsCfg.getStoragePath()), DB_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
