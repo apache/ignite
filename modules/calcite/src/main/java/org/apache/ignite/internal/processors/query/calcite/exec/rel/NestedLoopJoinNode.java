@@ -300,7 +300,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
@@ -394,7 +394,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
@@ -515,7 +515,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
@@ -661,7 +661,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
@@ -723,7 +723,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty()) {
@@ -789,7 +789,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
@@ -799,7 +799,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
     }
 
     /** */
-    protected void checkAndRequestInputs() throws Exception {
+    protected void tryToRequestInputs() throws Exception {
         if (waitingLeft == 0 && requested > 0)
             leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 

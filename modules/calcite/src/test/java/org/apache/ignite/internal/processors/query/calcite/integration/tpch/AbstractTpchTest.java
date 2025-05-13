@@ -18,21 +18,52 @@
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
+import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class TpchScale001Test extends AbstractTpchTest {
-    /** TODO: IGNITE-25209 - remove test 17 after fixing. */
+public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
+    /** */
+    protected static final Collection<Integer> KNOWS_TESTS = F.asList(16, 17, 19, 20);
+
+    /** Query ID. */
+    @Parameterized.Parameter
+    public int qryId;
+
+    /** */
+    protected abstract double scale();
+
+    /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Integer> params() {
-        return KNOWS_TESTS.stream().filter(t -> t != 17).collect(Collectors.toList());
+        return KNOWS_TESTS;
     }
 
     /** {@inheritDoc} */
-    @Override protected double scale() {
-        return 0.01;
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        TpchHelper.createTables(client);
+
+        TpchHelper.fillTables(client, scale());
+
+        TpchHelper.collectSqlStatistics(client);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean destroyCachesAfterTest() {
+        return false;
+    }
+
+    /**
+     * Test the TPC-H query can be planned and executed.
+     */
+    @Test
+    public void test() {
+        sql(TpchHelper.getQuery(qryId));
     }
 }

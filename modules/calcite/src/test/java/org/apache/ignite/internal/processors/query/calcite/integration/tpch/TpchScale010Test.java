@@ -22,7 +22,7 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class TpchScale010Test extends TpchScale001Test {
+public class TpchScale010Test extends AbstractTpchTest {
     /** */
     @Override protected double scale() {
         return 0.1;
