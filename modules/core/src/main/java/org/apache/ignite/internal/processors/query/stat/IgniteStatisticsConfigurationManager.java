@@ -76,7 +76,7 @@ public class IgniteStatisticsConfigurationManager {
     private static final String STAT_OBJ_PREFIX = "sql.statobj.";
 
     /** */
-    private static final String STAT_CFG_VIEW_NAME = "statistics.configuration";
+    public static final String STAT_CFG_VIEW_NAME = "statistics.configuration";
 
     /** */
     private static final String STAT_CFG_VIEW_DESCRIPTION = "Statistics configuration";

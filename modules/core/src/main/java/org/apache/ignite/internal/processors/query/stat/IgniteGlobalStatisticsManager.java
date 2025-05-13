@@ -67,7 +67,7 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
  */
 public class IgniteGlobalStatisticsManager implements GridMessageListener {
     /** */
-    private static final String STAT_GLOBAL_VIEW_NAME = "statisticsGlobalData";
+    public static final String STAT_GLOBAL_VIEW_NAME = "statisticsGlobalData";
 
     /** */
     private static final String STAT_GLOBAL_VIEW_DESCRIPTION = "Global statistics.";

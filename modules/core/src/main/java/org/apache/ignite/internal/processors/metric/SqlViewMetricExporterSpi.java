@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This SPI implementation exports metrics as SQL views.
  */
-class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
+public class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** System view name. */
     public static final String SYS_VIEW_NAME = "metrics";
 
