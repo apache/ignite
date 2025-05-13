@@ -51,10 +51,25 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected int waitingRight;
 
     /** */
+    protected Row left;
+
+    /** */
+    protected Row right;
+
+    /** */
     protected final Deque<Row> rightInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
+
+    /** Used to store similar rows of rights stream in many-to-many join mode. */
+    protected List<Row> rightMaterialization;
+
+    /** */
+    protected boolean drainMaterialization;
+
+    /** */
+    protected int rightIdx;
 
     /** */
     protected boolean inLoop;
@@ -214,6 +229,11 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** */
+    private int totalRightSize() {
+        return rightMaterialization == null ? rightInBuf.size() : rightInBuf.size() + rightMaterialization.size();
+    }
+
+    /** */
     protected void checkJoinFinished() throws Exception {
         if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
             requested = 0;
@@ -260,21 +280,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private static class InnerJoin<Row> extends MergeJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private Row right;
-
-        /** Used to store similar rows of rights stream in many-to-many join mode. */
-        private List<Row> rightMaterialization;
-
-        /** */
-        private int rightIdx;
-
-        /** */
-        private boolean drainMaterialization;
-
         /**
          * @param ctx Execution context.
          * @param rowType Row type.
@@ -392,7 +397,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null))
@@ -405,21 +410,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     private static class LeftJoin<Row> extends MergeJoinNode<Row> {
         /** Right row factory. */
         private final RowHandler.RowFactory<Row> rightRowFactory;
-
-        /** */
-        private Row left;
-
-        /** */
-        private Row right;
-
-        /** Used to store similar rows of rights stream in many-to-many join mode. */
-        private List<Row> rightMaterialization;
-
-        /** */
-        private int rightIdx;
-
-        /** */
-        private boolean drainMaterialization;
 
         /** Whether current left row was matched (hence pushed to downstream) or not. */
         private boolean matched;
@@ -573,7 +563,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 checkJoinFinished();
@@ -584,21 +574,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     private static class RightJoin<Row> extends MergeJoinNode<Row> {
         /** Right row factory. */
         private final RowHandler.RowFactory<Row> leftRowFactory;
-
-        /** */
-        private Row left;
-
-        /** */
-        private Row right;
-
-        /** Used to store similar rows of rights stream in many-to-many join mode. */
-        private List<Row> rightMaterialization;
-
-        /** */
-        private int rightIdx;
-
-        /** */
-        private boolean drainMaterialization;
 
         /** Whether current right row was matched (hence pushed to downstream) or not. */
         private boolean matched;
@@ -764,7 +739,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null)
                 checkJoinFinished();
@@ -778,21 +753,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         /** Right row factory. */
         private final RowHandler.RowFactory<Row> rightRowFactory;
-
-        /** */
-        private Row left;
-
-        /** */
-        private Row right;
-
-        /** Used to store similar rows of rights stream in many-to-many join mode. */
-        private List<Row> rightMaterialization;
-
-        /** */
-        private int rightIdx;
-
-        /** */
-        private boolean drainMaterialization;
 
         /** Whether current left row was matched (hence pushed to downstream) or not. */
         private boolean leftMatched;
@@ -994,7 +954,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null
@@ -1004,22 +964,22 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    protected void checkAndRequestInputs() throws Exception {
+    protected void tryToRequestInputs() throws Exception {
+        // Check `requested` to avoid endless buffer filling while unable to cycle. If buffer is half-loaded and nothing
+        // is requested, we can preload some data.
         if (waitingLeft == 0 && requested > 0)
             leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+        else if (leftInBuf.size() < HALF_IN_BUFFER_SIZE && waitingLeft == 0)
+            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
 
         if (waitingRight == 0 && requested > 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
+        else if (totalRightSize() < HALF_IN_BUFFER_SIZE && waitingRight == 0)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE - totalRightSize());
     }
 
     /** */
     private static class SemiJoin<Row> extends MergeJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private Row right;
-
         /**
          * @param ctx Execution context.
          * @param rowType Row type.
@@ -1074,7 +1034,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty())))
@@ -1085,12 +1045,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private static class AntiJoin<Row> extends MergeJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private Row right;
-
         /**
          * @param ctx Execution context.
          * @param rowType Row type.
@@ -1148,7 +1102,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            checkAndRequestInputs();
+            tryToRequestInputs();
 
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 checkJoinFinished();
