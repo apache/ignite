@@ -785,7 +785,6 @@ public class NodeFileTree extends SharedFileTree {
             .collect(Collectors.toMap(Function.identity(), resolver));
     }
 
-
     /**
      * @param segment WAL segment file.
      * @return Segment index.

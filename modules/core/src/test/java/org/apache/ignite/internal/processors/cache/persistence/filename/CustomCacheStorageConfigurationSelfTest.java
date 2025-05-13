@@ -108,11 +108,6 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 () -> srv.createCache(new CacheConfiguration<>("my-cache").setStoragePath("other")),
                 IgniteCheckedException.class
             );
-
-            assertThrowsWithCause(
-                () -> srv.createCache(new CacheConfiguration<>("my-cache").setIndexPath("other")),
-                IgniteCheckedException.class
-            );
         }
     }
 
@@ -133,13 +128,6 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                     .setStoragePath(myPath.getAbsolutePath())),
                 IgniteCheckedException.class
             );
-
-            assertThrowsWithCause(
-                () -> srv.createCache(new CacheConfiguration<>("my-cache")
-                    .setDataRegionName("in-mem")
-                    .setIndexPath(myPath.getAbsolutePath())),
-                IgniteCheckedException.class
-            );
         }
     }
 
@@ -156,20 +144,12 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
             srv.createCache(new CacheConfiguration<>("my-cache")
                     .setGroupName("grp")
-                    .setStoragePath(myPath.getAbsolutePath())
-                    .setIndexPath(myPath2.getAbsolutePath()));
+                    .setStoragePath(myPath.getAbsolutePath()));
 
             assertThrowsWithCause(
                 () -> srv.createCache(new CacheConfiguration<>("my-cache2")
                     .setGroupName("grp")
                     .setStoragePath(myPath3.getAbsolutePath())),
-                IgniteCheckedException.class
-            );
-
-            assertThrowsWithCause(
-                () -> srv.createCache(new CacheConfiguration<>("my-cache2")
-                    .setGroupName("grp")
-                    .setIndexPath(myPath3.getAbsolutePath())),
                 IgniteCheckedException.class
             );
 
@@ -203,8 +183,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
             assertThrowsWithCause(
                 () -> srv.createCache(new CacheConfiguration<>("my-cache2")
-                    .setGroupName("grp")
-                    .setIndexPath(myPath3.getAbsolutePath())),
+                    .setGroupName("grp")),
                 IgniteCheckedException.class
             );
         }
@@ -222,10 +201,10 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             srv.cluster().state(ClusterState.ACTIVE);
 
             srv.createCache(new CacheConfiguration<>("my-cache")
-                .setGroupName("grp").setStoragePath(myPath.getAbsolutePath(), myPath2.getAbsolutePath(), myPath3.getAbsolutePath()));
+                .setGroupName("grp").setStoragePath(myPath3.getAbsolutePath()));
 
             srv.createCache(new CacheConfiguration<>("my-cache2")
-                .setGroupName("grp").setStoragePath(myPath.getAbsolutePath(), myPath2.getAbsolutePath(), myPath3.getAbsolutePath()));
+                .setGroupName("grp").setStoragePath(myPath3.getAbsolutePath()));
         }
     }
 }
