@@ -104,14 +104,7 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
         }
 
         try {
-            for (int i = 1; i <= oldNodesCnt; ++i) {
-                startGrid(
-                    i,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
-                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
-                );
-            }
+            startOldNodes(oldNodesCnt);
 
             stopAllGrids();
 
@@ -210,7 +203,7 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
 
         new DumpReader(new DumpReaderConfiguration(
             CACHE_DUMP_NAME,
-            customSnpPath ? customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, false) : null,
+            snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME, false),
             node.configuration(),
             consumer
         ), log).run();
@@ -235,117 +228,5 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
         new ConfigurationClosure(incSnp, consId, customSnpPath, false, cacheGrpInfo).apply(cfg);
 
         return cfg;
-    }
-
-    /** */
-    private static String customSnapshotPath(String relativePath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), relativePath, delIfExist).getAbsolutePath();
-    }
-
-    /**
-     * Configuration closure both for old and current Ignite version.
-     */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /** */
-        private final String consId;
-
-        /** */
-        private final boolean incSnp;
-
-        /** */
-        private final boolean customSnpPath;
-
-        /** */
-        private final boolean delIfExist;
-
-        /** */
-        private final CacheGroupInfo cacheGrpInfo;
-
-        /** */
-        public ConfigurationClosure(
-            boolean incSnp,
-            String consId,
-            boolean customSnpPath,
-            boolean delIfExist,
-            CacheGroupInfo cacheGrpInfo
-        ) {
-            this.consId = consId;
-            this.incSnp = incSnp;
-            this.customSnpPath = customSnpPath;
-            this.delIfExist = delIfExist;
-            this.cacheGrpInfo = cacheGrpInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteConfiguration cfg) {
-            DataStorageConfiguration storageCfg = new DataStorageConfiguration();
-
-            storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-
-            cfg.setDataStorageConfiguration(storageCfg);
-
-            cfg.setConsistentId(consId);
-
-            storageCfg.setWalCompactionEnabled(incSnp);
-
-            if (delIfExist) {
-                cfg.setCacheConfiguration(
-                    cacheGrpInfo.cacheNamesList().stream()
-                        .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
-                            .setGroupName(cacheGrpInfo.name())
-                            .setAffinity(new RendezvousAffinityFunction(false, 10))
-                        )
-                        .toArray(CacheConfiguration[]::new)
-                );
-            }
-
-            if (customSnpPath) {
-                try {
-                    cfg.setSnapshotPath(customSnapshotPath(CUSTOM_SNP_RELATIVE_PATH, delIfExist));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    /**
-     * Snapshot creating closure for old Ignite version.
-     */
-    private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
-        /** */
-        private final boolean incSnp;
-
-        /** */
-        private final boolean cacheDump;
-
-        /** */
-        private final CacheGroupInfo cacheGrpInfo;
-
-        /** */
-        public CreateSnapshotClosure(boolean incSnp, boolean cacheDump, CacheGroupInfo cacheGrpInfo) {
-            this.incSnp = incSnp;
-            this.cacheDump = cacheDump;
-            this.cacheGrpInfo = cacheGrpInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Ignite ign) {
-            ign.cluster().state(ClusterState.ACTIVE);
-
-            cacheGrpInfo.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE);
-
-            if (cacheDump)
-                ign.snapshot().createDump(CACHE_DUMP_NAME, Collections.singleton(cacheGrpInfo.name())).get();
-            else
-                ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-            if (incSnp) {
-                cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT);
-
-                ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
-            }
-        }
     }
 }

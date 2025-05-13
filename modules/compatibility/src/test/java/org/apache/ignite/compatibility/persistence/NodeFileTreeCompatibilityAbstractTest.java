@@ -71,14 +71,14 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
     protected CacheGroupInfo cacheGrpInfo;
 
     /** */
-    @Before
-    public void setUp() {
-        cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
+    protected static String calcValue(String cacheName, int key) {
+        return cacheName + "-organization-" + key;
     }
 
     /** */
-    protected static String calcValue(String cacheName, int key) {
-        return cacheName + "-organization-" + key;
+    @Before
+    public void setUp() {
+        cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
     }
 
     /** */
@@ -92,8 +92,19 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
     }
 
     /** */
-    protected String snpPath(String workDirPath, String snpName) throws IgniteCheckedException {
-        return Paths.get(snpDir(workDirPath, false), snpName).toString();
+    protected String snpPath(String workDirPath, String snpName, boolean delIfExist) throws IgniteCheckedException {
+        return Paths.get(snpDir(workDirPath, delIfExist), snpName).toString();
+    }
+
+    protected void startOldNodes(int nodesCnt) throws Exception {
+        for (int i = 1; i <= nodesCnt; ++i) {
+            startGrid(
+                i,
+                OLD_IGNITE_VERSION,
+                new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
+                i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
+            );
+        }
     }
 
     /**

@@ -24,6 +24,21 @@ import static org.junit.Assume.assumeFalse;
 /** */
 public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbstractTest {
     /** */
+    private static final String SNP_PART_SUFFIX = ".bin";
+
+    /** */
+    private static final String DUMP_PART_SUFFIX = ".dump";
+
+    /** */
+    public static final String CACHE_DATA_SUFFIX = "cache_data.dat";
+
+    /** */
+    public static final String CACHE_GROUP_PREFIX = "cacheGroup";
+
+    /** */
+    public static final String CACHE_PREFIX = "cache";
+
+    /** */
     @Parameter(5)
     public int nodesCnt;
 
@@ -49,29 +64,11 @@ public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbst
         final String oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
 
         try {
-            ArrayList<IgniteEx> oldNodes = new ArrayList<>(nodesCnt);
-            ArrayList<IgniteEx> curNodes = new ArrayList<>(nodesCnt);
-
-            for (int i = 1; i < nodesCnt; ++i) {
-                oldNodes.add(
-                    startGrid(
-                        i,
-                        OLD_IGNITE_VERSION,
-                        new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo, oldWorkDir)
-                    )
-                );
-            }
-
-            oldNodes.add(
-                startGrid(
-                    nodesCnt,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(nodesCnt), customSnpPath, true, cacheGrpInfo, oldWorkDir),
-                    new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
-                )
-            );
+            startOldNodes(nodesCnt);
 
             stopAllGrids();
+
+            List<IgniteEx> curNodes = new ArrayList<>(nodesCnt);
 
             for (int i = 0; i < nodesCnt; ++i) {
                 curNodes.add(
@@ -84,18 +81,18 @@ public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbst
 
             new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(curNodes.get(0));
 
-            assertEquals(scanFileTree(oldWorkDir, ".bin"), scanFileTree(U.defaultWorkDirectory(), ".bin"));
+            assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
 
             if (cacheDump) {
                 assertEquals(
-                    scanFileTree(snpPath(oldWorkDir, CACHE_DUMP_NAME), ".dump"),
-                    scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME), ".dump")
+                    scanFileTree(snpPath(oldWorkDir, CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
+                    scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
                 );
             }
             else {
                 assertEquals(
-                    scanSnp(snpPath(oldWorkDir, SNAPSHOT_NAME)),
-                    scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME))
+                    scanSnp(snpPath(oldWorkDir, SNAPSHOT_NAME, false)),
+                    scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME, false))
                 );
             }
         }
@@ -112,18 +109,20 @@ public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbst
     private SnpScanResult scanSnp(String snpPath) {
         File incsDir = new File(snpPath, "increments");
 
-        return new SnpScanResult(incsDir.exists() ? incsDir.list().length : 0, scanFileTree(snpPath, ".bin"));
+        int incsCnt = incsDir.exists() ? incsDir.list().length : 0;
+
+        return new SnpScanResult(incsCnt, scanFileTree(snpPath, SNP_PART_SUFFIX));
     }
 
     /** */
-    private Map<String, CacheGrpScanResult> scanFileTree(String rootPath, String partPostfix) {
+    private Map<String, CacheGrpScanResult> scanFileTree(String rootPath, String partSuffix) {
         Map<String, CacheGrpScanResult> res = new HashMap<>();
 
         File dbDir = new File(rootPath, "db");
 
         for (File child : dbDir.listFiles()) {
             if (child.getName().startsWith("node") && !"cache-ignite-sys-cache".equals(child.getName())) {
-                List<CacheGrpScanResult> cacheGrpScans = scanNode(child, partPostfix);
+                List<CacheGrpScanResult> cacheGrpScans = scanNode(child, partSuffix);
 
                 for (CacheGrpScanResult cacheGrpScan : cacheGrpScans) {
                     res.merge(
@@ -145,34 +144,34 @@ public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbst
     }
 
     /** */
-    private List<CacheGrpScanResult> scanNode(File nodeDir, String partPostfix) {
+    private List<CacheGrpScanResult> scanNode(File nodeDir, String partSuffix) {
         assertTrue(nodeDir.isDirectory());
 
         List<CacheGrpScanResult> res = new ArrayList<>();
 
         for (File child : nodeDir.listFiles())
-            if (child.getName().startsWith("cache"))
-                res.add(scanCacheGrp(child, partPostfix));
+            if (child.getName().startsWith(CACHE_PREFIX))
+                res.add(scanCacheGrp(child, partSuffix));
 
         return res;
     }
 
     /** */
-    private CacheGrpScanResult scanCacheGrp(File cacheGrpDir, String partPostfix) {
+    private CacheGrpScanResult scanCacheGrp(File cacheGrpDir, String partSuffix) {
         assertTrue(cacheGrpDir.isDirectory());
 
-        String cacheGrpNamePrefix = cacheGrpDir.getName().startsWith("cacheGroup") ? "cacheGroup" : "cache";
+        String cacheGrpNamePrefix = cacheGrpDir.getName().startsWith(CACHE_GROUP_PREFIX) ? CACHE_GROUP_PREFIX : CACHE_PREFIX;
         String cacheGrpName = cacheGrpDir.getName().substring(cacheGrpNamePrefix.length() + 1);
 
         CacheGrpScanResult res = new CacheGrpScanResult(cacheGrpName);
 
         for (String childFileName : cacheGrpDir.list()) {
-            if (childFileName.endsWith("cache_data.dat")) {
-                String cacheName = childFileName.substring(0, childFileName.length() - "cache_data.dat".length());
+            if (childFileName.endsWith(CACHE_DATA_SUFFIX)) {
+                String cacheName = childFileName.substring(0, childFileName.length() - CACHE_DATA_SUFFIX.length());
                 res.addCacheName(cacheName);
             }
 
-            if (childFileName.startsWith("part") && childFileName.endsWith(partPostfix))
+            if (childFileName.startsWith("part") && childFileName.endsWith(partSuffix))
                 res.addPartName(childFileName);
         }
 
