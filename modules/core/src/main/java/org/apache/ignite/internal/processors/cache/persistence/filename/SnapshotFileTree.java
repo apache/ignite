@@ -124,7 +124,7 @@ public class SnapshotFileTree extends NodeFileTree {
         String folderName,
         @Nullable String consId
     ) {
-        super(cfg, root(ft, name, path), folderName, true);
+        super(cfg, root(ft, name, path), folderName);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -414,7 +414,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private NodeFileTree tempFileTree(GridKernalContext ctx) {
         NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
-        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName(), true);
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
 
         Map<String, File> snpTmpExtraStorages = new HashMap<>();
 
