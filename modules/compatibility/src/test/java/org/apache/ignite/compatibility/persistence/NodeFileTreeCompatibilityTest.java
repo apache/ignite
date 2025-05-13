@@ -12,51 +12,42 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assume.assumeFalse;
+
 /** */
-public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibilityAbstractTest {
+public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbstractTest {
     /** */
     @Parameter(5)
     public int nodesCnt;
 
     /** */
-    private static final String OLD_WORK_DIR;
-
-    static {
-        try {
-            OLD_WORK_DIR = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /** */
     @Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, nodesCnt={5}")
     public static Collection<Object[]> data() {
-        List<Object[]> data = new ArrayList<>();
-
-        for (boolean incSnp : Arrays.asList(true, false))
-            for (boolean customConsId: Arrays.asList(true, false))
-                for (boolean cacheDump : Arrays.asList(true, false))
-                    for (boolean customSnpPath : Arrays.asList(true, false))
-                        for (boolean testCacheGrp : Arrays.asList(true, false))
-                            for (int nodesCnt : Arrays.asList(1, 3))
-                                if (!incSnp || !cacheDump)
-                                    data.add(new Object[]{incSnp, customConsId, cacheDump, customSnpPath, testCacheGrp, nodesCnt});
-
-        return data;
+        return GridTestUtils.cartesianProduct(
+            Arrays.asList(true, false),
+            Arrays.asList(true, false),
+            Arrays.asList(true, false),
+            Arrays.asList(true, false),
+            Arrays.asList(true, false),
+            Arrays.asList(1, 3)
+        );
     }
 
     /** */
     @Test
     public void testNodeFileTree() throws Exception {
+        if (incSnp)
+            assumeFalse(INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED, cacheDump);
+
+        final String oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
+
         try {
             ArrayList<IgniteEx> oldNodes = new ArrayList<>(nodesCnt);
             ArrayList<IgniteEx> curNodes = new ArrayList<>(nodesCnt);
@@ -66,7 +57,7 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
                     startGrid(
                         i,
                         OLD_IGNITE_VERSION,
-                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo, OLD_WORK_DIR)
+                        new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo, oldWorkDir)
                     )
                 );
             }
@@ -75,7 +66,7 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
                 startGrid(
                     nodesCnt,
                     OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(customConsId, nodesCnt), customSnpPath, true, cacheGrpInfo, OLD_WORK_DIR),
+                    new ConfigurationClosure(incSnp, consId(nodesCnt), customSnpPath, true, cacheGrpInfo, oldWorkDir),
                     new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo)
                 )
             );
@@ -86,25 +77,25 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
                 curNodes.add(
                     startGrid(
                         i,
-                        new ConfigurationClosure(incSnp, consId(customConsId, i), customSnpPath, true, cacheGrpInfo)::apply
+                        new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo)::apply
                     )
                 );
             }
 
             new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(curNodes.get(0));
 
-            assertEquals(scanFileTree(OLD_WORK_DIR, ".bin"), scanFileTree(U.defaultWorkDirectory(), ".bin"));
+            assertEquals(scanFileTree(oldWorkDir, ".bin"), scanFileTree(U.defaultWorkDirectory(), ".bin"));
 
             if (cacheDump) {
                 assertEquals(
-                    scanFileTree(snpPath(customSnpPath, OLD_WORK_DIR, CACHE_DUMP_NAME), ".dump"),
-                    scanFileTree(snpPath(customSnpPath, U.defaultWorkDirectory(), CACHE_DUMP_NAME), ".dump")
+                    scanFileTree(snpPath(oldWorkDir, CACHE_DUMP_NAME), ".dump"),
+                    scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME), ".dump")
                 );
             }
             else {
                 assertEquals(
-                    scanSnp(snpPath(customSnpPath, OLD_WORK_DIR, SNAPSHOT_NAME)),
-                    scanSnp(snpPath(customSnpPath, U.defaultWorkDirectory(), SNAPSHOT_NAME))
+                    scanSnp(snpPath(oldWorkDir, SNAPSHOT_NAME)),
+                    scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME))
                 );
             }
         }
@@ -113,7 +104,7 @@ public class NodeFileTreeCompatibilityTest extends IgniteNodeFileTreeCompatibili
 
             cleanPersistenceDir(false);
 
-            FileUtils.deleteDirectory(new File(OLD_WORK_DIR));
+            FileUtils.deleteDirectory(new File(oldWorkDir));
         }
     }
 

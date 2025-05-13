@@ -23,11 +23,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-/**
- *
- */
+/** */
 @RunWith(Parameterized.class)
-public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
+public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** */
     protected static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
         .max(Comparator.comparing(IgniteReleasedVersion::version))
@@ -45,6 +43,9 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
 
     /** */
     protected static final int ENTRIES_CNT_FOR_INCREMENT = 100;
+
+    /** */
+    protected static final String INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED = "Incremental snapshots for cache dump not supported";
 
     /** */
     @Parameter
@@ -81,24 +82,24 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
     }
 
     /** */
-    protected static String consId(boolean custom, int nodeIdx) {
-        return custom ? "node-" + nodeIdx : null;
+    protected String consId(int nodeIdx) {
+        return customConsId ? "node-" + nodeIdx : null;
     }
 
     /** */
-    protected static String snpDir(boolean custom, String workDirPath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(workDirPath, custom ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
+    protected String snpDir(String workDirPath, boolean delIfExist) throws IgniteCheckedException {
+        return U.resolveWorkDirectory(workDirPath, customSnpPath ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
     }
 
     /** */
-    protected static String snpPath(boolean custom, String workDirPath, String snpName) throws IgniteCheckedException {
-        return Paths.get(snpDir(custom, workDirPath, false), snpName).toString();
+    protected String snpPath(String workDirPath, String snpName) throws IgniteCheckedException {
+        return Paths.get(snpDir(workDirPath, false), snpName).toString();
     }
 
     /**
      * Configuration closure both for old and current Ignite version.
      */
-    protected static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    protected class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
         private final boolean incSnp;
 
@@ -173,7 +174,7 @@ public abstract class IgniteNodeFileTreeCompatibilityAbstractTest extends Ignite
             }
 
             try {
-                cfg.setSnapshotPath(snpDir(customSnpPath, workDir, delIfExist));
+                cfg.setSnapshotPath(snpDir(workDir, delIfExist));
             }
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
