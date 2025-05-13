@@ -348,7 +348,7 @@ public class NodeFileTree extends SharedFileTree {
 
         extraStorages = extraStorages(
             dsCfg,
-            esp -> resolveDirectory(Path.of(esp, DB_DIR).toString())
+            storagePath -> resolveDirectory(Path.of(storagePath, DB_DIR).toString())
         );
     }
 
@@ -560,13 +560,13 @@ public class NodeFileTree extends SharedFileTree {
      * Temporary cache storage and partitions are created while snapshot restoring.
      * Moving to regular cache storage when finished.
      *
-     * @param cfgVal Config value.
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
      * @see CacheConfiguration#getStoragePath()
      */
-    public File tmpCacheStorage(@Nullable String cfgVal, String cacheDirName) {
-        return new File(cacheStorage(cfgVal), TMP_CACHE_DIR_PREFIX + cacheDirName);
+    public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
+        return new File(cacheStorage(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
@@ -607,14 +607,14 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * Temporary cache partitions are created while snapshot restoring.
      *
-     * @param cfgVal Value from config.
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
      * @return Path to the temp partition file.
      * @see CacheConfiguration#getStoragePath()
      */
-    public File tmpPartition(@Nullable String cfgVal, String cacheDirName, int partId) {
-        return new File(tmpCacheStorage(cfgVal, cacheDirName), partitionFileName(partId));
+    public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
+        return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
     }
 
     /** */
@@ -761,12 +761,12 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param cfgVal Value from config.
+     * @param storagePath Value from config.
      * @return File storage.
      * @see CacheConfiguration#getStoragePath()
      */
-    private File cacheStorage(@Nullable String cfgVal) {
-        return cfgVal == null ? nodeStorage : extraStorages.get(cfgVal);
+    private File cacheStorage(@Nullable String storagePath) {
+        return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
     }
 
     /**

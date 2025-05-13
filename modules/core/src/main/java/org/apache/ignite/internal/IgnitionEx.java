@@ -1952,9 +1952,6 @@ public class IgnitionEx {
                         "but not both.");
                 }
 
-                if (F.isEmpty(dsCfg.getStoragePath()) && !F.isEmpty(dsCfg.getExtraStoragePathes()))
-                    throw new IgniteCheckedException("Extra storage pathes can be used only if storagePath set.");
-
                 List<String> extraNodeStorages = F.asList(dsCfg.getExtraStoragePathes());
 
                 if (extraNodeStorages.size() != new HashSet<>(extraNodeStorages).size()

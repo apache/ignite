@@ -210,7 +210,7 @@ public class DataStorageConfiguration implements Serializable {
     @GridToStringInclude
     private DataRegionConfiguration[] dataRegions;
 
-    /** Default directory where index and partition files are stored. */
+    /** Directory where index and partition files are stored. */
     private String storagePath;
 
     /** 

@@ -124,7 +124,7 @@ public class SnapshotFileTree extends NodeFileTree {
         String folderName,
         @Nullable String consId
     ) {
-        super(cfg, root(ft, name, path), folderName);
+        super(cfg, root(ft, name, path), folderName, true);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -390,12 +390,12 @@ public class SnapshotFileTree extends NodeFileTree {
 
         Map<String, File> snpExtraStorages = new HashMap<>();
 
-        ft.extraStorages().forEach((cfgVal, extraStorage) -> {
+        ft.extraStorages().forEach((cfgStoragePath, extraStorage) -> {
             // In case we want to make snapshot in several folders the pathes will be the following:
             // {storage_path}/db/{folder_name} - node cache storage.
             // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
             snpExtraStorages.put(
-                cfgVal,
+                cfgStoragePath,
                 new File(extraStorage.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
             );
         });
@@ -414,18 +414,18 @@ public class SnapshotFileTree extends NodeFileTree {
     private NodeFileTree tempFileTree(GridKernalContext ctx) {
         NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
-        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName());
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName(), true);
 
-        Map<String, File> snpTmpExtratorages = new HashMap<>();
+        Map<String, File> snpTmpExtraStorages = new HashMap<>();
 
         // Iterating via snapshot extra storages,
         // because they may differ from the node one in case snapshot created using absolute path.
-        ft.extraStorages.forEach((cfgVal, storagePath) -> snpTmpExtratorages.put(
-            cfgVal,
-            new File(ft.extraStorages().get(cfgVal), Path.of(SNAPSHOT_TMP_DIR, name).toString())
+        ft.extraStorages.forEach((cfgStoragePath, extraStorage) -> snpTmpExtraStorages.put(
+            cfgStoragePath,
+            new File(extraStorage, Path.of(SNAPSHOT_TMP_DIR, name).toString())
         ));
 
-        res.extraStorages.putAll(snpTmpExtratorages);
+        res.extraStorages.putAll(snpTmpExtraStorages);
 
         return res;
     }

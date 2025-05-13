@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -47,33 +46,18 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
  * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
-public class CacheStoragePathTest extends GridCommonAbstractTest {
+public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** Custom storage path for default data region. */
     private static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
 
     /** Custom storage path for custom data region. */
     private static final String CUSTOM_STORAGE_PATH = "custom_dr";
 
-    /** Data region name with custom storage. */
-    private static final String DR_WITH_STORAGE = "custom-storage";
-
-    /** Data region with default storage. */
-    private static final String DR_WITH_DFLT_STORAGE = "default-storage";
-
     /** */
     private static final String SNP_PATH = "ex_snapshots";
 
     /** */
-    public final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
-        ccfg("cache0", null, null),
-        ccfg("cache1", "grp1", null),
-        ccfg("cache2", "grp1", null),
-        ccfg("cache3", null, DR_WITH_DFLT_STORAGE),
-        ccfg("cache4", "grp2", DR_WITH_DFLT_STORAGE),
-        ccfg("cache5", null, DR_WITH_STORAGE),
-        ccfg("cache6", "grp3", DR_WITH_STORAGE),
-        ccfg("cache7", "grp3", DR_WITH_STORAGE)
-    };
+    public CacheConfiguration[] ccfgs;
 
     /** */
     @Parameterized.Parameter()
@@ -94,17 +78,9 @@ public class CacheStoragePathTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.setExtraStoragePathes(storagePath(DEFAULT_DR_STORAGE_PATH), storagePath(CUSTOM_STORAGE_PATH));
-
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-
-        dsCfg.setDataRegionConfigurations(
-            new DataRegionConfiguration().setName(DR_WITH_STORAGE)
-                .setPersistenceEnabled(true),
-            new DataRegionConfiguration()
-                .setName(DR_WITH_DFLT_STORAGE)
-                .setPersistenceEnabled(true)
-        );
+        dsCfg.setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH))
+            .setExtraStoragePathes(storagePath(CUSTOM_STORAGE_PATH))
+            .getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(U.maskForFileName(igniteInstanceName))
@@ -113,11 +89,28 @@ public class CacheStoragePathTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        ccfgs = new CacheConfiguration[]{
+            ccfg("cache0", null, null),
+            ccfg("cache1", "grp1", null),
+            ccfg("cache2", "grp1", null),
+            ccfg("cache3", null, storagePath(DEFAULT_DR_STORAGE_PATH)),
+            ccfg("cache4", "grp2", storagePath(DEFAULT_DR_STORAGE_PATH)),
+            ccfg("cache5", null, storagePath(CUSTOM_STORAGE_PATH)),
+            ccfg("cache6", "grp3", storagePath(CUSTOM_STORAGE_PATH)),
+            ccfg("cache7", "grp3", storagePath(CUSTOM_STORAGE_PATH))
+        };
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
 
+/*
         cleanPersistenceDir();
 
         if (useAbsStoragePath)
@@ -128,6 +121,7 @@ public class CacheStoragePathTest extends GridCommonAbstractTest {
         }
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
+*/
     }
 
     /** */
@@ -206,7 +200,7 @@ public class CacheStoragePathTest extends GridCommonAbstractTest {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
                 File db;
 
-                if (Objects.equals(ccfg.getDataRegionName(), DR_WITH_DFLT_STORAGE)) {
+                if (Objects.equals(ccfg.getStoragePath(), storagePath(DEFAULT_DR_STORAGE_PATH))) {
                     db = ensureExists(new File(ft.root(), DB_DIR));
 
                     flags[0] = true;
@@ -275,10 +269,10 @@ public class CacheStoragePathTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CacheConfiguration<?, ?> ccfg(String name, String grp, String dr) {
+    private CacheConfiguration<?, ?> ccfg(String name, String grp, String storagePath) {
         return new CacheConfiguration<>(name)
             .setGroupName(grp)
-            .setDataRegionName(dr)
+            .setStoragePath(storagePath)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(15));
     }
 

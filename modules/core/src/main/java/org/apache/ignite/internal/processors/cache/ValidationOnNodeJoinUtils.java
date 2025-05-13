@@ -390,12 +390,7 @@ public class ValidationOnNodeJoinUtils {
                     cacheSpec.toString());
         }
 
-        boolean storagePathSet = !F.isEmpty(cc.getStoragePath());
-
-        if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration()) && storagePathSet)
-            throw new IgniteCheckedException("Storage path not allowed for in-memory cache");
-
-        if (storagePathSet) {
+        if (!F.isEmpty(cc.getStoragePath())) {
             DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
 
             String cs = cc.getStoragePath();
