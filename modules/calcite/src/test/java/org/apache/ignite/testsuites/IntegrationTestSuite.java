@@ -76,10 +76,10 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIn
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale100Test;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale050Test;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale010Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale001Test;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale010Test;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale050Test;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale100Test;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
