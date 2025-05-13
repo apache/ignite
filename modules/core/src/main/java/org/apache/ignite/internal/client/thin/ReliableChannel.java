@@ -287,9 +287,7 @@ final class ReliableChannel implements AutoCloseable {
                     if (hld == null) {
                         failures.add(failure0);
 
-                        fut.completeExceptionally(composeException(failures));
-
-                        return null;
+                        throw failure0;
                     }
 
                     if (shouldRetry(op, failures.size() - 1, failure0)) {
