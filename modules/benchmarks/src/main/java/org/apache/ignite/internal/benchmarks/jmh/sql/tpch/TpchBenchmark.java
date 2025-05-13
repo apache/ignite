@@ -112,34 +112,29 @@ public class TpchBenchmark {
     @Param({"CALCITE", "H2"})
     private String engine;
 
-    /**
-     * Query id.
-     * <p>
-     * The commented queries do not currently work with Calcite even for scale=0.01.
-     * The 11, 13, 15 can not be parsed with H2.
-     */
+    /** Query id.  */
     @Param({
         "1",
-//        "2", // TODO: https://issues.apache.org/jira/browse/IGNITE-24731
-        "3",
+        "2",
+//        "3", // TODO: https://issues.apache.org/jira/browse/IGNITE-18390
         "4",
-//        "5", // TODO: https://issues.apache.org/jira/browse/IGNITE-24741
+        "5",
         "6",
         "7",
-//        "8", // TODO: https://issues.apache.org/jira/browse/IGNITE-24746
-//        "9", // TODO: https://issues.apache.org/jira/browse/IGNITE-24752
+        "8",
+        "9",
         "10",
-        "11",
+//        "11", // Can't be parsed by H2
         "12",
-        "13",
+//        "13", // Can't be parsed by H2
         "14",
-        "15",
-//        "16", // TODO: https://issues.apache.org/jira/browse/IGNITE-24753
+//        "15", // Can't be parsed by H2
+        "16",
 //        "17", // TODO: https://issues.apache.org/jira/browse/IGNITE-24754
         "18",
-//        "19", // TODO: https://issues.apache.org/jira/browse/IGNITE-24756
-//        "20", // TODO: https://issues.apache.org/jira/browse/IGNITE-24730
-//        "21", // TODO: https://issues.apache.org/jira/browse/IGNITE-24757
+        "19",
+        "20",
+        "21",
         "22"
     })
     private String queryId;
