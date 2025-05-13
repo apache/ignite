@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
  * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
-public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
+public class CacheStoragePathTest extends GridCommonAbstractTest {
     /** First custom storage path. */
     private static final String CUSTOM_STORAGE_PATH = "custom";
 
