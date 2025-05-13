@@ -330,6 +330,7 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
+            // Snapshot MUST use root relative node storage path.
             nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
                 : new File(resolveDirectory(dsCfg.getStoragePath()), DB_DIR);

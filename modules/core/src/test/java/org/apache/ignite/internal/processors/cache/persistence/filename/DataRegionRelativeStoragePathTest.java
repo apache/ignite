@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -48,11 +46,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
  */
 @RunWith(Parameterized.class)
 public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
-    /** Custom storage path for default data region. */
-    private static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
+    /** First custom storage path. */
+    private static final String CUSTOM_STORAGE_PATH = "custom";
 
-    /** Custom storage path for custom data region. */
-    private static final String CUSTOM_STORAGE_PATH = "custom_dr";
+    /** Second custom storage path. */
+    private static final String CUSTOM2_STORAGE_PATH = "custom2";
 
     /** */
     private static final String SNP_PATH = "ex_snapshots";
@@ -79,8 +77,9 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH))
-            .setExtraStoragePathes(storagePath(CUSTOM_STORAGE_PATH))
+        dsCfg.setExtraStoragePathes(
+                storagePath(CUSTOM2_STORAGE_PATH),
+                storagePath(CUSTOM_STORAGE_PATH))
             .getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
         return super.getConfiguration(igniteInstanceName)
@@ -99,11 +98,11 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
             ccfg("cache0", null, null),
             ccfg("cache1", "grp1", null),
             ccfg("cache2", "grp1", null),
-            ccfg("cache3", null, storagePath(DEFAULT_DR_STORAGE_PATH)),
-            ccfg("cache4", "grp2", storagePath(DEFAULT_DR_STORAGE_PATH)),
-            ccfg("cache5", null, storagePath(CUSTOM_STORAGE_PATH)),
-            ccfg("cache6", "grp3", storagePath(CUSTOM_STORAGE_PATH)),
-            ccfg("cache7", "grp3", storagePath(CUSTOM_STORAGE_PATH))
+            ccfg("cache3", null, storagePath(CUSTOM_STORAGE_PATH)),
+            ccfg("cache4", "grp2", storagePath(CUSTOM_STORAGE_PATH)),
+            ccfg("cache5", null, storagePath(CUSTOM2_STORAGE_PATH)),
+            ccfg("cache6", "grp3", storagePath(CUSTOM2_STORAGE_PATH)),
+            ccfg("cache7", "grp3", storagePath(CUSTOM2_STORAGE_PATH))
         };
     }
 
@@ -113,18 +112,18 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-/*
         cleanPersistenceDir();
 
-        if (useAbsStoragePath)
-            U.delete(new File(storagePath(DEFAULT_DR_STORAGE_PATH)).getParentFile());
+        if (useAbsStoragePath) {
+            U.delete(new File(storagePath(CUSTOM_STORAGE_PATH)).getParentFile());
+            U.delete(new File(storagePath(CUSTOM2_STORAGE_PATH)).getParentFile());
+        }
         else {
-            U.delete(new File(U.defaultWorkDirectory(), DEFAULT_DR_STORAGE_PATH));
             U.delete(new File(U.defaultWorkDirectory(), CUSTOM_STORAGE_PATH));
+            U.delete(new File(U.defaultWorkDirectory(), CUSTOM2_STORAGE_PATH));
         }
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
-*/
     }
 
     /** */
@@ -203,18 +202,16 @@ public class DataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
                 File db;
 
-                if (ccfg.getStoragePath() == null || Objects.equals(ccfg.getStoragePath(), storagePath(DEFAULT_DR_STORAGE_PATH))) {
-                    ensureExists(new File(ft.root(), DB_DIR));
-
-                    db = ensureExists(Path.of(storagePath(DEFAULT_DR_STORAGE_PATH), ft.folderName()).toFile());
+                if (ccfg.getStoragePath() == null) {
+                    db = ensureExists(new File(ft.root(), DB_DIR));
 
                     flags[0] = true;
                 }
                 else {
-                    String storagePath = ccfg.getDataRegionName() == null ? DEFAULT_DR_STORAGE_PATH : CUSTOM_STORAGE_PATH;
+                    String storagePath = ccfg.getStoragePath();
 
                     File customRoot = ensureExists(useAbsStoragePath
-                        ? new File(storagePath(storagePath))
+                        ? new File(storagePath)
                         : new File(ft.root(), storagePath)
                     );
 
