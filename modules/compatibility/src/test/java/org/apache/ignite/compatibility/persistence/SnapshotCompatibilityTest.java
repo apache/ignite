@@ -31,6 +31,8 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
+import org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ConfigurationClosure;
+import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpConsumer;
@@ -42,14 +44,25 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.BASE_CACHE_SIZE;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CACHE_DUMP_NAME;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CreateSnapshotClosure;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ENTRIES_CNT_FOR_INCREMENT;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.SNAPSHOT_NAME;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.calcValue;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.snpDir;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /** */
-public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstractTest {
+@RunWith(Parameterized.class)
+public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
     private static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
         .max(Comparator.comparing(IgniteReleasedVersion::version))
@@ -57,23 +70,34 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
         .orElseThrow(() -> new IllegalStateException("Enum is empty"));
 
     /** */
-    private static final String SNAPSHOT_NAME = "test_snapshot";
-
-    /** */
-    private static final String CACHE_DUMP_NAME = "test_cache_dump";
-
-    /** */
-    private static final int BASE_CACHE_SIZE = 100;
-
-    /** */
-    private static final int ENTRIES_CNT_FOR_INCREMENT = 100;
-
-    /** */
     private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
+
+    /** */
+    @Parameterized.Parameter
+    public boolean incSnp;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean customConsId;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public boolean cacheDump;
+
+    /** */
+    @Parameterized.Parameter(3)
+    public boolean customSnpPath;
+
+    /** */
+    @Parameterized.Parameter(4)
+    public boolean testCacheGrp;
 
     /** */
     @Parameterized.Parameter(5)
     public int oldNodesCnt;
+
+    /** */
+    private CompatibilityTestCore core;
 
     /** */
     @Parameterized.Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, oldNodesCnt={5}")
@@ -86,6 +110,12 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
             Arrays.asList(true, false),
             Arrays.asList(1, 3)
         );
+    }
+
+    /** */
+    @Before
+    public void setUp() {
+        core = new CompatibilityTestCore(customConsId, customSnpPath, testCacheGrp);
     }
 
     /** */
@@ -104,8 +134,8 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
                 startGrid(
                     i,
                     OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
-                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
+                    new ConfigurationClosure(incSnp, core.consId(i), customSnpPath, true, core.cacheGrpInfo()),
+                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, core.cacheGrpInfo()) : null
                 );
             }
 
@@ -113,7 +143,7 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
 
             cleanPersistenceDir(true);
 
-            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, consId(1), customSnpPath));
+            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, core.consId(1), customSnpPath));
 
             node.cluster().state(ClusterState.ACTIVE);
 
@@ -133,16 +163,16 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
 
     /** */
     private void checkSnapshot(IgniteEx node) {
-        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.name())).get();
+        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(core.cacheGrpInfo().name())).get();
 
-        cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE);
+        core.cacheGrpInfo().checkCaches(node, BASE_CACHE_SIZE);
     }
 
     /** */
     private void checkIncrementalSnapshot(IgniteEx node) {
-        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheGrpInfo.name()), 1).get();
+        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(core.cacheGrpInfo().name()), 1).get();
 
-        cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
+        core.cacheGrpInfo().checkCaches(node, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
     }
 
     /** */
@@ -165,21 +195,21 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
             }
 
             @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
-                assertNotNull(cacheGrpInfo);
+                assertNotNull(core.cacheGrpInfo());
 
                 caches.forEachRemaining(cache -> {
                     CacheConfiguration<?, ?> ccfg = cache.config();
 
                     assertNotNull(ccfg);
 
-                    assertEquals(cacheGrpInfo.name(), ccfg.getGroupName());
+                    assertEquals(core.cacheGrpInfo().name(), ccfg.getGroupName());
 
                     foundCacheNames.add(ccfg.getName());
                 });
             }
 
             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                assertNotNull(cacheGrpInfo);
+                assertNotNull(core.cacheGrpInfo());
 
                 data.forEachRemaining(de -> {
                     assertNotNull(de);
@@ -187,7 +217,7 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
                     Integer key = (Integer)de.key();
                     String val = (String)de.value();
 
-                    for (String cacheName : cacheGrpInfo.cacheNamesList()) {
+                    for (String cacheName : core.cacheGrpInfo().cacheNamesList()) {
                         if (val.startsWith(cacheName)) {
                             assertEquals(calcValue(cacheName, key), val);
 
@@ -206,17 +236,17 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
 
         new DumpReader(new DumpReaderConfiguration(
             CACHE_DUMP_NAME,
-            snpDir(U.defaultWorkDirectory(), false),
+            snpDir(customSnpPath, U.defaultWorkDirectory(), false),
             node.configuration(),
             consumer
         ), log).run();
 
-        cacheGrpInfo.cacheNamesList().forEach(
+        core.cacheGrpInfo().cacheNamesList().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
         );
 
-        assertTrue(cacheGrpInfo.cacheNamesList().containsAll(foundCacheNames));
-        assertEquals(cacheGrpInfo.cacheNamesList().size(), foundCacheNames.size());
+        assertTrue(core.cacheGrpInfo().cacheNamesList().containsAll(foundCacheNames));
+        assertEquals(core.cacheGrpInfo().cacheNamesList().size(), foundCacheNames.size());
     }
 
     /** */
@@ -228,7 +258,7 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(incSnp, consId, customSnpPath, false, cacheGrpInfo).apply(cfg);
+        new ConfigurationClosure(incSnp, consId, customSnpPath, false, core.cacheGrpInfo()).apply(cfg);
 
         return cfg;
     }

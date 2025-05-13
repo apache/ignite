@@ -12,63 +12,59 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
-import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /** */
-@RunWith(Parameterized.class)
-public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
+public class CompatibilityTestCore {
     /** */
-    protected static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
+    public static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
         .max(Comparator.comparing(IgniteReleasedVersion::version))
         .map(IgniteReleasedVersion::toString)
         .orElseThrow(() -> new IllegalStateException("Enum is empty"));
 
     /** */
-    protected static final String SNAPSHOT_NAME = "test_snapshot";
+    public static final String SNAPSHOT_NAME = "test_snapshot";
 
     /** */
-    protected static final String CACHE_DUMP_NAME = "test_cache_dump";
+    public static final String CACHE_DUMP_NAME = "test_cache_dump";
 
     /** */
-    protected static final int BASE_CACHE_SIZE = 100;
+    public static final int BASE_CACHE_SIZE = 100;
 
     /** */
-    protected static final int ENTRIES_CNT_FOR_INCREMENT = 100;
+    public static final int ENTRIES_CNT_FOR_INCREMENT = 100;
 
     /** */
-    protected static final String INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED = "Incremental snapshots for cache dump not supported";
+    public static final String INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED = "Incremental snapshots for cache dump not supported";
 
     /** */
-    @Parameter
-    public boolean incSnp;
+    protected boolean customConsId;
 
     /** */
-    @Parameter(1)
-    public boolean customConsId;
-
-    /** */
-    @Parameter(2)
-    public boolean cacheDump;
-
-    /** */
-    @Parameter(3)
-    public boolean customSnpPath;
-
-    /** */
-    @Parameter(4)
-    public boolean testCacheGrp;
+    protected boolean customSnpPath;
 
     /** */
     protected CacheGroupInfo cacheGrpInfo;
+
+    /** */
+    public CompatibilityTestCore(boolean customConsId, boolean customSnpPath, boolean testCacheGrp) {
+        this.customConsId = customConsId;
+        this.customSnpPath = customSnpPath;
+
+        cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
+    }
+
+    /** */
+    public CacheGroupInfo cacheGrpInfo() {
+        return cacheGrpInfo;
+    }
 
     /** */
     protected static String calcValue(String cacheName, int key) {
@@ -76,9 +72,8 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
     }
 
     /** */
-    @Before
-    public void setUp() {
-        cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
+    protected static String snpDir(boolean customSnpPath, String workDirPath, boolean delIfExist) throws IgniteCheckedException {
+        return U.resolveWorkDirectory(workDirPath, customSnpPath ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
     }
 
     /** */
@@ -87,19 +82,14 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
     }
 
     /** */
-    protected String snpDir(String workDirPath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(workDirPath, customSnpPath ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
-    }
-
-    /** */
     protected String snpPath(String workDirPath, String snpName, boolean delIfExist) throws IgniteCheckedException {
-        return Paths.get(snpDir(workDirPath, delIfExist), snpName).toString();
+        return Paths.get(snpDir(customSnpPath, workDirPath, delIfExist), snpName).toString();
     }
 
     /**
      * Configuration closure both for old and current Ignite version.
      */
-    protected class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
         private final boolean incSnp;
 
@@ -174,7 +164,7 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
             }
 
             try {
-                cfg.setSnapshotPath(snpDir(workDir, delIfExist));
+                cfg.setSnapshotPath(snpDir(customSnpPath, workDir, delIfExist));
             }
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
@@ -183,9 +173,9 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
     }
 
     /**
-     * Snapshot creating closure for old Ignite version.
+     * Snapshot creating closure both for old and current Ignite version.
      */
-    protected static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
+    public static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
         private final boolean incSnp;
 
@@ -222,7 +212,7 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
     }
 
     /** */
-    protected static class CacheGroupInfo {
+    public static class CacheGroupInfo {
         /** */
         private final String name;
 
