@@ -26,15 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
@@ -43,7 +40,6 @@ import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -104,7 +100,14 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
         }
 
         try {
-            startOldNodes(oldNodesCnt);
+            for (int i = 1; i <= oldNodesCnt; ++i) {
+                startGrid(
+                    i,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
+                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
+                );
+            }
 
             stopAllGrids();
 
@@ -203,7 +206,7 @@ public class SnapshotCompatibilityTest extends NodeFileTreeCompatibilityAbstract
 
         new DumpReader(new DumpReaderConfiguration(
             CACHE_DUMP_NAME,
-            snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME, false),
+            snpDir(U.defaultWorkDirectory(), false),
             node.configuration(),
             consumer
         ), log).run();

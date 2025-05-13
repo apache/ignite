@@ -96,17 +96,6 @@ public abstract class NodeFileTreeCompatibilityAbstractTest extends IgniteCompat
         return Paths.get(snpDir(workDirPath, delIfExist), snpName).toString();
     }
 
-    protected void startOldNodes(int nodesCnt) throws Exception {
-        for (int i = 1; i <= nodesCnt; ++i) {
-            startGrid(
-                i,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo),
-                i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
-            );
-        }
-    }
-
     /**
      * Configuration closure both for old and current Ignite version.
      */

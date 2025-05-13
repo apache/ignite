@@ -64,7 +64,14 @@ public class NodeFileTreeCompatibilityTest extends NodeFileTreeCompatibilityAbst
         final String oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
 
         try {
-            startOldNodes(nodesCnt);
+            for (int i = 1; i <= nodesCnt; ++i) {
+                startGrid(
+                    i,
+                    OLD_IGNITE_VERSION,
+                    new ConfigurationClosure(incSnp, consId(i), customSnpPath, true, cacheGrpInfo, oldWorkDir),
+                    i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
+                );
+            }
 
             stopAllGrids();
 
