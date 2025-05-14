@@ -291,14 +291,14 @@ final class ReliableChannel implements AutoCloseable {
                     }
 
                     if (shouldRetry(op, failures.size() - 1, failure0)) {
-                        ClientChannel newCh = hld.getOrCreateChannel();
+                        CompletableFuture<T> reconnectFut = hld.getOrCreateChannel().serviceAsync(op, payloadWriter, payloadReader);
 
-                        newCh.serviceAsync(op, payloadWriter, payloadReader)
+                        reconnectFut
                             .handle((retryRes, retryErr) -> {
                                 if (retryErr == null)
                                     fut.complete(retryRes);
                                 else
-                                    handleReconnectionAttempt(fut, newCh, op, payloadWriter, payloadReader, failures);
+                                    handleReconnectionAttempt(fut, reconnectFut, op, payloadWriter, payloadReader, failures);
 
                                 return null;
                             });
@@ -312,7 +312,7 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException reconnectEx) {
                     onChannelFailure(hld, ch, reconnectEx, failures);
 
-                    handleReconnectionAttempt(fut, ch, op, payloadWriter, payloadReader, failures);
+                    handleReconnectionAttempt(fut, chFut, op, payloadWriter, payloadReader, failures);
                 }
                 catch (Throwable ex) {
                     fut.completeExceptionally(ex);
@@ -330,13 +330,13 @@ final class ReliableChannel implements AutoCloseable {
      */
     private <T> void handleReconnectionAttempt(
         final CompletableFuture<T> fut,
-        ClientChannel ch,
+        CompletableFuture<T> reconnectFut,
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
         List<ClientConnectionException> failures) {
         // Try other channels in case of failed retry.
-        ch.serviceAsync(op, payloadWriter, payloadReader)
+        reconnectFut
             .whenComplete((res, err) -> {
                 if (fut.isDone())
                     return;
