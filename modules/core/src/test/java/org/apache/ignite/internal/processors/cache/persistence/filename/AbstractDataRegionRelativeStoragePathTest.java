@@ -185,5 +185,6 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** @param fts Nodes file trees. */
     abstract void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException;
 
+    /** Cache configs. */
     abstract CacheConfiguration[] ccfgs();
 }
