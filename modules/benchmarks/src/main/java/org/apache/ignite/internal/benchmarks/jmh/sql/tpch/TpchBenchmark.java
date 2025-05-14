@@ -134,7 +134,7 @@ public class TpchBenchmark {
         "18",
         "19",
         "20",
-        "21",
+//        "21", Overal plan cost with nested loop still prevales over merge join with the same estimated rows count.
         "22"
     })
     private String queryId;
