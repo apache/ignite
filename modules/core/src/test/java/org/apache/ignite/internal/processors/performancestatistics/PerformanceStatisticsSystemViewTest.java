@@ -124,8 +124,6 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
             Map<?, ?> oldViews = U.field(sysViewMngr, "systemViews");
             oldViews.clear();
 
-            List<String> viewsToWrite = U.staticField(SystemViewFileWriter.class, "SYSTEM_VIEWS");
-
             Map<String, String> viewsExpected = new HashMap<>(VALID_VIEWS_CNT);
 
             for (int i = 0; i < VALID_VIEWS_CNT; i++) {
@@ -138,20 +136,14 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
                     "valid_desc",
                     new MetastorageViewWalker(), () -> Collections.singletonList(view), identity());
 
-                viewsToWrite.add(viewName);
-
                 viewsExpected.put(viewName, val);
             }
 
             for (int i = 0; i < INVALID_VIEWS_CNT; i++) {
-                String viewName = "invalid_desc" + i;
-
                 sysViewMngr.registerView(
-                    viewName,
+                    "invalid_desc" + i,
                     "invalid_" + i,
                     new MetastorageViewWalker(), () -> null, identity());
-
-                viewsToWrite.add(viewName);
             }
 
             startCollectStatistics();
