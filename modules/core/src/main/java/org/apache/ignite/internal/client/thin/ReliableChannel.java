@@ -310,7 +310,7 @@ final class ReliableChannel implements AutoCloseable {
                     }
                 }
                 catch (ClientConnectionException reconnectEx) {
-                    onChannelFailure(hld, null, reconnectEx, failures);
+                    onChannelFailure(hld, ch, reconnectEx, failures);
 
                     handleReconnectionAttempt(fut, ch, op, payloadWriter, payloadReader, failures);
                 }
