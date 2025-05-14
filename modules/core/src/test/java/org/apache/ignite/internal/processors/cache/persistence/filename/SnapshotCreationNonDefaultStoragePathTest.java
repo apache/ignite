@@ -41,7 +41,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH));
+            .setStoragePath(storagePath(STORAGE_PATH));
 
         dsCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true);
@@ -85,7 +85,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     @Override void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = DEFAULT_DR_STORAGE_PATH;
+                String storagePath = STORAGE_PATH;
 
                 File customRoot = ensureExists(useAbsStoragePath
                     ? new File(storagePath(storagePath))

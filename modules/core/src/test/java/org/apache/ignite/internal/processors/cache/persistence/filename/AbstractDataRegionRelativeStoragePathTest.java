@@ -40,11 +40,11 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
-    /** Custom storage path for default data region. */
-    static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
+    /** Custom storage path . */
+    static final String STORAGE_PATH = "dflt_dr";
 
-    /** Custom storage path for custom data region. */
-    static final String CUSTOM_STORAGE_PATH = "custom_dr";
+    /** Second custom storage path. */
+    static final String STORAGE_PATH_2 = "custom_dr";
 
     /** */
     static final String SNP_PATH = "ex_snapshots";
@@ -73,10 +73,10 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         cleanPersistenceDir();
 
         if (useAbsStoragePath)
-            U.delete(new File(storagePath(DEFAULT_DR_STORAGE_PATH)).getParentFile());
+            U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
         else {
-            U.delete(new File(U.defaultWorkDirectory(), DEFAULT_DR_STORAGE_PATH));
-            U.delete(new File(U.defaultWorkDirectory(), CUSTOM_STORAGE_PATH));
+            U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
+            U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
         }
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
