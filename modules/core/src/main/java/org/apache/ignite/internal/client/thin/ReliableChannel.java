@@ -336,27 +336,27 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader,
         List<ClientConnectionException> failures) {
         // Try other channels in case of failed retry.
-        reconnectFut
-            .whenComplete((res, err) -> {
-                if (fut.isDone())
-                    return;
+        if (fut.isDone())
+            return;
 
-                if (err != null && !(err instanceof ClientConnectionException)) {
-                    fut.completeExceptionally(err);
-                    return;
-                }
+        Throwable err = reconnectFut.isCompletedExceptionally() ? reconnectFut.handle((r, e) -> e).join() : null;
 
-                if (err != null) {
-                    ClientConnectionException failure0 = (ClientConnectionException)err;
+        if (err != null && !(err instanceof ClientConnectionException)) {
+            fut.completeExceptionally(err);
 
-                    if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0))
-                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-                    else
-                        fut.completeExceptionally(composeException(failures));
-                }
-                else
-                    fut.complete(res);
-            });
+            return;
+        }
+
+        if (err != null) {
+            ClientConnectionException failure0 = (ClientConnectionException)err;
+
+            if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0))
+                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+            else
+                fut.completeExceptionally(composeException(failures));
+        }
+        else
+            fut.complete(reconnectFut.join());
     }
 
     /**
