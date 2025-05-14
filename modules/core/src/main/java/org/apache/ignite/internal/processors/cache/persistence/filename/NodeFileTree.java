@@ -333,7 +333,7 @@ public class NodeFileTree extends SharedFileTree {
             // Snapshot MUST use root relative node storage path.
             nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
-                : new File(resolveDirectory(dsCfg.getStoragePath()), DB_DIR);
+                : resolveDirectory(dsCfg.getStoragePath());
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
