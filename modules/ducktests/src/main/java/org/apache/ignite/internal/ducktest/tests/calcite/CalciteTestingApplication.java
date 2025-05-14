@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -42,22 +43,34 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
      *
      */
     private static class QueryTest {
-        String query;
+        /**
+         * Query.
+         */
+        String qry;
+        /**
+         * Expected results.
+         */
         List<Object> expectedResults;
+        /**
+         * Expected type.
+         */
         Class<?> expectedType;
 
-        QueryTest(String query, Object... expectedResults) {
-            this.query = query;
+        /**
+         * @param qry             Query.
+         * @param expectedResults Expected results.
+         */
+        QueryTest(String qry, Object... expectedResults) {
+            this.qry = qry;
             this.expectedResults = Arrays.asList(expectedResults);
-            this.expectedType = expectedResults[0].getClass();
+            expectedType = expectedResults[0].getClass();
         }
     }
 
     /**
      *
      */
-    @Override
-    public void run(JsonNode jsonNode) throws SQLException {
+    @Override public void run(JsonNode jsonNode) throws SQLException {
         markInitialized();
 
         try (Connection conn = thinJdbcDataSource.getConnection()) {
@@ -314,56 +327,25 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
 
         // Execute all tests
         for (QueryTest test : tests) {
-            try (PreparedStatement stmt = conn.prepareStatement(test.query);
+            try (PreparedStatement stmt = conn.prepareStatement(test.qry);
                  ResultSet rs = stmt.executeQuery()) {
 
                 List<Object> actualResults = new ArrayList<>();
                 ResultSetMetaData meta = rs.getMetaData();
-                int colCount = meta.getColumnCount();
+                int colCnt = meta.getColumnCount();
 
                 while (rs.next()) {
-                    for (int i = 1; i <= colCount; i++) {
+                    for (int i = 1; i <= colCnt; i++)
                         actualResults.add(rs.getObject(i));
-                    }
                 }
 
-                if (!compareResults(test.expectedResults, actualResults, test.expectedType)) {
+                if (!Objects.equals(test.expectedResults, actualResults)) {
                     String errorMsg = String.format(
                         "Query failed: %s\nExpected: %s\nActual: %s",
-                        test.query, test.expectedResults, actualResults);
+                        test.qry, test.expectedResults, actualResults);
                     throw new RuntimeException(errorMsg);
                 }
             }
         }
-    }
-
-    /**
-     *
-     */
-    private boolean compareResults(List<Object> expected, List<Object> actual, Class<?> expectedType) {
-        if (expected.size() != actual.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < expected.size(); i++) {
-            Object exp = expected.get(i);
-            Object act = actual.get(i);
-
-            if (exp == null && act == null)
-                continue;
-            if (exp == null || act == null)
-                return false;
-
-            if (exp instanceof BigDecimal && act instanceof BigDecimal) {
-                if (((BigDecimal)exp).compareTo((BigDecimal)act) != 0) {
-                    return false;
-                }
-            }
-            else if (!exp.equals(act)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
