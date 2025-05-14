@@ -444,6 +444,7 @@ public class RexImpTable {
         map.put(NEGATED_POSIX_REGEX_CASE_SENSITIVE,
             NotImplementor.of(sensitiveImplementor));
         defineReflective(REGEXP_REPLACE_2,
+            BuiltInMethod.REGEXP_REPLACE2.method,
             BuiltInMethod.REGEXP_REPLACE3.method,
             BuiltInMethod.REGEXP_REPLACE4.method,
             BuiltInMethod.REGEXP_REPLACE5_MATCHTYPE.method,
@@ -2295,18 +2296,27 @@ public class RexImpTable {
             List<Expression> argValueList) {
             Expression operand0 = argValueList.get(0);
             final Expressions.FluentList<Expression> list = Expressions.list(operand0);
+
             switch (call.getOperator().getName()) {
                 case "LOG":
-                    if (argValueList.size() == 2)
-                        return list.append(argValueList.get(1));
-                    // fall through
+                    if (argValueList.size() == 2) {
+                        list.append(argValueList.get(1));
+                        break;
+                    }
+                // fall through
                 case "LN":
-                    return list.append(Expressions.constant(Math.exp(1)));
+                    list.append(Expressions.constant(Math.exp(1)));
+                    break;
                 case "LOG10":
-                    return list.append(Expressions.constant(BigDecimal.TEN));
+                    list.append(Expressions.constant(BigDecimal.TEN));
+                    break;
                 default:
                     throw new AssertionError("Operator not found: " + call.getOperator());
             }
+
+            list.append(Expressions.constant(false));
+
+            return list;
         }
     }
 

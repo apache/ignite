@@ -80,12 +80,13 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         Number negativeInfinity;
         Number nan;
 
-        for(String type : Arrays.asList("FLOAT", "REAL", "DOUBLE")){
+        for (String type : Arrays.asList("FLOAT", "REAL", "DOUBLE")) {
             if ("DOUBLE".equals(type)) {
                 positiveInfinity = Double.POSITIVE_INFINITY;
                 negativeInfinity = Double.NEGATIVE_INFINITY;
                 nan = Double.NaN;
-            } else {
+            }
+            else {
                 positiveInfinity = Float.POSITIVE_INFINITY;
                 negativeInfinity = Float.NEGATIVE_INFINITY;
                 nan = Float.NaN;
