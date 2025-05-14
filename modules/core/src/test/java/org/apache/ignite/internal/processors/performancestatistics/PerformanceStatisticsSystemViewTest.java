@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import static java.util.UUID.randomUUID;
 import static java.util.function.Function.identity;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -173,7 +174,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
 
         FilePerformanceStatisticsReader reader = new FilePerformanceStatisticsReader(BUFFER_SIZE, new TestHandler() {
             @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
-                assertEquals("metastorage", name);
+                assertEquals(METASTORE_VIEW, name);
                 assertEquals(expRow, row);
             }
         });
@@ -194,7 +195,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
             writeSystemView(buf, "customView", "customWalker", null);
 
             List<String> row = List.of("key", "value");
-            writeSystemView(buf, "metastorage", MetastorageViewWalker.class.getName(), row);
+            writeSystemView(buf, METASTORE_VIEW, MetastorageViewWalker.class.getName(), row);
 
             buf.flip();
 

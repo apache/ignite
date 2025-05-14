@@ -680,9 +680,23 @@ public class FilePerformanceStatisticsReader {
          * @param walkerName Name of walker to visist system view attributes.
          */
         public SystemViewEntry(String viewName, String walkerName) throws ReflectiveOperationException {
-            walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
+            SystemViewRowAttributeWalker<?> walker;
+            try {
+                walker = (SystemViewRowAttributeWalker<?>)Class.forName(walkerName).getConstructor().newInstance();
+            }
+            catch (ClassNotFoundException e) {
+                walker = null;
+            }
+
+            this.walker = walker;
 
             this.viewName = viewName;
+
+            if (this.walker == null) {
+                schema = null;
+                rowVisitor = null;
+                return;
+            }
 
             List<String> schemaList = new ArrayList<>();
 
@@ -701,6 +715,9 @@ public class FilePerformanceStatisticsReader {
          * @return System view row.
          */
         public List<Object> nextRow() {
+            if (walker == null)
+                throw new IgniteException("System view " + viewName + " is not supported.");
+
             rowVisitor.clear();
             walker.visitAll(rowVisitor);
             return rowVisitor.row();
