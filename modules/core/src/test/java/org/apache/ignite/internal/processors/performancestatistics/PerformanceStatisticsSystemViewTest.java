@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,13 +31,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static java.util.UUID.randomUUID;
 import static java.util.function.Function.identity;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -55,6 +63,9 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
 
     /** */
     private static final int INVALID_VIEWS_CNT = 10;
+
+    /** Read buffer size. */
+    private static final int BUFFER_SIZE = 100;
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger();
@@ -151,5 +162,63 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
             assertEquals(1, systemViewStatisticsFiles(statisticsFiles()).size());
             assertEquals(viewsExpected, viewsActual);
         }
+    }
+
+    /** Tests empty system view with custom system view walker. */
+    @Test
+    public void testCustomEmptySystemView() throws Exception {
+        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
+
+        List<String> expRow = createStatistics(dir);
+
+        FilePerformanceStatisticsReader reader = new FilePerformanceStatisticsReader(BUFFER_SIZE, new TestHandler() {
+            @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
+                assertEquals("metastorage", name);
+                assertEquals(expRow, row);
+            }
+        });
+
+        reader.read(List.of(dir));
+    }
+
+    /** Creates test performance statistics file. */
+    private List<String> createStatistics(File dir) throws Exception {
+        File file = new File(dir, "node-" + randomUUID() + ".prf");
+
+        try (FileIO fileIo = new RandomAccessFileIOFactory().create(file)) {
+            ByteBuffer buf = ByteBuffer.allocate(1024).order(ByteOrder.nativeOrder());
+
+            buf.put(OperationType.VERSION.id());
+            buf.putShort(FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION);
+
+            writeSystemView(buf, "customView", "customWalker", null);
+
+            List<String> row = List.of("key", "value");
+            writeSystemView(buf, "metastorage", MetastorageViewWalker.class.getName(), row);
+
+            buf.flip();
+
+            fileIo.write(buf);
+
+            fileIo.force();
+
+            return row;
+        }
+    }
+
+    /** */
+    private void writeSystemView(ByteBuffer buf, String view, String walker, List<String> row) {
+        buf.put(OperationType.SYSTEM_VIEW_SCHEMA.id());
+
+        writeString(buf, view, false);
+        writeString(buf, walker, false);
+
+        if (row == null)
+            return;
+
+        buf.put(OperationType.SYSTEM_VIEW_ROW.id());
+
+        for (String val : row)
+            writeString(buf, val, false);
     }
 }
