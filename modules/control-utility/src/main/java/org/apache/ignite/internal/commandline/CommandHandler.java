@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteWarningException;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.SslMode;
@@ -114,6 +115,9 @@ public class CommandHandler {
 
     /** */
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
+
+    /** */
+    public static final int EXIT_CODE_COMPLETED_WITH_WARNINGS = 5;
 
     /** */
     private static final long DFLT_PING_INTERVAL = 5000L;
@@ -295,6 +299,13 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (Throwable e) {
+            if (X.hasCause(e, IgniteWarningException.class)) {
+                logger.warning(e.getMessage());
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_COMPLETED_WITH_WARNINGS);
+
+                return EXIT_CODE_COMPLETED_WITH_WARNINGS;
+            }
+
             logger.error("Failed to perform operation.");
 
             if (isAuthError(e)) {

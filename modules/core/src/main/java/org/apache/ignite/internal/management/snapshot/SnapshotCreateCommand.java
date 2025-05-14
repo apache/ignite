@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotWarningException;
-import org.apache.ignite.internal.util.typedef.X;
-
 /** */
 public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreateCommandArg, String> {
     /** {@inheritDoc} */
@@ -36,13 +32,5 @@ public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreat
     /** {@inheritDoc} */
     @Override public Class<SnapshotCreateTask> taskClass() {
         return SnapshotCreateTask.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String handleException(Exception e, Consumer<String> printer) throws Exception {
-        if (X.hasCause(e, SnapshotWarningException.class))
-            return e.getMessage();
-        else
-            throw e;
     }
 }
