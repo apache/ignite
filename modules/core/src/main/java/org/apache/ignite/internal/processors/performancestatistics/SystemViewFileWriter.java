@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -101,7 +102,7 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
 /** Worker to write system views to performance statistics file. */
 class SystemViewFileWriter extends GridWorker {
     /** Default system views. */
-    private static final List<String> SYSTEM_VIEWS = List.of(
+    private static final List<String> SYSTEM_VIEWS = new ArrayList<>(List.of(
         CACHES_VIEW,
         CACHE_GRPS_VIEW,
         TASKS_VIEW,
@@ -153,7 +154,7 @@ class SystemViewFileWriter extends GridWorker {
         PAGE_TS_HISTOGRAM_VIEW,
         SQL_TBL_COLS_VIEW,
         SYS_VIEW_NAME
-    );
+    ));
 
     /** File writer thread name. */
     private static final String SYSTEM_VIEW_WRITER_THREAD_NAME = "performance-statistics-system-view-writer";
