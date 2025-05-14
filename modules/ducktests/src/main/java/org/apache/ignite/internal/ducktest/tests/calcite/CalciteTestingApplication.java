@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.ignite.internal.ducktest.tests.calcite;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,10 +33,14 @@ import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
-/** Tests sql queries for calcite engine */
+/**
+ * Tests sql queries for calcite engine
+ */
 public class CalciteTestingApplication extends IgniteAwareApplication {
 
-    /** */
+    /**
+     *
+     */
     private static class QueryTest {
         String query;
         List<Object> expectedResults;
@@ -48,7 +53,9 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     @Override
     public void run(JsonNode jsonNode) throws SQLException {
         markInitialized();
@@ -60,14 +67,18 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private void beforeTest(Connection conn) throws SQLException {
         conn.createStatement().execute("CREATE TABLE IF NOT EXISTS t(val INT)");
         conn.createStatement().execute("DELETE FROM t");
         conn.createStatement().execute("INSERT INTO t VALUES (1)");
     }
 
-    /** */
+    /**
+     *
+     */
     private void testQueries(Connection conn) throws SQLException {
         List<QueryTest> tests = new ArrayList<>();
 
@@ -295,8 +306,8 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         // XML
         tests.add(new QueryTest("SELECT EXTRACTVALUE('<a>b</a>', '//a') FROM t", "b"));
         tests.add(new QueryTest(
-                "SELECT XMLTRANSFORM('<a>b</a>','<?xml version=\"1.0\"?><xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">  <xsl:output method=\"text\"/>  <xsl:template match=\"/\">    a - <xsl:value-of select=\"/a\"/>  </xsl:template></xsl:stylesheet>') FROM t",
-                "    a - b"
+            "SELECT XMLTRANSFORM('<a>b</a>','<?xml version=\"1.0\"?><xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">  <xsl:output method=\"text\"/>  <xsl:template match=\"/\">    a - <xsl:value-of select=\"/a\"/>  </xsl:template></xsl:stylesheet>') FROM t",
+            "    a - b"
         ));
         tests.add(new QueryTest("SELECT \"EXTRACT\"('<a><b>c</b></a>', '/a/b') FROM t", "<b>c</b>"));
         tests.add(new QueryTest("SELECT EXISTSNODE('<a><b>c</b></a>', '/a/b') FROM t", 1));
@@ -318,15 +329,17 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
 
                 if (!compareResults(test.expectedResults, actualResults, test.expectedType)) {
                     String errorMsg = String.format(
-                            "Query failed: %s\nExpected: %s\nActual: %s",
-                            test.query, test.expectedResults, actualResults);
+                        "Query failed: %s\nExpected: %s\nActual: %s",
+                        test.query, test.expectedResults, actualResults);
                     throw new RuntimeException(errorMsg);
                 }
             }
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private boolean compareResults(List<Object> expected, List<Object> actual, Class<?> expectedType) {
         if (expected.size() != actual.size()) {
             return false;
@@ -336,14 +349,17 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
             Object exp = expected.get(i);
             Object act = actual.get(i);
 
-            if (exp == null && act == null) continue;
-            if (exp == null || act == null) return false;
+            if (exp == null && act == null)
+                continue;
+            if (exp == null || act == null)
+                return false;
 
             if (exp instanceof BigDecimal && act instanceof BigDecimal) {
                 if (((BigDecimal)exp).compareTo((BigDecimal)act) != 0) {
                     return false;
                 }
-            } else if (!exp.equals(act)) {
+            }
+            else if (!exp.equals(act)) {
                 return false;
             }
         }
