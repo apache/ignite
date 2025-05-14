@@ -547,32 +547,32 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         sql("CREATE TABLE t (id INT PRIMARY KEY, val1 DECIMAL(5, 3), val2 DECIMAL(3), val3 DECIMAL) WITH " + atomicity());
 
         // Check literals scale.
-//        sql("INSERT INTO t values (0, 0, 0, 0)");
+        sql("INSERT INTO t values (0, 0, 0, 0)");
         sql("INSERT INTO t values (1.1, 1.1, 1.1, 1.1)");
-//        sql("INSERT INTO t values (2.123, 2.123, 2.123, 2.123)");
-//        sql("INSERT INTO t values (3.123456, 3.123456, 3.123456, 3.123456)");
+        sql("INSERT INTO t values (2.123, 2.123, 2.123, 2.123)");
+        sql("INSERT INTO t values (3.123456, 3.123456, 3.123456, 3.123456)");
 
         // Check dynamic parameters scale.
         List<Number> params = F.asList(4, 5L, 6f, 7.25f, 8d, 9.03125d, new BigDecimal("10"),
             new BigDecimal("11.1"), new BigDecimal("12.123456"));
 
-//        for (Object val : params)
-//            sql("INSERT INTO t values (?, ?, ?, ?)", val, val, val, val);
+        for (Object val : params)
+            sql("INSERT INTO t values (?, ?, ?, ?)", val, val, val, val);
 
         assertQuery("SELECT * FROM t")
-//            .returns(0, new BigDecimal("0.000"), new BigDecimal("0"), new BigDecimal("0"))
+            .returns(0, new BigDecimal("0.000"), new BigDecimal("0"), new BigDecimal("0"))
             .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1.1"))
-//            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2.123"))
-//            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3.123456"))
-//            .returns(4, new BigDecimal("4.000"), new BigDecimal("4"), new BigDecimal("4"))
-//            .returns(5, new BigDecimal("5.000"), new BigDecimal("5"), new BigDecimal("5"))
-//            .returns(6, new BigDecimal("6.000"), new BigDecimal("6"), new BigDecimal("6"))
-//            .returns(7, new BigDecimal("7.250"), new BigDecimal("7"), new BigDecimal("7.25"))
-//            .returns(8, new BigDecimal("8.000"), new BigDecimal("8"), new BigDecimal("8"))
-//            .returns(9, new BigDecimal("9.031"), new BigDecimal("9"), new BigDecimal("9.03125"))
-//            .returns(10, new BigDecimal("10.000"), new BigDecimal("10"), new BigDecimal("10"))
-//            .returns(11, new BigDecimal("11.100"), new BigDecimal("11"), new BigDecimal("11.1"))
-//            .returns(12, new BigDecimal("12.123"), new BigDecimal("12"), new BigDecimal("12.123456"))
+            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2.123"))
+            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3.123456"))
+            .returns(4, new BigDecimal("4.000"), new BigDecimal("4"), new BigDecimal("4"))
+            .returns(5, new BigDecimal("5.000"), new BigDecimal("5"), new BigDecimal("5"))
+            .returns(6, new BigDecimal("6.000"), new BigDecimal("6"), new BigDecimal("6"))
+            .returns(7, new BigDecimal("7.250"), new BigDecimal("7"), new BigDecimal("7.25"))
+            .returns(8, new BigDecimal("8.000"), new BigDecimal("8"), new BigDecimal("8"))
+            .returns(9, new BigDecimal("9.031"), new BigDecimal("9"), new BigDecimal("9.03125"))
+            .returns(10, new BigDecimal("10.000"), new BigDecimal("10"), new BigDecimal("10"))
+            .returns(11, new BigDecimal("11.100"), new BigDecimal("11"), new BigDecimal("11.1"))
+            .returns(12, new BigDecimal("12.123"), new BigDecimal("12"), new BigDecimal("12.123456"))
             .check();
     }
 
