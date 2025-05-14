@@ -81,6 +81,15 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             log,
             () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
                 .setStoragePath(myPath.getAbsolutePath())
+                .setExtraStoragePathes(myPath2.getAbsolutePath(), myPath.getAbsolutePath()))),
+            IgniteCheckedException.class,
+            "Data storage configuration constains duplicates"
+        );
+
+        assertThrows(
+            log,
+            () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+                .setStoragePath(myPath.getAbsolutePath())
                 .setExtraStoragePathes(myPath2.getAbsolutePath(), myPath2.getAbsolutePath()))),
             IgniteCheckedException.class,
             "Data storage configuration constains duplicates"
@@ -129,34 +138,14 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 () -> srv.createCache(new CacheConfiguration<>("my-cache2").setGroupName("grp")),
                 IgniteCheckedException.class
             );
-        }
-    }
 
-    /** */
-    @Test
-    public void testDifferentStoragePathForGroupThrows2() throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setStoragePath(myPath.getAbsolutePath())
-            .setExtraStoragePathes(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
-
-        try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(dsCfg))) {
-            srv.cluster().state(ClusterState.ACTIVE);
-
-            srv.createCache(new CacheConfiguration<>("my-cache")
-                    .setStoragePath(myPath.getAbsolutePath())
-                .setGroupName("grp"));
-
-            assertThrowsWithCause(
-                () -> srv.createCache(new CacheConfiguration<>("my-cache2")
-                    .setGroupName("grp")
-                    .setStoragePath(myPath3.getAbsolutePath())),
-                IgniteCheckedException.class
-            );
+            srv.createCache(new CacheConfiguration<>("my-cache2")
+                .setGroupName("grp-2"));
 
             assertThrowsWithCause(
                 () -> srv.createCache(new CacheConfiguration<>("my-cache3")
-                    .setGroupName("grp")),
+                    .setGroupName("grp-2")
+                    .setStoragePath(myPath.getAbsolutePath())),
                 IgniteCheckedException.class
             );
         }

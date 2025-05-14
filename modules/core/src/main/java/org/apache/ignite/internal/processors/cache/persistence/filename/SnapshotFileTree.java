@@ -390,13 +390,13 @@ public class SnapshotFileTree extends NodeFileTree {
 
         Map<String, File> snpExtraStorages = new HashMap<>();
 
-        ft.extraStorages().forEach((cfgStoragePath, extraStorage) -> {
+        ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
             // In case we want to make snapshot in several folders the pathes will be the following:
             // {storage_path}/db/{folder_name} - node cache storage.
             // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
             snpExtraStorages.put(
                 cfgStoragePath,
-                new File(extraStorage.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
+                new File(storagePath.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
             );
         });
 
@@ -420,9 +420,9 @@ public class SnapshotFileTree extends NodeFileTree {
 
         // Iterating via snapshot extra storages,
         // because they may differ from the node one in case snapshot created using absolute path.
-        ft.extraStorages.forEach((cfgStoragePath, extraStorage) -> snpTmpExtraStorages.put(
+        ft.extraStorages.forEach((cfgStoragePath, storagePath) -> snpTmpExtraStorages.put(
             cfgStoragePath,
-            new File(extraStorage, Path.of(SNAPSHOT_TMP_DIR, name).toString())
+            new File(storagePath, Path.of(SNAPSHOT_TMP_DIR, name).toString())
         ));
 
         res.extraStorages.putAll(snpTmpExtraStorages);
