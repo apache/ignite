@@ -100,7 +100,7 @@ public class DataRegionRelativeStoragePathTest extends  AbstractDataRegionRelati
     }
 
     /** {@inheritDoc} */
-    @Override void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException {
+    @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
                 String storagePath = ccfg.getStoragePath();
