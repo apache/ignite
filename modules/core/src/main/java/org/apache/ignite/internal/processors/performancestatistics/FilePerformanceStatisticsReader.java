@@ -310,7 +310,7 @@ public class FilePerformanceStatisticsReader {
                 sysViewEntry = new SystemViewEntry(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
-                throw new IgniteException("Could not find walker: " + walkerName);
+                throw new IgniteException("Could not find walker: " + walkerName.str + ".");
             }
 
             return true;
