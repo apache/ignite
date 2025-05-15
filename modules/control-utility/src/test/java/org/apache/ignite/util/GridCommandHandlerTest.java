@@ -3408,9 +3408,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             logLsnr.check();
 
             assertNotContains(log, out, "Failed to perform operation");
-
             assertContains(log, out, "Snapshot create operation completed with warnings [name=testDsSnp");
-
             assertContains(log, out, "DataStreamer with property 'allowOverwrite' set to `false` was working " +
                 "during the snapshot creation");
 

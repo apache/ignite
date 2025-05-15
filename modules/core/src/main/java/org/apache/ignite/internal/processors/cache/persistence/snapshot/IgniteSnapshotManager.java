@@ -1347,10 +1347,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpReq.warnings());
 
                         SnapshotWarningException wrn = new SnapshotWarningException(
-                            "Snapshot create operation completed with warnings " +
-                                "[name=" + snpReq.snapshotName() +
-                                (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") +
-                                "]:" + wrnsLst);
+                            "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
+                                (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") + "]:" + wrnsLst);
 
                         clusterSnpFut.onDone(wrn);
 
