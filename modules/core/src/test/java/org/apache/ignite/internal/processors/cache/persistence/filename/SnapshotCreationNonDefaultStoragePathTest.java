@@ -19,11 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -78,7 +74,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     }
 
     /** {@inheritDoc} */
-    @Override void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException {
+    @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
                 String storagePath = STORAGE_PATH;

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
@@ -28,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,7 +83,6 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /**
      * @param name Snapshot name
      * @param path Snapshot path.
-     * @param fts Nodes file trees.
      */
     void restoreAndCheck(String name, String path) throws Exception {
         List<NodeFileTree> fts = IntStream.range(0, 3)
