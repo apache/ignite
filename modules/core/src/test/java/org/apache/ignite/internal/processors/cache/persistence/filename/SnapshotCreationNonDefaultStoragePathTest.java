@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,38 +30,22 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
-
 /**
  * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
-public class DataRegionRelativeStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
+public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
     /** */
-    public final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
-        ccfg("cache0", null, null),
-        ccfg("cache1", "grp1", null),
-        ccfg("cache2", "grp1", null),
-        ccfg("cache3", null, DR_WITH_DFLT_STORAGE),
-        ccfg("cache4", "grp2", DR_WITH_DFLT_STORAGE),
-        ccfg("cache5", null, DR_WITH_STORAGE),
-        ccfg("cache6", "grp3", DR_WITH_STORAGE),
-        ccfg("cache7", "grp3", DR_WITH_STORAGE)
+    private final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
+        ccfg("cache0", null, null)
     };
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH));
 
-        dsCfg.getDefaultDataRegionConfiguration().setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH)).setPersistenceEnabled(true);
-
-        dsCfg.setDataRegionConfigurations(
-            new DataRegionConfiguration().setName(DR_WITH_STORAGE)
-                .setStoragePath(storagePath(CUSTOM_STORAGE_PATH))
-                .setPersistenceEnabled(true),
-            new DataRegionConfiguration()
-                .setName(DR_WITH_DFLT_STORAGE)
-                .setPersistenceEnabled(true)
-        );
+        dsCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(true);
 
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(U.maskForFileName(igniteInstanceName))
@@ -77,23 +60,12 @@ public class DataRegionRelativeStoragePathTest extends AbstractDataRegionRelativ
 
     /** */
     @Test
-    public void testCaches() throws Exception {
-        startAndActivate();
+    public void testSnapshotCanBeCreated() throws Exception {
+        IgniteEx srv = startAndActivate();
 
         putData();
 
         checkDataExists();
-
-        stopAllGrids();
-
-        IgniteEx srv = startAndActivate();
-
-        checkDataExists();
-
-        List<NodeFileTree> fts = IntStream.range(0, 3)
-            .mapToObj(this::grid)
-            .map(ign -> ign.context().pdsFolderResolver().fileTree())
-            .collect(Collectors.toList());
 
         srv.snapshot().createSnapshot("mysnp").get();
 
@@ -101,44 +73,29 @@ public class DataRegionRelativeStoragePathTest extends AbstractDataRegionRelativ
 
         srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 
-        restoreAndCheck("mysnp", null, fts);
+        List<NodeFileTree> fts = IntStream.range(0, 3)
+            .mapToObj(this::grid)
+            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+            .collect(Collectors.toList());
 
+        restoreAndCheck("mysnp", null, fts);
         restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath(), fts);
     }
 
     /** {@inheritDoc} */
     @Override void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException {
         for (NodeFileTree ft : fts) {
-            boolean[] flags = new boolean[2];
-
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                File db;
+                String storagePath = DEFAULT_DR_STORAGE_PATH;
 
-                if (Objects.equals(ccfg.getDataRegionName(), DR_WITH_DFLT_STORAGE)) {
-                    db = ensureExists(new File(ft.root(), DB_DIR));
-
-                    flags[0] = true;
-                }
-                else {
-                    String storagePath = ccfg.getDataRegionName() == null ? DEFAULT_DR_STORAGE_PATH : CUSTOM_STORAGE_PATH;
-
-                    File customRoot = ensureExists(useAbsStoragePath
-                        ? new File(storagePath(storagePath))
-                        : new File(ft.root(), storagePath)
-                    );
-
-                    db = ensureExists(new File(customRoot, DB_DIR));
-
-                    flags[1] = true;
-                }
-
-                File nodeStorage = ensureExists(new File(db, ft.folderName()));
+                File customRoot = ensureExists(useAbsStoragePath
+                    ? new File(storagePath(storagePath))
+                    : new File(ft.root(), storagePath)
+                );
+                File nodeStorage = ensureExists(new File(customRoot, ft.folderName()));
 
                 ensureExists(new File(nodeStorage, ft.cacheStorage(ccfg).getName()));
             }
-
-            for (boolean flag : flags)
-                assertTrue(flag);
         }
     }
 }
