@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -60,48 +61,34 @@ public class UnnestIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testUnnestMultiCollection() {
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1], ARRAY[2])").returns(1, 2).check();
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1], ARRAY[2, 3])").returns(1, 2).returns(1, 3).check();
+        String errMsg = "Invalid number of arguments to function 'UNNEST'. Was expecting 1 arguments";
 
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ARRAY[4, 5])")
-            .returns(1, 4).returns(1, 5)
-            .returns(2, 4).returns(2, 5)
-            .returns(3, 4).returns(3, 5)
-            .check();
+        assertThrows("SELECT * FROM UNNEST(ARRAY[1], ARRAY[2])", IgniteSQLException.class, errMsg);
 
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ?)").withParams(F.asList(4, 5))
-            .returns(1, 4).returns(1, 5)
-            .returns(2, 4).returns(2, 5)
-            .returns(3, 4).returns(3, 5)
-            .check();
+        assertThrows("SELECT * FROM UNNEST(ARRAY[1, 2], ?)", IgniteSQLException.class, errMsg, F.asList(3));
 
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], MAP[4, 5, 6, 7])")
-            .returns(1, 4, 5).returns(1, 6, 7)
-            .returns(2, 4, 5).returns(2, 6, 7)
-            .returns(3, 4, 5).returns(3, 6, 7)
-            .check();
-
-        assertQuery("SELECT * FROM UNNEST(ARRAY[ROW(1, 2), ROW(3, 4)], MAP[5, 6, 7, 8], ARRAY[9, 10])")
-            .returns(1, 2, 5, 6, 9).returns(1, 2, 5, 6, 10)
-            .returns(1, 2, 7, 8, 9).returns(1, 2, 7, 8, 10)
-            .returns(3, 4, 5, 6, 9).returns(3, 4, 5, 6, 10)
-            .returns(3, 4, 7, 8, 9).returns(3, 4, 7, 8, 10)
-            .check();
+        assertThrows("SELECT * FROM UNNEST(MAP[4, 5], ARRAY[1, 2, 3])", IgniteSQLException.class, errMsg);
     }
 
     /** */
     @Test
-    public void testUnnestMultiLineMultiCollection() {
-        assertQuery("SELECT c, d FROM (VALUES (ARRAY[1, 2], ARRAY[3, 4]), (ARRAY[5, 6], ARRAY[7])) v(a, b), " +
-            "UNNEST(v.a, v.b) u(c, d)")
-            .returns(1, 3).returns(1, 4).returns(2, 3).returns(2, 4)
-            .returns(5, 7).returns(6, 7)
+    public void testUnnestWrongArgumentType() {
+        String errMsg = "Cannot apply 'UNNEST' to arguments of type 'UNNEST(<INTEGER>)'";
+
+        assertThrows("SELECT * FROM UNNEST(1)", IgniteSQLException.class, errMsg);
+
+        assertThrows("SELECT * FROM UNNEST(?)", IgniteSQLException.class, errMsg, 1);
+    }
+
+    /** */
+    @Test
+    public void testUnnestMultiLine() {
+        assertQuery("SELECT b FROM (VALUES (ARRAY[1, 2]), (ARRAY[3, 4])) v(a), UNNEST(v.a) u(b)")
+            .returns(1).returns(2).returns(3).returns(4)
             .check();
 
-        assertQuery("SELECT c, d, e FROM (VALUES (MAP[1, 2, 3, 4], ARRAY[5, 6]), (MAP[7, 8, 9, 10], ARRAY[11])) v(a, b), " +
-            "UNNEST(v.a, v.b) u(c, d, e)")
-            .returns(1, 2, 5).returns(1, 2, 6).returns(3, 4, 5).returns(3, 4, 6)
-            .returns(7, 8, 11).returns(9, 10, 11)
+        assertQuery("SELECT b, c FROM (VALUES (MAP[1, 2, 3, 4]), (MAP[5, 6, 7, 8])) v(a), UNNEST(v.a) u(b, c)")
+            .returns(1, 2).returns(3, 4).returns(5, 6).returns(7, 8)
             .check();
     }
 
@@ -111,46 +98,25 @@ public class UnnestIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT * FROM UNNEST(SELECT ARRAY_AGG(a) FROM (VALUES (1)) t(a) WHERE a = 0)")
             .resultSize(0).check();
 
-        assertQuery("SELECT * FROM (SELECT ARRAY_AGG(a) a FROM (VALUES (1)) t(a) WHERE a = 0) T, " +
-            "UNNEST(T.a, ARRAY[1, 2, 3])")
-            .resultSize(0).check();
-
-        assertQuery("SELECT * FROM (SELECT ARRAY_AGG(a) a FROM (VALUES (1)) t(a) WHERE a = 0) T, " +
-            "UNNEST(T.a, MAP[1, 2])")
-            .resultSize(0).check();
-
         assertQuery("SELECT * FROM UNNEST(?)")
-            .withParams(Collections.emptyList()).resultSize(0).check();
-
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ?)")
-            .withParams(Collections.emptyList()).resultSize(0).check();
-
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ?)")
-            .withParams(Collections.emptyMap()).resultSize(0).check();
-
-        assertQuery("SELECT * FROM UNNEST(ARRAY[ROW(1, 2), ROW(3, 4)], MAP[1, 2], ?)")
             .withParams(Collections.emptyList()).resultSize(0).check();
     }
 
     /** */
     @Test
     public void testUnnestWithOrdinality() {
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ARRAY[4, 5]) WITH ORDINALITY")
-            .returns(1, 4, 1).returns(1, 5, 2)
-            .returns(2, 4, 3).returns(2, 5, 4)
-            .returns(3, 4, 5).returns(3, 5, 6)
+        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3]) WITH ORDINALITY")
+            .returns(1, 1).returns(2, 2).returns(3, 3)
             .check();
 
-        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2, 3], MAP[4, 5, 6, 7]) WITH ORDINALITY")
-            .returns(1, 4, 5, 1).returns(1, 6, 7, 2)
-            .returns(2, 4, 5, 3).returns(2, 6, 7, 4)
-            .returns(3, 4, 5, 5).returns(3, 6, 7, 6)
+        assertQuery("SELECT * FROM UNNEST(MAP[1, 2, 3, 4]) WITH ORDINALITY")
+            .returns(1, 2, 1).returns(3, 4, 2)
             .check();
 
-        assertQuery("SELECT c, d, e FROM (VALUES (ARRAY[1, 2], ARRAY[3, 4]), (ARRAY[5, 6], ARRAY[7])) v(a, b), " +
-            "UNNEST(v.a, v.b) WITH ORDINALITY u(c, d, e)")
-            .returns(1, 3, 1).returns(1, 4, 2).returns(2, 3, 3).returns(2, 4, 4)
-            .returns(5, 7, 1).returns(6, 7, 2)
+        assertQuery("SELECT b, c FROM (VALUES (ARRAY[1, 2]), (ARRAY[3, 4, 5])) v(a), " +
+            "UNNEST(v.a) WITH ORDINALITY u(b, c)")
+            .returns(1, 1).returns(2, 2)
+            .returns(3, 1).returns(4, 2).returns(5, 3)
             .check();
     }
 

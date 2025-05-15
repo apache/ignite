@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.calcite.rel.type.RelDataType;
@@ -31,8 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Uncollect node produces flat product of collections for each input row.
- * For example, input row ({1, 2}, {3, 4}) produces rows: (1, 3), (1, 4), (2, 3), (2, 4).
+ * Uncollect node produces rows for items in input row collection.
  */
 public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
@@ -154,13 +152,13 @@ public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<
 
     /** */
     private Function<Row, Iterator<Row>> iteratorFactory(RelDataType inType, boolean withOrdinality) {
-        return new FlatProductIteratorFactory(inType, withOrdinality);
+        return new IteratorFactory(inType, withOrdinality);
     }
 
     /** */
-    private class FlatProductIteratorFactory implements Function<Row, Iterator<Row>> {
+    private class IteratorFactory implements Function<Row, Iterator<Row>> {
         /** */
-        private final Function<Object[], Row> rowFactory;
+        private final Function<Object, Row> rowFactory;
 
         /**
          * We use only one iterator at time, so following objects below can be shared between different iterators to
@@ -168,51 +166,37 @@ public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<
          */
         private final AtomicInteger ordinality = new AtomicInteger();
 
-        /** Iterators for each field of input row. */
-        private final Iterator<?>[] iters;
-
-        /** Current iterator values for each field of input row. */
-        private final Object[] curRow;
-
-        /** Input row. */
-        private Row inRow;
-
-        /** Next output row. */
-        private Row outRow;
-
         /** */
-        public FlatProductIteratorFactory(RelDataType inType, boolean withOrdinality) {
+        public IteratorFactory(RelDataType inType, boolean withOrdinality) {
             RowHandler<Row> rowHnd = context().rowHandler();
 
             int outFldCnt = rowType().getFieldCount();
             int inFldCnt = inType.getFieldCount();
 
-            Function<Object[], Object>[] fldFactories = (Function<Object[], Object>[])new Function[outFldCnt];
+            assert inFldCnt == 1;
+
+            Function<Object, Object>[] fldFactories = (Function<Object, Object>[])new Function[outFldCnt];
 
             int outFldIdx = 0;
 
-            for (int inFldIdx = 0; inFldIdx < inFldCnt; inFldIdx++) {
-                RelDataType inFieldType = inType.getFieldList().get(inFldIdx).getType();
+            RelDataType inFieldType = inType.getFieldList().get(0).getType();
 
-                final int inFldIdx0 = inFldIdx;
+            if (inFieldType instanceof MapSqlType) {
+                fldFactories[outFldIdx++] = row -> ((Map.Entry<Object, Object>)row).getKey();
+                fldFactories[outFldIdx++] = row -> ((Map.Entry<Object, Object>)row).getValue();
+            }
+            else {
+                RelDataType elementType = inFieldType.getComponentType();
 
-                if (inFieldType instanceof MapSqlType) {
-                    fldFactories[outFldIdx++] = row -> ((Map.Entry<Object, Object>)row[inFldIdx0]).getKey();
-                    fldFactories[outFldIdx++] = row -> ((Map.Entry<Object, Object>)row[inFldIdx0]).getValue();
-                }
-                else {
-                    RelDataType elementType = inFieldType.getComponentType();
+                if (elementType.isStruct()) {
+                    for (int elementFldIdx = 0; elementFldIdx < elementType.getFieldCount(); elementFldIdx++) {
+                        final int elementFldIdx0 = elementFldIdx;
 
-                    if (elementType.isStruct()) {
-                        for (int elementFldIdx = 0; elementFldIdx < elementType.getFieldCount(); elementFldIdx++) {
-                            final int elementFldIdx0 = elementFldIdx;
-
-                            fldFactories[outFldIdx++] = row -> rowHnd.get(elementFldIdx0, (Row)(row[inFldIdx0]));
-                        }
+                        fldFactories[outFldIdx++] = row -> rowHnd.get(elementFldIdx0, (Row)(row));
                     }
-                    else
-                        fldFactories[outFldIdx++] = row -> row[inFldIdx0];
                 }
+                else
+                    fldFactories[outFldIdx++] = row -> row;
             }
 
             if (withOrdinality)
@@ -223,17 +207,14 @@ public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<
 
             RowHandler.RowFactory<Row> outRowFactory = rowHnd.factory(context().getTypeFactory(), rowType());
 
-            rowFactory = inRow -> {
+            rowFactory = inVal -> {
                 Object[] outRow = new Object[outFldCnt];
 
                 for (int fldIdx = 0; fldIdx < outFldCnt; fldIdx++)
-                    outRow[fldIdx] = fldFactories[fldIdx].apply(inRow);
+                    outRow[fldIdx] = fldFactories[fldIdx].apply(inVal);
 
                 return outRowFactory.create(outRow);
             };
-
-            iters = (Iterator<?>[])new Iterator[inFldCnt];
-            curRow = new Object[inFldCnt];
         }
 
         /** {@inheritDoc} */
@@ -241,64 +222,10 @@ public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<
             ordinality.set(0);
 
             RowHandler<Row> rowHnd = context().rowHandler();
-            int colCnt = rowHnd.columnCount(row);
 
-            inRow = row;
+            Iterator<Object> iter = iterator(rowHnd.get(0, row));
 
-            for (int i = 0; i < colCnt; i++) {
-                iters[i] = iterator(rowHnd.get(i, row));
-
-                if (!iters[i].hasNext())
-                    return Collections.emptyIterator();
-
-                curRow[i] = iters[i].next();
-            }
-
-            outRow = rowFactory.apply(curRow);
-
-            return new Iterator<Row>() {
-                @Override public boolean hasNext() {
-                    return outRow != null;
-                }
-
-                @Override public Row next() {
-                    Row res = outRow;
-
-                    if (res == null)
-                        throw new NoSuchElementException();
-
-                    advance();
-
-                    return res;
-                }
-            };
-        }
-
-        /** */
-        private void advance() {
-            RowHandler<Row> rowHnd = context().rowHandler();
-
-            for (int i = iters.length - 1; i >= 0; i--) {
-                if (iters[i].hasNext()) {
-                    curRow[i] = iters[i].next();
-
-                    break;
-                }
-                else if (i == 0) {
-                    outRow = null;
-
-                    return;
-                }
-                else {
-                    iters[i] = iterator(rowHnd.get(i, inRow));
-
-                    assert iters[i].hasNext();
-
-                    curRow[i] = iters[i].next();
-                }
-            }
-
-            outRow = rowFactory.apply(curRow);
+            return F.iterator(iter, rowFactory::apply, true);
         }
 
         /** */

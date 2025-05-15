@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -36,55 +38,41 @@ import org.junit.Test;
  */
 public class UncollectExecutionTest extends AbstractExecutionTest {
     /** */
-    @SuppressWarnings("unchecked")
     @Test
-    public void testInputSizes() {
+    public void testCollectionSizes() {
         for (boolean withOrdinality : new boolean[] {false, true}) {
-            for (int colCnt : new int[] {1, 2, 3}) {
-                int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
-                    IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
+            int rows = 100;
 
-                Function<Integer, Object>[] funcs = new Function[colCnt];
+            int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
+                IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
 
-                for (int i = 0; i < colCnt; i++) {
-                    int mul = 2 << i;
-                    funcs[i] = row -> F.asList(mul * row, mul * row + 1);
+            for (int size : sizes) {
+                log.info("Check: size=" + size + ", withOrdinality=" + withOrdinality);
+
+                Function<Integer, Object> func = row -> IntStream.range(0, size).boxed().collect(Collectors.toList());
+
+                RootRewindable<Object[]> root = createNodes(withOrdinality, new TestTable(rows, 1, func));
+
+                long[] colsSum = new long[withOrdinality ? 2 : 1];
+                int cnt = 0;
+
+                while (root.hasNext()) {
+                    cnt++;
+                    Object[] row = root.next();
+
+                    for (int i = 0; i < row.length; i++)
+                        colsSum[i] += (int)row[i];
                 }
 
-                for (int size : sizes) {
-                    log.info("Check: size=" + size + ", colCnt=" + colCnt + ", withOrdinality=" + withOrdinality);
+                assertEquals(size * rows, cnt);
 
-                    RootRewindable<Object[]> root = createNodes(colCnt, withOrdinality, new TestTable(size, colCnt, funcs));
+                // Expected value of unnested column = rows * sum(0 .. size - 1)
+                assertEquals("Unexpected sum: size=" + size, (long)size * (size - 1) / 2 * rows, colsSum[0]);
 
-                    long[] colsSum = new long[withOrdinality ? colCnt + 1 : colCnt];
-                    int cnt = 0;
+                if (withOrdinality) // Expected value of ordinality column = rows * sum(1 .. size)
+                    assertEquals("Unexpected ordinality: size=" + size, (long)size * (size + 1) / 2 * rows, colsSum[1]);
 
-                    while (root.hasNext()) {
-                        cnt++;
-                        Object[] row = root.next();
-
-                        for (int i = 0; i < row.length; i++)
-                            colsSum[i] += (int)row[i];
-                    }
-
-                    assertEquals(size * (1 << colCnt), cnt);
-
-                    for (int i = 0; i < colCnt; i++) {
-                        long uniqSumByCol = (size * (size - 1L) * (2L << i) + size);
-                        long repeatCnt = (1L << (colCnt - 1));
-                        long expSum = uniqSumByCol * repeatCnt;
-
-                        assertEquals("Unexpected sum: size=" + size + ", colCnt=" + colCnt +
-                            ", withOrdinality=" + withOrdinality + ", i=" + i, expSum, colsSum[i]);
-                    }
-
-                    long ordSum[] = {1, 3, 10, 36}; // sum(1 .. (1 << colCnt))
-
-                    if (withOrdinality)
-                        assertEquals(size * ordSum[colCnt], colsSum[colCnt]);
-
-                    root.closeRewindableRoot();
-                }
+                root.closeRewindableRoot();
             }
         }
     }
@@ -93,64 +81,45 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
     @Test
     public void testExactResult() {
         checkExactResult(
-            2,
             false,
             F.asList(
-                row(F.asList(1, 2), F.asList(3, 4)),
-                row(F.asList(1), F.asList(2, 3))
+                row(F.asList(1, 2)),
+                row(F.asList(1))
             ),
             F.asList(
-                row(1, 3), row(1, 4),
-                row(2, 3), row(2, 4),
-                row(1, 2), row(1, 3)
+                row(1), row(2), row(1)
             )
         );
 
         checkExactResult(
-            2,
             true,
             F.asList(
-                row(F.asList(1, 2), F.asList(3, 4)),
-                row(F.asList(1), F.asList(2, 3))
+                row(F.asList(1, 2)),
+                row(F.asList(3, 4, 5)),
+                row(F.asList(6, 7))
             ),
             F.asList(
-                row(1, 3, 1), row(1, 4, 2),
-                row(2, 3, 3), row(2, 4, 4),
-                row(1, 2, 1), row(1, 3, 2)
+                row(1, 1), row(2, 2),
+                row(3, 1), row(4, 2), row(5, 3),
+                row(6, 1), row(7, 2)
             )
         );
 
         checkExactResult(
-            2,
             true,
             F.asList(
-                row(F.asList(1, 2), Collections.emptyList()),
-                row(Collections.emptyList(), F.asList(1, 2))
-            ),
-            Collections.emptyList()
-        );
-
-        checkExactResult(
-            3,
-            true,
-            F.asList(
-                row(F.asList(1, 2), F.asList(3, 4), F.asList(5, 6, 7)),
-                row(F.asList(1), F.asList(2, 3), F.asList(4, 5, 6))
+                row(F.asList(1, 2)),
+                row(Collections.emptyList())
             ),
             F.asList(
-                row(1, 3, 5, 1), row(1, 3, 6, 2), row(1, 3, 7, 3),
-                row(1, 4, 5, 4), row(1, 4, 6, 5), row(1, 4, 7, 6),
-                row(2, 3, 5, 7), row(2, 3, 6, 8), row(2, 3, 7, 9),
-                row(2, 4, 5, 10), row(2, 4, 6, 11), row(2, 4, 7, 12),
-                row(1, 2, 4, 1), row(1, 2, 5, 2), row(1, 2, 6, 3),
-                row(1, 3, 4, 4), row(1, 3, 5, 5), row(1, 3, 6, 6)
+                row(1, 1), row(2, 2)
             )
         );
     }
 
     /** */
-    private void checkExactResult(int colCnt, boolean withOrdinality, List<Object[]> dataSrc, List<Object[]> expRes) {
-        RootRewindable<Object[]> root = createNodes(colCnt, withOrdinality, dataSrc);
+    private void checkExactResult(boolean withOrdinality, List<Object[]> dataSrc, List<Object[]> expRes) {
+        RootRewindable<Object[]> root = createNodes(withOrdinality, dataSrc);
 
         List<Object[]> res = new ArrayList<>();
 
@@ -166,14 +135,13 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    private RootRewindable<Object[]> createNodes(int colCnt, boolean withOrdinality, Iterable<Object[]> dataSrc) {
+    private RootRewindable<Object[]> createNodes(boolean withOrdinality, Iterable<Object[]> dataSrc) {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
 
-        RelDataType[] inCols = new RelDataType[colCnt];
-        RelDataType[] outCols = new RelDataType[withOrdinality ? colCnt + 1 : colCnt];
+        RelDataType[] inCols = new RelDataType[] {tf.createArrayType(tf.createSqlType(SqlTypeName.INTEGER), -1)};
+        RelDataType[] outCols = new RelDataType[withOrdinality ? 2 : 1];
 
-        Arrays.fill(inCols, tf.createArrayType(tf.createSqlType(SqlTypeName.INTEGER), -1));
         Arrays.fill(outCols, tf.createSqlType(SqlTypeName.INTEGER));
 
         RelDataType inType = TypeUtils.createRowType(tf, inCols);
