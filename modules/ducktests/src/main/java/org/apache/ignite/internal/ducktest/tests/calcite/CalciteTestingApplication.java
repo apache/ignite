@@ -35,13 +35,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Tests sql queries for calcite engine
+ * Calcite engine tests
  */
 public class CalciteTestingApplication extends IgniteAwareApplication {
 
-    /**
-     *
-     */
+    /** */
     private static class QueryTest {
         /**
          * Query.
@@ -67,31 +65,23 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         }
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws SQLException {
         markInitialized();
 
         try (Connection conn = thinJdbcDataSource.getConnection()) {
-            beforeTest(conn);
+
+            conn.createStatement().execute("CREATE TABLE IF NOT EXISTS t(val INT)");
+            conn.createStatement().execute("DELETE FROM t");
+            conn.createStatement().execute("INSERT INTO t VALUES (1)");
+
             testQueries(conn);
+
             markFinished();
         }
     }
 
-    /**
-     *
-     */
-    private void beforeTest(Connection conn) throws SQLException {
-        conn.createStatement().execute("CREATE TABLE IF NOT EXISTS t(val INT)");
-        conn.createStatement().execute("DELETE FROM t");
-        conn.createStatement().execute("INSERT INTO t VALUES (1)");
-    }
-
-    /**
-     *
-     */
+    /** */
     private void testQueries(Connection conn) throws SQLException {
         List<QueryTest> tests = new ArrayList<>();
 
@@ -331,17 +321,21 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
                  ResultSet rs = stmt.executeQuery()) {
 
                 List<Object> actualResults = new ArrayList<>();
-                ResultSetMetaData meta = rs.getMetaData();
-                int colCnt = meta.getColumnCount();
 
-                while (rs.next()) {
-                    for (int i = 1; i <= colCnt; i++)
-                        actualResults.add(rs.getObject(i));
-                }
+                int colCnt = rs.getMetaData().getColumnCount();
+
+                if (test.expectedResults.get(list.size() - 1)) == null
+                    actualResults.add(null)
+
+                else:
+                    while (rs.next()) {
+                        for (int i = 1; i <= colCnt; i++)
+                            actualResults.add(rs.getObject(i));
+                    }
 
                 if (!Objects.equals(test.expectedResults, actualResults)) {
                     String errorMsg = String.format(
-                        "Query failed: %s\nExpected: %s\nActual: %s",
+                        "Query failed: %s Expected: %s Actual: %s",
                         test.qry, test.expectedResults, actualResults);
                     throw new RuntimeException(errorMsg);
                 }
