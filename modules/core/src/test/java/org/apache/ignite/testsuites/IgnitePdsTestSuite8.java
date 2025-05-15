@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.DataRegionRelativeStoragePathTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotCreationNonDefaultStoragePathTest;
 import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategySelfTest;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -111,6 +112,7 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, ConnectionEnabledPropertyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointRecoveryTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataRegionRelativeStoragePathTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SnapshotCreationNonDefaultStoragePathTest.class, ignoredTests);
 
         return suite;
     }
