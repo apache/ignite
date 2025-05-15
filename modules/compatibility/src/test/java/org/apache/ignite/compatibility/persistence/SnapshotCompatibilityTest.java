@@ -20,7 +20,6 @@ package org.apache.ignite.compatibility.persistence;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +29,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ConfigurationClosure;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -44,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -54,6 +51,7 @@ import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.
 import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CreateSnapshotClosure;
 import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ENTRIES_CNT_FOR_INCREMENT;
 import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED;
+import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.OLD_IGNITE_VERSION;
 import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.SNAPSHOT_NAME;
 import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.calcValue;
 import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.snpDir;
@@ -63,15 +61,6 @@ import static org.junit.Assume.assumeTrue;
 /** */
 @RunWith(Parameterized.class)
 public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
-    /** */
-    private static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
-        .max(Comparator.comparing(IgniteReleasedVersion::version))
-        .map(IgniteReleasedVersion::toString)
-        .orElseThrow(() -> new IllegalStateException("Enum is empty"));
-
-    /** */
-    private static final String CUSTOM_SNP_RELATIVE_PATH = "ex_snapshots";
-
     /** */
     @Parameterized.Parameter
     public boolean incSnp;
@@ -113,9 +102,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
     }
 
     /** */
-    @Before
-    public void setUp() {
-        core = new CompatibilityTestCore(customConsId, customSnpPath, testCacheGrp);
+    @Override public void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
@@ -129,36 +121,31 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             assumeTrue("https://issues.apache.org/jira/browse/IGNITE-25096", oldNodesCnt == 1);
         }
 
-        try {
-            for (int i = 1; i <= oldNodesCnt; ++i) {
-                startGrid(
-                    i,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, core.consId(i), customSnpPath, true, core.cacheGrpInfo()),
-                    i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, core.cacheGrpInfo()) : null
-                );
-            }
+        core = new CompatibilityTestCore(customConsId, customSnpPath, testCacheGrp);
 
-            stopAllGrids();
-
-            cleanPersistenceDir(true);
-
-            IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, core.consId(1), customSnpPath));
-
-            node.cluster().state(ClusterState.ACTIVE);
-
-            if (cacheDump)
-                checkCacheDump(node);
-            else if (incSnp)
-                checkIncrementalSnapshot(node);
-            else
-                checkSnapshot(node);
+        for (int i = 1; i <= oldNodesCnt; ++i) {
+            startGrid(
+                i,
+                OLD_IGNITE_VERSION,
+                new ConfigurationClosure(incSnp, core.consId(i), customSnpPath, true, core.cacheGrpInfo()),
+                i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, core.cacheGrpInfo()) : null
+            );
         }
-        finally {
-            stopAllGrids();
 
-            cleanPersistenceDir();
-        }
+        stopAllGrids();
+
+        cleanPersistenceDir(true);
+
+        IgniteEx node = startGrid(currentIgniteConfiguration(incSnp, core.consId(1), customSnpPath));
+
+        node.cluster().state(ClusterState.ACTIVE);
+
+        if (cacheDump)
+            checkCacheDump(node);
+        else if (incSnp)
+            checkIncrementalSnapshot(node);
+        else
+            checkSnapshot(node);
     }
 
     /** */
@@ -217,7 +204,7 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
                     Integer key = (Integer)de.key();
                     String val = (String)de.value();
 
-                    for (String cacheName : core.cacheGrpInfo().cacheNamesList()) {
+                    for (String cacheName : core.cacheGrpInfo().cacheNames()) {
                         if (val.startsWith(cacheName)) {
                             assertEquals(calcValue(cacheName, key), val);
 
@@ -241,12 +228,12 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
             consumer
         ), log).run();
 
-        core.cacheGrpInfo().cacheNamesList().forEach(
+        core.cacheGrpInfo().cacheNames().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName))
         );
 
-        assertTrue(core.cacheGrpInfo().cacheNamesList().containsAll(foundCacheNames));
-        assertEquals(core.cacheGrpInfo().cacheNamesList().size(), foundCacheNames.size());
+        assertTrue(core.cacheGrpInfo().cacheNames().containsAll(foundCacheNames));
+        assertEquals(core.cacheGrpInfo().cacheNames().size(), foundCacheNames.size());
     }
 
     /** */

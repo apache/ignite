@@ -41,10 +41,10 @@ import static org.junit.Assert.assertNotNull;
 /** */
 public class CompatibilityTestCore {
     /** */
-    public static final String OLD_IGNITE_VERSION = Arrays.stream(IgniteReleasedVersion.values())
-        .max(Comparator.comparing(IgniteReleasedVersion::version))
-        .map(IgniteReleasedVersion::toString)
-        .orElseThrow(() -> new IllegalStateException("Enum is empty"));
+    public static final String OLD_IGNITE_VERSION = Collections.max(
+        Arrays.asList(IgniteReleasedVersion.values()),
+        Comparator.comparing(IgniteReleasedVersion::version)
+    ).toString();
 
     /** */
     public static final String SNAPSHOT_NAME = "test_snapshot";
@@ -84,22 +84,22 @@ public class CompatibilityTestCore {
     }
 
     /** */
-    protected static String calcValue(String cacheName, int key) {
+    public static String calcValue(String cacheName, int key) {
         return cacheName + "-organization-" + key;
     }
 
     /** */
-    protected static String snpDir(boolean customSnpPath, String workDirPath, boolean delIfExist) throws IgniteCheckedException {
+    public static String snpDir(boolean customSnpPath, String workDirPath, boolean delIfExist) throws IgniteCheckedException {
         return U.resolveWorkDirectory(workDirPath, customSnpPath ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
     }
 
     /** */
-    protected String consId(int nodeIdx) {
+    public String consId(int nodeIdx) {
         return customConsId ? "node-" + nodeIdx : null;
     }
 
     /** */
-    protected String snpPath(String workDirPath, String snpName, boolean delIfExist) throws IgniteCheckedException {
+    public String snpPath(String workDirPath, String snpName, boolean delIfExist) throws IgniteCheckedException {
         return Paths.get(snpDir(customSnpPath, workDirPath, delIfExist), snpName).toString();
     }
 
@@ -171,7 +171,7 @@ public class CompatibilityTestCore {
 
             if (delIfExist) {
                 cfg.setCacheConfiguration(
-                    cacheGrpInfo.cacheNamesList().stream()
+                    cacheGrpInfo.cacheNames().stream()
                         .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
                             .setGroupName(cacheGrpInfo.name())
                             .setAffinity(new RendezvousAffinityFunction(false, 10))
@@ -252,7 +252,7 @@ public class CompatibilityTestCore {
         }
 
         /** */
-        public List<String> cacheNamesList() {
+        public List<String> cacheNames() {
             return cacheNames;
         }
 

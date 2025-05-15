@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ConfigurationClosure;
@@ -35,7 +36,6 @@ import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityA
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,9 +90,6 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
     public int nodesCnt;
 
     /** */
-    private CompatibilityTestCore core;
-
-    /** */
     @Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, nodesCnt={5}")
     public static Collection<Object[]> data() {
         return GridTestUtils.cartesianProduct(
@@ -106,16 +103,20 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
     }
 
     /** */
-    @Before
-    public void setUp() throws Exception {
-        core = new CompatibilityTestCore(customConsId, customSnpPath, testCacheGrp);
+    @Override public void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir(false);
     }
 
     /** */
     @Test
     public void testNodeFileTree() throws Exception {
-        if (incSnp)
-            assumeFalse(CompatibilityTestCore.INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED, cacheDump);
+        assumeFalse(CompatibilityTestCore.INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED, incSnp && cacheDump);
+
+        CompatibilityTestCore core = new CompatibilityTestCore(customConsId, customSnpPath, testCacheGrp);
 
         final String oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
 
@@ -160,10 +161,6 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
             }
         }
         finally {
-            stopAllGrids();
-
-            cleanPersistenceDir(false);
-
             FileUtils.deleteDirectory(new File(oldWorkDir));
         }
     }
@@ -184,22 +181,17 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
         File dbDir = new File(rootPath, "db");
 
         for (File child : dbDir.listFiles()) {
-            if (child.getName().startsWith("node") && !"cache-ignite-sys-cache".equals(child.getName())) {
+            if (child.getName().startsWith("node")) {
                 List<CacheGrpScanResult> cacheGrpScans = scanNode(child, partSuffix);
 
-                for (CacheGrpScanResult cacheGrpScan : cacheGrpScans) {
-                    res.merge(
-                        cacheGrpScan.cacheGrpName(),
-                        cacheGrpScan,
-                        (to, from) -> {
-                            to.cacheNames().addAll(from.cacheNames());
+                BiFunction<CacheGrpScanResult, CacheGrpScanResult, CacheGrpScanResult> mergeScans = (to, from) -> {
+                    to.cacheNames().addAll(from.cacheNames());
+                    to.partNames().addAll(from.partNames());
 
-                            to.partNames().addAll(from.partNames());
+                    return to;
+                };
 
-                            return to;
-                        }
-                    );
-                }
+                cacheGrpScans.forEach(scan -> res.merge(scan.cacheGrpName(), scan, mergeScans));
             }
         }
 
