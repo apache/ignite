@@ -80,6 +80,7 @@ form(novalidate name=form)
                 on-scale-change='scale = $event'
             )
                 +form-field__error({ error: 'min', message: `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).` })
+        .pc-form-grid__break
         .pc-form-grid-col-120
             .ignite-form-field
                 list-editable.pcb-caches-list(

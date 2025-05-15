@@ -4,9 +4,10 @@
 
         .pc-form-grid-col-30
             +form-field__text({
-                label: 'Jndi Name:',
-                model: `${model}.jndiName`,
-                name: '"jndiName"',
+                label: 'Cluster Name:',
+                model: `${model}.name`,
+                readOnly: true,
+                name: '"name"',
                 placeholder: ''
             })
 
@@ -29,8 +30,8 @@
         .pc-form-grid-col-30
             +form-field__text({
                 label: 'Mongo Admin URL:',
-                model: `${model}.jdbcProp.web_url`,
-                name: '"jdbcProp.web_url"',                        
+                model: `${model}.crudui_web_url`,
+                name: '"crudui_web_url"',                        
                 placeholder: 'http://'
             })         
             

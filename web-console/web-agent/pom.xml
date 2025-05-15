@@ -109,9 +109,15 @@
             <version>${web-console.ignite.version}</version>
         </dependency>         
         
-       <dependency>
+        <dependency>
 	      <groupId>org.apache.ignite.console.agent</groupId>
 	      <artifactId>DBMetadata-core</artifactId>
+	      <version>0.2.2</version>
+	    </dependency> 
+	    
+	    <dependency>
+	      <groupId>org.apache.ignite.console.agent</groupId>
+	      <artifactId>DBMetadata-generator</artifactId>
 	      <version>0.2.2</version>
 	    </dependency>   
         
@@ -186,6 +192,15 @@
         </testResources>
 
         <plugins>
+        
+	        <plugin>
+			  <artifactId>maven-compiler-plugin</artifactId>
+			  <configuration>
+			    <compilerArgs>
+			      <arg>-parameters</arg>
+			    </compilerArgs>
+			  </configuration>
+			</plugin>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>

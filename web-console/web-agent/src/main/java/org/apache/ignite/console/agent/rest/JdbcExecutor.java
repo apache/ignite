@@ -156,7 +156,7 @@ public class JdbcExecutor implements AutoCloseable {
                 	ServiceResult r = langflowClient.call(endpoint,params);
                 	if(r.getStatus().equals("200")) {
                 		try {
-        		    		JsonArray outputs = r.getResult().getJsonArray("outputs").getJsonObject(0).getJsonArray("outputs");
+                			JsonArray outputs = (JsonArray)r.getResult().get("outputs");
         		    		for(int k=0;k<outputs.size();k++) {
         			    		String sql = outputs.getJsonObject(k).getJsonObject("results").getJsonObject("message").getString("text");
         						list.add(sql);

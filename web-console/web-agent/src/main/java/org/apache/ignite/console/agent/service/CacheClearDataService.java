@@ -7,13 +7,11 @@ import java.util.Map;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceContext;
 
 import io.swagger.annotations.ApiOperation;
-import io.vertx.core.json.JsonObject;
+
 
 
 @ApiOperation("Clear cache data to cluster")
@@ -24,29 +22,23 @@ public class CacheClearDataService implements CacheAgentService {
     private Ignite ignite;
     
 	@Override
-	public ServiceResult call(Map<String,Object> payload) {
+	public ServiceResult call(String cache,Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
 		int count = 0;		
-		JsonObject args = new JsonObject(payload);	
-		List<String> message = result.messages;	
-		List<String> caches = cacheNameSelectList(ignite,args);
-		for(String cache: caches) {
-			try {
-				IgniteCache<?,?> igcache = ignite.cache(cache);
-					
-				igcache.withSkipStore().clear();
-				count++;
-			}
-			catch(Exception e) {
-				message.add(e.getMessage());
-			}
-		}
-		if(message.isEmpty()) {
-			message.add("Finish clear data successfull!");
-		}
 		
-		result.put("caches", caches);
-		result.put("count", count);
+		List<String> message = result.getMessages();
+		
+		try {
+			IgniteCache<?,?> igcache = ignite.cache(cache);
+			count = igcache.size(CachePeekMode.ALL);
+			igcache.withSkipStore().clear();
+			
+		}
+		catch(Exception e) {
+			result.setAcknowledged(false);
+			message.add(e.getMessage());
+		}
+		result.put("deletedCount", count);
 		return result;
 	}
 

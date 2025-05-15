@@ -27,7 +27,6 @@ import {registerStates} from './states';
 import {errorState} from '../configuration/transitionHooks/errorState';
 
 
-
 export default angular
     .module('ignite-console.igfs', [
         'ngSanitize',

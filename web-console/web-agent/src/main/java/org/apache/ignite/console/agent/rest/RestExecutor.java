@@ -145,7 +145,7 @@ public class RestExecutor implements AutoCloseable {
         	ServiceResult r = langflowClient.call(endpoint,params);
         	if(r.getStatus().equals("200")) {
         		try {
-		    		JsonArray outputs = r.getResult().getJsonArray("outputs").getJsonObject(0).getJsonArray("outputs");
+        			JsonArray outputs = (JsonArray)r.getResult().get("outputs");
 		    		for(int i=0;i<outputs.size();i++) {
 			    		String sql = outputs.getJsonObject(i).getJsonObject("results").getJsonObject("message").getString("text");
 						list.add(sql);

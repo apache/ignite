@@ -22,6 +22,5 @@ h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
 command-call-form(
     service='$ctrl.originalService$|async:this'    
     on-call='$ctrl.onCall($event)'
-    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
-   
+    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'   
 )

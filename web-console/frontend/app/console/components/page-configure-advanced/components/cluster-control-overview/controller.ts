@@ -57,7 +57,7 @@ export default class ClusterControlController {
                 placeholder: 'Filter by name…'
             },
             sortingAlgorithm: naturalCompare,
-            width: 150
+            width: 200
         },
         {
             name: 'text',
@@ -65,27 +65,14 @@ export default class ClusterControlController {
             field: 'text',
             enableHiding: false,
             sortingAlgorithm: naturalCompare,
-            width: 350
-        },
-        {
-            name: 'usage',
-            displayName: 'Usage',
-            field: 'usage',
-            filter: {
-                placeholder: 'Filter by usage...'
-            }, 
-            cellTemplate: `
-                <div class="ui-grid-cell-contents" ng-bind-html="row.entity.usage"></div>
-            `,            
-            type: 'string',
             minWidth: 400
-        },
+        },       
         {
             name: 'experimental',
-            displayName: 'Experimental',
+            displayName: 'Command class',
             field: 'experimental', 
             enableFiltering: false,
-            width: 150
+            width: 200
         }
     ];
 

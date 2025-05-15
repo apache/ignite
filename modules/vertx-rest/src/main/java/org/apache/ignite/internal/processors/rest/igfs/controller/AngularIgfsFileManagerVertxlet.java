@@ -76,16 +76,6 @@ import io.vertx.webmvc.common.VertxletException;
  * project<br>
  * Put in web.xml the servlet mapping
  *
- * <pre>
- * &ltservlet&gt
- * 	&ltservlet-name&gtFileManagerServlet&lt/servlet-name&gt
- * 	&ltservlet-class&gtcom.project.web.servlet.AngularFileManagerServlet&lt/servlet-class&gt
- * &lt/servlet&gt
- * &ltservlet-mapping&gt
- * 	&ltservlet-name&gtFileManagerServlet&lt/servlet-name&gt
- * 	&lturl-pattern&gt/fm/*&lt/url-pattern&gt
- * &lt/servlet-mapping&gt
- * </pre>
  *
  * that catch all request to path /fm/*<br>
  * in angular-filemanager-master/index.html uncomment links to js files<br>

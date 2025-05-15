@@ -18,6 +18,7 @@ import org.apache.ignite.json.BinaryObjectUtil;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import io.swagger.annotations.ApiOperation;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @ApiOperation("Run langflow for data to cache")
@@ -94,7 +95,8 @@ public class LangflowApiClient implements CacheAgentService{
                     System.out.println(response.toString());
                     
                     output = new JsonObject(response.toString());
-                    result.result = output;
+                    JsonArray outputs = output.getJsonArray("outputs").getJsonObject(0).getJsonArray("outputs");
+                    result.getResult().put("outputs", outputs);
                 }
                 result.setStatus("200");
             } else {
@@ -108,7 +110,7 @@ public class LangflowApiClient implements CacheAgentService{
                     System.err.println("API request failed with status code: " + status);
                     System.err.println(response.toString());                    
                     
-                    result.setError(response.toString());
+                    result.addMessage(response.toString());
                 }
                 result.setStatus(""+status);
             }
@@ -118,15 +120,16 @@ public class LangflowApiClient implements CacheAgentService{
             
         } catch (Exception e) {
             System.err.println("Error making API request: " + e.getMessage());          
-            result.setError(e.getMessage());
+            result.setErrorType(e.getClass().getSimpleName());
             result.setStatus("404");
             return result;
         }
 	}
 
 	@Override
-	public ServiceResult call(Map<String, Object> payload) {
-		ServiceResult result = new ServiceResult();		
+	public ServiceResult call(String cacheName, Map<String, Object> payload) {
+		ServiceResult result = new ServiceResult();
+		result.setCacheName(cacheName);
 		JsonObject args = new JsonObject(payload);
 		
         String endpoint = args.getString("endpoint");
@@ -136,43 +139,39 @@ public class LangflowApiClient implements CacheAgentService{
         // Request payload configuration 
         int count = 0;
         List<String> message = result.getMessages();
-        if(ignite!=null) {
-			List<String> caches = cacheNameSelectList(ignite,args);
-			for(String cache: caches) {
-				try {
-					IgniteCache<?,?> igcache = ignite.cache(cache).withKeepBinary();
-					CacheConfiguration<Object,BinaryObject> cfg = igcache.getConfiguration(CacheConfiguration.class);
-					CacheConfiguration<Object,BinaryObject> cfgOutput = new CacheConfiguration<Object,BinaryObject>(cfg);
-					cfgOutput.setName(cache+""+outputCacheSuffix);
-					IgniteCache<Object,BinaryObject> resultCache = ignite.getOrCreateCache(cfgOutput);
-	
-						
-					Iterable<Cache.Entry<Object, Object>> it = (Iterable)igcache.localEntries(CachePeekMode.PRIMARY);
-					for(Cache.Entry<Object, Object> row: it) {
-						if(row instanceof BinaryObject) {
-							BinaryObject node = (BinaryObject)row;
-							JsonObject apiPayload = new JsonObject();
-							Object input = node.field(inputField);
-							if(input!=null) {
-								apiPayload.put("input_value", input);
-								ServiceResult rowResult = this.call(endpoint,apiPayload);
-								BinaryObject output = BinaryObjectUtil.mapToBinaryObject(ignite, cfgOutput.getName(), rowResult.result.getMap());
-								resultCache.put(row.getKey(), output);
-							}
-						}
-						
-						count++;
-					}	
-					
+        String cache = cacheName;
+    	try {
+			IgniteCache<?,?> igcache = ignite.cache(cache).withKeepBinary();
+			CacheConfiguration<Object,BinaryObject> cfg = igcache.getConfiguration(CacheConfiguration.class);
+			CacheConfiguration<Object,BinaryObject> cfgOutput = new CacheConfiguration<Object,BinaryObject>(cfg);
+			cfgOutput.setName(cache+""+outputCacheSuffix);
+			IgniteCache<Object,BinaryObject> resultCache = ignite.getOrCreateCache(cfgOutput);
+
+				
+			Iterable<Cache.Entry<Object, Object>> it = (Iterable)igcache.localEntries(CachePeekMode.PRIMARY);
+			for(Cache.Entry<Object, Object> row: it) {
+				if(row instanceof BinaryObject) {
+					BinaryObject node = (BinaryObject)row;
+					JsonObject apiPayload = new JsonObject();
+					Object input = node.field(inputField);
+					if(input!=null) {
+						apiPayload.put("input_value", input);
+						ServiceResult rowResult = this.call(endpoint,apiPayload);
+						BinaryObject output = BinaryObjectUtil.mapToBinaryObject(ignite, cfgOutput.getName(), rowResult.getResult());
+						resultCache.put(row.getKey(), output);
+					}
 				}
-				catch(Exception e) {
-					message.add(e.getMessage());
-					result.setError(e.getMessage());
-				}
-			}
-        }
-		result.put("caches", ignite.cacheNames());
-		result.put("count", count);
+				
+				count++;
+			}	
+			
+		}
+		catch(Exception e) {
+			message.add(e.getMessage());
+			result.setErrorType(e.getClass().getSimpleName());
+		}
+		
+		result.put("modifiedCount", count);
         return result;
         
 	}

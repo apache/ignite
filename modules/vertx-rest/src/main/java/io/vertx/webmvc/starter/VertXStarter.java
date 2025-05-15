@@ -4,18 +4,15 @@ package io.vertx.webmvc.starter;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.spi.cluster.ignite.IgniteClusterManager;
 import io.vertx.webmvc.creater.WebApiCreater;
 import io.vertx.webmvc.utils.NetUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.plugin.IgniteVertxPlugin;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
+
 
 import java.util.Properties;
 
@@ -31,6 +28,11 @@ public class VertXStarter implements ApplicationContextAware {
     public Vertx vertx;
     private ApplicationContext springContext;   
     private WebApiCreater webApiCreater;
+    private final String contexPath;
+    
+    public VertXStarter(String contexPath) {
+    	this.contexPath = contexPath;
+    }
     
     public WebApiCreater getWebApiCreater() {
 		return webApiCreater;
@@ -60,25 +62,8 @@ public class VertXStarter implements ApplicationContextAware {
 	        log.info("[Vertx web] Vertx web's vert.x system started successfully, using time {}s.", (stopwatch-startwatch)/1000);
         }
     }
-    
-	public Future<String> start(Ignite ignite) {
-		IgniteVertxPlugin plugin = ignite.plugin("Vertx");		
-        if(webApiCreater!=null) {
-        	if(ignite.cluster().state()==ClusterState.INACTIVE) {
-        		vertx = Vertx.vertx();
-        	}
-        	else {
-        		vertx = plugin.vertx();
-        	}
-        	return vertx.deployVerticle(webApiCreater);
-        }
-        return null;
-	}
-	
-	public void stop(Ignite ignite) {
-		IgniteVertxPlugin plugin = ignite.plugin("Vertx");		
-        if(webApiCreater!=null) {        	
-        	
-        }
+
+	public String getContexPath() {
+		return contexPath;
 	}
 }

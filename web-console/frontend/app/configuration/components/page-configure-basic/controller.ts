@@ -182,6 +182,7 @@ export default class PageConfigureBasicController {
     }
 
     addCache() {
+        console.log("addCache");
         this.ConfigureState.dispatchAction({type: 'ADD_CACHE_TO_EDIT'});
     }
 

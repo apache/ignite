@@ -16,7 +16,7 @@
 		<jsqlparser.version>5.0</jsqlparser.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
 		<commons-collections3.version>3.2.2</commons-collections3.version>
-		<fastjson-version>1.2.28</fastjson-version>
+		<jackson.version>2.14.0</jackson.version>
 	</properties>
 
 	<dependencies>
@@ -39,10 +39,17 @@
 		</dependency>
 		
 		<dependency>
-			<groupId>com.alibaba</groupId>
-			<artifactId>fastjson</artifactId>
-			<version>${fastjson-version}</version>
-		</dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+		
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

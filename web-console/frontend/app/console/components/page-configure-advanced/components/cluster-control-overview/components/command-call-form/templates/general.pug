@@ -1,5 +1,4 @@
 
-
 include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
@@ -12,6 +11,9 @@ panel-collapsible(opened=`::true` ng-form=form)
         | {{ $ctrl.clonedService.text }}
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
+
+            pre.pcb-section-notification.pcb-inner-padding()
+                | {{ $ctrl.clonedService.usage }}
                             
             .pc-form-grid-col-60
                 +form-field__text({

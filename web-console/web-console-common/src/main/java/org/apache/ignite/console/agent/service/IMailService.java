@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.console.services;
+package org.apache.ignite.console.agent.service;
 
 import org.apache.ignite.console.notification.Notification;
 

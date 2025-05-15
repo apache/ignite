@@ -26,42 +26,37 @@ public class CacheDeleteTableService implements CacheAgentService {
     private Ignite ignite;
     
 	@Override
-	public ServiceResult call(Map<String,Object> payload) {
+	public ServiceResult call(String cache,Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
 		int count = 0;		
 		JsonObject args = new JsonObject(payload);	
-		List<String> message = result.messages;	
+		List<String> message = result.getMessages();	
 		IgniteEx igniteEx = (IgniteEx) ignite;
 		GridKernalContext ctx = igniteEx.context();
-		String schema = args.getString("sqlSchema");
-		List<String> caches = cacheNameSelectList(ignite,args);
-		for(String cache: caches) {
-			try {
-				
-				SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM "+cache);
-				qry.setLocal(true);
-				if(schema!=null && !schema.isBlank()) {
-					qry.setSchema(schema);
-				}
-				IgniteCache<?,?> igcache = ignite.cache(cache);
-				if(igcache!=null) {
-					igcache.query(qry).getAll();
-				}
-				else {
-					ctx.query().querySqlFields(qry, true).getAll();
-				}
-				count++;
+		String schema = args.getString("sqlSchema");		
+		
+		try {
+			
+			SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM "+cache);
+			qry.setLocal(true);
+			if(schema!=null && !schema.isBlank()) {
+				qry.setSchema(schema);
 			}
-			catch(Exception e) {
-				message.add(e.getMessage());
+			IgniteCache<?,?> igcache = ignite.cache(cache);
+			if(igcache!=null) {
+				count = igcache.query(qry).getAll().size();
 			}
+			else {
+				count = ctx.query().querySqlFields(qry, true).getAll().size();
+			}
+			
 		}
-		if(message.isEmpty()) {
-			message.add("Finish destroy cache successfull!");
+		catch(Exception e) {
+			result.setAcknowledged(false);
+			message.add(e.getMessage());
 		}
 		
-		result.put("caches", caches);
-		result.put("count", count);
+		result.put("deletedCount", count);
 		return result;
 	}
 

@@ -1,4 +1,4 @@
-package com.github.abel533;
+package database.ddl.transfer;
 
 import java.io.IOException;
 

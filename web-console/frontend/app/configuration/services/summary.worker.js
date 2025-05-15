@@ -1,5 +1,5 @@
 
-
+import _ from 'lodash';
 import JSZip from 'jszip';
 
 import IgniteMavenGenerator from '../generator/generator/Maven.service';
@@ -106,6 +106,7 @@ onmessage = function(e) {
 
     zip.file(`${startupPath}/ServerNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeCodeStartup',
         'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
+    
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
         'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 

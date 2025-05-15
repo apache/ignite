@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.config;
 
-import org.apache.ignite.console.services.IMailService;
+import org.apache.ignite.console.agent.service.IMailService;
 import org.apache.ignite.console.services.NoopMailService;
 import org.apache.ignite.console.web.security.AccountStatusChecker;
 import org.apache.ignite.internal.util.typedef.internal.S;

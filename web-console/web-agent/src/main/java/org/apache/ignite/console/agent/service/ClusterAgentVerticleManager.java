@@ -138,7 +138,7 @@ public class ClusterAgentVerticleManager implements ClusterAgentService {
 		JsonObject args = new JsonObject(payload);
 		Vertx vertx = vertxPlugin.getVertx();
 		JsonArray services = args.getJsonArray("verticles");
-		List<String> messages = result.messages;
+		List<String> messages = result.getMessages();
 		for (Object service : services) {
 			if (service instanceof String) {
 				String deploymentID = service.toString();
@@ -161,7 +161,7 @@ public class ClusterAgentVerticleManager implements ClusterAgentService {
 		JsonObject args = new JsonObject(payload);
 		VertxInternal vertx = (VertxInternal)vertxPlugin.getVertx();
 		JsonArray services = args.getJsonArray("verticles");
-		List<String> messages = result.messages;
+		List<String> messages = result.getMessages();
 		for (Object service : services) {
 			if (service instanceof String) {
 				String deploymentID = service.toString();

@@ -40,70 +40,42 @@ public class CacheCopyDataService implements CacheAgentService {
    
 	 /** Target Ignite instance. */
     @IgniteInstanceResource
-    private Ignite ignite;
+    private Ignite ignite;    
     
-    public Ignite getIgniteByName(String clusterName,ServiceResult stat) {
-    	Ignite ignite = null;    	
-    	String clusterId = Utils.escapeFileName(clusterName);
-    	String gridName = RestClusterHandler.clusterNameMap.get(clusterId);
-		if(gridName!=null) {
-			try {
-        		ignite = Ignition.ignite(gridName);	    		
-	    		stat.setStatus("started");
-	    		clusterName = null;
-    		}
-	    	catch(IgniteIllegalStateException e) {	
-	    		stat.addMessage(e.getMessage());
-	    		stat.setStatus("stoped");
-	    	}
-		}        
-        if(ignite!=null && clusterName!=null) {
-        	try {
-        		ignite = Ignition.ignite(clusterName);	    		
-	    		stat.setStatus("started");
-    		}
-	    	catch(IgniteIllegalStateException e) {	
-	    		stat.addMessage(e.getMessage());
-	    		stat.setStatus("stoped");
-	    	}
-    	}
-        return ignite;
-    }
     
 	@Override
-	public ServiceResult call(Map<String,Object> payload) {
+	public ServiceResult call(String targetCache,Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
-		int count = 0;		
+		int count = 0;
+		int nInserts = 0;
 		JsonObject args = new JsonObject(payload);
-		List<String> caches = cacheNameSelectList(ignite,args);
 		String clusterId = args.getString("clusterId");
-		for(String targetCache: caches) {			
-			JsonArray taskFlows = DataSourceManager.getTaskFlows(clusterId, targetCache);
-			for(int i=0;i<taskFlows.size();i++) {
-				JsonObject task = taskFlows.getJsonObject(i);
-				ServiceResult resultOne = copyFrom(task);
-				result.getMessages().addAll(resultOne.getMessages());
-				result.result.getMap().putAll(resultOne.getResult().getMap());
-				result.setStatus(resultOne.getStatus());
-				count++;
-			}
-		}		
-		result.put("count", count);		
+		JsonArray taskFlows = DataSourceManager.getTaskFlows(clusterId, targetCache);
+		for(int i=0;i<taskFlows.size();i++) {
+			JsonObject task = taskFlows.getJsonObject(i);
+			nInserts += copyFrom(result, task);	
+			count++;
+		}
+
+		result.put("insertedCount", nInserts);	
+		result.put("sourceCount", count);		
 		return result;
 	}
 	
-	public ServiceResult copyFrom(JsonObject args) {
-		ServiceResult result = new ServiceResult();			
-		
+	public long copyFrom(ServiceResult result, JsonObject args) {
+			
+		long nInserts = 0;
 		String targetCache = args.getString("target");
 		String sourceCache = args.getString("source");
 		
-		String sourceClusterName = args.getString("sourceCluster");
+		String sourceClusterName = args.getString("sourceCluster"); // is cluster uuid
 				
-		Ignite igniteSource = getIgniteByName(sourceClusterName,result);
+		Ignite igniteSource = ClusterAgentServiceManager.getIgniteByName(sourceClusterName,result);
 		if(igniteSource==null) {
-			return result;
-		}
+			result.getMessages().add("SourceCluster " + sourceClusterName + " is not existed!");
+			return nInserts;
+		}		
+
 		
 		JsonObject cacheInfo = new JsonObject();		
 
@@ -117,16 +89,19 @@ public class CacheCopyDataService implements CacheAgentService {
 			if(totalRows==0) {
 			   totalRows = transformData(igniteSource,srcCache,destCache);
 			   cacheInfo.put("loadedData", totalRows);
-			}		
+			}
+			
+			nInserts = totalRows;
 			
 		}
 		catch(Exception e) {
-			result.messages.add(e.getMessage());
+			result.setAcknowledged(false);
+			result.getMessages().add(e.getMessage());
 		}
 		
 		result.put("metric_"+sourceCache, cacheInfo);		
 		
-		return result;
+		return nInserts;
 	}
 	
 	

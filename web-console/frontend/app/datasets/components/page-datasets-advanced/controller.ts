@@ -2,19 +2,21 @@
 import {forkJoin, merge, from, of} from 'rxjs';
 import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import cloneDeep from 'lodash/cloneDeep';
-
+import {advancedSaveCluster} from 'app/configuration/store/actionCreators';
 import {Confirm} from 'app/services/Confirm.service';
 
 import ConfigureState from 'app/configuration/services/ConfigureState';
+import ConfigSelectors from '../../../configuration/store/selectors';
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
 import Datasource from 'app/datasource/services/Datasource';
 import {DatasourceDto} from 'app/configuration/types';
+import {Cluster} from 'app/configuration/types';
 
 export default class PageDatasetsAdvancedController {    
 
     static $inject = [
-        'Confirm', '$uiRouter', 'ConfigureState', '$element', 'IgniteFormUtils', 'Datasource', '$scope'
+        'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors','$element', 'IgniteFormUtils', 'Datasource', '$scope'
     ];
 
     form: ng.IFormController;
@@ -26,7 +28,8 @@ export default class PageDatasetsAdvancedController {
     constructor(
         private Confirm: Confirm,
         private $uiRouter: UIRouter,
-        private ConfigureState: ConfigureState,        
+        private ConfigureState: ConfigureState,
+        private ConfigSelectors: ConfigSelectors,          
         private $element: JQLite,        
         private IgniteFormUtils: ReturnType<typeof FormUtils>,
         private Datasource: Datasource, 
@@ -53,27 +56,28 @@ export default class PageDatasetsAdvancedController {
             filter((v) => v),
             take(1)
         );
-        
-        this.originalDatasource$ = datasetID$.pipe(
+
+        this.originalCluster$ = datasetID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return from(this.Datasource.selectDatasource(id));
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
             }),
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
-        );  
+        );
         
-        this.originalDatasource$.subscribe((c) =>{
-            this.originalDatasource = this._loadMongoExpress(c);
-            this.clonedDatasource = this._loadMongoExpress(c);
+        this.originalCluster$.subscribe((c) =>{
+            this.originalDatasource = cloneDeep(c);
+            this.clonedDatasource = c;
+            console.log(c);
             
         })
        
         this.formActionsMenu = [
            {
                text: 'Save',
-               click: () => this.save(true),
+               click: () => this.save(this.clonedDatasource),
                icon: 'checkmark'
            },
            {
@@ -93,49 +97,9 @@ export default class PageDatasetsAdvancedController {
         return true;
     }
 
-    _loadMongoExpress(dto: DatasourceDto) {
-        if(!dto.jdbcProp['web_url']){
-            dto.jdbcProp['web_url'] = this.baseUrl+"/webapps/mongoAdmin/queryDocuments#"+dto.jndiName
-        }   
-        return dto;
+    save({cluster}) {
+        this.ConfigureState.dispatchAction(advancedSaveCluster(cluster, false));
     }
-
-    _saveMongoExpress(datasource) {
-       
-        let stat = from(this.Datasource.saveAdvanced(datasource)).pipe(
-            switchMap(({data}) => of(
-                {type: 'SAVE_AND_EDIT_DATASOURCE_OK'}
-            )),
-            catchError((error) => of({
-                type: 'SAVE_AND_EDIT_DATASOURCE_ERR',
-                error: {
-                    message: `Failed to save datasource : ${error.data.message}.`
-                }
-            }))
-        );
-        return stat;        
-    }    
-
-    save(redirect = false) {
-        if (this.form.$invalid)
-            return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
-        let datasource = this.clonedDatasource;
-        if(datasource) {
-            try{
-                this._saveMongoExpress(datasource);                   
-                this.$scope.message = 'Save successful.';
-                if(redirect){                
-                    setTimeout(() => {
-                        this.$uiRouter.stateService.go('base.datasets.overview');
-                    },100)
-                }
-            }
-            catch (err) {
-                this.$scope.message = err.toString();
-            }                  
-        }        
-    }
-
     reset() {
         this.clonedDatasource = cloneDeep(this.originalDatasource);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});

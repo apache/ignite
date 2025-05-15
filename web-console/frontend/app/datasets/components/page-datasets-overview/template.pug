@@ -15,18 +15,18 @@ header.header-with-selector
 .pco-relative-root
     pc-items-table(
         table-title='::"Choose DataSets Source"'
-        column-defs='$ctrl.datasourceColumnDefs'
-        items='$ctrl.dataSourceList'
-        on-action='$ctrl.onDatasourceAction($event)'
+        column-defs='$ctrl.clustersColumnDefs'
+        items='$ctrl.shortClusters$|async:this'
+        on-action='$ctrl.onClustersAction($event)'
         max-rows-to-show='10'
         one-way-selection='::true'
         selected-row-id='$ctrl.selectedRowsIDs$|async:this'
         on-selection-change='$ctrl.selectedRows$.next($event)'
         actions-menu='$ctrl.actions$|async:this'
     )
-        footer-slot(ng-hide='$ctrl.dataSourceList.length' style='font-style: italic')
-            | You have no datasets source configurations.
-            a.link-success(ui-sref='base.datasource.edit.basic({clusterID: "new"})') Create one?
+        footer-slot(ng-hide='($ctrl.shortClusters$|async:this).length' style='font-style: italic')
+            | You have no cluster with crudui configurations.
+            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})') Create one?
     span 
         | {{ message }}
 

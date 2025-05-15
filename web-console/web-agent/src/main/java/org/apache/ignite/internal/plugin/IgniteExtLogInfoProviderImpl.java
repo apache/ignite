@@ -18,7 +18,15 @@
 package org.apache.ignite.internal.plugin;
 
 import java.lang.management.RuntimeMXBean;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -28,7 +36,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 
 /**
- * Change the message output for metrics log.
+ * Change the message output for metrics log. and typeName and fieldName hash code collision checker
  */
 public class IgniteExtLogInfoProviderImpl extends IgniteLogInfoProviderImpl {
     /** {@inheritDoc} */
@@ -43,5 +51,45 @@ public class IgniteExtLogInfoProviderImpl extends IgniteLogInfoProviderImpl {
                 ">>> MXBeanName: " + rtBean.getName() + NL +
                 ">>> " + NL
         );
+        
+        int fieldCollision = 0;
+        List<String> types = new ArrayList<>(256);       
+        for(CacheConfiguration cacheCfg: cfg.getCacheConfiguration()) {
+        	Collection<QueryEntity> ql = cacheCfg.getQueryEntities();
+        	for(QueryEntity entity: ql) {
+        		String type = entity.findValueType();
+        		if(type!=null) {
+        			types.add(type);
+        		}
+        		fieldCollision += hashCodeCollisionCheck(log,entity.getFields().keySet(),"field");
+        	}
+        }
+        
+        int typeCollision = hashCodeCollisionCheck(log,types,"type");
+        
+        if(typeCollision>0 || fieldCollision>0)
+	        U.quietAndInfo(log,
+	                NL + NL +               
+	                    ">>> typeIdCollision: " + typeCollision + NL +                
+	                    ">>> fieldIdCollision: " + fieldCollision + NL +	                    
+	                    ">>> " + NL
+	            );
     }
+    
+
+    public static int hashCodeCollisionCheck(IgniteLogger log, Iterable<String> strings, String domain) {
+        Map<Integer, String> hashCodeMap = new TreeMap<>();
+        int collisions = 0;
+        for(String current: strings) {
+        	current = current.toLowerCase();
+            int hashCode = current.hashCode();
+            String last = hashCodeMap.put(hashCode, current);
+            if (last != null) {
+                collisions++;
+                log.warning("find "+domain+"Id collision for "+last+" and "+current);
+            }
+        }
+        return collisions;
+    }
+
 }

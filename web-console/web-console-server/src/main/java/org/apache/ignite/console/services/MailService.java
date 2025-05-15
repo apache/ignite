@@ -24,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+
+import org.apache.ignite.console.agent.service.IMailService;
 import org.apache.ignite.console.config.MailPropertiesEx;
 import org.apache.ignite.console.notification.INotificationDescriptor;
 import org.apache.ignite.console.notification.IRecipient;

@@ -1,4 +1,4 @@
-package com.github.abel533;
+package database.ddl.transfer;
 
 
 import java.sql.Connection;
@@ -31,11 +31,11 @@ public class DatabasePostgreTest {
             List<IntrospectedTable> tables = dbMetadataUtils.introspectTables(dbMetadataUtils.getDefaultConfig());
 
             DBMetadataUtils.sortTables(tables);
-
-            BeetlTemplate.exportDatabaseHtml(tables, "/tmp", "db");
+            BeetlTemplate beetlTemplate = new BeetlTemplate();
+            beetlTemplate.exportDatabaseHtml(tables, "/tmp", "db");
 
             for (IntrospectedTable table : tables) {
-                BeetlTemplate.exportTableHtml(table, "/tmp", table.getName());
+            	beetlTemplate.exportTableHtml(table, "/tmp", table.getName());
             }
         } catch (SQLException e) {
             e.printStackTrace();

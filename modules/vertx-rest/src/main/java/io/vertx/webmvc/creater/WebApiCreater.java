@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * vert.x web API creater
@@ -49,10 +50,16 @@ public class WebApiCreater extends AbstractVerticle {
     
     private final Map<String, Vertxlet> vertxletMap = new HashMap<>();
     
-    private int state = 0;
+    private int state = 0; // 1: init, 2: ready, 3: started, 0: closed    
+    
+    private HttpServer server;
+    
+    private Consumer<Router> readyCallback;
 
 
-    public WebApiCreater(ApplicationContext applicationContext,HttpServerOptions options) {
+    
+
+	public WebApiCreater(ApplicationContext applicationContext,HttpServerOptions options) {
         springContext = applicationContext;
         this.options = options;        
     }
@@ -87,14 +94,27 @@ public class WebApiCreater extends AbstractVerticle {
     public Router getRouter() {
 		return router;
 	}
-
-    public boolean isStarted() {
+    
+    public HttpServer getHttpServer() {
+    	return server;
+    }
+    
+    public boolean isClosed() {
+    	return state==0;
+    }
+   
+    public boolean isInit() {
+    	return state==1;
+    }
+    
+    public boolean isReady() {
     	return state==2;
     }
     
-    public boolean isStarting() {
-    	return state==1;
+    public boolean isStarted() {
+    	return state==3;
     }
+    
     
     public String getProperty(String name,String def) {
     	String value = props.getProperty(name); 
@@ -107,6 +127,14 @@ public class WebApiCreater extends AbstractVerticle {
     public String getProperty(String name) {
     	return getProperty(name,null);
     }
+    
+    public Consumer<Router> getReadyCallback() {
+		return readyCallback;
+	}
+
+	public void setReadyCallback(Consumer<Router> readyCallback) {
+		this.readyCallback = readyCallback;
+	}
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -172,7 +200,7 @@ public class WebApiCreater extends AbstractVerticle {
                 java.util.Arrays.stream(staticDirs.split(",")).forEach(staticDir -> {
                     log.info("[vertx web] staticDir:" + staticDir);
                     String contextPath = FileUtil.getFilename(staticDir);
-                    router.route(contextPath).blockingHandler(StaticHandler.create(staticDir.trim()));
+                    router.route("/"+contextPath).blockingHandler(StaticHandler.create(staticDir.trim()));
                 });
             }
 
@@ -181,25 +209,33 @@ public class WebApiCreater extends AbstractVerticle {
             throw new RuntimeException(e.toString());
         }
         
-        server.requestHandler(router).listen(options.getPort(),options.getHost()).andThen(res->{
+        server = server.requestHandler(router);
+        
+        initializeVertxlet(startPromise);
+        
+        state = 2; // binding
+        
+        if(readyCallback!=null) {
+        	readyCallback.accept(router);
+        }        
+       
+    	server.listen(options.getPort(),options.getHost()).andThen(res->{
         	if (res.succeeded()) {
-        		state = 2;
+        		state = 3;
                 log.info("Http server started at [{}:{}]",  options.getHost(), options.getPort());
-                initializeVertxlet(startPromise);
+                
             } else {
                 startPromise.fail(res.cause());
                 state = 0;
             }
-        });    
-        
+        });
     }
     
     @Override
     public void stop(Promise<Void> stopPromise) throws Exception {
-        destroyVertxlet(stopPromise);
-        state = 0;
+    	state = 0;
+        destroyVertxlet(stopPromise);        
     }
-    
    
     
     private void cros(Router router) {

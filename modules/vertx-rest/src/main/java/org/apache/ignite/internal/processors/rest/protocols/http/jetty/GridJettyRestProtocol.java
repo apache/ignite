@@ -26,6 +26,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
@@ -36,8 +38,12 @@ import java.util.Properties;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.plugin.IgniteVertxPlugin;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -54,6 +60,7 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.webmvc.annotation.VertxletMapping;
 import io.vertx.webmvc.creater.WebApiCreater;
@@ -67,14 +74,16 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
    
 	private final Properties props = new Properties();
 
-    private GridJettyRestHandler jettyHnd;
+    private GridCmdRestHandler jettyHnd;
+    
+    private GridServiceRestHandler serviceHnd;
 
     /** HTTP server. */
     private WebApiCreater httpSrv;
     
-    private VertXStarter starter;
+    private ServerSocket serverSocketPlaceholder;
     
-    private static int handlerCount = 0;    
+    private static int handlerCount = 0;
 
     /**
      * @param ctx Context.
@@ -101,63 +110,109 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             throw new IgniteCheckedException("Failed to resolve host to bind address: " + jettyHost, e);
         }
 
-        jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
+        jettyHnd = new GridCmdRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {
                 return F.isEmpty(secretKey) || authenticate(tok);
             }
-        }, ctx);    
+        }, ctx); 
+        
+        
+        serviceHnd = new GridServiceRestHandler(hnd, new C1<String, Boolean>() {
+            @Override public Boolean apply(String tok) {
+                return F.isEmpty(secretKey) || authenticate(tok);
+            }
+        }, ctx); 
         
         
         // first start instance
         if(httpSrv==null) {
         	configSingletonJetty();
-        	handlerCount = 0;
-        	jettyHnd.index = handlerCount;
+        	handlerCount = 0;      	
      	}
         else {
-        	jettyHnd.index = ++handlerCount;
-        }        
+        	handlerCount ++;
+        }
     }
     
     public static boolean isPortInUse(int port) {
-        try (Socket socket = new Socket("127.0.0.1", port)) {
-            return true; // 能够连接成功，说明端口被占用了
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            return false;
         } catch (IOException e) {
-            return false; // 连接失败，说明端口未被占用
+            return true;
         }
     }
     
     /** {@inheritDoc} */
-    @Override public void onKernalStart() {    	
-		
-    	if(!httpSrv.isStarting() && !httpSrv.isStarted()) {
+    @Override public void onKernalStart() {
+    	
+    	if(httpSrv.isClosed()) {
     		
-			try {
-				
-				Future<String> rv = starter.start(ctx.grid());
-            	while(!rv.isComplete()) {
-            		Thread.sleep(200);
-            	}
-	            if(!httpSrv.isStarted()) {
-		            U.warn(log, "Failed to start Vertx REST server (possibly all ports in range are in use) ");
-		            
-		            return;
-	            }
-	            else {
-	            	ctx.ports().registerPort(port, TCP, getClass()); 
-	            }
-	            
-			} catch (Exception e1) {
-				
-				e1.printStackTrace();
-			}		
+    		final IgniteEx ignite = ctx.grid();
+        		
+        	if(true) {
+        		
+        		httpSrv.setReadyCallback((router)->{
+        			try {
+        				serverSocketPlaceholder.close();
+        			} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+        		});
+        	}        	
+    		
+    		ctx.pools().getRestExecutorService().submit(()->{
+    			
+            	try {
+    	        	int waitCount = 0;
+    	    		while(!ignite.cluster().active() && waitCount<60*10) {
+    	    			waitCount++;
+    	    			
+    					Thread.sleep(1000);
+    					
+    	    			if(waitCount%60==0) {
+    	    				log.info("Wait for cluster {} active...",ignite.name());
+    	    			}					
+    	    		}
+    	    		
+    	    		Vertx vertx;
+    	    		if(!ignite.cluster().active()) {
+    	        		log.info("[Vertx web] Vertx started in standard mode.");
+    	        		vertx = Vertx.vertx();
+    	        	}
+    	        	else {
+    	        		log.info("[Vertx web] Vertx started in cluster mode.");
+    	        		IgniteVertxPlugin plugin = ignite.plugin("Vertx");
+    	        		vertx = plugin.vertx();
+    	        	}
+    	    		
+    	    		Future<String> rv = vertx.deployVerticle(httpSrv);
+    	        	while(!rv.isComplete()) {
+    	        		Thread.sleep(200);
+    	        	}
+    	        	
+    	        	if(!httpSrv.isStarted()) {
+    	            	log.info("Failed to start Vertx REST server (possibly all ports in range are in use) ");
+    	                
+    	                return;
+    	            }
+    	        	
+    	        	httpSrv.getRouter().route("/ignite*").blockingHandler(jettyHnd);    	    		
+    	    		
+    	    		httpSrv.getRouter().get("/service/*").blockingHandler(serviceHnd);
+    	    		httpSrv.getRouter().post("/service/*").blockingHandler(serviceHnd);
+    	    		
+    	    		httpSrv.getRouter().get("/*").last().handler(new GridStaticRestHandler(ctx));
+    	        	
+            	} catch (InterruptedException e) {
+    				// TODO Auto-generated catch block
+    				e.printStackTrace();
+    			}
+    		});
+    		
+    		ctx.ports().registerPort(port, TCP, getClass());
 			
      	}
-    	
-    	if(handlerCount==0) {
-    		httpSrv.getRouter().route("/ignite*").blockingHandler(jettyHnd);
-    		httpSrv.getRouter().route("/*").blockingHandler(jettyHnd);
-    	}
     	
     }   
     
@@ -316,11 +371,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             break;
         }
         
-        override(httpSrv.options);
+        serverSocketPlaceholder = new ServerSocket(port);
         
-        starter = new VertXStarter();
-        starter.setApplicationContext(context);
-        starter.setWebApiCreater(httpSrv);        
+        override(httpSrv.options); 
         
     }
 
@@ -338,8 +391,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 // Record current interrupted status of calling thread.
                 boolean interrupted = Thread.interrupted();
 
-                try {
-                	starter.stop(ctx.grid());
+                try {                	
                 	httpSrv = null;
                 }
                 finally {
@@ -359,8 +411,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	handlerCount--;
     	
 
-    	if(httpSrv!=null && httpSrv.isStarted()) {  
-    		httpSrv.getRouter().delete("/ignite");
+    	if(httpSrv!=null && httpSrv.isStarted()) {
     		
     		if(handlerCount <= 0) {
     	        stopJetty();	

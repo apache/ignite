@@ -3,13 +3,15 @@ import {map,switchMap, distinctUntilChanged, catchError} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
 
 import {UIRouter} from '@uirouter/angularjs';
-import {DatasourceDto} from 'app/configuration/types';
+
 import ConfigureState from 'app/configuration/services/ConfigureState';
-import Datasource from 'app/datasource/services/Datasource';
+import {default as ConfigSelectors} from 'app/configuration/store/selectors';
+import {default as Clusters} from 'app/configuration/services/Clusters';
 import AgentManager from 'app/modules/agent/AgentManager.service';
+import {ShortCluster} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 
-const cellTemplate = (state) => `
+const cellTemplateGo = (state) => `
     <div class="ui-grid-cell-contents">
         <a
             class="link-success"
@@ -19,12 +21,24 @@ const cellTemplate = (state) => `
     </div>
 `;
 
+const cellTemplate = (state) => `
+    <div class="ui-grid-cell-contents">
+        <a
+            class="link-success"
+            ui-sref="${state}({clusterID: row.entity.id})"
+            title='Click to edit'
+        >{{ row.entity[col.field] }}</a>
+    </div>
+`;
+
+
 export default class PageDatasourceOverviewController {
     static $inject = [
         '$uiRouter',
         'ConfigureState',
         'AgentManager',
-        'Datasource'        
+        'Clusters',
+        'ConfigSelectors',
     ];
     
 
@@ -32,124 +46,107 @@ export default class PageDatasourceOverviewController {
         private $uiRouter: UIRouter,
         private ConfigureState: ConfigureState,
         private AgentManager: AgentManager,
-        private Datasource: Datasource    
+        private Clusters: Clusters,
+        private ConfigSelectors: ConfigSelectors,
     ) {}
 
-    shortClusters$: Observable<Array<DatasourceDto>>;    
-    selectedRows$: Subject<Array<DatasourceDto>>;
+    shortClusters$: Observable<Array<ShortCluster>>;
+    clustersColumnDefs: Array<IColumnDefOf<ShortCluster>>;
+    selectedRows$: Subject<Array<Clusters>>;
     selectedRowsIDs$: Observable<Array<string>>;
-    
-    
-    datasourceColumnDefs: Array<any> = [
-        {
-            name: 'jndiName',
-            displayName: 'Datasets Name',
-            field: 'jndiName',
-            enableHiding: false,
-            enableFiltering: true,
-            sort: {direction: 'asc'},
-            sortingAlgorithm: naturalCompare,            
-            width: 150
-        },
-        {
-            name: 'jdbcUrl',
-            displayName: 'Datasets URL',
-            field: 'jdbcUrl',
-            filter: {
-                placeholder: 'Filter by keyword…'
-            },
-            sort: {direction: 'asc'},
-            sortingAlgorithm: naturalCompare,
-            minWidth: 300
-        },
-        {
-            name: 'driverCls',
-            displayName: 'driverClass',
-            field: 'driverCls',                     
-            enableFiltering: false,           
-            width: 300
-        },
-        {
-            name: 'db',
-            displayName: 'DB type',
-            field: 'db',                   
-            enableFiltering: false,           
-            width: 150
-        },
-        {
-            name: 'schemaName',
-            displayName: 'Schema',
-            field: 'schemaName',                     
-            enableFiltering: false,            
-            width: 150
-        },
-        {
-            name: 'status',
-            displayName: 'Status',
-            field: 'status',
-            cellClass: 'ui-grid-number-cell',                
-            cellTemplate: `
-                <div class="ui-grid-cell-contents status-{{ row.entity.status }} ">{{ row.entity.status }}</div>
-            `,
-            enableFiltering: false,
-            type: 'string',
-            width: 85
-        },
-        {
-            name: 'id',
-            displayName: 'Action',
-            field: 'id',
-            cellClass: 'ui-grid-number-cell',                
-            cellTemplate: cellTemplate,
-            enableFiltering: false,
-            type: 'string',
-            width: 85
-        }
-    ];    
 
-
-    editDatasource(cluster) {
+    editCluster(cluster: ShortCluster) {
         return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster.id});
-    }
-    
-    pingDatasource(clusters: Array<any>) {
-      for(let cluster of clusters){
-         this.AgentManager.callClusterService(cluster,'datasourceTest',cluster).then((msg) => {
-             if(msg.status){
-                cluster.status = msg.status;               
-             }      
-             
-         });         
-      }
-    }
+    }   
 
     $onInit() {       
-        this.dataSourceList$ = from(this.Datasource.getDatasourceList()).pipe(            
-            switchMap(({data}) => of(
-                data            
-            )),
-            catchError((error) => of({
-                type: `DATASOURCE_ERR`,
-                error: {
-                    message: `Failed to load datasoure:  ${error.data.message}`
+        this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());
+        
+        this.clustersColumnDefs = [
+            {
+                name: 'name',
+                displayName: 'Name',
+                field: 'name',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by name…'
                 },
-                action: {}
-            }))           
-        ).subscribe((data)=> {
-            this.dataSourceList = data
-        }); 
-        
+                sort: {direction: 'asc', priority: 0},
+                sortingAlgorithm: naturalCompare,
+                cellTemplate: cellTemplate('base.configuration.edit'),
+                minWidth: 165
+            },
+            {
+                name: 'id',
+                displayName: 'Action',
+                field: 'id',
+                enableHiding: false,
+                enableFiltering: false,
+                cellTemplate: cellTemplateGo('base.configuration.edit'),
+                minWidth: 165
+            },
+            {
+                name: 'discovery',
+                displayName: 'Discovery',
+                field: 'discovery',
+                multiselectFilterOptions: this.Clusters.discoveries,
+                width: 200
+            },
+            {
+                name: 'caches',
+                displayName: 'Caches',
+                field: 'cachesCount',
+                cellClass: 'ui-grid-number-cell',
+                cellTemplate: cellTemplate('base.configuration.edit.advanced.caches'),
+                enableFiltering: false,
+                type: 'number',
+                width: 95
+            },
+            {
+                name: 'models',
+                displayName: 'Models',
+                field: 'modelsCount',
+                cellClass: 'ui-grid-number-cell',
+                cellTemplate: cellTemplate('base.configuration.edit.advanced.models'),
+                enableFiltering: false,
+                type: 'number',
+                width: 95
+            },
+            {
+                name: 'status',
+                displayName: 'Status',
+                field: 'status',
+                cellClass: 'ui-grid-number-cell',
+                cellTemplate: cellTemplate('base.configuration.edit.basic.models'),
+                enableFiltering: false,
+                type: 'string',
+                width: 95
+            }
+        ];
+
         this.selectedRows$ = new Subject();
+
+        this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedClusters) => selectedClusters.map((cluster) => cluster.id)));
+
         
-        this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedDatasources) => selectedDatasources.map((cluster) => cluster.id)));
-        
-        this.actions$ = this.selectedRows$.pipe(map((selectedDatasource) => [
+        this.actions$ = this.selectedRows$.pipe(map((selectedClusters) => [
             {
                 action: 'Ping',
-                click: () => this.pingDatasource(selectedDatasource),
-                available: selectedDatasource.length >= 1
-            }     
+                click: () => this.pingClusters(selectedClusters),
+                available: true
+            },
         ]));
+    }
+
+    pingClusters(clusters: Array<ShortCluster>) {
+        for(let cluster of clusters){
+            this.AgentManager.callClusterService(cluster,'serviceList',{}).then((msg) => {
+                if(msg.status){
+                    cluster.status = msg.status;
+                }        
+                
+            });         
+        }
     }
     
     $onDestroy() {

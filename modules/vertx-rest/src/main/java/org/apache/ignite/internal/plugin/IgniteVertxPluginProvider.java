@@ -96,7 +96,7 @@ public class IgniteVertxPluginProvider implements PluginProvider<PluginConfigura
 
 		VertxOptions options = new VertxOptions();
 		options.setClusterManager(clusterManager);
-		options.setHAEnabled(true);
+		options.setHAEnabled(false);
 		options.setHAGroup(this.instanceName);
 		options.setEventLoopPoolSize(igniteCfg.getSystemThreadPoolSize());
 		

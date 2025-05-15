@@ -16,6 +16,7 @@
 
 package org.apache.ignite.console.services;
 
+import org.apache.ignite.console.agent.service.IMailService;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.notification.Notification;
 import org.apache.ignite.console.notification.NotificationDescriptor;

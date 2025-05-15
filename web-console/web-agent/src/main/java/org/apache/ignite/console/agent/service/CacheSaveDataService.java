@@ -31,52 +31,47 @@ public class CacheSaveDataService implements CacheAgentService {
     private Ignite ignite;
     
 	@Override
-	public ServiceResult call(Map<String,Object> payload) {
+	public ServiceResult call(String cache,Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
 		int count = 0;
 		JsonObject args = new JsonObject(payload);	
 		List<String> message = result.getMessages();
-		List<String> caches = cacheNameSelectList(ignite,args);
-		for(String cache: caches) {
-			try {
-				IgniteCache<Object, Object> igcache = ignite.cache(cache);					
-				
-				CacheConfiguration<Object, Object> cfg = igcache.getConfiguration(CacheConfiguration.class);
-				
-				if(cfg.isWriteThrough()) {
-					message.add("Cache WriteThrough is true, It may not be necessary to call this service!");
-				}
-				
-				if(cfg.getCacheWriterFactory()!=null) {
-					CacheWriter<Object, Object> writer = cfg.getCacheWriterFactory().create();
-					
-					Iterable<Cache.Entry<Object, Object>> it = (Iterable)igcache.localEntries(CachePeekMode.PRIMARY);
-					for(Cache.Entry<Object, Object> row: it) {
-						writer.write(row);
-					}
-					
-				}
-				else if(cfg.getCacheStoreFactory()!=null) {
-					CacheStore<Object, Object> store =  cfg.getCacheStoreFactory().create();
-					Iterable<Cache.Entry<Object, Object>> it = (Iterable)igcache.localEntries(CachePeekMode.PRIMARY);
-					for(Cache.Entry<Object, Object> row: it) {
-						store.write(row);
-					}
-					store.sessionEnd(true);
-				}
-				
-				count++;
-			}
-			catch(Exception e) {
-				message.add(e.getMessage());
-			}
-		}
-		if(message.isEmpty()) {
-			message.add("Finish save data successfull!");
-		}
 		
-		result.put("caches", caches);
-		result.put("count", count);
+		try {
+			IgniteCache<Object, Object> igcache = ignite.cache(cache);					
+			
+			CacheConfiguration<Object, Object> cfg = igcache.getConfiguration(CacheConfiguration.class);
+			
+			if(cfg.isWriteThrough()) {
+				message.add("Cache WriteThrough is true, It may not be necessary to call this service!");
+			}
+			
+			if(cfg.getCacheWriterFactory()!=null) {
+				CacheWriter<Object, Object> writer = cfg.getCacheWriterFactory().create();
+				
+				Iterable<Cache.Entry<Object, Object>> it = (Iterable)igcache.localEntries(CachePeekMode.PRIMARY);
+				for(Cache.Entry<Object, Object> row: it) {
+					writer.write(row);
+					count++;
+				}
+				
+			}
+			else if(cfg.getCacheStoreFactory()!=null) {
+				CacheStore<Object, Object> store =  cfg.getCacheStoreFactory().create();
+				Iterable<Cache.Entry<Object, Object>> it = (Iterable)igcache.localEntries(CachePeekMode.PRIMARY);
+				for(Cache.Entry<Object, Object> row: it) {
+					store.write(row);
+					count++;
+				}
+				store.sessionEnd(true);
+			}			
+		}
+		catch(Exception e) {
+			result.setAcknowledged(false);
+			message.add(e.getMessage());
+		}
+
+		result.put("modifiedCount", count);
 		return result;
 	}
 

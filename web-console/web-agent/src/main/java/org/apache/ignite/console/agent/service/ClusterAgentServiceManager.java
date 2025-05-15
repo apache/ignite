@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.ignite.Ignite;
-
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.console.agent.handlers.RestClusterHandler;
+import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -19,7 +22,7 @@ import io.swagger.annotations.ApiOperation;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-@ApiOperation(value = "Deploy Service to the cluster", notes = "部署Service到ignite集群中。")
+@ApiOperation(value = "Deploy Service to the cluster", notes = "列出、部署、卸载Service到ignite集群中。")
 public class ClusterAgentServiceManager implements ClusterAgentService {
    
 	@IgniteInstanceResource
@@ -30,14 +33,85 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 		
 	public ClusterAgentServiceManager(Ignite ignite){
 		this.ignite = ignite;
-	}	
+	}
+	
+	public static Ignite getIgniteByName(String clusterName,ServiceResult stat) {
+    	Ignite ignite = null;    	
+    	String clusterId = Utils.escapeFileName(clusterName);
+    	String gridName = RestClusterHandler.clusterNameMap.get(clusterId);
+		if(gridName!=null) {
+			try {
+        		ignite = Ignition.ignite(gridName);	    		
+	    		stat.setStatus("started");
+	    		clusterName = null;
+    		}
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.addMessage(e.getMessage());
+	    		stat.setStatus("stoped");
+	    	}
+		}        
+        if(ignite!=null && clusterName!=null) {
+        	try {
+        		ignite = Ignition.ignite(clusterName);	    		
+	    		stat.setStatus("started");
+    		}
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.addMessage(e.getMessage());
+	    		stat.setStatus("stoped");
+	    	}
+    	}
+        return ignite;
+    }
+	
+	public static boolean canHandle(String serviceName) {
+		if(serviceName.equals("listService") || serviceName.equals("serviceList")) {    		
+    		return true;		
+    	}
+    	if(serviceName.equals("deployService")) {    		
+    		return true;   		
+    	}
+    	if(serviceName.equals("redeployService")) {    		
+    		return true;   		
+    	}
+    	if(serviceName.equals("undeployService")) {
+    		return true; 
+    	}
+    	if(serviceName.equals("cancelService")) {
+    		
+    		return true;    		
+    	}
+    	return false;
+	}
+	
+	@Override
+	public ServiceResult call(String serviceName, Map<String, Object> payload) {
+		if(serviceName==null || serviceName.isBlank()) {
+			serviceName = "listService";
+		}
+		if(serviceName.equals("listService") || serviceName.equals("serviceList")) {    		
+			return this.serviceList(payload);
+    	}
+    	if(serviceName.equals("deployService")) {    		
+    		return this.deployService(payload);	
+    	}
+    	if(serviceName.equals("redeployService")) {
+    		return this.redeployService(payload);		
+    	}
+    	if(serviceName.equals("undeployService")) {    		
+    		return this.undeployService(payload);		
+    	}
+    	if(serviceName.equals("cancelService")) {    		
+    		return this.cancelService(payload);
+    	}
+    	return ServiceResult.fail("Wrong serviceName:"+serviceName);
+	}
 	
 	public ServiceResult serviceList(Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
 		Collection<ServiceDescriptor> descs = ignite.services().serviceDescriptors();
 		
-		JsonObject args = new JsonObject(payload);
-		String type = args!=null? args.getString("type"):null;
+		
+		String type = payload!=null? (String)payload.get("type"):null;
 		
 		for(ServiceDescriptor ctx: descs) {
 			JsonObject info = new JsonObject();
@@ -89,7 +163,7 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 	
 	public ServiceResult redeployService(Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
-		List<String> messages = result.messages;
+		List<String> messages = result.getMessages();
 		Collection<ServiceDescriptor> descs = ignite.services().serviceDescriptors();		
 		JsonObject args = new JsonObject(payload);		
 		JsonArray services = args.getJsonArray("services");
@@ -126,7 +200,7 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 		ServiceResult result = new ServiceResult();	
 		JsonObject args = new JsonObject(payload);		
 		JsonArray services = args.getJsonArray("services");
-		List<String> messages = result.messages;
+		List<String> messages = result.getMessages();
 		for(Object service: services) {
 			if(service!=null) {
 				
@@ -148,7 +222,7 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 		ServiceResult result = new ServiceResult();	
 		JsonObject args = new JsonObject(payload);		
 		JsonArray services = args.getJsonArray("services");
-		List<String> messages = result.messages;
+		List<String> messages = result.getMessages();
 		for(Object service: services) {
 			if(service!=null) {
 				
@@ -169,11 +243,10 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 
 	/**
 	 * deploy service
-	 */
-	@Override
-	public ServiceResult call(String cluterId, Map<String, Object> payload) {
+	 */	
+	public ServiceResult deployService(Map<String, Object> payload) {
 		ServiceResult result = new ServiceResult();
-		List<String> messages = result.messages;
+		List<String> messages = result.getMessages();
 		JsonObject args = new JsonObject(payload);
 		if(args.containsKey("service")) {
 			JsonObject service = args.getJsonObject("service");

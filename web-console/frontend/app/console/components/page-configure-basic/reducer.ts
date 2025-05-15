@@ -42,7 +42,7 @@ export const reducer = (state = defaults, action, root) => {
                 oldClusterCaches: existingCaches(root.list.caches, cluster)
             });
         }
-
+        
         case ADD_NEW_CACHE: {
             const cache = {
                 id: action.id,

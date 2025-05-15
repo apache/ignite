@@ -1,8 +1,6 @@
 package org.apache.ignite.console.agent.db;
 
-import org.apache.ignite.console.agent.db.Dialect;
-import org.apache.ignite.console.agent.db.IntrospectedTable;
-import org.apache.ignite.console.agent.utils.DBMetadataUtils;
+
 import org.beetl.core.Configuration;
 import org.beetl.core.GroupTemplate;
 import org.beetl.core.Template;
@@ -44,7 +42,7 @@ public class BeetlTemplate {
      * @return
      * @throws IOException
      */
-    public static String exportDatabaseHtml(List<IntrospectedTable> tables, String filePath, String fileName) throws IOException {
+    public String exportDatabaseHtml(List<IntrospectedTable> tables, String filePath, String fileName) throws IOException {
         mkdirs(filePath);
         Template t = gt.getTemplate("datebase.html");
         t.binding("tables", tables);
@@ -61,7 +59,7 @@ public class BeetlTemplate {
      * @return
      * @throws IOException
      */
-    public static String exportTableHtml(IntrospectedTable table, String filePath, String fileName) throws IOException {
+    public String exportTableHtml(IntrospectedTable table, String filePath, String fileName) throws IOException {
         mkdirs(filePath);
         Template t = gt.getTemplate("table.html");
         t.binding("table", table);
@@ -76,7 +74,7 @@ public class BeetlTemplate {
      *
      * @param filePath
      */
-    private static void mkdirs(String filePath){
+    static void mkdirs(String filePath){
         File file = new File(filePath);
         if (!file.isDirectory() || !file.exists()) {
             file.mkdirs();
@@ -90,7 +88,7 @@ public class BeetlTemplate {
      * @param path
      * @throws IOException
      */
-    private static void render(Template t, String path) throws IOException {
+    static void render(Template t, String path) throws IOException {
         OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(path), "UTF-8");
 
         t.renderTo(writer);

@@ -1,6 +1,10 @@
 package database.ddl.transfer.utils;
 
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.beetl.core.resource.ClasspathResource;
 import org.beetl.core.resource.ClasspathResourceLoader;
@@ -9,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Version
  **/
 public class JsonUtil {
+	
+	public static ObjectMapper objectMapper = new ObjectMapper();
 
 	private volatile static Map<String, Map<String, String>> jsonMap = null;
 
@@ -45,22 +52,25 @@ public class JsonUtil {
 						jsonString.append((char)ch);
 						ch = reader.read();
 					}
-					JSONObject jsonObject = JSONObject.parseObject(jsonString.toString());
+					
+					
+					ObjectNode jsonObject = (ObjectNode) objectMapper.reader().readTree(jsonString.toString());
 					jsonMap = new ConcurrentHashMap<>();
-					Set<String> keySet = jsonObject.keySet();
-					Iterator<String> iterator = keySet.iterator();
+					
+					Iterator<Entry<String, JsonNode>> iterator = jsonObject.fields();
 					while (iterator.hasNext()) {
 						Map<String, String> mapingMap = new HashMap<>();
 						// 获取转换类型
-						String convertType = iterator.next();
-						// 获取mapping
-						String mapping = jsonObject.getString(convertType);
+						Entry<String, JsonNode> ent = iterator.next();
+						String convertType = ent.getKey();
+						
 						// 将mapping解析为object对象
-						JSONObject mappingJson = JSONObject.parseObject(mapping);
+						ObjectNode mappingJson = (ObjectNode)ent.getValue();
 						// 遍历mapping
-						Set<String> orginalTypeSet = mappingJson.keySet();
-						for (String orginalType : orginalTypeSet) {
-							String targetType = mappingJson.getString(orginalType);
+						Iterator<String> orginalTypeSet = mappingJson.fieldNames();
+						while (orginalTypeSet.hasNext()) {
+							String orginalType = orginalTypeSet.next();
+							String targetType = mappingJson.get(orginalType).asText();
 							mapingMap.put(orginalType, targetType);
 							jsonMap.put(convertType, mapingMap);
 						}

@@ -52,6 +52,7 @@ import org.apache.ignite.console.agent.db.DbTable;
 
 import org.apache.ignite.console.agent.rest.JdbcExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
+import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.db.DBInfo;
@@ -99,6 +100,14 @@ public class DatabaseHandler  implements ClusterHandler {
     private final JdbcExecutor jdbcExecutor;
     
     private DatabaseListener  databaseListener = new DatabaseListener();
+    
+    public static boolean canHandle(String serviceName) {
+    	
+		if(serviceName.equals("datasourceTest") || serviceName.equals("datasourceDisconnect")) {    		
+    		return true;		
+    	}    	
+    	return false;
+	}
     
     
 
@@ -396,4 +405,40 @@ public class DatabaseHandler  implements ClusterHandler {
     		databaseListener.deactivedCluster(info.getId().toString());
     	}
     }
+    
+    public ServiceResult handleCommand(String cluterId, String cmd, JsonObject args) {
+    	
+    	if(cmd.equals("datasourceTest")){
+    		ServiceResult stat = new ServiceResult();        	
+        	try (Connection conn = connect(args)) {
+                String catalog = conn.getCatalog();
+
+                log.info("Collected database catalog:" + catalog);            
+                stat.put("message","Connect success!"+(catalog==null?"":" Catalog:"+catalog));
+                stat.put("status", "connected");
+                return stat;
+            }
+        	catch(SQLException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "fail");
+	    		stat.put("error", e.getClass().getSimpleName());
+	    		return stat;
+	    	}
+        	
+        }
+        if(cmd.equals("datasourceDisconnect")) {
+        	ServiceResult stat = new ServiceResult();
+        	boolean rv = getDatabaseListener().deactivedCluster(cluterId);
+        	if(!rv) {
+        		stat.put("message", "Try again to remove from List.");
+        	}
+        	else {
+        		stat.put("message", "Remove this connection from List.");
+        	}
+    		stat.put("status", rv);
+    		return stat;
+        }
+        
+        return ServiceResult.fail("Can not handle cmd "+ cmd);
+	}
 }

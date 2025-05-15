@@ -9,7 +9,10 @@ function registerStates($stateProvider) {
         permission: 'query',
         url: '/datasets',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
-        resolve: {           
+        resolve: {
+            _shortClusters: ['ConfigEffects', ({etp}) => {
+                return etp('LOAD_USER_CLUSTERS');
+            }]
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -29,9 +32,11 @@ function registerStates($stateProvider) {
         permission: 'query',
         component: 'pageDatasets',
         resolve: {
-            _dataset: ['$transition$', ($transition$) => {
-                return {datasetID: $transition$.params().datasetID};
-            }]
+             _cluster: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                return $transition$.injector().getAsync('_shortClusters').then(() => {
+                    return etp('LOAD_AND_EDIT_CLUSTER', {clusterID: $transition$.params().datasetID});
+                });
+            }]     
         },
         data: {
             errorState: 'base.datasets.overview'

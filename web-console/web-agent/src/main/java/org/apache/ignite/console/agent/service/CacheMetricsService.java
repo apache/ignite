@@ -28,28 +28,21 @@ public class CacheMetricsService implements CacheAgentService {
     private Ignite ignite;
     
 	@Override
-	public ServiceResult call(Map<String,Object> payload) {
+	public ServiceResult call(String cache,Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();
-		int count = 0;		
-		JsonObject args = new JsonObject(payload);	
-		List<String> message = result.messages;	
-		IgniteEx igniteEx = (IgniteEx) ignite;
-		Collection<String> caches = cacheNameSelectList(ignite,args);
-		if(caches.isEmpty()) {
-			caches = igniteEx.cacheNames();
+
+		List<String> message = result.getMessages();
+		
+		try {				
+			IgniteCache<?,?> igcache = ignite.cache(cache);
+			if(igcache!=null) {
+				CacheMetrics metric = igcache.metrics();
+				result.getResult().putAll(JsonObject.mapFrom(metric).getMap());				
+			}		
+
 		}
-		for(String cache: caches) {
-			try {				
-				IgniteCache<?,?> igcache = ignite.cache(cache);
-				if(igcache!=null) {
-					CacheMetrics metric = igcache.metrics();
-					result.put(cache,metric);
-				}				
-				count++;
-			}
-			catch(Exception e) {
-				message.add(e.getMessage());
-			}
+		catch(Exception e) {
+			message.add(e.getMessage());
 		}
 		return result;
 	}

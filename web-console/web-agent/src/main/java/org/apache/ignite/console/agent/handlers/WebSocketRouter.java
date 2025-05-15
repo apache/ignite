@@ -67,6 +67,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
@@ -80,6 +81,7 @@ import org.apache.ignite.console.agent.service.CacheAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
 import org.apache.ignite.console.agent.service.ServiceResult;
+import org.apache.ignite.console.agent.task.CacheServiceMapperTask;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.websocket.AgentHandshakeRequest;
@@ -165,7 +167,7 @@ public class WebSocketRouter implements AutoCloseable {
     
     private HttpClient httpClient;
     
-    private static Map<String,Service> runningServices = new ConcurrentHashMap<>();
+    private static Map<String,Object> runningServices = new ConcurrentHashMap<>();
     
     /**
      * @param cfg Configuration.
@@ -463,16 +465,18 @@ public class WebSocketRouter implements AutoCloseable {
         	json.put("demo", true);
         }
         String clusterName = Utils.escapeFileName(json.getString("name"));
-		try {			
+        List<String> messages = new ArrayList<>();
+		
+        try {			
 
-			String unzipDest = IgniteClusterLauncher.saveBlobToFile(json);
+			String unzipDest = IgniteClusterLauncher.saveBlobToFile(json,messages);
 			
 			Boolean restart = json.getBoolean("restart",false);
 			if(restart) {			
 	        	IgniteClusterLauncher.stopIgnite(clusterName,clusterId);
 			}
 			else if(unzipDest!=null) {
-				stat.put("message", "Deploy server.xml to "+unzipDest);
+				stat.put("message", String.join("\n",messages));
 				stat.put("status", "stoped");
 				return stat;
 			}
@@ -624,37 +628,17 @@ public class WebSocketRouter implements AutoCloseable {
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(msg);
         String cluterId = json.getString("id");
-        String serviceName = json.getString("serviceName","");        
+        String serviceName = json.getString("serviceName","");
         
-        if(serviceName.equals("datasourceTest")) {
+        if(dbHnd.canHandle(serviceName)) {
+        	
         	JsonObject args = json.getJsonObject("args");
-        	try (Connection conn = dbHnd.connect(args)) {
-                String catalog = conn.getCatalog();
-
-                log.info("Collected database catalog:" + catalog);            
-                stat.put("message","Connect success!"+(catalog==null?"":" Catalog:"+catalog));
-                stat.put("status", "connected");
-                return stat;
-            }
-        	catch(SQLException e) {	
-	    		stat.put("message", e.getMessage());
-	    		stat.put("status", "fail");
-	    		stat.put("error", e.getClass().getSimpleName());
-	    		return stat;
-	    	}
+        	ServiceResult rv = dbHnd.handleCommand(cluterId,serviceName,args);        	
+    		
+    		return rv.toJson();
         	
         }
-        if(serviceName.equals("datasourceDisconnect")) {        	
-        	boolean rv = dbHnd.getDatabaseListener().deactivedCluster(cluterId);
-        	if(!rv) {
-        		stat.put("message", "Try again to remove from List.");
-        	}
-        	else {
-        		stat.put("message", "Remove this connection from List.");
-        	}
-    		stat.put("status", rv);
-    		return stat;
-        }
+        
         
         Ignite ignite = getIgnite(json,stat);
         if(ignite!=null && !serviceName.isEmpty()) {
@@ -662,34 +646,15 @@ public class WebSocketRouter implements AutoCloseable {
         	if(args==null) {
         		args = new JsonObject();
         	}
-        	Service serviceObject = null;
+        	
         	String serviceType = json.getString("serviceType","ClusterAgentService");
         	
-        	if(serviceName.equals("serviceList")) {
+        	if(ClusterAgentServiceManager.canHandle(serviceName)) {
         		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
-        		ServiceResult result = serviceList.serviceList(args.getMap());
-        		return result.toJson();   		
+        		ServiceResult result = serviceList.call(serviceName,args.getMap());
+        		return result.toJson();
         	}
-        	if(serviceName.equals("deployService")) {
-        		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
-        		ServiceResult result = serviceList.call(cluterId,args.getMap());
-        		return result.toJson();   		
-        	}
-        	if(serviceName.equals("redeployService")) {
-        		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
-        		ServiceResult result = serviceList.redeployService(args.getMap());
-        		return result.toJson();   		
-        	}
-        	if(serviceName.equals("undeployService")) {
-        		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
-        		ServiceResult result = serviceList.undeployService(args.getMap());
-        		return result.toJson();     		
-        	}
-        	if(serviceName.equals("cancelService")) {
-        		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
-        		ServiceResult result = serviceList.cancelService(args.getMap());
-        		return result.toJson();    		
-        	}
+        	
         	
         	try {
         		
@@ -697,40 +662,59 @@ public class WebSocketRouter implements AutoCloseable {
         			stat.put("message", String.format("%s already running!", serviceName));
         			return stat;
         		}
+        		
+        		ServiceResult result;
         		if(serviceType.equals("CacheAgentService")) {
-            		serviceObject = ignite.services().serviceProxy(serviceName,CacheAgentService.class,true);
+        			CacheAgentService serviceObject = ignite.services().serviceProxy(serviceName,CacheAgentService.class,true);
             		if(serviceObject==null) {
         				stat.put("message", "service not found!");
         				return stat;
         			}
             		
-            		CacheAgentService agentSeervice = (CacheAgentService)(serviceObject);
-            		runningServices.put(serviceName,agentSeervice);            		
-            		ServiceResult result = agentSeervice.call(args.getMap());
-            		runningServices.remove(serviceName);            		
-            		return result.toJson();
+            		String cacheName = null;
+            		if(args.containsKey("cache")) {
+            			cacheName = args.getJsonObject("cache").getString("name");            			
+            		}
+            		else if(args.containsKey("cacheName")) {
+            			cacheName = args.getString("cacheName");            			
+            		}
             		
+            		if(cacheName!=null && !cacheName.isEmpty()) {            			
+            			runningServices.put(serviceName,serviceObject);
+                		result = serviceObject.call(cacheName,args.getMap());
+            		}
+            		else {
+	            		ComputeTaskFuture<ServiceResult> r = ignite.compute().executeAsync(CacheServiceMapperTask.class, json);
+	            		runningServices.put(serviceName,r);
+	            		result = r.get();
+            		}
             	}
             	else {
-            		serviceObject = ignite.services().serviceProxy(serviceName,ClusterAgentService.class,true);
+            		ClusterAgentService serviceObject = ignite.services().serviceProxy(serviceName,ClusterAgentService.class,true);
             		if(serviceObject==null) {
         				stat.put("message", "service not found!");
         				return stat;
-        			}
+        			}            		
             		
-            		ClusterAgentService agentSeervice = (ClusterAgentService)(serviceObject);
-            		runningServices.put(serviceName,agentSeervice);
-            		ServiceResult result = agentSeervice.call(cluterId,args.getMap());
-            		runningServices.remove(serviceName);
-            		return result.toJson();
-            	}	        	
+            		runningServices.put(serviceName,serviceObject);
+            		result = serviceObject.call(cluterId,args.getMap());
+            		
+            	}
+        		
+        		if(result.isAcknowledged() && result.getMessages().isEmpty()) {
+        			result.addMessage("Execute service "+serviceName+" successfull.");
+        		}
+        		
+        		return result.toJson();
 	        }
 			catch(Exception e) {
 				stat.put("status", "fail");
 				stat.put("message", e.getMessage());
-				stat.put("error", e.getClass().getSimpleName());
-				runningServices.remove(serviceName);
+				stat.put("error", e.getClass().getSimpleName());				
 			}
+        	finally {
+        		runningServices.remove(serviceName);
+        	}
         }
         else {
         	stat.put("status", "stoped");
@@ -749,7 +733,7 @@ public class WebSocketRouter implements AutoCloseable {
         String cmdName = json.getString("cmdName","");
         JsonObject state = new JsonObject();
         Ignite ignite = getIgnite(json,state);
-        if(ignite!=null) {
+        if(ignite!=null || cmdName.equals("commandList")) {
         	state = IgniteClusterLauncher.callClusterCommand(ignite,cmdName,json);
         }
         return state;

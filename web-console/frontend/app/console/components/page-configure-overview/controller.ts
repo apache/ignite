@@ -82,8 +82,14 @@ export default class PageConfigureOverviewController {
       }
     }
 
-    editCluster(cluster: ShortCluster) {
-        return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster.id});
+    startCluster(cluster: ShortCluster) {
+        this.AgentManager.startCluster(cluster).then((msg) => {
+             if(msg.status){               
+                this.ConfigureState.dispatchAction({type: 'START_CLUSTER'});
+                cluster.status = msg.status;
+             }        
+             
+         });
     }
 
     $onInit() {
@@ -156,7 +162,7 @@ export default class PageConfigureOverviewController {
             },
             {
                 action: 'Start',
-                click: () => this.editCluster(selectedClusters[0]),
+                click: () => this.startCluster(selectedClusters[0]),
                 available: selectedClusters.length === 1
             },
             {

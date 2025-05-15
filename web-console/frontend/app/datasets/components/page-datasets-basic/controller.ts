@@ -2,13 +2,17 @@ import { Component, OnInit,AfterViewInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {forkJoin, merge, from, of} from 'rxjs';
 import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
+import ConfigureState from '../../../configuration/services/ConfigureState';
+import ConfigSelectors from '../../../configuration/store/selectors';
+import Clusters from '../../../configuration/services/Clusters';
+
 import cloneDeep from 'lodash/cloneDeep';
 import {UIRouter} from '@uirouter/angularjs';
 
 import Datasource from 'app/datasource/services/Datasource';
 
 export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit {
-    static $inject = ['$sanitize','$sce','$uiRouter','Datasource'];
+    static $inject = ['$sanitize','$sce','$uiRouter','Datasource','ConfigureState','ConfigSelectors'];
 
     url = 'http://localhost:3000/webapps/mongoAdmin/queryDocuments#admin';
 
@@ -16,7 +20,13 @@ export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit
 
     safeStringUrl: SafeResourceUrl;
 
-    constructor(private $sanitize,private $sce,private $uiRouter: UIRouter,private Datasource: Datasource) {
+    constructor(
+        private $sanitize,private $sce,
+        private $uiRouter: UIRouter,
+        private Datasource: Datasource,
+        private ConfigureState: ConfigureState,
+        private ConfigSelectors: ConfigSelectors,
+    ) {
         
         this.safeUrl = this.$sce.trustAsResourceUrl(this.url);
         this.safeStringUrl = this.$sanitize(this.url);    
@@ -37,22 +47,24 @@ export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit
             filter((v) => v),
             take(1)
         );
-        
-        this.originalDatasource$ = datasetID$.pipe(
+
+        this.originalCluster$ = datasetID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return from(this.Datasource.selectDatasource(id));
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
             }),
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
-        );  
+        );
         
-        this.originalDatasource$.subscribe((c) =>{
-            this.clonedDatasource = cloneDeep(c);            
-            this.setCookie('currentDatasetUrl',c.jdbcUrl,30);
-            if (c.jdbcProp['web_url']){
-                this.url = c.jdbcProp['web_url']
+        
+        this.originalCluster$.subscribe((c) =>{
+            this.clonedCluster = cloneDeep(c);
+            let jndi_url  = 'mongodb://127.0.0.1:2701/'+this.clonedCluster.name;               
+            this.setCookie('currentDatasetUrl',jndi_url,30);
+            if (this.clonedCluster.crudui_web_url){
+                this.url = this.clonedCluster.crudui_web_url;
                 this.safeUrl = this.$sce.trustAsResourceUrl(this.url);
                 this.safeStringUrl = this.$sanitize(this.url);   
                 console.log(this.safeUrl);

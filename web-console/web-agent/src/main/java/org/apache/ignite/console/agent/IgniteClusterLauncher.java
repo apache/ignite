@@ -19,6 +19,8 @@ package org.apache.ignite.console.agent;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,6 +52,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.console.agent.code.CrudUICodeGenerator;
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.console.agent.handlers.StringStreamHandler;
 import org.apache.ignite.console.agent.service.*;
@@ -70,7 +73,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.logger.slf4j.Slf4jLogger;
+
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.slf4j.Logger;
@@ -193,7 +196,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * @param services Distributed services on the grid.
      */
     public static void deployServices(IgniteServices services) {    	
-        
+
         services.deployNodeSingleton("CacheMetricsService", new CacheMetricsService());
         services.deployNodeSingleton("CacheLoadDataService", new CacheLoadDataService());
         services.deployNodeSingleton("CacheSaveDataService", new CacheSaveDataService());
@@ -204,8 +207,8 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         services.deployClusterSingleton("CacheCopyDataService", new CacheCopyDataService());        
         services.deployNodeSingleton("ComputeTaskLoadService", new ComputeTaskLoadService());
         
-        services.deployClusterSingleton("ClusterAgentServiceManager", new ClusterAgentServiceManager());
-        services.deployClusterSingleton("ClusterAgentVerticleManager", new ClusterAgentVerticleManager());
+        services.deployClusterSingleton("serviceManager", new ClusterAgentServiceManager());
+        services.deployClusterSingleton("verticleManager", new ClusterAgentVerticleManager());
 
         
         //String cacheName = "default";
@@ -313,7 +316,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			cfgWorkMap = IgnitionEx.loadConfigurations(springCfgUrl);			
 			//only on node per jvm.					
 			IgniteConfiguration cfg = cfgWorkMap.get1().iterator().next();			
-			
+
 			// 最后一个节点： clusterID和nodeID相同
 			if(isLastNode) {				
 				if(cfg.getConsistentId()==null)
@@ -376,7 +379,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static String saveBlobToFile(JsonObject json) throws IgniteCheckedException {    	
+    public static String saveBlobToFile(JsonObject json,List<String> messages) throws IgniteCheckedException {    	
     	String clusterName = json.getString("name");    	
     	String base64 = json.getString("blob");    	 
         String prefix = "data:application/octet-stream;base64,";
@@ -398,10 +401,17 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 				
 				AgentUtils.unZip(zipFile, descDir);
 				
+				if(json.containsKey("crudui")) {
+					CrudUICodeGenerator codeGen = new CrudUICodeGenerator();
+					List<String> codeMessages = codeGen.generator(descDir,json.getMap());
+					messages.addAll(codeMessages);
+				}
+				
 				return descDir;
 				
 			} catch (IOException e) {
 				log.error("Failed to save zip blob data!",e);
+				messages.add(e.getMessage());
 			}
         }
         return null;
@@ -445,14 +455,15 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         if(ignite!=null) {
 	        
         	ClusterNode node = ignite.cluster().localNode();
-	        Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
-	        String host = jettyAddrs.iterator().next();
+	        Collection<String> tcpAddrs = node.attribute(ATTR_REST_TCP_ADDRS);
+	        String host = tcpAddrs.iterator().next();
 	        if(host!=null && !host.isBlank()) {
 		        argsList.add("--host");
 		        argsList.add(host);
 	        }
 	        argsList.add("--port");
-	        argsList.add(""+ignite.configuration().getConnectorConfiguration().getPort());
+	        Object tcpPort = node.attribute("clientListenerPort");
+	        argsList.add(""+tcpPort);
         }
         
         if(args!=null) {
@@ -468,7 +479,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         JavaLogger javaLogger = new JavaLogger(logger,!JavaLogger.isConfigured());
         CommandHandler hnd = new CommandHandler(javaLogger);
         hnd.console = null;
-        boolean experimentalEnabled = true;
+        
         if(cmdName.equals("commandList")) {
         	IgniteCommandRegistry cmdReg = null;
         	if(ignite==null) {        		

@@ -154,13 +154,6 @@ export default class PageConfigureBasicController {
         return this.ConfigureState.dispatchAction(changeItem('caches', cache));
     }
 
-    save(download = false) {
-        if (this.form.$invalid)
-            return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
-
-        // todo@byron
-    }
-
     reset() {
         this.clonedCluster = cloneDeep(this.originalCluster);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
@@ -172,16 +165,26 @@ export default class PageConfigureBasicController {
         if(this.$scope.status && this.$scope.status=="stoped"){
             formActionsMenu.push({
                 text: 'Start Cluster',
-                click: () => this.confirmAndStart(),
+                click: () => this.confirmAndStart(false),
+                icon: 'checkmark'
+            });
+            formActionsMenu.push({
+                text: 'Start Crud UI',
+                click: () => this.confirmAndStart(true),
                 icon: 'checkmark'
             })
         }        
         else {
             formActionsMenu.push({
                 text: 'Start Cluster',
-                click: () => this.confirmAndStart(),
+                click: () => this.confirmAndStart(false),
                 icon: 'checkmark'
             });
+            formActionsMenu.push({
+                text: 'Start Crud UI',
+                click: () => this.confirmAndStart(true),
+                icon: 'checkmark'
+            })
             formActionsMenu.push({
                 text: 'Stop Cluster',
                 click: () => this.confirmAndStop(),
@@ -195,11 +198,27 @@ export default class PageConfigureBasicController {
         }
         this.$scope.formActionsMenu = formActionsMenu;
         return formActionsMenu;
-    }
-    
+    }    
     
     start(restart:boolean) {
         this.clonedCluster['restart'] = restart;
+        this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
+            if(!msg.message){
+               this.$scope.status = msg.status;
+               this.ConfigureState.dispatchAction({type: 'START_CLUSTER'});
+               this.clonedCluster.status = msg.status;
+            }            
+            this.$scope.message = msg.message;
+ 
+        })
+       .catch((e) => {
+            this.$scope.message = ('Failed to generate project config file: '+e);           
+        });
+    }
+
+    startWithUI(restart:boolean) {
+        this.clonedCluster['restart'] = restart;
+        this.clonedCluster['crudui'] = true;
         this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
             if(!msg.message){
                this.$scope.status = msg.status;
@@ -254,9 +273,17 @@ export default class PageConfigureBasicController {
             .then(() => this.reset())
             .catch(() => {});
     }
-    confirmAndStart() {
+    confirmAndStart(withUI:boolean) {
         return this.Confirm.confirm('Are you sure you want to start current cluster? Current status:' + this.clonedCluster.status)
-            .then(() => this.start(false))
+            .then(() => {
+                if(withUI) {
+                    this.startWithUI(false);
+                }
+                else{
+                    this.start(false);
+                }
+
+            })
             .catch(() => {});
     }
     confirmAndRestart() {

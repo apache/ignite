@@ -40,11 +40,13 @@ import java.util.Map;
 import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.jackson.VertxModule;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.webmvc.Vertxlet;
 
@@ -102,7 +104,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * Vertx REST handler. The following URL format is supported: {@code /ignite?cmd=cmdName&param1=abc&param2=123}
  */
-public class GridJettyRestHandler extends Vertxlet {
+public class GridCmdRestHandler extends Vertxlet {
     
 	private static final long serialVersionUID = 1L;
 
@@ -150,19 +152,13 @@ public class GridJettyRestHandler extends Vertxlet {
 
     /** Request handlers. */
     private GridRestProtocolHandler hnd;
-
-    /** Default page. */
-    private volatile String dfltPage;
-
-    /** Favicon. */
-    private volatile byte[] favicon;
+   
 
     /** Mapper from Java object to JSON. */
     private final ObjectMapper jsonMapper;
     
-    private final String contextPath;
-    
-    public int index = 0;
+    private final String contextPath;    
+
 
     /** */
     private final boolean getAllAsArray = IgniteSystemProperties.getBoolean(IGNITE_REST_GETALL_AS_ARRAY);
@@ -175,7 +171,7 @@ public class GridJettyRestHandler extends Vertxlet {
      * @param authChecker Authentication checking closure.
      * @param ctx Kernal context.
      */
-    GridJettyRestHandler(GridRestProtocolHandler hnd, C1<String, Boolean> authChecker, GridKernalContext ctx) {
+    GridCmdRestHandler(GridRestProtocolHandler hnd, C1<String, Boolean> authChecker, GridKernalContext ctx) {
         assert hnd != null;
         assert ctx != null;
 
@@ -183,28 +179,10 @@ public class GridJettyRestHandler extends Vertxlet {
         this.authChecker = authChecker;
         this.log = ctx.log(getClass());
         this.jsonMapper = new IgniteObjectMapper(ctx);
+        this.jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        this.jsonMapper.registerModule(new VertxModule());
         this.contextPath = ctx.igniteInstanceName()==null || ctx.igniteInstanceName().isBlank() ? null: "/"+ctx.igniteInstanceName();
-        
-        // Init default page and favicon.
-        try {
-            initDefaultPage();
-
-            if (log.isDebugEnabled())
-                log.debug("Initialized default page.");
-        }
-        catch (IOException e) {
-            U.warn(log, "Failed to initialize default page: " + e.getMessage());
-        }
-
-        try {
-            initFavicon();
-
-            if (log.isDebugEnabled())
-                log.debug(favicon != null ? "Initialized favicon, size: " + favicon.length : "Favicon is null.");
-        }
-        catch (IOException e) {
-            U.warn(log, "Failed to initialize favicon: " + e.getMessage());
-        }
+       
     }
 
     /**
@@ -309,68 +287,7 @@ public class GridJettyRestHandler extends Vertxlet {
             throw new IgniteCheckedException(format(FAILED_TO_PARSE_FORMAT, "UUID", key, val));
         }
     }
-
-    /**
-     * @throws IOException If failed.
-     */
-    private void initDefaultPage() throws IOException {
-        assert dfltPage == null;
-
-        InputStream in = getClass().getResourceAsStream("/rest.html");
-
-        if (in != null) {
-            LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, CHARSET));
-
-            try {
-                StringBuilder buf = new StringBuilder(2048);
-
-                for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                    buf.append(line);
-
-                    if (!line.endsWith(" "))
-                        buf.append(' ');
-                }
-
-                dfltPage = buf.toString();
-            }
-            finally {
-                U.closeQuiet(rdr);
-            }
-        }
-    }
-
-    /**
-     * @throws IOException If failed.
-     */
-    private void initFavicon() throws IOException {
-        assert favicon == null;
-
-        InputStream in = getClass().getResourceAsStream("/favicon.ico");
-
-        if (in != null) {
-            BufferedInputStream bis = new BufferedInputStream(in);
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-            try {
-                byte[] buf = new byte[2048];
-
-                while (true) {
-                    int n = bis.read(buf);
-
-                    if (n == -1)
-                        break;
-
-                    bos.write(buf, 0, n);
-                }
-
-                favicon = bos.toByteArray();
-            }
-            finally {
-                U.closeQuiet(bis);
-            }
-        }
-    }
+    
     
     @Override
     public void handle(RoutingContext rc) {
@@ -384,55 +301,9 @@ public class GridJettyRestHandler extends Vertxlet {
     public void handle(String target, RoutingContext rc, HttpServerRequest srvReq, HttpServerResponse res) {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", srvReq=" + srvReq + ']');
-
         
-        if(this.contextPath!=null && index==0 && target.equals("/ignite")) {
-        	 processRequest(target, rc, srvReq, res);
-        	 rc.end();
-        }
-        else if (this.contextPath!=null && target.startsWith(this.contextPath)) {        	
-            processRequest(target, rc, srvReq, res);
-            rc.end();
-           
-        }       
-        else if (this.contextPath==null && target.startsWith("/ignite")) {        	
-            processRequest(target, rc, srvReq, res);
-            rc.end();
-        }       
-        else if (target.startsWith("/favicon.ico")) {
-            if (favicon == null) {
-                res.setStatusCode(404);
-
-                rc.end();
-
-                return;
-            }
-
-            res.setStatusCode(200);
-            res.putHeader("Content-Type", "image/x-icon");
-            res.putHeader("Content-Length", String.valueOf(favicon.length));
-            res.write(Buffer.buffer(favicon));            
-
-            rc.end();
-        }
-        else if(target.equals("/")){  //modify@byron 
-            if (dfltPage == null) {
-                res.setStatusCode(404);
-               
-                rc.end();
-
-                return;
-            }
-
-            res.setStatusCode(200);
-            res.putHeader("Content-Type", "text/html");
-            
-            res.end(dfltPage);
-
-        }
-        else{ // continue
-        	
-        }
+        processRequest(target, rc, srvReq, res);
+   	 	rc.end();
     }
 
     /**
