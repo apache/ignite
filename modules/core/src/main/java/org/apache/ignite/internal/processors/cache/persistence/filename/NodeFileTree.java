@@ -311,6 +311,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Ignite configuration to get parameter from.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param isSnapshot {@code True} if tree relfects snapshot structure.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)

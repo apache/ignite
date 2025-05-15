@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,13 +60,8 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     @Parameterized.Parameters(name = "useAbsStoragePath={0}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (boolean useAbsStoragePath : new boolean[]{true, false})
-            params.add(new Object[]{useAbsStoragePath});
-
-        return params;
+    public static Object[] params() {
+        return new Object[]{true, false};
     }
 
     /** {@inheritDoc} */
@@ -89,6 +85,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /**
      * @param name Snapshot name
      * @param path Snapshot path.
+     * @param fts Nodes file trees.
      */
     void restoreAndCheck(String name, String path) throws Exception {
         List<NodeFileTree> fts = IntStream.range(0, 3)

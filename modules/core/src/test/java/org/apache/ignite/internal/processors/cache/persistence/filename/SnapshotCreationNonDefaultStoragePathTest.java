@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,7 +35,7 @@ import org.junit.Test;
  */
 public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
     /** */
-    public final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
+    private final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
         ccfg("cache0", null, null)
     };
 
