@@ -30,7 +30,10 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/**
+ * Uncollect node produces flat product of collections for each input row.
+ * For example, input row ({1, 2}, {3, 4}) produces rows: (1, 3), (1, 4), (2, 3), (2, 4).
+ */
 public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
     private int requested;

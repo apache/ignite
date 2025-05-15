@@ -44,15 +44,15 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
                 int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
                     IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
 
+                Function<Integer, Object>[] funcs = new Function[colCnt];
+
+                for (int i = 0; i < colCnt; i++) {
+                    int mul = 2 << i;
+                    funcs[i] = row -> F.asList(mul * row, mul * row + 1);
+                }
+
                 for (int size : sizes) {
                     log.info("Check: size=" + size + ", colCnt=" + colCnt + ", withOrdinality=" + withOrdinality);
-
-                    Function<Integer, Object>[] funcs = new Function[colCnt];
-
-                    for (int i = 0; i < colCnt; i++) {
-                        int mul = 2 << i;
-                        funcs[i] = row -> F.asList(mul * row, mul * row + 1);
-                    }
 
                     RootRewindable<Object[]> root = createNodes(colCnt, withOrdinality, new TestTable(size, colCnt, funcs));
 
