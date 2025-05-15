@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -83,20 +81,15 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
         checkDataExists();
 
-        List<NodeFileTree> fts = IntStream.range(0, 3)
-            .mapToObj(this::grid)
-            .map(ign -> ign.context().pdsFolderResolver().fileTree())
-            .collect(Collectors.toList());
-
         srv.snapshot().createSnapshot("mysnp").get();
 
         File fullPathSnp = new File(U.defaultWorkDirectory(), SNP_PATH);
 
         srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 
-        restoreAndCheck("mysnp", null, fts);
+        restoreAndCheck("mysnp", null);
 
-        restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath(), fts);
+        restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath());
     }
 
     /** {@inheritDoc} */

@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -85,9 +86,13 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /**
      * @param name Snapshot name
      * @param path Snapshot path.
-     * @param fts Nodes file trees.
      */
-    void restoreAndCheck(String name, String path, List<NodeFileTree> fts) throws Exception {
+    void restoreAndCheck(String name, String path) throws Exception {
+        List<NodeFileTree> fts = IntStream.range(0, 3)
+            .mapToObj(this::grid)
+            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+            .collect(Collectors.toList());
+
         stopAllGrids();
 
         checkFileTrees(fts);
