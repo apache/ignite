@@ -328,7 +328,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 while (run.get() && !Thread.currentThread().isInterrupted()) {
                     U.sleep(interval * 3 / 2);
 
-                    onNodeLeft((TcpCommunicationSpi)spis.get(from.id()), to.consistentId(), to.id());
+                    CommunicationWorkerThreadUtils.onNodeLeft((TcpCommunicationSpi)spis.get(from.id()), to.consistentId(), to.id());
                 }
             }
             catch (IgniteInterruptedCheckedException ignored) {

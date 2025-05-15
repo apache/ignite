@@ -113,9 +113,7 @@ import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -3221,16 +3219,5 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
         return new SnapshotFileTree(srv.context(), name, path);
-    }
-
-    /**
-     * @param consistentId Consistent id of the node.
-     * @param nodeId Left node ID.
-     */
-    protected static void onNodeLeft(TcpCommunicationSpi spi, Object consistentId, UUID nodeId) {
-        assert nodeId != null;
-
-        ((TcpCommunicationMetricsListener)U.field(spi, "metricsLsnr")).onNodeLeft(consistentId);
-        ((ConnectionClientPool)U.field(spi, "clientPool")).onNodeLeft(nodeId);
     }
 }

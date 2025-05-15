@@ -374,13 +374,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         this.lsnr = lsnr;
     }
 
-    /**
-     * @return Listener.
-     */
-    public CommunicationListener getListener() {
-        return lsnr;
-    }
-
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
         // Listener could be not initialized yet, but discovery thread could try to aggregate metrics.
