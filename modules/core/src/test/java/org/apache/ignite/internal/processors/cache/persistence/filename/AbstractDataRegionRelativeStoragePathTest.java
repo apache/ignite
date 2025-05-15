@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.IntStream;
@@ -62,13 +61,8 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     @Parameterized.Parameters(name = "useAbsStoragePath={0}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (boolean useAbsStoragePath : new boolean[]{true, false})
-            params.add(new Object[]{useAbsStoragePath});
-
-        return params;
+    public static Object[] params() {
+        return new Object[]{true, false};
     }
 
     /** {@inheritDoc} */

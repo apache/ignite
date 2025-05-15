@@ -35,7 +35,7 @@ import org.junit.Test;
  */
 public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
     /** */
-    public final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
+    private final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
         ccfg("cache0", null, null)
     };
 
