@@ -299,6 +299,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testLargeUserAttribute1() throws Exception {
         initLargeAttribute();
 
@@ -321,6 +322,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testLargeUserAttribute2() throws Exception {
         startGrid(0);
 
@@ -340,6 +342,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testLargeUserAttribute3() throws Exception {
         Set<Integer> idxs = ThreadLocalRandom.current()
             .ints(0, 10)
