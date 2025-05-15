@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
 import org.junit.Test;
 
-import static java.lang.String.format;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.junit.Assume.assumeTrue;
 
@@ -92,15 +91,15 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
                 nan = Float.NaN;
             }
 
-            assertQuery(format("SELECT CAST('+Infinity' AS %s)", type)).returns(positiveInfinity).check();
-            assertQuery(format("SELECT CAST('Infinity' AS %s)", type)).returns(positiveInfinity).check();
-            assertQuery(format("SELECT CAST('-Infinity' AS %s)", type)).returns(negativeInfinity).check();
-            assertQuery(format("SELECT CAST('NaN' AS %s)", type)).returns(nan).check();
+            assertQuery(String.format("SELECT CAST('+Infinity' AS %s)", type)).returns(positiveInfinity).check();
+            assertQuery(String.format("SELECT CAST('Infinity' AS %s)", type)).returns(positiveInfinity).check();
+            assertQuery(String.format("SELECT CAST('-Infinity' AS %s)", type)).returns(negativeInfinity).check();
+            assertQuery(String.format("SELECT CAST('NaN' AS %s)", type)).returns(nan).check();
 
-            assertQuery(format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k < CAST('+Infinity' AS %s)", type)).returns(0).check();
-            assertQuery(format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k < CAST('Infinity' AS %s)", type)).returns(0).check();
-            assertQuery(format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k > CAST('-Infinity' AS %s)", type)).returns(0).check();
-            assertQuery(format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k <> CAST('NaN' AS %s)", type)).returns(0).check();
+            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k < CAST('+Infinity' AS %s)", type)).returns(0).check();
+            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k < CAST('Infinity' AS %s)", type)).returns(0).check();
+            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k > CAST('-Infinity' AS %s)", type)).returns(0).check();
+            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k <> CAST('NaN' AS %s)", type)).returns(0).check();
         }
     }
 
@@ -730,9 +729,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             String result = params.get(2);
 
             if (dynamics)
-                assertQuery(format("SELECT CAST(? AS %s)", type)).withParams(val).returns(result).check();
+                assertQuery(String.format("SELECT CAST(? AS %s)", type)).withParams(val).returns(result).check();
             else
-                assertQuery(format("SELECT CAST('%s' AS %s)", val, type)).returns(result).check();
+                assertQuery(String.format("SELECT CAST('%s' AS %s)", val, type)).returns(result).check();
         }
     }
 
@@ -789,8 +788,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
             if (dynamic) {
                 String qry = precasted
-                    ? format("SELECT CAST(?::%s AS %s)", inputType, targetType)
-                    : format("SELECT CAST(? AS %s)", targetType);
+                    ? String.format("SELECT CAST(?::%s AS %s)", inputType, targetType)
+                    : String.format("SELECT CAST(? AS %s)", targetType);
 
                 if (expectedRes instanceof Exception)
                     assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage(), inputVal);
@@ -799,8 +798,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             }
             else {
                 String qry = precasted
-                    ? format("SELECT CAST(%s::%s AS %s)", asLiteral(inputVal, inputType), inputType, targetType)
-                    : format("SELECT CAST(%s AS %s)", asLiteral(inputVal, inputType), targetType);
+                    ? String.format("SELECT CAST(%s::%s AS %s)", asLiteral(inputVal, inputType), inputType, targetType)
+                    : String.format("SELECT CAST(%s AS %s)", asLiteral(inputVal, inputType), targetType);
 
                 if (expectedRes instanceof Exception)
                     assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage());
@@ -812,7 +811,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     private static String asLiteral(Object val, String type) {
-        return "VARCHAR".equalsIgnoreCase(type) ? format("'%s'", val) : String.valueOf(val);
+        return "VARCHAR".equalsIgnoreCase(type) ? String.format("'%s'", val) : String.valueOf(val);
     }
 
     /** @return input type, input value, target type, expected result. */
