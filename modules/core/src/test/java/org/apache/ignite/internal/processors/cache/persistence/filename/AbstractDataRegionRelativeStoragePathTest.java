@@ -42,13 +42,16 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** Custom storage path . */
-    static final String STORAGE_PATH = "dflt_dr";
+    static final String STORAGE_PATH = "storage";
 
     /** Second custom storage path. */
-    static final String STORAGE_PATH_2 = "custom_dr";
+    static final String STORAGE_PATH_2 = "storage2";
 
     /** */
     static final String SNP_PATH = "ex_snapshots";
+
+    /** */
+    protected static final int PARTS_CNT = 15;
 
     /** */
     @Parameterized.Parameter()
@@ -172,12 +175,17 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         return new CacheConfiguration<>(name)
             .setGroupName(grp)
             .setStoragePath(storagePath)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(15));
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(PARTS_CNT));
     }
 
     /** */
-    String storagePath(String storagePath) throws IgniteCheckedException {
-        return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+    String storagePath(String storagePath) {
+        try {
+            return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** @param fts Nodes file trees. */
