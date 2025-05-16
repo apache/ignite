@@ -2130,11 +2130,6 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             return trySetSystemFieldPosition(fieldId(name));
     }
 
-    /** {@inheritDoc} */
-    @Override public int fieldId(int order) {
-        return getOrCreateSchema().fieldId(order);
-    }
-
     /**
      * Try finding the field by ID. Used for types with stable schema (Serializable) to avoid
      * (string -> ID) calculations.

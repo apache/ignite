@@ -85,11 +85,4 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
      * @return Offset.
      */
     public boolean findFieldByName(String name);
-
-    /**
-     * Gets field by its order.
-     *
-     * @param order Order.
-     */
-    public int fieldId(int order);
 }
