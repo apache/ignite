@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.SystemVie
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UnnestIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UnstableTopologyIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
@@ -159,6 +160,7 @@ import org.junit.runners.Suite;
     QueryBlockingTaskExecutorIntegrationTest.class,
     ScalarInIntegrationTest.class,
     TpchTest.class,
+    UnnestIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
