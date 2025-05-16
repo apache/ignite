@@ -1962,7 +1962,7 @@ public class IgnitionEx {
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
                 convertLegacyDataStorageConfigurationToNew(cfg);
 
-            if (!cfg.isClientMode() && dsCfg == null)
+            if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
