@@ -320,6 +320,9 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 if (length == 0)
                     return "";
 
+                if (val.getClass() == char[].class)
+                    return new String((char[])val);
+
                 StringBuffer sb = new StringBuffer();
 
                 for (int i = 0; i < length; i++) {
