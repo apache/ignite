@@ -92,11 +92,26 @@ public class BinaryMetadata implements Externalizable {
      * @param typeName Type name.
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
-     * @param schemas Schemas.
      * @param isEnum Enum flag.
      * @param enumMap Enum name to ordinal mapping.
      */
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, BinaryFieldMetadata> fields,
+        @Nullable String affKeyFieldName, boolean isEnum, @Nullable Map<String, Integer> enumMap) {
+        this(typeId, typeName, fields, affKeyFieldName, null, isEnum, enumMap);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param fields Fields map.
+     * @param affKeyFieldName Affinity key field name.
+     * @param schemas Schemas.
+     * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
+     */
+    BinaryMetadata(int typeId, String typeName, @Nullable Map<String, BinaryFieldMetadata> fields,
         @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum,
         @Nullable Map<String, Integer> enumMap) {
         assert typeName != null;
@@ -176,7 +191,7 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Schemas.
      */
-    public Collection<BinarySchema> schemas() {
+    Collection<BinarySchema> schemas() {
         return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
     }
 

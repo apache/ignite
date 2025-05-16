@@ -1981,8 +1981,12 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         return mapper.fieldId(typeId, name);
     }
 
-    /** {@inheritDoc} */
-    @Override public BinarySchema getOrCreateSchema() {
+    /**
+     * Get or create object schema.
+     *
+     * @return Schema.
+     */
+    BinarySchema getOrCreateSchema() {
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
