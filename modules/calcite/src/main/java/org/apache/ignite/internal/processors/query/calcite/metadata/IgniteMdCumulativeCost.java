@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.Set;
-
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
