@@ -313,7 +313,7 @@ public class FilePerformanceStatisticsReader {
                 sysViewEntry = new UnsupportedSystemViewEntry(viewName.str, walkerName.str);
             }
             catch (ReflectiveOperationException e) {
-                throw new IgniteException("Could not find walker: " + walkerName.str + ".");
+                throw new IgniteException("Failed to instantiate " + walkerName.str + " walker for " + viewName.str + " system view.");
             }
 
             return true;
