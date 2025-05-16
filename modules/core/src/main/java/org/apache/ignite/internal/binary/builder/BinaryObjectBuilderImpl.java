@@ -244,7 +244,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 int idx = 0;
 
                 while (reader.position() < rawPos) {
-                    int fieldId = reader.reader().fieldId(idx++);
+                    int fieldId = BinaryUtils.fieldId(reader.reader(), idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
@@ -470,7 +470,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int idx = 0;
 
             while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = reader.reader().fieldId(idx++);
+                int fieldId = BinaryUtils.fieldId(reader.reader(), idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);

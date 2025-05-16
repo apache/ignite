@@ -3402,6 +3402,16 @@ public class BinaryUtils {
     }
 
     /**
+     * Gets field by its order.
+     *
+     * @param reader Reader.
+     * @param order Order.
+     */
+    public static int fieldId(BinaryReaderEx reader, int order) {
+        return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {
