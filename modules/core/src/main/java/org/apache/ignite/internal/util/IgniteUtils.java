@@ -2529,11 +2529,12 @@ public abstract class IgniteUtils extends CommonUtils {
     public static long fromBytes(byte[] bytes, int off, int limit) {
         assert bytes != null;
         assert limit <= 8;
-        assert bytes.length >= off + limit;
+
+        int bytesCnt = Math.min(bytes.length - off, limit);
 
         long res = 0;
 
-        for (int i = 0; i < limit; i++) {
+        for (int i = 0; i < bytesCnt; i++) {
             res <<= 8;
             res |= bytes[off + i] & 0xFF;
         }
