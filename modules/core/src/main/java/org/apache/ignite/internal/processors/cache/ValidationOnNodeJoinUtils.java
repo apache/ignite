@@ -389,6 +389,24 @@ public class ValidationOnNodeJoinUtils {
                 throw new IgniteCheckedException("Encryption cannot be used with disk page compression " +
                     cacheSpec.toString());
         }
+
+        if (!F.isEmpty(cc.getStoragePath())) {
+            DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
+
+            String cs = cc.getStoragePath();
+
+            if (dsCfg == null)
+                throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + cs);
+
+            List<String> extraNodeStorages = F.asList(dsCfg.getExtraStoragePathes());
+
+            if (!extraNodeStorages.contains(cs) && !Objects.equals(cs, dsCfg.getStoragePath())) {
+                throw new IgniteCheckedException(
+                    "Unknown storage path. Storage path must be from DataStorageConfiguration " +
+                        "[cacheStorage=" + cs + ", nodeStorages=" + extraNodeStorages + ']'
+                );
+            }
+        }
     }
 
     /**

@@ -1943,11 +1943,20 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            if (cfg.getDataStorageConfiguration() != null &&
-                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
-                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
-                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
-                    "but not both.");
+            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+            if (dsCfg != null) {
+                if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null) {
+                    throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                        "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                        "but not both.");
+                }
+
+                List<String> extraNodeStorages = F.asList(dsCfg.getExtraStoragePathes());
+
+                if (extraNodeStorages.size() != new HashSet<>(extraNodeStorages).size()
+                    || extraNodeStorages.contains(dsCfg.getStoragePath()))
+                    throw new IgniteCheckedException("Data storage configuration constains duplicates: " + extraNodeStorages);
             }
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)

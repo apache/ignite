@@ -306,11 +306,11 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
-                    @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+                    @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                         if (partId(from) > 0)
                             throw new IgniteException("Test exception. Uploading partition file failed: " + pair);
 
-                        super.sendPart0(from, to, drName, pair, length);
+                        super.sendPart0(from, to, storagePath, pair, length);
                     }
                 };
             }
@@ -350,8 +350,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
-                    @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
-                        delegate.sendPart0(from, to, drName, pair, length);
+                    @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
+                        delegate.sendPart0(from, to, storagePath, pair, length);
 
                         restoreStarted.countDown();
 

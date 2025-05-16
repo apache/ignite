@@ -80,7 +80,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                     // No-op.
                 }
 
-                @Override protected void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+                @Override protected void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     // No-op.
                 }
 

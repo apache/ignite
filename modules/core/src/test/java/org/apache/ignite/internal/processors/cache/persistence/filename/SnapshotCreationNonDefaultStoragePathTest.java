@@ -19,11 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -31,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
- * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
  */
 public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
     /** */
@@ -42,7 +38,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setStoragePath(storagePath(DEFAULT_DR_STORAGE_PATH));
+            .setStoragePath(storagePath(STORAGE_PATH));
 
         dsCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true);
@@ -73,20 +69,15 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
         srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 
-        List<NodeFileTree> fts = IntStream.range(0, 3)
-            .mapToObj(this::grid)
-            .map(ign -> ign.context().pdsFolderResolver().fileTree())
-            .collect(Collectors.toList());
-
-        restoreAndCheck("mysnp", null, fts);
-        restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath(), fts);
+        restoreAndCheck("mysnp", null);
+        restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath());
     }
 
     /** {@inheritDoc} */
-    @Override void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException {
+    @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = DEFAULT_DR_STORAGE_PATH;
+                String storagePath = STORAGE_PATH;
 
                 File customRoot = ensureExists(useAbsStoragePath
                     ? new File(storagePath(storagePath))

@@ -213,6 +213,12 @@ public class DataStorageConfiguration implements Serializable {
     /** Directory where index and partition files are stored. */
     private String storagePath;
 
+    /** 
+     * Additional directories where index and partition files are stored. 
+     * @see CacheConfiguration#setStoragePath(String)
+     */
+    private String[] extraStoragePathes;
+
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
 
@@ -556,6 +562,13 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * @return Additional directories where index and partition files are stored.
+     */
+    public String[] getExtraStoragePathes() {
+        return extraStoragePathes;
+    }
+
+    /**
      * Sets a path to the root directory where the Persistent Store will persist data and indexes.
      * By default, the Persistent Store's files are located under Ignite work directory.
      *
@@ -564,6 +577,19 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
         this.storagePath = persistenceStorePath;
+
+        return this;
+    }
+
+    /**
+     * Sets a pathes to the root directories where the Persistent Store can persist data and indexes.
+     * By default, {@link #getStoragePath()} used.
+     *
+     * @param extraStoragePathes Extra storage pathes where persistent data can be stored.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setExtraStoragePathes(String... extraStoragePathes) {
+        this.extraStoragePathes = extraStoragePathes;
 
         return this;
     }

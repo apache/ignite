@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,24 +36,21 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test cases when {@link DataRegionConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
-    /** Custom storage path for default data region. */
-    static final String DEFAULT_DR_STORAGE_PATH = "dflt_dr";
+    /** Custom storage path . */
+    static final String STORAGE_PATH = "storage";
 
-    /** Custom storage path for custom data region. */
-    static final String CUSTOM_STORAGE_PATH = "custom_dr";
-
-    /** Data region name with custom storage. */
-    static final String DR_WITH_STORAGE = "custom-storage";
-
-    /** Data region with default storage. */
-    static final String DR_WITH_DFLT_STORAGE = "default-storage";
+    /** Second custom storage path. */
+    static final String STORAGE_PATH_2 = "storage2";
 
     /** */
     static final String SNP_PATH = "ex_snapshots";
+
+    /** */
+    protected static final int PARTS_CNT = 15;
 
     /** */
     @Parameterized.Parameter()
@@ -74,10 +71,10 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         cleanPersistenceDir();
 
         if (useAbsStoragePath)
-            U.delete(new File(storagePath(DEFAULT_DR_STORAGE_PATH)).getParentFile());
+            U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
         else {
-            U.delete(new File(U.defaultWorkDirectory(), DEFAULT_DR_STORAGE_PATH));
-            U.delete(new File(U.defaultWorkDirectory(), CUSTOM_STORAGE_PATH));
+            U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
+            U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
         }
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
@@ -86,16 +83,20 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /**
      * @param name Snapshot name
      * @param path Snapshot path.
-     * @param fts Nodes file trees.
      */
-    void restoreAndCheck(String name, String path, List<NodeFileTree> fts) throws Exception {
+    void restoreAndCheck(String name, String path) throws Exception {
+        List<NodeFileTree> fts = IntStream.range(0, 3)
+            .mapToObj(this::grid)
+            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+            .collect(Collectors.toList());
+
         stopAllGrids();
 
         checkFileTrees(fts);
 
         fts.forEach(ft -> {
             U.delete(ft.nodeStorage());
-            ft.dataRegionStorages().values().forEach(U::delete);
+            ft.extraStorages().values().forEach(U::delete);
         });
 
         U.delete(F.first(fts).db());
@@ -164,16 +165,21 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     }
 
     /** */
-    CacheConfiguration<?, ?> ccfg(String name, String grp, String dr) {
+    CacheConfiguration<?, ?> ccfg(String name, String grp, String storagePath) {
         return new CacheConfiguration<>(name)
             .setGroupName(grp)
-            .setDataRegionName(dr)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(15));
+            .setStoragePath(storagePath)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(PARTS_CNT));
     }
 
     /** */
-    String storagePath(String storagePath) throws IgniteCheckedException {
-        return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+    String storagePath(String storagePath) {
+        try {
+            return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** @param fts Nodes file trees. */
