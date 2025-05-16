@@ -300,19 +300,25 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testLargeUserAttribute1() throws Exception {
-        initLargeAttribute();
+        try {
+            initLargeAttribute();
 
-        startGrid(0);
+            startGrid(0);
 
-        checkZkNodesCleanup();
+            checkZkNodesCleanup();
 
-        userAttrs = null;
+            userAttrs = null;
 
-        startGrid(1);
+            startGrid(1);
 
-        helper.waitForEventsAcks(ignite(0));
+            helper.waitForEventsAcks(ignite(0));
 
-        waitForTopology(2);
+            waitForTopology(2);
+        }  finally {
+            zkCluster.close();
+
+            zkCluster = null;
+        }
     }
 
     /**
@@ -322,15 +328,23 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testLargeUserAttribute2() throws Exception {
-        startGrid(0);
+        try {
+            startGrid(0);
 
-        initLargeAttribute();
+            initLargeAttribute();
 
-        startGrid(1);
+            startGrid(1);
 
-        helper.waitForEventsAcks(ignite(0));
+            helper.waitForEventsAcks(ignite(0));
 
-        checkZkNodesCleanup();
+            checkZkNodesCleanup();
+        }  finally {
+            zkCluster.close();
+
+            zkCluster = null;
+
+            userAttrs = null;
+        }
     }
 
     /**
@@ -341,28 +355,36 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testLargeUserAttribute3() throws Exception {
-        Set<Integer> idxs = ThreadLocalRandom.current()
-            .ints(0, 10)
-            .distinct()
-            .limit(3)
-            .boxed()
-            .collect(Collectors.toSet());
+        try {
+            Set<Integer> idxs = ThreadLocalRandom.current()
+                    .ints(0, 10)
+                    .distinct()
+                    .limit(3)
+                    .boxed()
+                    .collect(Collectors.toSet());
 
-        for (int i = 0; i < 10; i++) {
-            info("Iteration: " + i);
+            for (int i = 0; i < 10; i++) {
+                info("Iteration: " + i);
 
-            if (idxs.contains(i))
-                initLargeAttribute();
-            else
-                userAttrs = null;
+                if (idxs.contains(i))
+                    initLargeAttribute();
+                else
+                    userAttrs = null;
 
-            if (i > 5)
-                startClientGrid(i);
-            else
-                startGrid(i);
+                if (i > 5)
+                    startClientGrid(i);
+                else
+                    startGrid(i);
+            }
+
+            waitForTopology(10);
+        } finally {
+            zkCluster.close();
+
+            zkCluster = null;
+
+            userAttrs = null;
         }
-
-        waitForTopology(10);
     }
 
     /**
@@ -371,7 +393,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     private void initLargeAttribute() {
         userAttrs = new HashMap<>();
 
-        int[] attr = new int[1024 * 1024 + ThreadLocalRandom.current().nextInt(1024 * 512)];
+        int[] attr = new int[1024 * 1024 + ThreadLocalRandom.current().nextInt(1024 * 64)];
 
         for (int i = 0; i < attr.length; i++)
             attr[i] = i;

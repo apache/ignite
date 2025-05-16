@@ -504,15 +504,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!isMultiJvm())
             cfg.setLocalEventListeners(lsnrs);
 
-        if (persistence) {
-            DataStorageConfiguration memCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
-                    setPersistenceEnabled(true))
-                .setPageSize(1024)
-                .setWalMode(WALMode.LOG_ONLY);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
+                setPersistenceEnabled(persistence))
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
 
-            cfg.setDataStorageConfiguration(memCfg);
-        }
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (testCommSpi)
             cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
