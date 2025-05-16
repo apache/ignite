@@ -110,7 +110,7 @@
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
-        <zookeeper.version>3.8.4</zookeeper.version>
+        <zookeeper.version>3.9.3</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
