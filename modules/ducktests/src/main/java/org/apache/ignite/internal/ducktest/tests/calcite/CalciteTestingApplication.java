@@ -16,21 +16,20 @@
  */
 package org.apache.ignite.internal.ducktest.tests.calcite;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.ResultSetMetaData;
-import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Period;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
-import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -38,30 +37,29 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * Calcite engine tests
  */
 public class CalciteTestingApplication extends IgniteAwareApplication {
-
     /** */
     private static class QueryTest {
-        /**
-         * Query.
-         */
+        /** Query. */
         String qry;
-        /**
-         * Expected results.
-         */
+
+        /** Expected results. */
         List<Object> expectedResults;
-        /**
-         * Expected type.
-         */
+
+        /** Expected type. */
         Class<?> expectedType;
 
+        /** Skip verification. */
+        boolean skipVerification;
+
         /**
-         * @param qry             Query.
+         * @param qry Query.
          * @param expectedResults Expected results.
          */
         QueryTest(String qry, Object... expectedResults) {
             this.qry = qry;
             this.expectedResults = Arrays.asList(expectedResults);
-            expectedType = expectedResults[0].getClass();
+            skipVerification = expectedResults.length == 0;
+            expectedType = expectedResults.length > 0 ? expectedResults[0].getClass() : Object.class;
         }
     }
 
@@ -236,7 +234,8 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT DATETIME(2021, 1, 1, 1, 10, 30) FROM t", Timestamp.valueOf("2021-01-01 01:10:30")));
         tests.add(new QueryTest("SELECT TO_CHAR(DATE '2021-01-01', 'YYMMDD') FROM t", "210101"));
         tests.add(new QueryTest("SELECT TO_DATE('210101', 'YYMMDD') FROM t", Date.valueOf("2021-01-01")));
-        tests.add(new QueryTest("SELECT TO_TIMESTAMP('210101-01-10-30', 'YYMMDD-HH24-MI-SS') FROM t", Timestamp.valueOf("2021-01-01 01:10:30")));
+        tests.add(new QueryTest("SELECT TO_TIMESTAMP('210101-01-10-30', 'YYMMDD-HH24-MI-SS') FROM t",
+            Timestamp.valueOf("2021-01-01 01:10:30")));
 
         // Math
         tests.add(new QueryTest("SELECT MOD(3, 2) FROM t", 1));
@@ -245,6 +244,8 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT LN(2) FROM t", Math.log(2)));
         tests.add(new QueryTest("SELECT LOG10(2) FROM t", Math.log(2) / Math.log(10)));
         tests.add(new QueryTest("SELECT ABS(-1) FROM t", Math.abs(-1)));
+        tests.add(new QueryTest("SELECT RAND() FROM t"));
+        tests.add(new QueryTest("SELECT RAND_INTEGER(10) FROM t"));
         tests.add(new QueryTest("SELECT ACOS(1) FROM t", Math.acos(1)));
         tests.add(new QueryTest("SELECT ACOSH(1) FROM t", 0d));
         tests.add(new QueryTest("SELECT ASIN(1) FROM t", Math.asin(1)));
@@ -282,6 +283,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT ARRAY[1, 2, 3] IS NOT EMPTY FROM t", true));
 
         // JSON
+        tests.add(new QueryTest("SELECT '{\"a\":1}' FORMAT JSON FROM t"));
         tests.add(new QueryTest("SELECT JSON_VALUE('{\"a\":1}', '$.a') FROM t", "1"));
         tests.add(new QueryTest("SELECT JSON_VALUE('{\"a\":1}' FORMAT JSON, '$.a') FROM t", "1"));
         tests.add(new QueryTest("SELECT JSON_QUERY('{\"a\":{\"b\":1}}', '$.a') FROM t", "{\"b\":1}"));
@@ -309,35 +311,49 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         // XML
         tests.add(new QueryTest("SELECT EXTRACTVALUE('<a>b</a>', '//a') FROM t", "b"));
         tests.add(new QueryTest(
-            "SELECT XMLTRANSFORM('<a>b</a>','<?xml version=\"1.0\"?><xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">  <xsl:output method=\"text\"/>  <xsl:template match=\"/\">    a - <xsl:value-of select=\"/a\"/>  </xsl:template></xsl:stylesheet>') FROM t",
+            "SELECT XMLTRANSFORM('<a>b</a>','" +
+                "<?xml version=\"1.0\"?>" +
+                "<xsl:stylesheet version=\"1.0\" " +
+                "xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">  " +
+                "<xsl:output method=\"text\"/>  " +
+                "<xsl:template match=\"/\">    " +
+                "a - <xsl:value-of select=\"/a\"/>  " +
+                "</xsl:template></xsl:stylesheet>') FROM t",
             "    a - b"
         ));
         tests.add(new QueryTest("SELECT \"EXTRACT\"('<a><b>c</b></a>', '/a/b') FROM t", "<b>c</b>"));
         tests.add(new QueryTest("SELECT EXISTSNODE('<a><b>c</b></a>', '/a/b') FROM t", 1));
+
+        // Currrent time functions
+        tests.add(new QueryTest("SELECT CURRENT_TIME FROM t"));
+        tests.add(new QueryTest("SELECT CURRENT_TIMESTAMP FROM t"));
+        tests.add(new QueryTest("SELECT CURRENT_DATE FROM t"));
+        tests.add(new QueryTest("SELECT LOCALTIME FROM t"));
+        tests.add(new QueryTest("SELECT LOCALTIMESTAMP FROM t"));
 
         // Execute all tests
         for (QueryTest test : tests) {
             try (PreparedStatement stmt = conn.prepareStatement(test.qry);
                  ResultSet rs = stmt.executeQuery()) {
 
+                if (test.skipVerification)
+                    continue;
+
                 List<Object> actualResults = new ArrayList<>();
 
                 int colCnt = rs.getMetaData().getColumnCount();
 
-                if (test.expectedResults.get(list.size() - 1)) == null
-                    actualResults.add(null)
-
-                else:
-                    while (rs.next()) {
-                        for (int i = 1; i <= colCnt; i++)
-                            actualResults.add(rs.getObject(i));
-                    }
+                while (rs.next()) {
+                    for (int i = 1; i <= colCnt; i++)
+                        actualResults.add(rs.getObject(i));
+                }
 
                 if (!Objects.equals(test.expectedResults, actualResults)) {
                     String errorMsg = String.format(
                         "Query failed: %s Expected: %s Actual: %s",
                         test.qry, test.expectedResults, actualResults);
                     throw new RuntimeException(errorMsg);
+
                 }
             }
         }
