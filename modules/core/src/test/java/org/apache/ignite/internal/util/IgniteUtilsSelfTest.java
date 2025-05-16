@@ -1483,10 +1483,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test UUID conversions from string to binary and back.
      *
-     * @throws Exception On any exception.
      */
     @Test
-    public void testUuidConvertions() throws Exception {
+    public void testUuidConvertions() {
         Map<String, byte[]> map = new LinkedHashMap<>();
 
         map.put("2ec84557-f7c4-4a2e-aea8-251eb13acff3", new byte[] {
@@ -1528,9 +1527,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             assertEquals(e.getKey(), uuid.toString());
             assertEquals(e.getKey(), uuidFromBytes.toString());
 
-            byte[] bytes = new byte[16];
-
-            IgniteUtils.uuidToBytes(uuid, bytes, 0);
+            byte[] bytes = IgniteUtils.uuidToBytes(uuid);
 
             assertTrue(e.getKey(), Arrays.equals(e.getValue(), bytes));
         }
@@ -1538,7 +1535,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testShortToBytes() throws Exception {
+    public void testShortToBytes() {
         Map<String, Short> map = new HashMap<>();
 
         map.put("00-00", (short)0);
@@ -1564,7 +1561,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testIntToBytes() throws Exception {
+    public void testIntToBytes() {
         Map<String, Integer> map = new HashMap<>();
 
         map.put("00-00-00-00", 0);
@@ -1590,7 +1587,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testLongToBytes() throws Exception {
+    public void testLongToBytes() {
         Map<String, Long> map = new LinkedHashMap<>();
 
         map.put("00-00-00-00-00-00-00-00", 0L);

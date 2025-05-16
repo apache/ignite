@@ -2412,23 +2412,9 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Encoded into byte array {@link java.util.UUID}.
      */
     public static byte[] uuidToBytes(@Nullable UUID uuid) {
-        byte[] bytes = new byte[(Long.SIZE >> 3) * 2];
+        byte[] bytes = new byte[16];
 
-        uuidToBytes(uuid, bytes, 0);
-
-        return bytes;
-    }
-
-    /**
-     * Converts {@code UUID} type to byte array and stores it in specified byte array.
-     *
-     * @param uuid UUID to convert.
-     * @param bytes Array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return Number of bytes overwritten in {@code bytes} array.
-     */
-    public static int uuidToBytes(UUID uuid, byte[] bytes, int off) {
-        ByteBuffer buf = ByteBuffer.wrap(bytes, off, 16);
+        ByteBuffer buf = ByteBuffer.wrap(bytes, 0, bytes.length);
 
         buf.order(ByteOrder.BIG_ENDIAN);
 
@@ -2441,7 +2427,7 @@ public abstract class IgniteUtils extends CommonUtils {
             buf.putLong(0);
         }
 
-        return 16;
+        return bytes;
     }
 
     /**
@@ -2503,7 +2489,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @param bytes Bytes array to write result to.
      * @param off Offset in the target array to write result to.
      * @param limit Limit of bytes to write into output.
-     * @return Number of bytes overwritten in {@code bytes} array.
+     * @return Array of bytes.
      */
     private static byte[] toBytes(long l, byte[] bytes, int off, int limit) {
         assert bytes != null;
@@ -2524,9 +2510,9 @@ public abstract class IgniteUtils extends CommonUtils {
      * @param bytes Array of bytes.
      * @param off Offset in {@code bytes} array.
      * @param limit Amount of bytes to use in the source array.
-     * @return Unsigned long value.
+     * @return Long value.
      */
-    public static long fromBytes(byte[] bytes, int off, int limit) {
+    private static long fromBytes(byte[] bytes, int off, int limit) {
         assert bytes != null;
         assert limit <= 8;
 
