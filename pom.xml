@@ -43,7 +43,6 @@
         <module>modules/binary/api</module>
         <module>modules/core</module>
         <module>modules/compress</module>
-        <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
@@ -594,14 +593,6 @@
                                         </replaceregexp>
 
                                         <echo message="Update ignite.version in build.gradle" />
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(ignVer = ).*$"/>
-                                            <substitution expression="\1'${project.version}'" />
-                                            <fileset dir="${project.basedir}/modules/dev-utils/">
-                                                <include name="ignite-modules-test/build.gradle" />
-                                            </fileset>
-                                        </replaceregexp>
                                     </target>
                                 </configuration>
                             </execution>
