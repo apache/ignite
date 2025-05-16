@@ -73,7 +73,6 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -3877,11 +3877,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendBinaryMeta0(Collection<BinaryType> types) {
-            if (types == null)
+        @Override public void sendBinaryMeta0(Collection<BinaryMetadata> metas) {
+            if (metas == null)
                 return;
 
-            cctx.kernalContext().cacheObjects().saveMetadata(types, sft);
+            cctx.kernalContext().cacheObjects().saveMetadata(metas, sft);
         }
 
         /** {@inheritDoc} */
