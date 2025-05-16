@@ -47,6 +47,8 @@
         <commons.math.version>3.6.1</commons.math.version>
         <commons.text.version>1.11.0</commons.text.version>
         <io.trino.tpch.version>1.2</io.trino.tpch.version>
+        <json-smart.version>2.5.2</json-smart.version>
+
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -148,6 +150,18 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
             <version>${jsonpath.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.minidev</groupId>
+                    <artifactId>json-smart</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>net.minidev</groupId>
+            <artifactId>json-smart</artifactId>
+            <version>${json-smart.version}</version>
         </dependency>
 
         <dependency>
