@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.cfg.CacheProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
@@ -146,8 +147,18 @@ public class IgniteObjectMapper extends ObjectMapper {
         }
 
         /** {@inheritDoc} */
+        public CustomSerializerProvider(CustomSerializerProvider src, CacheProvider cache) {
+            super(src, cache);
+        }
+
+        /** {@inheritDoc} */
         @Override public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
             return new CustomSerializerProvider(this, cfg, jsf);
+        }
+
+        /** {@inheritDoc} */
+        @Override public DefaultSerializerProvider withCaches(CacheProvider cacheProvider) {
+            return new CustomSerializerProvider(this, cacheProvider);
         }
 
         /** {@inheritDoc} */
