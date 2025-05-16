@@ -37,16 +37,16 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * Calcite engine tests
  */
 public class CalciteTestingApplication extends IgniteAwareApplication {
-    /** */
+    /**
+     * Helper class for testing SQL queries.
+     * Contains the query, expected results, and a flag to skip verification.
+     */
     private static class QueryTest {
         /** Query. */
         String qry;
 
         /** Expected results. */
         List<Object> expectedResults;
-
-        /** Expected type. */
-        Class<?> expectedType;
 
         /** Skip verification. */
         boolean skipVerification;
@@ -59,7 +59,6 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
             this.qry = qry;
             this.expectedResults = Arrays.asList(expectedResults);
             skipVerification = expectedResults.length == 0;
-            expectedType = expectedResults.length > 0 ? expectedResults[0].getClass() : Object.class;
         }
     }
 
