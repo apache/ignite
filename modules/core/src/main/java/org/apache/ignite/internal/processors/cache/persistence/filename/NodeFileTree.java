@@ -483,11 +483,30 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
+     * TODO: SCS
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
         return new File(cacheStorage(F.isEmpty(ccfg.getStoragePath())  ? null : ccfg.getStoragePath()[0]), ccfg.getGroupName() != null
             ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
             : CACHE_DIR_PREFIX + ccfg.getName());
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Store dirs for given cache.
+     */
+    public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
+        String[] csp = ccfg.getStoragePath();
+
+        if (F.isEmpty(csp))
+            return new File[] {cacheStorage((String)null)};
+
+        File[] cs = new File[csp.length];
+
+        for (int i = 0; i < cs.length; i++)
+            cs[i] = cacheStorage(csp[i]);
+
+        return cs;
     }
 
     /**
@@ -544,6 +563,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @param part Partition id.
      * @return Partition file.
+     * TODO: SCS
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
         return new File(cacheStorage(ccfg), partitionFileName(part));
@@ -552,6 +572,7 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param ccfg Cache configuration.
      * @return Store directory for given cache.
+     * TODO: SCS
      */
     public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
         File cacheStorage = cacheStorage(ccfg);
@@ -566,6 +587,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
      * @see CacheConfiguration#getStoragePath()
+     * TODO: SCS - accept all cache storages from remote node.
      */
     public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
         return new File(cacheStorage(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
@@ -577,6 +599,7 @@ public class NodeFileTree extends SharedFileTree {
      *
      * @param cacheStorage cache storage.
      * @return Temp store directory for given cache storage.
+     * TODO: SCS
      */
     public File tmpCacheStorage(File cacheStorage) {
         return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
@@ -601,6 +624,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @param partId partition id.
      * @return Path to the temp partition file.
+     * TODO: SCS
      */
     public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
         return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
@@ -614,6 +638,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param partId partition id.
      * @return Path to the temp partition file.
      * @see CacheConfiguration#getStoragePath()
+     * TODO: SCS
      */
     public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
         return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
