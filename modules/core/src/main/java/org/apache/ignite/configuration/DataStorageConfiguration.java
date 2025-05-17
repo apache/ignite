@@ -215,7 +215,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** 
      * Additional directories where index and partition files are stored. 
-     * @see CacheConfiguration#setStoragePath(String)
+     * @see CacheConfiguration#setStoragePath(String...)
      */
     private String[] extraStoragePathes;
 

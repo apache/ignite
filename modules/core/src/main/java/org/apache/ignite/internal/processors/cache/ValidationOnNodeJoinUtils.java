@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -393,17 +396,20 @@ public class ValidationOnNodeJoinUtils {
         if (!F.isEmpty(cc.getStoragePath())) {
             DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
 
-            String cs = cc.getStoragePath();
+            List<String> cs = Arrays.asList(cc.getStoragePath());
 
             if (dsCfg == null)
                 throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + cs);
 
-            List<String> extraNodeStorages = F.asList(dsCfg.getExtraStoragePathes());
+            Set<String> nodeStorages = new HashSet<>(Arrays.asList(dsCfg.getExtraStoragePathes()));
 
-            if (!extraNodeStorages.contains(cs) && !Objects.equals(cs, dsCfg.getStoragePath())) {
+            if (!F.isEmpty(dsCfg.getStoragePath()))
+                nodeStorages.add(dsCfg.getStoragePath());
+
+            if (!nodeStorages.containsAll(cs)) {
                 throw new IgniteCheckedException(
                     "Unknown storage path. Storage path must be from DataStorageConfiguration " +
-                        "[cacheStorage=" + cs + ", nodeStorages=" + extraNodeStorages + ']'
+                        "[cacheStorage=" + cs + ", nodeStorages=" + nodeStorages + ']'
                 );
             }
         }

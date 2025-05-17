@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
@@ -42,7 +43,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePath(String...)} used to set custom data region storage path.
  */
 public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
 
@@ -105,7 +106,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = ccfg.getStoragePath();
+                String storagePath = F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0];
 
                 File customRoot = storagePath == null ? ft.root() : ensureExists(useAbsStoragePath
                     ? new File(storagePath)
@@ -186,7 +187,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
             seenGrps.add(cname);
 
-            File expRoot = snpRootF.apply(ccfg.getStoragePath());
+            File expRoot = snpRootF.apply(F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0]);
 
             assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
 

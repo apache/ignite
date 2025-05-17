@@ -116,7 +116,13 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, sft.partitionFile(ccfg, gp.getPartitionId()), ccfg.getStoragePath(), gp, snpPart.length());
+                snpSndr.sendPart(
+                    snpPart,
+                    sft.partitionFile(ccfg, gp.getPartitionId()),
+                    F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0],
+                    gp,
+                    snpPart.length()
+                );
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)

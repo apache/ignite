@@ -36,7 +36,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePath(String...)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
