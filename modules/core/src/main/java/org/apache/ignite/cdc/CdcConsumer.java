@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.nio.file.Path;
 import java.util.Iterator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
@@ -34,7 +33,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  * This consumer will receive data change events during ignite-cdc process invocation.
  * The lifecycle of the consumer is the following:
  * <ul>
- *     <li>Start of the consumer {@link #start(MetricRegistry, Path)}.</li>
+ *     <li>Start of the consumer {@link #start(MetricRegistry)}.</li>
  *     <li>Notification of the consumer by the {@link #onEvents(Iterator)} call.</li>
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
@@ -67,9 +66,8 @@ public interface CdcConsumer {
     /**
      * Starts the consumer.
      * @param mreg Metric registry for consumer specific metrics.
-     * @param cdcDir Path to Change Data Capture Directory.
      */
-    public void start(MetricRegistry mreg, Path cdcDir);
+    public void start(MetricRegistry mreg);
 
     /**
      * Handles entry changes events.
@@ -133,7 +131,7 @@ public interface CdcConsumer {
 
     /**
      * Stops the consumer.
-     * This method can be invoked only after {@link #start(MetricRegistry, Path)}.
+     * This method can be invoked only after {@link #start(MetricRegistry)}.
      */
     public void stop();
 
