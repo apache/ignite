@@ -19,7 +19,6 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -195,7 +194,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         CdcConfiguration cfg = new CdcConfiguration();
 
         cfg.setConsumer(new UserCdcConsumer() {
-            @Override public void start(MetricRegistry mreg, Path cdcDir) {
+            @Override public void start(MetricRegistry mreg) {
                 appStarted.countDown();
             }
         });
