@@ -17,7 +17,6 @@
 
 package org.apache.ignite.util;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -235,7 +234,7 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg, Path cdcDir) {
+        @Override public void start(MetricRegistry mreg) {
             // No-op
         }
 

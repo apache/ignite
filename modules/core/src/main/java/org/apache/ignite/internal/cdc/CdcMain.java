@@ -339,7 +339,7 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cdcDir);
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), ft.walCdc().toPath());
 
                 started = true;
 
