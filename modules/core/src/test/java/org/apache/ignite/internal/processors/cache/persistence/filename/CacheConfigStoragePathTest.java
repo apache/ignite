@@ -45,7 +45,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
  * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
  */
 public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()

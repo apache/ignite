@@ -364,6 +364,11 @@ public class NodeFileTree extends SharedFileTree {
         return extraStorages;
     }
 
+    /** @return All storages directories. */
+    public Stream<File> allStorages() {
+        return Stream.concat(Stream.of(nodeStorage), extraStorages.values().stream());
+    }
+
     /** @return Folder name. */
     public String folderName() {
         return folderName;
@@ -439,7 +444,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Path to the directories for temp snapshot files. */
     public List<File> snapshotsTempRoots() {
-        return Stream.concat(Stream.of(nodeStorage), extraStorages.values().stream())
+        return allStorages()
             .map(this::snapshotTempRoot)
             .collect(Collectors.toList());
     }
@@ -828,7 +833,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return All files from all {@link #extraStorages} and {@link #nodeStorage} matching the filter.
      */
     private Stream<File> filesInStorages(FileFilter filter) {
-        return Stream.concat(Stream.of(nodeStorage), extraStorages.values().stream()).flatMap(storage -> {
+        return allStorages().flatMap(storage -> {
             File[] storageFiles = storage.listFiles(filter);
 
             return storageFiles == null

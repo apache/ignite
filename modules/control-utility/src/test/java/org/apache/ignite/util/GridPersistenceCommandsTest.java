@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -28,12 +29,16 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -43,8 +48,55 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Command line test of --persitence commands.
+ * TODO: add cases for absolute pathes.
  */
+@RunWith(Parameterized.class)
 public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    /** Use explicit cache storage for each group. */
+    @Parameterized.Parameter(1)
+    public boolean separateStorage;
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0},separateStorage={1}")
+    public static List<Object[]> params() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (String cmdHnd : CMD_HNDS.keySet()) {
+            for (boolean separateStorage: new boolean[] {true, false})
+                res.add(new Object[] {cmdHnd, separateStorage});
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        if (separateStorage) {
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "0")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "2")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "3")));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (separateStorage) {
+            cfg.getDataStorageConfiguration().setExtraStoragePathes(
+                storagePath(DEFAULT_CACHE_NAME + "0"),
+                storagePath(DEFAULT_CACHE_NAME + "1"),
+                storagePath(DEFAULT_CACHE_NAME + "2"),
+                storagePath(DEFAULT_CACHE_NAME + "3")
+            );
+        }
+
+        return cfg;
+    }
+
     /**
      * Test verifies persistence clean command with explicit list of caches to be cleaned.
      *
@@ -59,7 +111,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         String nonExistingCacheName = DEFAULT_CACHE_NAME + "4";
 
-        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+        NodeFileTree ft = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
                 cacheConfiguration(cacheName0),
                 cacheConfiguration(cacheName1),
@@ -82,14 +134,14 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
             "--persistence", "clean", "caches",
             cacheName0 + "," + cacheName1));
 
-        boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+        boolean cleanedEmpty = ft.existingCacheDirs().stream()
             .filter(f -> f.getName().contains(cacheName0) || f.getName().contains(cacheName1))
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(cleanedEmpty);
 
-        boolean nonCleanedNonEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+        boolean nonCleanedNonEmpty = ft.existingCacheDirs().stream()
             .filter(f -> f.getName().contains(cacheName2) || f.getName().contains(cacheName3))
             .map(f -> f.listFiles().length > 1)
             .reduce(true, (t, u) -> t && u);
@@ -125,7 +177,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         String cacheName2 = DEFAULT_CACHE_NAME + "2";
         String cacheName3 = DEFAULT_CACHE_NAME + "3";
 
-        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+        NodeFileTree ft = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
                 cacheConfiguration(cacheName0),
                 cacheConfiguration(cacheName1),
@@ -143,7 +195,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "clean", "corrupted"));
 
-        boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+        boolean cleanedEmpty = ft.existingCacheDirs().stream()
             .filter(f ->
                 f.getName().contains(cacheName0)
                 || f.getName().contains(cacheName1)
@@ -171,7 +223,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
 
-        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+        NodeFileTree ft = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
                 cacheConfiguration(cacheName0),
                 cacheConfiguration(cacheName1)
@@ -183,7 +235,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", connectorPort(ig1),
             "--persistence", "clean", "all"));
 
-        boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+        boolean allEmpty = ft.existingCacheDirs().stream()
             .filter(File::isDirectory)
             .filter(NodeFileTree::cacheDir)
             .map(f -> f.listFiles().length == 1)
@@ -208,7 +260,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
 
-        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+        NodeFileTree ft = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
                 cacheConfiguration(cacheName0),
                 cacheConfiguration(cacheName1)
@@ -220,21 +272,22 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", connectorPort(ig1),
             "--persistence", "backup", "all"));
 
-        Set<String> backedUpCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+        Set<String> backedUpCacheDirs = ft.allStorages()
+            .flatMap(storageRoot -> Arrays.stream(storageRoot.listFiles()))
             .filter(File::isDirectory)
             .filter(f -> f.getName().startsWith("backup_"))
             .map(f -> f.getName().substring("backup_".length()))
             .collect(Collectors.toCollection(TreeSet::new));
 
-        Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+        Set<String> allCacheDirs = ft.existingCacheDirs().stream()
             .filter(File::isDirectory)
             .filter(NodeFileTree::cacheDir)
             .map(File::getName)
             .collect(Collectors.toCollection(TreeSet::new));
 
-        assertEqualsCollections(backedUpCacheDirs, allCacheDirs);
+        assertEqualsCollections(allCacheDirs, backedUpCacheDirs);
 
-        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+        checkCacheAndBackupDirsContent(ft);
     }
 
     /**
@@ -248,7 +301,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
 
-        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+        NodeFileTree ft = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
                 cacheConfiguration(cacheName0),
                 cacheConfiguration(cacheName1)
@@ -260,7 +313,8 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", connectorPort(ig1),
             "--persistence", "backup", "corrupted"));
 
-        long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
+        long backedUpCachesCnt = ft.allStorages()
+            .flatMap(storagRoot -> Arrays.stream(storagRoot.listFiles()))
             .filter(File::isDirectory)
             .filter(f -> f.getName().startsWith("backup_"))
             .filter(f -> f.getName().contains(cacheName0))
@@ -268,7 +322,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         assertEquals(1, backedUpCachesCnt);
 
-        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+        checkCacheAndBackupDirsContent(ft);
     }
 
     /**
@@ -285,7 +339,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         String nonExistingCacheName = "nonExistingCache";
 
-        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+        NodeFileTree ft = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
                 cacheConfiguration(cacheName0),
                 cacheConfiguration(cacheName1),
@@ -305,24 +359,32 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
             "--persistence", "backup", "caches",
             cacheName0 + "," + cacheName2));
 
-        long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
+        long backedUpCachesCnt = ft.allStorages()
+            .flatMap(root -> Arrays.stream(root.listFiles()))
             .filter(File::isDirectory)
             .filter(f -> f.getName().startsWith("backup_"))
             .count();
 
         assertEquals(2, backedUpCachesCnt);
 
-        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+        checkCacheAndBackupDirsContent(ft);
     }
 
     /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
+            .setStoragePath(separateStorage ? storagePath(cacheName) : null)
             .setAtomicityMode(TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1);
 
         return ccfg;
+    }
+
+    /** */
+    private String storagePath(String cacheName) {
+        assertTrue(cacheName.startsWith(DEFAULT_CACHE_NAME));
+        return "ex_storage" + cacheName.replace(DEFAULT_CACHE_NAME, "");
     }
 
     /**
@@ -332,7 +394,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
      * @param cachesToStart Configurations of caches that should be started in cluster.
      * @param cacheToCorrupt Function determining should cache with given name be corrupted or not.
      */
-    private File startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
+    private NodeFileTree startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
                                                   @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
         assert cachesToStart != null && cachesToStart.length > 0;
 
@@ -361,7 +423,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
 
         Arrays.stream(cachesToStart)
-            .map(ccfg -> ccfg.getName())
+            .map(CacheConfiguration::getName)
             .filter(name -> cacheToCorrupt.apply(name))
             .forEach(name -> ig0.cluster().disableWal(name));
 
@@ -379,17 +441,17 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         assertThrows(log, () -> startGrid(1), Exception.class, null);
 
-        return ft1.nodeStorage();
+        return ft1;
     }
 
     /** */
-    private void checkCacheAndBackupDirsContent(File mntcNodeWorkDir) {
-        List<File> backupDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+    private void checkCacheAndBackupDirsContent(NodeFileTree ft) {
+        List<File> backupDirs = Arrays.stream(ft.nodeStorage().listFiles())
             .filter(File::isDirectory)
             .filter(f -> f.getName().startsWith("backup_"))
             .collect(Collectors.toList());
 
-        Path mntcNodeWorkDirPath = mntcNodeWorkDir.toPath();
+        Path mntcNodeWorkDirPath = ft.nodeStorage().toPath();
 
         for (File bDir : backupDirs) {
             File origCacheDir = mntcNodeWorkDirPath.resolve(bDir.getName().substring("backup_".length())).toFile();
