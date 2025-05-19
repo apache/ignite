@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -307,9 +308,10 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
-        );
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            log.info(">>> BEFORE sendIoTest: " + Instant.now());
+            srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
+        });
 
         assertTrue(GridTestUtils.waitForCondition(fut::isDone, 30_000));
 
@@ -342,6 +344,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         srv.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
+                log.info(">>> clientFailedEvtFlag.set(true): " + Instant.now());
                 clientFailedEvtFlag.set(true);
 
                 return false;
@@ -359,11 +362,13 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
-        );
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            log.info(">>> BEFORE sendIoTest: " + Instant.now());
+            srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
+        });
 
-        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(
+                clientFailedEvtFlag::get, IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT * 2));
     }
 
     /**
