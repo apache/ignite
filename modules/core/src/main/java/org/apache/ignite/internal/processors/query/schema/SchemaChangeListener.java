@@ -136,15 +136,49 @@ public interface SchemaChangeListener {
      * @param schemaName Schema name.
      * @param name Function name.
      * @param deterministic Specifies if the function is deterministic (result depends only on input parameters)
-     * @param method Public static method, implementing this function.
+     * @param method Public method, implementing this function.
      */
     public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method);
 
     /**
-     * Callback method.
+     * Callback on table function creation.
+     *
+     * @param schemaName Schema name.
+     * @param name Function name.
+     * @param colTypes Column types of the table representation.
+     * @param colNames Column names of the table representation.
+     * @param method Public method, implementing this function.
+     */
+    public void onTableFunctionCreated(
+        String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        String[] colNames
+    );
+
+    /**
+     * Callback on system view creation.
      *
      * @param schemaName Schema name.
      * @param sysView System view.
      */
     public void onSystemViewCreated(String schemaName, SystemView<?> sysView);
+
+    /**
+     * Callback on user defined view creation.
+     *
+     * @param schemaName Schema name.
+     * @param viewName View name.
+     * @param viewSql View SQL.
+     */
+    public void onViewCreated(String schemaName, String viewName, String viewSql);
+
+    /**
+     * Callback on user defined view dropped.
+     *
+     * @param schemaName Schema name.
+     * @param viewName View name.
+     */
+    public void onViewDropped(String schemaName, String viewName);
 }

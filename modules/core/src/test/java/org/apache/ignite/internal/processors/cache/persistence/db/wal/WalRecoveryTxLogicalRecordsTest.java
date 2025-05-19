@@ -137,8 +137,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setMarshaller(null);
-
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
         binCfg.setCompactFooter(false);

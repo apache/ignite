@@ -23,14 +23,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -70,6 +70,9 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+
+    /** Default nested tx mode for compatibility. */
+    private static final byte DEFAULT_NESTED_TX_MODE = 3;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -131,7 +134,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(GridNioSession ses,
-        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        ClientListenerProtocolVersion ver, BinaryReaderEx reader)
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver) : "Unsupported ODBC protocol version.";
 
@@ -153,18 +156,13 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         String user = null;
         String passwd = null;
 
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-
         if (ver.compareTo(VER_2_5_0) >= 0) {
             user = reader.readString();
             passwd = reader.readString();
         }
 
-        if (ver.compareTo(VER_2_7_0) >= 0) {
-            byte nestedTxModeVal = reader.readByte();
-
-            nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
-        }
+        if (ver.compareTo(VER_2_7_0) >= 0 && reader.readByte() != DEFAULT_NESTED_TX_MODE)
+            throw new IgniteCheckedException("Nested transactions are not supported!");
 
         String qryEngine = null;
         if (ver.compareTo(VER_2_13_0) >= 0) {
@@ -205,7 +203,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         initClientDescriptor("odbc");
 
         handler = new OdbcRequestHandler(ctx, busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            replicatedOnly, collocated, lazy, skipReducerOnUpdate, qryEngine, nestedTxMode, ver, this);
+            replicatedOnly, collocated, lazy, skipReducerOnUpdate, qryEngine, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);
 
@@ -227,5 +225,25 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientTxContext txContext(int txId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addTxContext(ClientTxContext txCtx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeTxContext(int txId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanupTxs() {
+        throw new UnsupportedOperationException();
     }
 }

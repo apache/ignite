@@ -39,10 +39,10 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceI
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -281,7 +281,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
-        List<Object[]> res = executeQuery(publicSchema, sql, -10);
+        List<Object[]> res = executeQuery(publicSchema, sql);
 
         assertFalse(res.isEmpty());
 
@@ -380,7 +380,7 @@ public class PlannerTest extends AbstractPlannerTest {
         kernal.add(new NoOpIgniteSecurityProcessor(kernal));
         kernal.add(new GridCacheProcessor(kernal));
 
-        QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
+        StripedQueryTaskExecutor taskExecutor = new StripedQueryTaskExecutor(kernal);
         taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
             kernal.config().getQueryThreadPoolSize(),
             kernal.igniteInstanceName(),
@@ -412,6 +412,7 @@ public class PlannerTest extends AbstractPlannerTest {
         ExecutionContext<Object[]> ectx = new ExecutionContext<>(
             qctx,
             taskExecutor,
+            null,
             qryId,
             nodeId,
             F.first(nodes),
@@ -425,7 +426,8 @@ public class PlannerTest extends AbstractPlannerTest {
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
-            Commons.parametersMap(ctx.parameters()));
+            Commons.parametersMap(ctx.parameters()),
+            null);
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
             new TestFailureProcessor(kernal)).go(fragment.root());
@@ -849,64 +851,5 @@ public class PlannerTest extends AbstractPlannerTest {
                 "      IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
                 "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n",
             RelOptUtil.toString(phys));
-    }
-
-    /** */
-    @Test
-    public void testNotStandardFunctions() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        publicSchema.addTable(
-            "TEST",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "TEST", "hash");
-                }
-            }
-        );
-
-        String queries[] = {
-            "select REVERSE(val) from TEST", // MYSQL
-            "select DECODE(id, 0, val, '') from TEST" // ORACLE
-        };
-
-        for (String sql : queries) {
-            IgniteRel phys = physicalPlan(
-                sql,
-                publicSchema
-            );
-
-            checkSplitAndSerialization(phys, publicSchema);
-        }
-    }
-
-    /** */
-    @Test
-    public void testMinusDateSerialization() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        IgniteRel phys = physicalPlan("SELECT (DATE '2021-03-01' - DATE '2021-01-01') MONTHS", publicSchema);
-
-        checkSplitAndSerialization(phys, publicSchema);
-    }
-
-    /** */
-    @Test
-    public void testFloatSerialization() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        IgniteRel phys = physicalPlan("SELECT " + Integer.MAX_VALUE + "::FLOAT, " +
-            Long.MAX_VALUE + "::FLOAT" +
-            "-17014118346046923173168730371588410572::FLOAT" +
-            "-17014118346046923173.168730371588410572::FLOAT",
-            publicSchema);
-
-        checkSplitAndSerialization(phys, publicSchema);
     }
 }

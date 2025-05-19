@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
@@ -103,6 +103,22 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        Set<ClassLoader> obsoleteClsLdrs = U.newIdentityHashSet();
+
+        synchronized (mux) {
+            // There can be obsolete class loaders in cache after client node reconnect with the new node id.
+            for (Entry<String, Deque<GridDeployment>> entry : cache.entrySet())
+                for (GridDeployment dep : entry.getValue())
+                    if (!dep.classLoaderId().globalId().equals(ctx.localNodeId()))
+                        obsoleteClsLdrs.add(dep.classLoader());
+        }
+
+        for (ClassLoader clsLdr : obsoleteClsLdrs)
+            undeploy(clsLdr);
     }
 
     /** {@inheritDoc} */
@@ -559,8 +575,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 ctx.resource().onUndeployed(dep);
 
                 // Clear optimized marshaller's cache.
-                if (ctx.config().getMarshaller() instanceof AbstractMarshaller)
-                    ((AbstractMarshaller)ctx.config().getMarshaller()).onUndeploy(ldr);
+                ctx.marshaller().onUndeploy(ldr);
 
                 clearSerializationCaches();
 

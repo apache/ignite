@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -213,8 +212,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
         TcpCommunicationSpi spi0 = spis.get(0);
         TcpCommunicationSpi spi1 = spis.get(1);
 
-        final TestListener lsnr0 = (TestListener)spi0.getListener();
-        final TestListener lsnr1 = (TestListener)spi1.getListener();
+        final TestListener lsnr0 = U.field(spi0, "lsnr");
+        final TestListener lsnr1 = U.field(spi1, "lsnr");
 
         ClusterNode node0 = nodes.get(0);
         ClusterNode node1 = nodes.get(1);
@@ -286,7 +285,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             final TcpCommunicationSpi spi0 = spis.get(0);
             final TcpCommunicationSpi spi1 = spis.get(1);
 
-            final TestListener lsnr1 = (TestListener)spi1.getListener();
+            final TestListener lsnr1 = U.field(spi1, "lsnr");
 
             final ClusterNode node0 = nodes.get(0);
             final ClusterNode node1 = nodes.get(1);
@@ -403,8 +402,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             final TcpCommunicationSpi spi0 = spis.get(0);
             final TcpCommunicationSpi spi1 = spis.get(1);
 
-            final TestListener lsnr0 = (TestListener)spi0.getListener();
-            final TestListener lsnr1 = (TestListener)spi1.getListener();
+            final TestListener lsnr0 = U.field(spi0, "lsnr");
+            final TestListener lsnr1 = U.field(spi1, "lsnr");
 
             final ClusterNode node0 = nodes.get(0);
             final ClusterNode node1 = nodes.get(1);
@@ -539,7 +538,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             final TcpCommunicationSpi spi0 = spis.get(0);
             final TcpCommunicationSpi spi1 = spis.get(1);
 
-            final TestListener lsnr1 = (TestListener)spi1.getListener();
+            final TestListener lsnr1 = U.field(spi1, "lsnr");
 
             final ClusterNode node0 = nodes.get(0);
             final ClusterNode node1 = nodes.get(1);
@@ -686,7 +685,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
     protected TcpCommunicationSpi getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
         spi.setLocalPort(port++);
         spi.setIdleConnectionTimeout(10_000);
         spi.setConnectTimeout(10_000);
@@ -730,7 +728,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
             );
 
             ctx.setLocalNode(node);

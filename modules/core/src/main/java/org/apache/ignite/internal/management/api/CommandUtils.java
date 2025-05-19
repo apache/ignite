@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.api;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,14 +40,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCacheMode;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.client.GridClientNodeMetrics;
-import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -61,6 +54,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Utility class for management commands.
@@ -486,27 +480,27 @@ public class CommandUtils {
      * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
-    public static @Nullable Collection<GridClientNode> coordinatorOrNull(Collection<GridClientNode> nodes) {
+    public static @Nullable Collection<ClusterNode> coordinatorOrNull(Collection<ClusterNode> nodes) {
         return nodes.stream()
             .filter(n -> !n.isClient())
-            .min(Comparator.comparingLong(GridClientNode::order))
+            .min(Comparator.comparingLong(ClusterNode::order))
             .map(Collections::singleton)
             .orElse(null);
     }
 
     /** */
-    public static @Nullable Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+    public static @Nullable Collection<ClusterNode> nodeOrNull(@Nullable UUID nodeId, Collection<ClusterNode> nodes) {
         return nodeId == null ? null : node(nodeId, nodes);
     }
 
     /** */
-    public static Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+    public static Collection<ClusterNode> nodeOrAll(@Nullable UUID nodeId, Collection<ClusterNode> nodes) {
         return nodeId == null ? nodes : node(nodeId, nodes);
     }
 
     /** */
-    public static Collection<GridClientNode> nodes(UUID[] nodeIds, Collection<GridClientNode> nodes) {
-        List<GridClientNode> res = new ArrayList<>();
+    public static Collection<ClusterNode> nodes(UUID[] nodeIds, Collection<ClusterNode> nodes) {
+        List<ClusterNode> res = new ArrayList<>();
 
         for (UUID nodeId : nodeIds)
             res.addAll(node(nodeId, nodes));
@@ -515,9 +509,9 @@ public class CommandUtils {
     }
 
     /** */
-    public static List<GridClientNode> node(UUID nodeId, Collection<GridClientNode> nodes) {
-        for (GridClientNode node : nodes) {
-            if (node.nodeId().equals(nodeId))
+    public static List<ClusterNode> node(UUID nodeId, Collection<ClusterNode> nodes) {
+        for (ClusterNode node : nodes) {
+            if (node.id().equals(nodeId))
                 return Collections.singletonList(node);
         }
 
@@ -528,7 +522,7 @@ public class CommandUtils {
      * @param nodes Nodes.
      * @return Server nodes.
      */
-    public static Collection<GridClientNode> servers(Collection<GridClientNode> nodes) {
+    public static Collection<ClusterNode> servers(Collection<ClusterNode> nodes) {
         return nodes.stream()
             .filter(e -> !e.isClient())
             .collect(Collectors.toList());
@@ -546,17 +540,17 @@ public class CommandUtils {
     }
 
     /**
-     * @param cli Grid client.
      * @param ignite Ignite node.
      * @return Collection of cluster nodes.
      */
-    public static Collection<GridClientNode> nodes(@Nullable GridClient cli, @Nullable Ignite ignite) throws GridClientException {
-        if (cli != null)
-            return cli.compute().nodes();
+    public static Collection<ClusterNode> nodes(
+        @Nullable IgniteClient client,
+        @Nullable Ignite ignite
+    ) {
+        if (client != null)
+            return client.cluster().nodes();
 
-        return ignite.cluster().nodes().stream()
-            .map(CommandUtils::clusterToClientNode)
-            .collect(Collectors.toList());
+        return ignite.cluster().nodes();
     }
 
     /**
@@ -763,31 +757,25 @@ public class CommandUtils {
 
     /** */
     public static <A, R> R execute(
-        @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         Class<? extends VisorMultiNodeTask<A, R, ?>> taskCls,
         A arg,
-        Collection<GridClientNode> nodes
+        Collection<ClusterNode> nodes
     ) throws Exception {
-        Collection<UUID> nodesIds = nodes.stream()
-            .map(GridClientNode::nodeId)
-            .collect(Collectors.toList());
+        Collection<UUID> nodesIds = nodeIds(nodes);
 
-        if (cli != null) {
-            GridClientCompute compute = cli.compute();
-
-            Collection<GridClientNode> connectable = compute.nodes().stream()
-                .filter(nodes::contains)
-                .filter(GridClientNode::connectable)
-                .collect(Collectors.toList());
-
-            if (!connectable.isEmpty())
-                compute = compute.projection(connectable);
-
-            return ((VisorTaskResult<R>)compute.execute(
-                taskCls.getName(),
-                new VisorTaskArgument<>(nodesIds, arg, false)
-            )).result();
+        if (client != null) {
+            try {
+                return client.compute(client.cluster().forNodes(client.cluster().nodes()))
+                    .<VisorTaskArgument<A>, VisorTaskResult<R>>execute(
+                        taskCls.getName(),
+                        new VisorTaskArgument<>(nodesIds, arg, false)
+                    ).result();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         return ignite
@@ -901,62 +889,5 @@ public class CommandUtils {
                 throw new IgniteException(e);
             }
         }
-    }
-
-    /** */
-    public static GridClientNode clusterToClientNode(ClusterNode n) {
-        return new GridClientNode() {
-            @Override public UUID nodeId() {
-                return n.id();
-            }
-
-            @Override public Object consistentId() {
-                return n.consistentId();
-            }
-
-            @Override public boolean connectable() {
-                return true;
-            }
-
-            @Override public long order() {
-                return n.order();
-            }
-
-            @Override public boolean isClient() {
-                return n.isClient();
-            }
-
-            @Override public List<String> tcpAddresses() {
-                return U.arrayList(n.addresses());
-            }
-
-            @Override public List<String> tcpHostNames() {
-                return U.arrayList(n.hostNames());
-            }
-
-            @Override public int tcpPort() {
-                return -1;
-            }
-
-            @Override public Map<String, Object> attributes() {
-                return n.attributes();
-            }
-
-            @Override public <T> @Nullable T attribute(String name) {
-                return n.attribute(name);
-            }
-
-            @Override public GridClientNodeMetrics metrics() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override public Map<String, GridClientCacheMode> caches() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto, boolean filterResolved) {
-                throw new UnsupportedOperationException();
-            }
-        };
     }
 }

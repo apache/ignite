@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.io;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -26,7 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
@@ -40,13 +40,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data output based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
-    /**
-     * Based on {@link ByteArrayOutputStream#MAX_ARRAY_SIZE} or many other similar constants in other classes.
-     * It's not safe to allocate more then this number of elements in byte array, because it can throw
-     * java.lang.OutOfMemoryError: Requested array size exceeds VM limit
-     */
-    private static final int MAX_BYTE_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
     /** */
     private static final long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
@@ -145,7 +138,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             int newSize = size << 1;
 
             if (!canBeAllocated(newSize))
-                newSize = MAX_BYTE_ARRAY_SIZE;
+                newSize = MAX_ARRAY_SIZE;
 
             bytes = Arrays.copyOf(bytes, newSize); // Grow.
         }
@@ -163,10 +156,10 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /**
      * @param size Size of potential byte array to check.
      * @return true if {@code new byte[size]} won't throw {@link OutOfMemoryError} given enough heap space.
-     * @see GridUnsafeDataOutput#MAX_BYTE_ARRAY_SIZE
+     * @see U#MAX_ARRAY_SIZE
      */
     private boolean canBeAllocated(long size) {
-        return 0 <= size && size <= MAX_BYTE_ARRAY_SIZE;
+        return 0 <= size && size <= MAX_ARRAY_SIZE;
     }
 
     /**

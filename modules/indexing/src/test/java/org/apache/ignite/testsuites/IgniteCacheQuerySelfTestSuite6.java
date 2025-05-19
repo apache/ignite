@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.index.RejoinWithLostDynamicDdlTest;
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlKeepStaticConfigurationTest;
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSystemViewTablesTest;
+import org.apache.ignite.internal.processors.query.DropTableAfterCteSqlQueryTest;
 import org.apache.ignite.internal.processors.query.IgniteInsertNullableDuplicatesSqlTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSinglePartitionMultiParallelismTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
@@ -71,15 +74,18 @@ import org.junit.runners.Suite;
     CacheContinuousWithTransformerRandomOperationsTest.class,
     CacheContinuousQueryRandomOperationsTest.class,
     StaticCacheDdlTest.class,
+    RejoinWithLostDynamicDdlTest.class,
     StaticCacheDdlKeepStaticConfigurationTest.class,
     MemLeakOnSqlWithClientReconnectTest.class,
     CacheContinuousQueryFilterDeploymentFailedTest.class,
     PerformanceStatisticsQueryTest.class,
+    PerformanceStatisticsSystemViewTablesTest.class,
     CacheContinuousQueryFilterDeploymentFailedTest.class,
     CacheContinuousQueryDeploymentToClientTest.class,
     IgniteSqlSinglePartitionMultiParallelismTest.class,
     QueryEntityAliasesTest.class,
     CacheContinuousQueryEntriesExpireTest.class,
+    DropTableAfterCteSqlQueryTest.class,
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

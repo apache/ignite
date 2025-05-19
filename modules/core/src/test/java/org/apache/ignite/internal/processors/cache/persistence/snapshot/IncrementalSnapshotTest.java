@@ -25,6 +25,7 @@ import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -32,6 +33,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -43,7 +46,6 @@ import org.junit.Test;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -203,9 +205,9 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        File toRmv = new File(
-            snp(ignite(GRID_CNT - 1)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 2),
-            snapshotMetaFileName(ignite(GRID_CNT - 1).localNode().consistentId().toString()));
+        IncrementalSnapshotFileTree ift = snapshotFileTree(ignite(GRID_CNT - 1), SNAPSHOT_NAME).incrementalSnapshotFileTree(2);
+
+        File toRmv = ift.meta();
 
         assertTrue(toRmv.exists());
 
@@ -239,7 +241,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         long segIdx = wal.lastCompactedSegment();
 
-        U.delete(wal.compactedSegment(segIdx));
+        U.delete(srv.context().pdsFolderResolver().fileTree().zipWalArchiveSegment(segIdx));
 
         assertThrowsWithCause(
             () -> srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
@@ -308,7 +310,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridLocalConfigManager locCfgMgr = srv.context().cache().configManager();
 
-        File ccfgFile = locCfgMgr.cacheConfigurationFile(ccfg);
+        File ccfgFile = srv.context().pdsFolderResolver().fileTree().cacheConfigurationFile(ccfg);
 
         StoredCacheData cacheData = locCfgMgr.readCacheData(ccfgFile);
 
@@ -340,8 +342,10 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(srv, SNAPSHOT_NAME, null, TIMEOUT);
 
-        assertTrue(snp(srv).incrementalSnapshotsLocalRootDir(SNAPSHOT_NAME, null).mkdirs());
-        assertTrue(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).createNewFile());
+        SnapshotFileTree sft = snapshotFileTree(srv, SNAPSHOT_NAME);
+
+        assertTrue(sft.incrementsRoot().mkdirs());
+        assertTrue(sft.incrementalSnapshotFileTree(1).root().createNewFile());
 
         assertThrows(
             null,
@@ -350,8 +354,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             "Failed to create snapshot WAL directory"
         );
 
-        for (int i = 0; i < GRID_CNT; i++)
-            assertFalse(snp(grid(i)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
+        for (int i = 0; i < GRID_CNT; i++) {
+            SnapshotFileTree sft0 = snapshotFileTree(grid(i), SNAPSHOT_NAME);
+
+            assertFalse(sft0.incrementalSnapshotFileTree(1).root().exists());
+        }
     }
 
     /** */
@@ -438,6 +445,42 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, singleton(DEFAULT_CACHE_NAME), 1).get();
 
         assertCacheKeys(srv.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** */
+    @Test
+    public void testDefaultConsistentId() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        cache.put(1, 1);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        cache.put(2, 2);
+
+        ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME)).get(getTestTimeout());
+
+        assertEquals(1, cache.size());
+
+        ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME), 1).get(getTestTimeout());
+
+        assertEquals(2, cache.size());
     }
 
     /** */

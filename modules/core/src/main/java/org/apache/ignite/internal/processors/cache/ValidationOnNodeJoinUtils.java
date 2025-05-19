@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -43,9 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -55,9 +54,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -70,9 +67,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
-import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
-import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
@@ -103,9 +99,6 @@ public class ValidationOnNodeJoinUtils {
     /** Template of message of failed node join because encryption settings are different for the same cache. */
     private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
         "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
-
-    /** Supports non default precision and scale for DECIMAL and VARCHAR types. */
-    private static final IgniteProductVersion PRECISION_SCALE_SINCE_VER = IgniteProductVersion.fromString("2.7.0");
 
     /** Invalid region configuration message. */
     private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node (Incompatible data region configuration " +
@@ -178,7 +171,7 @@ public class ValidationOnNodeJoinUtils {
 
                 // Peform checks of SQL schema. If schemas' names not equal, only valid case is if local or joined
                 // QuerySchema is empty and schema name is null (when indexing enabled dynamically).
-                if (!F.eq(joinedSchema, locSchema)
+                if (!Objects.equals(joinedSchema, locSchema)
                         && (locSchema != null || !locDesc.schema().isEmpty())
                         && (joinedSchema != null || !F.isEmpty(joinedQryEntities))) {
                     errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
@@ -288,14 +281,6 @@ public class ValidationOnNodeJoinUtils {
                     " 'true' [cacheName=" + U.maskName(cc.getName()) + ']');
         }
 
-        DeploymentMode depMode = c.getDeploymentMode();
-
-        if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
-            !CU.isSystemCache(cc.getName()) && !(c.getMarshaller() instanceof BinaryMarshaller))
-            throw new IgniteCheckedException("Cache can be started in PRIVATE or ISOLATED deployment mode only when" +
-                " BinaryMarshaller is used [depMode=" + ctx.config().getDeploymentMode() + ", marshaller=" +
-                c.getMarshaller().getClass().getName() + ']');
-
         if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
             throw new IgniteCheckedException("Affinity function must return at most " +
                 CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
@@ -367,7 +352,7 @@ public class ValidationOnNodeJoinUtils {
         if (ctx.query().moduleEnabled()) {
             String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
 
-            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+            if (Objects.equals(schema, QueryUtils.SCHEMA_SYS)) {
                 if (cc.getSqlSchema() == null) {
                     // Conflict on cache name.
                     throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
@@ -404,22 +389,6 @@ public class ValidationOnNodeJoinUtils {
                 throw new IgniteCheckedException("Encryption cannot be used with disk page compression " +
                     cacheSpec.toString());
         }
-
-        Collection<QueryEntity> ents = cc.getQueryEntities();
-
-        if (ctx.discovery().discoCache() != null) {
-            boolean nonDfltPrecScaleExists = ents.stream().anyMatch(
-                e -> !F.isEmpty(e.getFieldsPrecision()) || !F.isEmpty(e.getFieldsScale()));
-
-            if (nonDfltPrecScaleExists) {
-                ClusterNode oldestNode = ctx.discovery().discoCache().oldestServerNode();
-
-                if (PRECISION_SCALE_SINCE_VER.compareTo(oldestNode.version()) > 0) {
-                    throw new IgniteCheckedException("Non default precision and scale is supported since version 2.7. " +
-                        "The node with oldest version [node=" + oldestNode + ']');
-                }
-            }
-        }
     }
 
     /**
@@ -430,15 +399,9 @@ public class ValidationOnNodeJoinUtils {
     static void checkConsistency(GridKernalContext ctx, IgniteLogger log) throws IgniteCheckedException {
         Collection<ClusterNode> rmtNodes = ctx.discovery().remoteNodes();
 
-        boolean changeablePoolSize =
-            IgniteFeatures.allNodesSupports(rmtNodes, IgniteFeatures.DIFFERENT_REBALANCE_POOL_SIZE);
-
         for (ClusterNode n : rmtNodes) {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                 continue;
-
-            if (!changeablePoolSize)
-                checkRebalanceConfiguration(n, ctx);
 
             checkTransactionConfiguration(n, ctx, log);
 
@@ -531,30 +494,6 @@ public class ValidationOnNodeJoinUtils {
     /**
      * @param rmt Remote node to check.
      * @param ctx Context.
-     * @throws IgniteCheckedException If check failed.
-     */
-    private static void checkRebalanceConfiguration(
-        ClusterNode rmt,
-        GridKernalContext ctx
-    ) throws IgniteCheckedException {
-        if (ctx.config().isClientMode() || rmt.isClient())
-            return;
-
-        Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
-
-        if (rebalanceThreadPoolSize != null && rebalanceThreadPoolSize != ctx.config().getRebalanceThreadPoolSize()) {
-            throw new IgniteCheckedException("Rebalance configuration mismatch (fix configuration or set -D" +
-                IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)." +
-                " Different values of such parameter may lead to rebalance process instability and hanging. " +
-                " [rmtNodeId=" + rmt.id() +
-                ", locRebalanceThreadPoolSize = " + ctx.config().getRebalanceThreadPoolSize() +
-                ", rmtRebalanceThreadPoolSize = " + rebalanceThreadPoolSize + "]");
-        }
-    }
-
-    /**
-     * @param rmt Remote node to check.
-     * @param ctx Context.
      * @param log Logger.
      * @throws IgniteCheckedException If check failed.
      */
@@ -575,6 +514,18 @@ public class ValidationOnNodeJoinUtils {
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + rmtTxSer + ']');
         }
+
+        Boolean rmtTxAwareQryEnabled = rmt.attribute(ATTR_TX_AWARE_QUERIES_ENABLED);
+
+        if (rmtTxAwareQryEnabled != null) {
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
+
+            if (!rmtTxAwareQryEnabled.equals(locTxCfg.isTxAwareQueriesEnabled()))
+                throw new IgniteCheckedException("Transactions aware queries enabled mismatch " +
+                    "(fix txAwareQueriesEnabled property) [rmtNodeId=" + rmt.id() +
+                    ", locTxAwareQueriesEnabled=" + locTxCfg.isTxAwareQueriesEnabled() +
+                    ", rmtTxAwareQueriesEnabled=" + rmtTxAwareQryEnabled + ']');
+        }
     }
 
     /**
@@ -591,7 +542,7 @@ public class ValidationOnNodeJoinUtils {
         Object dsCfgBytes = rmt.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
 
         if (dsCfgBytes instanceof byte[])
-            dsCfg = new JdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+            dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
 
         if (dsCfg == null) {
             // Try to use legacy memory configuration.

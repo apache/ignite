@@ -34,7 +34,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -102,9 +101,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, OdbcQueryResults> qryResults = new ConcurrentHashMap<>();
 
-    /** Nested transaction behaviour. */
-    private final NestedTxMode nestedTxMode;
-
     /** Client version. */
     private ClientListenerProtocolVersion ver;
 
@@ -133,7 +129,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
-     * @param nestedTxMode Nested transaction mode.
      * @param ver Client protocol version.
      */
     public OdbcRequestHandler(
@@ -148,7 +143,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean lazy,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
-        NestedTxMode nestedTxMode,
         ClientListenerProtocolVersion ver,
         OdbcConnectionContext connCtx) {
         this.ctx = ctx;
@@ -171,13 +165,16 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             skipReducerOnUpdate,
             null,
             null,
-            qryEngine
+            qryEngine,
+            null,
+            null,
+            0,
+            null
         );
 
         this.busyLock = busyLock;
         this.sender = sender;
         this.maxCursors = maxCursors;
-        this.nestedTxMode = nestedTxMode;
         this.ver = ver;
 
         log = ctx.log(getClass());
@@ -259,7 +256,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+    @Override public void writeHandshake(BinaryWriterEx writer) {
         writer.writeBoolean(true);
     }
 
@@ -353,7 +350,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setSchema(OdbcUtils.prepareSchema(schema));
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
-        qry.setNestedTxMode(nestedTxMode);
         qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         return qry;

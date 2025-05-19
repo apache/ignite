@@ -713,7 +713,7 @@ namespace Apache.Ignite.Core.Tests
             foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
                                                   !p.Name.Contains("ThreadPoolSize") && p.Name != "MaxSize" &&
                                                   p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel" &&
-                                                  p.Name != "Logger" && p.Name != "SharedMemoryPort"))
+                                                  p.Name != "Logger"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -747,7 +747,6 @@ namespace Apache.Ignite.Core.Tests
                         Endpoints = new[] {"127.0.0.1:47503", "127.0.0.1:47504"}
                     },
                     ClientReconnectDisabled = true,
-                    ForceServerMode = true,
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 47503,

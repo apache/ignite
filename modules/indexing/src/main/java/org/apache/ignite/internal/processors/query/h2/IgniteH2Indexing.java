@@ -48,6 +48,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -92,11 +94,9 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -128,7 +128,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
@@ -148,6 +147,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.sqlWithoutConst;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
@@ -194,7 +194,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private UUID nodeId;
 
     /** */
-    private Marshaller marshaller;
+    private BinaryMarshaller marshaller;
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -425,18 +425,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     PreparedStatement stmt = conn.prepareStatement(qry, H2StatementCache.queryFlags(qryDesc));
 
                     // Convert parameters into BinaryObjects.
-                    Marshaller m = ctx.config().getMarshaller();
+                    BinaryMarshaller m = ctx.marshaller();
                     byte[] paramsBytes = U.marshal(m, qryParams.arguments());
                     final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-                    Object[] params;
-
-                    if (m instanceof BinaryMarshaller) {
-                        params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller()
-                            .unmarshal(paramsBytes, ldr));
-                    }
-                    else
-                        params = U.unmarshal(m, paramsBytes, ldr);
+                    Object[] params = BinaryUtils.rawArrayFromBinary(m.binaryMarshaller()
+                        .unmarshal(paramsBytes, ldr));
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
@@ -467,6 +461,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         ),
                         qryInfo
                     );
+
+                    if (runningQueryManager().planHistoryTracker().enabled()) {
+                        H2QueryInfo qryInfo0 = qryInfo;
+
+                        ctx.pools().getSystemExecutorService().submit(() ->
+                            runningQueryManager().planHistoryTracker().addPlan(
+                                qryInfo0.plan(),
+                                qryInfo0.sql(),
+                                qryInfo0.schema(),
+                                true,
+                                IndexingQueryEngineConfiguration.ENGINE_NAME));
+                    }
 
                     return new H2FieldsIterator(
                         rs,
@@ -1044,12 +1050,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Exception failReason = null;
 
+        H2DmlInfo dmlInfo = null;
+
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_DML_QRY_EXECUTE, MTC.span()))) {
             if (!updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
                 throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
                     "cache(s) with TRANSACTIONAL atomicity mode (disable this error message with system property " +
                     "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
             }
+
+            dmlInfo = new H2DmlInfo(
+                U.currentTimeMillis(),
+                qryId,
+                ctx.localNodeId(),
+                qryDesc.schemaName(),
+                qryDesc.sql()
+            );
+
+            heavyQueriesTracker().startTracking(dmlInfo);
 
             if (!qryDesc.local()) {
                 return executeUpdateDistributed(
@@ -1101,6 +1119,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ", params=" + S.toString(QueryParameters.class, qryParams) + "]", e);
         }
         finally {
+            if (dmlInfo != null)
+                heavyQueriesTracker().stopTracking(dmlInfo, failReason);
+
             runningQueryManager().unregister(qryId, failReason);
         }
     }
@@ -1315,23 +1336,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param stmnt Statement to print.
-     * @return SQL query where constant replaced with '?' char.
-     * @see GridSqlConst#getSQL()
-     * @see QueryUtils#includeSensitive()
-     */
-    private String sqlWithoutConst(GridSqlStatement stmnt) {
-        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
-
-        try {
-            return stmnt.getSQL();
-        }
-        finally {
-            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
-        }
-    }
-
-    /**
      * Check security access for caches.
      *
      * @param cacheIds Cache IDs.
@@ -1541,7 +1545,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         this.ctx = ctx;
 
-        partReservationMgr = new PartitionReservationManager(ctx);
+        partReservationMgr = ctx.query().partitionReservationManager();
 
         connMgr = new ConnectionManager(ctx);
 
@@ -1553,7 +1557,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.start();
 
         nodeId = ctx.localNodeId();
-        marshaller = ctx.config().getMarshaller();
+        marshaller = ctx.marshaller();
 
         mapQryExec = new GridMapQueryExecutor();
         rdcQryExec = new GridReduceQueryExecutor();
@@ -1632,7 +1636,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             if (msg instanceof GridCacheQueryMarshallable)
-                ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+                ((GridCacheQueryMarshallable)msg).unmarshall(ctx);
 
             try {
                 boolean processed = true;
@@ -1815,10 +1819,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(GridCacheContextInfo<?, ?> cacheInfo) {
-        String cacheName = cacheInfo.name();
-
-        partReservationMgr.onCacheStop(cacheName);
-
         // Unregister connection.
         connMgr.onCacheDestroyed();
 
@@ -2153,108 +2153,142 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexingQueryFilter filters,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
-        UpdatePlan plan = dml.plan();
+        StringBuilder dmlPlanInfo = new StringBuilder("As part of this DML command ");
 
-        UpdateResult fastUpdateRes = plan.processFast(qryParams.arguments());
-
-        if (fastUpdateRes != null)
-            return fastUpdateRes;
-
-        DmlDistributedPlanInfo distributedPlan = loc ? null : plan.distributedPlan();
-
-        if (distributedPlan != null) {
-            if (cancel == null)
-                cancel = new GridQueryCancel();
-
-            UpdateResult result = rdcQryExec.update(
-                qryDesc.schemaName(),
-                distributedPlan.getCacheIds(),
-                qryDesc.sql(),
-                qryParams.arguments(),
-                qryDesc.enforceJoinOrder(),
-                qryParams.pageSize(),
-                qryParams.timeout(),
-                qryParams.partitions(),
-                distributedPlan.isReplicatedOnly(),
-                cancel
-            );
-
-            // Null is returned in case not all nodes support distributed DML.
-            if (result != null)
-                return result;
-        }
-
-        final GridQueryCancel selectCancel = (cancel != null) ? new GridQueryCancel() : null;
-
-        if (cancel != null)
-            cancel.add(selectCancel::cancel);
-
-        SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
-            .setArgs(qryParams.arguments())
-            .setDistributedJoins(qryDesc.distributedJoins())
-            .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
-            .setLocal(qryDesc.local())
-            .setPageSize(qryParams.pageSize())
-            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS)
-            // We cannot use lazy mode when UPDATE query contains updated columns
-            // in WHERE condition because it may be cause of update one entry several times
-            // (when index for such columns is selected for scan):
-            // e.g. : UPDATE test SET val = val + 1 WHERE val >= ?
-            .setLazy(qryParams.lazy() && plan.canSelectBeLazy());
-
-        Iterable<List<?>> cur;
-
-        // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
-        // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (!loc && !plan.isLocalSubquery()) {
-            assert !F.isEmpty(plan.selectQuery());
-
-            cur = executeSelectForDml(
-                qryId,
-                qryDesc.schemaName(),
-                selectFieldsQry,
-                selectCancel,
-                qryParams.timeout()
-            );
-        }
-        else if (plan.hasRows())
-            cur = plan.createRows(qryParams.arguments());
-        else {
-            selectFieldsQry.setLocal(true);
-
-            QueryParserResult selectParseRes = parser.parse(qryDesc.schemaName(), selectFieldsQry, false);
-
-            final GridQueryFieldsResult res = executeSelectLocal(
-                qryId,
-                selectParseRes.queryDescriptor(),
-                selectParseRes.queryParameters(),
-                selectParseRes.select(),
-                filters,
-                selectCancel,
-                qryParams.timeout()
-            );
-
-            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), true);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            }, cancel, true, qryParams.lazy());
-        }
-
-        int pageSize = qryParams.updateBatchSize();
-
-        // TODO: IGNITE-11176 - Need to support cancellation
         try {
-            return DmlUtils.processSelectResult(plan, cur, pageSize);
+            UpdatePlan plan = dml.plan();
+
+            UpdateResult fastUpdateRes = plan.processFast(qryParams.arguments());
+
+            if (fastUpdateRes != null) {
+                dmlPlanInfo.append("no SELECT queries have been executed.");
+
+                return fastUpdateRes;
+            }
+
+            DmlDistributedPlanInfo distributedPlan = loc ? null : plan.distributedPlan();
+
+            if (distributedPlan != null) {
+                if (cancel == null)
+                    cancel = new GridQueryCancel();
+
+                UpdateResult result = rdcQryExec.update(
+                    qryDesc.schemaName(),
+                    distributedPlan.getCacheIds(),
+                    qryDesc.sql(),
+                    qryParams.arguments(),
+                    qryDesc.enforceJoinOrder(),
+                    qryParams.pageSize(),
+                    qryParams.timeout(),
+                    qryParams.partitions(),
+                    distributedPlan.isReplicatedOnly(),
+                    cancel
+                );
+
+                // Null is returned in case not all nodes support distributed DML.
+                if (result != null) {
+                    dmlPlanInfo = new StringBuilder("This DML command has been executed with a distibuted plan " +
+                        "(requests for separate DML commands have been sent to respective cluster nodes).");
+
+                    return result;
+                }
+            }
+
+            final GridQueryCancel selectCancel = (cancel != null) ? new GridQueryCancel() : null;
+
+            if (cancel != null)
+                cancel.add(selectCancel::cancel);
+
+            SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
+                .setArgs(qryParams.arguments())
+                .setDistributedJoins(qryDesc.distributedJoins())
+                .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
+                .setLocal(qryDesc.local())
+                .setPageSize(qryParams.pageSize())
+                .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS)
+                // We cannot use lazy mode when UPDATE query contains updated columns
+                // in WHERE condition because it may be cause of update one entry several times
+                // (when index for such columns is selected for scan):
+                // e.g. : UPDATE test SET val = val + 1 WHERE val >= ?
+                .setLazy(qryParams.lazy() && plan.canSelectBeLazy());
+
+            Iterable<List<?>> cur;
+
+            // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
+            // sub-query and not some dummy stuff like "select 1, 2, 3;"
+            if (!loc && !plan.isLocalSubquery()) {
+                assert !F.isEmpty(plan.selectQuery());
+
+                cur = executeSelectForDml(
+                    qryId,
+                    qryDesc.schemaName(),
+                    selectFieldsQry,
+                    selectCancel,
+                    qryParams.timeout()
+                );
+
+                dmlPlanInfo
+                    .append("the following query has been executed:").append(U.nl())
+                    .append(selectFieldsQry.getSql()).append(";").append(U.nl())
+                    .append("check map nodes for map phase query plans");
+            }
+            else if (plan.hasRows()) {
+                cur = plan.createRows(qryParams.arguments());
+
+                dmlPlanInfo.append("no SELECT queries have been executed.");
+            }
+            else {
+                selectFieldsQry.setLocal(true);
+
+                QueryParserResult selectParseRes = parser.parse(qryDesc.schemaName(), selectFieldsQry, false);
+
+                final GridQueryFieldsResult res = executeSelectLocal(
+                    qryId,
+                    selectParseRes.queryDescriptor(),
+                    selectParseRes.queryParameters(),
+                    selectParseRes.select(),
+                    filters,
+                    selectCancel,
+                    qryParams.timeout()
+                );
+
+                cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    @Override public Iterator<List<?>> iterator() {
+                        try {
+                            return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }, cancel, true, qryParams.lazy());
+
+                dmlPlanInfo
+                    .append("the following local query has been executed:").append(U.nl())
+                    .append(selectFieldsQry.getSql());
+            }
+
+            int pageSize = qryParams.updateBatchSize();
+
+            // TODO: IGNITE-11176 - Need to support cancellation
+            try {
+                return DmlUtils.processSelectResult(plan, cur, pageSize);
+            }
+            finally {
+                if (cur instanceof AutoCloseable)
+                    U.closeQuiet((AutoCloseable)cur);
+            }
         }
         finally {
-            if (cur instanceof AutoCloseable)
-                U.closeQuiet((AutoCloseable)cur);
+            if (runningQueryManager().planHistoryTracker().enabled()) {
+                runningQueryManager().planHistoryTracker().addPlan(
+                    dmlPlanInfo.toString(),
+                    qryDesc.sql(),
+                    qryDesc.schemaName(),
+                    loc,
+                    IndexingQueryEngineConfiguration.ENGINE_NAME
+                );
+            }
         }
     }
 

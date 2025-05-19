@@ -364,7 +364,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             IgniteClient ignored1 = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port));
             Connection ignored2 = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())
         ) {
-            assertEquals(2, systemView(ignite0, CLI_CONN_VIEW).size());
+            assertEquals(commandHandler.equals(CLI_CMD_HND) ? 3 : 2, systemView(ignite0, CLI_CONN_VIEW).size());
         }
     }
 
@@ -495,14 +495,15 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_SETS",
             "DS_SEMAPHORES",
             "DS_QUEUES",
-            "PAGES_TIMESTAMP_HISTOGRAM"
+            "PAGES_TIMESTAMP_HISTOGRAM",
+            "SQL_PLANS_HISTORY"
         ));
 
         Set<String> viewNames = new TreeSet<>();
 
         List<List<String>> sqlViewsView = systemView(ignite0, SQL_VIEWS_VIEW);
 
-        sqlViewsView.forEach(row -> viewNames.add(row.get(0))); // name
+        sqlViewsView.forEach(row -> viewNames.add(row.get(1))); // name
 
         assertEquals(expViewNames, viewNames);
     }
@@ -1282,7 +1283,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return System view values.
      */
     private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             String outStart = "--------------------------------------------------------------------------------";
 
             String outEnd = "Command [SYSTEM-VIEW] finished with code: " + EXIT_CODE_OK;

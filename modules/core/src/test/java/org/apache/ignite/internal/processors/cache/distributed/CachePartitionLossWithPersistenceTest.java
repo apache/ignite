@@ -208,7 +208,7 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
 
         final Collection<Integer> lostParts = crd.cache(DEFAULT_CACHE_NAME).lostPartitions();
 
-        assertEquals(PARTS_CNT, cachex.context().topology().localPartitions().size() + lostParts.size());
+        assertEquals(PARTS_CNT, cachex.context().topology().localPartitionsNumber() + lostParts.size());
 
         assertTrue(lostParts.contains(part));
 

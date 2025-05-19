@@ -39,6 +39,8 @@
         <module>parent-internal</module>
         <module>modules/bom</module>
         <module>modules/tools</module>
+        <module>modules/commons</module>
+        <module>modules/binary/api</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
@@ -80,12 +82,6 @@
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
-            <modules> <!-- sorted alphabetically -->
             </modules>
         </profile>
 
@@ -150,6 +146,7 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <failOnWarnings>true</failOnWarnings>
                                     <!--
                                     For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
                                     parent configuration to -tagletpath javadoc parameter.

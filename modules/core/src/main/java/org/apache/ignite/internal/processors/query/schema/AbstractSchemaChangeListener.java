@@ -108,7 +108,28 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     }
 
     /** {@inheritDoc} */
+    @Override public void onTableFunctionCreated(
+        String schemaName,
+        String name,
+        Method method,
+        Class<?>[] colTypes,
+        String[] colNames
+    ) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onViewCreated(String schemaName, String viewName, String viewSql) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onViewDropped(String schemaName, String viewName) {
         // No-op.
     }
 }

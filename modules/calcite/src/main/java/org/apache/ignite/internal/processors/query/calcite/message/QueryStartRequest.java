@@ -18,13 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -65,6 +70,14 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private long timeout;
 
     /** */
+    @GridDirectCollection(QueryTxEntry.class)
+    private @Nullable Collection<QueryTxEntry> qryTxEntries;
+
+    /** */
+    @GridDirectMap(keyType = String.class, valueType = String.class)
+    private Map<String, String> appAttrs;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
@@ -76,7 +89,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         int totalFragmentsCnt,
         Object[] params,
         @Nullable byte[] paramsBytes,
-        long timeout
+        long timeout,
+        Collection<QueryTxEntry> qryTxEntries,
+        @Nullable Map<String, String> appAttrs
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -88,6 +103,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
+        this.qryTxEntries = qryTxEntries;
+        this.appAttrs = appAttrs;
     }
 
     /** */
@@ -168,20 +185,44 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
+    /**
+     * @return Transaction entries to mixin on query processing.
+     */
+    public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
+        return qryTxEntries;
+    }
+
+    /** */
+    public Map<String, String> appAttrs() {
+        return appAttrs;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
             paramsBytes = U.marshal(ctx, params);
 
         fragmentDesc.prepareMarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareMarshal(ctx);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        ClassLoader ldr = U.resolveClassLoader(ctx.gridConfig());
+
         if (params == null && paramsBytes != null)
-            params = U.unmarshal(ctx, paramsBytes, U.resolveClassLoader(ctx.gridConfig()));
+            params = U.unmarshal(ctx, paramsBytes, ldr);
 
         fragmentDesc.prepareUnmarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareUnmarshal(ctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -245,11 +286,22 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 8:
+                if (!writer.writeCollection("qryTxEntries", qryTxEntries, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeAffinityTopologyVersion("ver", ver))
                     return false;
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -328,7 +380,23 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 8:
+                qryTxEntries = reader.readCollection("qryTxEntries", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 ver = reader.readAffinityTopologyVersion("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -347,6 +415,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 11;
     }
 }

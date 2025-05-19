@@ -62,6 +62,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -109,6 +110,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final RelDataType nullType;
 
     /** */
+    private final RelDataType booleanType;
+
+    /** */
     private final ExecutionContext<Row> ctx;
 
     /** */
@@ -125,6 +129,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         emptyType = new RelDataTypeFactory.Builder(this.typeFactory).build();
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
+        booleanType = typeFactory.createJavaType(Boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -192,7 +197,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right) {
+    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
                 + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
@@ -237,7 +242,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 }
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
-                return hasNulls ? 1 : 0;
+                // Except cases with IS DISTINCT / IS NOT DISTINCT.
+                return hasNulls && !nullsEqual ? 1 : 0;
             }
         };
     }
@@ -245,9 +251,24 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     @SuppressWarnings("rawtypes")
     private static int compare(Object o1, Object o2, int nullComparison) {
+        if (BinaryUtils.isBinaryObjectImpl(o1))
+            return compareBinary(o1, o2, nullComparison);
+
         final Comparable c1 = (Comparable)o1;
         final Comparable c2 = (Comparable)o2;
         return RelFieldCollation.compare(c1, c2, nullComparison);
+    }
+
+    /** */
+    private static int compareBinary(Object o1, Object o2, int nullComparison) {
+        if (o1 == o2)
+            return 0;
+        else if (o1 == null)
+            return nullComparison;
+        else if (o2 == null)
+            return -nullComparison;
+
+        return BinaryUtils.compareForDml(o1, o2);
     }
 
     /** {@inheritDoc} */
@@ -567,6 +588,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             new RexShuttle() {
                 @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                     b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
+                    b.append(", fldType=").append(fieldAccess.getField().getType().getFullTypeString());
 
                     return super.visitFieldAccess(fieldAccess);
                 }
@@ -606,7 +628,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private AbstractScalarPredicate(T scalar) {
             this.scalar = scalar;
             hnd = ctx.rowHandler();
-            out = hnd.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+            out = hnd.factory(typeFactory, booleanType).create();
         }
     }
 

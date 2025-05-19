@@ -46,7 +46,7 @@ import static org.hamcrest.CoreMatchers.not;
 /**
  * Basic index tests.
  */
-public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicIntegrationTest {
+public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     private static final String PK_IDX_NAME = QueryUtils.PRIMARY_KEY_INDEX;
 
@@ -69,8 +69,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     private static final String NAME_DATE_IDX = "NAME_DATE_IDX";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void init() throws Exception {
+        super.init();
 
         QueryEntity projEntity = new QueryEntity();
         projEntity.setKeyType(Integer.class.getName());
@@ -105,35 +105,6 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
 
         IgniteCache<Integer, Developer> devCache = client.createCache(projCfg);
 
-        devCache.put(1, new Developer("Mozart", 3, "Vienna", 33));
-        devCache.put(2, new Developer("Beethoven", 2, "Vienna", 44));
-        devCache.put(3, new Developer("Bach", 1, "Leipzig", 55));
-        devCache.put(4, new Developer("Strauss", 2, "Munich", 66));
-
-        devCache.put(5, new Developer("Vagner", 4, "Leipzig", 70));
-        devCache.put(6, new Developer("Chaikovsky", 5, "Votkinsk", 53));
-        devCache.put(7, new Developer("Verdy", 6, "Rankola", 88));
-        devCache.put(8, new Developer("Stravinsky", 7, "Spt", 89));
-        devCache.put(9, new Developer("Rahmaninov", 8, "Starorussky ud", 70));
-        devCache.put(10, new Developer("Shubert", 9, "Vienna", 31));
-        devCache.put(11, new Developer("Glinka", 10, "Smolenskaya gb", 53));
-
-        devCache.put(12, new Developer("Einaudi", 11, "", -1));
-        devCache.put(13, new Developer("Glass", 12, "", -1));
-        devCache.put(14, new Developer("Rihter", 13, "", -1));
-
-        devCache.put(15, new Developer("Marradi", 14, "", -1));
-        devCache.put(16, new Developer("Zimmer", 15, "", -1));
-        devCache.put(17, new Developer("Hasaishi", 16, "", -1));
-
-        devCache.put(18, new Developer("Arnalds", 17, "", -1));
-        devCache.put(19, new Developer("Yiruma", 18, "", -1));
-        devCache.put(20, new Developer("O'Halloran", 19, "", -1));
-
-        devCache.put(21, new Developer("Cacciapaglia", 20, "", -1));
-        devCache.put(22, new Developer("Prokofiev", 21, "", -1));
-        devCache.put(23, new Developer("Musorgskii", 22, "", -1));
-
         QueryEntity bdEntity = new QueryEntity();
         bdEntity.setKeyType(Integer.class.getName());
         bdEntity.setKeyFieldName("id");
@@ -158,16 +129,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
 
         IgniteCache<Integer, Birthday> bdCache = client.createCache(bdCfg);
 
-        bdCache.put(1, new Birthday("Mozart", Date.valueOf("1756-01-27")));
-        bdCache.put(2, new Birthday("Beethoven", null));
-        bdCache.put(3, new Birthday("Bach", Date.valueOf("1685-03-31")));
-        bdCache.put(4, new Birthday("Strauss", Date.valueOf("1864-06-11")));
-        bdCache.put(5, new Birthday("Vagner", Date.valueOf("1813-05-22")));
-        bdCache.put(6, new Birthday("Chaikovsky", Date.valueOf("1840-05-07")));
-        bdCache.put(7, new Birthday("Verdy", Date.valueOf("1813-10-10")));
-
         IgniteCache<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer> tblWithAff =
-            client.getOrCreateCache(new CacheConfiguration<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>()
+            client.getOrCreateCache(this.<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>cacheConfiguration()
                 .setName("TBL_WITH_AFF_KEY")
                 .setSqlSchema("PUBLIC")
                 .setBackups(1)
@@ -175,11 +138,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
                 .setTableName("TBL_WITH_AFF_KEY")))
         );
 
-        tblWithAff.put(new CalciteQueryProcessorTest.Key(1, 2), new CalciteQueryProcessorTest.Developer("Petr", 10));
-        tblWithAff.put(new CalciteQueryProcessorTest.Key(2, 3), new CalciteQueryProcessorTest.Developer("Ivan", 11));
-
         IgniteCache<Integer, CalciteQueryProcessorTest.Developer> tblConstrPk =
-            client.getOrCreateCache(new CacheConfiguration<Integer, CalciteQueryProcessorTest.Developer>()
+            client.getOrCreateCache(this.<Integer, CalciteQueryProcessorTest.Developer>cacheConfiguration()
                 .setName("TBL_CONSTR_PK")
                 .setSqlSchema("PUBLIC")
                 .setBackups(0)
@@ -189,11 +149,51 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
                     .addQueryField("id", Integer.class.getName(), null)))
             );
 
-        tblConstrPk.put(1, new CalciteQueryProcessorTest.Developer("Petr", 10));
-        tblConstrPk.put(2, new CalciteQueryProcessorTest.Developer("Ivan", 11));
-
         executeSql("CREATE TABLE PUBLIC.UNWRAP_PK" + " (F1 VARCHAR, F2 BIGINT, F3 BIGINT, F4 BIGINT, " +
-            "CONSTRAINT PK PRIMARY KEY (F2, F1)) WITH \"backups=0, affinity_key=F1\"");
+            "CONSTRAINT PK PRIMARY KEY (F2, F1)) WITH \"backups=0, affinity_key=F1," + atomicity() + "\"");
+
+        put(client, devCache, 1, new Developer("Mozart", 3, "Vienna", 33));
+        put(client, devCache, 2, new Developer("Beethoven", 2, "Vienna", 44));
+        put(client, devCache, 3, new Developer("Bach", 1, "Leipzig", 55));
+        put(client, devCache, 4, new Developer("Strauss", 2, "Munich", 66));
+
+        put(client, devCache, 5, new Developer("Vagner", 4, "Leipzig", 70));
+        put(client, devCache, 6, new Developer("Chaikovsky", 5, "Votkinsk", 53));
+        put(client, devCache, 7, new Developer("Verdy", 6, "Rankola", 88));
+        put(client, devCache, 8, new Developer("Stravinsky", 7, "Spt", 89));
+        put(client, devCache, 9, new Developer("Rahmaninov", 8, "Starorussky ud", 70));
+        put(client, devCache, 10, new Developer("Shubert", 9, "Vienna", 31));
+        put(client, devCache, 11, new Developer("Glinka", 10, "Smolenskaya gb", 53));
+
+        put(client, devCache, 12, new Developer("Einaudi", 11, "", -1));
+        put(client, devCache, 13, new Developer("Glass", 12, "", -1));
+        put(client, devCache, 14, new Developer("Rihter", 13, "", -1));
+
+        put(client, devCache, 15, new Developer("Marradi", 14, "", -1));
+        put(client, devCache, 16, new Developer("Zimmer", 15, "", -1));
+        put(client, devCache, 17, new Developer("Hasaishi", 16, "", -1));
+
+        put(client, devCache, 18, new Developer("Arnalds", 17, "", -1));
+        put(client, devCache, 19, new Developer("Yiruma", 18, "", -1));
+        put(client, devCache, 20, new Developer("O'Halloran", 19, "", -1));
+
+        put(client, devCache, 21, new Developer("Cacciapaglia", 20, "", -1));
+        put(client, devCache, 22, new Developer("Prokofiev", 21, "", -1));
+        put(client, devCache, 23, new Developer("Musorgskii", 22, "", -1));
+
+        put(client, bdCache, 1, new Birthday("Mozart", Date.valueOf("1756-01-27")));
+        put(client, bdCache, 2, new Birthday("Beethoven", null));
+        put(client, bdCache, 3, new Birthday("Bach", Date.valueOf("1685-03-31")));
+        put(client, bdCache, 4, new Birthday("Strauss", Date.valueOf("1864-06-11")));
+        put(client, bdCache, 5, new Birthday("Vagner", Date.valueOf("1813-05-22")));
+        put(client, bdCache, 6, new Birthday("Chaikovsky", Date.valueOf("1840-05-07")));
+        put(client, bdCache, 7, new Birthday("Verdy", Date.valueOf("1813-10-10")));
+
+        put(client, tblWithAff, new CalciteQueryProcessorTest.Key(1, 2), new CalciteQueryProcessorTest.Developer("Petr", 10));
+        put(client, tblWithAff, new CalciteQueryProcessorTest.Key(2, 3), new CalciteQueryProcessorTest.Developer("Ivan", 11));
+
+        put(client, tblConstrPk, 1, new CalciteQueryProcessorTest.Developer("Petr", 10));
+        put(client, tblConstrPk, 2, new CalciteQueryProcessorTest.Developer("Ivan", 11));
 
         executeSql("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Petr', 1, 2, 3)");
         executeSql("INSERT INTO PUBLIC.UNWRAP_PK(F1, F2, F3, F4) values ('Ivan', 2, 2, 4)");
@@ -219,7 +219,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
 
     /** */
     private <K, V> CacheConfiguration<K, V> cache(QueryEntity ent) {
-        return new CacheConfiguration<K, V>(ent.getTableName())
+        return this.<K, V>cacheConfiguration().setName(ent.getTableName())
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1)
             .setQueryEntities(singletonList(ent))
@@ -572,8 +572,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     /** */
     @Test
     public void testIndexedFieldGreaterThanFilter() {
-        assertQuery("SELECT * FROM Developer WHERE depId>21")
-            .withParams(3)
+        assertQuery("SELECT * FROM Developer WHERE depId>?")
+            .withParams(21)
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(23, "Musorgskii", 22, "", -1)
             .check();

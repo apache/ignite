@@ -490,6 +490,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
 
                     try {
+                        cctx.tm().txContext(this);
+
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         // Data entry to write to WAL.
@@ -628,7 +630,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                null,
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer,
                                                 resolveTaskName(),
@@ -650,7 +651,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                null,
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer,
@@ -688,7 +688,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             txEntry.hasOldValue(),
                                             txEntry.oldValue(),
                                             topVer,
-                                            null,
                                             replicate ? DR_BACKUP : DR_NONE,
                                             near() ? null : explicitVer,
                                             resolveTaskName(),
@@ -808,6 +807,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                             locPart.release();
 
                         cctx.database().checkpointReadUnlock();
+
+                        cctx.tm().resetContext();
 
                         if (wrapper != null)
                             wrapper.initialize(ret);

@@ -22,7 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -41,7 +41,7 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
      *
      * @param reader Reader.
      */
-    ClientCacheKeyRequest(BinaryRawReaderEx reader) {
+    ClientCacheKeyRequest(BinaryReaderEx reader) {
         super(reader);
 
         key = reader.readObjectDetached();

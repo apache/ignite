@@ -114,7 +114,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             NetworkTimeout = reader.ReadLongAsTimespan();
             JoinTimeout = reader.ReadLongAsTimespan();
 
-            ForceServerMode = reader.ReadBoolean();
             ClientReconnectDisabled = reader.ReadBoolean();
             LocalAddress = reader.ReadString();
             ReconnectCount = reader.ReadInt();
@@ -159,12 +158,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// Gets or sets the join timeout.
         /// </summary>
         public TimeSpan JoinTimeout { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether TcpDiscoverySpi is started in server mode 
-        /// regardless of <see cref="IgniteConfiguration.ClientMode"/> setting.
-        /// </summary>
-        public bool ForceServerMode { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether client does not try to reconnect after
@@ -247,7 +240,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteLong((long) JoinTimeout.TotalMilliseconds);
 
-            writer.WriteBoolean(ForceServerMode);
             writer.WriteBoolean(ClientReconnectDisabled);
             writer.WriteString(LocalAddress);
             writer.WriteInt(ReconnectCount);

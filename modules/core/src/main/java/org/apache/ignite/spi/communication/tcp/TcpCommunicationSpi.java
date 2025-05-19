@@ -196,11 +196,6 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
-    /** @deprecated This constant is not used and will be removed in future releases. */
-    @Deprecated
-    public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower).";
-
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
 
@@ -210,10 +205,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Node attribute that is mapped to node port number (value is <tt>comm.tcp.port</tt>). */
     public static final String ATTR_PORT = "comm.tcp.port";
 
-    /** @deprecated This constant is not used and will be removed in future releases. */
-    @Deprecated
-    public static final String ATTR_SHMEM_PORT = "comm.shmem.tcp.port";
-
     /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
 
@@ -222,10 +213,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
-
-    /** @deprecated This constant is not used and will be removed in future releases. */
-    @Deprecated
-    public static final int DFLT_SHMEM_PORT = -1;
 
     /** Default idle connection timeout (value is <tt>10</tt>min). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 10 * 60_000;
@@ -387,13 +374,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         this.lsnr = lsnr;
     }
 
-    /**
-     * @return Listener.
-     */
-    public CommunicationListener getListener() {
-        return lsnr;
-    }
-
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
         // Listener could be not initialized yet, but discovery thread could try to aggregate metrics.
@@ -430,42 +410,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         return metricsLsnr.receivedBytesCount();
     }
 
-    /**
-     * Gets received messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
-    }
-
-    /**
-     * Gets received messages counts (grouped by node).
-     *
-     * @return Map containing sender nodes and respective counts.
-     */
-    public Map<UUID, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by node).
-     *
-     * @return Map containing receiver nodes and respective counts.
-     */
-    public Map<UUID, Long> getSentMessagesByNode() {
-        return metricsLsnr.sentMessagesByNode();
-    }
-
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvWrapper.nio();
@@ -476,17 +420,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         metricsLsnr.resetMetrics();
-    }
-
-    /**
-     * @param consistentId Consistent id of the node.
-     * @param nodeId Left node ID.
-     */
-    void onNodeLeft(Object consistentId, UUID nodeId) {
-        assert nodeId != null;
-
-        metricsLsnr.onNodeLeft(consistentId);
-        clientPool.onNodeLeft(nodeId);
     }
 
     /**
@@ -1182,32 +1115,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
-     * Process errors if TCP/IP {@link GridNioSession} creation to remote node hasn't been performed.
-     *
-     * @param node Remote node.
-     * @param addrs Remote node addresses.
-     * @param errs TCP client creation errors.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void processSessionCreationError(
-        ClusterNode node,
-        Collection<InetSocketAddress> addrs,
-        IgniteCheckedException errs
-    ) throws IgniteCheckedException {
-        nioSrvWrapper.processSessionCreationError(node, addrs, errs);
-    }
-
-    /**
-     * @param node Node.
-     * @return {@code True} if remote current node cannot receive TCP connections. Applicable for client nodes only.
-     */
-    private boolean forceClientToServerConnections(ClusterNode node) {
-        Boolean forceClientToSrvConnections = node.attribute(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS));
-
-        return Boolean.TRUE.equals(forceClientToSrvConnections);
-    }
-
-    /**
      * @param sndId Sender ID.
      * @param msg Communication message.
      * @param msgC Closure to call when message processing finished.
@@ -1242,14 +1149,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         U.join(commWorker, log);
 
         clientPool.forceClose();
-    }
-
-    /**
-     * @param msg Error message.
-     * @param e Exception.
-     */
-    private void onException(String msg, Exception e) {
-        getExceptionRegistry().onException(msg, e);
     }
 
     /** {@inheritDoc} */

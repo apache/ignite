@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
@@ -64,6 +64,7 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
+import static org.apache.ignite.testframework.GridTestUtils.noop;
 
 /**
  * Event consume test.
@@ -100,8 +101,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         if (include)
             cfg.setUserAttributes(F.asMap("include", true));
@@ -445,7 +444,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -487,7 +486,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -532,7 +531,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -578,8 +577,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
-            grid(0).compute().withName("exclude").run(F.noop());
+            grid(0).compute().broadcast(noop());
+            grid(0).compute().withName("exclude").run(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -621,7 +620,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -663,7 +662,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -705,7 +704,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -749,7 +748,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -791,7 +790,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().run(F.noop());
+            grid(0).compute().run(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -800,7 +799,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).events().stopRemoteListen(consumeId);
 
-            grid(0).compute().run(F.noop());
+            grid(0).compute().run(noop());
 
             U.sleep(500);
 
@@ -835,13 +834,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             EVT_JOB_STARTED);
 
-        compute(grid(0).cluster().forLocal()).run(F.noop());
+        compute(grid(0).cluster().forLocal()).run(noop());
 
         assert latch.await(10, SECONDS) : latch;
 
         assertEquals(1, cnt.get());
 
-        compute(grid(0).cluster().forLocal()).run(F.noop());
+        compute(grid(0).cluster().forLocal()).run(noop());
 
         U.sleep(500);
 
@@ -886,7 +885,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             startGrid("anotherGridNodeJoin");
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -938,7 +937,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             startGrid("anotherGridNodeJoinWithProjection2");
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -989,7 +988,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             startGrid("anotherGridNodeJoinWithP2P");
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -1046,7 +1045,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
 
             assert latch.await(10, SECONDS) : latch;
 
@@ -1141,7 +1140,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 EVT_JOB_STARTED
             );
 
-            grid(0).compute().broadcast(F.noop());
+            grid(0).compute().broadcast(noop());
         }
         finally {
             stopGrid("anotherGridMasterNodeLeaveNoAutoUnsubscribe");
@@ -1149,7 +1148,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         discoLatch.await(3000, MILLISECONDS);
 
-        grid(0).compute().broadcast(F.noop());
+        grid(0).compute().broadcast(noop());
 
         assert consumeLatch.await(2, SECONDS);
 
@@ -1241,7 +1240,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        grid(idx).compute().runAsync(F.noop()).get(30_000);
+                        grid(idx).compute().runAsync(noop()).get(30_000);
                     }
                     catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
@@ -1253,7 +1252,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             GridTestUtils.waitForAllFutures(starterFut, stopperFut, nodeRestarterFut, jobRunnerFut);
 
-            Collection<UUID> notStopped = F.lose(started, true, stopped);
+            Collection<UUID> notStopped = started.stream().filter(n -> !stopped.contains(n)).collect(Collectors.toList());
 
             assertEquals("Not stopped IDs: " + notStopped, 0, notStopped.size());
         }

@@ -26,15 +26,15 @@ import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link JdbcType}.
  */
-public class CacheJdbcType extends VisorDataTransferObject {
+public class CacheJdbcType extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -172,7 +172,7 @@ public class CacheJdbcType extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         dbSchema = U.readString(in);
         dbTbl = U.readString(in);
         keyType = U.readString(in);

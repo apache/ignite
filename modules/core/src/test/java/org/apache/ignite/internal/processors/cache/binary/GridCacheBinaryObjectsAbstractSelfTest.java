@@ -56,9 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -76,6 +74,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -108,7 +107,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         binKeysCacheCfg.setName("BinKeysCache");
 
         cfg.setCacheConfiguration(cacheCfg, binKeysCacheCfg);
-        cfg.setMarshaller(new BinaryMarshaller());
 
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
@@ -167,10 +165,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 Object val = CU.value(e.rawGet(), c.context(), false);
 
                 if (key instanceof BinaryObject)
-                    assert ((BinaryObjectImpl)key).detached() : val;
+                    assert BinaryObjectTestUtils.isDetached(key) : key;
 
                 if (val instanceof BinaryObject)
-                    assert ((BinaryObjectImpl)val).detached() : val;
+                    assert BinaryObjectTestUtils.isDetached(val) : val;
             }
         }
 
@@ -661,7 +659,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 BinaryObject val = kbCache.get(i);
 
-                assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key=" + i, BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
 
                 assertEquals(i, (int)val.field("val"));
 
@@ -717,7 +715,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 BinaryObject val = kbCache.getAsync(i).get();
 
-                assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key=" + i, BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
 
                 assertEquals(i, (int)val.field("val"));
 
@@ -912,7 +910,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     kpc.put(e.getKey(), val);
 
-                    assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                    assertFalse("Key=" + i, BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
                 }
 
                 tx.commit();
@@ -985,7 +983,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     assertEquals(new Integer(e.getKey().intValue()), val.field("val"));
 
-                    assertFalse("Key=" + e.getKey(), val instanceof BinaryObjectOffheapImpl);
+                    assertFalse("Key=" + e.getKey(), BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
                 }
 
                 tx.commit();

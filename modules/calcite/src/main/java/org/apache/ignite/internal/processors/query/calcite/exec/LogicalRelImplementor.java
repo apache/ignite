@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +38,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
@@ -114,6 +114,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.calcite.sql.SqlKind.IS_DISTINCT_FROM;
+import static org.apache.calcite.sql.SqlKind.IS_NOT_DISTINCT_FROM;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -298,7 +300,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         Comparator<Row> comp = expressionFactory.comparator(
             rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.rightCollation().getFieldCollations().subList(0, pairsCnt)
+            rel.rightCollation().getFieldCollations().subList(0, pairsCnt),
+            rel.getCondition().getKind() == IS_NOT_DISTINCT_FROM || rel.getCondition().getKind() == IS_DISTINCT_FROM
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
@@ -349,7 +352,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, ranges, requiredColumns);
 
-            return new ScanStorageNode<>(idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
         }
         else {
             // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
@@ -440,15 +443,22 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(idx.name() + "_COUNT", ctx, rel.getRowType(),
-                () -> Collections.singletonList(ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType())
-                    .create(idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()))).iterator());
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name() + "_COUNT", ctx, rel.getRowType(),
+                idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()));
         }
         else {
             CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
 
-            replacement.register(new ScanStorageNode<>(tbl.name(), ctx, rel.getTable().getRowType(), tbl.scan(ctx,
-                ctx.group(rel.sourceId()), ImmutableBitSet.of(0))));
+            replacement.register(
+                new ScanStorageNode<>(
+                    tbl.name(),
+                    ctx,
+                    rel.getTable().getRowType(),
+                    tbl.scan(ctx, ctx.group(rel.sourceId()), ImmutableBitSet.of(rel.fieldIndex())),
+                    rel.notNull() ? r -> ctx.rowHandler().get(0, r) != null : null,
+                    null
+                )
+            );
 
             return replacement;
         }
@@ -464,7 +474,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(idx.name() + "_BOUND", ctx, rowType,
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name() + "_BOUND", ctx, rowType,
                 idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
         }
         else {
@@ -503,21 +513,30 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
         List<RexNode> projects = rel.projects();
-        ImmutableBitSet requiredColunms = rel.requiredColumns();
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColunms);
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         ColocationGroup grp = ctx.group(rel.sourceId());
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColunms);
+        IgniteIndex idx = tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX);
 
-        return new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filters, prj);
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            Iterable<Row> rowsIter = idx.scan(ctx, grp, null, requiredColumns);
+
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
+        }
+        else {
+            Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColumns);
+
+            return new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filters, prj);
+        }
     }
 
     /** {@inheritDoc} */
@@ -653,13 +672,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableFunctionScan rel) {
-        Supplier<Iterable<Object[]>> dataSupplier = expressionFactory.execute(rel.getCall());
+        Supplier<Iterable<?>> dataSupplier = expressionFactory.execute(rel.getCall());
 
         RelDataType rowType = rel.getRowType();
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(dataSupplier, rowFactory));
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(rowType, dataSupplier, rowFactory));
     }
 
     /** {@inheritDoc} */

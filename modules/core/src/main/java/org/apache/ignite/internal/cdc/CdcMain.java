@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -47,7 +46,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -55,10 +53,9 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -73,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -85,13 +81,11 @@ import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
-import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -163,6 +157,9 @@ public class CdcMain implements Runnable {
     /** Event capture time. */
     public static final String EVT_CAPTURE_TIME = "EventCaptureTime";
 
+    /** Wal segment iterator consuming time. */
+    public static final String SEGMENT_CONSUMING_TIME = "SegmentConsumingTime";
+
     /** Binary metadata metric name. */
     public static final String BINARY_META_DIR = "BinaryMetaDir";
 
@@ -213,6 +210,9 @@ public class CdcMain implements Runnable {
      */
     private HistogramMetricImpl evtCaptureTime;
 
+    /** Metric represents time between creating {@link WALIterator} and finish consuming it, in milliseconds. */
+    private HistogramMetricImpl segmentConsumingTime;
+
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
 
@@ -222,17 +222,8 @@ public class CdcMain implements Runnable {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Change Data Capture directory. */
-    private Path cdcDir;
-
-    /** Database directory. */
-    private File dbDir;
-
-    /** Binary meta directory. */
-    private File binaryMeta;
-
-    /** Marshaller directory. */
-    private File marshaller;
+    /** Ignite folders. */
+    private NodeFileTree ft;
 
     /** Standalone kernal context. */
     private StandaloneGridKernalContext kctx;
@@ -324,28 +315,22 @@ public class CdcMain implements Runnable {
         }
 
         try (CdcFileLockHolder lock = lockPds()) {
-            String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
-
-            Files.createDirectories(cdcDir.resolve(STATE_DIR));
-
-            binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(igniteCfg.getWorkDirectory(), consIdDir);
-
-            marshaller = MarshallerContextImpl.mappingFileStoreWorkDir(igniteCfg.getWorkDirectory());
+            Files.createDirectories(ft.walCdc().toPath().resolve(STATE_DIR));
 
             if (log.isInfoEnabled()) {
-                log.info("Change Data Capture [dir=" + cdcDir + ']');
-                log.info("Ignite node Binary meta [dir=" + binaryMeta + ']');
-                log.info("Ignite node Marshaller [dir=" + marshaller + ']');
+                log.info("Change Data Capture [dir=" + ft.walCdc() + ']');
+                log.info("Ignite node Binary meta [dir=" + ft.binaryMeta() + ']');
+                log.info("Ignite node Marshaller [dir=" + ft.marshaller() + ']');
             }
 
-            kctx = startStandaloneKernal();
+            startStandaloneKernal();
 
             initMetrics();
 
             try {
                 kctx.resource().injectGeneric(consumer.consumer());
 
-                state = createState(cdcDir.resolve(STATE_DIR));
+                state = createState(ft.walCdc().toPath().resolve(STATE_DIR));
 
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
@@ -384,11 +369,10 @@ public class CdcMain implements Runnable {
     }
 
     /**
-     * @return Kernal instance.
      * @throws IgniteCheckedException If failed.
      */
-    private StandaloneGridKernalContext startStandaloneKernal() throws IgniteCheckedException {
-        StandaloneGridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
+    private void startStandaloneKernal() throws IgniteCheckedException {
+        kctx = new StandaloneGridKernalContext(log, ft) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -423,15 +407,13 @@ public class CdcMain implements Runnable {
         }
 
         mreg = kctx.metric().registry("cdc");
-
-        return kctx;
     }
 
     /** Initialize metrics. */
     private void initMetrics() {
-        mreg.objectMetric(BINARY_META_DIR, String.class, "Binary meta directory").value(binaryMeta.getAbsolutePath());
-        mreg.objectMetric(MARSHALLER_DIR, String.class, "Marshaller directory").value(marshaller.getAbsolutePath());
-        mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(cdcDir.toFile().getAbsolutePath());
+        mreg.objectMetric(BINARY_META_DIR, String.class, "Binary meta directory").value(ft.binaryMeta().getAbsolutePath());
+        mreg.objectMetric(MARSHALLER_DIR, String.class, "Marshaller directory").value(ft.marshaller().getAbsolutePath());
+        mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(ft.walCdc().getAbsolutePath());
 
         curSegmentIdx = mreg.longMetric(CUR_SEG_IDX, "Current segment index");
         committedSegmentIdx = mreg.longMetric(COMMITTED_SEG_IDX, "Committed segment index");
@@ -443,6 +425,10 @@ public class CdcMain implements Runnable {
             EVT_CAPTURE_TIME,
             new long[] {5_000, 10_000, 15_000, 30_000, 60_000},
             "Time between creating an event on Ignite node and capturing it by CdcConsumer");
+        segmentConsumingTime = mreg.histogram(
+            SEGMENT_CONSUMING_TIME,
+            new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000},
+            "Time of WAL segment consumption by consumer, in milliseconds.");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
@@ -459,10 +445,12 @@ public class CdcMain implements Runnable {
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
+        ft = fileTree(settings.folderName());
+
         CdcFileLockHolder lock = settings.getLockedFileLockHolder();
 
         if (lock == null) {
-            File consIdDir = settings.persistentStoreNodePath();
+            File consIdDir = ft.nodeStorage();
 
             lock = tryLock(consIdDir);
 
@@ -490,7 +478,7 @@ public class CdcMain implements Runnable {
                     return;
                 }
 
-                try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
+                try (Stream<Path> cdcFiles = Files.list(ft.walCdc().toPath())) {
                     Set<Path> exists = new HashSet<>();
 
                     Iterator<Path> segments = cdcFiles
@@ -498,9 +486,9 @@ public class CdcMain implements Runnable {
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
-                        .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)) // Sort by segment index.
+                        .sorted(Comparator.comparingLong(ft::walSegmentIndex)) // Sort by segment index.
                         .peek(p -> {
-                            long nextSgmnt = segmentIndex(p);
+                            long nextSgmnt = ft.walSegmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
                                 throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
@@ -558,8 +546,7 @@ public class CdcMain implements Runnable {
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
-                .binaryMetadataFileStoreDir(binaryMeta)
-                .marshallerMappingFileStoreDir(marshaller)
+                .fileTree(ft)
                 .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile());
@@ -570,11 +557,13 @@ public class CdcMain implements Runnable {
         if (walState != null)
             builder.from(walState.get1());
 
-        long segmentIdx = segmentIndex(segment);
+        long segmentIdx = ft.walSegmentIndex(segment);
 
         lastSegmentConsumptionTs.value(System.currentTimeMillis());
 
         curSegmentIdx.value(segmentIdx);
+
+        long start = U.currentTimeMillis();
 
         if (cdcModeState == CdcMode.IGNITE_NODE_ACTIVE) {
             if (consumeSegmentPassively(builder))
@@ -582,6 +571,8 @@ public class CdcMain implements Runnable {
         }
         else
             consumeSegmentActively(builder);
+
+        segmentConsumingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
 
@@ -679,15 +670,15 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
-            File[] files = binaryMeta.listFiles();
+            File[] files = ft.binaryMeta().listFiles();
 
             if (files == null)
                 return;
 
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
-                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
+                .filter(NodeFileTree::binFile)
                 .map(f -> {
-                    int typeId = BinaryUtils.typeId(f.getName());
+                    int typeId = NodeFileTree.typeId(f.getName());
                     long lastModified = f.lastModified();
 
                     // Filter out files already in `typesState` with the same last modify date.
@@ -697,7 +688,7 @@ public class CdcMain implements Runnable {
                     typesState.put(typeId, lastModified);
 
                     try {
-                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
+                        kctx.cacheObjects().cacheMetadataLocally(ft, typeId);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -726,7 +717,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
+            File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
 
             if (files == null)
                 return;
@@ -754,15 +745,15 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
-            if (!dbDir.exists())
+            if (!ft.nodeStorage().exists())
                 return;
 
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
-                    dbDir,
-                    MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                    ft,
+                    kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()
                 .map(data -> {
@@ -812,7 +803,7 @@ public class CdcMain implements Runnable {
      * @return {@code True} if segment file was deleted, {@code false} otherwise.
      */
     private boolean removeProcessedOnFailover(Path segment) {
-        long segmentIdx = segmentIndex(segment);
+        long segmentIdx = ft.walSegmentIndex(segment);
 
         if (segmentIdx > walState.get1().index()) {
             throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
@@ -859,7 +850,7 @@ public class CdcMain implements Runnable {
             Path processedSegment = rmvIter.next();
 
             // Can't delete current segment, because state points to it.
-            if (segmentIndex(processedSegment) >= curState.get1().index())
+            if (ft.walSegmentIndex(processedSegment) >= curState.get1().index())
                 continue;
 
             // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
@@ -884,35 +875,16 @@ public class CdcMain implements Runnable {
             return null;
         }
 
-        File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
+        ft = fileTree(dbStoreDirWithSubdirectory.getName());
 
-        if (!cdcRoot.isAbsolute()) {
-            cdcRoot = new File(
-                igniteCfg.getWorkDirectory(),
-                igniteCfg.getDataStorageConfiguration().getCdcWalPath()
-            );
-        }
-
-        if (!cdcRoot.exists()) {
-            log.warning("CDC root directory not exists. Should be created by Ignite Node. " +
-                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + cdcRoot + ']');
-
-            return null;
-        }
-
-        Path cdcDir = Paths.get(cdcRoot.getAbsolutePath(), dbStoreDirWithSubdirectory.getName());
-
-        if (!Files.exists(cdcDir)) {
+        if (!ft.walCdc().exists()) {
             log.warning("CDC directory not exists. Should be created by Ignite Node. " +
-                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + cdcDir + ']');
+                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + ft.walCdc() + ']');
 
             return null;
         }
 
-        this.cdcDir = cdcDir;
-        this.dbDir = dbStoreDirWithSubdirectory;
-
-        CdcFileLockHolder lock = new CdcFileLockHolder(cdcDir.toString(), "cdc.lock", log);
+        CdcFileLockHolder lock = new CdcFileLockHolder(ft.walCdc().toString(), "cdc.lock", log);
 
         try {
             lock.tryLock(cdcCfg.getLockTimeout());
@@ -923,7 +895,7 @@ public class CdcMain implements Runnable {
             U.closeQuiet(lock);
 
             if (log.isInfoEnabled()) {
-                log.info("Unable to acquire lock to lock CDC folder [dir=" + cdcRoot + "]" + NL +
+                log.info("Unable to acquire lock to lock CDC folder [dir=" + ft.walCdc() + "]" + NL +
                     "Reason: " + e.getMessage());
             }
 
@@ -1022,5 +994,13 @@ public class CdcMain implements Runnable {
             .filter(filter)
             .filter(Objects::nonNull)
             .iterator();
+    }
+
+    /**
+     * @param folderName Folder name
+     * @return Node file tree.
+     */
+    private NodeFileTree fileTree(String folderName) {
+        return new NodeFileTree(igniteCfg, folderName);
     }
 }

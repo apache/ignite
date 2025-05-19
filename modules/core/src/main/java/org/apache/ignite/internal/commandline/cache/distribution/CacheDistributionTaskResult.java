@@ -26,17 +26,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Result of CacheDistributionTask
  */
-public class CacheDistributionTaskResult extends VisorDataTransferObject {
+public class CacheDistributionTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -83,8 +83,7 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeResList = U.readList(in);
         exceptions = U.readMap(in);
     }
@@ -313,6 +312,9 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
             SB out = new SB();
 
             out.a(grpId);
+            out.a(',');
+
+            out.a(partId);
             out.a(',');
 
             out.a(U.id8(getNodeId()));

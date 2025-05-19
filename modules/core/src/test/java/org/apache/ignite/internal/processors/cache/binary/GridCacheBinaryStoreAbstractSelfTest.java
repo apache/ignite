@@ -31,7 +31,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -59,8 +58,6 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
         bCfg.setClassNames(Arrays.asList(Key.class.getName(), Value.class.getName()));
 
         cfg.setBinaryConfiguration(bCfg);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

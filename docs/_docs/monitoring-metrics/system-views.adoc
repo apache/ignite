@@ -102,21 +102,21 @@ control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684
 |CACHE_MODE | string |  Cache mode
 |ATOMICITY_MODE | string |  Atomicity mode
 |CACHE_GROUP_NAME | string |  Cache group name
-|AFFINITY | string |  toString representation of affinity function
-|AFFINITY_MAPPER | string |  toString representation of affinity mapper
+|AFFINITY | string |  String representation of affinity function
+|AFFINITY_MAPPER | string |  String representation of affinity mapper
 |BACKUPS | int | backup count
 |CACHE_GROUP_ID | int | cache group id
-|CACHE_LOADER_FACTORY | string |  toString representation of cache loader factory
-|CACHE_STORE_FACTORY | string |  toString representation of cache store factory
-|CACHE_WRITER_FACTORY | string |  toString representation of cache writer factory
+|CACHE_LOADER_FACTORY | string | String representation of cache loader factory
+|CACHE_STORE_FACTORY | string |  String representation of cache store factory
+|CACHE_WRITER_FACTORY | string |  String representation of cache writer factory
 |DATA_REGION_NAME | string |  Data region name
 |DEFAULT_LOCK_TIMEOUT | long |    Lock timeout in milliseconds
-|EVICTION_FILTER | string |  toString representation of eviction filter
-|EVICTION_POLICY_FACTORY | string |  toString representation of eviction policy factory
-|EXPIRY_POLICY_FACTORY | string |  toString representation of expiry policy factory
-|CONFLICT_RESOLVER | string |  toString representation of cache conflict resolver
-|HAS_EXPIRING_ENTRIES | string | Yes if cache has entries pending expire
-|INTERCEPTOR | string |  toString representation of interceptor
+|EVICTION_FILTER | string |  String representation of eviction filter
+|EVICTION_POLICY_FACTORY | string |  String representation of eviction policy factory
+|EXPIRY_POLICY_FACTORY | string |  String representation of expiry policy factory
+|CONFLICT_RESOLVER | string |  String representation of cache conflict resolver
+|HAS_EXPIRING_ENTRIES | string | Yes if cache has entries pending expire 
+|INTERCEPTOR | string |  String representation of interceptor
 |IS_COPY_ON_READ | boolean | Flag indicating whether a copy of the value stored in the on-heap cache
 |IS_EAGER_TTL | boolean | Flag indicating whether expired cache entries will be eagerly removed from cache
 |IS_ENCRYPTION_ENABLED | boolean | True if cache data encrypted
@@ -136,10 +136,10 @@ control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684
 |IS_WRITE_THROUGH | boolean | True if write to third party storage enabled
 |MAX_CONCURRENT_ASYNC_OPERATIONS | int | Maximum number of allowed concurrent asynchronous operations. If 0 returned then number of concurrent asynchronous operations is unlimited
 |MAX_QUERY_ITERATORS_COUNT | int | Maximum number of query iterators that can be stored. Iterators are stored to support query pagination when each page of data is sent to user's node only on demand
-|NEAR_CACHE_EVICTION_POLICY_FACTORY | string |  toString representation of near cache eviction policy factory
+|NEAR_CACHE_EVICTION_POLICY_FACTORY | string |  String representation of near cache eviction policy factory
 |NEAR_CACHE_START_SIZE | int | Initial cache size for near cache which will be used to pre-create internal hash table after start.
-|NODE_FILTER | string |  toString representation of node filter
-|PARTITION_LOSS_POLICY | string |  toString representation of partition loss policy
+|NODE_FILTER | string |  String representation of node filter
+|PARTITION_LOSS_POLICY | string |  String representation of partition loss policy
 |QUERY_DETAIL_METRICS_SIZE | int | size of queries detail metrics that will be stored in memory for monitoring purposes. If 0 then history will not be collected.
 |QUERY_PARALLELISM | int | Hint to query execution engine on desired degree of parallelism within a single node
 |REBALANCE_BATCH_SIZE | int | Size (in bytes) to be loaded within a single rebalance message
@@ -152,7 +152,7 @@ control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684
 |SQL_INDEX_MAX_INLINE_SIZE | int | Index inline size in bytes
 |SQL_ONHEAP_CACHE_MAX_SIZE | int | Maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows will be evicted.
 |SQL_SCHEMA | string |  Schema name
-|TOPOLOGY_VALIDATOR | string |  toString representation of topology validator
+|TOPOLOGY_VALIDATOR | string |  String representation of topology validator
 |WRITE_BEHIND_BATCH_SIZE | int | Maximum batch size for write-behind cache store operations
 |WRITE_BEHIND_COALESCING | boolean | Write coalescing flag for write-behind cache store operations. Store operations (get or remove) with the same key are combined or coalesced to single, resulting operation to reduce pressure to underlying cache store
 |WRITE_BEHIND_FLUSH_FREQUENCY | long |    Frequency with which write-behind cache is flushed to the cache store in milliseconds
@@ -172,7 +172,7 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |Column|Data Type|Description
 
 
-|AFFINITY| VARCHAR | The string representation (as returned by the `toString()` method) of the affinity function defined for the cache group.
+|AFFINITY| VARCHAR | String representation of the affinity function defined for the cache group.
 |ATOMICITY_MODE | VARCHAR | The link:configuring-caches/atomicity-modes[atomicity mode] of the cache group.
 |BACKUPS|INT | The number of link:configuring-caches/configuring-backups[backup partitions] configured for the cache group.
 |CACHE_COUNT|INT | The number of caches in the cache group.
@@ -181,13 +181,13 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |CACHE_MODE | VARCHAR | The cache mode.
 |DATA_REGION_NAME | VARCHAR | The name of the link:memory-configuration/data-regions[data region].
 |IS_SHARED|BOOLEAN | If this group contains more than one cache.
-|NODE_FILTER | VARCHAR | The string representation (as returned by the `toString()` method) of the node filter defined for the cache group.
+|NODE_FILTER | VARCHAR | String representation of the the node filter defined for the cache group.
 |PARTITION_LOSS_POLICY | VARCHAR | link:configuring-caches/partition-loss-policy[Partition loss policy].
 |PARTITIONS_COUNT|INT | The number of partitions.
 |REBALANCE_DELAY|LONG | link:data-rebalancing#other-properties[Rebalancing delay].
 |REBALANCE_MODE | VARCHAR  | link:data-rebalancing#configuring-rebalancing-mode[Rebalancing mode].
 |REBALANCE_ORDER|INT | link:data-rebalancing#other-properties[Rebalancing order].
-|TOPOLOGY_VALIDATOR | VARCHAR |  The string representation (as returned by the `toString()` method) of the topology validator defined for the cache group.
+|TOPOLOGY_VALIDATOR | VARCHAR |  String representation of the topology validator defined for the cache group.
 |===
 
 
@@ -256,7 +256,7 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 |MAX_PER_NODE_COUNT | int | Maximum count of services instances per node
 |NAME | string |  Service name
 |NAME | TYPE |    DESCRIPTION
-|NODE_FILTER | string |  toString representation of node filter
+|NODE_FILTER | string |  String representation of node filter
 |ORIGIN_NODE_ID | UUID |    Originating node ID
 |SERVICE_CLASS | string |  Service class name
 |SERVICE_ID | UUID |    Service ID
@@ -411,7 +411,7 @@ This view exposes information about tasks waiting for the execution in the syste
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|DESCRIPTION | string |  toString representation of the task
+|DESCRIPTION | string |  String representation of the task
 |STRIPE_INDEX | int | Index of the stripe thread
 |TASK_NAME | string |  Class name of the task
 |THREAD_NAME | string |  Name of the stripe thread
@@ -424,7 +424,7 @@ This view exposes information about tasks waiting for the execution in the data 
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|DESCRIPTION | string |  toString representation of the task
+|DESCRIPTION | string |  String representation of the task
 |STRIPE_INDEX | int | Index of the stripe thread
 |TASK_NAME | string |  Class name of the task
 |THREAD_NAME | string |  Name of the stripe thread
@@ -443,7 +443,7 @@ This view exposes information about currently running scan queries.
 |CACHE_NAME | string |  Cache name
 |CANCELED | boolean | True if canceled
 |DURATION | long |    Query duration
-|FILTER | string |  toString representation of filter
+|FILTER | string |  String representation of filter
 |KEEP_BINARY | boolean | True if keepBinary enabled
 |LOCAL | boolean | True if query local only
 |ORIGIN_NODE_ID | UUID |    Node id started query
@@ -454,7 +454,7 @@ This view exposes information about currently running scan queries.
 |SUBJECT_ID | UUID |    User ID started query
 |TASK_NAME | string |
 |TOPOLOGY | string |  Topology version
-|TRANSFORMER | string |  toString representation of transformer
+|TRANSFORMER | string |  String representation of transformer
 |===
 
 
@@ -475,13 +475,13 @@ This view exposes information about currently running continuous queries.
 |IS_QUERY | boolean | True if user started continuous query.
 |KEEP_BINARY | boolean | True if keepBinary enabled
 |LAST_SEND_TIME | long |    Last time event batch sent to query originating node
-|LOCAL_LISTENER | string |  toString representation of local listener
-|LOCAL_TRANSFORMED_LISTENER | string |  toString representation of local transformed listener
+|LOCAL_LISTENER | string |  String representation of local listener
+|LOCAL_TRANSFORMED_LISTENER | string |  String representation of local transformed listener
 |NODE_ID | UUID |    Originating node id
 |NOTIFY_EXISTING | boolean | True if listener should be notified about existing entries
 |OLD_VALUE_REQUIRED | boolean | True if old entry value should be included in event
-|REMOTE_FILTER | string |  toString representation of remote filter
-|REMOTE_TRANSFORMER | string |  toString representation of remote transformer
+|REMOTE_FILTER | string |  String representation of remote filter
+|REMOTE_TRANSFORMER | string |  String representation of remote transformer
 |ROUTINE_ID | UUID |    Query ID
 |TOPIC | string |  Query topic name
 |===
@@ -518,6 +518,51 @@ This view exposes information about currently running SQL queries.
 |DURATION_MAX | long |    Maximum duration of execution
 |LAST_START_TIME | date |    Last execution date
 |===
+
+== SQL_PLANS_HISTORY
+
+This view displays a list of plans of previously executed SQL queries.
+
+[{table_opts}]
+|===
+|NAME | TYPE |  DESCRIPTION
+|SCHEMA_NAME | string |  Schema name
+|SQL | string |  Query text
+|PLAN | string |  SQL plan text
+|LOCAL | boolean | True if local only
+|ENGINE | string |  SQL engine
+|LAST_START_TIME | date |  Last execution date
+|===
+
+=== Performance Considerations
+
+When using the H2 engine, collecting SQL plans may introduce a performance overhead under high SQL query load, impacting both latency and throughput. For this reason, SQL plan collection is disabled by default for H2.
+
+To enable it, you need to configure the SQL plan history size:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+<bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="sqlConfiguration">
+        <bean class="org.apache.ignite.configuration.SqlConfiguration">
+            <property name="sqlPlanHistorySize" value="1000"/>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source, java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+cfg.setSqlConfiguration(new SqlConfiguration().setSqlPlanHistorySize(1000));
+----
+--
+
+When using the Calcite engine, collecting SQL plans does not impact performance. Therefore, it is enabled by default. The default history size is 1000 entries.
 
 == SCHEMAS
 
@@ -645,8 +690,9 @@ This view exposes information about SQL views.
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|NAME | string |  Name
 |SCHEMA | string |  Schema
+|NAME | string |  Name
+|SQL | string | SQL query for view
 |DESCRIPTION | string |  Description
 |===
 
@@ -1008,4 +1054,5 @@ The SNAPSHOT view exposes information about local snapshots.
 | SNAPSHOT_RECORD_SEGMENT | BIGINT | Index of WAL segment containing snapshot's WAL record.
 | INCREMENT_INDEX | INTEGER | Incremental snapshot index.
 | TYPE | VARCHAR | Type of snapshot - full or incremental.
+| SNAPSHOT_TIME | BIGINT | Snapshot creation time.
 |===

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -30,6 +33,7 @@ import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -67,6 +71,8 @@ import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -130,7 +136,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         o.bigVal = new BigDecimal(1);
         o.strVal = "str";
         o.arrVal = new byte[] {1};
-        o.blobVal = new byte[] {1};
+        o.blobVal = new byte[] {1, 2, 3};
         o.clobVal = "large str";
         o.dateVal = new Date(1);
         o.timeVal = new Time(1);
@@ -867,7 +873,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         Blob blob = conn.createBlob();
 
-        blob.setBytes(1, new byte[] {1});
+        blob.setBytes(1, new byte[] {1, 2, 3});
 
         stmt.setBlob(1, blob);
 
@@ -884,6 +890,209 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         assertTrue(rs.next());
         assertEquals(2, rs.getInt("id"));
         assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobWrittenViaOutputStream() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        try (OutputStream out = blob.setBinaryStream(1)) {
+            out.write(new byte[] {1, 2, 3});
+        }
+
+        stmt.setBlob(1, blob);
+
+        checkStmtExec(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobSeeChangesDoneAfterAddToStatement() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        stmt.setBlob(1, blob);
+
+        try (OutputStream out = blob.setBinaryStream(1)) {
+            out.write(new byte[] {1});
+            out.write(2);
+        }
+
+        blob.setBytes(3, new byte[] {3});
+
+        checkStmtExec(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobNull() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        stmt.setBlob(1, (Blob)null);
+        checkStmtExec(2);
+
+        stmt.setNull(1, BLOB);
+        checkStmtExec(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamKnownLength() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[]{1, 2, 3});
+
+        assertThrows(null, () -> {
+            stmt.setBinaryStream(1, stream, -1L);
+            return null;
+        }, SQLException.class, null);
+
+        assertThrows(null, () -> {
+            stmt.setBinaryStream(1, stream, -1);
+            return null;
+        }, SQLException.class, null);
+
+        assertThrows(null, () -> {
+            stmt.setBinaryStream(1, stream, (long)MAX_ARRAY_SIZE + 1);
+            return null;
+        }, SQLFeatureNotSupportedException.class, null);
+
+        assertThrows(null, () -> {
+            stmt.setBinaryStream(1, stream, MAX_ARRAY_SIZE + 1);
+            return null;
+        }, SQLFeatureNotSupportedException.class, null);
+
+        stmt.setBinaryStream(1, stream, 3);
+        checkStmtExec(1);
+
+        stream.reset();
+        stmt.setBinaryStream(1, stream, 3L);
+        checkStmtExec(1);
+
+        stream.reset();
+        stmt.setBinaryStream(1, stream, 10L);
+        assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
+
+        stmt.setBinaryStream(1, null, 0);
+        checkStmtExec(2);
+
+        stmt.setBinaryStream(1, null, 0L);
+        checkStmtExec(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamUnknownLength() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[]{1, 2, 3});
+
+        stmt.setBinaryStream(1, stream);
+        checkStmtExec(1);
+
+        stmt.setBinaryStream(1, null);
+        checkStmtExec(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamThrows() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        stmt.setBinaryStream(1, new ThrowingInputStream());
+
+        assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobStreamKnownLength() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[]{1, 2, 3});
+
+        assertThrows(null, () -> {
+            stmt.setBlob(1, stream, -1L);
+            return null;
+        }, SQLException.class, null);
+
+        assertThrows(null, () -> {
+            stmt.setBlob(1, stream, (long)MAX_ARRAY_SIZE + 1);
+            return null;
+        }, SQLFeatureNotSupportedException.class, null);
+
+        stmt.setBlob(1, stream, 3L);
+        checkStmtExec(1);
+
+        stream.reset();
+        stmt.setBlob(1, stream, 10L);
+        assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
+
+        stmt.setBlob(1, null, 0L);
+        checkStmtExec(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobStreamUnknownLength() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[]{1, 2, 3});
+
+        stmt.setBlob(1, stream);
+        checkStmtExec(1);
+
+        stmt.setBlob(1, (Blob)null);
+        checkStmtExec(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobStreamThrows() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        stmt.setBinaryStream(1, new ThrowingInputStream());
+
+        assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
+    }
+
+    /** */
+    private void checkStmtExec(int expectedId) throws SQLException {
+        ResultSet rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(expectedId, rs.getInt("id"));
+        assertFalse(rs.next());
+    }
+
+    /** */
+    static class ThrowingInputStream extends InputStream {
+        /** {@inheritDoc} */
+        @Override public int read() throws IOException {
+            throw new IOException();
+        }
     }
 
     /**
@@ -1086,36 +1295,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 stmt.setAsciiStream(1, null, 0L);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBinaryStream(1, null);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBinaryStream(1, null, 0);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBinaryStream(1, null, 0L);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBlob(1, (InputStream)null);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBlob(1, null, 0L);
             }
         });
 

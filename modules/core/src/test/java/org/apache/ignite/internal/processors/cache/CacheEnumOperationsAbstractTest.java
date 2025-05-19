@@ -25,9 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -187,15 +185,11 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @param expVal Expected value.
      */
     private static void assertBinaryEnum(IgniteCache<Object, Object> cache, int key, TestEnum expVal) {
-        Marshaller marsh = ((IgniteCacheProxy)cache).context().marshaller();
+        BinaryObject enumObj = (BinaryObject)cache.withKeepBinary().get(key);
 
-        if (marsh instanceof BinaryMarshaller) {
-            BinaryObject enumObj = (BinaryObject)cache.withKeepBinary().get(key);
-
-            assertEquals(expVal.ordinal(), enumObj.enumOrdinal());
-            assertTrue(enumObj.type().isEnum());
-            assertTrue(enumObj instanceof BinaryEnumObjectImpl);
-        }
+        assertEquals(expVal.ordinal(), enumObj.enumOrdinal());
+        assertTrue(enumObj.type().isEnum());
+        assertTrue(BinaryUtils.isBinaryEnumObject(enumObj));
     }
 
     /**

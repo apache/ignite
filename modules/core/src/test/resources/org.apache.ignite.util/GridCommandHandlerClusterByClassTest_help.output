@@ -4,7 +4,7 @@ User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
 
-  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--ssl-factory SSL_FACTORY_PATH] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--ssl-factory SSL_FACTORY_PATH] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
 
 
 This utility can do the following commands:
@@ -427,6 +427,18 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Get status of collecting performance statistics in the cluster:
     control.(sh|bat) --performance-statistics status
 
+  Delete lost segment CDC links:
+    control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
+
+    Parameters:
+      --node-id node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+
+  Forcefully resend all cache data to CDC. Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC:
+    control.(sh|bat) --cdc resend --caches cache1,...,cacheN
+
+    Parameters:
+      --caches cache1,...,cacheN  - specifies a comma-separated list of cache names.
+
   [EXPERIMENTAL]
   Check/Repair cache consistency using Read Repair approach:
     control.(sh|bat) --consistency repair --cache cache --partitions partition --strategy LWW|PRIMARY|RELATIVE_MAJORITY|REMOVE|CHECK_ONLY [--parallel]
@@ -450,26 +462,12 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
 
-  [EXPERIMENTAL]
-  Delete lost segment CDC links:
-    control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
-
-    Parameters:
-      --node-id node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
-
-  [EXPERIMENTAL]
-  Forcefully resend all cache data to CDC. Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC:
-    control.(sh|bat) --cdc resend --caches cache1,...,cacheN
-
-    Parameters:
-      --caches cache1,...,cacheN  - specifies a comma-separated list of cache names.
-
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
 Default values:
     HOST_OR_IP=127.0.0.1
-    PORT=11211
+    PORT=10800
     PING_INTERVAL=5000
     PING_TIMEOUT=30000
     SSL_PROTOCOL=TLS

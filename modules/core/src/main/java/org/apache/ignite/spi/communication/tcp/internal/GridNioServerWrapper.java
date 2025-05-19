@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -101,8 +102,6 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
@@ -804,13 +803,22 @@ public class GridNioServerWrapper {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        get().register(directType, supplier);
+                    }
+
                     @Nullable @Override public Message create(short type) {
-                        if (impl == null)
+                        return get().create(type);
+                    }
+
+                    private MessageFactory get() {
+                        if (impl == null) {
                             impl = stateProvider.getSpiContext().messageFactory();
 
-                        assert impl != null;
+                            assert impl != null;
+                        }
 
-                        return impl.create(type);
+                        return impl;
                     }
                 };
 
@@ -1069,8 +1077,6 @@ public class GridNioServerWrapper {
         assert !remote.isLocal() : remote;
         assert initMsg != null;
         assert chConnPlc != null;
-        assert nodeSupports(remote, CHANNEL_COMMUNICATION) : "Node doesn't support direct connection over socket channel " +
-            "[nodeId=" + remote.id() + ']';
 
         ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 

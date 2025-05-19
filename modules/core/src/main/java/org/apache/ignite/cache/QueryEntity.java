@@ -560,7 +560,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets mapping from full property name in dot notation to an alias that will be used as SQL column name.
-     * Example: {"parent.name" -> "parentName"}.
+     * Example: {"parent.name" -&gt; "parentName"}.
      *
      * @param aliases Aliases map.
      * @return {@code this} for chaining.
@@ -942,19 +942,19 @@ public class QueryEntity implements Serializable {
 
         QueryEntity entity = (QueryEntity)o;
 
-        return F.eq(keyType, entity.keyType) &&
-            F.eq(valType, entity.valType) &&
-            F.eq(keyFieldName, entity.keyFieldName) &&
-            F.eq(valueFieldName, entity.valueFieldName) &&
-            F.eq(fields, entity.fields) &&
-            F.eq(keyFields, entity.keyFields) &&
-            F.eq(aliases, entity.aliases) &&
+        return Objects.equals(keyType, entity.keyType) &&
+            Objects.equals(valType, entity.valType) &&
+            Objects.equals(keyFieldName, entity.keyFieldName) &&
+            Objects.equals(valueFieldName, entity.valueFieldName) &&
+            Objects.equals(fields, entity.fields) &&
+            Objects.equals(keyFields, entity.keyFields) &&
+            Objects.equals(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
-            F.eq(tableName, entity.tableName) &&
-            F.eq(_notNullFields, entity._notNullFields) &&
-            F.eq(defaultFieldValues, entity.defaultFieldValues) &&
-            F.eq(fieldsPrecision, entity.fieldsPrecision) &&
-            F.eq(fieldsScale, entity.fieldsScale);
+            Objects.equals(tableName, entity.tableName) &&
+            Objects.equals(_notNullFields, entity._notNullFields) &&
+            Objects.equals(defaultFieldValues, entity.defaultFieldValues) &&
+            Objects.equals(fieldsPrecision, entity.fieldsPrecision) &&
+            Objects.equals(fieldsScale, entity.fieldsScale);
     }
 
     /** {@inheritDoc} */

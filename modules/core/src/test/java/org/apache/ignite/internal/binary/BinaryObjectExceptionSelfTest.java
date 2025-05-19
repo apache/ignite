@@ -48,8 +48,6 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         cfg.setCacheConfiguration(
             new CacheConfiguration(cacheName)
                 .setCopyOnRead(true)
@@ -92,7 +90,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
 
         b.deserialize(); // deserialize working
 
-        byte[] a = b.array();
+        byte[] a = b.bytes();
 
         int unexpectedCnt = 0;
 

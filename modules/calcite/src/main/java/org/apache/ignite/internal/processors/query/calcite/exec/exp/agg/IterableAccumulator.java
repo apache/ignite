@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
-/**
- * Interface for row storing accumulator.
- */
-public interface IterableAccumulator<Row> extends Accumulator<Row>, Iterable<Row> {
+/** */
+public interface IterableAccumulator<Row> extends Accumulator<Row>, Iterable<Row>, StoringAccumulator {
     // No-op.
 }

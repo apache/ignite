@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -120,9 +120,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     @Override public boolean equals(Object obj) {
         return super.equals(obj) &&
             obj instanceof TcpDiscoveryCustomEventMessage &&
-            F.eq(
-                ((TcpDiscoveryCustomEventMessage)obj).verifierNodeId(),
-                verifierNodeId());
+            Objects.equals(((TcpDiscoveryCustomEventMessage)obj).verifierNodeId(), verifierNodeId());
     }
 
     /** {@inheritDoc} */

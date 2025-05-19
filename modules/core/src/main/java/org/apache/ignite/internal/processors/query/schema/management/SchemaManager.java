@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -88,7 +89,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 
 /**
- * Schema manager. Responsible for all manipulations on schema objects.
+ * Local schema manager. Responsible for all manipulations on schema objects.
  */
 public class SchemaManager {
     /** */
@@ -203,9 +204,10 @@ public class SchemaManager {
             id2tbl.values(),
             SqlTableView::new);
 
-        ctx.systemView().registerView(SQL_VIEWS_VIEW, SQL_VIEWS_VIEW_DESC,
+        ctx.systemView().registerInnerCollectionView(SQL_VIEWS_VIEW, SQL_VIEWS_VIEW_DESC,
             new SqlViewViewWalker(),
-            sysViews,
+            schemas.values(),
+            SchemaDescriptor::views,
             SqlViewView::new);
 
         ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
@@ -284,6 +286,8 @@ public class SchemaManager {
 
         try {
             createSchema(schema, true);
+
+            schema(schema).add(new ViewDescriptor(MetricUtils.toSqlName(view.name()), null, view.description()));
 
             sysViews.add(view);
 
@@ -413,13 +417,13 @@ public class SchemaManager {
     }
 
     /**
-     * Handle cache destroy.
+     * Handle cache stop.
      *
      * @param cacheName Cache name.
-     * @param rmvIdx Whether to remove indexes.
+     * @param destroy Destroy cache.
      * @param clearIdx Whether to clear the index.
      */
-    public void onCacheDestroyed(String cacheName, boolean rmvIdx, boolean clearIdx) {
+    public void onCacheStopped(String cacheName, boolean destroy, boolean clearIdx) {
         lock.writeLock().lock();
 
         try {
@@ -431,7 +435,7 @@ public class SchemaManager {
             cacheName2schema.remove(cacheName);
 
             for (TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cacheInfo().name(), cacheName)) {
+                if (Objects.equals(tbl.cacheInfo().name(), cacheName)) {
                     Collection<IndexDescriptor> idxs = new ArrayList<>(tbl.indexes().values());
 
                     for (IndexDescriptor idx : idxs) {
@@ -439,7 +443,7 @@ public class SchemaManager {
                             dropIndex(tbl, idx.name(), !clearIdx);
                     }
 
-                    lsnr.onSqlTypeDropped(schemaName, tbl.type(), rmvIdx);
+                    lsnr.onSqlTypeDropped(schemaName, tbl.type(), destroy);
 
                     schema.drop(tbl);
 
@@ -450,6 +454,9 @@ public class SchemaManager {
 
             if (schema.decrementUsageCount()) {
                 schemas.remove(schemaName);
+
+                if (destroy)
+                    ctx.query().sqlViewManager().clearSchemaViews(schemaName);
 
                 lsnr.onSchemaDropped(schemaName);
             }
@@ -469,7 +476,7 @@ public class SchemaManager {
         assert lock.isWriteLockedByCurrentThread();
 
         if (!predefined)
-            predefined = F.eq(QueryUtils.DFLT_SCHEMA, schemaName);
+            predefined = Objects.equals(QueryUtils.DFLT_SCHEMA, schemaName);
 
         SchemaDescriptor schema = new SchemaDescriptor(schemaName, predefined);
 
@@ -498,17 +505,28 @@ public class SchemaManager {
 
         for (Class<?> cls : clss) {
             for (Method m : cls.getDeclaredMethods()) {
-                QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
+                QuerySqlFunction fun = m.getAnnotation(QuerySqlFunction.class);
+                QuerySqlTableFunction tableFun = m.getAnnotation(QuerySqlTableFunction.class);
 
-                if (ann != null) {
-                    int modifiers = m.getModifiers();
+                if (fun == null && tableFun == null)
+                    continue;
 
-                    if (!Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers))
-                        throw new IgniteCheckedException("Method " + m.getName() + " must be public static.");
+                if (!Modifier.isPublic(m.getModifiers())) {
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                        "method must be public.");
+                }
 
-                    String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
+                if (fun != null && tableFun != null) {
+                    throw new IgniteCheckedException("Failed to register method '" + m.getName() + "' as a SQL function: " +
+                        "both table and non-table function variants are defined.");
+                }
 
-                    lsnr.onFunctionCreated(schema, alias, ann.deterministic(), m);
+                if (fun != null)
+                    lsnr.onFunctionCreated(schema, fun.alias().isEmpty() ? m.getName() : fun.alias(), fun.deterministic(), m);
+                else {
+                    String alias = tableFun.alias().isEmpty() ? m.getName() : tableFun.alias();
+
+                    lsnr.onTableFunctionCreated(schema, alias, m, tableFun.columnTypes(), tableFun.columnNames());
                 }
             }
         }
@@ -575,7 +593,7 @@ public class SchemaManager {
                 if (idxDesc.type() != QueryIndexType.SORTED)
                     continue;
 
-                affIdxFound |= F.eq(tbl.affinityKey(), F.first(idxDesc.fields()));
+                affIdxFound |= Objects.equals(tbl.affinityKey(), F.first(idxDesc.fields()));
             }
 
             // Add explicit affinity key index if nothing alike was found.
@@ -636,16 +654,16 @@ public class SchemaManager {
             String newFieldName = oldFieldName;
 
             // Replace _KEY/_VAL field with aliases and vice versa.
-            if (F.eq(oldFieldName, QueryUtils.KEY_FIELD_NAME) && !F.isEmpty(keyAlias))
+            if (Objects.equals(oldFieldName, KEY_FIELD_NAME) && !F.isEmpty(keyAlias))
                 newFieldName = keyAlias;
-            else if (F.eq(oldFieldName, QueryUtils.VAL_FIELD_NAME) && !F.isEmpty(valAlias))
+            else if (Objects.equals(oldFieldName, VAL_FIELD_NAME) && !F.isEmpty(valAlias))
                 newFieldName = valAlias;
-            else if (F.eq(oldFieldName, keyAlias))
-                newFieldName = QueryUtils.KEY_FIELD_NAME;
-            else if (F.eq(oldFieldName, valAlias))
-                newFieldName = QueryUtils.VAL_FIELD_NAME;
+            else if (Objects.equals(oldFieldName, keyAlias))
+                newFieldName = KEY_FIELD_NAME;
+            else if (Objects.equals(oldFieldName, valAlias))
+                newFieldName = VAL_FIELD_NAME;
 
-            modified |= !F.eq(oldFieldName, newFieldName);
+            modified |= !Objects.equals(oldFieldName, newFieldName);
 
             proxyKeyDefs.put(newFieldName, keyDef.getValue());
         }
@@ -884,6 +902,64 @@ public class SchemaManager {
     }
 
     /**
+     * Create view.
+     *
+     * @param schemaName Schema name.
+     * @param viewName View name.
+     * @param viewSql View SQL.
+     */
+    public void createView(String schemaName, String viewName, String viewSql) {
+        lock.writeLock().lock();
+
+        try {
+            SchemaDescriptor schema = schema(schemaName);
+
+            if (schema == null) {
+                log.warning("Schema for view not found in schema manager [schemaName=" + schemaName +
+                    ", viewName=" + viewName + ']');
+
+                return;
+            }
+
+            schema.add(new ViewDescriptor(viewName, viewSql, null));
+
+            lsnr.onViewCreated(schemaName, viewName, viewSql);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Drop view.
+     *
+     * @param schemaName Schema name.
+     * @param viewName View name.
+     */
+    public void dropView(String schemaName, String viewName) {
+        lock.writeLock().lock();
+
+        try {
+            SchemaDescriptor schema = schema(schemaName);
+
+            if (schema == null)
+                return;
+
+            ViewDescriptor viewDesc = schema.viewByName(viewName);
+
+            if (viewDesc == null)
+                return;
+
+            schema(schemaName).drop(viewDesc);
+
+            lsnr.onViewDropped(schemaName, viewName);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
      * Initialize table's cache context created for not started cache.
      *
      * @param cctx Cache context.
@@ -1004,7 +1080,7 @@ public class SchemaManager {
             List<TableDescriptor> tbls = new ArrayList<>();
 
             for (TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cacheInfo().name(), cacheName))
+                if (Objects.equals(tbl.cacheInfo().name(), cacheName))
                     tbls.add(tbl);
             }
 
@@ -1028,7 +1104,7 @@ public class SchemaManager {
                 return null;
 
             for (TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cacheInfo().name(), cacheName))
+                if (Objects.equals(tbl.cacheInfo().name(), cacheName))
                     return tbl.cacheInfo();
             }
 
@@ -1141,11 +1217,13 @@ public class SchemaManager {
                 .forEach(infos::add);
         }
 
-        if ((allTypes || types.contains(JdbcUtils.TYPE_VIEW)) && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
-            sysViews.stream()
-                .filter(t -> matches(MetricUtils.toSqlName(t.name()), tblNamePtrn))
-                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, MetricUtils.toSqlName(v.name()), JdbcUtils.TYPE_VIEW))
-                .forEach(infos::add);
+        if ((allTypes || types.contains(JdbcUtils.TYPE_VIEW))) {
+            schemas.values().stream()
+                .filter(s -> matches(s.schemaName(), schemaNamePtrn))
+                .forEach(s -> s.views().stream()
+                    .filter(v -> matches(v.name(), tblNamePtrn))
+                    .map(v -> new TableInformation(s.schemaName(), v.name(), JdbcUtils.TYPE_VIEW))
+                    .forEach(infos::add));
         }
 
         return infos;
@@ -1350,8 +1428,29 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
+        @Override public void onTableFunctionCreated(
+            String schemaName,
+            String name,
+            Method method,
+            Class<?>[] colTypes,
+            String[] colNames
+        ) {
+            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onTableFunctionCreated(schemaName, name, method, colTypes, colNames)));
+        }
+
+        /** {@inheritDoc} */
         @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
             lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onSystemViewCreated(schemaName, sysView)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onViewCreated(String schemaName, String viewName, String viewSql) {
+            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onViewCreated(schemaName, viewName, viewSql)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onViewDropped(String schemaName, String viewName) {
+            lsnrs.forEach(lsnr -> executeSafe(() -> lsnr.onViewDropped(schemaName, viewName)));
         }
 
         /** */

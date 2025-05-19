@@ -56,8 +56,6 @@ namespace ignite
             const std::string Configuration::DefaultValue::user = "";
             const std::string Configuration::DefaultValue::password = "";
 
-            const NestedTxMode::Type Configuration::DefaultValue::nestedTxMode = NestedTxMode::AI_ERROR;
-
             const EngineMode::Type Configuration::DefaultValue::engineMode = EngineMode::DEFAULT;
 
             Configuration::Configuration() :
@@ -81,7 +79,6 @@ namespace ignite
                 sslCaFile(DefaultValue::sslCaFile),
                 user(DefaultValue::user),
                 password(DefaultValue::password),
-                nestedTxMode(DefaultValue::nestedTxMode),
                 engineMode(DefaultValue::engineMode)
             {
                 // No-op.
@@ -410,21 +407,6 @@ namespace ignite
                 return password.IsSet();
             }
 
-            NestedTxMode::Type Configuration::GetNestedTxMode() const
-            {
-                return nestedTxMode.GetValue();
-            }
-
-            void Configuration::SetNestedTxMode(NestedTxMode::Type mode)
-            {
-                this->nestedTxMode.SetValue(mode);
-            }
-
-            bool Configuration::IsNestedTxModeSet() const
-            {
-                return nestedTxMode.IsSet();
-            }
-
             EngineMode::Type Configuration::GetEngineMode() const {
                 return engineMode.GetValue();
             }
@@ -464,7 +446,6 @@ namespace ignite
                 AddToMap(res, ConnectionStringParser::Key::sslCaFile, sslCaFile);
                 AddToMap(res, ConnectionStringParser::Key::user, user);
                 AddToMap(res, ConnectionStringParser::Key::password, password);
-                AddToMap(res, ConnectionStringParser::Key::nestedTxMode, nestedTxMode);
                 AddToMap(res, ConnectionStringParser::Key::engineMode, engineMode);
             }
 
@@ -520,14 +501,6 @@ namespace ignite
             {
                 if (value.IsSet())
                     map[key] = ssl::SslMode::ToString(value.GetValue());
-            }
-
-            template<>
-            void Configuration::AddToMap(ArgumentMap& map, const std::string& key,
-                const SettableValue<NestedTxMode::Type>& value)
-            {
-                if (value.IsSet())
-                    map[key] = NestedTxMode::ToString(value.GetValue());
             }
 
             template<>

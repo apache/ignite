@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -157,7 +156,7 @@ public class ServiceDeploymentProcessId implements Message {
 
         ServiceDeploymentProcessId id = (ServiceDeploymentProcessId)o;
 
-        return F.eq(topVer, id.topVer) && F.eq(reqId, id.reqId);
+        return Objects.equals(topVer, id.topVer) && Objects.equals(reqId, id.reqId);
     }
 
     /** {@inheritDoc} */

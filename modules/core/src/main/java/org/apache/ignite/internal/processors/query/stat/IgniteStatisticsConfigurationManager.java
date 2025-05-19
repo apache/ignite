@@ -126,7 +126,7 @@ public class IgniteStatisticsConfigurationManager {
                 distrMetaStorage.listen(
                     (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
                     (k, oldV, newV) -> {
-                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // Skip invocation at node start (see 'ReadableDistributedMetaStorage#listen' the second case)
                         // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
                         // called on exchange done.
                         if (topVer == null)
@@ -165,11 +165,13 @@ public class IgniteStatisticsConfigurationManager {
             assert !F.isEmpty(cols);
 
             // Drop statistics after columns dropped.
-            dropStatistics(
-                Collections.singletonList(
-                    new StatisticsTarget(schemaName, typeDesc.tableName(), cols.toArray(EMPTY_STRINGS))
-                ),
-                false
+            mgmtBusyExecutor.execute(() ->
+                dropStatistics(
+                    Collections.singletonList(
+                        new StatisticsTarget(schemaName, typeDesc.tableName(), cols.toArray(EMPTY_STRINGS))
+                    ),
+                    false
+                )
             );
         }
 
@@ -185,18 +187,22 @@ public class IgniteStatisticsConfigurationManager {
 
             assert !F.isEmpty(schemaName) && !F.isEmpty(name) : schemaName + ":" + name;
 
-            StatisticsKey key = new StatisticsKey(schemaName, name);
+            // Drop statistics asynchronously to avoid possible deadlock between schema manager lock and distributed
+            // metastorage lock.
+            mgmtBusyExecutor.execute(() -> {
+                StatisticsKey key = new StatisticsKey(schemaName, name);
 
-            try {
-                StatisticsObjectConfiguration cfg = config(key);
+                try {
+                    StatisticsObjectConfiguration cfg = config(key);
 
-                if (cfg != null && !F.isEmpty(cfg.columns()))
-                    dropStatistics(Collections.singletonList(new StatisticsTarget(schemaName, name)), false);
-            }
-            catch (Throwable e) {
-                if (!X.hasCause(e, NodeStoppingException.class))
-                    throw new IgniteSQLException("Error on drop statistics for dropped table [key=" + key + ']', e);
-            }
+                    if (cfg != null && !F.isEmpty(cfg.columns()))
+                        dropStatistics(Collections.singletonList(new StatisticsTarget(schemaName, name)), false);
+                }
+                catch (Throwable e) {
+                    if (!X.hasCause(e, NodeStoppingException.class))
+                        throw new IgniteSQLException("Error on drop statistics for dropped table [key=" + key + ']', e);
+                }
+            });
         }
     };
 

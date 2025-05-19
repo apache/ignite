@@ -23,29 +23,28 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
-
+import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.ThinProtocolFeature;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -67,9 +66,12 @@ import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.lang.Math.abs;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.isolation;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -102,8 +104,11 @@ public class JdbcThinTcpIo {
     /** Version 2.13.0. */
     private static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
+    /** Version 2.17.0. */
+    private static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -157,7 +162,13 @@ public class JdbcThinTcpIo {
     private final ClientListenerProtocolVersion srvProtoVer;
 
     /** Protocol context (version, supported features, etc). */
-    private JdbcProtocolContext protoCtx;
+    private final JdbcProtocolContext protoCtx;
+
+    /**
+     * Transaction modes supported by the server.
+     * @see org.apache.ignite.configuration.TransactionConfiguration#TX_AWARE_QUERIES_SUPPORTED_MODES
+     */
+    private final Set<TransactionIsolation> isolationLevelsSupported;
 
     /** Binary context for serialization/deserialization of binary objects. */
     private final BinaryContext ctx;
@@ -245,6 +256,8 @@ public class JdbcThinTcpIo {
 
         srvProtoVer = handshakeRes.serverProtocolVersion();
 
+        isolationLevelsSupported = handshakeRes.isolationLevelsSupported();
+
         protoCtx = new JdbcProtocolContext(srvProtoVer, handshakeRes.features(), connProps.isKeepBinary());
     }
 
@@ -256,7 +269,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -264,8 +277,8 @@ public class JdbcThinTcpIo {
 
         ctx.configure(marsh);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
-            null, null);
+        BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
+            null);
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -284,7 +297,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         if (ver.compareTo(VER_2_7_0) >= 0)
-            writer.writeString(connProps.nestedTxMode());
+            writer.writeString(DEFAULT_NESTED_TX_MODE);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
             writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
@@ -318,6 +331,13 @@ public class JdbcThinTcpIo {
         if (ver.compareTo(VER_2_13_0) >= 0)
             writer.writeString(connProps.getQueryEngine());
 
+        if (ver.compareTo(VER_2_17_0) >= 0) {
+            writer.writeByte(connProps.getTransactionConcurrency().ordinal());
+            writer.writeByte(isolation(JdbcThinConnection.DFLT_ISOLATION).ordinal());
+            writer.writeInt(connProps.getTransactionTimeout());
+            writer.writeString(connProps.getTransactionLabel());
+        }
+
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
 
@@ -327,8 +347,7 @@ public class JdbcThinTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(read()),
-            null, null, false);
+        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, false);
 
         boolean accepted = reader.readBoolean();
 
@@ -356,6 +375,12 @@ public class JdbcThinTcpIo {
                     EnumSet<JdbcThinFeature> features = JdbcThinFeature.enumSet(srvFeatures);
 
                     handshakeRes.features(features);
+
+                    if (features.contains(JdbcThinFeature.TX_AWARE_QUERIES)) {
+                        handshakeRes.isolationLevelsSupported(Arrays.stream(reader.readIntArray())
+                            .mapToObj(TransactionIsolation::fromOrdinal)
+                            .collect(Collectors.toSet()));
+                    }
                 }
             }
             else {
@@ -382,7 +407,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + " address=" + sockAddr + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_9_0.equals(srvProtoVer0)
+            if (VER_2_13_0.equals(srvProtoVer0)
+                || VER_2_9_0.equals(srvProtoVer0)
                 || VER_2_8_0.equals(srvProtoVer0)
                 || VER_2_7_0.equals(srvProtoVer0)
                 || VER_2_5_0.equals(srvProtoVer0)
@@ -407,8 +433,8 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake_2_1_0() throws IOException, SQLException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
-            null, null);
+        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
+            null);
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -426,8 +452,7 @@ public class JdbcThinTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
-            null, null, false);
+        BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), null, false);
 
         boolean accepted = reader.readBoolean();
 
@@ -516,7 +541,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     JdbcResponse readResponse() throws IOException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(read()), null, true);
+        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, true);
 
         JdbcResponse res = new JdbcResponse();
 
@@ -561,8 +586,7 @@ public class JdbcThinTcpIo {
     private void sendRequestRaw(JdbcRequest req) throws IOException {
         int cap = guessCapacity(req);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(cap),
-            BinaryThreadLocalContext.get().schemaHolder(), null);
+        BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(cap));
 
         req.writeBinary(writer, protoCtx);
 
@@ -688,6 +712,23 @@ public class JdbcThinTcpIo {
      */
     boolean isCustomObjectSupported() {
         return protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT);
+    }
+
+    /**
+     * Whether SQL transactions are supported by the server or not.
+     *
+     * @return {@code true} if SQL transactions supported, {@code false} otherwise.
+     */
+    boolean isTxAwareQueriesSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES);
+    }
+
+    /**
+     * @param isolation Transaction isolation level.
+     * @return {@code True} if transaction isolation mode supported by the server, {@code false} otherwise.
+     */
+    boolean isIsolationLevelSupported(TransactionIsolation isolation) {
+        return isolationLevelsSupported.contains(isolation);
     }
 
     /**

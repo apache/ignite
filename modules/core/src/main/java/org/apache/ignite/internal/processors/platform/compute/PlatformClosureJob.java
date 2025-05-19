@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -79,7 +79,7 @@ public class PlatformClosureJob extends PlatformAbstractJob {
 
                 in.synchronize();
 
-                BinaryRawReaderEx reader = ctx.reader(in);
+                BinaryReaderEx reader = ctx.reader(in);
 
                 return PlatformUtils.readInvocationResult(ctx, reader);
             }

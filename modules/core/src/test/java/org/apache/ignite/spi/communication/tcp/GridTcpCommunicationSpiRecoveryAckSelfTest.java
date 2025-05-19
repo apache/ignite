@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -211,7 +210,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                 final int expMsgs0 = expMsgs;
 
                 for (TcpCommunicationSpi spi : spis) {
-                    final TestListener lsnr = (TestListener)spi.getListener();
+                    final TestListener lsnr = U.field(spi, "lsnr");
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
@@ -317,7 +316,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         final int expMsgs = sentMsgs + 100;
 
-        final TestListener lsnr = (TestListener)spi1.getListener();
+        final TestListener lsnr = U.field(spi1, "lsnr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -365,7 +364,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         spi.setTcpNoDelay(true);
         spi.setAckSendThreshold(ackCnt);
         spi.setMessageQueueLimit(queueLimit);
-        spi.setSharedMemoryPort(-1);
         spi.setConnectionsPerNode(1);
 
         return spi;
@@ -400,13 +398,13 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             GridSpiTestContext ctx = initSpiContext();
 
             MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
+                @Override public void registerAll(MessageFactory factory) {
                     factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
                 }
             };
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
             );
 
             ctx.setLocalNode(node);

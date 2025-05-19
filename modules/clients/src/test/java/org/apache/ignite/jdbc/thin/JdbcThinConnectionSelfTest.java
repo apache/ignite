@@ -17,7 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -45,12 +44,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
-import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
-import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -73,7 +68,6 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
-import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -115,9 +109,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
         cfg.setGridLogger(new GridStringLogger());
 
         return cfg;
@@ -1898,7 +1889,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             assertNotNull(propsResult);
 
-            assertTrue(propsResult.isEmpty());
+            assertFalse(propsResult.isEmpty());
 
             conn.close();
 
@@ -2105,45 +2096,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test that attempting to supply invalid nested TX mode to driver fails on the client.
-     */
-    @Test
-    public void testInvalidNestedTxMode() {
-        assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                DriverManager.getConnection(urlWithPartitionAwarenessProp + "&nestedTransactionsMode=invalid");
-
-                return null;
-            }
-        }, SQLException.class, "Invalid nested transactions handling mode");
-    }
-
-    /**
-     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields an error.
-     * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
-     * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
-     */
-    @Test
-    public void testInvalidNestedTxModeOnServerSide() {
-        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
-
-        connProps.setAddresses(new HostAndPortRange[] {new HostAndPortRange(LOCALHOST, DFLT_PORT, DFLT_PORT)});
-
-        connProps.nestedTxMode("invalid");
-
-        connProps.setPartitionAwareness(partitionAwareness);
-
-        assertThrows(null, new Callable<Object>() {
-            @SuppressWarnings("ResultOfObjectAllocationIgnored")
-            @Override public Object call() throws Exception {
-                new JdbcThinTcpIo(connProps, new InetSocketAddress(LOCALHOST, DFLT_PORT), getBinaryContext(), 0);
-
-                return null;
-            }
-        }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
-    }
-
-    /**
      */
     @Test
     public void testSslClientAndPlainServer() {
@@ -2281,8 +2233,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         marsh.setContext(getFakeMarshallerCtx());
 
-        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(),
-            new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(new IgniteConfiguration(), new NullLogger());
 
         ctx.configure(marsh);
         ctx.registerUserTypesSchema();

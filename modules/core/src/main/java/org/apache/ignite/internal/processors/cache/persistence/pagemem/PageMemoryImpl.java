@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
+import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -426,12 +427,27 @@ public class PageMemoryImpl implements PageMemoryEx {
      * Resolves instance of {@link PagesWriteThrottlePolicy} according to chosen throttle policy.
      */
     private void initWriteThrottle() {
-        if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
-        else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false, log);
-        else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY)
-            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true, log);
+        // Exponential backoff throttling strategy is not suitable for mode with writing recovery data on checkpoint.
+        // In this mode used checkpoint buffer can't be reduced during recovery data write phase. After starting,
+        // throttling never reset until the next phase of the checkpoint. Throttling time grows very fast
+        // (for example, it reaches one day after about 500 invocations). This completely blocks pages changes
+        // until the next checkpoint phase. So, use another throttling strategy to protect checkpoint buffer in
+        // this mode.
+        boolean fillRateBasedCpBufProtection = ctx.gridConfig().getDataStorageConfiguration()
+            .isWriteRecoveryDataOnCheckpoint();
+
+        if (throttlingPlc == ThrottlingPolicy.SPEED_BASED) {
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker,
+                fillRateBasedCpBufProtection, log);
+        }
+        else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED) {
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker,
+                false, fillRateBasedCpBufProtection, log);
+        }
+        else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY) {
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker,
+                true, fillRateBasedCpBufProtection, log);
+        }
     }
 
     /** {@inheritDoc} */
@@ -617,7 +633,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId), metrics);
 
-                    if (!ctx.wal().disabled(fullId.groupId(), fullId.pageId())) {
+                    if (!ctx.wal().pageRecordsDisabled(fullId.groupId(), fullId.pageId())) {
                         if (!ctx.wal().isAlwaysWriteFullPages())
                             ctx.wal().log(
                                 new InitNewPageRecord(
@@ -939,7 +955,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private void releaseCheckpointBufferPage(long tmpBufPtr) {
         int resCntr = checkpointPool.releaseFreePage(tmpBufPtr);
 
-        if (resCntr == checkpointBufferPagesSize() / 2 && writeThrottle != null)
+        if (writeThrottle != null && resCntr == writeThrottle.checkpointBufferThrottledThreadsWakeupThreshold())
             writeThrottle.wakeupThrottledThreads();
     }
 
@@ -1110,7 +1126,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(
-        IgniteInternalFuture allowToReplace
+        ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace
     ) throws IgniteException {
         if (segments == null)
             return new GridMultiCollectionWrapper<>(Collections.emptyList());
@@ -1172,7 +1188,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         FullPageId fullId,
         ByteBuffer buf,
         PageStoreWriter pageStoreWriter,
-        CheckpointMetricsTracker metricsTracker
+        CheckpointMetricsTracker metricsTracker,
+        boolean keepDirty
     ) throws IgniteCheckedException {
         assert buf.remaining() == pageSize();
 
@@ -1243,7 +1260,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
 
-        copyPageForCheckpoint(absPtr, fullId, buf, tag, pageSingleAcquire, pageStoreWriter, metricsTracker);
+        copyPageForCheckpoint(absPtr, fullId, buf, tag, pageSingleAcquire, pageStoreWriter, metricsTracker, keepDirty);
     }
 
     /**
@@ -1253,6 +1270,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pageSingleAcquire Page is acquired only once. We don't pin the page second time (until page will not be
      * copied) in case checkpoint temporary buffer is used.
      * @param pageStoreWriter Checkpoint page write context.
+     * @param keepDirty Keep page in checkpoint buffer and don't reset dirty flag.
      */
     private void copyPageForCheckpoint(
         long absPtr,
@@ -1261,7 +1279,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         Integer tag,
         boolean pageSingleAcquire,
         PageStoreWriter pageStoreWriter,
-        CheckpointMetricsTracker tracker
+        CheckpointMetricsTracker tracker,
+        boolean keepDirty
     ) throws IgniteCheckedException {
         assert absPtr != 0;
         assert PageHeader.isAcquired(absPtr) || !isInCheckpoint(fullId);
@@ -1286,7 +1305,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             return;
         }
 
-        if (!clearCheckpoint(fullId)) {
+        boolean inCheckpoint = keepDirty ? isInCheckpoint(fullId) : clearCheckpoint(fullId);
+
+        if (!inCheckpoint) {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
             if (!pageSingleAcquire)
@@ -1299,30 +1320,33 @@ public class PageMemoryImpl implements PageMemoryEx {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
 
             if (tmpRelPtr != INVALID_REL_PTR) {
-                PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
-
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
 
-                copyInBuffer(tmpAbsPtr, buf);
+                copyToBuffer(tmpAbsPtr, buf);
 
-                PageHeader.fullPageId(tmpAbsPtr, NULL_PAGE);
+                if (!keepDirty) {
+                    PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
-                GridUnsafe.zeroMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize());
+                    PageHeader.fullPageId(tmpAbsPtr, NULL_PAGE);
 
-                if (tracker != null)
-                    tracker.onCowPageWritten();
+                    GridUnsafe.zeroMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize());
 
-                releaseCheckpointBufferPage(tmpRelPtr);
+                    if (tracker != null)
+                        tracker.onCowPageWritten();
 
-                // Need release again because we pin page when resolve abs pointer,
-                // and page did not have tmp buffer page.
-                if (!pageSingleAcquire)
-                    PageHeader.releasePage(absPtr);
+                    releaseCheckpointBufferPage(tmpRelPtr);
+
+                    // Need release again because we pin page when resolve abs pointer,
+                    // and page did not have tmp buffer page.
+                    if (!pageSingleAcquire)
+                        PageHeader.releasePage(absPtr);
+                }
             }
             else {
-                copyInBuffer(absPtr, buf);
+                copyToBuffer(absPtr, buf);
 
-                PageHeader.dirty(absPtr, false);
+                if (!keepDirty)
+                    PageHeader.dirty(absPtr, false);
             }
 
             assert PageIO.getType(buf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
@@ -1345,17 +1369,18 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             // We pinned the page either when allocated the temp buffer, or when resolved abs pointer.
             // Must release the page only after write unlock.
-            PageHeader.releasePage(absPtr);
+            if (!keepDirty || !pageSingleAcquire)
+                PageHeader.releasePage(absPtr);
         }
     }
 
     /**
      * @param absPtr Absolute ptr.
-     * @param buf Tmp buffer.
+     * @param out Output buffer.
      */
-    private void copyInBuffer(long absPtr, ByteBuffer buf) {
-        if (buf.isDirect()) {
-            long tmpPtr = GridUnsafe.bufferAddress(buf);
+    private void copyToBuffer(long absPtr, ByteBuffer out) {
+        if (out.isDirect()) {
+            long tmpPtr = GridUnsafe.bufferAddress(out);
 
             GridUnsafe.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
 
@@ -1363,7 +1388,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert PageIO.getCrc(tmpPtr) == 0; //TODO GG-11480
         }
         else {
-            byte[] arr = buf.array();
+            byte[] arr = out.array();
 
             assert arr != null;
             assert arr.length == pageSize();
@@ -1754,6 +1779,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         return rwLock.isReadLocked(absPtr + PAGE_LOCK_OFFSET);
     }
 
+    /** {@inheritDoc} */
+    @Override public String pageLockStateInfo(long absPtr) {
+        return rwLock.stateInfo(absPtr + PAGE_LOCK_OFFSET);
+    }
+
     /**
      * @param pageId Page ID to check if it was added to the checkpoint list.
      * @return {@code True} if it was added to the checkpoint list.
@@ -1860,7 +1890,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) throws IgniteCheckedException {
-        boolean walIsNotDisabled = walMgr != null && !walMgr.disabled(pageId.groupId(), pageId.pageId());
+        boolean walIsNotDisabled = walMgr != null && !walMgr.pageRecordsDisabled(pageId.groupId(), pageId.pageId());
         boolean pageRecOrAlwaysWriteFullPage = walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages());
 
         if (pageRecOrAlwaysWriteFullPage && walIsNotDisabled)

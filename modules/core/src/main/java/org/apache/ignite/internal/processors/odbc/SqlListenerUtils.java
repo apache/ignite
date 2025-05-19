@@ -18,16 +18,19 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,7 +46,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow)
         throws BinaryObjectException {
         return readObject(reader, binObjAllow, true);
     }
@@ -55,7 +58,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow, boolean keepBinary)
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary)
         throws BinaryObjectException {
         byte type = reader.readByte();
 
@@ -69,8 +72,22 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
-        boolean keepBinary) throws BinaryObjectException {
+    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
+                                              boolean keepBinary) throws BinaryObjectException {
+        return readObject(type, reader, binObjAllow, keepBinary, true);
+    }
+
+    /**
+     * @param type Object type.
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @param createByteArrayCopy Whether to return new copy or copy-on-write buffer for byte array.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
+        boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
@@ -121,7 +138,7 @@ public abstract class SqlListenerUtils {
                 return BinaryUtils.doReadBooleanArray(reader.in());
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(reader.in());
+                return readByteArray(reader, createByteArrayCopy);
 
             case GridBinaryMarshaller.CHAR_ARR:
                 return BinaryUtils.doReadCharArray(reader.in());
@@ -175,12 +192,37 @@ public abstract class SqlListenerUtils {
     }
 
     /**
+     * Read byte array using the reader.
+     *
+     * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
+     * or {@link JdbcBinaryBuffer} which wraps part of the array enclosed in
+     * the reader's input stream in a copy-on-write manner.
+     *
+     * @param reader Reader.
+     * @param createByteArrayCopy Whether create new byte array copy or try to create copy-on-write buffer.
+     * @return Either byte[] or {@link JdbcBinaryBuffer}.
+     */
+    private static Object readByteArray(BinaryReaderEx reader, boolean createByteArrayCopy) {
+        if (!createByteArrayCopy && reader.in().hasArray()) {
+            int len = reader.in().readInt();
+
+            int position = reader.in().position();
+
+            reader.in().position(position + len);
+
+            return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
+        }
+        else
+            return BinaryUtils.doReadByteArray(reader.in());
+    }
+
+    /**
      * @param writer Writer.
      * @param obj Object to write.
      * @param binObjAllow Allow to write non plain objects.
      * @throws BinaryObjectException On error.
      */
-    public static void writeObject(BinaryWriterExImpl writer, @Nullable Object obj, boolean binObjAllow)
+    public static void writeObject(BinaryWriterEx writer, @Nullable Object obj, boolean binObjAllow)
         throws BinaryObjectException {
         if (obj == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
@@ -207,9 +249,9 @@ public abstract class SqlListenerUtils {
         else if (cls == Double.class)
             writer.writeDoubleFieldPrimitive((Double)obj);
         else if (cls == String.class)
-            writer.doWriteString((String)obj);
+            writer.writeString((String)obj);
         else if (cls == BigDecimal.class)
-            writer.doWriteDecimal((BigDecimal)obj);
+            writer.writeDecimal((BigDecimal)obj);
         else if (cls == UUID.class)
             writer.writeUuid((UUID)obj);
         else if (cls == Time.class)
@@ -246,10 +288,49 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper)
+            writeByteArray(writer, (SqlInputStreamWrapper)obj);
+        else if (obj instanceof Blob)
+            writeByteArray(writer, (Blob)obj);
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
             throw new BinaryObjectException("Custom objects are not supported");
+    }
+
+    /**
+     * Write byte array from the InputStream enclosed in the stream wrapper.
+     *
+     * @param writer Writer.
+     * @param wrapper stream wrapper
+     */
+    private static void writeByteArray(BinaryWriterEx writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
+        int written = writer.writeByteArray(wrapper.inputStream(), wrapper.length());
+
+        if (wrapper.length() != -1 && wrapper.length() != written) {
+            throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + wrapper.length() + ", " +
+                    "actualLength=" + written + "]");
+        }
+    }
+
+    /**
+     * Write byte array from the Blob instance.
+     *
+     * @param writer Writer.
+     * @param blob Blob.
+     */
+    private static void writeByteArray(BinaryWriterEx writer, Blob blob) throws BinaryObjectException {
+        try {
+            int written = writer.writeByteArray(blob.getBinaryStream(), (int)blob.length());
+
+            if ((int)blob.length() != written) {
+                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + (int)blob.length() + ", " +
+                        "actualLength=" + written + "]");
+            }
+        }
+        catch (SQLException e) {
+            throw new BinaryObjectException(e);
+        }
     }
 
     /**
@@ -284,7 +365,9 @@ public abstract class SqlListenerUtils {
             || cls == UUID[].class
             || cls == Time[].class
             || cls == Timestamp[].class
-            || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+            || cls == java.util.Date[].class || cls == java.sql.Date[].class
+            || cls == SqlInputStreamWrapper.class
+            || cls == Blob.class;
     }
 
     /**

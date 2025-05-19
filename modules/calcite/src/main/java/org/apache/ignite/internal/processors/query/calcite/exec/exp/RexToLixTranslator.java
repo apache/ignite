@@ -47,6 +47,8 @@ import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLambda;
+import org.apache.calcite.rex.RexLambdaRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -56,12 +58,12 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
@@ -69,6 +71,7 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
@@ -541,6 +544,25 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 Expressions.field(null, SqlParserPos.class, "ZERO")
                             )
                         );
+                        break;
+                    case NUMERIC:
+                        BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
+
+                        if (SqlTypeName.FRACTIONAL_TYPES.contains(sourceType.getSqlTypeName())) {
+                            convert = sourceType.getSqlTypeName() == SqlTypeName.DECIMAL
+                                ? operand
+                                : ConverterUtils.convertToDecimal(operand, typeFactory.createSqlType(SqlTypeName.DECIMAL));
+
+                            convert = Expressions.call(
+                                convert,
+                                IgniteMethod.BIG_DECIMAL_MULTIPLY.method(),
+                                Expressions.constant(multiplier));
+                        }
+                        else
+                            convert = IgniteExpressions.multiplyExact(operand, Expressions.constant(multiplier.longValue()));
+
+                        convert = ConverterUtils.convert(convert, targetType);
+                        break;
                 }
                 break;
             case BINARY:
@@ -610,25 +632,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 (long)Math.pow(10, 3 - targetScale)));
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                switch (sourceType.getSqlTypeName().getFamily()) {
-                    case NUMERIC:
-                        final BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
-                        final BigDecimal divider = BigDecimal.ONE;
-                        convert = RexImpTable.multiplyDivide(convert, multiplier, divider);
-                }
         }
         return scaleIntervalToNumber(sourceType, targetType, convert);
     }
@@ -929,6 +932,22 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return deref(localRef).accept(this);
     }
 
+    /** {@inheritDoc} */
+    @Override public Result visitLambdaRef(RexLambdaRef ref) {
+        final ParameterExpression valVariable =
+            Expressions.parameter(
+                typeFactory.getJavaClass(ref.getType()), ref.getName());
+
+        // Generate one line of code to check whether lambdaRef is null, e.g.,
+        // "final boolean input_isNull = $0 == null;"
+        final Expression isNullExpression = checkNull(valVariable);
+        final ParameterExpression isNullVariable =
+            Expressions.parameter(
+                Boolean.TYPE, list.newName("input_isNull"));
+        list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
+        return new Result(isNullVariable, valVariable);
+    }
+
     /**
      * Visit {@code RexLiteral}. If it has never been visited before, {@code RexToLixTranslator} will generate two lines
      * of code. For example, when visiting a primitive int (10), the generated code snippet is: {@code final int
@@ -1015,7 +1034,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             return implementCaseWhen(call);
 
         if (operator == SEARCH)
-            return RexUtil.expandSearch(builder, program, call).accept(this);
+            return RexUtils.expandSearchNullable(builder, program, call).accept(this);
 
         final RexImpTable.RexCallImplementor implementor =
             RexImpTable.INSTANCE.get(operator);
@@ -1282,6 +1301,43 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     /** {@inheritDoc} */
     @Override public Result visitPatternFieldRef(RexPatternFieldRef fieldRef) {
         return visitInputRef(fieldRef);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Result visitLambda(RexLambda lambda) {
+        final RexNode expression = lambda.getExpression();
+        final List<RexLambdaRef> rexLambdaRefs = lambda.getParameters();
+
+        // Prepare parameter expressions for lambda expression
+        final ParameterExpression[] paramExpressions =
+            new ParameterExpression[rexLambdaRefs.size()];
+        for (int i = 0; i < rexLambdaRefs.size(); i++) {
+            final RexLambdaRef rexLambdaRef = rexLambdaRefs.get(i);
+            paramExpressions[i] =
+                Expressions.parameter(
+                    typeFactory.getJavaClass(rexLambdaRef.getType()), rexLambdaRef.getName());
+        }
+
+        // Generate code for lambda expression body
+        final RexToLixTranslator exprTranslator = setBlock(new BlockBuilder());
+        final Result exprResult = expression.accept(exprTranslator);
+        exprTranslator.list.add(
+            Expressions.return_(null, exprResult.valueVariable));
+
+        // Generate code for lambda expression
+        final Expression functionExpression =
+            Expressions.lambda(exprTranslator.list.toBlock(), paramExpressions);
+        final ParameterExpression valVariable =
+            Expressions.parameter(functionExpression.getType(), list.newName("function_value"));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable, functionExpression));
+
+        // Generate code for checking whether lambda expression is null
+        final Expression isNullExpression = checkNull(valVariable);
+        final ParameterExpression isNullVariable =
+            Expressions.parameter(Boolean.TYPE, list.newName("function_isNull"));
+        list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
+
+        return new Result(isNullVariable, valVariable);
     }
 
     /** */

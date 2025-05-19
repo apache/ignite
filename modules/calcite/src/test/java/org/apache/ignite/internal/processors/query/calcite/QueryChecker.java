@@ -24,24 +24,30 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
@@ -275,6 +281,9 @@ public abstract class QueryChecker {
     private final String qry;
 
     /** */
+    private final Transaction tx;
+
+    /** */
     private final ArrayList<Matcher<String>> planMatchers = new ArrayList<>();
 
     /** */
@@ -302,8 +311,23 @@ public abstract class QueryChecker {
     private FrameworkConfig frameworkCfg;
 
     /** */
+    private RelOptListener planLsnr;
+
+    /** */
+    private Consumer<List<List<?>>> resultChecker;
+
+    /** */
     public QueryChecker(String qry) {
+        this(qry, null, SqlTransactionMode.NONE);
+    }
+
+    /** */
+    public QueryChecker(String qry, Transaction tx, SqlTransactionMode sqlTxMode) {
+        assert (tx != null && sqlTxMode != SqlTransactionMode.NONE)
+            || (tx == null && sqlTxMode == SqlTransactionMode.NONE) : "mode = " + sqlTxMode + ", tx = " + tx;
+
         this.qry = qry;
+        this.tx = tx;
     }
 
     /** */
@@ -330,6 +354,20 @@ public abstract class QueryChecker {
     /** */
     public QueryChecker withFrameworkConfig(FrameworkConfig frameworkCfg) {
         this.frameworkCfg = frameworkCfg;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withPlannerListener(RelOptListener lsnr) {
+        this.planLsnr = lsnr;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withResultChecker(Consumer<List<List<?>>> resultChecker) {
+        this.resultChecker = resultChecker;
 
         return this;
     }
@@ -382,7 +420,13 @@ public abstract class QueryChecker {
         // Check plan.
         QueryEngine engine = getEngine();
 
-        QueryContext ctx = frameworkCfg != null ? QueryContext.of(frameworkCfg) : null;
+        GridCacheVersion txVer = tx != null
+            ? ((TransactionProxyImpl)tx).tx().xidVersion()
+            : null;
+
+        QueryContext ctx = (frameworkCfg != null || txVer != null || planLsnr != null)
+            ? QueryContext.of(frameworkCfg, txVer, planLsnr)
+            : null;
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
             engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
@@ -391,7 +435,8 @@ public abstract class QueryChecker {
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
 
-        if (!F.isEmpty(planMatchers)) {
+        // Will not check plan in transaction, because, statistic not refreshed inside transaction, so plan differs from expected.
+        if (!F.isEmpty(planMatchers) && tx == null) {
             for (Matcher<String> matcher : planMatchers)
                 assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
         }
@@ -400,8 +445,7 @@ public abstract class QueryChecker {
             assertEquals(exactPlan, actualPlan);
 
         // Check result.
-        List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(ctx, "PUBLIC", qry, params);
+        List<FieldsQueryCursor<List<?>>> cursors = engine.query(ctx, "PUBLIC", qry, params);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
@@ -433,6 +477,9 @@ public abstract class QueryChecker {
 
             assertEqualsCollections(expectedResult, res);
         }
+
+        if (resultChecker != null)
+            resultChecker.accept(res);
     }
 
     /** */
@@ -455,7 +502,7 @@ public abstract class QueryChecker {
             Object item1 = it1.next();
             Object item2 = it2.next();
 
-            if (!F.eq(item1, item2))
+            if (!Objects.equals(item1, item2))
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
@@ -481,7 +528,7 @@ public abstract class QueryChecker {
                 Object item1 = it1.next();
                 Object item2 = it2.next();
 
-                if (F.eq(item1, item2))
+                if (Objects.equals(item1, item2))
                     continue;
 
                 if (item1 == null)
@@ -520,7 +567,7 @@ public abstract class QueryChecker {
      * @param cacheName Cache to check reservations.
      */
     public static void awaitReservationsRelease(IgniteEx node, String cacheName) throws IgniteInterruptedCheckedException {
-        GridDhtAtomicCache c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
+        GridDhtCacheAdapter c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
 
         List<GridDhtLocalPartition> parts = c.topology().localPartitions();
 

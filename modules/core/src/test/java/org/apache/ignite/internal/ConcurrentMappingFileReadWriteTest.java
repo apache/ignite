@@ -33,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 
 /**
  * Tests concurrent read/write operations for {@code org.apache.ignite.internal.MarshallerMappingFileStore}.
@@ -53,11 +52,10 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        mappingDir = new File(U.workDirectory(null, null) + DFLT_MARSHALLER_PATH);
-        mappingDir.mkdirs();
+        mappingDir = sharedFileTree().mkdirMarshaller();
 
         mappingFileStore = new MarshallerMappingFileStore(
-            new StandaloneGridKernalContext(log, null, null),
+            new StandaloneGridKernalContext(log, null),
             mappingDir
         );
     }

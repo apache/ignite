@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -189,7 +190,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
-                if (!F.eq(req.cacheName(), cctx.name())) {
+                if (!Objects.equals(req.cacheName(), cctx.name())) {
                     GridCacheQueryResponse res = new GridCacheQueryResponse(
                         cctx.cacheId(),
                         req.id(),
@@ -244,8 +245,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (sndNode == null)
             return null;
 
-        GridCacheQueryAdapter<?> qry =
-            new GridCacheQueryAdapter<>(
+        CacheQuery<?> qry =
+            new CacheQuery<>(
                 cctx,
                 req.type(),
                 log,
@@ -263,7 +264,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.includeMetaData(),
                 req.keepBinary(),
                 req.taskHash(),
-                req.isDataPageScanEnabled()
+                req.isDataPageScanEnabled(),
+                req.skipKeys()
             );
 
         return new GridCacheQueryInfo(
@@ -541,7 +543,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
+    @Override public GridCloseableIterator scanQueryDistributed(final CacheQuery qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert qry.type() == GridCacheQueryType.SCAN : qry;
 

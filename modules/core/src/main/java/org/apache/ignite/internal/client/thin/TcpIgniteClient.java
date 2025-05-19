@@ -59,16 +59,15 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
@@ -163,6 +162,7 @@ public class TcpIgniteClient implements IgniteClient {
                 metadataHnd.onReconnect();
                 marshCtx.clearUserTypesCache();
                 marsh.context().unregisterUserTypeDescriptors();
+                marsh.context().unregisterBinarySchemas();
             });
 
             // Send postponed metadata after channel init.
@@ -323,13 +323,33 @@ public class TcpIgniteClient implements IgniteClient {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
             BinaryOutputStream out = payloadCh.out();
 
+            byte flags = TcpClientCache.KEEP_BINARY_FLAG_MASK;
+
+            int txId = 0;
+
+            if (payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES)) {
+                TcpClientTransaction tx = transactions.tx();
+
+                txId = tx == null ? 0 : tx.txId();
+            }
+
             out.writeInt(0); // no cache ID
-            out.writeByte((byte)1); // keep binary
+
+            if (txId != 0) {
+                flags |= TcpClientCache.TRANSACTIONAL_FLAG_MASK;
+
+                out.writeByte(flags);
+                out.writeInt(txId);
+            }
+            else
+                out.writeByte(flags);
+
             serDes.write(qry, out);
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
             ch,
+            transactions.tx(),
             ClientOperation.QUERY_SQL_FIELDS,
             ClientOperation.QUERY_SQL_FIELDS_CURSOR_GET_PAGE,
             qryWriter,
@@ -431,6 +451,11 @@ public class TcpIgniteClient implements IgniteClient {
         });
     }
 
+    /** Stops cache warmup. */
+    public void stopWarmUp() {
+        ch.service(ClientOperation.OP_STOP_WARMUP, null, null);
+    }
+
     /**
      * Initializes new instance of {@link IgniteClient}.
      *
@@ -503,7 +528,7 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** Serialize string. */
     private void writeString(String s, BinaryOutputStream out) {
-        try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
             w.writeString(s);
         }
     }
@@ -511,7 +536,7 @@ public class TcpIgniteClient implements IgniteClient {
     /** Deserialize string. */
     private String readString(BinaryInputStream in) throws BinaryObjectException {
         try {
-            try (BinaryReaderExImpl r = serDes.createBinaryReader(in)) {
+            try (BinaryReaderEx r = serDes.createBinaryReader(in)) {
                 return r.readString();
             }
         }
@@ -577,7 +602,7 @@ public class TcpIgniteClient implements IgniteClient {
      */
     private class ClientBinaryMetadataHandler implements BinaryMetadataHandler {
         /** In-memory metadata cache. */
-        private volatile BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
+        private volatile BinaryMetadataHandler cache = BinaryUtils.cachingMetadataHandler();
 
         /** {@inheritDoc} */
         @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
@@ -720,7 +745,7 @@ public class TcpIgniteClient implements IgniteClient {
          * Clear local cache on reconnect.
          */
         void onReconnect() {
-            cache = BinaryCachingMetadataHandler.create();
+            cache = BinaryUtils.cachingMetadataHandler();
         }
     }
 

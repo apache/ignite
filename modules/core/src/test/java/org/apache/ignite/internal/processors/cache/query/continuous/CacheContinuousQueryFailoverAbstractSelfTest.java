@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -97,7 +98,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -130,11 +130,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setIdleConnectionTimeout(100);
 
         cfg.setCommunicationSpi(commSpi);
@@ -1141,7 +1138,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             for (T3<Object, Object, Object> exp : expEvts) {
                 List<CacheEntryEvent<?, ?>> rcvdEvts = lsnr.evts.get(exp.get1());
 
-                if (F.eq(exp.get2(), exp.get3()))
+                if (Objects.equals(exp.get2(), exp.get3()))
                     continue;
 
                 if (rcvdEvts == null || rcvdEvts.isEmpty()) {
@@ -2308,7 +2305,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         Integer key = i;
                         Integer val = cache.get(key);
 
-                        if (!F.eq(val, iteration))
+                        if (!Objects.equals(val, iteration))
                             sb.append("\n\t").append(">>> WRONG CACHE VALUE (lost data?) [key=").append(key)
                                 .append(", val=").append(val).append(']');
                     }
@@ -2317,7 +2314,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         Integer key = entry.getKey();
                         Integer val = entry.getValue();
 
-                        if (!F.eq(val, iteration))
+                        if (!Objects.equals(val, iteration))
                             sb.append("\n\t").append(">>> WRONG LISTENER VALUE (lost event?) [key=").append(key)
                                 .append(", val=").append(val).append(']');
                     }

@@ -19,24 +19,16 @@ package org.apache.ignite.internal.binary.streams;
 
 import org.apache.ignite.internal.util.GridUnsafe;
 
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 
 /**
  * Base binary output stream.
  */
-public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
+abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     implements BinaryOutputStream {
     /** Minimal capacity when it is reasonable to start doubling resize. */
     private static final int MIN_CAP = 256;
-
-    /**
-     * The maximum size of array to allocate.
-     * Some VMs reserve some header words in an array.
-     * Attempts to allocate larger arrays may result in
-     * OutOfMemoryError: Requested array size exceeds VM limit
-     * @see java.util.ArrayList#MAX_ARRAY_SIZE
-     */
-    protected static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) {

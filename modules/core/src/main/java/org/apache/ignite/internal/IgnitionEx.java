@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +43,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
-import java.util.stream.Collectors;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -73,8 +73,7 @@ import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -104,9 +103,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
@@ -1798,7 +1794,7 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
-            BinaryArray.initUseBinaryArrays();
+            BinaryUtils.initUseBinaryArrays();
 
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
@@ -1821,7 +1817,7 @@ public class IgnitionEx {
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
-            assert F.eq(name, cfg.getIgniteInstanceName());
+            assert Objects.equals(name, cfg.getIgniteInstanceName());
 
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 
@@ -1914,26 +1910,9 @@ public class IgnitionEx {
             }
 
             if (myCfg.getUserAttributes() == null)
-                myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
+                myCfg.setUserAttributes(Collections.emptyMap());
 
             initializeDefaultMBeanServer(myCfg);
-
-            Marshaller marsh = myCfg.getMarshaller();
-
-            if (marsh == null) {
-                if (!BinaryMarshaller.available()) {
-                    U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                        "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
-
-                    marsh = new JdkMarshaller();
-                }
-                else
-                    marsh = new BinaryMarshaller();
-            }
-
-            MarshallerUtils.setNodeName(marsh, cfg.getIgniteInstanceName());
-
-            myCfg.setMarshaller(marsh);
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
                 myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STRS);
@@ -2263,24 +2242,17 @@ public class IgnitionEx {
                         safeToStop = false;
 
                     if (safeToStop && !proposedSuppliers.isEmpty()) {
-                        Set<UUID> supportedPlcNodes = proposedSuppliers.keySet().stream()
-                            .filter(nodeId ->
-                                IgniteFeatures.nodeSupports(grid0.cluster().node(nodeId), IgniteFeatures.SHUTDOWN_POLICY))
-                            .collect(Collectors.toSet());
+                        try {
+                            safeToStop = grid0.context().task().execute(
+                                CheckCpHistTask.class,
+                                proposedSuppliers,
+                                options(grid0.cluster().forNodeIds(proposedSuppliers.keySet()).nodes())
+                            ).get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to check availability of historical rebalance", e);
 
-                        if (!supportedPlcNodes.isEmpty()) {
-                            try {
-                                safeToStop = grid0.context().task().execute(
-                                    CheckCpHistTask.class,
-                                    proposedSuppliers,
-                                    options(grid0.cluster().forNodeIds(supportedPlcNodes).nodes())
-                                ).get();
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to check availability of historical rebalance", e);
-
-                                safeToStop = false;
-                            }
+                            safeToStop = false;
                         }
                     }
 

@@ -37,9 +37,9 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -53,8 +53,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
  * Tests for Zookeeper SPI discovery.
@@ -136,8 +136,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @SuppressWarnings("deprecation")
             @Override public Void call() throws Exception {
-                ignite(0).configuration().getMarshaller().marshal(new C1());
-                ignite(0).configuration().getMarshaller().marshal(new C2());
+                marshaller(ignite(0)).marshal(new C1());
+                marshaller(ignite(0)).marshal(new C2());
 
                 return null;
             }
@@ -459,21 +459,19 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         List<Ignite> nodes = G.allGrids();
 
-        JdkMarshaller marsh = new JdkMarshaller();
-
         for (Ignite ignite : nodes) {
             Collection<ClusterNode> nodes0 = ignite.cluster().nodes();
 
             assertEquals(nodes.size(), nodes0.size());
 
             for (ClusterNode node : nodes0) {
-                byte[] secSubj = node.attribute(ATTR_SECURITY_SUBJECT_V2);
+                SecurityContext secCtx = nodeSecurityContext(
+                    ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller(),
+                    U.resolveClassLoader(ignite.configuration()),
+                    node
+                );
 
-                assertNotNull(secSubj);
-
-                ZkTestNodeAuthenticator.TestSecurityContext secCtx = marsh.unmarshal(secSubj, null);
-
-                assertEquals(node.attribute(ATTR_IGNITE_INSTANCE_NAME), secCtx.nodeName);
+                assertEquals(node.attribute(ATTR_IGNITE_INSTANCE_NAME), ((ZkTestNodeAuthenticator.TestSecurityContext)secCtx).nodeName);
             }
         }
     }

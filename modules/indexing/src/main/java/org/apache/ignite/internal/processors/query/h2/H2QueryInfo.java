@@ -74,6 +74,9 @@ public class H2QueryInfo implements TrackableQuery {
     /** Query id. */
     private final long queryId;
 
+    /** Query SQL plan. */
+    private volatile String plan;
+
     /**
      * @param type Query type.
      * @param stmt Query statement.
@@ -117,8 +120,24 @@ public class H2QueryInfo implements TrackableQuery {
     }
 
     /** */
-    public String plan() {
-        return stmt.getPlanSQL();
+    public synchronized String plan() {
+        if (plan == null) {
+            String plan0 = stmt.getPlanSQL();
+
+            plan = (plan0 != null) ? planWithoutScanCount(plan0) : "";
+        }
+
+        return plan;
+    }
+
+    /** */
+    public String schema() {
+        return schema;
+    }
+
+    /** */
+    public String sql() {
+        return sql;
     }
 
     /** */
@@ -179,7 +198,7 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema)
                 .append(", sql='").append(sql)
-                .append("', plan=").append(stmt.getPlanSQL());
+                .append("', plan=").append(plan());
 
         printInfo(msgSb);
 
@@ -191,6 +210,43 @@ public class H2QueryInfo implements TrackableQuery {
     /** */
     public boolean isSuspended() {
         return isSuspended;
+    }
+
+    /**
+     * If the same SQL query is executed sequentially within a single instance of {@link H2Connection} (which happens,
+     * for example, during consecutive local query executions), the next execution plan is generated using
+     * a {@link PreparedStatement} stored in the statement cache of this connection — H2Connection#statementCache.<br>
+     * <br>
+     * During the preparation of a PreparedStatement, a TableFilter object is created, where the variable scanCount
+     * stores the number of elements scanned within the query. If this value is not zero, the generated execution plan
+     * will contain a substring in the following format: "scanCount: X", where X is the value of the scanCount
+     * variable at the time of plan generation.<br>
+     * <br>
+     * The scanCount variable is reset in the TableFilter#startQuery method. However, since execution plans are
+     * generated and recorded asynchronously, there is no guarantee that plan generation happens immediately after
+     * TableFilter#startQuery is called.<br>
+     * <br>
+     * As a result, identical execution plans differing only by the scanCount suffix may be recorded in the SQL plan
+     * history. To prevent this, the suffix should be removed from the plan as soon as it is generated with the
+     * Prepared#getPlanSQL method.<br>
+     * <br>
+     *
+     * @param plan SQL plan.
+     *
+     * @return SQL plan without the scanCount suffix.
+     */
+    public String planWithoutScanCount(String plan) {
+        String res = null;
+
+        int start = plan.indexOf("\n    /* scanCount");
+
+        if (start != -1) {
+            int end = plan.indexOf("*/", start);
+
+            res = plan.substring(0, start) + plan.substring(end + 2);
+        }
+
+        return (res == null) ? plan : res;
     }
 
     /**

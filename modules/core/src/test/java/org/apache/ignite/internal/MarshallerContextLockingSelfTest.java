@@ -27,11 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -147,6 +149,8 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             counter.incrementAndGet();
 
             MarshallerContextImpl marshallerCtx = new MarshallerContextImpl(null, null);
+
+            marshallerCtx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
             marshallerCtx.onMarshallerProcessorStarted(ctx, null);
 
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());

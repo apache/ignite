@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -59,7 +60,7 @@ public class FragmentMapping implements MarshalableMessage {
 
     /** */
     public static FragmentMapping create() {
-        return new FragmentMapping(Collections.emptyList());
+        return new FragmentMapping(new ColocationGroup());
     }
 
     /** */
@@ -165,6 +166,16 @@ public class FragmentMapping implements MarshalableMessage {
             throw new IllegalStateException("Multiple groups with the same id found. [sourceId=" + sourceId + "]");
 
         return F.first(grps);
+    }
+
+    /** Create fragment mapping with explicit mapping for groups by source ids. */
+    public FragmentMapping explicitMapping(Set<Long> srcIds) {
+        Set<ColocationGroup> explicitMappingGrps = U.newIdentityHashSet();
+
+        srcIds.forEach(srcId -> explicitMappingGrps.add(findGroup(srcId)));
+
+        return new FragmentMapping(Commons.transform(colocationGroups,
+            g -> explicitMappingGrps.contains(g) ? g.explicitMapping() : g));
     }
 
     /** {@inheritDoc} */

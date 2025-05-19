@@ -57,9 +57,7 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -77,7 +75,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -133,9 +130,7 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * TcpDiscoverySpi starts in client mode as well. In this case node does not take its place in the ring,
  * but it connects to random node in the ring (IP taken from IP finder configured) and
  * use it as a router for discovery traffic.
- * Therefore slow client node or its shutdown will not affect whole cluster. If TcpDiscoverySpi
- * needs to be started in server mode regardless of {@link IgniteConfiguration#clientMode},
- * {@link #forceSrvMode} should be set to true.
+ * Therefore slow client node or its shutdown will not affect whole cluster.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
@@ -194,7 +189,6 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * <li>Thread priority for threads started by SPI (see {@link #setThreadPriority(int)})</li>
  * <li>IP finder clean frequency (see {@link #setIpFinderCleanFrequency(long)})</li>
  * <li>Statistics print frequency (see {@link #setStatisticsPrintFrequency(long)}</li>
- * <li>Force server mode (see {@link #setForceServerMode(boolean)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
@@ -448,9 +442,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected TcpDiscoveryImpl impl;
 
     /** */
-    private boolean forceSrvMode;
-
-    /** */
     private boolean clientReconnectDisabled;
 
     /** */
@@ -568,36 +559,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * If {@code true} TcpDiscoverySpi will started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}
-     *
-     * @return forceServerMode flag.
-     * @deprecated Will be removed at 3.0.
-     */
-    @Deprecated
-    public boolean isForceServerMode() {
-        return forceSrvMode;
-    }
-
-    /**
-     * Sets force server mode flag.
-     * <p>
-     * If {@code true} TcpDiscoverySpi is started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}.
-     *
-     * @param forceSrvMode forceServerMode flag.
-     * @return {@code this} for chaining.
-     * @deprecated Will be removed at 3.0.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
-        this.forceSrvMode = forceSrvMode;
-
-        return this;
-    }
-
-    /**
      * If {@code true} client does not try to reconnect after
      * server detected client node failure.
      *
@@ -634,10 +595,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
 
-            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
-                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
-            else
-                marsh = new JdkMarshaller();
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
         }
     }
 
@@ -2206,7 +2164,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             dataPacket.marshalJoiningNodeData(
                 dataBag,
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
         else
@@ -2214,7 +2171,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 dataBag,
                 locNode.id(),
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
 
@@ -2245,14 +2201,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 throw new IgniteException(e);
             }
         }
-        else {
+        else
             dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-
-            //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
-            //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
-            if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
-                dataPacket.unzipData(log);
-        }
 
         exchange.onExchange(dataBag);
     }
@@ -2277,7 +2227,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         initFailureDetectionTimeout();
 
-        if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
+        if (Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
             if (ackTimeout == 0)
                 ackTimeout = DFLT_ACK_TIMEOUT_CLIENT;
 
@@ -2459,14 +2409,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** {@inheritDoc} */
     @Override public void clientReconnect() throws IgniteSpiException {
         impl.reconnect();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        if (impl == null)
-            return false;
-
-        return impl.allNodesSupport(feature);
     }
 
     /** {@inheritDoc} */

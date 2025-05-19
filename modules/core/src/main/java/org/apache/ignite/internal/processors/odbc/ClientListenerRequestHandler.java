@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * Client listener request handler.
@@ -45,7 +45,7 @@ public interface ClientListenerRequestHandler {
      *
      * @param writer Binary writer.
      */
-    void writeHandshake(BinaryWriterExImpl writer);
+    void writeHandshake(BinaryWriterEx writer);
 
 
     /**

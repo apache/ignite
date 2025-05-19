@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -92,6 +93,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -103,6 +105,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
 import org.apache.ignite.spi.systemview.view.BaselineNodeView;
@@ -114,6 +117,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
@@ -180,6 +184,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SETS_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_ATTR_VIEW;
@@ -208,6 +213,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String TEST_TRANSFORMER = "TestTransformer";
+
+    /** */
+    private static CountDownLatch jobStartedLatch;
+
+    /** */
+    private static CountDownLatch releaseJobLatch;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -598,63 +609,80 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testComputeTask() throws Exception {
-        CyclicBarrier barrier = new CyclicBarrier(2);
+        doTestComputeTask(false);
+    }
 
-        try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
+    /** */
+    @Test
+    public void testInternalComputeTask() throws Exception {
+        doTestComputeTask(true);
+    }
 
+    /** */
+    private void doTestComputeTask(boolean internal) throws Exception {
+        int gridCnt = 3;
+
+        IgniteEx g1 = startGrids(gridCnt);
+
+        try {
             IgniteCache<Integer, Integer> cache = g1.createCache("test-cache");
 
             cache.put(1, 1);
 
-            g1.compute().executeAsync(new ComputeTask<Object, Object>() {
-                @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-                    @Nullable Object arg) throws IgniteException {
-                    return Collections.singletonMap(new ComputeJob() {
-                        @Override public void cancel() {
-                            // No-op.
-                        }
+            for (int i = 0; i < gridCnt; i++) {
+                IgniteEx grid = grid(i);
 
-                        @Override public Object execute() throws IgniteException {
-                            return 1;
-                        }
-                    }, subgrid.get(0));
+                SystemView<ComputeTaskView> tasks = grid.context().systemView().view(TASKS_VIEW);
+
+                jobStartedLatch = new CountDownLatch(3);
+                releaseJobLatch = new CountDownLatch(1);
+
+                IgniteInternalFuture<Object> fut
+                    = runAsync(() -> grid.compute().execute(internal ? new InternalTask() : new UserTask(), 1));
+
+                assertTrue(jobStartedLatch.await(30_000, TimeUnit.MILLISECONDS));
+
+                try {
+                    assertEquals(1, tasks.size());
+
+                    ComputeTaskView t = tasks.iterator().next();
+
+                    assertEquals("Expecting to see " + (internal ? "internal" : "user") + " task", internal, t.internal());
+                    assertNull(t.affinityCacheName());
+                    assertEquals(-1, t.affinityPartitionId());
+                    assertTrue(t.taskClassName().startsWith(getClass().getName()));
+                    assertTrue(t.taskName().startsWith(getClass().getName()));
+                    assertEquals(grid.localNode().id(), t.taskNodeId());
+                    assertEquals("0", t.userVersion());
+
+                    checkJobs(gridCnt, internal, t.sessionId());
+                }
+                finally {
+                    releaseJobLatch.countDown();
                 }
 
-                @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-                    List<ComputeJobResult> rcvd) throws IgniteException {
-                    try {
-                        barrier.await();
-                        barrier.await();
-                    }
-                    catch (InterruptedException | BrokenBarrierException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    return null;
-                }
-
-                @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
-                    return 1;
-                }
-            }, 1);
-
-            barrier.await();
-
-            assertEquals(1, tasks.size());
-
-            ComputeTaskView t = tasks.iterator().next();
-
-            assertFalse(t.internal());
-            assertNull(t.affinityCacheName());
-            assertEquals(-1, t.affinityPartitionId());
-            assertTrue(t.taskClassName().startsWith(getClass().getName()));
-            assertTrue(t.taskName().startsWith(getClass().getName()));
-            assertEquals(g1.localNode().id(), t.taskNodeId());
-            assertEquals("0", t.userVersion());
-
-            barrier.await();
+                fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+            }
         }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    private void checkJobs(int gridCnt, boolean internal, IgniteUuid sesId) {
+        for (int i = 0; i < gridCnt; i++) {
+            SystemView<ComputeJobView> jobs = grid(i).context().systemView().view(JOBS_VIEW);
+
+            assertTrue("Expecting to see " + (internal ? "internal" : "user") + " job", jobs.size() > 0);
+
+            ComputeJobView job = jobs.iterator().next();
+
+            assertEquals(sesId, job.sessionId());
+            assertEquals("Expecting to see " + (internal ? "internal" : "user") + " job", internal, job.isInternal());
+        }
+
+        releaseJobLatch.countDown();
     }
 
     /** */
@@ -2056,7 +2084,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             // Test filtering.
             assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
 
-            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(Map.of(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
                 CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
@@ -2064,7 +2092,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, F.size(iter));
 
-            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(Map.of(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
             ));
@@ -2301,6 +2329,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
                 assertNotNull(v.snapshotRecordSegment());
+                assertTrue("snapshotTime should be non-zero value",
+                        v.snapshotTime() > 0);
 
                 Integer incIdx = v.incrementIndex();
 
@@ -2589,5 +2619,54 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         @Override public String toString() {
             return getClass().getSimpleName() + idx;
         }
+    }
+
+    /** */
+    private static class UserTask implements ComputeTask<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List<ClusterNode> subgrid,
+            @Nullable Object arg
+        ) throws IgniteException {
+            return subgrid.stream().collect(Collectors.toMap(k -> new UserJob(), Function.identity()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+            return ComputeJobResultPolicy.WAIT;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+            return 1;
+        }
+
+        /** */
+        private static class UserJob implements ComputeJob {
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object execute() throws IgniteException {
+                jobStartedLatch.countDown();
+
+                try {
+                    assertTrue(releaseJobLatch.await(30_000, TimeUnit.MILLISECONDS));
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                return 1;
+            }
+        }
+    }
+
+    /** */
+    @GridInternal
+    public static class InternalTask extends UserTask {
+        // No-op.
     }
 }

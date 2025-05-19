@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 
 /**
  * SQL listener connection context.
@@ -58,7 +60,7 @@ public interface ClientListenerConnectionContext {
      * @param reader Reader set to the configuration part of the handshake message.
      * @throws IgniteCheckedException On error.
      */
-    void initializeFromHandshake(GridNioSession ses, ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    void initializeFromHandshake(GridNioSession ses, ClientListenerProtocolVersion ver, BinaryReaderEx reader)
         throws IgniteCheckedException;
 
     /**
@@ -88,4 +90,11 @@ public interface ClientListenerConnectionContext {
      * Connection attributes.
      */
     Map<String, String> attributes();
+
+    /**
+     * @return {@code True} if client is management.
+     */
+    default boolean managementClient() {
+        return Boolean.parseBoolean(attributes().get(MANAGEMENT_CLIENT_ATTR));
+    }
 }

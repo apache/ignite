@@ -35,16 +35,18 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <avatica.version>1.23.0</avatica.version>
-        <calcite.version>1.34.0</calcite.version>
+        <avatica.version>1.25.0</avatica.version>
+        <calcite.version>1.37.0</calcite.version>
         <checker.version>3.10.0</checker.version>
         <failureaccess.version>1.0.1</failureaccess.version>
         <immutables.version>2.8.2</immutables.version>
-        <janino.version>3.1.8</janino.version>
+        <janino.version>3.1.12</janino.version>
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
         <jsonpath.version>2.9.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
         <commons.math.version>3.6.1</commons.math.version>
+        <commons.text.version>1.11.0</commons.text.version>
+        <io.trino.tpch.version>1.2</io.trino.tpch.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -53,6 +55,18 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-binary-api</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!--
@@ -173,6 +187,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${commons.text.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang3.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
             <version>${immutables.version}</version>
@@ -229,6 +255,13 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino.tpch</groupId>
+            <artifactId>tpch</artifactId>
+            <version>${io.trino.tpch.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -347,6 +380,17 @@
                             <lookAhead>2</lookAhead>
                             <isStatic>false</isStatic>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

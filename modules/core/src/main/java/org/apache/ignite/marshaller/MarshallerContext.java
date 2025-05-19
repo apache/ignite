@@ -27,7 +27,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  */
 public interface MarshallerContext {
     /**
-     * Method to register typeId->class name mapping in marshaller context <b>cluster-wide</b>.
+     * Method to register typeId-&gt;class name mapping in marshaller context &lt;b&gt;cluster-wide&lt;/b&gt;.
      *
      * This method <b>guarantees</b> that mapping is delivered to all nodes in cluster
      * and blocks caller thread until then.
@@ -68,7 +68,7 @@ public interface MarshallerContext {
     ) throws IgniteCheckedException;
 
     /**
-     * Method to register typeId->class name mapping in marshaller context <b>on local node only</b>.
+     * Method to register typeId-&gt;class name mapping in marshaller context &lt;b&gt;on local node only&lt;/b&gt;.
      *
      * <b>No guarantees</b> that the mapping is presented on other nodes are provided.
      *

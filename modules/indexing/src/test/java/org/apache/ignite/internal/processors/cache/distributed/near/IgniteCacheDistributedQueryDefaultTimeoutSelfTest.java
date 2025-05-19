@@ -57,10 +57,10 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
     public static final int VAL_SIZE = 16;
 
     /** */
-    private static final String QRY_1 = "select a._val, b._val, delay(1) from String a, String b";
+    private static final String QRY_1 = "select a._val, b._val, sleep(1) from String a, String b";
 
     /** */
-    private static final String QRY_2 = "select a._key, count(*), delay(1) from String a group by a._key";
+    private static final String QRY_2 = "select a._key, count(*), sleep(1) from String a group by a._key";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

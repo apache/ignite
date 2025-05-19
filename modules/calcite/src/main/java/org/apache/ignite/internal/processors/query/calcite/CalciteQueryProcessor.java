@@ -43,6 +43,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -59,6 +60,8 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -72,13 +75,16 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.InjectResourcesService;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -117,8 +123,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
@@ -135,6 +143,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     @SystemProperty(value = "Timeout of calcite based sql engine's planner, in ms", type = Long.class,
         defaults = "" + DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT)
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
+
+    /**
+     * Use query blocking executor property name.
+     */
+    @SystemProperty(value = "Calcite-based SQL engine. Use query blocking task executor instead of striped task " +
+        "executor. Query blocking executor allows to run SQL queries inside user-defined functions at the cost of " +
+        "some performance penalty", defaults = "" + false)
+    public static final String IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR =
+        "IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR";
 
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
@@ -159,7 +176,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
             .withDefaultNullCollation(NullCollation.LOW)
-            .withSqlConformance(IgniteSqlConformance.INSTANCE)
+            .withConformance(IgniteSqlConformance.INSTANCE)
             .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
@@ -177,9 +194,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         })
         .build();
 
+    /** */
+    private final FrameworkConfig frameworkCfg;
+
     /** Query planner timeout. */
-    private final long queryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT,
-        DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT);
+    private final long qryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT);
 
     /** */
     private final QueryPlanCache qryPlanCache;
@@ -230,6 +249,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final DistributedCalciteConfiguration distrCfg;
 
     /** */
+    private final InjectResourcesService injectSvc;
+
+    /** */
+    private final AtomicBoolean udfQryWarned = new AtomicBoolean();
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -238,12 +263,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
+        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
+
         failureProcessor = ctx.failure();
-        schemaHolder = new SchemaHolderImpl(ctx);
+        schemaHolder = new SchemaHolderImpl(ctx, frameworkCfg);
         qryPlanCache = new QueryPlanCacheImpl(ctx);
         parserMetrics = new QueryParserMetricsHolder(ctx.metric());
         mailboxRegistry = new MailboxRegistryImpl(ctx);
-        taskExecutor = new QueryTaskExecutorImpl(ctx);
+        taskExecutor = getBoolean(IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR)
+            ? new QueryBlockingTaskExecutor(ctx)
+            : new StripedQueryTaskExecutor(ctx);
         executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);
         partSvc = new AffinityServiceImpl(ctx);
         msgSvc = new MessageServiceImpl(ctx);
@@ -252,6 +282,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         prepareSvc = new PrepareServiceImpl(ctx);
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
+        injectSvc = new InjectResourcesService(ctx);
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
@@ -390,7 +421,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
     }
 
     /** {@inheritDoc} */
@@ -399,7 +430,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -408,7 +439,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -422,7 +453,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        SqlNodeList qryNodeList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        SqlNodeList qryNodeList = Commons.parse(sql, frameworkCfg.getParserConfig());
 
         if (qryNodeList.size() != 1) {
             throw new IgniteSQLException("Multiline statements are not supported in batched query",
@@ -484,8 +515,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
+        boolean validateParamsCnt,
         Object... params
     ) throws IgniteSQLException {
+        ensureTransactionModeSupported(qryCtx);
+
+        checkUdfQuery();
+
         SchemaPlus schema = schemaHolder.schema(schemaName);
 
         assert schema != null : "Schema not found: " + schemaName;
@@ -504,12 +540,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         QueryProperties qryProps = qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null;
 
-        SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        SqlNodeList qryList = Commons.parse(sql, frameworkCfg.getParserConfig());
 
         if (qryList.size() > 1 && qryProps != null && qryProps.isFailOnMultipleStmts()) {
             throw new IgniteSQLException("Multiple statements queries are not supported.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
+
+        if (validateParamsCnt)
+            checkDynamicParamsCount(qryList, params);
 
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
@@ -537,6 +576,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
+    private void checkDynamicParamsCount(SqlNode node, Object[] params) {
+        int[] maxDynParIdx = new int[] {-1};
+
+        node.accept(new SqlShuttle() {
+            @Override public SqlNode visit(SqlDynamicParam param) {
+                if (param.getIndex() > maxDynParIdx[0])
+                    maxDynParIdx[0] = param.getIndex();
+
+                return param;
+            }
+        });
+
+        int paramsCnt = params == null ? 0 : params.length;
+
+        if (paramsCnt != maxDynParIdx[0] + 1) {
+            throw new IgniteSQLException("Wrong number of query parameters. Expected: " + (maxDynParIdx[0] + 1) + ", passed: "
+                + paramsCnt + '.', IgniteQueryErrorCode.PARSING);
+        }
+    }
+
+    /** */
     private String removeSensitive(SqlNode qry) {
         if (QueryUtils.INCLUDE_SENSITIVE)
             return qry.toString();
@@ -545,7 +605,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 return qry.accept(
                     new SqlShuttle() {
                         @Override public SqlNode visit(SqlLiteral literal) {
-                            return new SqlDynamicParam(-1, literal.getParserPosition());
+                            // Process only certain data types, where it's justified to hide information.
+                            // Don't touch enums and boolean literals, since they can be used as internal field values
+                            // for some SQL nodes.
+                            if (SqlTypeName.STRING_TYPES.contains(literal.getTypeName())
+                                || SqlTypeName.NUMERIC_TYPES.contains(literal.getTypeName())
+                                || SqlTypeName.DATETIME_TYPES.contains(literal.getTypeName()))
+                                return new SqlDynamicParam(-1, literal.getParserPosition());
+
+                            return literal;
                         }
 
                         @Override public SqlNode visit(SqlCall call) {
@@ -588,7 +656,50 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         SqlFieldsQuery sqlFieldsQry = qryCtx.unwrap(SqlFieldsQuery.class);
 
-        return sqlFieldsQry != null ? F.asList(sqlFieldsQry.isLocal(), sqlFieldsQry.isEnforceJoinOrder()) : null;
+        return sqlFieldsQry != null
+            ? F.asList(sqlFieldsQry.isLocal(), sqlFieldsQry.isEnforceJoinOrder(), queryTransactionVersion(qryCtx) == null)
+            : null;
+    }
+
+    /** */
+    private static GridCacheVersion queryTransactionVersion(@Nullable QueryContext qryCtx) {
+        return qryCtx == null ? null : qryCtx.unwrap(GridCacheVersion.class);
+    }
+
+    /** */
+    private void ensureTransactionModeSupported(@Nullable QueryContext qryCtx) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return;
+
+        GridCacheVersion ver = queryTransactionVersion(qryCtx);
+
+        if (ver == null)
+            return;
+
+        IgniteTxManager.ensureTransactionModeSupported(ctx.cache().context().tm().tx(ver).isolation());
+    }
+
+    /** Checks that query is initiated by UDF and print message to log if needed. */
+    private void checkUdfQuery() {
+        if (udfQryWarned.get())
+            return;
+
+        if (Thread.currentThread().getName().startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)
+            && udfQryWarned.compareAndSet(false, true)) {
+            if (taskExecutor instanceof QueryBlockingTaskExecutor) {
+                log.info("Detected query initiated by user-defined function. " +
+                    "In some circumstances, this can lead to thread pool starvation and deadlock. Ensure that " +
+                    "the pool size is properly configured (property IgniteConfiguration.QueryThreadPoolSize). " +
+                    "The pool size should be greater than the maximum number of concurrent queries initiated by UDFs.");
+            }
+            else {
+                log.warning("Detected query initiated by user-defined function. " +
+                    "When a striped query task executor (the default configuration) is used, tasks for such queries " +
+                    "can be assigned to the same thread as that held by the initial query, which can lead to a " +
+                    "deadlock. To switch to a blocking tasks executor, set the following parameter: " +
+                    "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true.");
+            }
+        }
     }
 
     /** */
@@ -607,6 +718,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (timeout <= 0)
             timeout = distrCfg.defaultQueryTimeout();
 
+        if (frameworkCfg != FRAMEWORK_CONFIG)
+            qryCtx = QueryContext.of(frameworkCfg, qryCtx);
+
         RootQuery<Object[]> qry = new RootQuery<>(
             sql,
             schemaHolder.schema(schema),
@@ -618,7 +732,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             exchangeSvc,
             (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
-            queryPlannerTimeout,
+            qryPlannerTimeout,
             timeout
         );
 
@@ -731,5 +845,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public DistributedCalciteConfiguration distributedConfiguration() {
         return distrCfg;
+    }
+
+    /** */
+    public FrameworkConfig frameworkConfig() {
+        return frameworkCfg;
+    }
+
+    /** */
+    public InjectResourcesService injectService() {
+        return injectSvc;
     }
 }

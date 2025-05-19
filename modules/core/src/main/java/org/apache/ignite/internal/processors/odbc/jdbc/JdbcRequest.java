@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -88,6 +88,12 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Update binary type name request. */
     public static final byte BINARY_TYPE_NAME_PUT = 20;
 
+    /** Sets transaction parameters request. */
+    public static final byte TX_SET_PARAMS = 21;
+
+    /** Finish transaction request. */
+    public static final byte TX_END = 22;
+
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
@@ -108,7 +114,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeByte(type);
@@ -119,7 +125,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
 
@@ -146,7 +152,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
      * @throws BinaryObjectException On error.
      */
     public static JdbcRequest readRequest(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         int reqType = reader.readByte();
@@ -249,6 +255,16 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
+            case TX_SET_PARAMS:
+                req = new JdbcSetTxParametersRequest();
+
+                break;
+
+            case TX_END:
+                req = new JdbcTxEndRequest();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
@@ -275,7 +291,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
      * @return Request Id.
      */
     public static long readRequestId(byte[] msg) {
-        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+        BinaryInputStream stream = BinaryStreams.inputStream(msg);
 
         stream.position(1);
 

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -87,6 +87,12 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Get binary type name result. */
     static final byte BINARY_TYPE_NAME_GET = 22;
 
+    /** Start transaction response. */
+    static final byte TX_SET_PARAMS = 23;
+
+    /** End transaction response. */
+    static final byte TX_END = 24;
+
     /** Success status. */
     private byte type;
 
@@ -101,7 +107,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeByte(type);
@@ -109,7 +115,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
     }
@@ -121,7 +127,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
      * @throws BinaryObjectException On error.
      */
     public static JdbcResult readResult(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         int resId = reader.readByte();
@@ -226,6 +232,14 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case BINARY_TYPE_NAME_GET:
                 res = new JdbcBinaryTypeNameGetResult();
+
+                break;
+
+            case TX_SET_PARAMS:
+                return null;
+
+            case TX_END:
+                res = new JdbcTxEndResult();
 
                 break;
 

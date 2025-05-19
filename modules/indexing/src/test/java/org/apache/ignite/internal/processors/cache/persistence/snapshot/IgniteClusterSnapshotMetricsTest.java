@@ -45,9 +45,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -60,8 +59,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
@@ -153,8 +150,8 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
             assertTrue(nodeNameMsg, GridTestUtils.waitForCondition(() -> getNumMetric("endTime", mReg) > 0, TIMEOUT));
 
-            int expParts = ((IgniteEx)grid).cachex(ccfg1.getName()).context().topology().localPartitions().size() +
-                ((IgniteEx)grid).cachex(ccfg2.getName()).context().topology().localPartitions().size();
+            int expParts = ((IgniteEx)grid).cachex(ccfg1.getName()).context().topology().localPartitionsNumber() +
+                ((IgniteEx)grid).cachex(ccfg2.getName()).context().topology().localPartitionsNumber();
 
             // Cache2 is replicated - the index partition is being copied (on snapshot data nodes).
             if (!emptyNode.name().equals(grid.name()))
@@ -186,8 +183,10 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        String failingFilePath = Paths.get(FilePageStoreManager.cacheDirName(dfltCacheCfg),
-            PART_FILE_PREFIX + primaries[0] + FILE_SUFFIX).toString();
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        String failingFilePath = sft.partitionFile(dfltCacheCfg, primaries[0]).getAbsolutePath()
+            .replace(sft.nodeStorage().getAbsolutePath(), "");
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
@@ -287,10 +286,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         assertEquals(-1, processedSize.value());
 
         // Calculate transfer rate limit.
-        PdsFolderSettings<?> folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        long rate = FileUtils.sizeOfDirectory(storeWorkDir) / 5;
+        long rate = FileUtils.sizeOfDirectory(ignite.context().pdsFolderResolver().fileTree().nodeStorage()) / 5;
 
         // Limit snapshot transfer rate.
         DistributedChangeableProperty<Serializable> rateProp =

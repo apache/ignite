@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientMessageParser.OP_COMPUTE_TASK_FINISHED;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
 
 /**
  * Client compute task.
@@ -68,15 +69,20 @@ class ClientComputeTask implements ClientCloseableResource {
     /** Task closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** */
+    private final boolean systemTask;
+
     /**
      * Ctor.
      *
      * @param ctx Connection context.
+     * @param sysTask {@code True} if task is system.
      */
-    ClientComputeTask(ClientConnectionContext ctx) {
+    ClientComputeTask(ClientConnectionContext ctx, boolean sysTask) {
         assert ctx != null;
 
         this.ctx = ctx;
+        this.systemTask = sysTask;
 
         log = ctx.kernalContext().log(getClass());
     }
@@ -96,8 +102,7 @@ class ClientComputeTask implements ClientCloseableResource {
 
         GridTaskProcessor task = ctx.kernalContext().task();
 
-        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
-            F.nodeForNodeIds(nodeIds);
+        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() : nodeForNodeIds(nodeIds);
 
         TaskExecutionOptions opts = options()
             .asPublicRequest()
@@ -113,8 +118,12 @@ class ClientComputeTask implements ClientCloseableResource {
         taskFut = task.execute(taskName, arg, opts);
 
         // Fail fast.
-        if (taskFut.isDone() && taskFut.error() != null)
-            throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage());
+        if (taskFut.isDone() && taskFut.error() != null) {
+            if (ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient())
+                throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage(), taskFut.error());
+            else
+                throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage());
+        }
     }
 
     /**
@@ -144,7 +153,8 @@ class ClientComputeTask implements ClientCloseableResource {
             finally {
                 // If task was explicitly closed before, resource is already released.
                 if (closed.compareAndSet(false, true)) {
-                    ctx.decrementActiveTasksCount();
+                    if (!systemTask)
+                        ctx.decrementActiveTasksCount();
 
                     ctx.resources().release(taskId);
                 }
@@ -164,7 +174,8 @@ class ClientComputeTask implements ClientCloseableResource {
      */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
-            ctx.decrementActiveTasksCount();
+            if (!systemTask)
+                ctx.decrementActiveTasksCount();
 
             try {
                 if (taskFut != null)

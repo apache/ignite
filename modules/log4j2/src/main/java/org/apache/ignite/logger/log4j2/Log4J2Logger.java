@@ -67,7 +67,7 @@ import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYST
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.log4j2.Log4J2Logger"&gt;
  *              &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
- *          &lt;/bean>
+ *          &lt;/bean&gt;
  *      &lt;/property&gt;
  * </pre>
  * and from your code:

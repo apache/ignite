@@ -18,15 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import org.apache.calcite.schema.Function;
+import org.apache.calcite.schema.FunctionParameter;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Ignite schema.
@@ -40,6 +45,9 @@ public class IgniteSchema extends AbstractSchema {
 
     /** */
     private final Multimap<String, Function> funcMap = Multimaps.synchronizedMultimap(HashMultimap.create());
+
+    /** */
+    private final Map<String, String> viewMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a Schema.
@@ -86,6 +94,55 @@ public class IgniteSchema extends AbstractSchema {
      * @param func SQL function.
      */
     public void addFunction(String name, Function func) {
+        for (Function existingFun : getFunctions(name)) {
+            List<FunctionParameter> params = func.getParameters();
+            List<FunctionParameter> existingParams = existingFun.getParameters();
+
+            if (params.size() != existingParams.size())
+                continue;
+
+            for (int i = 0; i < params.size(); ++i) {
+                FunctionParameter p = params.get(i);
+                FunctionParameter existingP = existingParams.get(i);
+
+                if (!p.getType(Commons.typeFactory()).equalsSansFieldNames(existingP.getType(Commons.typeFactory())))
+                    break;
+            }
+
+            throw new IgniteException("Unable to register function '" + name + "'. Other function with the same " +
+                "name and parameters is already registered in schema '" + schemaName + "'.");
+        }
+
         funcMap.put(name, func);
+    }
+
+    /**
+     * @param name View name.
+     * @param sql View sql.
+     */
+    public void addView(String name, String sql) {
+        viewMap.put(name, sql);
+    }
+
+    /**
+     * @param name View name.
+     */
+    public void removeView(String name) {
+        viewMap.remove(name);
+    }
+
+    /**
+     * Registers current {@code IgniteSchema} in parent {@code SchemaPlus}.
+     *
+     * @param parent Parent schema.
+     * @param frameworkCfg Framework config.
+     * @return Registered schema.
+     */
+    public SchemaPlus register(SchemaPlus parent, FrameworkConfig frameworkCfg) {
+        SchemaPlus newSchema = parent.add(schemaName, this);
+
+        viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema, frameworkCfg)));
+
+        return newSchema;
     }
 }

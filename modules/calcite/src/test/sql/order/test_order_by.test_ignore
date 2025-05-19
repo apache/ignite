@@ -143,15 +143,6 @@ SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY k;
 2
 3
 
-# ORDER BY on alias in right-most query
-# CONTROVERSIAL: SQLite allows both "k" and "l" to be referenced here, Postgres and MonetDB give an error.
-query I
-SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY l;
-----
-1
-2
-3
-
 # computations with aliases are not allowed though
 statement error
 SELECT a-10 AS k FROM test UNION SELECT a-10 AS l FROM test ORDER BY 1-k;

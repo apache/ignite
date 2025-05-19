@@ -979,7 +979,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         public void map(@NotNull ComputeJob job, @NotNull ClusterNode node) throws IgniteCheckedException {
             if (ctx.localNodeId().equals(node.id())) {
                 if (hadLocNode) {
-                    Marshaller marsh = ctx.config().getMarshaller();
+                    Marshaller marsh = ctx.marshaller();
 
                     job = U.unmarshal(marsh, U.marshal(marsh, job), U.resolveClassLoader(ctx.config()));
                 }

@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -171,8 +170,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                     spi1.sendMessage(node0, new GridTestMessage(node1.id(), ++msgId, 0), ackC);
 
                     if (j == 0) {
-                        final TestListener lsnr0 = (TestListener)spi0.getListener();
-                        final TestListener lsnr1 = (TestListener)spi1.getListener();
+                        final TestListener lsnr0 = U.field(spi0, "lsnr");
+                        final TestListener lsnr1 = U.field(spi1, "lsnr");
 
                         GridTestUtils.waitForCondition(new GridAbsPredicate() {
                             @Override public boolean apply() {
@@ -228,7 +227,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                 final int expMsgs0 = expMsgs;
 
                 for (TcpCommunicationSpi spi : spis) {
-                    final TestListener lsnr = (TestListener)spi.getListener();
+                    final TestListener lsnr = U.field(spi, "lsnr");
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
@@ -360,7 +359,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         final int expMsgs = sentMsgs + cnt;
 
-        final TestListener lsnr = (TestListener)spi1.getListener();
+        final TestListener lsnr = U.field(spi1, "lsnr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -416,7 +415,6 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         spi.setTcpNoDelay(true);
         spi.setAckSendThreshold(ackCnt);
         spi.setMessageQueueLimit(queueLimit);
-        spi.setSharedMemoryPort(-1);
         spi.setConnectionsPerNode(1);
 
         return spi;
@@ -453,13 +451,13 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             GridSpiTestContext ctx = initSpiContext();
 
             MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
+                @Override public void registerAll(MessageFactory factory) {
                     factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
                 }
             };
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
             );
 
             ctx.setLocalNode(node);

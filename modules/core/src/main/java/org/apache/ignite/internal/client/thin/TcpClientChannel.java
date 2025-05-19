@@ -52,20 +52,20 @@ import org.apache.ignite.client.ClientReconnectedException;
 import org.apache.ignite.client.events.ConnectionDescription;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.client.monitoring.EventListenerDemultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.odbc.ClientConnectionNodeRecoveryException;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -128,7 +129,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private volatile AffinityTopologyVersion srvTopVer;
 
     /** Channel. */
-    private final ClientConnection sock;
+    private volatile ClientConnection sock;
 
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
@@ -199,7 +200,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         List<InetSocketAddress> addrs = cfg.getAddresses();
 
-        ClientConnection sock = null;
         ClientConnectionException connectionEx = null;
 
         assert !addrs.isEmpty();
@@ -210,17 +210,33 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 if (log.isDebugEnabled())
                     log.debug("Connection established: " + addr);
-
-                break;
             }
             catch (ClientConnectionException e) {
                 log.info("Can't establish connection with " + addr);
 
-                if (connectionEx != null)
-                    connectionEx.addSuppressed(e);
-                else
-                    connectionEx = e;
+                connectionEx = U.addSuppressed(connectionEx, e);
+
+                continue;
             }
+
+            try {
+                handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+            }
+            catch (ClientConnectionException e) {
+                if (!X.hasCause(e, ClientConnectionNodeRecoveryException.class))
+                    throw e;
+
+                log.info("Can't establish connection with " + addr + ". Node in recovery mode.");
+
+                connectionEx = U.addSuppressed(connectionEx, e);
+
+                U.closeQuiet(sock);
+                sock = null;
+
+                continue;
+            }
+
+            break;
         }
 
         if (sock == null) {
@@ -228,10 +244,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             throw connectionEx;
         }
-
-        this.sock = sock;
-
-        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
         assert protocolCtx != null : "Protocol context after handshake is null";
 
@@ -506,7 +518,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * Process next message from the input stream and complete corresponding future.
      */
     private void processNextMessage(ByteBuffer buf) throws ClientProtocolError, ClientConnectionException {
-        BinaryInputStream dataInput = BinaryByteBufferInputStream.create(buf);
+        BinaryInputStream dataInput = BinaryStreams.inputStream(buf);
 
         if (protocolCtx == null) {
             // Process handshake.
@@ -728,9 +740,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             try {
                 ByteBuffer buf = timeout > 0 ? fut.get(timeout) : fut.get();
 
-                BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
+                BinaryInputStream res = BinaryStreams.inputStream(buf);
 
-                try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
+                try (BinaryReaderEx reader = ClientUtils.createBinaryReader(null, res)) {
                     boolean success = res.readBoolean();
 
                     if (success) {
@@ -771,6 +783,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                         RuntimeException resultErr = null;
                         if (errCode == ClientStatus.AUTH_FAILED)
                             resultErr = new ClientAuthenticationException(err);
+                        else if (errCode == ClientStatus.NODE_IN_RECOVERY_MODE)
+                            throw new ClientConnectionNodeRecoveryException(err);
                         else if (ver.equals(srvVer))
                             resultErr = new ClientProtocolError(err);
                         else if (!supportedVers.contains(srvVer) ||
@@ -826,9 +840,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Send handshake request. */
     private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
         Map<String, String> userAttrs) throws ClientConnectionException {
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(32), null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size

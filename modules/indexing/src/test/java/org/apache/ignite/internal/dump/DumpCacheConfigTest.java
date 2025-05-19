@@ -31,7 +31,6 @@ import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -136,7 +135,9 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), srv.configuration().getSnapshotPath(), false), name),
+                null,
+                new File(sharedFileTree(srv.configuration()).snapshotsRoot(), name).getAbsolutePath(),
+                null,
                 cnsmr
             ),
             log

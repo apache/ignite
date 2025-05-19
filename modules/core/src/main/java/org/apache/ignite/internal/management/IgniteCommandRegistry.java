@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management;
 
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Ignite command registry containing all commands known by Ignite node.
@@ -70,9 +72,11 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new PersistenceCommand(),
             new DefragmentationCommand(),
             new PerformanceStatisticsCommand(),
-            new ConsistencyCommand(),
-            new CdcCommand()
+            new CdcCommand(),
+            new ConsistencyCommand()
         );
+
+        U.loadService(CommandsProvider.class).forEach(p -> p.commands().forEach(this::register));
     }
 
     /** {@inheritDoc} */

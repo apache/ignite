@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -544,11 +545,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
         if (formatter == null) {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(UUID rmtNodeId) {
-                    return new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+                    return new DirectMessageWriter();
                 }
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory, GridIoManager.DIRECT_PROTO_VER);
+                    return new DirectMessageReader(msgFactory);
                 }
             };
         }
@@ -559,7 +560,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
+            factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         return factory;
     }
@@ -711,7 +712,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
             GridLocalMessageListener l = (GridLocalMessageListener)o;
 
-            return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
+            return Objects.equals(predLsnr, l.predLsnr) && Objects.equals(topic, l.topic);
         }
 
         /** {@inheritDoc} */

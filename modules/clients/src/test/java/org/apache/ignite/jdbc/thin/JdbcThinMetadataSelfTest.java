@@ -464,7 +464,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STATISTICS_GLOBAL_DATA",
                 "SYS.STATISTICS_PARTITION_DATA",
                 "SYS.STATISTICS_CONFIGURATION",
-                "SYS.PAGES_TIMESTAMP_HISTOGRAM"
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM",
+                "SYS.SQL_PLANS_HISTORY"
             ))
         );
     }
@@ -905,6 +906,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SNAPSHOT.NAME.null",
                 "SYS.SNAPSHOT.SNAPSHOT_RECORD_SEGMENT.null",
                 "SYS.SNAPSHOT.TYPE.null",
+                "SYS.SNAPSHOT.SNAPSHOT_TIME.null",
                 "SYS.TASKS.AFFINITY_CACHE_NAME.null",
                 "SYS.TASKS.INTERNAL.null",
                 "SYS.TASKS.END_TIME.null",
@@ -970,9 +972,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.CACHE_IDS.null",
                 "SYS.SCHEMAS.SCHEMA_NAME.null",
                 "SYS.SCHEMAS.PREDEFINED.null",
-                "SYS.VIEWS.NAME.null",
-                "SYS.VIEWS.DESCRIPTION.null",
                 "SYS.VIEWS.SCHEMA.null",
+                "SYS.VIEWS.NAME.null",
+                "SYS.VIEWS.SQL.null",
+                "SYS.VIEWS.DESCRIPTION.null",
                 "SYS.TABLE_COLUMNS.AFFINITY_COLUMN.null",
                 "SYS.TABLE_COLUMNS.COLUMN_NAME.null",
                 "SYS.TABLE_COLUMNS.SCALE.null",
@@ -1158,7 +1161,13 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.DATA_REGION_NAME.null",
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_START.null",
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_END.null",
-                "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null"
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null",
+                "SYS.SQL_PLANS_HISTORY.ENGINE.null",
+                "SYS.SQL_PLANS_HISTORY.LAST_START_TIME.null",
+                "SYS.SQL_PLANS_HISTORY.LOCAL.null",
+                "SYS.SQL_PLANS_HISTORY.PLAN.null",
+                "SYS.SQL_PLANS_HISTORY.SCHEMA_NAME.null",
+                "SYS.SQL_PLANS_HISTORY.SQL.null"
                 ));
 
             Assert.assertEquals(expectedCols, actualSysCols);

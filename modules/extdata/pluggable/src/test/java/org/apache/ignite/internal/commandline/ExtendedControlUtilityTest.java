@@ -17,16 +17,28 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.security.Permissions;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
+
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND_ARG;
 import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND_OUTPUT;
 import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND_USAGE;
+import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMPUTE_COMMAND;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.DEFAULT_PWD;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.TEST_LOGIN;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
+import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.clearExternalSystemTypes;
+import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.registerExternalSystemTypes;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -61,6 +73,8 @@ public class ExtendedControlUtilityTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testAdditionalCommandHelp() {
+        Assume.assumeTrue(cliCommandHandler());
+
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--help"));
@@ -69,5 +83,44 @@ public class ExtendedControlUtilityTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, testOutStr, TEST_COMMAND_USAGE);
         assertContains(log, testOutStr, TEST_COMMAND_ARG);
+    }
+
+    /** */
+    @Test
+    public void testAdditionalComputeCommand() throws Exception {
+        try (Ignite grid = startGrid(0)) {
+            injectTestSystemOut();
+
+            String testVal = "test value";
+
+            assertEquals(EXIT_CODE_OK, execute(cmdText(TEST_COMPUTE_COMMAND), TEST_COMMAND_ARG, testVal));
+
+            assertContains(log, testOut.toString(), testVal);
+        }
+    }
+
+    /** */
+    @Test
+    public void testAdditionalComputeCommandSecurityEnabled() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        cfg.setPluginProviders(new TestSecurityPluginProvider(cfg.getIgniteInstanceName(), "", ALL_PERMISSIONS, false,
+            new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, ALL_PERMISSIONS, new Permissions())));
+
+        registerExternalSystemTypes(CommandsProviderExtImpl.TestTask.class);
+
+        try (Ignite grid = startGrid(cfg)) {
+            injectTestSystemOut();
+
+            String testVal = "test value";
+
+            assertEquals(EXIT_CODE_OK, execute("--user", TEST_LOGIN, "--password", DEFAULT_PWD,
+                cmdText(TEST_COMPUTE_COMMAND), TEST_COMMAND_ARG, testVal));
+
+            assertContains(log, testOut.toString(), testVal);
+        }
+        finally {
+            clearExternalSystemTypes();
+        }
     }
 }

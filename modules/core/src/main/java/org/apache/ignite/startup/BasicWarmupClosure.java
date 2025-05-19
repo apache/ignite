@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -411,9 +412,9 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
      */
     private boolean matches(CacheConfiguration ccfg0, CacheConfiguration ccfg1) {
         return
-            F.eq(ccfg0.getCacheMode(), ccfg1.getCacheMode()) &&
-            F.eq(ccfg0.getBackups(), ccfg1.getBackups()) &&
-            F.eq(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode());
+            Objects.equals(ccfg0.getCacheMode(), ccfg1.getCacheMode()) &&
+                Objects.equals(ccfg0.getBackups(), ccfg1.getBackups()) &&
+                Objects.equals(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode());
     }
 
     /**

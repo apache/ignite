@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -113,11 +114,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestCommunicationSpi commSpi = new TestCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -1450,7 +1447,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         else {
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return F.eq(clientCache, srvDisco.cacheClientNode(clientNode, cacheName));
+                    return Objects.equals(clientCache, srvDisco.cacheClientNode(clientNode, cacheName));
                 }
             }, 5000));
 

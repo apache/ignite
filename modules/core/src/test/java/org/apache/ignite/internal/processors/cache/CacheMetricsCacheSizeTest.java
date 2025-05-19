@@ -82,7 +82,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         GridCacheContext cacheCtx = ((GatewayProtectedCacheProxy)cacheNode0).context();
 
-        CacheMetrics cacheMetric = new CacheMetricsSnapshotV2(new CacheMetricsImpl(cacheCtx));
+        CacheMetrics cacheMetric = new CacheMetricsSnapshot(new CacheMetricsImpl(cacheCtx));
 
         long size = cacheMetric.getCacheSize();
 
@@ -94,7 +94,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         msg.setCacheMetrics(UUID.randomUUID(), cacheMetrics);
 
-        Marshaller marshaller = grid(0).context().config().getMarshaller();
+        Marshaller marshaller = marshaller(grid(0));
 
         byte[] buf = marshaller.marshal(msg);
 

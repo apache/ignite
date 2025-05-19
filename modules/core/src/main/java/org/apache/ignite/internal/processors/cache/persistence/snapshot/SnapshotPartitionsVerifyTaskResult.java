@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The result of execution snapshot partitions verify task which besides calculating partition hashes of
- * {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+ * {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
  */
 public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
@@ -46,7 +46,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     private Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
-    @Nullable private IdleVerifyResultV2 idleRes;
+    @Nullable private IdleVerifyResult idleRes;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskResult() {
@@ -59,7 +59,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      */
     public SnapshotPartitionsVerifyTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> metas,
-        @Nullable IdleVerifyResultV2 idleRes
+        @Nullable IdleVerifyResult idleRes
     ) {
         this.metas = metas;
         this.idleRes = idleRes;
@@ -103,7 +103,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     /**
      * @return Result of cluster nodes partitions comparison.
      */
-    public IdleVerifyResultV2 idleVerifyResult() {
+    public IdleVerifyResult idleVerifyResult() {
         return idleRes;
     }
 
@@ -121,8 +121,8 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         metas = U.readMap(in);
-        idleRes = (IdleVerifyResultV2)in.readObject();
+        idleRes = (IdleVerifyResult)in.readObject();
     }
 }

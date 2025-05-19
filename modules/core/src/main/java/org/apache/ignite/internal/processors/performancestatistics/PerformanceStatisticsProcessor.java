@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -26,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -42,9 +42,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PERFORMANCE_STATISTICS_ROTATE;
 
@@ -62,6 +62,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
+
+    /** Performance statistics system view writer. {@code Null} if collecting statistics disabled. */
+    @Nullable private SystemViewFileWriter sysViewWriter;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
@@ -257,6 +260,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         long walCpRecordFsyncDuration,
         long writeCpEntryDuration,
         long splitAndSortCpPagesDuration,
+        long recoveryDataWriteDuration,
         long totalDuration,
         long cpStartTime,
         int pagesSize,
@@ -272,6 +276,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             walCpRecordFsyncDuration,
             writeCpEntryDuration,
             splitAndSortCpPagesDuration,
+            recoveryDataWriteDuration,
             totalDuration,
             cpStartTime,
             pagesSize,
@@ -294,9 +299,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void startCollectStatistics() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
-
-        if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS))
-            throw new IllegalStateException("Not all nodes in the cluster support collecting performance statistics.");
 
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
@@ -368,8 +370,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
+                sysViewWriter = new SystemViewFileWriter(ctx);
 
                 writer.start();
+                new IgniteThread(sysViewWriter).start();
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -388,10 +392,13 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return;
 
             FilePerformanceStatisticsWriter writer = this.writer;
+            SystemViewFileWriter sysViewWriter = this.sysViewWriter;
 
             this.writer = null;
+            this.sysViewWriter = null;
 
             writer.stop();
+            U.awaitForWorkersStop(Collections.singleton(sysViewWriter), true, log);
         }
 
         log.info("Performance statistics writer stopped.");

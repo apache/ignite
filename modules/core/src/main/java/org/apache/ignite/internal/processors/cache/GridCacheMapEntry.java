@@ -986,7 +986,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -997,10 +996,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject old;
 
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
-
-        // Lock should be held by now.
-        if (!cctx.isAll(this, filter))
-            return new GridCacheUpdateTxResult(false);
 
         final GridCacheVersion newVer;
 
@@ -1206,7 +1201,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         String taskName,
@@ -1220,10 +1214,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion newVer;
 
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
-
-        // Lock should be held by now.
-        if (!cctx.isAll(this, filter))
-            return new GridCacheUpdateTxResult(false);
 
         GridCacheVersion obsoleteVer = null;
 
@@ -4964,13 +4954,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         newExpireTime = entry.expireTimeExtras();
                     }
                     else if (newSysTtl == CU.TTL_ZERO) {
-                        op = DELETE;
-
-                        writeObj = null;
-
-                        remove(conflictCtx, invokeRes, readFromStore, false);
-
-                        return;
+                        newTtl = CU.TTL_ZERO;
+                        newSysExpireTime = newExpireTime = U.currentTimeMillis() - 1; // Force expiration.
                     }
                     else {
                         newSysExpireTime = CU.EXPIRE_TIME_CALCULATE;
@@ -4982,6 +4967,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else {
                 newSysTtl = newTtl = conflictCtx.ttl();
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
+            }
+
+            if (newExpireTime > 0 && newExpireTime < U.currentTimeMillis()) {
+                op = DELETE;
+
+                writeObj = null;
+
+                remove(conflictCtx, invokeRes, readFromStore, false);
+
+                return;
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {

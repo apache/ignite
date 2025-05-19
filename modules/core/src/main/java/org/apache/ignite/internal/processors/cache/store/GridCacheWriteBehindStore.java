@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -1536,15 +1537,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
-         * Awaits a signal on flush condition.
-         *
-         * @throws IgniteInterruptedCheckedException If thread was interrupted.
-         */
-        private void waitForFlush() throws IgniteInterruptedCheckedException {
-            U.await(flushCond);
-        }
-
-        /**
          * Signals flush condition.
          */
         @SuppressWarnings({"SignalWithoutCorrespondingAwait"})
@@ -1562,7 +1554,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             StatefulValue other = (StatefulValue)o;
 
-            return F.eq(val, other.val) && F.eq(valStatus, other.valStatus);
+            return Objects.equals(val, other.val) && Objects.equals(valStatus, other.valStatus);
         }
 
         /** {@inheritDoc} */

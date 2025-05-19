@@ -101,8 +101,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -112,6 +111,7 @@ import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -134,7 +134,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Long.parseLong;
 import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -154,6 +156,18 @@ public final class GridTestUtils {
 
     /** */
     private static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+
+    /** */
+    private static final GridAbsClosure NOOP = new NoOpClosure();
+
+    /**
+     * Creates an absolute (no-arg) closure that does nothing.
+     *
+     * @return Absolute (no-arg) closure that does nothing.
+     */
+    public static GridAbsClosure noop() {
+        return NOOP;
+    }
 
     /**
      * Hook object intervenes to discovery message handling
@@ -1565,7 +1579,7 @@ public final class GridTestUtils {
 
                     if (nodes.size() > backups + 1) {
                         LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
-                            ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
+                            ", p=" + p + ", nodes=" + nodeIds(nodes) + ']');
 
                         wait = true;
 
@@ -2323,30 +2337,17 @@ public final class GridTestUtils {
 
     /**
      * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
+     * @return Count of deleted files.
      */
-    public static void deleteIndexBin(String igniteInstanceName) throws IgniteCheckedException {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+    public static int deleteIndexBin(NodeFileTree ft) {
+        List<File> idxs = ft.existingCacheDirs().stream()
+            .map(dir -> new File(dir, partitionFileName(INDEX_PARTITION)))
+            .filter(File::exists)
+            .collect(Collectors.toList());
 
-        for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
-            new File(grp, "index.bin").delete();
-        }
-    }
+        idxs.forEach(File::delete);
 
-    /**
-     * Removing the directory cache groups.
-     * Deletes all directory satisfy the {@code cacheGrpFilter}.
-     *
-     * @param igniteInstanceName Ignite instance name.
-     * @param cacheGrpFilter Filter cache groups.
-     * @throws Exception If failed.
-     */
-    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        String nodeDirName = U.maskForFileName(igniteInstanceName);
-
-        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
-            U.delete(cacheGrpDir);
+        return idxs.size();
     }
 
     /**
@@ -2355,9 +2356,7 @@ public final class GridTestUtils {
      * @param ignite Ignite node.
      */
     public static void deleteLastCheckpointEndMarker(IgniteEx ignite) throws IOException {
-        IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
-
-        Path cpDir = ((GridCacheDatabaseSharedManager)dbSharedMgr).checkpointDirectory().toPath();
+        Path cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint().toPath();
 
         try (Stream<Path> files = Files.list(cpDir)) {
             Optional<Path> endMarker = files
@@ -2582,21 +2581,16 @@ public final class GridTestUtils {
      *
      */
     public static class SqlTestFunctions {
-        /** Sleep milliseconds. */
-        public static volatile long sleepMs;
-
-        /** Fail flag. */
-        public static volatile boolean fail;
-
         /**
          * Do sleep {@code sleepMs} milliseconds
          *
+         * @param sleepMs time to sleep
          * @return amount of milliseconds to sleep
          */
         @QuerySqlFunction
         @SuppressWarnings("BusyWait")
-        public static long sleep() {
-            long end = System.currentTimeMillis() + sleepMs;
+        public static long sleep(long sleepMs) {
+            long end = U.currentTimeMillis() + sleepMs;
 
             long remainTime = sleepMs;
 
@@ -2608,36 +2602,19 @@ public final class GridTestUtils {
                     // No-op
                 }
             }
-            while ((remainTime = end - System.currentTimeMillis()) > 0);
+            while ((remainTime = end - U.currentTimeMillis()) > 0);
 
             return sleepMs;
         }
 
         /**
-         * Delays execution for {@code duration} milliseconds.
-         *
-         * @param duration Duration.
-         * @return amount of milliseconds to delay.
-         */
-        @QuerySqlFunction
-        public static long delay(long duration) {
-            try {
-                Thread.sleep(duration);
-            }
-            catch (InterruptedException ignored) {
-                // No-op
-            }
-
-            return duration;
-        }
-
-        /**
          * Function do fail in case of {@code fail} is true, return 0 otherwise.
          *
+         * @param fail fail flag
          * @return in case of {@code fail} is false return 0, fail otherwise.
          */
         @QuerySqlFunction
-        public static int can_fail() {
+        public static int can_fail(boolean fail) {
             if (fail)
                 throw new IllegalArgumentException();
             else
@@ -2647,13 +2624,15 @@ public final class GridTestUtils {
         /**
          * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
          *
+         * @param sleepMs time to sleep
+         * @param fail fail flag
          * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
          */
         @QuerySqlFunction
-        public static long sleep_and_can_fail() {
-            long sleep = sleep();
+        public static long sleep_and_can_fail(long sleepMs, boolean fail) {
+            long sleep = sleep(sleepMs);
 
-            can_fail();
+            can_fail(fail);
 
             return sleep;
         }

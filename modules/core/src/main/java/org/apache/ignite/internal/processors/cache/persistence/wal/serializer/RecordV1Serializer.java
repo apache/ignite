@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.record.Header
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -138,7 +138,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             WALPointer ptr = readPosition(in);
 
-            if (!skipPositionCheck && !F.eq(ptr, expPtr))
+            if (!skipPositionCheck && !Objects.equals(ptr, expPtr))
                 throw new SegmentEofException("WAL segment rollover detected (will end iteration) [expPtr=" + expPtr +
                         ", readPtr=" + ptr + ']', null);
 

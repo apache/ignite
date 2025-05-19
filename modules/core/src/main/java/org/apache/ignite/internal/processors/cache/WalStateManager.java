@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -62,6 +63,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
@@ -218,7 +220,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         WalStateResult res;
 
-                        if (F.eq(enabled, msg.enable()))
+                        if (Objects.equals(enabled, msg.enable()))
                             res = new WalStateResult(msg, false);
                         else
                             res = new WalStateResult(msg, true);
@@ -361,7 +363,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 if (grpDesc == null)
                     grpDesc = curGrpDesc;
-                else if (!F.eq(grpDesc.deploymentId(), curGrpDesc.deploymentId())) {
+                else if (!Objects.equals(grpDesc.deploymentId(), curGrpDesc.deploymentId())) {
                     return errorFuture("Cannot change WAL mode for caches from different cache groups [" +
                         "cache1=" + cacheNames.iterator().next() + ", grp1=" + grpDesc.groupName() +
                         ", cache2=" + cacheName + ", grp2=" + curGrpDesc.groupName() + ']');
@@ -538,7 +540,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
 
-            if (cacheDesc == null || !F.eq(cacheDesc.deploymentId(), cache.getValue()))
+            if (cacheDesc == null || !Objects.equals(cacheDesc.deploymentId(), cache.getValue()))
                 return "Cache doesn't exist: " + cacheName;
         }
 
@@ -580,7 +582,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         "no longer exist: " + msg.caches().keySet());
                 }
                 else {
-                    if (F.eq(msg.enable(), grpCtx.globalWalEnabled()))
+                    if (Objects.equals(msg.enable(), grpCtx.globalWalEnabled()))
                         // Nothing changed -> no-op.
                         res = new WalStateResult(msg, false);
                     else {
@@ -709,7 +711,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         while (iter.hasNext()) {
             WalStateAckMessage ackMsg = iter.next();
 
-            if (F.eq(proc.operationId(), ackMsg.operationId())) {
+            if (Objects.equals(proc.operationId(), ackMsg.operationId())) {
                 proc.onNodeFinished(ackMsg.senderNodeId(), ackMsg);
 
                 iter.remove();
@@ -799,7 +801,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
-            if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
+            if (grpDesc != null && Objects.equals(grpDesc.deploymentId(), msg.groupDeploymentId())) {
                 // Toggle WAL mode in descriptor.
                 if (msg.changed())
                     grpDesc.walEnabled(!grpDesc.walEnabled());
@@ -808,7 +810,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
 
                 assert oldProposeMsg != null;
-                assert F.eq(oldProposeMsg.operationId(), msg.operationId());
+                assert Objects.equals(oldProposeMsg.operationId(), msg.operationId());
 
                 grpDesc.removeWalChangeRequest();
 
@@ -829,7 +831,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 while (ackIter.hasNext()) {
                     WalStateAckMessage ackMsg = ackIter.next();
 
-                    if (F.eq(ackMsg.operationId(), msg.operationId()))
+                    if (Objects.equals(ackMsg.operationId(), msg.operationId()))
                         ackIter.remove();
                 }
             }
@@ -853,14 +855,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 return;
             }
 
-            if (F.eq(crdNode.id(), nodeId)) {
+            if (Objects.equals(crdNode.id(), nodeId)) {
                 // Coordinator exited, re-send to new, or initialize new distirbuted processes.
                 crdNode = null;
 
                 for (WalStateResult res : ress.values())
                     onCompletedLocally(res);
             }
-            else if (F.eq(cctx.localNodeId(), crdNode.id())) {
+            else if (Objects.equals(cctx.localNodeId(), crdNode.id())) {
                 // Notify distributed processes on node leave.
                 for (Map.Entry<UUID, WalStateDistributedProcess> procEntry : procs.entrySet()) {
                     WalStateDistributedProcess proc = procEntry.getValue();
@@ -1012,13 +1014,16 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Checks WAL disabled for cache group.
+     * Checks WAL page records disabled.
      *
      * @param grpId Group id.
      * @param pageId Page id.
      * @return {@code True} if WAL disable for group. {@code False} If not.
      */
-    public boolean isDisabled(int grpId, long pageId) {
+    public boolean isPageRecordsDisabled(int grpId, long pageId) {
+        if (cctx.kernalContext().config().getDataStorageConfiguration().isWriteRecoveryDataOnCheckpoint())
+            return true;
+
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
         return ctx != null && (!ctx.walEnabled()

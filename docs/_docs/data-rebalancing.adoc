@@ -66,12 +66,7 @@ tab:C++[unsupported]
 
 == Configuring Rebalance Thread Pool [[threadpool]]
 
-By default, rebalancing is performed in one thread on each node.
-It means that at each point in time only one thread is used to transfer batches from one node to another, or to process batches coming from the remote node.
-////
-For example, if the cluster has two nodes and a single cache, all the cache's partitions will be re-balanced sequentially, one by one.
-If the cluster has two nodes and two caches, then the caches will be re-balanced in-parallel *TODO*
-////
+By default, Ignite uses either 4 threads, or 1/4 of the number of processor cores available, whichever is lower. For example, on an 8-core processor, 2 threads will be used.
 
 You can increase the number of threads that are taken from the system thread pool and used for rebalancing.
 A system thread is taken from the pool every time a node needs to send a batch of data to a remote node or needs to process a batch that came from a remote node.

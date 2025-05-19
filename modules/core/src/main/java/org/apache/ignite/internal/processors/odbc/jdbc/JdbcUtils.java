@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +36,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param items Query results items.
      */
-    public static void writeItems(BinaryWriterExImpl writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
+    public static void writeItems(BinaryWriterEx writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
         writer.writeInt(items.size());
 
         for (List<Object> row : items) {
@@ -53,7 +53,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return Query results items.
      */
-    public static List<List<Object>> readItems(BinaryReaderExImpl reader, JdbcProtocolContext protoCtx) {
+    public static List<List<Object>> readItems(BinaryReaderEx reader, JdbcProtocolContext protoCtx) {
         int rowsSize = reader.readInt();
 
         if (rowsSize > 0) {
@@ -65,7 +65,7 @@ public class JdbcUtils {
                 List<Object> col = new ArrayList<>(colsSize);
 
                 for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(readObject(reader, protoCtx));
+                    col.add(readObject(reader, protoCtx, false));
 
                 items.add(col);
             }
@@ -80,7 +80,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param lst List to write.
      */
-    public static void writeStringCollection(BinaryWriterExImpl writer, Collection<String> lst) {
+    public static void writeStringCollection(BinaryWriterEx writer, Collection<String> lst) {
         if (lst == null)
             writer.writeInt(0);
         else {
@@ -95,7 +95,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return List of string.
      */
-    public static List<String> readStringList(BinaryReaderExImpl reader) {
+    public static List<String> readStringList(BinaryReaderEx reader) {
         int size = reader.readInt();
 
         if (size > 0) {
@@ -116,7 +116,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return read value.
      */
-    @Nullable public static Integer readNullableInteger(BinaryReaderExImpl reader) {
+    @Nullable public static Integer readNullableInteger(BinaryReaderEx reader) {
         return reader.readBoolean() ? reader.readInt() : null;
     }
 
@@ -126,7 +126,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param val Integer value..
      */
-    public static void writeNullableInteger(BinaryWriterExImpl writer, @Nullable Integer val) {
+    public static void writeNullableInteger(BinaryWriterEx writer, @Nullable Integer val) {
         writer.writeBoolean(val != null);
 
         if (val != null)
@@ -136,15 +136,30 @@ public class JdbcUtils {
     /**
      * @param reader Reader.
      * @param protoCtx Protocol context.
+     * @param createByteArrayCopy Whether to create new copy or copy-on-write buffer for byte array.
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
     @Nullable public static Object readObject(
-        BinaryReaderExImpl reader,
-        JdbcProtocolContext protoCtx
+            BinaryReaderEx reader,
+            JdbcProtocolContext protoCtx,
+            boolean createByteArrayCopy
     ) throws BinaryObjectException {
         return SqlListenerUtils.readObject(reader.readByte(), reader,
-            protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary());
+                protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary(), createByteArrayCopy);
+    }
+
+    /**
+     * @param reader Reader.
+     * @param protoCtx Protocol context.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(
+        BinaryReaderEx reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        return readObject(reader, protoCtx, true);
     }
 
     /**
@@ -154,7 +169,7 @@ public class JdbcUtils {
      * @throws BinaryObjectException On error.
      */
     public static void writeObject(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         @Nullable Object obj,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {

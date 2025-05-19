@@ -67,6 +67,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.SslMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -225,16 +226,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
             new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage"));
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(1)), "--cache", "find_garbage"));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage",
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(1)), "--cache", "find_garbage",
             ignite(0).localNode().id().toString()));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage",
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(1)), "--cache", "find_garbage",
             "groupGarbage"));
 
         assertContains(log, testOut.toString(), "garbage not found");
@@ -399,7 +400,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testCacheHelp() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 
@@ -452,7 +453,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testHelp() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 
@@ -530,7 +531,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testPrintTimestampAtEndsOfExecution() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 
@@ -751,7 +752,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertContains(log, dumpWithZeros, "The check procedure has finished, found " + parts + " partitions");
-            assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
+            assertContains(log, dumpWithZeros, "Partition: PartitionKey [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
             assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCnt);
@@ -768,7 +769,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCnt + " partitions");
             assertContains(log, dumpWithoutZeros, (parts - keysCnt) + " partitions was skipped");
-            assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
+            assertContains(log, dumpWithoutZeros, "Partition: PartitionKey [grpId=1544803905, grpName=default, partId=");
 
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
@@ -797,6 +798,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             .setAddresses("127.0.0.1:10800")
             .setAutoBinaryConfigurationEnabled(false)
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+        if (sslEnabled()) {
+            cliCfg.setSslMode(SslMode.REQUIRED);
+            cliCfg.setSslContextFactory(sslFactory());
+        }
 
         try (IgniteClient cli = TcpIgniteClient.start(cliCfg)) {
             for (int i = keysCnt; i < keysCnt * 3; i++)
@@ -982,7 +988,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     private void assertSort(int expectedPartsCount, String output) {
         Pattern partIdPattern = Pattern.compile(".*partId=([0-9]*)");
-        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecordV2 \\[isPrimary=true");
+        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecord \\[isPrimary=true");
 
         Matcher partIdMatcher = partIdPattern.matcher(output);
         Matcher primaryMatcher = primaryPattern.matcher(output);
@@ -1244,7 +1250,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * @return Build matcher for dump file name.
      */
-    @NotNull private Matcher dumpFileNameMatcher() {
+    @NotNull static Matcher dumpFileNameMatcher() {
         Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getSimpleName()
             + " successfully written output to '(.*)'");
         return fileNamePattern.matcher(testOut.toString());
@@ -1356,9 +1362,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(
             log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", CREATE, SPRING_XML_CONFIG),
-            !sslEnabled()
-                ? "Please specify a value for argument: --springXmlConfig"
-                : "Unexpected value: --keystore"
+                "Please specify a value for argument: --springxmlconfig"
         );
 
         autoConfirmation = true;
@@ -1393,7 +1397,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CREATE,
             SPRING_XML_CONFIG, cfgPath + "/cache-create-with-spel.xml");
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, out, "Spring expressions are prohibited.");
 
         assertEquals(expSize, G.allGrids().size());
@@ -1469,7 +1473,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         injectTestSystemIn(CONFIRM_MSG);
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, DESTROY_ALL_ARG));
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, testOut.toString(), expConfirmation);
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
@@ -1497,7 +1501,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR, CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Unexpected argument: Z");
 
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             autoConfirmation = false;
 
             String expConfirmation = String.format(CacheClearCommand.CONFIRM_MSG, 2, "cache1, cache2");
@@ -1645,10 +1649,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit"));
 
-        if (sslEnabled()) // Extra arguments at the end added.
-            assertContains(log, testOut.toString(), "Unexpected value: --keystore");
-        else
-            assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
+        assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit", "test"));
 
@@ -2055,6 +2056,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         createCacheAndPreload(ignite, 100);
 
+        createCacheAndPreload(client, "with-node-filter-cache", 1, 3,
+            node -> node.consistentId().toString().endsWith("0"));
+
         injectTestSystemOut();
 
         // Run distribution for all node and all cache
@@ -2067,6 +2071,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Result include info by cache "ignite-sys-cache"
         assertContains(log, out, "[next group: id=-2100569601, name=ignite-sys-cache]");
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
 
         // Run distribution for all node and all cache and include additional user attribute
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
@@ -2088,6 +2095,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Check that number of columns increased by 3
         assertEquals(3, userArrtCommaNum - commaNum);
+
+        // Run distribution for all node and "with-node-filter-cache" cache
+        assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "with-node-filter-cache"));
+
+        out = testOut.toString();
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
+
+        // Result not include error
+        assertNotContains(log, out, "Cache distrubution task failed on nodes");
     }
 
     /** */
@@ -2291,7 +2309,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
     public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalTrue() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         checkContainsNotExperimentalCmdInHelpOutput();
     }
@@ -2305,7 +2323,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
     public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalFalse() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         checkContainsNotExperimentalCmdInHelpOutput();
     }
@@ -2317,7 +2335,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
     public void testContainsExperimentalCmdInHelpOutput() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         checkExperimentalCmdInHelpOutput(true);
     }
@@ -2329,7 +2347,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
     public void testNotContainsExperimentalCmdInHelpOutput() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         checkExperimentalCmdInHelpOutput(false);
     }
@@ -2404,7 +2422,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testErrInvalidArgumentsWithVerbose() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 
@@ -2424,7 +2442,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testErrConnectionWithVerbose() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 
@@ -2444,7 +2462,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testErrUnexpectedWithWithoutVerbose() {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 

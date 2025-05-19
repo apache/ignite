@@ -227,6 +227,7 @@ data: {
       "JSON_OBJECT"
       "JSON_OBJECTAGG"
       "JSON_QUERY"
+      "JSON_SCOPE"
       "JSON_VALUE"
       "LAG"
       "LANGUAGE"
@@ -273,6 +274,7 @@ data: {
       "ONE"
       "ONLY"
       "OPEN"
+      "ORDINAL"
       "OUT"
       "OVER"
       "OVERLAPS"
@@ -324,6 +326,9 @@ data: {
       "ROWS"
       "ROW_NUMBER"
       "RUNNING"
+      "SAFE_CAST"
+      "SAFE_OFFSET"
+      "SAFE_ORDINAL"
       "SAVEPOINT"
       "SCOPE"
       "SCROLL"
@@ -371,6 +376,7 @@ data: {
       "TRIM"
       "TRIM_ARRAY"
       "TRUNCATE"
+      "TRY_CAST"
       "UESCAPE"
       "UNIQUE"
       "UNKNOWN"
@@ -444,7 +450,8 @@ data: {
     createStatementParserMethods: [
       "SqlCreateTable",
       "SqlCreateIndex",
-      "SqlCreateUser"
+      "SqlCreateUser",
+      "SqlCreateView"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -453,7 +460,8 @@ data: {
     dropStatementParserMethods: [
       "SqlDropTable",
       "SqlDropIndex",
-      "SqlDropUser"
+      "SqlDropUser",
+      "SqlDropView"
     ]
 
     # List of methods for parsing extensions to "ALTER <scope>" calls.

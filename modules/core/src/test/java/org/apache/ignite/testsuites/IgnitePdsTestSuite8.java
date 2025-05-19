@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.CircledRebalanceTest;
+import org.apache.ignite.internal.processors.cache.ConnectionEnabledPropertyTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheRebalanceWithRemovedWalSegment;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.SupplyPartitionHistoricallyWithReorderedUpdates;
 import org.apache.ignite.internal.processors.cache.expiry.ActivationOnExpirationTimeoutTest;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.MaintenancePersis
 import org.apache.ignite.internal.processors.cache.persistence.NoUnnecessaryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.PagesPossibleCorruptionDiagnosticTest;
 import org.apache.ignite.internal.processors.cache.persistence.PendingTreeCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCheckpointRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.HistoricalReservationTest;
@@ -46,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.DataRegionRelativeStoragePathTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotCreationNonDefaultStoragePathTest;
 import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategySelfTest;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -104,6 +108,11 @@ public class IgnitePdsTestSuite8 {
 
         GridTestUtils.addTestIfNeeded(suite, PagesPossibleCorruptionDiagnosticTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MaintenancePersistenceTaskTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, ConnectionEnabledPropertyTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointRecoveryTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DataRegionRelativeStoragePathTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SnapshotCreationNonDefaultStoragePathTest.class, ignoredTests);
 
         return suite;
     }

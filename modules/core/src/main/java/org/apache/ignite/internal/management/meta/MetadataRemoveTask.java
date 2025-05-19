@@ -21,25 +21,17 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.management.meta.MetadataInfoTask.typeId;
-import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_METADATA_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
@@ -74,16 +66,6 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetaRemoveCommandArg,
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Auto-inject job context. */
-        @JobContextResource
-        private transient ComputeJobContext jobCtx;
-
-        /** Metadata future. */
-        private transient IgniteInternalFuture<?> future;
-
-        /** Job result: metadata info for removed type (used for job continuation). */
-        private transient MetadataMarshalled res;
-
         /**
          * @param arg Argument.
          * @param debug Debug.
@@ -100,62 +82,27 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetaRemoveCommandArg,
         /** {@inheritDoc} */
         @Override protected MetadataMarshalled run(@Nullable MetaRemoveCommandArg arg) throws IgniteException {
             try {
-                if (future == null) {
-                    assert Objects.nonNull(arg);
+                assert Objects.nonNull(arg);
 
-                    int typeId = typeId(ignite.context(), arg.typeId(), arg.typeName());
+                int typeId = typeId(ignite.context(), arg.typeId(), arg.typeName());
 
-                    BinaryMetadata meta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects())
-                        .binaryMetadata(typeId);
+                BinaryMetadata meta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects())
+                    .binaryMetadata(typeId);
 
-                    if (meta == null)
-                        return new MetadataMarshalled(null, null);
+                if (meta == null)
+                    return new MetadataMarshalled(null, null);
 
-                    byte[] marshalled = U.marshal(ignite.context(), meta);
+                byte[] marshalled = U.marshal(ignite.context(), meta);
 
-                    res = new MetadataMarshalled(marshalled, meta);
+                MetadataMarshalled res = new MetadataMarshalled(marshalled, meta);
 
-                    ignite.context().cacheObjects().removeType(typeId);
-
-                    future = ignite.context().closure().runAsync(
-                        BROADCAST,
-                        new DropAllThinSessionsJob(),
-                        options(ignite.cluster().forServers().nodes())
-                    );
-
-                    jobCtx.holdcc();
-
-                    future.listen(() -> {
-                        if (future.isDone())
-                            jobCtx.callcc();
-                    });
-
-                    return null;
-                }
+                ignite.context().cacheObjects().removeType(typeId);
 
                 return res;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }
-    }
-
-    /**
-     * Job to drop all thin session.
-     */
-    @GridInternal
-    private static class DropAllThinSessionsJob implements IgniteRunnable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Grid */
-        @IgniteInstanceResource
-        private IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public void run() throws IgniteException {
-            ignite.context().clientListener().closeAllSessions();
         }
     }
 }

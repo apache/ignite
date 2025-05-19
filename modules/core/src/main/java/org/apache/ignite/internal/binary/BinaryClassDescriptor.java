@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 /**
  * Binary class descriptor.
  */
-public class BinaryClassDescriptor {
+class BinaryClassDescriptor {
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -669,153 +669,153 @@ public class BinaryClassDescriptor {
                     break;
 
                 case DECIMAL:
-                    writer.doWriteDecimal((BigDecimal)obj);
+                    writer.writeDecimal((BigDecimal)obj);
 
                     break;
 
                 case STRING:
-                    writer.doWriteString((String)obj);
+                    writer.writeString((String)obj);
 
                     break;
 
                 case UUID:
-                    writer.doWriteUuid((UUID)obj);
+                    writer.writeUuid((UUID)obj);
 
                     break;
 
                 case DATE:
-                    writer.doWriteDate((Date)obj);
+                    writer.writeDate((Date)obj);
 
                     break;
 
                 case TIMESTAMP:
-                    writer.doWriteTimestamp((Timestamp)obj);
+                    writer.writeTimestamp((Timestamp)obj);
 
                     break;
 
                 case TIME:
-                    writer.doWriteTime((Time)obj);
+                    writer.writeTime((Time)obj);
 
                     break;
 
                 case BYTE_ARR:
-                    writer.doWriteByteArray((byte[])obj);
+                    writer.writeByteArray((byte[])obj);
 
                     break;
 
                 case SHORT_ARR:
-                    writer.doWriteShortArray((short[])obj);
+                    writer.writeShortArray((short[])obj);
 
                     break;
 
                 case INT_ARR:
-                    writer.doWriteIntArray((int[])obj);
+                    writer.writeIntArray((int[])obj);
 
                     break;
 
                 case LONG_ARR:
-                    writer.doWriteLongArray((long[])obj);
+                    writer.writeLongArray((long[])obj);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.doWriteFloatArray((float[])obj);
+                    writer.writeFloatArray((float[])obj);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.doWriteDoubleArray((double[])obj);
+                    writer.writeDoubleArray((double[])obj);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.doWriteCharArray((char[])obj);
+                    writer.writeCharArray((char[])obj);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.doWriteBooleanArray((boolean[])obj);
+                    writer.writeBooleanArray((boolean[])obj);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.doWriteDecimalArray((BigDecimal[])obj);
+                    writer.writeDecimalArray((BigDecimal[])obj);
 
                     break;
 
                 case STRING_ARR:
-                    writer.doWriteStringArray((String[])obj);
+                    writer.writeStringArray((String[])obj);
 
                     break;
 
                 case UUID_ARR:
-                    writer.doWriteUuidArray((UUID[])obj);
+                    writer.writeUuidArray((UUID[])obj);
 
                     break;
 
                 case DATE_ARR:
-                    writer.doWriteDateArray((Date[])obj);
+                    writer.writeDateArray((Date[])obj);
 
                     break;
 
                 case TIMESTAMP_ARR:
-                    writer.doWriteTimestampArray((Timestamp[])obj);
+                    writer.writeTimestampArray((Timestamp[])obj);
 
                     break;
 
                 case TIME_ARR:
-                    writer.doWriteTimeArray((Time[])obj);
+                    writer.writeTimeArray((Time[])obj);
 
                     break;
 
                 case OBJECT_ARR:
-                    if (obj instanceof BinaryArray)
-                        writer.doWriteBinaryArray(((BinaryArray)obj));
+                    if (BinaryUtils.isBinaryArray(obj))
+                        writer.writeBinaryArray(((BinaryArray)obj));
                     else
-                        writer.doWriteObjectArray((Object[])obj);
+                        writer.writeObjectArray((Object[])obj);
 
                     break;
 
                 case COL:
-                    writer.doWriteCollection((Collection<?>)obj);
+                    writer.writeCollection((Collection<?>)obj);
 
                     break;
 
                 case MAP:
-                    writer.doWriteMap((Map<?, ?>)obj);
+                    writer.writeMap((Map<?, ?>)obj);
 
                     break;
 
                 case ENUM:
-                    writer.doWriteEnum((Enum<?>)obj);
+                    writer.writeEnum((Enum<?>)obj);
 
                     break;
 
                 case BINARY_ENUM:
-                    writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
+                    writer.writeBinaryEnum((BinaryEnumObjectImpl)obj);
 
                     break;
 
                 case ENUM_ARR:
-                    if (obj instanceof BinaryArray)
-                        writer.doWriteBinaryArray(((BinaryArray)obj));
+                    if (BinaryUtils.isBinaryArray(obj))
+                        writer.writeBinaryArray(((BinaryArray)obj));
                     else
                         writer.doWriteEnumArray((Object[])obj);
 
                     break;
 
                 case CLASS:
-                    writer.doWriteClass((Class)obj);
+                    writer.writeClass((Class)obj);
 
                     break;
 
                 case PROXY:
-                    writer.doWriteProxy((Proxy)obj, intfs);
+                    writer.writeProxy((Proxy)obj, intfs);
 
                     break;
 
                 case BINARY_OBJ:
-                    writer.doWriteBinaryObject((BinaryObjectImpl)obj);
+                    writer.writeBinaryObject((BinaryObjectImpl)obj);
 
                     break;
 

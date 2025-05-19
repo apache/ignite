@@ -302,7 +302,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             timeout,
             createTtl,
             accessTtl,
-            CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());

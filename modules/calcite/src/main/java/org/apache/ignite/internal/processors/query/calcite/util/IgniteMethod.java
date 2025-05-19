@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
@@ -95,7 +96,16 @@ public enum IgniteMethod {
     GREATEST2(IgniteSqlFunctions.class, "greatest2", Object.class, Object.class),
 
     /** See {@link Objects#equals(Object, Object)} */
-    IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class);
+    IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class),
+
+    /** See {@link IgniteSqlFunctions#skipFirstArgument(Object, Object)}. **/
+    SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class),
+
+    /** See {@link BigDecimal#multiply(BigDecimal)}. */
+    BIG_DECIMAL_MULTIPLY(BigDecimal.class, "multiply", BigDecimal.class),
+
+    /** See {@link ExecutionContext#udfInstance(String)}. */
+    UDF_INSTANCE(ExecutionContext.class, "udfInstance", String.class);
 
     /** */
     private final Method method;

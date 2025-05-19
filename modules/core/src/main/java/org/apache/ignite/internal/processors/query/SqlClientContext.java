@@ -28,6 +28,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -98,6 +100,21 @@ public class SqlClientContext implements AutoCloseable {
      * the processing the last request. */
     private long totalProcessedOrderedReqs;
 
+    /** Transaction concurrency control. */
+    private TransactionConcurrency concurrency;
+
+    /** Transaction isolation level. */
+    private @Nullable TransactionIsolation isolation;
+
+    /** Transaction timeout. */
+    private long timeout;
+
+    /** Transaction label. */
+    private String lb;
+
+    /** Application attributes. */
+    private @Nullable Map<String, String> appAtts;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -113,6 +130,10 @@ public class SqlClientContext implements AutoCloseable {
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
      * @param qryEngine Name of the SQL engine to use.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
      */
     public SqlClientContext(GridKernalContext ctx,
         Factory<GridWorker> orderedBatchWorkerFactory,
@@ -124,7 +145,11 @@ public class SqlClientContext implements AutoCloseable {
         boolean skipReducerOnUpdate,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
-        @Nullable String qryEngine
+        @Nullable String qryEngine,
+        @Nullable TransactionConcurrency concurrency,
+        @Nullable TransactionIsolation isolation,
+        long timeout,
+        @Nullable String lb
     ) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
@@ -137,6 +162,10 @@ public class SqlClientContext implements AutoCloseable {
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.updateBatchSize = updateBatchSize;
         this.qryEngine = qryEngine;
+        this.concurrency = concurrency;
+        this.isolation = isolation;
+        this.timeout = timeout;
+        this.lb = lb;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -336,6 +365,54 @@ public class SqlClientContext implements AutoCloseable {
 
             muxStreamer.notifyAll();
         }
+    }
+
+    /**
+     * Sets transaction parameters.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
+     */
+    public void txParameters(TransactionConcurrency concurrency, @Nullable TransactionIsolation isolation, long timeout, String lb) {
+        this.concurrency = concurrency;
+        this.isolation = isolation;
+        this.timeout = timeout;
+        this.lb = lb;
+    }
+
+    /** */
+    public TransactionConcurrency concurrency() {
+        return concurrency;
+    }
+
+    /** */
+    public @Nullable TransactionIsolation isolation() {
+        return isolation;
+    }
+
+    /** */
+    public long transactionTimeout() {
+        return timeout;
+    }
+
+    /** */
+    public String transactionLabel() {
+        return lb;
+    }
+
+    /**
+     * @param appAtts Application attributes.
+     */
+    public void applicationAttributes(Map<String, String> appAtts) {
+        this.appAtts = appAtts;
+    }
+
+    /**
+     * @return Application attributes.
+     */
+    public Map<String, String> applicationAttributes() {
+        return appAtts;
     }
 
     /** {@inheritDoc} */

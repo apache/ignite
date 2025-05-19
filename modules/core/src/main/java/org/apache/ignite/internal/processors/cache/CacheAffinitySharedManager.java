@@ -77,7 +77,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -222,9 +221,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         boolean isClient = cctx.discovery().localNode().isClient();
-
-        if (cctx.kernalContext().config().getDiscoverySpi() instanceof TcpDiscoverySpi)
-            isClient &= !((TcpDiscoverySpi)cctx.kernalContext().config().getDiscoverySpi()).isForceServerMode();
 
         // Skip message if affinity was already recalculated.
         // Client node should just accept the flag from the mutated message.

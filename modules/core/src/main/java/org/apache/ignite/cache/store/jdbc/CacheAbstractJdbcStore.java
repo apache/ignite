@@ -59,8 +59,8 @@ import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -543,33 +543,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
     /**
      * @param type Type name to check.
-     * @param binarySupported True if binary marshaller enable.
-     * @return {@code True} if class not found.
-     */
-    protected TypeKind kindForName(String type, boolean binarySupported) {
-        if (BUILT_IN_TYPES.contains(type))
-            return TypeKind.BUILT_IN;
-
-        if (binarySupported)
-            return TypeKind.BINARY;
-
-        try {
-            Class.forName(type);
-
-            return TypeKind.POJO;
-        }
-        catch (ClassNotFoundException e) {
-            throw new CacheException("Failed to find class " + type +
-                " (make sure the class is present in classPath or use BinaryMarshaller)", e);
-        }
-    }
-
-    /**
-     * @param type Type name to check.
      * @return {@code True} if class not found.
      */
     protected TypeKind kindForName(String type) {
-        return kindForName(type, ignite.configuration().getMarshaller() instanceof BinaryMarshaller);
+        if (BUILT_IN_TYPES.contains(type))
+            return TypeKind.BUILT_IN;
+
+        return TypeKind.BINARY;
     }
 
     /**
@@ -600,13 +580,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             entryMappings = U.newHashMap(cacheTypes.size());
 
             if (!cacheTypes.isEmpty()) {
-                boolean binarySupported = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
-
                 for (JdbcType type : cacheTypes) {
                     String keyType = type.getKeyType();
                     String valType = type.getValueType();
 
-                    TypeKind keyKind = kindForName(keyType, binarySupported);
+                    TypeKind keyKind = kindForName(keyType);
 
                     checkTypeConfiguration(cacheName, keyKind, keyType, type.getKeyFields());
 
@@ -616,7 +594,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         throw new CacheException("Key type must be unique in type metadata [cache=" +
                             U.maskName(cacheName) + ", type=" + keyType + "]");
 
-                    TypeKind valKind = kindForName(valType, binarySupported);
+                    TypeKind valKind = kindForName(valType);
 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
@@ -1379,8 +1357,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         fieldVal = NUMERIC_TYPES.contains(field.getDatabaseFieldType()) ? val.ordinal() : val.name();
                     }
-                    else if (fieldVal instanceof BinaryEnumObjectImpl) {
-                        BinaryEnumObjectImpl val = (BinaryEnumObjectImpl)fieldVal;
+                    else if (BinaryUtils.isBinaryEnumObject(fieldVal)) {
+                        BinaryObjectEx val = (BinaryObjectEx)fieldVal;
 
                         fieldVal = val.enumOrdinal();
                     }
@@ -1943,7 +1921,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /**
          * Get full table name.
          *
-         * @return &lt;schema&gt;.&lt;table name&gt
+         * @return &lt;schema&gt;.&lt;table name&gt;
          */
         protected String fullTableName() {
             return fullTblName;

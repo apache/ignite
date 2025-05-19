@@ -22,14 +22,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
@@ -40,9 +41,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.SupplierX;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -61,16 +65,14 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
  *
  */
 public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** */
-    private static AtomicInteger cnt;
-
     /** Index of the near-only instance. */
     protected Integer nearIdx;
 
+    /** */
+    protected boolean isMultiJvm;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cnt = new AtomicInteger();
-
         super.beforeTestsStarted();
 
         for (int i = 0; i < gridCount(); i++) {
@@ -96,7 +98,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (cnt.getAndIncrement() == 0 || (cnt.get() > gridCount() && cnt.get() % gridCount() == 0)) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(gridCount() - 1))) {
             info("Use grid '" + igniteInstanceName + "' as near-only.");
 
             cfg.setClientMode(true);
@@ -107,6 +109,61 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite startGrid(String igniteInstanceName, GridSpringResourceContext ctx) throws Exception {
+        return sameJvmForClientNode(() -> super.startGrid(igniteInstanceName, ctx), igniteInstanceName);
+    }
+
+    /** */
+    public <R> R sameJvmForClientNode(SupplierX<R> s, String igniteInstanceName) {
+        boolean prevMultiJvm = isMultiJvm;
+
+        try {
+            if (isMultiJvm && getConfiguration(igniteInstanceName).isClientMode())
+                isMultiJvm = false;
+
+            return s.get();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            isMultiJvm = prevMultiJvm;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx grid(int idx) {
+        return sameJvmForClientNode(() -> super.grid(idx), getTestIgniteInstanceName(idx));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx ignite(int idx) {
+        return sameJvmForClientNode(() -> super.ignite(idx), getTestIgniteInstanceName(idx));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stopGrid(String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        sameJvmForClientNode(() -> {
+            super.stopGrid(igniteInstanceName, cancel, awaitTop);
+            return null;
+        }, igniteInstanceName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEx defaultInstance() {
+        IgniteEx cli = grid(gridCount() - 1);
+
+        assertTrue(cli.configuration().isClientMode());
+
+        return cli;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        return isMultiJvm;
     }
 
     /** {@inheritDoc} */
@@ -143,7 +200,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                return !F.eq(grid(n).name(), grid(nearIdx).name());
+                return !Objects.equals(grid(n).name(), grid(nearIdx).name());
             }
         });
     }
@@ -152,7 +209,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      * @return A not near-only cache.
      */
     @Override protected IgniteCache<String, Integer> fullCache() {
-        return nearIdx == 0 ? jcache(1) : jcache(0);
+        return nearIdx == (gridCount() - 1) ? jcache(1) : jcache();
     }
 
     /**
@@ -566,7 +623,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
+            defaultInstance().events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_LOCKED:

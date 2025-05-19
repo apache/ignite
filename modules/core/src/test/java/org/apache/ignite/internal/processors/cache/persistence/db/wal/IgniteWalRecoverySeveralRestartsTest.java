@@ -84,8 +84,6 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setMarshaller(null);
-
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
         binCfg.setCompactFooter(false);

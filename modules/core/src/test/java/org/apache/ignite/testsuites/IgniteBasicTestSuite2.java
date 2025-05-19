@@ -44,7 +44,6 @@ import org.apache.ignite.internal.metric.PeriodicHistogramMetricImplTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
-import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest;
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolT
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ProgressSpeedCalculationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SegmentedLruPageListTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
+import org.apache.ignite.internal.processors.cache.transactions.NonTransactionalOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanTest;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
@@ -166,6 +166,7 @@ import org.junit.runners.Suite;
     ExchangeWorkerWaitingForTaskTest.class,
 
     AtomicOperationsInTxTest.class,
+    NonTransactionalOperationsInTxTest.class,
 
     RebalanceWithDifferentThreadPoolSizeTest.class,
 
@@ -199,8 +200,6 @@ import org.junit.runners.Suite;
     NotStringSystemPropertyTest.class,
     ConfigVariationsExecutionTest.class,
     ConfigVariationsTestSuiteBuilderTest.class,
-
-    DeadLockOnNodeLeftExchangeTest.class,
 
     ClassPathContentLoggingTest.class,
 

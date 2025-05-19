@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * of them with optional fallback to normal hash map lookup.
  *
  */
-public class BinarySchemaRegistry {
+class BinarySchemaRegistry {
     /** Empty schema ID. */
     private static final int EMPTY = 0;
 

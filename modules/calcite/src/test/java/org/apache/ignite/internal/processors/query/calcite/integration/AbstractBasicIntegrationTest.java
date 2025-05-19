@@ -69,13 +69,22 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGrids(nodeCount());
 
         client = startClientGrid("client");
     }
 
+    /** */
+    protected boolean destroyCachesAfterTest() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.
@@ -92,8 +101,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }, INBOX_INITIALIZATION_TIMEOUT * 2);
 
         for (Ignite ign : G.allGrids()) {
-            for (String cacheName : ign.cacheNames())
-                ign.destroyCache(cacheName);
+            if (destroyCachesAfterTest()) {
+                for (String cacheName : ign.cacheNames())
+                    ign.destroyCache(cacheName);
+            }
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
@@ -137,17 +148,24 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    protected QueryChecker assertQuery(Ignite ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+                return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
             }
         };
     }
 
-    /** */
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
     protected List<List<?>> executeSql(String sql, Object... args) {
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+        return executeSql(client, sql, args);
+    }
+
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
 
         List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
 
@@ -169,17 +187,17 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      * @param msg Error message.
      */
     protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
-        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
+        assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(2, CacheMode.PARTITIONED);
+    protected void createAndPopulateTable() {
+        createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+    protected void createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
@@ -193,13 +211,21 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        person.put(idx++, new Employer("Igor", 10d));
-        person.put(idx++, new Employer(null, 15d));
-        person.put(idx++, new Employer("Ilya", 15d));
-        person.put(idx++, new Employer("Roma", 10d));
-        person.put(idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx++, new Employer("Igor", 10d));
+        put(ignite, person, idx++, new Employer(null, 15d));
+        put(ignite, person, idx++, new Employer("Ilya", 15d));
+        put(ignite, person, idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx, new Employer("Roma", 10d));
+    }
 
-        return person;
+    /** */
+    protected <K, V> void put(Ignite ignite, IgniteCache<K, V> c, K key, V val) {
+        c.put(key, val);
+    }
+
+    /** */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        return new CacheConfiguration<>();
     }
 
     /** */
@@ -218,6 +244,32 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
+        }
+    }
+
+    /** */
+    protected void gatherStatistics() throws Exception {
+        for (List<?> lst : sql("SELECT TABLE_NAME FROM SYS.TABLES")) {
+            assert lst.size() == 1 : "Single table name expected";
+
+            String tbl = lst.get(0).toString().toUpperCase();
+
+            sql("ANALYZE " + tbl);
+
+            waitForCondition(
+                () -> {
+                    for (Ignite node : G.allGrids()) {
+                        if (node.configuration().isClientMode())
+                            continue;
+
+                        if (F.isEmpty(sql((IgniteEx)node, "select * from sys.statistics_local_data where name = ?", tbl)))
+                            return false;
+                    }
+
+                    return true;
+                },
+                getTestTimeout()
+            );
         }
     }
 
@@ -277,7 +329,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        @Override public <Row> Iterable<Row> count(ExecutionContext<Row> ectx, ColocationGroup grp, boolean notNull) {
             return delegate.count(ectx, grp, notNull);
         }
 
@@ -311,6 +363,19 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         public Employer(String name, Double salary) {
             this.name = name;
             this.salary = salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Employer employer = (Employer)o;
+
+            return name.equals(employer.name) && salary.equals(employer.salary);
         }
     }
 }

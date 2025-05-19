@@ -23,10 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Thin client implementation of {@link ClusterNode}.
@@ -142,7 +143,7 @@ class ClientClusterNodeImpl implements ClusterNode {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return F.eqNodes(this, o);
+        return eqNodes(this, o);
     }
 
     /** {@inheritDoc} */

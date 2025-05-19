@@ -57,7 +57,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -332,9 +331,6 @@ public class IgniteConfiguration {
     /** Local node ID. */
     private UUID nodeId;
 
-    /** Marshaller. */
-    private Marshaller marsh;
-
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
 
@@ -605,6 +601,9 @@ public class IgniteConfiguration {
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
 
+    /** Default values for distributed properties. */
+    private Map<String, String> distrProps;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -679,7 +678,6 @@ public class IgniteConfiguration {
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
         lsnrs = cfg.getLocalEventListeners();
-        marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
         metricsExpTime = cfg.getMetricsExpireTime();
@@ -732,6 +730,7 @@ public class IgniteConfiguration {
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
         asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
+        distrProps = cfg.getDistributedPropertiesDefaultValues();
     }
 
     /**
@@ -1384,36 +1383,6 @@ public class IgniteConfiguration {
     @Deprecated
     public IgniteConfiguration setNodeId(UUID nodeId) {
         this.nodeId = nodeId;
-
-        return this;
-    }
-
-    /**
-     * Should return an instance of marshaller to use in grid. If not provided,
-     * default marshaller implementation that allows to read object field values
-     * without deserialization will be used.
-     *
-     * @return Marshaller to use in grid.
-     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
-     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
-     */
-    @Deprecated
-    public Marshaller getMarshaller() {
-        return marsh;
-    }
-
-    /**
-     * Sets marshaller to use within grid.
-     *
-     * @param marsh Marshaller to use within grid.
-     * @see IgniteConfiguration#getMarshaller()
-     * @return {@code this} for chaining.
-     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
-     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
-     */
-    @Deprecated
-    public IgniteConfiguration setMarshaller(Marshaller marsh) {
-        this.marsh = marsh;
 
         return this;
     }
@@ -2584,7 +2553,6 @@ public class IgniteConfiguration {
      * {@link DiscoverySpi} in client mode if this property is {@code true}.
      *
      * @return Client mode flag.
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public Boolean isClientMode() {
         return clientMode;
@@ -3144,6 +3112,8 @@ public class IgniteConfiguration {
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        A.notNull(snapshotPath, "snapshotPath");
+
         this.snapshotPath = snapshotPath;
 
         return this;
@@ -3595,6 +3565,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    /**
+     * Gets default values for distributed properties.
+     *
+     * @return Default values for distributed properties.
+     */
+    public Map<String, String> getDistributedPropertiesDefaultValues() {
+        return distrProps;
+    }
+
+    /**
+     * Sets default values for distributed properties.
+     *
+     * @param distrProps Default values for distributed properties.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDistributedPropertiesDefaultValues(Map<String, String> distrProps) {
+        this.distrProps = distrProps;
 
         return this;
     }

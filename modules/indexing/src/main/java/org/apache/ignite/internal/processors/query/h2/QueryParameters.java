@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.List;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -49,9 +48,6 @@ public class QueryParameters {
     /** Data page scan enabled flag. */
     private final Boolean dataPageScanEnabled;
 
-    /** Nexted transactional mode. */
-    private final NestedTxMode nestedTxMode;
-
     /** Auto-commit flag. */
     private final boolean autoCommit;
 
@@ -74,7 +70,6 @@ public class QueryParameters {
      * @param lazy Lazy flag.
      * @param pageSize Page size.
      * @param dataPageScanEnabled Data page scan enabled flag.
-     * @param nestedTxMode Nested TX mode.
      * @param autoCommit Auto-commit flag.
      * @param batchedArgs Batched arguments.
      * @param updateBatchSize Update internal batch size.
@@ -87,7 +82,6 @@ public class QueryParameters {
         boolean lazy,
         int pageSize,
         Boolean dataPageScanEnabled,
-        NestedTxMode nestedTxMode,
         boolean autoCommit,
         List<Object[]> batchedArgs,
         int updateBatchSize
@@ -98,7 +92,6 @@ public class QueryParameters {
         this.lazy = lazy;
         this.pageSize = pageSize;
         this.dataPageScanEnabled = dataPageScanEnabled;
-        this.nestedTxMode = nestedTxMode;
         this.autoCommit = autoCommit;
         this.batchedArgs = batchedArgs;
         this.updateBatchSize = updateBatchSize;
@@ -149,13 +142,6 @@ public class QueryParameters {
     }
 
     /**
-     * @return Nested TX mode.
-     */
-    public NestedTxMode nestedTxMode() {
-        return nestedTxMode;
-    }
-
-    /**
      * @return Auto-commit flag.
      */
     public boolean autoCommit() {
@@ -194,7 +180,6 @@ public class QueryParameters {
             this.lazy,
             this.pageSize,
             this.dataPageScanEnabled,
-            this.nestedTxMode,
             this.autoCommit,
             null,
             this.updateBatchSize

@@ -119,15 +119,18 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionC
                     return info;
 
                 for (Integer id : grpIds) {
+                    final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
+
+                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
+
+                    if (grpCtx == null)
+                        continue;
+
                     final CacheDistributionGroup grp = new CacheDistributionGroup();
 
                     info.getGroups().add(grp);
 
                     grp.setGroupId(id);
-
-                    final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
-
-                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
 
                     grp.setGroupName(grpCtx.cacheOrGroupName());
 
@@ -137,11 +140,7 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionC
 
                     final AffinityAssignment assignment = grpCtx.affinity().readyAffinity(top.readyTopologyVersion());
 
-                    List<GridDhtLocalPartition> locParts = top.localPartitions();
-
-                    for (int i = 0; i < locParts.size(); i++) {
-                        GridDhtLocalPartition part = locParts.get(i);
-
+                    for (GridDhtLocalPartition part: top.currentLocalPartitions()) {
                         if (part == null)
                             continue;
 

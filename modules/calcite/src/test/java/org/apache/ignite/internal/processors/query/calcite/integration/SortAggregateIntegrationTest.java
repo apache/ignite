@@ -27,14 +27,14 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
  * Sort aggregate integration test.
  */
-public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
+public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     public static final int ROWS = 103;
 
@@ -45,6 +45,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
+        clearTransaction();
+
         for (String cacheName : client.cacheNames())
             client.cache(cacheName).clear();
     }
@@ -63,6 +65,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
             .addQueryField("COL0", Integer.class.getName(), null)
             .setIndexes(Collections.singletonList(new QueryIndex(fields1, QueryIndexType.SORTED)));
 
+        QueryEntity tbl12 = new QueryEntity(tbl1).setTableName("TBL12");
+
         QueryEntity part = new QueryEntity()
             .setTableName("TEST")
             .setKeyType(Integer.class.getName())
@@ -73,14 +77,22 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
             .addQueryField("GRP1", Integer.class.getName(), null)
             .addQueryField("VAL0", Integer.class.getName(), null)
             .addQueryField("VAL1", Integer.class.getName(), null)
-            .setIndexes(Collections.singletonList(new QueryIndex(Arrays.asList("GRP0", "GRP1"), QueryIndexType.SORTED)));
+            .setIndexes(F.asList(new QueryIndex(Arrays.asList("GRP0", "GRP1"), QueryIndexType.SORTED),
+                new QueryIndex(Collections.singletonList("VAL1"), QueryIndexType.SORTED)));
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
-                new CacheConfiguration<>(part.getTableName())
+                cacheConfiguration()
+                    .setName(part.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(Arrays.asList(tbl1, part))
+                    .setSqlSchema("PUBLIC"),
+                cacheConfiguration()
+                    .setName(tbl12.getTableName())
+                    .setAffinity(new RendezvousAffinityFunction(false, 8))
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setQueryEntities(Collections.singletonList(tbl12))
                     .setSqlSchema("PUBLIC")
             );
     }
@@ -88,7 +100,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void mapReduceAggregate() throws InterruptedException {
-        fillCacheTest(grid(0).cache("TEST"), ROWS);
+        fillCacheTest(client.cache("TEST"), ROWS);
 
         List<List<?>> cursors = executeSql("SELECT /*+ DISABLE_RULE('HashAggregateConverterRule') */" +
             "SUM(val0), SUM(val1), grp0 FROM TEST " +
@@ -109,8 +121,19 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testSubqueryOtherTable() throws Exception {
+        fillCacheTbl1(client.cache("TBL12"), ROWS);
+        fillCacheTest(client.cache("TEST"), ROWS);
+
+        assertQuery("SELECT COL0 FROM TBL12 WHERE PK IN (SELECT VAL1 FROM TEST WHERE VAL0 < 2)")
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
     public void correctCollationsOnMapReduceSortAgg() throws InterruptedException {
-        fillCacheTbl1(grid(0).cache("TEST"), ROWS);
+        fillCacheTbl1(client.cache("TEST"), ROWS);
 
         List<List<?>> cursors = executeSql("SELECT PK FROM TBL1 WHERE col0 IN (SELECT col0 FROM TBL1)");
 
@@ -123,7 +146,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
      */
     private void fillCacheTbl1(IgniteCache c, int rows) throws InterruptedException {
         for (int i = 0; i < rows; ++i)
-            c.put(i, new TestValTbl1(i));
+            put(client, c, i, new TestValTbl1(i));
 
         awaitPartitionMapExchange();
     }
@@ -134,7 +157,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
      */
     private void fillCacheTest(IgniteCache c, int rows) throws InterruptedException {
         for (int i = 0; i < rows; ++i)
-            c.put(i, new TestValTest(i));
+            put(client, c, i, new TestValTest(i));
 
         awaitPartitionMapExchange();
     }

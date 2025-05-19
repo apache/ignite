@@ -29,6 +29,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
@@ -62,8 +64,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -123,7 +125,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected List<UUID> nodes;
 
     /** */
-    protected List<QueryTaskExecutorImpl> executors;
+    protected List<StripedQueryTaskExecutor> executors;
 
     /** */
     protected volatile Throwable lastE;
@@ -147,7 +149,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     @After
     public void tearDown() throws Throwable {
         if (!F.isEmpty(executors))
-            executors.forEach(QueryTaskExecutorImpl::tearDown);
+            executors.forEach(StripedQueryTaskExecutor::tearDown);
 
         if (lastE != null)
             throw lastE;
@@ -222,13 +224,28 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected PlanningContext plannerCtx(String sql, IgniteSchema publicSchema, String... disabledRules) {
-        return plannerCtx(sql, Collections.singleton(publicSchema), disabledRules);
+        return plannerCtx(sql, publicSchema, null, disabledRules);
     }
 
     /** */
-    protected PlanningContext plannerCtx(String sql, Collection<IgniteSchema> schemas, String... disabledRules) {
+    protected PlanningContext plannerCtx(
+        String sql,
+        IgniteSchema publicSchema,
+        @Nullable RelOptListener planLsnr,
+        String... disabledRules
+    ) {
+        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, disabledRules);
+    }
+
+    /** */
+    protected PlanningContext plannerCtx(
+        String sql,
+        Collection<IgniteSchema> schemas,
+        @Nullable RelOptListener planLsnr,
+        String... disabledRules
+    ) {
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(baseQueryContext(schemas))
+            .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
             .query(sql)
             .build();
 
@@ -236,19 +253,24 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(planner);
 
-        planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
+        planner.addDisabledRules(ImmutableSet.copyOf(disabledRules));
 
         return ctx;
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        return physicalPlan(plannerCtx(sql, publicSchema, disabledRules));
+        return physicalPlan(sql, publicSchema, null, disabledRules);
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
-        return physicalPlan(plannerCtx(sql, schemas, disabledRules));
+    protected IgniteRel physicalPlan(
+        String sql,
+        IgniteSchema publicSchema,
+        @Nullable RelOptListener planLsnr,
+        String... disabledRules
+    ) throws Exception {
+        return physicalPlan(plannerCtx(sql, publicSchema, planLsnr, disabledRules));
     }
 
     /** */
@@ -437,7 +459,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        assertPlan(sql, Collections.singleton(schema), predicate, disabledRules);
+        assertPlan(sql, schema, null, predicate, disabledRules);
     }
 
     /** */
@@ -447,7 +469,18 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        IgniteRel plan = physicalPlan(sql, schemas, disabledRules);
+        assertPlan(sql, schemas, null, predicate, disabledRules);
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        String sql,
+        Collection<IgniteSchema> schemas,
+        @Nullable RelOptListener planLsnr,
+        Predicate<T> predicate,
+        String... disabledRules
+    ) throws Exception {
+        IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, disabledRules));
 
         checkSplitAndSerialization(plan, schemas);
 
@@ -457,6 +490,17 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             fail(invalidPlanMsg);
         }
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        String sql,
+        IgniteSchema schema,
+        @Nullable RelOptListener planLsnr,
+        Predicate<T> predicate,
+        String... disabledRules
+    ) throws Exception {
+        assertPlan(sql, Collections.singletonList(schema), planLsnr, predicate, disabledRules);
     }
 
     /**
@@ -682,7 +726,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         SchemaPlus dfltSchema = null;
 
         for (IgniteSchema igniteSchema : schemas) {
-            SchemaPlus schema = rootSchema.add(igniteSchema.getName(), igniteSchema);
+            SchemaPlus schema = igniteSchema.register(rootSchema, null);
 
             if (dfltSchema == null || DEFAULT_SCHEMA.equals(schema.getName()))
                 dfltSchema = schema;
