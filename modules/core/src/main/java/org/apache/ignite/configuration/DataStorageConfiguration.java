@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
@@ -214,9 +215,13 @@ public class DataStorageConfiguration implements Serializable {
     private String storagePath;
 
     /** 
-     * Additional directories where index and partition files are stored. 
+     * Additional directories where index and partition files are stored.
+     * User may want to use dedicated storage for cache is server has several physical disks.
+     * Spreading load across several disks can improve performance.
+     *
      * @see CacheConfiguration#setStoragePath(String)
      */
+    @IgniteExperimental
     private String[] extraStoragePathes;
 
     /** Checkpoint frequency. */
@@ -564,6 +569,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * @return Additional directories where index and partition files are stored.
      */
+    @IgniteExperimental
     public String[] getExtraStoragePathes() {
         return extraStoragePathes;
     }
@@ -575,6 +581,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param persistenceStorePath Persistence store path.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
         this.storagePath = persistenceStorePath;
 

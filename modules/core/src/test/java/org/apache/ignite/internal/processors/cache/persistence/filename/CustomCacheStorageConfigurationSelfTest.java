@@ -75,7 +75,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 .setStoragePath(myPath.getAbsolutePath())
                 .setExtraStoragePathes(myPath.getAbsolutePath()))),
             IgniteCheckedException.class,
-            "Data storage configuration constains duplicates"
+            "DataStorageConfiguration contains duplicates"
         );
 
         assertThrows(
@@ -84,7 +84,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 .setStoragePath(myPath.getAbsolutePath())
                 .setExtraStoragePathes(myPath2.getAbsolutePath(), myPath.getAbsolutePath()))),
             IgniteCheckedException.class,
-            "Data storage configuration constains duplicates"
+            "DataStorageConfiguration contains duplicates"
         );
 
         assertThrows(
@@ -93,7 +93,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 .setStoragePath(myPath.getAbsolutePath())
                 .setExtraStoragePathes(myPath2.getAbsolutePath(), myPath2.getAbsolutePath()))),
             IgniteCheckedException.class,
-            "Data storage configuration constains duplicates"
+            "DataStorageConfiguration contains duplicates"
         );
     }
 
