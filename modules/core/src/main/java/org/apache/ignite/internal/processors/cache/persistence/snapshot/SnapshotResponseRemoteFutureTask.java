@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -119,7 +120,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 snpSndr.sendPart(
                     snpPart,
                     sft.partitionFile(ccfg, gp.getPartitionId()),
-                    F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0],
+                    FileTreeUtils.partitionStorage(ccfg, gp.getPartitionId()),
                     gp,
                     snpPart.length()
                 );

@@ -71,7 +71,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C3;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -538,7 +537,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return F.isEmpty(gctx.config().getStoragePath()) ? null : gctx.config().getStoragePath()[0];
+        return FileTreeUtils.partitionStorage(gctx.config(), grpAndPart.getPartitionId());
     }
 
     /** {@inheritDoc} */

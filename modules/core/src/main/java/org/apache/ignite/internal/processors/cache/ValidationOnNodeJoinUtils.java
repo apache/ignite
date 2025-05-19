@@ -396,20 +396,20 @@ public class ValidationOnNodeJoinUtils {
         if (!F.isEmpty(cc.getStoragePath())) {
             DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
 
-            List<String> cs = Arrays.asList(cc.getStoragePath());
+            List<String> csp = Arrays.asList(cc.getStoragePath());
 
             if (dsCfg == null)
-                throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + cs);
+                throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + csp);
 
             Set<String> nodeStorages = new HashSet<>(Arrays.asList(dsCfg.getExtraStoragePathes()));
 
             if (!F.isEmpty(dsCfg.getStoragePath()))
                 nodeStorages.add(dsCfg.getStoragePath());
 
-            if (!nodeStorages.containsAll(cs)) {
+            if (!nodeStorages.containsAll(csp)) {
                 throw new IgniteCheckedException(
                     "Unknown storage path. Storage path must be from DataStorageConfiguration " +
-                        "[cacheStorage=" + cs + ", nodeStorages=" + nodeStorages + ']'
+                        "[cacheStorage=" + csp + ", nodeStorages=" + nodeStorages + ']'
                 );
             }
         }
