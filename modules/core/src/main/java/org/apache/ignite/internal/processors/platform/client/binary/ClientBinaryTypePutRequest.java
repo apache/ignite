@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.platform.client.binary;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
  * Binary types update request.
@@ -41,7 +41,7 @@ public class ClientBinaryTypePutRequest extends ClientRequest {
     public ClientBinaryTypePutRequest(BinaryReaderEx reader) {
         super(reader);
 
-        meta = PlatformUtils.readBinaryMetadata(reader);
+        meta = BinaryUtils.readBinaryMetadata(reader);
     }
 
     /** {@inheritDoc} */

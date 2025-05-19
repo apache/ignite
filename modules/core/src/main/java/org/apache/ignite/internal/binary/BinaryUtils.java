@@ -80,7 +80,6 @@ import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClosure;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -3160,14 +3159,13 @@ public class BinaryUtils {
         String affKey = reader.readString();
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
-            new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryReaderEx reader) {
+            new Function<>() {
+                @Override public T2<String, BinaryFieldMetadata> apply(BinaryReaderEx reader) {
                     String name = reader.readString();
                     int typeId = reader.readInt();
                     int fieldId = reader.readInt();
 
-                    return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
-                        new BinaryFieldMetadata(typeId, fieldId));
+                    return new T2<>(name, new BinaryFieldMetadata(typeId, fieldId));
                 }
             });
 
@@ -3215,7 +3213,7 @@ public class BinaryUtils {
      * @return Map.
      */
     private static <K, V> Map<K, V> readLinkedMap(BinaryReaderEx reader,
-        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        @Nullable Function<BinaryReaderEx, T2<K, V>> readClo) {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newLinkedHashMap(cnt);
@@ -3226,7 +3224,7 @@ public class BinaryUtils {
         }
         else {
             for (int i = 0; i < cnt; i++) {
-                IgniteBiTuple<K, V> entry = readClo.read(reader);
+                IgniteBiTuple<K, V> entry = readClo.apply(reader);
 
                 map.put(entry.getKey(), entry.getValue());
             }

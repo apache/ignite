@@ -18,12 +18,18 @@
 package org.apache.ignite.internal.processors.platform.utils;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -77,7 +83,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-public class PlatformUtils extends BinaryUtils {
+public class PlatformUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX + ".platform";
 
@@ -882,9 +888,9 @@ public class PlatformUtils extends BinaryUtils {
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
-        else if (knownCollection(o))
+        else if (BinaryUtils.knownCollection(o))
             return unwrapKnownCollection((Collection<Object>)o);
-        else if (knownMap(o))
+        else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
         else if (o instanceof Object[])
             return unwrapBinariesInArray((Object[])o);
@@ -895,12 +901,51 @@ public class PlatformUtils extends BinaryUtils {
     }
 
     /**
+     * @param obj Obj.
+     * @return True is obj is a known simple type array.
+     */
+    private static boolean knownArray(Object obj) {
+        return obj instanceof String[] ||
+            obj instanceof boolean[] ||
+            obj instanceof byte[] ||
+            obj instanceof char[] ||
+            obj instanceof int[] ||
+            obj instanceof long[] ||
+            obj instanceof short[] ||
+            obj instanceof Timestamp[] ||
+            obj instanceof double[] ||
+            obj instanceof float[] ||
+            obj instanceof UUID[] ||
+            obj instanceof BigDecimal[];
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if collection should be recursively unwrapped.
+     */
+    private static boolean knownCollection(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if map should be recursively unwrapped.
+     */
+    private static boolean knownMap(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == HashMap.class || cls == LinkedHashMap.class;
+    }
+
+    /**
      * @param col Collection to unwrap.
      * @return Unwrapped collection.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private static Collection<Object> unwrapKnownCollection(Collection<Object> col) {
-        Collection<Object> col0 = newKnownCollection(col);
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
@@ -933,7 +978,7 @@ public class PlatformUtils extends BinaryUtils {
      * @return Unwrapped collection.
      */
     private static Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map) {
-        Map<Object, Object> map0 = newMap(map);
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
@@ -994,7 +1039,7 @@ public class PlatformUtils extends BinaryUtils {
                 try {
                     field.set(
                         obj,
-                        isObjectArray(field.getType()) ? rawArrayFromBinary(val) : val
+                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
                     );
                 }
                 catch (Exception e) {
@@ -1034,7 +1079,7 @@ public class PlatformUtils extends BinaryUtils {
         return readCollection(reader,
                 new PlatformReaderClosure<BinaryMetadata>() {
                     @Override public BinaryMetadata read(BinaryReaderEx reader) {
-                        return readBinaryMetadata(reader);
+                        return BinaryUtils.readBinaryMetadata(reader);
                     }
                 }
         );

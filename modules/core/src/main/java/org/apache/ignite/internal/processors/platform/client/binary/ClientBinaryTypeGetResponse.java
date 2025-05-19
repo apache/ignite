@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 /**
  * Binary meta response.
@@ -48,7 +48,7 @@ public class ClientBinaryTypeGetResponse extends ClientResponse {
         if (meta != null) {
             writer.writeBoolean(true);  // Not null.
 
-            PlatformUtils.writeBinaryMetadata(writer, meta, true);
+            BinaryUtils.writeBinaryMetadata(writer, meta, true);
         }
         else {
             writer.writeBoolean(false);  // Null.
