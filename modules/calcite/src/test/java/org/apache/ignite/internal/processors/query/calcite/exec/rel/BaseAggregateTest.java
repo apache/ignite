@@ -34,7 +34,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -443,7 +442,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void sumOnDifferentRowsCount() throws IgniteCheckedException {
+    public void sumOnDifferentRowsCount() {
         int[] grpsCnt = {1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE, IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
         int[] rowsInGrps = {1, 5, IN_BUFFER_SIZE};
 

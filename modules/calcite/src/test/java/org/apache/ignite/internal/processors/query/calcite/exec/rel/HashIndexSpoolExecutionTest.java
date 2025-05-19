@@ -53,7 +53,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
      *
      */
     @Test
-    public void testIndexSpool() throws Exception {
+    public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);

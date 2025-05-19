@@ -36,7 +36,7 @@ import org.junit.Test;
 public class LimitExecutionTest extends AbstractExecutionTest {
     /** */
     @Test
-    public void testLimit() throws Exception {
+    public void testLimit() {
         checkLimit(0, 1);
         checkLimit(1, 0);
         checkLimit(1, 1);
@@ -51,7 +51,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
     /** Tests Sort node can limit its output when fetch param is set. */
     @Test
-    public void testSortLimit() throws Exception {
+    public void testSortLimit() {
         checkLimitSort(0, 1);
         checkLimitSort(1, 0);
         checkLimitSort(1, 1);
