@@ -17,10 +17,12 @@
 
 package org.apache.ignite.compatibility.persistence;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +42,6 @@ import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,34 +72,37 @@ public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
 
     /** */
     @Parameterized.Parameter(2)
-    public boolean cacheDump;
+    public int oldNodesCnt;
 
     /** */
     @Parameterized.Parameter(3)
-    public boolean customSnpPath;
+    public boolean cacheDump;
 
     /** */
     @Parameterized.Parameter(4)
-    public boolean testCacheGrp;
+    public boolean customSnpPath;
 
     /** */
     @Parameterized.Parameter(5)
-    public int oldNodesCnt;
+    public boolean testCacheGrp;
 
     /** */
     private CompatibilityTestCore core;
 
     /** */
-    @Parameterized.Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, oldNodesCnt={5}")
+    @Parameterized.Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
     public static Collection<Object[]> data() {
-        return GridTestUtils.cartesianProduct(
-            Arrays.asList(true, false),
-            Arrays.asList(true, false),
-            Arrays.asList(true, false),
-            Arrays.asList(true, false),
-            Arrays.asList(true, false),
-            Arrays.asList(1, 3)
-        );
+        List<Object[]> data = new ArrayList<>();
+
+        for (boolean incSnp : Arrays.asList(true, false))
+            for (boolean customConsId : Arrays.asList(true, false))
+                for (int oldNodesCnt : Arrays.asList(1, 3))
+                    for (boolean cacheDump : Arrays.asList(true, false))
+                        for (boolean customSnpPath : Arrays.asList(true, false))
+                            for (boolean testCacheGrp : Arrays.asList(true, false))
+                                data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+
+        return data;
     }
 
     /** */
