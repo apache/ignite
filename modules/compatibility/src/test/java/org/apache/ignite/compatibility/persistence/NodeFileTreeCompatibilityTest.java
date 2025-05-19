@@ -180,19 +180,16 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
 
         File dbDir = new File(rootPath, "db");
 
+        BiFunction<CacheGrpScanResult, CacheGrpScanResult, CacheGrpScanResult> mergeScans = (to, from) -> {
+            to.cacheNames().addAll(from.cacheNames());
+            to.partNames().addAll(from.partNames());
+
+            return to;
+        };
+
         for (File child : dbDir.listFiles()) {
-            if (child.getName().startsWith("node")) {
-                List<CacheGrpScanResult> cacheGrpScans = scanNode(child, partSuffix);
-
-                BiFunction<CacheGrpScanResult, CacheGrpScanResult, CacheGrpScanResult> mergeScans = (to, from) -> {
-                    to.cacheNames().addAll(from.cacheNames());
-                    to.partNames().addAll(from.partNames());
-
-                    return to;
-                };
-
-                cacheGrpScans.forEach(scan -> res.merge(scan.cacheGrpName(), scan, mergeScans));
-            }
+            if (child.getName().startsWith("node"))
+                scanNode(child, partSuffix).forEach(scan -> res.merge(scan.cacheGrpName(), scan, mergeScans));
         }
 
         return res;
