@@ -439,6 +439,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see DataStorageConfiguration#setStoragePath(String)
      * @see DataStorageConfiguration#setExtraStoragePathes(String[])
      */
+    @IgniteExperimental
     @Nullable private String storagePath;
 
     /** Empty constructor (all values are initialized to their defaults). */
@@ -2468,6 +2469,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
      */
+    @IgniteExperimental
     @Nullable public String getStoragePath() {
         return storagePath;
     }
@@ -2479,6 +2481,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param storagePath Persistence store path.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public CacheConfiguration<K, V> setStoragePath(String storagePath) {
         this.storagePath = storagePath;
 
