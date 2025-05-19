@@ -223,9 +223,9 @@ public class UncollectNode<Row> extends AbstractNode<Row> implements SingleNode<
 
             RowHandler<Row> rowHnd = context().rowHandler();
 
-            Iterator<Object> iter = iterator(rowHnd.get(0, row));
+            Iterator<Object> it = iterator(rowHnd.get(0, row));
 
-            return F.iterator(iter, rowFactory::apply, true);
+            return F.iterator(it, rowFactory::apply, true);
         }
 
         /** */
