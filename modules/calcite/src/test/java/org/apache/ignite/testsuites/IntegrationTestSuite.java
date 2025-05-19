@@ -76,7 +76,11 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIn
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.FullScaleTpchTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.HalfScaleTpchTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.ThinScaleTpchTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.ThirdScaleTpchTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TinyScaleTpchTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
@@ -158,7 +162,11 @@ import org.junit.runners.Suite;
     SqlPlanHistoryIntegrationTest.class,
     QueryBlockingTaskExecutorIntegrationTest.class,
     ScalarInIntegrationTest.class,
-    TpchTest.class,
+    TinyScaleTpchTest.class,
+    ThinScaleTpchTest.class,
+    ThirdScaleTpchTest.class,
+    HalfScaleTpchTest.class,
+    FullScaleTpchTest.class,
 })
 public class IntegrationTestSuite {
 }
