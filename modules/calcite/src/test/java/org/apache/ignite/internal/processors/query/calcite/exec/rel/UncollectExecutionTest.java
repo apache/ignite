@@ -43,7 +43,7 @@ public class UncollectExecutionTest extends AbstractExecutionTest {
         for (boolean withOrdinality : new boolean[] {false, true}) {
             int rows = 100;
 
-            int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
+            int[] sizes = {1, 10, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
                 IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
 
             for (int size : sizes) {
