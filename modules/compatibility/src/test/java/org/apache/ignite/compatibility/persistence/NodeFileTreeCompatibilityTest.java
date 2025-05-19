@@ -42,9 +42,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CACHE_DUMP_NAME;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.OLD_IGNITE_VERSION;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.SNAPSHOT_NAME;
 import static org.junit.Assume.assumeFalse;
 
 /** */
@@ -80,10 +77,6 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
     /** */
     @Parameter(3)
     public boolean customSnpPath;
-
-    /** */
-    @Parameter(4)
-    public boolean testCacheGrp;
 
     /** */
     @Parameter(5)

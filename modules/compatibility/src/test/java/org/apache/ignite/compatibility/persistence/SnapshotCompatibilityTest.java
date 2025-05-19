@@ -47,71 +47,32 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.BASE_CACHE_SIZE;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CACHE_DUMP_NAME;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CreateSnapshotClosure;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ENTRIES_CNT_FOR_INCREMENT;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.OLD_IGNITE_VERSION;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.SNAPSHOT_NAME;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.calcValue;
-import static org.apache.ignite.compatibility.persistence.CompatibilityTestCore.snpDir;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
-public class SnapshotCompatibilityTest extends IgniteCompatibilityAbstractTest {
-    /** */
-    @Parameterized.Parameter
-    public boolean incSnp;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public boolean customConsId;
-
+public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest {
     /** */
     @Parameterized.Parameter(2)
     public int oldNodesCnt;
 
     /** */
     @Parameterized.Parameter(3)
-    public boolean cacheDump;
-
-    /** */
-    @Parameterized.Parameter(4)
-    public boolean customSnpPath;
-
-    /** */
-    @Parameterized.Parameter(5)
     public boolean testCacheGrp;
 
     /** */
-    private CompatibilityTestCore core;
-
-    /** */
-    @Parameterized.Parameters(name = "incSnp={0}, customConsId={1}, oldNodesCnt={2}, cacheDump={3}, customSnpPath={4}, testCacheGrp={5}")
+    @Parameterized.Parameters(name = "customConsId={0}, customSnpDir={1}, oldNodesCnt={2}, testCacheGrp={3}")
     public static Collection<Object[]> data() {
         List<Object[]> data = new ArrayList<>();
 
-        for (boolean incSnp : Arrays.asList(true, false))
-            for (boolean customConsId : Arrays.asList(true, false))
+        for (boolean customConsId : Arrays.asList(true, false))
+            for (boolean customSnpDir : Arrays.asList(true, false))
                 for (int oldNodesCnt : Arrays.asList(1, 3))
-                    for (boolean cacheDump : Arrays.asList(true, false))
-                        for (boolean customSnpPath : Arrays.asList(true, false))
-                            for (boolean testCacheGrp : Arrays.asList(true, false))
-                                data.add(new Object[]{incSnp, customConsId, oldNodesCnt, cacheDump, customSnpPath, testCacheGrp});
+                    for (boolean testCacheGrp : Arrays.asList(true, false))
+                        data.add(new Object[]{customConsId, customSnpDir, oldNodesCnt, testCacheGrp});
 
         return data;
-    }
-
-    /** */
-    @Override public void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /** */
