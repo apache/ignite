@@ -1952,11 +1952,13 @@ public class IgnitionEx {
                         "but not both.");
                 }
 
-                List<String> extraNodeStorages = F.asList(dsCfg.getExtraStoragePathes());
+                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePathes());
 
-                if (extraNodeStorages.size() != new HashSet<>(extraNodeStorages).size()
-                    || extraNodeStorages.contains(dsCfg.getStoragePath()))
-                    throw new IgniteCheckedException("Data storage configuration constains duplicates: " + extraNodeStorages);
+                if (extraStorages.size() != new HashSet<>(extraStorages).size()
+                    || extraStorages.contains(dsCfg.getStoragePath())) {
+                    throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
+                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePathes=" + extraStorages + ']');
+                }
             }
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
