@@ -299,8 +299,12 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         locHost = ip;
         checkHostNamesAttr(startGrid(nodeIdx++), false, true);
 
-        locHost = host;
-        checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        // If host is IP, then skip the check.
+        if (!host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+            locHost = host;
+
+            checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        }
 
         locHost = null;
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
@@ -334,8 +338,12 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         locHost = ip;
         checkHostNamesAttr(startGrid(nodeIdx++), false, false);
 
-        locHost = host;
-        checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        // If host is IP, then skip the check.
+        if (!host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+            locHost = host;
+
+            checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        }
 
         locHost = null;
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
