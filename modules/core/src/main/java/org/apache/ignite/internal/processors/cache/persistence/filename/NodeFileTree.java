@@ -491,7 +491,7 @@ public class NodeFileTree extends SharedFileTree {
      * TODO: SCS
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(F.isEmpty(ccfg.getStoragePath())  ? null : ccfg.getStoragePath()[0]), ccfg.getGroupName() != null
+        return new File(cacheStorage(F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0]), ccfg.getGroupName() != null
             ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
             : CACHE_DIR_PREFIX + ccfg.getName());
     }
