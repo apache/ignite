@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.jetbrains.annotations.Nullable;
@@ -60,7 +61,7 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
         BinaryInputStream in = payloadCh.in();
 
         if (!hasFirstPage())
-            fieldNames = new ArrayList<>(ClientUtils.collection(in, ignored -> (String)serDes.readObject(in, keepBinary)));
+            fieldNames = new ArrayList<>(BinaryUtils.collection(in, ignored -> (String)serDes.readObject(in, keepBinary)));
 
         int rowCnt = in.readInt();
 

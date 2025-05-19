@@ -3242,7 +3242,7 @@ public class BinaryUtils {
      * @param w Binary raw writer.
      * @param out Output stream.
      */
-    protected static void writeBinaryMetadata(BinaryMetadata meta, BinaryOutputStream out, BinaryWriterEx w) {
+    public static void writeBinaryMetadata(BinaryMetadata meta, BinaryOutputStream out, BinaryWriterEx w) {
         w.writeInt(meta.typeId());
         w.writeString(meta.typeName());
         w.writeString(meta.affinityKeyFieldName());
@@ -3290,7 +3290,7 @@ public class BinaryUtils {
      * @param in Input stream.
      * @param reader Reader.
      */
-    protected static @NotNull BinaryMetadata readBinaryMetadata(BinaryInputStream in, BinaryReaderEx reader) {
+    public static @NotNull BinaryMetadata readBinaryMetadata(BinaryInputStream in, BinaryReaderEx reader) {
         int typeId = reader.readInt();
         String typeName = reader.readString();
         String affKeyFieldName = reader.readString();

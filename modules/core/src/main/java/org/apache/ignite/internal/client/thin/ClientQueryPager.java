@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Collection;
 import java.util.function.Consumer;
 import javax.cache.Cache;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +75,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
     @Override Collection<Cache.Entry<K, V>> readEntries(PayloadInputChannel paloadCh) {
         BinaryInputStream in = paloadCh.in();
 
-        return ClientUtils.collection(
+        return BinaryUtils.collection(
             in,
             ignored -> new ClientCacheEntry<>(serDes.readObject(in, keepBinary), serDes.readObject(in, keepBinary))
         );

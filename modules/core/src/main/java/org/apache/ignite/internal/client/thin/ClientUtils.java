@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Shared serialization/deserialization utils.
  */
-public final class ClientUtils extends BinaryUtils {
+public final class ClientUtils {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -80,17 +80,33 @@ public final class ClientUtils extends BinaryUtils {
         return name.hashCode();
     }
 
+    /**
+     * @param col Collection to serialize.
+     * @param out Output stream.
+     * @param elemWriter Collection element serializer
+     */
+    static <E> void collection(E[] col, BinaryOutputStream out, BiConsumer<BinaryOutputStream, E> elemWriter) {
+        if (col == null || col.length == 0)
+            out.writeInt(0);
+        else {
+            out.writeInt(col.length);
+
+            for (E e : col)
+                elemWriter.accept(out, e);
+        }
+    }
+
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
         try (BinaryReaderEx reader = createBinaryReader(in)) {
-            return readBinaryMetadata(in, reader);
+            return BinaryUtils.readBinaryMetadata(in, reader);
         }
     }
 
     /** Serialize binary type metadata to stream. */
     void binaryMetadata(BinaryMetadata meta, BinaryOutputStream out) {
-        try (BinaryWriterEx w = writer(marsh.context(), out, null)) {
-            writeBinaryMetadata(meta, out, w);
+        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
+            BinaryUtils.writeBinaryMetadata(meta, out, w);
         }
     }
 
@@ -142,7 +158,7 @@ public final class ClientUtils extends BinaryUtils {
             itemWriter.accept(CfgItem.SQL_SCHEMA, w -> w.writeString(cfg.getSqlSchema()));
             itemWriter.accept(
                 CfgItem.KEY_CONFIGS,
-                w -> collection(
+                w -> ClientUtils.collection(
                     cfg.getKeyConfiguration(),
                     out,
                     (unused, i) -> {
@@ -154,7 +170,7 @@ public final class ClientUtils extends BinaryUtils {
 
             itemWriter.accept(
                 CfgItem.QUERY_ENTITIES,
-                w -> collection(
+                w -> ClientUtils.collection(
                     cfg.getQueryEntities(),
                     out, (unused, e) -> {
                         w.writeString(e.getKeyType());
@@ -162,7 +178,7 @@ public final class ClientUtils extends BinaryUtils {
                         w.writeString(e.getTableName());
                         w.writeString(e.getKeyFieldName());
                         w.writeString(e.getValueFieldName());
-                        collection(
+                        BinaryUtils.collection(
                             e.getFields().entrySet(),
                             out,
                             (unused2, f) -> {
@@ -180,21 +196,21 @@ public final class ClientUtils extends BinaryUtils {
                                 }
                             }
                         );
-                        collection(
+                        BinaryUtils.collection(
                             e.getAliases().entrySet(),
                             out, (unused3, a) -> {
                                 w.writeString(a.getKey());
                                 w.writeString(a.getValue());
                             }
                         );
-                        collection(
+                        BinaryUtils.collection(
                             e.getIndexes(),
                             out,
                             (unused4, i) -> {
                                 w.writeString(i.getName());
                                 w.writeByte((byte)i.getIndexType().ordinal());
                                 w.writeInt(i.getInlineSize());
-                                collection(i.getFields().entrySet(), out, (unused5, f) -> {
+                                BinaryUtils.collection(i.getFields().entrySet(), out, (unused5, f) -> {
                                         w.writeString(f.getKey());
                                         w.writeBoolean(f.getValue());
                                     }
@@ -263,9 +279,9 @@ public final class ClientUtils extends BinaryUtils {
                 .setSqlSchema(reader.readString())
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(reader.readInt()))
                 .setKeyConfiguration(
-                    collection(in, unused -> new CacheKeyConfiguration(reader.readString(), reader.readString()))
+                    BinaryUtils.collection(in, unused -> new CacheKeyConfiguration(reader.readString(), reader.readString()))
                         .toArray(new CacheKeyConfiguration[0])
-                ).setQueryEntities(collection(
+                ).setQueryEntities(BinaryUtils.collection(
                     in,
                     unused -> {
                         QueryEntity qryEntity = new QueryEntity(reader.readString(), reader.readString())
@@ -276,7 +292,7 @@ public final class ClientUtils extends BinaryUtils {
                         boolean isPrecisionAndScaleSupported =
                             protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE);
 
-                        Collection<QueryField> qryFields = collection(
+                        Collection<QueryField> qryFields = BinaryUtils.collection(
                             in,
                             unused2 -> {
                                 String name = reader.readString();
@@ -323,18 +339,18 @@ public final class ClientUtils extends BinaryUtils {
                                 .filter(f -> f.getScale() != -1)
                                 .collect(Collectors.toMap(QueryField::getName, QueryField::getScale))
                             )
-                            .setAliases(collection(
+                            .setAliases(BinaryUtils.collection(
                                 in,
                                 unused3 -> new SimpleEntry<>(reader.readString(), reader.readString())
                             ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)))
-                            .setIndexes(collection(
+                            .setIndexes(BinaryUtils.collection(
                                 in,
                                 unused4 -> {
                                     String name = reader.readString();
                                     QueryIndexType type = QueryIndexType.fromOrdinal(reader.readByte());
                                     int inlineSize = reader.readInt();
 
-                                    LinkedHashMap<String, Boolean> fields = collection(
+                                    LinkedHashMap<String, Boolean> fields = BinaryUtils.collection(
                                         in,
                                         unused5 -> new SimpleEntry<>(reader.readString(), reader.readBoolean())
                                     ).stream().collect(Collectors.toMap(
@@ -362,7 +378,7 @@ public final class ClientUtils extends BinaryUtils {
         out.writeInt(qry.getPageSize());
         out.writeInt(-1); // do not limit
         writeObject(out, qry.getSql());
-        collection(qry.getArgs() == null ? null : Arrays.asList(qry.getArgs()), out, this::writeObject);
+        BinaryUtils.collection(qry.getArgs() == null ? null : Arrays.asList(qry.getArgs()), out, this::writeObject);
         out.writeByte((byte)0); // statement type ANY
         out.writeBoolean(qry.isDistributedJoins());
         out.writeBoolean(qry.isLocal());
