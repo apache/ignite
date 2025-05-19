@@ -38,8 +38,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -596,8 +594,8 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
         for (String fldName : t.fieldNames())
             assertContains(log, cmdOut, "name=" + fldName + ", type=" + t.fieldTypeName(fldName));
 
-        for (T2<Integer, int[]> s : BinaryUtils.schemasAndFieldsIds(((BinaryTypeImpl)t).metadata()))
-            assertContains(log, cmdOut, "schemaId=0x" + Integer.toHexString(s.get1()).toUpperCase());
+        for (int schemaId : (((BinaryTypeImpl)t).metadata().schemaIds()))
+            assertContains(log, cmdOut, "schemaId=0x" + Integer.toHexString(schemaId).toUpperCase());
     }
 
     /**

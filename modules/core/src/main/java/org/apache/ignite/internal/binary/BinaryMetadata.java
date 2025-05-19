@@ -402,4 +402,11 @@ public class BinaryMetadata implements Externalizable {
     @Override public String toString() {
         return S.toString(BinaryMetadata.class, this);
     }
+
+    /**
+     * @return Schema IDs registered for this type.
+     */
+    public Set<Integer> schemaIds() {
+        return Collections.unmodifiableSet(schemaIds);
+    }
 }

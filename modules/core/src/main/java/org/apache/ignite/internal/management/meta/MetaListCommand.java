@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.meta;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -49,7 +48,7 @@ public class MetaListCommand implements ComputeCommand<IgniteDataTransferObject,
             printer.accept("typeId=" + printInt(m.typeId()) +
                 ", typeName=" + m.typeName() +
                 ", fields=" + m.fields().size() +
-                ", schemas=" + BinaryUtils.schemasAndFieldsIds(m).size() +
+                ", schemas=" + m.schemaIds().size() +
                 ", isEnum=" + m.isEnum());
         }
     }
