@@ -52,7 +52,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void testLazyTableSpool() throws Exception {
+    public void testLazyTableSpool() {
         checkTableSpool(
             (ctx, rowType) -> new TableSpoolNode<>(ctx, rowType, true)
         );
@@ -60,7 +60,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void testEagerTableSpool() throws Exception {
+    public void testEagerTableSpool() {
         checkTableSpool(
             (ctx, rowType) -> new TableSpoolNode<>(ctx, rowType, false)
         );
