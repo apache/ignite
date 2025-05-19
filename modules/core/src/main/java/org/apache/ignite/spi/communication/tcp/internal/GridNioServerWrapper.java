@@ -358,8 +358,6 @@ public class GridNioServerWrapper {
             }
         }
 
-        Collection<InetSocketAddress> addrs = nodeAddresses(node, cfg.filterReachableAddresses(), attrs, locNodeSupplier);
-
         GridNioSession ses = null;
         IgniteCheckedException errs = null;
 
@@ -374,6 +372,12 @@ public class GridNioServerWrapper {
                 cfg.reconCount()
             );
         }
+
+        log.info(">>> BEFORE nodeAddresses for node: " + node.id() + ", isClient=" + node.isClient());
+
+        Collection<InetSocketAddress> addrs = nodeAddresses(node, cfg.filterReachableAddresses(), attrs, locNodeSupplier);
+
+        log.info(">>> AFTER nodeAddresses for node: " + node.id() + ", isClient=" + node.isClient());
 
         Set<InetSocketAddress> failedAddrsSet = new HashSet<>();
         int skippedAddrs = 0;

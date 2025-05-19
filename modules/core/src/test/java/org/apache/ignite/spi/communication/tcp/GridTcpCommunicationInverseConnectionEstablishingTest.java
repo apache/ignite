@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.security.Security;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,11 +112,17 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(8_000);
+        cfg.setFailureDetectionTimeout(4_000);
+        cfg.setClientFailureDetectionTimeout(4_000);
+        cfg.setSystemWorkerBlockedTimeout(3_000);
+        cfg.setNetworkTimeout(3_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
                 .setForceClientToServerConnections(forceClientToSrvConnections)
+                .setReconnectCount(2)
+                .setIdleConnectionTimeout(2_000)
+                .setConnectTimeout(3_000)
         );
 
         if (ccfg != null) {
@@ -225,11 +233,11 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             grid(3).context().io().sendIoTest(clientNode, new byte[10], false);
         });
 
-        doSleep(2000L); // Client failover timeout is 8 seconds.
+        doSleep(2000L); // Client failover timeout is 4 seconds.
 
         stopGrid(0);
 
-        fut.get(8000L);
+        fut.get(4000L);
 
         UUID newId = grid(1).localNode().id();
         UUID newRouterNode = ((TcpDiscoveryNode)grid(1).localNode()).clientRouterNodeId();
@@ -277,43 +285,78 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
      */
     @Test
     public void testClientSkipsInverseConnectionResponse() throws Exception {
-        UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
-        RESPOND_TO_INVERSE_REQUEST.set(false);
+        String cacheTtl = Security.getProperty("networkaddress.cache.ttl");
 
-        startGrids(SRVS_NUM - 1);
+        if (cacheTtl == null) {
+            String fallbackCacheTtl = Security.getProperty("sun.net.inetaddr.ttl");
+            if (fallbackCacheTtl != null) {
+                cacheTtl = String.valueOf(Integer.decode(fallbackCacheTtl));
+            }
+        }
 
-        LogListener lsnr = LogListener.matches(
-            "Failed to wait for establishing inverse communication connection"
-        ).build();
+        String cacheNegativeTtl = Security.getProperty("networkaddress.cache.negative.ttl");
 
-        startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>)cfg -> {
-            ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
+        if (cacheNegativeTtl == null) {
+            String fallbackCacheNegativeTtl = Security.getProperty("sun.net.inetaddr.negative.ttl");
+            if (fallbackCacheNegativeTtl != null) {
+                cacheNegativeTtl = String.valueOf(Integer.decode(fallbackCacheNegativeTtl));
+            }
+        }
 
-            log.registerListener(lsnr);
+        try {
+            System.out.println(">>> cacheTtl=" + cacheTtl);
+            System.out.println(">>> cacheNegativeTtl=" + cacheNegativeTtl);
 
-            return cfg.setGridLogger(log);
-        });
+            Security.setProperty("networkaddress.cache.ttl", "0");
+            Security.setProperty("networkaddress.cache.negative.ttl", "0");
 
-        forceClientToSrvConnections = false;
+            UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
+            RESPOND_TO_INVERSE_REQUEST.set(false);
 
-        IgniteEx client = startClientGrid(SRVS_NUM);
-        ClusterNode clientNode = client.localNode();
+            startGrids(SRVS_NUM - 1);
 
-        IgniteEx srv = grid(SRVS_NUM - 1);
+            LogListener lsnr = LogListener.matches(
+                    "Failed to wait for establishing inverse communication connection"
+            ).build();
 
-        interruptCommWorkerThreads(client.name());
+            startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>)cfg -> {
+                ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
-        TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
+                log.registerListener(lsnr);
 
-        CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
+                return cfg.setGridLogger(log);
+            });
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
-        );
+            forceClientToSrvConnections = false;
 
-        assertTrue(GridTestUtils.waitForCondition(fut::isDone, 30_000));
+            IgniteEx client = startClientGrid(SRVS_NUM);
+            ClusterNode clientNode = client.localNode();
 
-        assertTrue(lsnr.check());
+            IgniteEx srv = grid(SRVS_NUM - 1);
+
+            interruptCommWorkerThreads(client.name());
+
+            TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
+
+            CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                log.info(">>> BEFORE sendIoTest: " + Instant.now());
+                srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
+            });
+
+            assertTrue(GridTestUtils.waitForCondition(fut::isDone, 30_000));
+
+            assertTrue(lsnr.check());
+        }
+        finally {
+            if (cacheTtl != null) {
+                Security.setProperty("networkaddress.cache.ttl", cacheTtl);
+            }
+            if (cacheNegativeTtl != null) {
+                Security.setProperty("networkaddress.cache.negative.ttl", cacheNegativeTtl);
+            }
+        }
     }
 
     /**
@@ -342,6 +385,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         srv.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
+                log.info(">>> clientFailedEvtFlag.set(true): " + Instant.now());
                 clientFailedEvtFlag.set(true);
 
                 return false;
@@ -359,11 +403,12 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
-        );
+        GridTestUtils.runAsync(() -> {
+            log.info(">>> BEFORE sendIoTest: " + Instant.now());
+            srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
+        });
 
-        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 20_000));
     }
 
     /**
