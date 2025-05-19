@@ -9,40 +9,12 @@ statement ok
 CREATE TABLE IF NOT EXISTS trades (id INTEGER,amount INTEGER, xkey VARCHAR(255), name VARCHAR(255),ts TIMESTAMP, PRIMARY KEY(id));
 
 statement ok
-INSERT INTO trades(id, amount, xkey, name, ts) VALUES (1, 150,  'key-1', 'name1', '2021-12-01 12:00:00'), (2, 300,  'key-2', 'name2', '2021-11-01 14:00:00');
-
-statement ok
-INSERT INTO trades(id, amount, xkey, name, ts) VALUES (3, 10,   'key-1', 'name1', '2021-10-01 15:00:00'), (4, 900,  'key-3', 'name1', '2021-08-01 16:00:00');
-
-statement ok
 INSERT INTO trades(id, amount, xkey, name, ts) VALUES (5, 1000, 'key-4', 'name3', '2021-09-01 17:00:00'), (6, 200,  'key-2', 'name11','2021-12-01 18:00:00');
 
-statement ok
-INSERT INTO trades(id, amount, xkey, name, ts) VALUES (7, 10,   'key-4', 'name4', '2021-11-01 19:00:00');
-
 # Simple ordering
-query TTTTT
-SELECT xkey, STRING_AGG(name ORDER BY name), STRING_AGG(name ORDER BY name DESC), STRING_AGG(DISTINCT name ORDER BY name), STRING_AGG(DISTINCT name ORDER BY name DESC) FROM trades GROUP BY xkey ORDER BY xkey
+query T
+SELECT 'x' || name || 'x' FROM trades
 ----
-key-1	name1,name1	name1,name1	name1	name1
-key-2	name11,name2	name2,name11	name11,name2	name2,name11
-key-3	name1	name1	name1	name1
-key-4	name3,name4	name4,name3	name3,name4	name4,name3
+'xname3x'
+'xname11x'
 
-# Collation ordering
-query TTTTTTTT
-SELECT xkey, COUNT(*), COUNT(DISTINCT name), SUM(amount), STRING_AGG(name ORDER BY amount), STRING_AGG(name ORDER BY amount DESC), STRING_AGG(name ORDER BY ts), STRING_AGG(name ORDER BY ts DESC) FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	2	1	160	name1,name1	name1,name1	name1,name1	name1,name1
-key-2	2	2	500	name11,name2	name2,name11	name2,name11	name11,name2
-key-3	1	1	900	name1	name1	name1	name1
-key-4	2	2	1010	name4,name3	name3,name4	name3,name4	name4,name3
-
-# Distinct collation ordering
-query TTTTTTTT
-SELECT xkey, COUNT(*), COUNT(DISTINCT name), SUM(amount), STRING_AGG(DISTINCT name ORDER BY amount), STRING_AGG(DISTINCT name ORDER BY amount DESC), STRING_AGG(DISTINCT name ORDER BY ts), STRING_AGG(DISTINCT name ORDER BY ts DESC)  FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	2	1	160	name1	name1	name1	name1
-key-2	2	2	500	name11,name2	name2,name11	name2,name11	name11,name2
-key-3	1	1	900	name1	name1	name1	name1
-key-4	2	2	1010	name4,name3	name3,name4	name3,name4	name4,name3

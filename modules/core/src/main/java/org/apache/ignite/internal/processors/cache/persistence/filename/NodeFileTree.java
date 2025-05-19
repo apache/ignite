@@ -312,7 +312,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        this(cfg, resolveRoot(cfg), folderName);
+        this(cfg, resolveRoot(cfg), folderName, false);
     }
 
     /**
@@ -322,6 +322,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Ignite configuration to get parameter from.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param isSnapshot {@code True} if tree relfects snapshot structure.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -329,7 +330,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName) {
+    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName, boolean isSnapshot) {
         super(root, cfg.getSnapshotPath());
 
         A.notNull(folderName, "Node directory");
@@ -341,7 +342,7 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
+            nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);

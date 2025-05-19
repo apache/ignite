@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeMappingRule;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -162,6 +163,12 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             return type2;
 
         return super.commonTypeForBinaryComparison(type1, type2);
+    }
+
+    @Override protected boolean needToCast(SqlValidatorScope scope, SqlNode node, RelDataType toType, SqlTypeMappingRule mappingRule) {
+
+
+        return super.needToCast(scope, node, toType, mappingRule);
     }
 
     /** {@inheritDoc} */
