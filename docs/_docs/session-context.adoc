@@ -1,0 +1,76 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= SessionContext API
+
+:javaFile: {javaCodeDir}/IgniteSessionContext.java
+
+== Overview
+
+Apache Ignite provides opportunity to set custom application attributes at runtime. Such attributes may include session ID, application language, application name, etc. The attributes ​​are set by application only once for Ignite API entry point (Ignite, JDBC) and are available on all participating nodes of the application requests and queries.
+
+== SessionContext interface
+
+SessionContext is an entrypoint for accessing attributes on all levels and other session-level data (e.g. SecuritySubject). Ignite provides SessionContextProviderResource to access to SessionContext. User defined functions such as QuerySqlFunction and CacheInterceptor can access the attributes with SessionContextProvider.
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=context;indent=0]
+----
+
+== Application attributes in QuerySqlFunction
+
+User-defined SQL functions such as QuerySqlFunction can use application attributes set on the client side:
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=sql-function;indent=0]
+----
+
+Note that access to the attributes is only available in Calcite query engine. In such case class must have public zero-args constructor.
+
+== Application attributes in CacheInterceptor
+
+You can configure your own custom CacheInterceptor and write callbacks with access to the application attributes, which will be invoked before and after invocation of main cache operations:
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=cache-interceptor;indent=0]
+----
+
+== Setting application attributes
+
+=== Ignite
+
+You can set attributes with Ignite#withApplicationAttributes. It returns Ignite instance that is aware of the attributes. Application attributes are propagated with all messages sent within operation on remote nodes.
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=ignite-context;indent=0]
+----
+
+=== JDBC
+Standard JDBC protocol provides method Connection#setClientInfo which can be used for setting client attributes, that are available during the lifetime of the connection.
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=jdbc-context;indent=0]
+----
+
+
