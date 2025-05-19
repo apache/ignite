@@ -115,6 +115,8 @@
             <excludes>
                 <exclude>${project.groupId}:ignite-bom</exclude>
                 <exclude>${project.groupId}:ignite-core</exclude>
+                <exclude>${project.groupId}:ignite-commons</exclude>
+                <exclude>${project.groupId}:ignite-binary-api</exclude>
                 <exclude>${project.groupId}:ignite-clients</exclude>
                 <exclude>${project.groupId}:ignite-spring</exclude>
                 <exclude>${project.groupId}:ignite-tools</exclude>
