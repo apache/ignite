@@ -67,7 +67,6 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         markInitialized();
 
         try (Connection conn = thinJdbcDataSource.getConnection()) {
-
             conn.createStatement().execute("CREATE TABLE IF NOT EXISTS t(val INT)");
             conn.createStatement().execute("DELETE FROM t");
             conn.createStatement().execute("INSERT INTO t VALUES (1)");
@@ -352,7 +351,6 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
                         "Query failed: %s Expected: %s Actual: %s",
                         test.qry, test.expectedResults, actualResults);
                     throw new RuntimeException(errorMsg);
-
                 }
             }
         }

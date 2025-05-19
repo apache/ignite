@@ -23,7 +23,6 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
-
 from ignitetest.utils.bean import Bean
 
 
