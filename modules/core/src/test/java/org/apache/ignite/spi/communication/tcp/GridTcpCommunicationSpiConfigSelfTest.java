@@ -300,7 +300,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkHostNamesAttr(startGrid(nodeIdx++), false, true);
 
         // If host is IP, then skip the check.
-        if (!host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+        if (!ipAddress(host)) {
             locHost = host;
 
             checkHostNamesAttr(startGrid(nodeIdx++), false, false);
@@ -339,7 +339,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkHostNamesAttr(startGrid(nodeIdx++), false, false);
 
         // If host is IP, then skip the check.
-        if (!host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+        if (!ipAddress(host)) {
             locHost = host;
 
             checkHostNamesAttr(startGrid(nodeIdx++), false, false);
@@ -347,6 +347,11 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
         locHost = null;
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
+    }
+
+    /** */
+    private boolean ipAddress(String addr) {
+        return addr.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
     }
 
     /**
