@@ -47,8 +47,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
- * Command line test of --persitence commands.
- * TODO: add cases for absolute pathes.
+ * Command line tests of --persitence commands.
  */
 @RunWith(Parameterized.class)
 public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMethodAbstractTest {
