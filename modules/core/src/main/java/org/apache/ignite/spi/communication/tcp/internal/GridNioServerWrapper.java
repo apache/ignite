@@ -1172,7 +1172,7 @@ public class GridNioServerWrapper {
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
      * @param sslMeta Session meta.
-     * @param msg {@link HandshakeMessage} or {@link HandshakeMessage} to send.
+     * @param msg {@link HandshakeMessage} to send.
      * @return Handshake response.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      */
