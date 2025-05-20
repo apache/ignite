@@ -34,8 +34,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * Tests of configuration checks for custom cache storages.
- * @see CacheConfiguration#setStoragePath(String)
+ *
  */
 public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractTest {
     /** */

@@ -47,7 +47,7 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
             for (String cacheStoreDirName : cacheStoreDirs) {
                 File cacheStoreDir = new File(storageRoot, cacheStoreDirName);
 
-                if (cacheStoreDir.exists())
+                if (cacheStoreDir.exists() && cacheStoreDir.isDirectory())
                     this.cacheStoreDirs.add(cacheStoreDir);
             }
         });
@@ -56,7 +56,12 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
     /** {@inheritDoc} */
     @Override public boolean shouldProceedWithMaintenance() {
         for (File cacheStoreDir : cacheStoreDirs) {
-            for (File f : cacheStoreDir.listFiles()) {
+            File[] files = cacheStoreDir.listFiles();
+
+            if (files == null)
+                continue;
+
+            for (File f : files) {
                 if (!NodeFileTree.cacheConfigFile(f))
                     return true;
             }
