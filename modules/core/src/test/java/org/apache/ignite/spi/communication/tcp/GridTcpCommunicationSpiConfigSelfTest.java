@@ -48,6 +48,7 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Objects.isNull;
@@ -279,7 +280,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             new InetSocketAddress(0).getAddress()
         );
 
-        String host = addrs.get2().iterator().next();
+        String host = findHostName(addrs.get2());
 
         String ip = null;
 
@@ -300,7 +301,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkHostNamesAttr(startGrid(nodeIdx++), false, true);
 
         // If host is IP, then skip the check.
-        if (!ipAddress(host)) {
+        if (host != null) {
             locHost = host;
 
             checkHostNamesAttr(startGrid(nodeIdx++), false, false);
@@ -329,7 +330,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         InetSocketAddress inetSockAddr = new InetSocketAddress(0);
 
         String ip = inetSockAddr.getHostName();
-        String host = U.resolveLocalAddresses(inetSockAddr.getAddress()).get2().iterator().next();
+        String host = findHostName(U.resolveLocalAddresses(inetSockAddr.getAddress()).get2());
 
         log.info("Testing ip=" + ip + " host=" + host);
 
@@ -339,7 +340,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkHostNamesAttr(startGrid(nodeIdx++), false, false);
 
         // If host is IP, then skip the check.
-        if (!ipAddress(host)) {
+        if (host != null) {
             locHost = host;
 
             checkHostNamesAttr(startGrid(nodeIdx++), false, false);
@@ -349,9 +350,12 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
     }
 
-    /** */
-    private boolean ipAddress(String addr) {
-        return addr.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
+    /** @return Host name, or {@code null} if all addresses are IPs. */
+    private @Nullable String findHostName(Collection<String> addrs) {
+         return addrs.stream()
+             .filter(h -> !h.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
+             .findFirst()
+             .orElse(null);
     }
 
     /**
