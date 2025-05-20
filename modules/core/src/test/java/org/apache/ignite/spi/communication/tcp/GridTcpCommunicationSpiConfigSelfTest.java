@@ -352,10 +352,10 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
     /** @return Host name, or {@code null} if all addresses are IPs. */
     private @Nullable String findHostName(Collection<String> addrs) {
-         return addrs.stream()
-             .filter(h -> !h.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
-             .findFirst()
-             .orElse(null);
+        return addrs.stream()
+            .filter(h -> !h.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
+            .findFirst()
+            .orElse(null);
     }
 
     /**
