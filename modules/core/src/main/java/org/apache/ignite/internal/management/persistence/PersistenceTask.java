@@ -145,18 +145,21 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> backupFailedCaches = new ArrayList<>();
 
             for (File cacheDir : cacheDirs) {
-                File backupDir = new File(cacheDir.getParent(), BACKUP_FOLDER_PREFIX + cacheDir.getName());
+                String dir = cacheDir.getName();
+                String backupDirName = BACKUP_FOLDER_PREFIX + dir;
+
+                File backupDir = new File(cacheDir.getParent(), backupDirName);
 
                 if (!backupDir.exists()) {
                     try {
-                        U.ensureDirectory(backupDir, backupDir.getName(), null);
+                        U.ensureDirectory(backupDir, backupDirName, null);
 
                         copyCacheFiles(cacheDir, backupDir);
 
-                        backupCompletedCaches.add(backupDir.getName());
+                        backupCompletedCaches.add(backupDirName);
                     }
                     catch (IgniteCheckedException | IOException e) {
-                        backupFailedCaches.add(cacheDir.getName());
+                        backupFailedCaches.add(dir);
                     }
                 }
             }
@@ -361,10 +364,10 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
 
             String params = task.parameters();
 
-            List<String> namesArr = new ArrayList<>(F.asList(params.split(Pattern.quote(File.separator))));
+            List<String> namesArr = F.asList(params.split(Pattern.quote(File.separator)));
 
             return ft.existingCacheDirs().stream()
-                .filter(dir -> namesArr.remove(dir.getName()))
+                .filter(dir -> namesArr.contains(dir.getName()))
                 .collect(Collectors.toList());
         }
 
