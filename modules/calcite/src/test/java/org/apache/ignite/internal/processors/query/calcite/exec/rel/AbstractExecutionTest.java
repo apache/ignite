@@ -86,6 +86,9 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected static final String PARAMS_STRING = "Task executor = {0}, Execution strategy = {1}";
 
     /** */
+    protected static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
+
+    /** */
     private Throwable lastE;
 
     /** */
@@ -396,13 +399,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
      */
     public static class TestTable implements Iterable<Object[]> {
         /** */
-        private int rowsCnt;
+        private final int rowsCnt;
 
         /** */
-        private RelDataType rowType;
+        private final int colsCnt;
 
         /** */
-        private Function<Integer, Object>[] fieldCreators;
+        private final Function<Integer, Object>[] fieldCreators;
 
         /** */
         TestTable(int rowsCnt, RelDataType rowType) {
@@ -430,7 +433,14 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         /** */
         TestTable(int rowsCnt, RelDataType rowType, Function<Integer, Object>... fieldCreators) {
             this.rowsCnt = rowsCnt;
-            this.rowType = rowType;
+            colsCnt = rowType.getFieldCount();
+            this.fieldCreators = fieldCreators;
+        }
+
+        /** */
+        TestTable(int rowsCnt, int colsCnt, Function<Integer, Object>... fieldCreators) {
+            this.rowsCnt = rowsCnt;
+            this.colsCnt = colsCnt;
             this.fieldCreators = fieldCreators;
         }
 
@@ -451,7 +461,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
         /** */
         private Object[] createRow(int rowNum) {
-            Object[] row = new Object[rowType.getFieldCount()];
+            Object[] row = new Object[colsCnt];
 
             for (int i = 0; i < fieldCreators.length; ++i)
                 row[i] = fieldCreators[i].apply(rowNum);

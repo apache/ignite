@@ -16,33 +16,33 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
-import org.apache.calcite.rel.core.Collect;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Uncollect;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 
 /** */
-public class CollectRule extends AbstractIgniteConverterRule<Collect> {
+public class UncollectConverterRule extends AbstractIgniteConverterRule<Uncollect> {
     /** */
-    public static final RelOptRule INSTANCE = new CollectRule();
+    public static final RelOptRule INSTANCE = new UncollectConverterRule();
 
     /** */
-    protected CollectRule() {
-        super(Collect.class, "CollectRule");
+    protected UncollectConverterRule() {
+        super(Uncollect.class, "UncollectConverterRule");
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, Collect rel) {
-        RelOptCluster cluster = rel.getCluster();
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, Uncollect rel) {
+        RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE).replace(RelCollations.EMPTY);
 
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
+        RelNode input = convert(rel.getInput(), rel.getInput().getTraitSet().replace(IgniteConvention.INSTANCE));
 
-        return new IgniteCollect(cluster, traits, convert(rel.getInput(), traits), rel.getRowType());
+        return IgniteUncollect.create(traits, input, rel.withOrdinality);
     }
 }
