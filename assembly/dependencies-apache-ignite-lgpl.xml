@@ -136,6 +136,7 @@
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <exclude>${project.groupId}:ignite-control-utility</exclude>
+                <exclude>${project.groupId}:ignite-checkstyle</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

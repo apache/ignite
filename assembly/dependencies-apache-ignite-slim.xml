@@ -142,6 +142,7 @@
                 <exclude>${project.groupId}:ignite-web</exclude>
                 <exclude>${project.groupId}:ignite-zookeeper</exclude>
                 <exclude>${project.groupId}:ignite-control-utility</exclude>
+                <exclude>${project.groupId}:ignite-checkstyle</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
