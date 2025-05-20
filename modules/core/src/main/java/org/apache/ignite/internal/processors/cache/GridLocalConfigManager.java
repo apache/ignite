@@ -135,18 +135,18 @@ public class GridLocalConfigManager {
 
         try {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
-                File cacheDir = ft.cacheStorage(ccfg);
+                for (File cacheDir : ft.cacheStorages(ccfg)) {
+                    if (!cacheDir.exists())
+                        continue;
 
-                if (!cacheDir.exists())
-                    continue;
+                    List<File> ccfgFiles = NodeFileTree.existingCacheConfigFiles(cacheDir);
 
-                List<File> ccfgFiles = NodeFileTree.existingCacheConfigFiles(cacheDir);
+                    if (F.isEmpty(ccfgFiles))
+                        continue;
 
-                if (F.isEmpty(ccfgFiles))
-                    continue;
-
-                for (File ccfgFile : ccfgFiles)
-                    ccfgCons.accept(ccfg, ccfgFile);
+                    for (File ccfgFile : ccfgFiles)
+                        ccfgCons.accept(ccfg, ccfgFile);
+                }
             }
         }
         finally {
@@ -269,13 +269,13 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        File cacheWorkDir = ft.cacheStorage(ccfg);
+        File file = ft.cacheConfigurationFile(ccfg);
+        File cacheWorkDir = file.getParentFile();
 
         FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
 
         chgLock.readLock().lock();
@@ -402,12 +402,12 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If fails.
      */
     public void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
-        File cacheGrpDir = ft.cacheStorage(ctx.config());
-
-        if (cacheGrpDir != null && cacheGrpDir.exists()) {
-            for (File file : NodeFileTree.existingCacheConfigFiles(cacheGrpDir)) {
-                if (!U.delete(file))
-                    throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx);
+        for (File cacheGrpDir : ft.cacheStorages(ctx.config())) {
+            if (cacheGrpDir != null && cacheGrpDir.exists()) {
+                for (File file : NodeFileTree.existingCacheConfigFiles(cacheGrpDir)) {
+                    if (!U.delete(file))
+                        throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx);
+                }
             }
         }
     }
