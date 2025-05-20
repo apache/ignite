@@ -339,7 +339,8 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
             helper.waitForEventsAcks(ignite(0));
 
             checkZkNodesCleanup();
-        }  finally {
+        }
+        finally {
             zkCluster.close();
 
             zkCluster = null;
@@ -379,7 +380,8 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
             }
 
             waitForTopology(10);
-        } finally {
+        }
+        finally {
             zkCluster.close();
 
             zkCluster = null;
