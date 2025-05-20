@@ -434,6 +434,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private Integer diskPageCompressionLevel;
 
+    /**
+     * Root directories where partition files are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePathes(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String storagePath;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -532,6 +540,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
+        storagePath = cc.getStoragePath();
     }
 
     /**
@@ -2453,6 +2462,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
+     */
+    @IgniteExperimental
+    @Nullable public String getStoragePath() {
+        return storagePath;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist data.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param storagePath Persistence store path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setStoragePath(String storagePath) {
+        this.storagePath = storagePath;
 
         return this;
     }
