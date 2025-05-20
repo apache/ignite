@@ -314,7 +314,8 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
             helper.waitForEventsAcks(ignite(0));
 
             waitForTopology(2);
-        }  finally {
+        }
+        finally {
             zkCluster.close();
 
             zkCluster = null;
