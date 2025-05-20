@@ -97,7 +97,6 @@ public class IgniteSessionContext {
     public void igniteSessContext() {
         //tag::ignite-context[]
         IgniteConfiguration ignCfg = new IgniteConfiguration();
-        // Example of usage.
         try (Ignite ign = Ignition.start(ignCfg)) {
 
             Map<String, String> appAttrs = F.asMap("SESSION_ID", "1234");
@@ -110,11 +109,13 @@ public class IgniteSessionContext {
     }
 
     public void jdbcSessContext() {
-        //tag::jdbc-context[]
         String URL = "test";
+        //tag::jdbc-context[]
         // JDBC connection to Ignite server.
         try (Connection conn = DriverManager.getConnection(URL)) {
+
             conn.setClientInfo("SESSION_ID", "1234");
+
             //Your code here...
         }
         //end::jdbc-context[]

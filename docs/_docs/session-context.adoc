@@ -18,59 +18,52 @@
 
 == Overview
 
-Apache Ignite provides opportunity to set custom application attributes at runtime. Such attributes may include session ID, application language, application name, etc. The attributes ​​are set by application only once for Ignite API entry point (Ignite, JDBC) and are available on all participating nodes of the application requests and queries.
+Apache Ignite allows setting custom application attributes at runtime. These attributes may include session ID, application language, application name, etc. The attributes are set by the application only once for the Ignite API entry point (Ignite, JDBC) and are available on all participating nodes for application requests and queries.
 
-== SessionContext interface
+== SessionContext Interface
 
-SessionContext is an entrypoint for accessing attributes on all levels and other session-level data (e.g. SecuritySubject). Ignite provides SessionContextProviderResource to access to SessionContext. User defined functions such as QuerySqlFunction and CacheInterceptor can access the attributes with SessionContextProvider.
-tab:Java[]
-
-[source, java]
-----
-include::{javaFile}[tags=context;indent=0]
-----
-
-== Application attributes in QuerySqlFunction
-
-User-defined SQL functions such as QuerySqlFunction can use application attributes set on the client side:
-tab:Java[]
+`SessionContext` is an entry point for accessing attributes at all levels and other session-level data. Ignite provides `SessionContextProviderResource` annotation for access to SessionContext. User-defined functions, such as link:SQL/custom-sql-func[QuerySqlFunction] and `CacheInterceptor`, can access these attributes using `SessionContextProvider`.
 
 [source, java]
 ----
-include::{javaFile}[tags=sql-function;indent=0]
+include::{javaFile}[tags=context,indent=0]
 ----
 
-Note that access to the attributes is only available in Calcite query engine. In such case class must have public zero-args constructor.
+== Application Attributes in QuerySqlFunction [[sql-function]]
 
-== Application attributes in CacheInterceptor
-
-You can configure your own custom CacheInterceptor and write callbacks with access to the application attributes, which will be invoked before and after invocation of main cache operations:
-tab:Java[]
+User-defined SQL functions, like `QuerySqlFunction`, can utilize application attributes set on the client side:
 
 [source, java]
 ----
-include::{javaFile}[tags=cache-interceptor;indent=0]
+include::{javaFile}[tags=sql-function,indent=0]
+----
+
+NOTE: Attribute access is only available in the link:SQL/sql-calcite[Calcite] query engine. In such cases, the class must have a public zero-argument constructor.
+
+== Application Attributes in CacheInterceptor
+
+You can configure a custom `CacheInterceptor` and write callbacks with access to application attributes, which are invoked before and after main cache operations:
+
+[source, java]
+----
+include::{javaFile}[tags=cache-interceptor,indent=0]
 ----
 
 == Setting application attributes
 
 === Ignite
 
-You can set attributes with Ignite#withApplicationAttributes. It returns Ignite instance that is aware of the attributes. Application attributes are propagated with all messages sent within operation on remote nodes.
-tab:Java[]
+You can set attributes using `Ignite.withApplicationAttributes(...)`. It returns an Ignite instance aware of the attributes. Application attributes are propagated with all messages sent within operations to remote nodes.
 
 [source, java]
 ----
-include::{javaFile}[tags=ignite-context;indent=0]
+include::{javaFile}[tags=ignite-context,indent=0]
 ----
 
 === JDBC
-Standard JDBC protocol provides method Connection#setClientInfo which can be used for setting client attributes, that are available during the lifetime of the connection.
-tab:Java[]
+The standard JDBC protocol provides the method `Connection.setClientInfo(...)` to set client attributes, which are available during the connection’s lifetime:
 
 [source, java]
 ----
-include::{javaFile}[tags=jdbc-context;indent=0]
+include::{javaFile}[tags=jdbc-context,indent=0]
 ----
-
-
