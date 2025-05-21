@@ -86,7 +86,10 @@ public abstract class ClientCacheRequest extends ClientRequest {
     protected IgniteInternalCache<Object, Object> cachex(ClientConnectionContext ctx) {
         String cacheName = cacheDescriptor(ctx).cacheName();
 
-        return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
+        return ctx.kernalContext()
+            .grid()
+            .cachex(cacheName)
+            .keepBinary();
     }
 
     /**
