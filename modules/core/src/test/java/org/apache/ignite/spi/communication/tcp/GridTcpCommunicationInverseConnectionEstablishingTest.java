@@ -86,6 +86,9 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     private static final int SRVS_NUM = 2;
 
     /** */
+    private static final long FAILURE_DETECTION_TIMEOUT = 8_000;
+
+    /** */
     private boolean forceClientToSrvConnections;
 
     /** */
@@ -111,7 +114,8 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(8_000);
+        cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
+        cfg.setSystemWorkerBlockedTimeout(10_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
@@ -367,8 +371,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
         });
 
-        assertTrue(GridTestUtils.waitForCondition(
-                clientFailedEvtFlag::get, IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT * 2));
+        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, FAILURE_DETECTION_TIMEOUT * 2));
     }
 
     /**
