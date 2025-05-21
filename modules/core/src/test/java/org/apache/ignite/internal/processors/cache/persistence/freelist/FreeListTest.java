@@ -25,13 +25,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.Random;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 
@@ -39,6 +36,8 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
  * Test freelists.
  */
 public class FreeListTest extends GridCommonAbstractTest {
+    private static final int KEYS_COUNT = 5_000;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -71,7 +70,7 @@ public class FreeListTest extends GridCommonAbstractTest {
 
         dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(false)
-                .setMaxSize(pageSize * 4_000_000L));
+                .setMaxSize(pageSize * 3L * KEYS_COUNT));
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -85,66 +84,31 @@ public class FreeListTest extends GridCommonAbstractTest {
     public void testFreeList() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-//        ignite.cluster().state(ClusterState.ACTIVE);
-
-        int partCnt = 10;
-
-        GridCacheProcessor cacheProc = ignite.context().cache();
-//        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProc.context().database();
-
-//        dbMgr.enableCheckpoints(false).get();
+        int partCnt = 1;
 
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(partCnt))
             .setAtomicityMode(CacheAtomicityMode.ATOMIC));
 
-        IgniteCacheOffheapManagerImpl offheap = (IgniteCacheOffheapManagerImpl)cacheProc.cache(DEFAULT_CACHE_NAME).context().group()
-            .offheap();
+        Random random = new Random(3793);
+
+        for (int i = 0; i < KEYS_COUNT; i++)
+            cache.put(i, new byte[random.nextInt(3000, 12000)]);
+
 
         runMultiThreaded(() -> {
-                for (int i = 0; i < 50_000; i++) {
-                    for (int p = 0; p < partCnt; p++) {
-                        Integer key = i * partCnt + p;
-                        cache.put(key, new byte[i + 1]);
-//                cache.remove(key);
-                    }
-                }
-            },
-            24,
-            "insert"
-        );
+            for (int i = 0; i < KEYS_COUNT * 100; i++) {
+                if (i % 50000 == 0)
+                    ignite.log().info(String.format("%s: i=%d; size=%d", Thread.currentThread().getName(), i, cache.size()));
 
-        for (int i = 0; i < 100_000; i++) {
-            cache.remove(i);
-        }
+                cache.put(random.nextInt(KEYS_COUNT),
+                    new byte[random.nextInt(3000, 12000)]);
 
-        runMultiThreaded(() -> {
-                ThreadLocalRandom random = ThreadLocalRandom.current();
+                int del = random.nextInt(KEYS_COUNT);
 
-                for (int i = 0; i < 5_000_000; i++) {
-                    cache.put(random.nextInt(500_000),
-                        new byte[random.nextInt(1, 53307)]);
-
-                    int del = random.nextInt(500_000);
-                    for (int j = del; j < del + random.nextInt(50); j++)
-                        cache.remove(j);
-                }
-            },
-            24,
-            "update-remove");
-
-        offheap.cacheDataStores().forEach(cacheData -> {
-            PagesList list = (PagesList)cacheData.rowStore().freeList();
-
-            AtomicLongArray bucketsSize = list.bucketsSize;
-
-            // All buckets except reuse bucket must be empty after puts and removes of the same key.
-            for (int i = 0; i < bucketsSize.length(); i++) {
-//                if (list.isReuseBucket(i))
-//                    assertTrue(bucketsSize.get(i) > 0);
-//                else
-//                    assertEquals(0, bucketsSize.get(i));
+                for (int j = del; j < del + random.nextInt(5); j++)
+                    cache.remove(j);
             }
-        });
+        },24,"update-remove");
     }
 }
