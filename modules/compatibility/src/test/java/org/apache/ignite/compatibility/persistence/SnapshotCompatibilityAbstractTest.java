@@ -1,5 +1,6 @@
 package org.apache.ignite.compatibility.persistence;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +29,18 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     ).toString();
 
     /** */
+    public static final String OLD_WORK_DIR;
+
+    static {
+        try {
+            OLD_WORK_DIR = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
     public static final String SNAPSHOT_NAME = "test_snapshot";
 
     /** */
@@ -48,8 +61,20 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     public boolean customSnpDir;
 
     /** */
+    @Parameter(2)
+    public boolean testCacheGrp;
+
+    /** */
+    protected final CacheGroupInfo cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
+
+    /** */
     public String snpDir(String workDirPath, boolean delIfExist) throws IgniteCheckedException {
         return U.resolveWorkDirectory(workDirPath, customSnpDir ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
+    }
+
+    /** */
+    public String snpPath(String workDirPath, String snpName, boolean delIfExist) throws IgniteCheckedException {
+        return Paths.get(snpDir(workDirPath, delIfExist), snpName).toString();
     }
 
     /** */
@@ -60,7 +85,7 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     /**
      * Configuration closure both for old and current Ignite version.
      */
-    public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    protected static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
         private final boolean incSnp;
 
@@ -141,7 +166,7 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     /**
      * Snapshot creating closure both for old and current Ignite version.
      */
-    public static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
+    protected static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
         private final boolean incSnp;
 
@@ -178,7 +203,7 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     }
 
     /** */
-    public static class CacheGroupInfo {
+    protected static class CacheGroupInfo {
         /** */
         private final String name;
 

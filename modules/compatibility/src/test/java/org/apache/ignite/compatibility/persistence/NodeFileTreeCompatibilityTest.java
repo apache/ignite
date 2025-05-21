@@ -30,9 +30,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.ignite.compatibility.persistence.CompatibilityTestCore.ConfigurationClosure;
-import org.apache.ignite.compatibility.persistence.CompatibilityTestCore.CreateSnapshotClosure;
-import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -42,11 +40,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.junit.Assume.assumeFalse;
-
 /** */
 @RunWith(Parameterized.class)
-public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTest {
+public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstractTest {
     /** */
     private static final String SNP_PART_SUFFIX = ".bin";
 
@@ -63,31 +59,13 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
     public static final String CACHE_PREFIX = "cache";
 
     /** */
-    @Parameter
-    public boolean incSnp;
-
-    /** */
-    @Parameter(1)
-    public boolean customConsId;
-
-    /** */
-    @Parameter(2)
-    public boolean cacheDump;
-
-    /** */
     @Parameter(3)
-    public boolean customSnpPath;
-
-    /** */
-    @Parameter(5)
     public int nodesCnt;
 
     /** */
-    @Parameters(name = "incSnp={0}, customConsId={1}, cacheDump={2}, customSnpPath={3}, testCacheGrp={4}, nodesCnt={5}")
+    @Parameters(name = "customConsId={0}, customSnpDir={1}, testCacheGrp={2}, nodesCnt={3}")
     public static Collection<Object[]> data() {
         return GridTestUtils.cartesianProduct(
-            Arrays.asList(true, false),
-            Arrays.asList(true, false),
             Arrays.asList(true, false),
             Arrays.asList(true, false),
             Arrays.asList(true, false),
@@ -96,30 +74,46 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
     }
 
     /** */
-    @Override public void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir(false);
+    @Test
+    public void testNodeFileTreeForSnapshot() throws Exception {
+        doNodeFileTreeTest(true, false, () -> {
+            try {
+                assertEquals(
+                    scanFileTree(snpPath(OLD_WORK_DIR, CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
+                    scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
+                );
+            }
+            catch (IgniteCheckedException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
     }
 
     /** */
     @Test
-    public void testNodeFileTree() throws Exception {
-        assumeFalse(CompatibilityTestCore.INCREMENTAL_SNAPSHOTS_FOR_CACHE_DUMP_NOT_SUPPORTED, incSnp && cacheDump);
+    public void testNodeFileTreeForCacheDump() throws Exception {
+        doNodeFileTreeTest(true, false, () -> {
+            try {
+                assertEquals(
+                    scanSnp(snpPath(OLD_WORK_DIR, SNAPSHOT_NAME, false)),
+                    scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME, false))
+                );
+            }
+            catch (IgniteCheckedException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+    }
 
-        CompatibilityTestCore core = new CompatibilityTestCore(customConsId, customSnpPath, testCacheGrp);
-
-        final String oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
-
+    /** */
+    private void doNodeFileTreeTest(boolean incSnp, boolean cacheDump, Runnable fileTreeChecker) throws Exception {
         try {
             for (int i = 1; i <= nodesCnt; ++i) {
                 startGrid(
                     i,
                     OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, core.consId(i), customSnpPath, true, core.cacheGrpInfo(), oldWorkDir),
-                    i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, core.cacheGrpInfo()) : null
+                    new ConfigurationClosure(incSnp, consId(i), snpDir(OLD_WORK_DIR, true), true, cacheGrpInfo, OLD_WORK_DIR),
+                    i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
                 );
             }
 
@@ -131,30 +125,19 @@ public class NodeFileTreeCompatibilityTest extends IgniteCompatibilityAbstractTe
                 curNodes.add(
                     startGrid(
                         i,
-                        new ConfigurationClosure(incSnp, core.consId(i), customSnpPath, true, core.cacheGrpInfo())::apply
+                        new ConfigurationClosure(incSnp, consId(i), snpDir(OLD_WORK_DIR, true), true, cacheGrpInfo)::apply
                     )
                 );
             }
 
-            new CreateSnapshotClosure(incSnp, cacheDump, core.cacheGrpInfo()).apply(curNodes.get(0));
+            new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(curNodes.get(0));
 
-            assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
+            assertEquals(scanFileTree(OLD_WORK_DIR, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
 
-            if (cacheDump) {
-                assertEquals(
-                    scanFileTree(core.snpPath(oldWorkDir, CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
-                    scanFileTree(core.snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
-                );
-            }
-            else {
-                assertEquals(
-                    scanSnp(core.snpPath(oldWorkDir, SNAPSHOT_NAME, false)),
-                    scanSnp(core.snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME, false))
-                );
-            }
+            fileTreeChecker.run();
         }
         finally {
-            FileUtils.deleteDirectory(new File(oldWorkDir));
+            FileUtils.deleteDirectory(new File(OLD_WORK_DIR));
         }
     }
 
