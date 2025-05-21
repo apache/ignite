@@ -72,6 +72,6 @@ import org.junit.runner.RunWith;
  *
  */
 @RunWith(ScriptTestRunner.class)
-@ScriptRunnerTestsEnvironment(scriptsRoot = "modules/calcite/src/test/sql/aggregate/aggregates", timeout = 180000)
+@ScriptRunnerTestsEnvironment(scriptsRoot = "modules/calcite/src/test/sql", timeout = 180000)
 public class ScriptTestSuite {
 }

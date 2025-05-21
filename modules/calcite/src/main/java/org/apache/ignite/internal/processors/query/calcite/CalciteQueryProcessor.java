@@ -29,18 +29,10 @@ import java.util.function.Function;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.core.Values;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
@@ -58,9 +50,6 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RelBuilderFactory;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -137,10 +126,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.calcite.sql.SqlKind.EXCEPT;
-import static org.apache.calcite.sql.SqlKind.INTERSECT;
-import static org.apache.calcite.sql.SqlKind.UNION;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
@@ -181,14 +166,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withDecorrelationEnabled(true)
             .withExpand(false)
             .withHintStrategyTable(HintsConfig.buildHintTable())
-            .withRelBuilderFactory(new RelBuilderFactory() {
-                @Override public RelBuilder create(RelOptCluster cluster,
-                    @org.checkerframework.checker.nullness.qual.Nullable RelOptSchema schema) {
-                    RelBuilder b = RelFactories.LOGICAL_BUILDER.create(cluster, schema);
-
-                    return b;
-                }
-            })
         )
         .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(
@@ -878,70 +855,5 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public InjectResourcesService injectService() {
         return injectSvc;
-    }
-
-    /** */
-    private static final class RelBuilderExt extends RelBuilder {
-        /** */
-        protected RelBuilderExt(@org.checkerframework.checker.nullness.qual.Nullable Context context,
-            RelOptCluster cluster, @org.checkerframework.checker.nullness.qual.Nullable RelOptSchema relOptSchema) {
-            super(context, cluster, relOptSchema);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelBuilder union(boolean all, int n) {
-            return setOp(all, UNION, n);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelBuilder intersect(boolean all, int n) {
-            return setOp(all, INTERSECT, n);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelBuilder minus(boolean all, int n) {
-            return setOp(all, EXCEPT, n);
-        }
-
-        private RelBuilder setOp(boolean all, SqlKind kind, int n) {
-            List<RelNode> inputs = new ArrayList<>();
-            for (int i = 0; i < n; i++) {
-                inputs.add(0, build());
-            }
-            switch (kind) {
-                case UNION:
-                case INTERSECT:
-                case EXCEPT:
-                    if (n < 1) {
-                        throw new IllegalArgumentException(
-                            "bad INTERSECT/UNION/EXCEPT input count");
-                    }
-                    break;
-                default:
-                    throw new AssertionError("bad setOp " + kind);
-            }
-
-            if (n == 1) {
-                return push(inputs.get(0));
-            }
-
-            if (config.simplifyValues()
-                && kind == UNION
-                && inputs.stream().allMatch(r -> r instanceof Values)) {
-                List<RelDataType> inputTypes = Util.transform(inputs, RelNode::getRowType);
-                RelDataType rowType = getTypeFactory()
-                    .leastRestrictive(inputTypes);
-                requireNonNull(rowType, () -> "leastRestrictive(" + inputTypes + ")");
-                final List<List<RexLiteral>> tuples = new ArrayList<>();
-                for (RelNode input : inputs) {
-                    tuples.addAll(((Values) input).tuples);
-                }
-                final List<List<RexLiteral>> tuples2 =
-                    all ? tuples : Util.distinctList(tuples);
-                return values(tuples2, rowType);
-            }
-
-            return push(struct.setOpFactory.createSetOp(kind, inputs, all));
-        }
     }
 }

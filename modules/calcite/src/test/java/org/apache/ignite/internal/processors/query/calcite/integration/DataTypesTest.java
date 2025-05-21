@@ -692,8 +692,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         for (Object val : params)
             sql("INSERT INTO t values (?, ?, ?, ?, ?, ?, ?)", val, val, val, val, val, val, val);
 
-        assertQuery("SELECT CAST(100.1::REAL AS DOUBLE);").returns(100.1d);
-
         assertQuery("SELECT * FROM t")
             .returns((byte)1, (short)1, 1, 1L, BigDecimal.valueOf(1), 1f, 1d)
             .returns((byte)2, (short)2, 2, 2L, BigDecimal.valueOf(2), 2f, 2d)

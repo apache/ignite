@@ -5,11 +5,12 @@
 statement ok
 PRAGMA enable_verification
 
-# default decimal type is (32767, 0), see IgniteTypeSystem.getMaxNumericPrecision
+# default decimal type is (32767, 0), see IgniteTypeSystem.getMaxNumericPrecision. But we convert type to keep digits
+# behind the decimal in Postgres-style.
 query I
 SELECT typeof('0.1'::DECIMAL);
 ----
-DECIMAL(32767, 0)
+DECIMAL(2, 1)
 
 # test basic string conversions
 query II

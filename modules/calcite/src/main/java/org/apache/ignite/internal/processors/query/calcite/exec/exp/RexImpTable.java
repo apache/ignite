@@ -2296,7 +2296,6 @@ public class RexImpTable {
             List<Expression> argValueList) {
             Expression operand0 = argValueList.get(0);
             final Expressions.FluentList<Expression> list = Expressions.list(operand0);
-
             switch (call.getOperator().getName()) {
                 case "LOG":
                     if (argValueList.size() == 2) {

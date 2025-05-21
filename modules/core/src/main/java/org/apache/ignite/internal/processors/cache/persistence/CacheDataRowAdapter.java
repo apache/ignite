@@ -548,9 +548,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
-        if (val.toString().contains("name3 "))
-            val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
-
         int verLen;
 
         if (skipVer) {
