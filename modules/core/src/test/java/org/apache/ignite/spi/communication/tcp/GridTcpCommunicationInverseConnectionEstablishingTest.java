@@ -111,12 +111,14 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(2_000);
+        cfg.setFailureDetectionTimeout(1_000);
+        cfg.setNetworkTimeout(10_000);
         //cfg.setSystemWorkerBlockedTimeout(5_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
                 .setForceClientToServerConnections(forceClientToSrvConnections)
+                .setConnectTimeout(5_000)
         );
 
         if (ccfg != null) {
