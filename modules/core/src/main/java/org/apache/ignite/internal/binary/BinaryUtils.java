@@ -3122,7 +3122,7 @@ public class BinaryUtils {
         @Nullable Collection<T2<Integer, List<Integer>>> schemasAndFieldIds,
         boolean isEnum,
         @Nullable Map<String, Integer> enumMap) {
-        List<BinarySchema> schemas = schemasAndFieldIds.stream()
+        List<BinarySchema> schemas = F.isEmpty(schemasAndFieldIds) ? null : schemasAndFieldIds.stream()
             .map(t -> new BinarySchema(t.get1(), t.get2()))
             .collect(Collectors.toList());
 
