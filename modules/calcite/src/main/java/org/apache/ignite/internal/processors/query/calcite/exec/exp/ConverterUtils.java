@@ -371,7 +371,7 @@ public class ConverterUtils {
                         // E.g. from "double" to "String"
                         // Generate "SqlFunctions.toString(x)"
                         return Expressions.call(
-                            SqlFunctions.class,
+                            IgniteSqlFunctions.class,
                             "toString",
                             operand);
                     default:
