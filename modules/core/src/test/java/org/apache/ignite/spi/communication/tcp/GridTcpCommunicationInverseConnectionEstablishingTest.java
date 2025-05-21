@@ -115,7 +115,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
-        cfg.setSystemWorkerBlockedTimeout(10_000);
+        cfg.setSystemWorkerBlockedTimeout(5_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
