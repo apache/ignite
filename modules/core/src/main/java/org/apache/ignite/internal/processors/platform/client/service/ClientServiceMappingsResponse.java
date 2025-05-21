@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.platform.client.service;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.client.thin.ClientUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +44,7 @@ public class ClientServiceMappingsResponse extends ClientResponse {
     @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
-        BinaryUtils.collection(
+        ClientUtils.collection(
             svcsNodes,
             writer.out(),
             (out, uuid) -> {

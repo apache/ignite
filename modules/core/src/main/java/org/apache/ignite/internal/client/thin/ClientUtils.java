@@ -19,16 +19,21 @@ package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -44,6 +49,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -51,6 +57,7 @@ import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -85,6 +92,25 @@ public final class ClientUtils {
      * @param out Output stream.
      * @param elemWriter Collection element serializer
      */
+    public static <E> void collection(
+        Collection<E> col, BinaryOutputStream out,
+        BiConsumer<BinaryOutputStream, E> elemWriter
+    ) {
+        if (col == null || col.isEmpty())
+            out.writeInt(0);
+        else {
+            out.writeInt(col.size());
+
+            for (E e : col)
+                elemWriter.accept(out, e);
+        }
+    }
+
+    /**
+     * @param col Collection to serialize.
+     * @param out Output stream.
+     * @param elemWriter Collection element serializer
+     */
     static <E> void collection(E[] col, BinaryOutputStream out, BiConsumer<BinaryOutputStream, E> elemWriter) {
         if (col == null || col.length == 0)
             out.writeInt(0);
@@ -96,17 +122,119 @@ public final class ClientUtils {
         }
     }
 
+    /**
+     * @param in Input stream.
+     * @param elemReader Collection element deserializer.
+     * @return Deserialized collection.
+     */
+    static <E> Collection<E> collection(BinaryInputStream in, Function<BinaryInputStream, E> elemReader) {
+        Collection<E> col = new LinkedList<>(); // needs to be ordered for some use cases
+
+        int cnt = in.readInt();
+
+        for (int i = 0; i < cnt; i++)
+            col.add(elemReader.apply(in));
+
+        return col;
+    }
+
+    /**
+     * @return Deserialized map
+     */
+    private static <K, V> Map<K, V> map(
+        BinaryInputStream in,
+        Function<BinaryInputStream, K> keyReader,
+        Function<BinaryInputStream, V> valReader
+    ) {
+        int cnt = in.readInt();
+
+        Map<K, V> map = new HashMap<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            map.put(keyReader.apply(in), valReader.apply(in));
+
+        return map;
+    }
+
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
         try (BinaryReaderEx reader = createBinaryReader(in)) {
-            return BinaryUtils.readBinaryMetadata(in, reader);
+            int typeId = reader.readInt();
+            String typeName = reader.readString();
+            String affKeyFieldName = reader.readString();
+
+            Map<String, BinaryFieldMetadata> fields = ClientUtils.map(
+                in,
+                unused -> reader.readString(),
+                unused2 -> new BinaryFieldMetadata(reader.readInt(), reader.readInt())
+            );
+
+            boolean isEnum = reader.readBoolean();
+
+            Map<String, Integer> enumValues = isEnum ? ClientUtils.map(in, unsed -> reader.readString(), unsed2 -> reader.readInt()) : null;
+
+            Collection<T2<Integer, List<Integer>>> schemas = ClientUtils.collection(
+                in,
+                unused -> new T2<>(
+                    reader.readInt(),
+                    new ArrayList<>(ClientUtils.collection(in, unused2 -> reader.readInt()))
+                )
+            );
+
+            return BinaryUtils.binaryMetadata(
+                typeId,
+                typeName,
+                fields,
+                affKeyFieldName,
+                schemas,
+                isEnum,
+                enumValues
+            );
         }
     }
 
     /** Serialize binary type metadata to stream. */
     void binaryMetadata(BinaryMetadata meta, BinaryOutputStream out) {
         try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
-            BinaryUtils.writeBinaryMetadata(meta, out, w);
+            w.writeInt(meta.typeId());
+            w.writeString(meta.typeName());
+            w.writeString(meta.affinityKeyFieldName());
+
+            collection(
+                meta.fieldsMap().entrySet(),
+                out,
+                (unused, e) -> {
+                    w.writeString(e.getKey());
+                    w.writeInt(e.getValue().typeId());
+                    w.writeInt(e.getValue().fieldId());
+                }
+            );
+
+            w.writeBoolean(meta.isEnum());
+
+            if (meta.isEnum())
+                collection(
+                    meta.enumMap().entrySet(),
+                    out,
+                    (unused, e) -> {
+                        w.writeString(e.getKey());
+                        w.writeInt(e.getValue());
+                    }
+                );
+
+            collection(
+                BinaryUtils.schemasAndFieldsIds(meta),
+                out,
+                (unused, s) -> {
+                    w.writeInt(s.get1());
+
+                    collection(
+                        Arrays.stream(s.get2()).boxed().collect(Collectors.toList()),
+                        out,
+                        (unused2, i) -> w.writeInt(i)
+                    );
+                }
+            );
         }
     }
 
@@ -178,7 +306,7 @@ public final class ClientUtils {
                         w.writeString(e.getTableName());
                         w.writeString(e.getKeyFieldName());
                         w.writeString(e.getValueFieldName());
-                        BinaryUtils.collection(
+                        ClientUtils.collection(
                             e.getFields().entrySet(),
                             out,
                             (unused2, f) -> {
@@ -196,21 +324,21 @@ public final class ClientUtils {
                                 }
                             }
                         );
-                        BinaryUtils.collection(
+                        ClientUtils.collection(
                             e.getAliases().entrySet(),
                             out, (unused3, a) -> {
                                 w.writeString(a.getKey());
                                 w.writeString(a.getValue());
                             }
                         );
-                        BinaryUtils.collection(
+                        ClientUtils.collection(
                             e.getIndexes(),
                             out,
                             (unused4, i) -> {
                                 w.writeString(i.getName());
                                 w.writeByte((byte)i.getIndexType().ordinal());
                                 w.writeInt(i.getInlineSize());
-                                BinaryUtils.collection(i.getFields().entrySet(), out, (unused5, f) -> {
+                                ClientUtils.collection(i.getFields().entrySet(), out, (unused5, f) -> {
                                         w.writeString(f.getKey());
                                         w.writeBoolean(f.getValue());
                                     }
@@ -279,9 +407,9 @@ public final class ClientUtils {
                 .setSqlSchema(reader.readString())
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(reader.readInt()))
                 .setKeyConfiguration(
-                    BinaryUtils.collection(in, unused -> new CacheKeyConfiguration(reader.readString(), reader.readString()))
+                    ClientUtils.collection(in, unused -> new CacheKeyConfiguration(reader.readString(), reader.readString()))
                         .toArray(new CacheKeyConfiguration[0])
-                ).setQueryEntities(BinaryUtils.collection(
+                ).setQueryEntities(ClientUtils.collection(
                     in,
                     unused -> {
                         QueryEntity qryEntity = new QueryEntity(reader.readString(), reader.readString())
@@ -292,7 +420,7 @@ public final class ClientUtils {
                         boolean isPrecisionAndScaleSupported =
                             protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE);
 
-                        Collection<QueryField> qryFields = BinaryUtils.collection(
+                        Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
                             unused2 -> {
                                 String name = reader.readString();
@@ -339,18 +467,18 @@ public final class ClientUtils {
                                 .filter(f -> f.getScale() != -1)
                                 .collect(Collectors.toMap(QueryField::getName, QueryField::getScale))
                             )
-                            .setAliases(BinaryUtils.collection(
+                            .setAliases(ClientUtils.collection(
                                 in,
                                 unused3 -> new SimpleEntry<>(reader.readString(), reader.readString())
                             ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)))
-                            .setIndexes(BinaryUtils.collection(
+                            .setIndexes(ClientUtils.collection(
                                 in,
                                 unused4 -> {
                                     String name = reader.readString();
                                     QueryIndexType type = QueryIndexType.fromOrdinal(reader.readByte());
                                     int inlineSize = reader.readInt();
 
-                                    LinkedHashMap<String, Boolean> fields = BinaryUtils.collection(
+                                    LinkedHashMap<String, Boolean> fields = ClientUtils.collection(
                                         in,
                                         unused5 -> new SimpleEntry<>(reader.readString(), reader.readBoolean())
                                     ).stream().collect(Collectors.toMap(
@@ -378,7 +506,7 @@ public final class ClientUtils {
         out.writeInt(qry.getPageSize());
         out.writeInt(-1); // do not limit
         writeObject(out, qry.getSql());
-        BinaryUtils.collection(qry.getArgs() == null ? null : Arrays.asList(qry.getArgs()), out, this::writeObject);
+        ClientUtils.collection(qry.getArgs() == null ? null : Arrays.asList(qry.getArgs()), out, this::writeObject);
         out.writeByte((byte)0); // statement type ANY
         out.writeBoolean(qry.isDistributedJoins());
         out.writeBoolean(qry.isLocal());

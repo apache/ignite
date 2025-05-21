@@ -40,12 +40,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -68,6 +70,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.service.LazyServiceConfiguration;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -380,6 +383,34 @@ public class PlatformUtils {
         int cnt = reader.readInt();
 
         Map<K, V> map = U.newHashMap(cnt);
+
+        if (readClo == null) {
+            for (int i = 0; i < cnt; i++)
+                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
+        }
+        else {
+            for (int i = 0; i < cnt; i++) {
+                IgniteBiTuple<K, V> entry = readClo.read(reader);
+
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * Read linked map.
+     *
+     * @param reader Reader.
+     * @param readClo Reader closure.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> readLinkedMap(BinaryReaderEx reader,
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        int cnt = reader.readInt();
+
+        Map<K, V> map = U.newLinkedHashMap(cnt);
 
         if (readClo == null) {
             for (int i = 0; i < cnt; i++)
@@ -1070,6 +1101,67 @@ public class PlatformUtils {
     }
 
     /**
+     * Writes the binary metadata to a writer.
+     *
+     * @param writer Writer.
+     * @param meta Meta.
+     */
+    public static void writeBinaryMetadata(BinaryRawWriter writer, BinaryMetadata meta, boolean includeSchemas) {
+        assert meta != null;
+
+        Map<String, BinaryFieldMetadata> fields = meta.fieldsMap();
+
+        writer.writeInt(meta.typeId());
+        writer.writeString(meta.typeName());
+        writer.writeString(meta.affinityKeyFieldName());
+
+        writer.writeInt(fields.size());
+
+        for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
+            writer.writeString(e.getKey());
+
+            writer.writeInt(e.getValue().typeId());
+            writer.writeInt(e.getValue().fieldId());
+        }
+
+        if (meta.isEnum()) {
+            writer.writeBoolean(true);
+
+            Map<String, Integer> enumMap = meta.enumMap();
+
+            writer.writeInt(enumMap.size());
+
+            for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
+                writer.writeString(e.getKey());
+                writer.writeInt(e.getValue());
+            }
+        }
+        else {
+            writer.writeBoolean(false);
+        }
+
+        if (!includeSchemas) {
+            return;
+        }
+
+        // Schemas.
+        Collection<T2<Integer, int[]>> schemas = BinaryUtils.schemasAndFieldsIds(meta);
+
+        writer.writeInt(schemas.size());
+
+        for (T2<Integer, int[]> schema : schemas) {
+            writer.writeInt(schema.get1());
+
+            int[] ids = schema.get2();
+            writer.writeInt(ids.length);
+
+            for (int id : ids) {
+                writer.writeInt(id);
+            }
+        }
+    }
+
+    /**
      * Reads the binary metadata.
      *
      * @param reader Reader.
@@ -1079,10 +1171,69 @@ public class PlatformUtils {
         return readCollection(reader,
                 new PlatformReaderClosure<BinaryMetadata>() {
                     @Override public BinaryMetadata read(BinaryReaderEx reader) {
-                        return BinaryUtils.readBinaryMetadata(reader);
+                        return readBinaryMetadata(reader);
                     }
                 }
         );
+    }
+
+    /**
+     * Reads the binary metadata.
+     *
+     * @param reader Reader.
+     * @return Binary type metadata.
+     */
+    public static BinaryMetadata readBinaryMetadata(BinaryReaderEx reader) {
+        int typeId = reader.readInt();
+        String typeName = reader.readString();
+        String affKey = reader.readString();
+
+        Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
+                new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryReaderEx reader) {
+                        String name = reader.readString();
+                        int typeId = reader.readInt();
+                        int fieldId = reader.readInt();
+
+                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                                new BinaryFieldMetadata(typeId, fieldId));
+                    }
+                });
+
+        Map<String, Integer> enumMap = null;
+
+        boolean isEnum = reader.readBoolean();
+
+        if (isEnum) {
+            int size = reader.readInt();
+
+            enumMap = new LinkedHashMap<>(size);
+
+            for (int idx = 0; idx < size; idx++)
+                enumMap.put(reader.readString(), reader.readInt());
+        }
+
+        // Read schemas and fields identifiers.
+        int schemaCnt = reader.readInt();
+
+        List<T2<Integer, List<Integer>>> schemas = null;
+
+        if (schemaCnt > 0) {
+            schemas = new ArrayList<>(schemaCnt);
+
+            for (int i = 0; i < schemaCnt; i++) {
+                int id = reader.readInt();
+                int fieldCnt = reader.readInt();
+                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                for (int j = 0; j < fieldCnt; j++)
+                    fieldIds.add(reader.readInt());
+
+                schemas.add(new T2<>(id, fieldIds));
+            }
+        }
+
+        return BinaryUtils.binaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
     }
 
     /**

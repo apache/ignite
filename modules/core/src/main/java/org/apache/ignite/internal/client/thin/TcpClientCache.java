@@ -1543,7 +1543,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private void writeKeys(Set<? extends K> keys, PayloadOutputChannel req, TcpClientTransaction tx) {
         writeCacheInfo(req, tx);
-        BinaryUtils.collection(keys, req.out(), serDes::writeObject);
+        ClientUtils.collection(keys, req.out(), serDes::writeObject);
     }
 
     /** */
@@ -1562,7 +1562,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private void writeEntries(Map<? extends K, ? extends V> map, PayloadOutputChannel req, TcpClientTransaction tx) {
         writeCacheInfo(req, tx);
-        BinaryUtils.collection(
+        ClientUtils.collection(
                 map.entrySet(),
                 req.out(),
                 (out, e) -> {
@@ -1580,7 +1580,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         writeCacheInfo(req);
 
-        BinaryUtils.collection(
+        ClientUtils.collection(
             map.entrySet(),
             req.out(),
             (out, e) -> {
@@ -1597,7 +1597,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         writeCacheInfo(req);
 
-        BinaryUtils.collection(
+        ClientUtils.collection(
             map.entrySet(),
             req.out(),
             (out, e) -> {

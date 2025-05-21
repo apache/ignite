@@ -377,7 +377,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
             BinaryMetadata meta0 = ((BinaryTypeImpl)meta).metadata();
 
-            BinaryUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
+            PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }
     }
 
@@ -666,7 +666,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
             PlatformInputStream in = mem0.input();
             in.synchronize();
 
-            return BinaryUtils.readBinaryMetadata(reader(in));
+            return PlatformUtils.readBinaryMetadata(reader(in));
         }
     }
 

@@ -89,7 +89,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -3088,310 +3087,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Writes the binary metadata to a writer.
-     *
-     * @param writer Writer.
-     * @param meta Meta.
-     */
-    public static void writeBinaryMetadata(BinaryRawWriter writer, BinaryMetadata meta, boolean includeSchemas) {
-        assert meta != null;
-
-        Map<String, BinaryFieldMetadata> fields = meta.fieldsMap();
-
-        writer.writeInt(meta.typeId());
-        writer.writeString(meta.typeName());
-        writer.writeString(meta.affinityKeyFieldName());
-
-        writer.writeInt(fields.size());
-
-        for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
-            writer.writeString(e.getKey());
-
-            writer.writeInt(e.getValue().typeId());
-            writer.writeInt(e.getValue().fieldId());
-        }
-
-        if (meta.isEnum()) {
-            writer.writeBoolean(true);
-
-            Map<String, Integer> enumMap = meta.enumMap();
-
-            writer.writeInt(enumMap.size());
-
-            for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
-                writer.writeString(e.getKey());
-                writer.writeInt(e.getValue());
-            }
-        }
-        else {
-            writer.writeBoolean(false);
-        }
-
-        if (!includeSchemas) {
-            return;
-        }
-
-        // Schemas.
-        Collection<BinarySchema> schemas = meta.schemas();
-
-        writer.writeInt(schemas.size());
-
-        for (BinarySchema schema : schemas) {
-            writer.writeInt(schema.schemaId());
-
-            int[] ids = schema.fieldIds();
-            writer.writeInt(ids.length);
-
-            for (int id : ids)
-                writer.writeInt(id);
-        }
-    }
-
-    /**
-     * Reads the binary metadata.
-     *
-     * @param reader Reader.
-     * @return Binary type metadata.
-     */
-    public static BinaryMetadata readBinaryMetadata(BinaryReaderEx reader) {
-        int typeId = reader.readInt();
-        String typeName = reader.readString();
-        String affKey = reader.readString();
-
-        Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
-            new Function<>() {
-                @Override public T2<String, BinaryFieldMetadata> apply(BinaryReaderEx reader) {
-                    String name = reader.readString();
-                    int typeId = reader.readInt();
-                    int fieldId = reader.readInt();
-
-                    return new T2<>(name, new BinaryFieldMetadata(typeId, fieldId));
-                }
-            });
-
-        Map<String, Integer> enumMap = null;
-
-        boolean isEnum = reader.readBoolean();
-
-        if (isEnum) {
-            int size = reader.readInt();
-
-            enumMap = new LinkedHashMap<>(size);
-
-            for (int idx = 0; idx < size; idx++)
-                enumMap.put(reader.readString(), reader.readInt());
-        }
-
-        // Read schemas.
-        int schemaCnt = reader.readInt();
-
-        List<BinarySchema> schemas = null;
-
-        if (schemaCnt > 0) {
-            schemas = new ArrayList<>(schemaCnt);
-
-            for (int i = 0; i < schemaCnt; i++) {
-                int id = reader.readInt();
-                int fieldCnt = reader.readInt();
-                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
-
-                for (int j = 0; j < fieldCnt; j++)
-                    fieldIds.add(reader.readInt());
-
-                schemas.add(new BinarySchema(id, fieldIds));
-            }
-        }
-
-        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
-    }
-
-    /**
-     * Read linked map.
-     *
-     * @param reader Reader.
-     * @param readClo Reader closure.
-     * @return Map.
-     */
-    private static <K, V> Map<K, V> readLinkedMap(BinaryReaderEx reader,
-        @Nullable Function<BinaryReaderEx, T2<K, V>> readClo) {
-        int cnt = reader.readInt();
-
-        Map<K, V> map = U.newLinkedHashMap(cnt);
-
-        if (readClo == null) {
-            for (int i = 0; i < cnt; i++)
-                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
-        }
-        else {
-            for (int i = 0; i < cnt; i++) {
-                IgniteBiTuple<K, V> entry = readClo.apply(reader);
-
-                map.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return map;
-    }
-
-    /**
-     * Writes {@link BinaryMetadata} into {@link BinaryOutputStream} by means of {@link BinaryOutputStream}.
-     *
-     * @param meta Binary metadata.
-     * @param w Binary raw writer.
-     * @param out Output stream.
-     */
-    public static void writeBinaryMetadata(BinaryMetadata meta, BinaryOutputStream out, BinaryWriterEx w) {
-        w.writeInt(meta.typeId());
-        w.writeString(meta.typeName());
-        w.writeString(meta.affinityKeyFieldName());
-
-        collection(
-            meta.fieldsMap().entrySet(),
-            out,
-            (unused, e) -> {
-                w.writeString(e.getKey());
-                w.writeInt(e.getValue().typeId());
-                w.writeInt(e.getValue().fieldId());
-            }
-        );
-
-        w.writeBoolean(meta.isEnum());
-
-        if (meta.isEnum())
-            collection(
-                meta.enumMap().entrySet(),
-                out,
-                (unused, e) -> {
-                    w.writeString(e.getKey());
-                    w.writeInt(e.getValue());
-                }
-            );
-
-        collection(
-            meta.schemas(),
-            out,
-            (unused, s) -> {
-                w.writeInt(s.schemaId());
-
-                collection(
-                    Arrays.stream(s.fieldIds()).boxed().collect(Collectors.toList()),
-                    out,
-                    (unused2, i) -> w.writeInt(i)
-                );
-            }
-        );
-    }
-
-    /**
-     * Read binary metadata from {@link BinaryInputStream} by means of {@link BinaryReaderEx}.
-     *
-     * @param in Input stream.
-     * @param reader Reader.
-     */
-    public static @NotNull BinaryMetadata readBinaryMetadata(BinaryInputStream in, BinaryReaderEx reader) {
-        int typeId = reader.readInt();
-        String typeName = reader.readString();
-        String affKeyFieldName = reader.readString();
-
-        Map<String, BinaryFieldMetadata> fields = map(
-            in,
-            unused -> reader.readString(),
-            unused2 -> new BinaryFieldMetadata(reader.readInt(), reader.readInt())
-        );
-
-        boolean isEnum = reader.readBoolean();
-
-        Map<String, Integer> enumValues = isEnum ? map(in, unsed -> reader.readString(), unsed2 -> reader.readInt()) : null;
-
-        Collection<BinarySchema> schemas = collection(
-            in,
-            unused -> new BinarySchema(
-                reader.readInt(),
-                new ArrayList<>(collection(in, unused2 -> reader.readInt()))
-            )
-        );
-
-        return new BinaryMetadata(
-            typeId,
-            typeName,
-            fields,
-            affKeyFieldName,
-            schemas,
-            isEnum,
-            enumValues
-        );
-    }
-
-    /**
-     * @return Deserialized map
-     */
-    private static <K, V> Map<K, V> map(
-        BinaryInputStream in,
-        Function<BinaryInputStream, K> keyReader,
-        Function<BinaryInputStream, V> valReader
-    ) {
-        int cnt = in.readInt();
-
-        Map<K, V> map = new HashMap<>(cnt);
-
-        for (int i = 0; i < cnt; i++)
-            map.put(keyReader.apply(in), valReader.apply(in));
-
-        return map;
-    }
-
-    /**
-     * @param col Collection to serialize.
-     * @param out Output stream.
-     * @param elemWriter Collection element serializer
-     */
-    public static <E> void collection(
-        Collection<E> col, BinaryOutputStream out,
-        BiConsumer<BinaryOutputStream, E> elemWriter
-    ) {
-        if (F.isEmpty(col))
-            out.writeInt(0);
-        else {
-            out.writeInt(col.size());
-
-            for (E e : col)
-                elemWriter.accept(out, e);
-        }
-    }
-
-    /**
-     * @param col Collection to serialize.
-     * @param out Output stream.
-     * @param elemWriter Collection element serializer
-     */
-    public static <E> void collection(E[] col, BinaryOutputStream out, BiConsumer<BinaryOutputStream, E> elemWriter) {
-        if (F.isEmpty(col))
-            out.writeInt(0);
-        else {
-            out.writeInt(col.length);
-
-            for (E e : col)
-                elemWriter.accept(out, e);
-        }
-    }
-
-    /**
-     * @param in Input stream.
-     * @param elemReader Collection element deserializer.
-     * @return Deserialized collection.
-     */
-    public static <E> Collection<E> collection(BinaryInputStream in, Function<BinaryInputStream, E> elemReader) {
-        Collection<E> col = new LinkedList<>(); // needs to be ordered for some use cases
-
-        int cnt = in.readInt();
-
-        for (int i = 0; i < cnt; i++)
-            col.add(elemReader.apply(in));
-
-        return col;
-    }
-
-    /**
      * @param meta Binary metadata.
      * @return Schemas identifiers of the specified {@link BinaryMetadata}.
      */
@@ -3407,6 +3102,30 @@ public class BinaryUtils {
      */
     public static int fieldId(BinaryReaderEx reader, int order) {
         return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+    }
+
+    /**
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param fields Fields map.
+     * @param affKeyFieldName Affinity key field name.
+     * @param schemasAndFieldIds Schemas.
+     * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
+     */
+    public static BinaryMetadata binaryMetadata(
+        int typeId,
+        String typeName,
+        @Nullable Map<String, BinaryFieldMetadata> fields,
+        @Nullable String affKeyFieldName,
+        @Nullable Collection<T2<Integer, List<Integer>>> schemasAndFieldIds,
+        boolean isEnum,
+        @Nullable Map<String, Integer> enumMap) {
+        List<BinarySchema> schemas = schemasAndFieldIds.stream()
+            .map(t -> new BinarySchema(t.get1(), t.get2()))
+            .collect(Collectors.toList());
+
+        return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
     }
 
     /**
