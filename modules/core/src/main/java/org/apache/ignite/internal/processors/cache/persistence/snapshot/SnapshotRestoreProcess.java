@@ -788,11 +788,11 @@ public class SnapshotRestoreProcess {
                     }
                 }
 
-                File tmpCacheDir = ft.tmpCacheStorage(ccfg);
-
-                if (tmpCacheDir.exists()) {
-                    throw new IgniteCheckedException("Unable to restore cache group, temp directory already exists " +
-                        "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
+                for (File tmpCacheDir : ft.tmpCacheStorages(ccfg)) {
+                    if (tmpCacheDir.exists()) {
+                        throw new IgniteCheckedException("Unable to restore cache group, temp directory already exists " +
+                            "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
+                    }
                 }
             }
         }
@@ -990,7 +990,8 @@ public class SnapshotRestoreProcess {
                 if (log.isInfoEnabled())
                     cacheGrpNames.put(grpId, cacheOrGrpName);
 
-                ft.tmpCacheStorage(ccfg).mkdir();
+                for (File tmpCacheDir : ft.tmpCacheStorages(ccfg))
+                    tmpCacheDir.mkdir();
 
                 Set<PartitionRestoreFuture> leftParts;
 
@@ -1169,7 +1170,7 @@ public class SnapshotRestoreProcess {
                             throw new IgniteInterruptedException("The operation has been stopped on temporary directory switch.");
 
                         for (File src : opCtx0.dirs)
-                            Files.move(ft.tmpCacheStorage(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                            Files.move(NodeFileTree.tmpCacheStorage(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -1650,7 +1651,7 @@ public class SnapshotRestoreProcess {
                 IgniteCheckedException ex = null;
 
                 for (File cacheDir : opCtx0.dirs) {
-                    File tmpCacheDir = ft.tmpCacheStorage(cacheDir);
+                    File tmpCacheDir = NodeFileTree.tmpCacheStorage(cacheDir);
 
                     if (tmpCacheDir.exists() && !U.delete(tmpCacheDir)) {
                         log.error("Unable to perform rollback routine completely, cannot remove temp directory " +

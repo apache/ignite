@@ -49,6 +49,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.oneOf;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
@@ -573,10 +574,9 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @param part Partition id.
      * @return Partition file.
-     * TODO: SCS
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(cacheStorage(ccfg), partitionFileName(part));
+        return new File(oneOf(cacheStorages(ccfg), part), partitionFileName(part));
     }
 
     /**
@@ -584,9 +584,14 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store directory for given cache.
      * TODO: SCS
      */
-    public File tmpCacheStorage(CacheConfiguration<?, ?> ccfg) {
-        File cacheStorage = cacheStorage(ccfg);
-        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    public File[] tmpCacheStorages(CacheConfiguration<?, ?> ccfg) {
+        File[] cacheStorages = cacheStorages(ccfg);
+        File[] tmpCacheStorages = new File[cacheStorages.length];
+
+        for (int i = 0; i < cacheStorages.length; i++)
+            tmpCacheStorages[i] = new File(cacheStorages[i].getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorages[i].getName());
+
+        return tmpCacheStorages;
     }
 
     /**
@@ -611,7 +616,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Temp store directory for given cache storage.
      * TODO: SCS
      */
-    public File tmpCacheStorage(File cacheStorage) {
+    public static File tmpCacheStorage(File cacheStorage) {
         return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
     }
 
@@ -637,7 +642,7 @@ public class NodeFileTree extends SharedFileTree {
      * TODO: SCS
      */
     public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
-        return new File(tmpCacheStorage(ccfg), partitionFileName(partId));
+        return new File(oneOf(tmpCacheStorages(ccfg), partId), partitionFileName(partId));
     }
 
     /**

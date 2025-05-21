@@ -116,4 +116,13 @@ public class FileTreeUtils {
                 "Current persistence store directory is: [" + dir.getAbsolutePath() + "]");
         }
     }
+
+    /**
+     * @param storages Storages to select from.
+     * @param part Partition.
+     * @return Storage for partition.
+     */
+    static File oneOf(File[] storages, int part) {
+        return storages[(part + 1) % storages.length];
+    }
 }
