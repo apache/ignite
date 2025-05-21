@@ -1213,7 +1213,7 @@ public class PlatformUtils {
                 enumMap.put(reader.readString(), reader.readInt());
         }
 
-        // Read schemas and fields identifiers.
+        // Read schemas
         int schemaCnt = reader.readInt();
 
         List<T2<Integer, List<Integer>>> schemas = null;
