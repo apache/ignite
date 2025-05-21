@@ -343,7 +343,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             }
         }
 
-        node = super.performUnconditionalRewrites(node, underFrom);
+        // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-6978
+        // Remove this after update to Calcite 1.40.
+        if (node instanceof SqlCall) {
+            SqlNode oldNode = node;
+            node = super.performUnconditionalRewrites(node, underFrom);
+
+            // Restore rewritten sql call, if it contains subquery.
+            if (node != oldNode && IgniteSqlCallRewriteTable.containsSubquery(oldNode))
+                node = oldNode;
+        }
+        else
+            node = super.performUnconditionalRewrites(node, underFrom);
 
         if (config().callRewrite() && node instanceof SqlCall)
             node = IgniteSqlCallRewriteTable.INSTANCE.rewrite(this, (SqlCall)node);
