@@ -388,7 +388,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
             CacheStoreHolder holder = initDir(
-                ft.metaStorage(),
+                new File[]{ft.metaStorage()},
                 p -> ft.metaStoragePartition(p).toPath(),
                 grpId,
                 MetaStorage.METASTORAGE_CACHE_NAME,
@@ -484,7 +484,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpDesc.groupId());
 
         return initDir(
-            ft.cacheStorage(ccfg),
+            ft.cacheStorages(ccfg),
             p -> ft.partitionFile(ccfg, p).toPath(),
             grpDesc.groupId(),
             ccfg.getName(),
@@ -558,7 +558,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheWorkDir Cache work dir.
+     * @param cacheWorkDirs Cache work directories.
      * @param grpId Group ID.
      * @param cacheName Cache name.
      * @param partitions Number of partitions.
@@ -568,7 +568,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(
-        File cacheWorkDir,
+        File[] cacheWorkDirs,
         IntFunction<Path> partitionFile,
         int grpId,
         String cacheName,
@@ -577,16 +577,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         boolean encrypted,
         Collection<String> grpCaches) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
-
-            if (dirExisted) {
-                MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
-
-                if (!mntcReg.isMaintenanceMode())
-                    DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
-            }
-
             File idxFile = partitionFile.apply(INDEX_PARTITION).toFile();
+
+            boolean idxDirExisted = idxFile.getParentFile().exists();
+
+            for (File cacheWorkDir : cacheWorkDirs) {
+                boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
+
+                if (dirExisted) {
+                    MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
+
+                    if (!mntcReg.isMaintenanceMode())
+                        DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
+                }
+            }
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
@@ -607,7 +611,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             }
 
-            if (dirExisted && !idxFile.exists())
+            if (idxDirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
             FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(grpId, encrypted);

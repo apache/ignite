@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -113,7 +114,8 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 File snpPart = sinfo.sft.partitionFile(ccfg, gp.getPartitionId());
 
                 if (!snpPart.exists()) {
-                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + sinfo.sft.cacheStorage(ccfg) +
+                    throw new IgniteException("Snapshot partition file not found [" +
+                        "cacheDirs=" + Arrays.toString(sinfo.sft.cacheStorages(ccfg)) +
                         ", pair=" + gp + ']');
                 }
 

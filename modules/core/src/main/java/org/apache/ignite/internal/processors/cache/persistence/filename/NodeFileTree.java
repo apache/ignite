@@ -227,10 +227,10 @@ public class NodeFileTree extends SharedFileTree {
     /** Temporary cache directory prefix. */
     private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
-    /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of single cache. */
+    /** Prefix for {@link #cacheStorages(CacheConfiguration)} directory in case of single cache. */
     private static final String CACHE_DIR_PREFIX = "cache-";
 
-    /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
+    /** Prefix for {@link #cacheStorages(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** Folder name for consistent id. */
@@ -493,25 +493,28 @@ public class NodeFileTree extends SharedFileTree {
      * TODO: SCS
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0]), ccfg.getGroupName() != null
-            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
-            : CACHE_DIR_PREFIX + ccfg.getName());
+        return cacheStorages(ccfg)[0];
     }
 
     /**
      * @param ccfg Cache configuration.
      * @return Store dirs for given cache.
+     * TODO: return single storage for snapshot with absolute path.
      */
     public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
+        String cacheDirName = ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName();
+
         String[] csp = ccfg.getStoragePath();
 
         if (F.isEmpty(csp))
-            return new File[] {cacheStorage((String)null)};
+            return new File[] {new File(cacheStorageRoot(null), cacheDirName)};
 
         File[] cs = new File[csp.length];
 
         for (int i = 0; i < cs.length; i++)
-            cs[i] = cacheStorage(csp[i]);
+            cs[i] = new File(cacheStorageRoot(csp[i]), cacheDirName);
 
         return cs;
     }
@@ -551,7 +554,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(ccfg), ccfg.getGroupName() == null
+        return new File(cacheStorages(ccfg)[0], ccfg.getGroupName() == null
             ? CACHE_DATA_FILENAME
             : (ccfg.getName() + CACHE_DATA_FILENAME));
     }
@@ -561,7 +564,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File tmpCacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(ccfg), ccfg.getGroupName() == null
+        return new File(cacheStorages(ccfg)[0], ccfg.getGroupName() == null
             ? (CACHE_DATA_TMP_FILENAME)
             : (ccfg.getName() + CACHE_DATA_TMP_FILENAME));
     }
@@ -597,7 +600,7 @@ public class NodeFileTree extends SharedFileTree {
      * TODO: SCS - accept all cache storages from remote node.
      */
     public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
-        return new File(cacheStorage(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
+        return new File(cacheStorageRoot(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
@@ -799,7 +802,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return File storage.
      * @see CacheConfiguration#getStoragePath()
      */
-    private File cacheStorage(@Nullable String storagePath) {
+    private File cacheStorageRoot(@Nullable String storagePath) {
         return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
     }
 

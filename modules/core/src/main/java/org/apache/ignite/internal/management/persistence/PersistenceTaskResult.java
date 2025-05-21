@@ -20,9 +20,8 @@ package org.apache.ignite.internal.management.persistence;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -39,10 +38,10 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     private boolean maintenanceTaskCompleted;
 
     /** */
-    private List<String> handledCaches;
+    private Collection<String> handledCaches;
 
     /** */
-    private List<String> failedToHandleCaches;
+    private Collection<String> failedToHandleCaches;
 
     /** */
     private Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo;
@@ -72,8 +71,8 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         inMaintenanceMode = in.readBoolean();
         maintenanceTaskCompleted = in.readBoolean();
-        handledCaches = U.readList(in);
-        failedToHandleCaches = U.readList(in);
+        handledCaches = U.readCollection(in);
+        failedToHandleCaches = U.readCollection(in);
         cachesInfo = U.readMap(in);
     }
 
@@ -93,22 +92,22 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public List<String> handledCaches() {
+    public Collection<String> handledCaches() {
         return handledCaches;
     }
 
     /** */
-    public void handledCaches(List<String> handledCaches) {
+    public void handledCaches(Collection<String> handledCaches) {
         this.handledCaches = handledCaches;
     }
 
     /** */
-    public List<String> failedCaches() {
+    public Collection<String> failedCaches() {
         return failedToHandleCaches;
     }
 
     /** */
-    public void failedCaches(List<String> failedToHandleCaches) {
+    public void failedCaches(Collection<String> failedToHandleCaches) {
         this.failedToHandleCaches = failedToHandleCaches;
     }
 

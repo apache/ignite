@@ -18,7 +18,10 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -139,11 +142,12 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             assertNotNull(cpMarkers);
             assertTrue(cpMarkers.length > 0);
 
-            File cacheDir = ft.cacheStorage(ignite.cachex(TEST_CACHE_NAME).configuration());
-            File[] partFiles = cacheDir.listFiles(NodeFileTree::partitionFile);
+            List<File> partFiles = Arrays.stream(ft.cacheStorages(ignite.cachex(TEST_CACHE_NAME).configuration()))
+                .flatMap(cacheDir -> Arrays.stream(cacheDir.listFiles(NodeFileTree::partitionFile)))
+                .collect(Collectors.toList());
 
             assertNotNull(partFiles);
-            assertTrue(partFiles.length > 0);
+            assertTrue(!partFiles.isEmpty());
 
             // Enforce reading WAL from the very beginning at the next start.
             for (File f : cpMarkers)

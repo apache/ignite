@@ -539,7 +539,6 @@ public class CachePartitionDefragmentationManager {
         int partId = oldCacheDataStore.partId();
 
         PartitionContext partCtx = new PartitionContext(
-            workDir,
             grpId,
             partId,
             partDataRegion,
@@ -932,9 +931,6 @@ public class CachePartitionDefragmentationManager {
     @SuppressWarnings("PublicField")
     private class PartitionContext {
         /** */
-        public final File workDir;
-
-        /** */
         public final int grpId;
 
         /** */
@@ -978,7 +974,6 @@ public class CachePartitionDefragmentationManager {
 
         /** */
         public PartitionContext(
-            File workDir,
             int grpId,
             int partId,
             DataRegion partDataRegion,
@@ -988,7 +983,6 @@ public class CachePartitionDefragmentationManager {
             CacheDataStore oldCacheDataStore,
             FileVersionCheckingFactory pageStoreFactory
         ) {
-            this.workDir = workDir;
             this.grpId = grpId;
             this.partId = partId;
             cacheDataRegion = oldGrpCtx.dataRegion();

@@ -271,14 +271,16 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private IgniteBiTuple<Long, Long> findPagesForAnyCacheKey() throws IgniteCheckedException {
-        File dir = ft.cacheStorage(cacheConfig(CACHE_GROUP_NAME));
+        File[] dirs = ft.cacheStorages(cacheConfig(CACHE_GROUP_NAME));
+
+        assertEquals(1, dirs.length);
 
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
         IgniteLogger log = createTestLogger();
 
-        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
+        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dirs[0], null, false, log) {
             @Override ScanContext createContext(
                 String idxName,
                 FilePageStore store,
@@ -723,7 +725,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             PAGE_SIZE,
             PART_CNT,
             PAGE_STORE_VER,
-            ft.cacheStorage(cacheConfig(cacheGrp)),
+            ft.cacheStorages(cacheConfig(cacheGrp))[0],
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
             log
@@ -1088,10 +1090,12 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Create an empty directory and try to check it.
         String newCleanGrp = "noCache";
 
-        File cleanDir = ft.cacheStorage(cacheConfig(newCleanGrp));
+        File[] cleanDirs = ft.cacheStorages(cacheConfig(newCleanGrp));
+
+        assertEquals(1, cleanDirs.length);
 
         try {
-            cleanDir.mkdir();
+            cleanDirs[0].mkdir();
 
             assertThrows(
                 log,
@@ -1101,7 +1105,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             );
         }
         finally {
-            U.delete(cleanDir);
+            U.delete(cleanDirs[0]);
         }
     }
 
