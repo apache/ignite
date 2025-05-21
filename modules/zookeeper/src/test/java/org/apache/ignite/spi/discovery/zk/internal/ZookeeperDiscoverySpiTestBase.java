@@ -74,6 +74,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
@@ -729,7 +730,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             int connIdx
         ) throws IgniteCheckedException {
             if (failure && !matrix.hasConnection(getLocalNode(), node)) {
-                processSessionCreationError(node, null, new IgniteCheckedException("Test", new SocketTimeoutException()));
+                ((GridNioServerWrapper)U.field(this, "nioSrvWrapper")).processSessionCreationError(
+                        node,
+                        null,
+                        new IgniteCheckedException("Test", new SocketTimeoutException())
+                );
 
                 return null;
             }

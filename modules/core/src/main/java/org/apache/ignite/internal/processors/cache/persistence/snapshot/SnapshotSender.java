@@ -126,11 +126,12 @@ public abstract class SnapshotSender {
     /**
      * @param from Partition file to send.
      * @param to Destination file.
-     * @param drName Data region name.
+     * @param storagePath Cache storage path.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
+     * @see CacheConfiguration#getStoragePath()
      */
-    public final void sendPart(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+    public final void sendPart(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -138,7 +139,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendPart0(from, to, drName, pair, length);
+            sendPart0(from, to, storagePath, pair, length);
         }
         finally {
             lock.readLock().unlock();
@@ -192,11 +193,12 @@ public abstract class SnapshotSender {
     /**
      * @param from Partition file to send.
      * @param to Patition file to copy to.
-     * @param drName Data region name.
+     * @param storagePath Cache storage path.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
+     * @see CacheConfiguration#getStoragePath()
      */
-    protected abstract void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length);
+    protected abstract void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length);
 
     /**
      * @param delta Delta pages file.

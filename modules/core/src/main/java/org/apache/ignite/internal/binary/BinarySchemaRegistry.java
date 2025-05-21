@@ -70,7 +70,7 @@ class BinarySchemaRegistry {
      * @param schemaId Schema ID.
      * @return Schema or {@code null}.
      */
-    @Nullable public BinarySchema schema(int schemaId) {
+    @Nullable BinarySchema schema(int schemaId) {
         if (inline) {
             if (schemaId == schemaId1)
                 return schema1;

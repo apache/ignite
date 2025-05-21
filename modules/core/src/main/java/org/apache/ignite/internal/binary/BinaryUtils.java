@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,6 +60,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -81,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -3081,6 +3084,49 @@ public class BinaryUtils {
     public static void detachAllowedIfPossible(Object o) {
         if (isBinaryObjectImpl(o))
             ((BinaryObjectImpl)o).detachAllowed(true);
+    }
+
+    /**
+     * @param meta Binary metadata.
+     * @return Schemas identifiers of the specified {@link BinaryMetadata}.
+     */
+    public static Collection<T2<Integer, int[]>> schemasAndFieldsIds(BinaryMetadata meta) {
+        return F.viewReadOnly(meta.schemas(), s -> new T2<>(s.schemaId(), s.fieldIds()));
+    }
+
+    /**
+     * Gets field by its order.
+     *
+     * @param reader Reader.
+     * @param order Order.
+     */
+    public static int fieldId(BinaryReaderEx reader, int order) {
+        return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+    }
+
+    /**
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param fields Fields map.
+     * @param affKeyFieldName Affinity key field name.
+     * @param schemasAndFieldIds Schemas and fields identifiers.
+     * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
+     * @return New instance of {@link BinaryMetadata}.
+     */
+    public static BinaryMetadata binaryMetadata(
+        int typeId,
+        String typeName,
+        @Nullable Map<String, BinaryFieldMetadata> fields,
+        @Nullable String affKeyFieldName,
+        @Nullable Collection<T2<Integer, List<Integer>>> schemasAndFieldIds,
+        boolean isEnum,
+        @Nullable Map<String, Integer> enumMap) {
+        List<BinarySchema> schemas = schemasAndFieldIds.stream()
+            .map(t -> new BinarySchema(t.get1(), t.get2()))
+            .collect(Collectors.toList());
+
+        return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
     }
 
     /**

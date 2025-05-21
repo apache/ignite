@@ -110,7 +110,7 @@ public class TcpCommunicationSpiInverseConnectionLoggingTest extends GridCommonA
 
         TcpCommunicationSpi spi = (TcpCommunicationSpi)server.configuration().getCommunicationSpi();
 
-        GridTestUtils.invoke(spi, "onNodeLeft", clientNode.consistentId(), clientNode.id());
+        CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         sendFailingMessage(server, clientNode);
 

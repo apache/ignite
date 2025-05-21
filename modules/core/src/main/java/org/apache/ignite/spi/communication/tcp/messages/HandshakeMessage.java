@@ -36,7 +36,7 @@ public class HandshakeMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 32;
+    private static final int MESSAGE_SIZE = 36;
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
@@ -50,6 +50,9 @@ public class HandshakeMessage implements Message {
     /** */
     private long connectCnt;
 
+    /** */
+    private int connIdx;
+
     /**
      * Default constructor required by {@link Message}.
      */
@@ -61,21 +64,23 @@ public class HandshakeMessage implements Message {
      * @param nodeId Node ID.
      * @param connectCnt Connect count.
      * @param rcvCnt Number of received messages.
+     * @param connIdx Connection index.
      */
-    public HandshakeMessage(UUID nodeId, long connectCnt, long rcvCnt) {
+    public HandshakeMessage(UUID nodeId, long connectCnt, long rcvCnt, int connIdx) {
         assert nodeId != null;
         assert rcvCnt >= 0 : rcvCnt;
 
         this.nodeId = nodeId;
         this.connectCnt = connectCnt;
         this.rcvCnt = rcvCnt;
+        this.connIdx = connIdx;
     }
 
     /**
      * @return Connection index.
      */
     public int connectionIndex() {
-        return 0;
+        return connIdx;
     }
 
     /**
@@ -128,6 +133,8 @@ public class HandshakeMessage implements Message {
 
         buf.putLong(connectCnt);
 
+        buf.putInt(connIdx);
+
         return true;
     }
 
@@ -145,6 +152,8 @@ public class HandshakeMessage implements Message {
         rcvCnt = buf.getLong();
 
         connectCnt = buf.getLong();
+
+        connIdx = buf.getInt();
 
         return true;
     }

@@ -69,6 +69,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
@@ -2336,7 +2337,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Array of bytes.
      */
     public static byte[] longToBytes(long l) {
-        return GridClientByteUtils.longToBytes(l);
+        return toBytes(l, new byte[8], 0, 8);
     }
 
     /**
@@ -2349,7 +2350,9 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Number of bytes overwritten in {@code bytes} array.
      */
     public static int longToBytes(long l, byte[] bytes, int off) {
-        return off + GridClientByteUtils.longToBytes(l, bytes, off);
+        toBytes(l, bytes, off, 8);
+
+        return off + 8;
     }
 
     /**
@@ -2359,7 +2362,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Array of bytes.
      */
     public static byte[] intToBytes(int i) {
-        return GridClientByteUtils.intToBytes(i);
+        return toBytes(i, new byte[4], 0, 4);
     }
 
     /**
@@ -2372,7 +2375,9 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Number of bytes overwritten in {@code bytes} array.
      */
     public static int intToBytes(int i, byte[] bytes, int off) {
-        return off + GridClientByteUtils.intToBytes(i, bytes, off);
+        toBytes(i, bytes, off, 4);
+
+        return off + 4;
     }
 
     /**
@@ -2382,7 +2387,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Array of bytes.
      */
     public static byte[] shortToBytes(short s) {
-        return GridClientByteUtils.shortToBytes(s);
+        return toBytes(s, new byte[2], 0, 2);
     }
 
     /**
@@ -2395,7 +2400,9 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Number of bytes overwritten in {@code bytes} array.
      */
     public static int shortToBytes(short s, byte[] bytes, int off) {
-        return off + GridClientByteUtils.shortToBytes(s, bytes, off);
+        toBytes(s, bytes, off, 2);
+
+        return off + 2;
     }
 
     /**
@@ -2405,7 +2412,22 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Encoded into byte array {@link java.util.UUID}.
      */
     public static byte[] uuidToBytes(@Nullable UUID uuid) {
-        return GridClientByteUtils.uuidToBytes(uuid);
+        byte[] bytes = new byte[16];
+
+        ByteBuffer buf = ByteBuffer.wrap(bytes, 0, bytes.length);
+
+        buf.order(ByteOrder.BIG_ENDIAN);
+
+        if (uuid != null) {
+            buf.putLong(uuid.getMostSignificantBits());
+            buf.putLong(uuid.getLeastSignificantBits());
+        }
+        else {
+            buf.putLong(0);
+            buf.putLong(0);
+        }
+
+        return bytes;
     }
 
     /**
@@ -2416,23 +2438,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Short value.
      */
     public static short bytesToShort(byte[] bytes, int off) {
-        assert bytes != null;
-
-        int bytesCnt = Short.SIZE >> 3;
-
-        if (off + bytesCnt > bytes.length)
-            // Just use the remainder.
-            bytesCnt = bytes.length - off;
-
-        short res = 0;
-
-        for (int i = 0; i < bytesCnt; i++) {
-            int shift = bytesCnt - i - 1 << 3;
-
-            res |= (0xffL & bytes[off++]) << shift;
-        }
-
-        return res;
+        return (short)fromBytes(bytes, off, 2);
     }
 
     /**
@@ -2443,23 +2449,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Integer value.
      */
     public static int bytesToInt(byte[] bytes, int off) {
-        assert bytes != null;
-
-        int bytesCnt = Integer.SIZE >> 3;
-
-        if (off + bytesCnt > bytes.length)
-            // Just use the remainder.
-            bytesCnt = bytes.length - off;
-
-        int res = 0;
-
-        for (int i = 0; i < bytesCnt; i++) {
-            int shift = bytesCnt - i - 1 << 3;
-
-            res |= (0xffL & bytes[off++]) << shift;
-        }
-
-        return res;
+        return (int)fromBytes(bytes, off, 4);
     }
 
     /**
@@ -2470,34 +2460,72 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Long value.
      */
     public static long bytesToLong(byte[] bytes, int off) {
+        return fromBytes(bytes, off, 8);
+    }
+
+    /**
+     * Constructs {@link UUID} from byte array.
+     *
+     * @param bytes Array of bytes.
+     * @param off Offset in {@code bytes} array.
+     * @return UUID value.
+     */
+    public static UUID bytesToUuid(byte[] bytes, int off) {
+        ByteBuffer buf = ByteBuffer.wrap(bytes, off, 16);
+
+        buf.order(ByteOrder.BIG_ENDIAN);
+
+        long most = buf.getLong();
+        long least = buf.getLong();
+
+        return most != 0 && least != 0 ? new UUID(most, least) : null;
+    }
+
+    /**
+     * Converts primitive {@code long} type to byte array and stores it in specified
+     * byte array. The highest byte in the value is the first byte in result array.
+     *
+     * @param l Unsigned long value.
+     * @param bytes Bytes array to write result to.
+     * @param off Offset in the target array to write result to.
+     * @param limit Limit of bytes to write into output.
+     * @return Array of bytes.
+     */
+    private static byte[] toBytes(long l, byte[] bytes, int off, int limit) {
         assert bytes != null;
+        assert limit <= 8;
+        assert bytes.length >= off + limit;
 
-        int bytesCnt = Long.SIZE >> 3;
+        for (int i = limit - 1; i >= 0; i--) {
+            bytes[off + i] = (byte)(l & 0xFF);
+            l >>>= 8;
+        }
 
-        if (off + bytesCnt > bytes.length)
-            bytesCnt = bytes.length - off;
+        return bytes;
+    }
+
+    /**
+     * Constructs {@code long} from byte array. The first byte in array is the highest byte in result.
+     *
+     * @param bytes Array of bytes.
+     * @param off Offset in {@code bytes} array.
+     * @param limit Amount of bytes to use in the source array.
+     * @return Long value.
+     */
+    private static long fromBytes(byte[] bytes, int off, int limit) {
+        assert bytes != null;
+        assert limit <= 8;
+
+        int bytesCnt = Math.min(bytes.length - off, limit);
 
         long res = 0;
 
         for (int i = 0; i < bytesCnt; i++) {
-            int shift = bytesCnt - i - 1 << 3;
-
-            res |= (0xffL & bytes[off++]) << shift;
+            res <<= 8;
+            res |= bytes[off + i] & 0xFF;
         }
 
         return res;
-    }
-
-    /**
-     * Reads an {@link java.util.UUID} form byte array.
-     * If given array contains all 0s then {@code null} will be returned.
-     *
-     * @param bytes array of bytes.
-     * @param off Offset in {@code bytes} array.
-     * @return UUID value or {@code null}.
-     */
-    public static UUID bytesToUuid(byte[] bytes, int off) {
-        return GridClientByteUtils.bytesToUuid(bytes, off);
     }
 
     /**
