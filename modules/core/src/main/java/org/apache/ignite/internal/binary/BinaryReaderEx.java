@@ -47,13 +47,6 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
     public BinaryInputStream in();
 
     /**
-     * Get or create object schema.
-     *
-     * @return Schema.
-     */
-    public BinarySchema getOrCreateSchema();
-
-    /**
      * @param offset Offset in the array.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.

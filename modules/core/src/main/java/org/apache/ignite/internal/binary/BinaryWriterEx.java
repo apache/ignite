@@ -142,11 +142,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public int schemaId();
 
     /**
-     * @return Current writer's schema.
-     */
-    public BinarySchema currentSchema();
-
-    /**
      * @return Binary context.
      */
     public BinaryContext context();
