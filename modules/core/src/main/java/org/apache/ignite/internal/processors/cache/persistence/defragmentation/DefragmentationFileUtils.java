@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -33,39 +34,18 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentationCompletionMarkerFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexTmpFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartMappingFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Everything related to file management during defragmentation process.
  */
 public class DefragmentationFileUtils {
-    /** Prefix for link mapping files. */
-    private static final String DFRG_LINK_MAPPING_FILE_PREFIX = PART_FILE_PREFIX + "map-";
-
-    /** Link mapping file template. */
-    private static final String DFRG_LINK_MAPPING_FILE_TEMPLATE = DFRG_LINK_MAPPING_FILE_PREFIX + "%d" + FILE_SUFFIX;
-
-    /** Defragmentation complation marker file name. */
-    private static final String DFRG_COMPLETION_MARKER_FILE_NAME = "dfrg-completion-marker";
-
-    /** Name of defragmentated index partition file. */
-    private static final String DFRG_INDEX_FILE_NAME = INDEX_FILE_PREFIX + "-dfrg" + FILE_SUFFIX;
-
-    /** Name of defragmentated index partition temporary file. */
-    private static final String DFRG_INDEX_TMP_FILE_NAME = DFRG_INDEX_FILE_NAME + TMP_SUFFIX;
-
-    /** Prefix for defragmented partition files. */
-    private static final String DFRG_PARTITION_FILE_PREFIX = PART_FILE_PREFIX + "dfrg-";
-
-    /** Defragmented partition file template. */
-    private static final String DFRG_PARTITION_FILE_TEMPLATE = DFRG_PARTITION_FILE_PREFIX + "%d" + FILE_SUFFIX;
-
-    /** Defragmented partition temp file template. */
-    private static final String DFRG_PARTITION_TMP_FILE_TEMPLATE = DFRG_PARTITION_FILE_TEMPLATE + TMP_SUFFIX;
 
     /**
      * Performs cleanup of work dir before initializing file page stores.
@@ -95,12 +75,10 @@ public class DefragmentationFileUtils {
      */
     public static void deleteLeftovers(File workDir) {
         for (File file : workDir.listFiles()) {
-            String fileName = file.getName();
-
             if (
-                fileName.startsWith(DFRG_PARTITION_FILE_PREFIX)
-                    || fileName.startsWith(DFRG_INDEX_FILE_NAME)
-                    || fileName.startsWith(DFRG_LINK_MAPPING_FILE_PREFIX)
+                DefragmentationFileTreeUtils.defragmentationPartitionFile(file)
+                    || DefragmentationFileTreeUtils.defragmentationIndexFile(file)
+                    || DefragmentationFileTreeUtils.defragmentationLinkMappingFile(file)
             )
                 U.delete(file);
         }
@@ -115,7 +93,7 @@ public class DefragmentationFileUtils {
      * @return {@code true} if given cache group is already defragmented.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#defragmentationCompletionMarkerFile(File)
+     * @see DefragmentationFileTreeUtils#defragmentationCompletionMarkerFile(File)
      */
     public static boolean skipAlreadyDefragmentedCacheGroup(File workDir, int grpId, IgniteLogger log) throws IgniteException {
         File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
@@ -149,9 +127,9 @@ public class DefragmentationFileUtils {
      * @return {@code true} if given partition is already defragmented.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#defragmentedPartTmpFile(File, int)
-     * @see DefragmentationFileUtils#defragmentedPartFile(File, int)
-     * @see DefragmentationFileUtils#defragmentedPartMappingFile(File, int)
+     * @see DefragmentationFileTreeUtils#defragmentedPartTmpFile(File, int)
+     * @see DefragmentationFileTreeUtils#defragmentedPartFile(File, int)
+     * @see DefragmentationFileTreeUtils#defragmentedPartMappingFile(File, int)
      */
     public static boolean skipAlreadyDefragmentedPartition(File workDir, int grpId, int partId, IgniteLogger log) throws IgniteException {
         File defragmentedPartFile = defragmentedPartFile(workDir, partId);
@@ -211,18 +189,18 @@ public class DefragmentationFileUtils {
             return;
 
         try {
-            for (File mappingFile : workDir.listFiles((dir, name) -> name.startsWith(DFRG_LINK_MAPPING_FILE_PREFIX)))
+            for (File mappingFile : workDir.listFiles(DefragmentationFileTreeUtils::defragmentationLinkMappingFile))
                 Files.delete(mappingFile.toPath());
 
-            for (File partFile : workDir.listFiles((dir, name) -> name.startsWith(DFRG_PARTITION_FILE_PREFIX))) {
-                int partId = extractPartId(partFile.getName());
+            for (File partFile : workDir.listFiles(DefragmentationFileTreeUtils::defragmentationPartitionFile)) {
+                int partId = DefragmentationFileTreeUtils.partId(partFile);
 
                 File oldPartFile = new File(workDir, partitionFileName(partId));
 
                 Files.move(partFile.toPath(), oldPartFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
             }
 
-            File idxFile = new File(workDir, DFRG_INDEX_FILE_NAME);
+            File idxFile = DefragmentationFileTreeUtils.defragmentedIndexFile(workDir);
 
             if (idxFile.exists()) {
                 File oldIdxFile = new File(workDir, partitionFileName(INDEX_PARTITION));
@@ -236,59 +214,13 @@ public class DefragmentationFileUtils {
     }
 
     /**
-     * Extracts partition number from file names like {@code part-dfrg-%d.bin}.
-     *
-     * @param dfrgPartFileName Defragmented partition file name.
-     * @return Partition index.
-     *
-     * @see DefragmentationFileUtils#defragmentedPartFile(File, int)
-     */
-    private static int extractPartId(String dfrgPartFileName) {
-        assert dfrgPartFileName.startsWith(DFRG_PARTITION_FILE_PREFIX) : dfrgPartFileName;
-        assert dfrgPartFileName.endsWith(FILE_SUFFIX) : dfrgPartFileName;
-
-        String partIdStr = dfrgPartFileName.substring(
-            DFRG_PARTITION_FILE_PREFIX.length(),
-            dfrgPartFileName.length() - FILE_SUFFIX.length()
-        );
-
-        return Integer.parseInt(partIdStr);
-    }
-
-    /**
-     * Return file named {@code index-dfrg.bin.tmp} in given folder. It will be used for storing defragmented index
-     * partition during the process.
-     *
-     * @param workDir Cache group working directory.
-     * @return File.
-     *
-     * @see DefragmentationFileUtils#defragmentedIndexFile(File)
-     */
-    public static File defragmentedIndexTmpFile(File workDir) {
-        return new File(workDir, DFRG_INDEX_TMP_FILE_NAME);
-    }
-
-    /**
-     * Return file named {@code index-dfrg.bin} in given folder. It will be used for storing defragmented index
-     * partition when the process is over.
-     *
-     * @param workDir Cache group working directory.
-     * @return File.
-     *
-     * @see DefragmentationFileUtils#defragmentedIndexTmpFile(File)
-     */
-    public static File defragmentedIndexFile(File workDir) {
-        return new File(workDir, DFRG_INDEX_FILE_NAME);
-    }
-
-    /**
      * Rename temporary index defragmentation file to a finalized one.
      *
      * @param workDir Cache group working directory.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#defragmentedIndexTmpFile(File)
-     * @see DefragmentationFileUtils#defragmentedIndexFile(File)
+     * @see DefragmentationFileTreeUtils#defragmentedIndexTmpFile(File)
+     * @see DefragmentationFileTreeUtils#defragmentedIndexFile(File)
      */
     public static void renameTempIndexFile(File workDir) throws IgniteException {
         File defragmentedIdxTmpFile = defragmentedIndexTmpFile(workDir);
@@ -305,42 +237,14 @@ public class DefragmentationFileUtils {
     }
 
     /**
-     * Return file named {@code part-dfrg-%d.bin.tmp} in given folder. It will be used for storing defragmented data
-     * partition during the process.
-     *
-     * @param workDir Cache group working directory.
-     * @param partId Partition index, will be substituted into file name.
-     * @return File.
-     *
-     * @see DefragmentationFileUtils#defragmentedPartFile(File, int)
-     */
-    public static File defragmentedPartTmpFile(File workDir, int partId) {
-        return new File(workDir, String.format(DFRG_PARTITION_TMP_FILE_TEMPLATE, partId));
-    }
-
-    /**
-     * Return file named {@code part-dfrg-%d.bin} in given folder. It will be used for storing defragmented data
-     * partition when the process is over.
-     *
-     * @param workDir Cache group working directory.
-     * @param partId Partition index, will be substituted into file name.
-     * @return File.
-     *
-     * @see DefragmentationFileUtils#defragmentedPartTmpFile(File, int)
-     */
-    public static File defragmentedPartFile(File workDir, int partId) {
-        return new File(workDir, String.format(DFRG_PARTITION_FILE_TEMPLATE, partId));
-    }
-
-    /**
      * Rename temporary partition defragmentation file to a finalized one.
      *
      * @param workDir Cache group working directory.
      * @param partId Partition index.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#defragmentedPartTmpFile(File, int)
-     * @see DefragmentationFileUtils#defragmentedPartFile(File, int)
+     * @see DefragmentationFileTreeUtils#defragmentedPartTmpFile(File, int)
+     * @see DefragmentationFileTreeUtils#defragmentedPartFile(File, int)
      */
     public static void renameTempPartitionFile(File workDir, int partId) throws IgniteException {
         File defragmentedPartTmpFile = defragmentedPartTmpFile(workDir, partId);
@@ -357,35 +261,6 @@ public class DefragmentationFileUtils {
     }
 
     /**
-     * Return file named {@code part-map-%d.bin} in given folder. It will be used for storing defragmention links
-     * mapping for given partition during and after defragmentation process. No temporary counterpart is required here.
-     *
-     * @param workDir Cache group working directory.
-     * @param partId Partition index, will be substituted into file name.
-     * @return File.
-     *
-     * @see LinkMap
-     */
-    public static File defragmentedPartMappingFile(File workDir, int partId) {
-        return new File(workDir, String.format(DFRG_LINK_MAPPING_FILE_TEMPLATE, partId));
-    }
-
-    /**
-     * Return defragmentation completion marker file. This file can only be created when all partitions and index are
-     * defragmented and renamed from their original {@code *.tmp} versions. Presence of this file signals that no data
-     * will be lost if original partitions are deleted and batch rename process can be safely initiated.
-     *
-     * @param workDir Cache group working directory.
-     * @return File.
-     *
-     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, File, IgniteLogger)
-     * @see DefragmentationFileUtils#batchRenameDefragmentedCacheGroupPartitions(File, IgniteLogger)
-     */
-    public static File defragmentationCompletionMarkerFile(File workDir) {
-        return new File(workDir, DFRG_COMPLETION_MARKER_FILE_NAME);
-    }
-
-    /**
      * Creates empty completion marker file in given directory.
      *
      * @param ioFactory File IO factory.
@@ -393,7 +268,7 @@ public class DefragmentationFileUtils {
      * @param log Logger to write messages.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#defragmentationCompletionMarkerFile(File)
+     * @see DefragmentationFileTreeUtils#defragmentationCompletionMarkerFile(File)
      */
     public static void writeDefragmentationCompletionMarker(
         FileIOFactory ioFactory,

@@ -208,7 +208,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String PART_FILE_PREFIX = "part-";
 
     /** Index file prefix. */
-    public static final String INDEX_FILE_PREFIX = "index";
+    static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
     protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;

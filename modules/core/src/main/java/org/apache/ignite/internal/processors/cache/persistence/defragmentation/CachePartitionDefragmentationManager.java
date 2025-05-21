@@ -96,16 +96,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_PART_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.renameTempIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.renameTempPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedCacheGroup;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedPartition;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.writeDefragmentationCompletionMarker;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexTmpFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartMappingFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartTmpFile;
 
 /**
  * Defragmentation manager is the core class that contains main defragmentation procedure.

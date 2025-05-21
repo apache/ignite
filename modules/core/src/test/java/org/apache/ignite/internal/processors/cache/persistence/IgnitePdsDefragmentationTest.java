@@ -58,9 +58,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -70,11 +70,11 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentationCompletionMarkerFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartMappingFile;
 
 /** */
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
@@ -403,8 +403,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     @Test
     public void testFailoverIncompletedIndex() throws Exception {
         testFailover(workDir -> move(
-            DefragmentationFileUtils.defragmentedIndexFile(workDir),
-            DefragmentationFileUtils.defragmentedIndexTmpFile(workDir)
+            defragmentedIndexFile(workDir),
+            DefragmentationFileTreeUtils.defragmentedIndexTmpFile(workDir)
         ));
     }
 
@@ -416,11 +416,11 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     @Test
     public void testFailoverIncompletedPartition1() throws Exception {
         testFailover(workDir -> {
-            DefragmentationFileUtils.defragmentedIndexFile(workDir).delete();
+            defragmentedIndexFile(workDir).delete();
 
             move(
-                DefragmentationFileUtils.defragmentedPartFile(workDir, PARTS - 1),
-                DefragmentationFileUtils.defragmentedPartTmpFile(workDir, PARTS - 1)
+                defragmentedPartFile(workDir, PARTS - 1),
+                DefragmentationFileTreeUtils.defragmentedPartTmpFile(workDir, PARTS - 1)
             );
         });
     }
@@ -433,9 +433,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     @Test
     public void testFailoverIncompletedPartition2() throws Exception {
         testFailover(workDir -> {
-            DefragmentationFileUtils.defragmentedIndexFile(workDir).delete();
+            defragmentedIndexFile(workDir).delete();
 
-            DefragmentationFileUtils.defragmentedPartMappingFile(workDir, PARTS - 1).delete();
+            defragmentedPartMappingFile(workDir, PARTS - 1).delete();
         });
     }
 

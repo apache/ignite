@@ -39,7 +39,7 @@ import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -140,7 +140,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             newIdxFileLen <= oldIdxFileLen
         );
 
-        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(ft.cacheStorage(dfltCacheCfg));
+        File completionMarkerFile = DefragmentationFileTreeUtils.defragmentationCompletionMarkerFile(ft.cacheStorage(dfltCacheCfg));
 
         assertTrue("Completion marker file must exists", completionMarkerFile.exists());
 
