@@ -39,30 +39,8 @@ public class FreeListTest extends GridCommonAbstractTest {
     private static final int KEYS_COUNT = 5_000;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
-        super.afterTest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setMetricsLogFrequency(2000);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
@@ -77,11 +55,9 @@ public class FreeListTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
-    public void testFreeList() throws Exception {
+    public void testConcurrentUpdatesAndRemoves() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         int partCnt = 1;
@@ -93,7 +69,7 @@ public class FreeListTest extends GridCommonAbstractTest {
         Random random = new Random(3793);
 
         for (int i = 0; i < KEYS_COUNT; i++)
-            cache.put(i, new byte[random.nextInt(3000, 12000)]);
+            cache.put(i, new byte[random.nextInt(3000, 15000)]);
 
 
         runMultiThreaded(() -> {
@@ -102,7 +78,7 @@ public class FreeListTest extends GridCommonAbstractTest {
                     ignite.log().info(String.format("%s: i=%d; size=%d", Thread.currentThread().getName(), i, cache.size()));
 
                 cache.put(random.nextInt(KEYS_COUNT),
-                    new byte[random.nextInt(3000, 12000)]);
+                    new byte[random.nextInt(3000, 15000)]);
 
                 int del = random.nextInt(KEYS_COUNT);
 
