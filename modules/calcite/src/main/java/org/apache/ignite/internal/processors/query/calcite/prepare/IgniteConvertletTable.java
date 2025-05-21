@@ -49,7 +49,6 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
     protected IgniteConvertletTable() {
         // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
-        //registerOp(SqlStdOperatorTable.CASE, this::convertCase);
 
         addAlias(IgniteOwnSqlOperatorTable.LENGTH, SqlStdOperatorTable.CHAR_LENGTH);
     }
@@ -60,22 +59,6 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
         SqlRexConvertlet res = super.get(call);
 
         return res == null ? StandardConvertletTable.INSTANCE.get(call) : res;
-    }
-
-    /** */
-    private RexNode convertCase(SqlRexContext cx, SqlCall call) {
-        SqlRexConvertlet stdConvertlet = StandardConvertletTable.INSTANCE.get(call);
-
-        RexCall res = (RexCall)stdConvertlet.convertCall(cx, call);
-
-        RelDataType validatedType = cx.getValidator().getValidatedNodeType(call);
-        RelDataType convertedType = res.getType();
-
-        if (validatedType != null && !validatedType.equals(convertedType)
-            && SqlTypeUtil.equalSansNullability(validatedType, convertedType))
-            return cx.getRexBuilder().makeCall(validatedType, res.getOperator(), res.getOperands());
-
-        return res;
     }
 
     /** Convertlet that handles the {@code TIMESTAMPDIFF} function. */
