@@ -3109,9 +3109,11 @@ public class BinaryUtils {
      * @param typeName Type name.
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
-     * @param schemasAndFieldIds Schemas.
+     * @param schemasAndFieldIds Schemas and fields identifiers.
      * @param isEnum Enum flag.
      * @param enumMap Enum name to ordinal mapping.
+     *
+     * @return New instance of {@link BinaryMetadata}.
      */
     public static BinaryMetadata binaryMetadata(
         int typeId,
