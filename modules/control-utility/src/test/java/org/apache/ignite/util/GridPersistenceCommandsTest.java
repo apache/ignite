@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
- * Command line tests of --persitence commands.
+ * Command line tests of --persistence commands.
  */
 @RunWith(Parameterized.class)
 public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMethodAbstractTest {
