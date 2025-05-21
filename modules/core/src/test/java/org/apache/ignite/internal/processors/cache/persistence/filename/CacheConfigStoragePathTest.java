@@ -115,7 +115,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
                 File db = ensureExists(new File(customRoot, DB_DIR));
                 File nodeStorage = ensureExists(new File(db, ft.folderName()));
 
-                ensureExists(new File(nodeStorage, ft.cacheStorage(ccfg).getName()));
+                ensureExists(new File(nodeStorage, ft.cacheStorages(ccfg)[0].getName()));
             }
         }
     }

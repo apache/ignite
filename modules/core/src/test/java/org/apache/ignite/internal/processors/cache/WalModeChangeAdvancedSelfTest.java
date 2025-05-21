@@ -433,7 +433,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     try {
                         IgniteEx srv = grid(victimName);
 
-                        File cacheDir = srv.context().pdsFolderResolver().fileTree().cacheStorage(srv.cachex(CACHE_NAME).configuration());
+                        File cacheDir =
+                            srv.context().pdsFolderResolver().fileTree().cacheStorages(srv.cachex(CACHE_NAME).configuration())[0];
 
                         stopGrid(victimName);
 

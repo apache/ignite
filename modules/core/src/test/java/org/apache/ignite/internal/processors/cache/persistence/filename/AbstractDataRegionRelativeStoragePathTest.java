@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -111,8 +113,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (NodeFileTree ft : fts) {
                 for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                    if (!F.isEmpty(ft.cacheStorage(ccfg).listFiles()))
-                        return false;
+                    Stream<File> cacheFiles = Arrays.stream(ft.cacheStorages(ccfg)).flatMap(dir -> Arrays.stream(dir.listFiles()));
+
+                    return cacheFiles.findAny().isEmpty();
                 }
             }
 

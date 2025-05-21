@@ -748,7 +748,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         assertTrue(cacheDir.exists());
 
-        renamed = cacheDir.renameTo(ft.cacheStorage(new CacheConfiguration<>(RENAMED_CACHE_NAME)));
+        renamed = cacheDir.renameTo(ft.cacheStorages(new CacheConfiguration<>(RENAMED_CACHE_NAME))[0]);
 
         assert renamed;
 

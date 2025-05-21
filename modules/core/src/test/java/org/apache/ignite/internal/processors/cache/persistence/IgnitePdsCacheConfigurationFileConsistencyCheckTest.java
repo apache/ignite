@@ -141,7 +141,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-            File[] tmpFile = ft.cacheStorage(desc.cacheConfiguration()).listFiles(NodeFileTree::tmpCacheConfig);
+            File[] tmpFile = ft.cacheStorages(desc.cacheConfiguration())[0].listFiles(NodeFileTree::tmpCacheConfig);
 
             assertNotNull(tmpFile);
 

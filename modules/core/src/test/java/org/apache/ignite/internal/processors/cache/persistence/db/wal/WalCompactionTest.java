@@ -191,7 +191,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         File walSegment = ft.zipWalArchiveSegment(0);
-        File cacheDir = ft.cacheStorage(ig.cachex(CACHE_NAME).configuration());
+        File cacheDir = ft.cacheStorages(ig.cachex(CACHE_NAME).configuration())[0];
 
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(walSegment::exists, 15_000));
@@ -484,7 +484,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
 
-        File cacheDir = ft.cacheStorage(ig.cachex(CACHE_NAME).configuration());
+        File cacheDir = ft.cacheStorages(ig.cachex(CACHE_NAME).configuration())[0];
 
         stopAllGrids();
 
