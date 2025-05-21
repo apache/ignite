@@ -536,7 +536,8 @@ public class CommandUtils {
         return cmd instanceof LocalCommand
             || cmd instanceof ComputeCommand
             || cmd instanceof HelpCommand
-            || cmd instanceof BeforeNodeStartCommand;
+            || cmd instanceof BeforeNodeStartCommand
+            || cmd instanceof OfflineCommand;
     }
 
     /**

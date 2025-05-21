@@ -17,8 +17,10 @@
 
 package org.apache.ignite.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -30,6 +32,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,6 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
@@ -80,11 +84,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -3857,6 +3866,63 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
+    /** */
+    @Test
+    public void testOfflineCommand() throws Exception {
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream(16 * 1024);
+
+        PrintStream sysOut = System.out;
+
+        System.setOut(new PrintStream(testOut));
+
+        startGrid(0);
+
+        try {
+            TestCommandHandler cmdHnd = newCommandHandler(createTestLogger());
+
+            IgniteCommandRegistry registry;
+
+            if (cliCommandHandler()) {
+                Field fieldHnd = cmdHnd.getClass().getDeclaredField("hnd");
+                fieldHnd.setAccessible(true);
+
+                CommandHandler hnd = (CommandHandler)fieldHnd.get(cmdHnd);
+
+                Field fieldRegistry = hnd.getClass().getDeclaredField("registry");
+                fieldRegistry.setAccessible(true);
+
+                registry = (IgniteCommandRegistry)fieldRegistry.get(hnd);
+            }
+            else {
+                Field field = grid(0).getClass().getDeclaredField("mBeansMgr");
+                field.setAccessible(true);
+
+                IgniteMBeansManager mBeansMgr = (IgniteMBeansManager)field.get(grid(0));
+
+                mBeansMgr.register("OfflineTest", new LinkedList<>(), new OfflineTestCommand());
+
+                Field fieldRegistry = cmdHnd.getClass().getDeclaredField("registry");
+                fieldRegistry.setAccessible(true);
+
+                registry = (IgniteCommandRegistry)fieldRegistry.get(cmdHnd);
+            }
+
+            registry.register(new OfflineTestCommand());
+
+            testOut.reset();
+
+            assertEquals(EXIT_CODE_OK, cmdHnd.execute(List.of("--offline-test")));
+
+            if (!cliCommandHandler())
+                cmdHnd.flushLogger();
+
+            assertTrue(testOut.toString().contains(new OfflineTestCommand().description()));
+        }
+        finally {
+            System.setOut(sysOut);
+        }
+    }
+
     /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
@@ -3952,5 +4018,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     public static void assertClusterState(ClusterState state, String logOutput) {
         assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
+    }
+
+    /** */
+    private static class OfflineTestCommand implements OfflineCommand<NoArg, Void> {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return "Test offline command";
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<? extends NoArg> argClass() {
+            return NoArg.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void execute(NoArg arg, Consumer<String> printer) {
+            printer.accept(description());
+
+            return null;
+        }
     }
 }
