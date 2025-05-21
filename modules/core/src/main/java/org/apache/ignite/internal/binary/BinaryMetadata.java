@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -407,6 +406,6 @@ public class BinaryMetadata implements Externalizable {
      * @return Schema IDs registered for this type.
      */
     public Set<Integer> schemaIds() {
-        return Collections.unmodifiableSet(schemaIds);
+        return schemaIds;
     }
 }
