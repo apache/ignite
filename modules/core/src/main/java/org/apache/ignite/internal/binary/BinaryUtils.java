@@ -3112,7 +3112,6 @@ public class BinaryUtils {
      * @param schemasAndFieldIds Schemas and fields identifiers.
      * @param isEnum Enum flag.
      * @param enumMap Enum name to ordinal mapping.
-     *
      * @return New instance of {@link BinaryMetadata}.
      */
     public static BinaryMetadata binaryMetadata(
