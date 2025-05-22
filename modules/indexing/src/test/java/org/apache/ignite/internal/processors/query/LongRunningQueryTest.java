@@ -57,6 +57,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
 
+    /** Number of keys to be queries in lazy queries. */
+    private static final int LAZY_QRYS_KEY_CNT = 5;
+
     /** Long query warning timeout. */
     private static final int LONG_QUERY_WARNING_TIMEOUT = 1000;
 
@@ -147,6 +150,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        assertTrue(heavyQueriesTracker().getQueries().isEmpty());
+
         stopAllGrids();
 
         super.afterTest();
@@ -393,6 +398,33 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Verifies that while a lazy query is not fully fetched, its {@link H2QueryInfo} is kept in
+     * {@link HeavyQueriesTracker} and its {@link H2QueryInfo#isSuspended()} returns {@code true}. It also verifies that
+     * once the query is fully fetched, its {@link H2QueryInfo} is removed from {@link HeavyQueriesTracker}.
+     */
+    @Test
+    public void testLazyQueriesMemoryLeak() {
+        local = false;
+        lazy = true;
+        pageSize = 1;
+
+        try {
+            Iterator<?> it = sql("test", "select * from test").iterator();
+
+            H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+
+            assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+
+            assertTrue(qry.isSuspended());
+
+            it.forEachRemaining(x -> {});
+        }
+        finally {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
+    }
+
+    /**
      * Do several fast queries.
      * Log messages must not contain info about long query.
      */
@@ -467,7 +499,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         pageSize = 1;
 
         try {
-            assertFalse(sql("test", sql, args).iterator().next().isEmpty());
+            assertEquals(LAZY_QRYS_KEY_CNT, sql("test", sql, args).getAll().size());
         }
         finally {
             pageSize = DEFAULT_PAGE_SIZE;
@@ -507,14 +539,14 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private void sqlCheckLongRunning() {
         if (lazy && withMergeTable) {
             String select = "select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
-                " where p.orgId = o._key and o._key=1 and o._key < sleep_func(?)" +
+                " where p.orgId = o._key and o._key=1 and o._key < sleep_func(?, ?)" +
                 " union select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
                 " where p.orgId = o._key and o._key=2";
 
-            sqlCheckLongRunningLazyWithMergeTable(select, 2000);
+            sqlCheckLongRunningLazyWithMergeTable(select, 2000, LAZY_QRYS_KEY_CNT);
         }
         else if (lazy && !withMergeTable)
-            sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?)", 2000);
+            sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?, ?)", 2000, LAZY_QRYS_KEY_CNT);
         else
             sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
     }
@@ -545,9 +577,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog().registerListener(lsnr);
 
-        try {
-            Iterator<List<?>> it = sql("test", "select * from test").iterator();
+        Iterator<List<?>> it = sql("test", "select * from test").iterator();
 
+        try {
             it.next();
 
             long sleepStartTs = U.currentTimeMillis();
@@ -565,6 +597,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         }
         finally {
             pageSize = DEFAULT_PAGE_SIZE;
+
+            it.forEachRemaining(x -> {});
         }
     }
 
@@ -588,19 +622,19 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     public static class TestSQLFunctions {
         /**
-         * @param v amount of milliseconds to sleep
-         * @return amount of milliseconds to sleep
+         * @param sleep amount of milliseconds to sleep
+         * @param val value to be returned by the function
          */
         @SuppressWarnings("unused")
         @QuerySqlFunction
-        public static int sleep_func(int v) {
+        public static int sleep_func(int sleep, int val) {
             try {
-                Thread.sleep(v);
+                Thread.sleep(sleep);
             }
             catch (InterruptedException ignored) {
                 // No-op
             }
-            return v;
+            return val;
         }
 
         /** */
