@@ -243,19 +243,20 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures
     ) {
         try {
-            applyOnDefaultChannel(
-                channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
-                null,
-                failures
-            );
+            ClientChannel ch = applyOnDefaultChannel(Function.identity(), null, failures);
+
+            applyOnClientChannelAsync(fut, ch, op, payloadWriter, payloadReader, failures);
         }
         catch (Throwable ex) {
             fut.completeExceptionally(ex);
         }
     }
 
-    /** */
-    private <T> Object applyOnClientChannelAsync(
+    /**
+     * Retries an async operation on the same channel if it fails with a connection exception
+     * then falls back to other channels if retry fails. Aggregates failures and completes the original future.
+     */
+    private <T> void applyOnClientChannelAsync(
         final CompletableFuture<T> fut,
         ClientChannel ch,
         ClientOperation op,
@@ -263,43 +264,99 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader,
         List<ClientConnectionException> failures
     ) {
-        return ch
-            .serviceAsync(op, payloadWriter, payloadReader)
-            .handle((res, err) -> {
-                if (err == null) {
-                    fut.complete(res);
-
-                    return null;
-                }
-
-                if (err instanceof ClientConnectionException) {
-                    ClientConnectionException failure0 = (ClientConnectionException)err;
-
-                    failures.add(failure0);
-
-                    try {
-                        // Will try to reinit channels if topology changed.
-                        onChannelFailure(ch, err, failures);
-                    }
-                    catch (Throwable ex) {
-                        fut.completeExceptionally(ex);
-
-                        return null;
-                    }
-
-                    if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0)) {
-                        handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-
-                        return null;
-                    }
-
-                    fut.completeExceptionally(composeException(failures));
-                }
-                else
-                    fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
+        ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> {
+            if (err == null) {
+                fut.complete(res);
 
                 return null;
-            });
+            }
+
+            // Retry use same channel in case of connection exception.
+            if (err instanceof ClientConnectionException) {
+                ClientConnectionException failure0 = (ClientConnectionException)err;
+
+                UUID nodeId = ch.serverNodeId();
+
+                ClientChannelHolder hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
+
+                try {
+                    // Will try to reinit channels if topology changed.
+                    onChannelFailure(ch, err, failures);
+
+                    if (hld == null) {
+                        failures.add(failure0);
+
+                        throw failure0;
+                    }
+
+                    if (shouldRetry(op, failures.size() - 1, failure0)) {
+                        try {
+                            hld.getOrCreateChannel().serviceAsync(op, payloadWriter, payloadReader)
+                                .handle((retryRes, retryErr) -> {
+                                    if (retryErr == null)
+                                        fut.complete(retryRes);
+                                    else
+                                        fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures);
+
+                                    return null;
+                                });
+                        }
+                        catch (ClientConnectionException retryEx) {
+                            failures.add(retryEx);
+
+                            throw retryEx;
+                        }
+                    }
+                    else {
+                        failures.add(failure0);
+
+                        fut.completeExceptionally(composeException(failures));
+                    }
+                }
+                catch (ClientConnectionException reconnectEx) {
+                    onChannelFailure(hld, ch, reconnectEx, failures);
+
+                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures);
+                }
+                catch (Throwable ex) {
+                    fut.completeExceptionally(ex);
+                }
+            }
+            else
+                fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
+
+            return null;
+        });
+    }
+
+    /**
+     * Handle reconnection attempt to another channels after failure on client channel twice.
+     */
+    private <T> void fallbackToOtherChannels(
+        CompletableFuture<T> fut,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader,
+        List<ClientConnectionException> failures
+    ) {
+        ClientConnectionException err = failures.get(failures.size() - 1);
+
+        if (err != null && !(err instanceof ClientConnectionException)) {
+            fut.completeExceptionally(err);
+
+            return;
+        }
+
+        if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, err)) {
+            try {
+                handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
+            }
+            catch (Throwable ex) {
+                fut.completeExceptionally(ex);
+            }
+        }
+        else
+            fut.completeExceptionally(composeException(failures));
     }
 
     /**
@@ -395,14 +452,13 @@ final class ReliableChannel implements AutoCloseable {
                 CompletableFuture<T> fut = new CompletableFuture<>();
                 List<ClientConnectionException> failures = new ArrayList<>();
 
-                Object result = applyOnNodeChannel(
-                    affNodeId,
-                    channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
-                    failures
-                );
+                ClientChannel ch = applyOnNodeChannel(affNodeId, Function.identity(), failures);
 
-                if (result != null)
+                if (ch != null) {
+                    applyOnClientChannelAsync(fut, ch, op, payloadWriter, payloadReader, failures);
+
                     return new IgniteClientFutureImpl<>(fut);
+                }
             }
         }
 
