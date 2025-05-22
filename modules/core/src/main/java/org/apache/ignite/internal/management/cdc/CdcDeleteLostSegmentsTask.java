@@ -141,7 +141,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                     Path stateDir = ft.walCdc().toPath().resolve(STATE_DIR);
 
                     if (stateDir.toFile().exists()) {
-                        File walState = NodeFileTree.walStateFilePath(stateDir).toFile();
+                        File walState = NodeFileTree.walStateFilePath(stateDir, false).toFile();
 
                         if (walState.exists() && !walState.delete()) {
                             throw new IgniteException("Failed to delete wal state file [file=" +

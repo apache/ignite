@@ -97,16 +97,16 @@ public class CdcConsumerState {
      */
     public CdcConsumerState(IgniteLogger log, Path stateDir) {
         this.log = log.getLogger(CdcConsumerState.class);
-        walPtr = NodeFileTree.walStateFilePath(stateDir);
-        tmpWalPtr = NodeFileTree.tempWalStateFilePath(stateDir);
-        types = NodeFileTree.typesStateFilePath(stateDir);
-        tmpTypes = NodeFileTree.tempTypesStateFilePath(stateDir);
-        mappings = NodeFileTree.mappingsStateFilePath(stateDir);
-        tmpMappings = NodeFileTree.tempMappingsStateFilePath(stateDir);
-        caches = NodeFileTree.cachesStateFilePath(stateDir);
-        tmpCaches = NodeFileTree.tempCachesStateFilePath(stateDir);
-        cdcMode = NodeFileTree.cdcModeStateFilePath(stateDir);
-        tmpCdcMode = NodeFileTree.tempCdcModeStateFilePath(stateDir);
+        walPtr = NodeFileTree.walStateFilePath(stateDir, false);
+        tmpWalPtr = NodeFileTree.walStateFilePath(stateDir, true);
+        types = NodeFileTree.typesStateFilePath(stateDir, false);
+        tmpTypes = NodeFileTree.typesStateFilePath(stateDir, true);
+        mappings = NodeFileTree.mappingsStateFilePath(stateDir, false);
+        tmpMappings = NodeFileTree.mappingsStateFilePath(stateDir, true);
+        caches = NodeFileTree.cachesStateFilePath(stateDir, false);
+        tmpCaches = NodeFileTree.cachesStateFilePath(stateDir, true);
+        cdcMode = NodeFileTree.cdcModeStateFilePath(stateDir, false);
+        tmpCdcMode = NodeFileTree.cdcModeStateFilePath(stateDir, true);
     }
 
     /**

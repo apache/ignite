@@ -905,82 +905,47 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param stateDir State directory.
+     * @param isTmp {@code True} if the temporary file.
      * @return WAL state file path.
      */
-    public static Path walStateFilePath(Path stateDir) {
-        return stateDir.resolve(WAL_STATE_FILE_NAME);
+    public static Path walStateFilePath(Path stateDir, boolean isTmp) {
+        return stateDir.resolve(WAL_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
     }
 
     /**
      * @param stateDir State directory.
-     * @return Temp WAL state file path.
-     */
-    public static Path tempWalStateFilePath(Path stateDir) {
-        return stateDir.resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /**
-     * @param stateDir State directory.
+     * @param isTmp {@code True} if the temporary file.
      * @return Types state file path.
      */
-    public static Path typesStateFilePath(Path stateDir) {
-        return stateDir.resolve(TYPES_STATE_FILE_NAME);
+    public static Path typesStateFilePath(Path stateDir, boolean isTmp) {
+        return stateDir.resolve(TYPES_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
     }
 
     /**
      * @param stateDir State directory.
-     * @return Temp types state file path.
-     */
-    public static Path tempTypesStateFilePath(Path stateDir) {
-        return stateDir.resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /**
-     * @param stateDir State directory.
+     * @param isTmp {@code True} if the temporary file.
      * @return Mappings state file path.
      */
-    public static Path mappingsStateFilePath(Path stateDir) {
-        return stateDir.resolve(MAPPINGS_STATE_FILE_NAME);
+    public static Path mappingsStateFilePath(Path stateDir, boolean isTmp) {
+        return stateDir.resolve(MAPPINGS_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
     }
 
     /**
      * @param stateDir State directory.
-     * @return Temp mappings state file path.
-     */
-    public static Path tempMappingsStateFilePath(Path stateDir) {
-        return stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /**
-     * @param stateDir State directory.
+     * @param isTmp {@code True} if the temporary file.
      * @return Caches state file path.
      */
-    public static Path cachesStateFilePath(Path stateDir) {
-        return stateDir.resolve(CACHES_STATE_FILE_NAME);
+    public static Path cachesStateFilePath(Path stateDir, boolean isTmp) {
+        return stateDir.resolve(CACHES_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
     }
 
     /**
      * @param stateDir State directory.
-     * @return Temp caches state file path.
-     */
-    public static Path tempCachesStateFilePath(Path stateDir) {
-        return stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /**
-     * @param stateDir State directory.
+     * @param isTmp {@code True} if the temporary file.
      * @return CDC manager mode state file path.
      */
-    public static Path cdcModeStateFilePath(Path stateDir) {
-        return stateDir.resolve(CDC_MODE_FILE_NAME);
-    }
-
-    /**
-     * @param stateDir State directory.
-     * @return Temp CDC manager mode state file path.
-     */
-    public static Path tempCdcModeStateFilePath(Path stateDir) {
-        return stateDir.resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    public static Path cdcModeStateFilePath(Path stateDir, boolean isTmp) {
+        return stateDir.resolve(CDC_MODE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
     }
 
     /** {@inheritDoc} */
