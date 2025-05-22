@@ -118,6 +118,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
                 .setForceClientToServerConnections(forceClientToSrvConnections)
+                .setReconnectCount(2)
                 //.setConnectTimeout(5_000)
         );
 
