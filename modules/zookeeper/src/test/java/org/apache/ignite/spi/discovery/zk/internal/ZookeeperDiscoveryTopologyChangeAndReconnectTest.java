@@ -359,7 +359,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     public void testLargeUserAttribute3() throws Exception {
         try {
             Set<Integer> idxs = ThreadLocalRandom.current()
-                    .ints(0, 10)
+                    .ints(0, 6)
                     .distinct()
                     .limit(3)
                     .boxed()
