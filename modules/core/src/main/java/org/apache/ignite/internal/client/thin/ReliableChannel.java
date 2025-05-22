@@ -262,11 +262,9 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
-        List<ClientConnectionException> failures) {
-        CompletableFuture<T> chFut = ch.serviceAsync(op, payloadWriter, payloadReader);
-
-        // Retry use same channel in case of connection exception.
-        chFut.handle((res, err) -> {
+        List<ClientConnectionException> failures
+    ) {
+        ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> {
             if (err == null) {
                 fut.complete(res);
 
@@ -291,17 +289,22 @@ final class ReliableChannel implements AutoCloseable {
                     }
 
                     if (shouldRetry(op, failures.size() - 1, failure0)) {
-                        CompletableFuture<T> reconnectFut = hld.getOrCreateChannel().serviceAsync(op, payloadWriter, payloadReader);
+                        try {
+                            hld.getOrCreateChannel().serviceAsync(op, payloadWriter, payloadReader)
+                                .handle((retryRes, retryErr) -> {
+                                    if (retryErr == null)
+                                        fut.complete(retryRes);
+                                    else
+                                        fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures);
 
-                        reconnectFut
-                            .handle((retryRes, retryErr) -> {
-                                if (retryErr == null)
-                                    fut.complete(retryRes);
-                                else
-                                    handleReconnectionAttempt(fut, reconnectFut, op, payloadWriter, payloadReader, failures);
+                                    return null;
+                                });
+                        }
+                        catch (ClientConnectionException retryEx) {
+                            failures.add(retryEx);
 
-                                return null;
-                            });
+                            throw retryEx;
+                        }
                     }
                     else {
                         failures.add(failure0);
@@ -312,7 +315,7 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException reconnectEx) {
                     onChannelFailure(hld, ch, reconnectEx, failures);
 
-                    handleReconnectionAttempt(fut, chFut, op, payloadWriter, payloadReader, failures);
+                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures);
                 }
                 catch (Throwable ex) {
                     fut.completeExceptionally(ex);
@@ -328,18 +331,14 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Handle reconnection attempt to another channels after failure on client channel twice.
      */
-    private <T> void handleReconnectionAttempt(
-        final CompletableFuture<T> fut,
-        CompletableFuture<T> reconnectFut,
+    private <T> void fallbackToOtherChannels(
+        CompletableFuture<T> fut,
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
-        List<ClientConnectionException> failures) {
-        // Try other channels in case of failed retry.
-        if (fut.isDone())
-            return;
-
-        Throwable err = reconnectFut.isCompletedExceptionally() ? reconnectFut.handle((r, e) -> e).join() : null;
+        List<ClientConnectionException> failures
+    ) {
+        ClientConnectionException err = failures.get(failures.size() - 1);
 
         if (err != null && !(err instanceof ClientConnectionException)) {
             fut.completeExceptionally(err);
@@ -347,16 +346,16 @@ final class ReliableChannel implements AutoCloseable {
             return;
         }
 
-        if (err != null) {
-            ClientConnectionException failure0 = (ClientConnectionException)err;
-
-            if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, failure0))
+        if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, err)) {
+            try {
                 handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
-            else
-                fut.completeExceptionally(composeException(failures));
+            }
+            catch (Throwable ex) {
+                fut.completeExceptionally(ex);
+            }
         }
         else
-            fut.complete(reconnectFut.join());
+            fut.completeExceptionally(composeException(failures));
     }
 
     /**
