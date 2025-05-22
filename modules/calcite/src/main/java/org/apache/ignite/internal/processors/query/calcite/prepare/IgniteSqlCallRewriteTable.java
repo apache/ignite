@@ -66,10 +66,15 @@ public class IgniteSqlCallRewriteTable {
     }
 
     /** Rewrites SQL call. */
-    SqlCall rewrite(SqlValidator validator, SqlCall call) {
+    SqlNode rewrite(SqlValidator validator, SqlCall call) {
         BiFunction<SqlValidator, SqlCall, SqlCall> rewriter = map.get(call.getOperator().getName());
 
-        return rewriter == null ? call : rewriter.apply(validator, call);
+        return rewriter == null ? builtInRewrite(validator, call) : rewriter.apply(validator, call);
+    }
+
+    /** */
+    private SqlNode builtInRewrite(SqlValidator validator, SqlCall call) {
+        return containsSubquery(call) ? call : call.getOperator().rewriteCall(validator, call);
     }
 
     /** Rewrites NVL call to CASE WHEN call. */
