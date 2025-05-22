@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_PREFIX;
@@ -158,6 +159,8 @@ public class DefragmentationFileTreeUtils {
      * @param workDir Cache group working directory.
      * @param partId Partition index, will be substituted into file name.
      * @return File.
+     *
+     * @see LinkMap
      */
     public static File defragmentedPartMappingFile(File workDir, int partId) {
         return new File(workDir, String.format(DFRG_LINK_MAPPING_FILE_TEMPLATE, partId));
