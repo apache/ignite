@@ -180,7 +180,6 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setStoragePath(myPath.getAbsolutePath());
 
-
         try (IgniteEx srv = startGrid(getConfiguration("srv")
             .setDataStorageConfiguration(dsCfg)
             .setCacheConfiguration(ccfg)
