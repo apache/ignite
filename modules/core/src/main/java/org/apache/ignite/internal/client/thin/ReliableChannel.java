@@ -271,6 +271,7 @@ final class ReliableChannel implements AutoCloseable {
                 return null;
             }
 
+            // Retry use same channel in case of connection exception.
             if (err instanceof ClientConnectionException) {
                 ClientConnectionException failure0 = (ClientConnectionException)err;
 
