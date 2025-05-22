@@ -332,15 +332,23 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
         );
 
         // Also check result type inference.
-        Predicate<RelDataType> rowTypeChecker = t -> t.getFieldCount() == 1
-            && t.getFieldList().get(0).getType().getSqlTypeName() == SqlTypeName.CHAR
+        Predicate<RelDataType> rowTypeCheckerChar = t -> t.getFieldCount() == 1
+            && t.getFieldList().get(0).getType().getSqlTypeName() == SqlTypeName.CHAR;
+
+        Predicate<RelDataType> rowTypeCheckerNotNull = t -> rowTypeCheckerChar.test(t)
             && !t.getFieldList().get(0).getType().isNullable();
 
+        Predicate<RelDataType> rowTypeCheckerNullable = t -> rowTypeCheckerChar.test(t)
+            && t.getFieldList().get(0).getType().isNullable();
+
         assertPlan("SELECT COALESCE((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
-            n -> rowTypeChecker.test(n.getRowType()));
+            n -> rowTypeCheckerNotNull.test(n.getRowType()));
 
         assertPlan("SELECT NVL((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
-            n -> rowTypeChecker.test(n.getRowType()));
+            n -> rowTypeCheckerNotNull.test(n.getRowType()));
+
+        assertPlan("SELECT NULLIF((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNullable.test(n.getRowType()));
     }
 
     /** */

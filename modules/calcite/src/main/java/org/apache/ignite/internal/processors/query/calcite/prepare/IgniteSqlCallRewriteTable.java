@@ -58,6 +58,10 @@ public class IgniteSqlCallRewriteTable {
     private IgniteSqlCallRewriteTable() {
         register(SqlLibraryOperators.NVL.getName(), IgniteSqlCallRewriteTable::nvlRewriter);
         register(SqlLibraryOperators.DECODE.getName(), IgniteSqlCallRewriteTable::decodeRewriter);
+
+        // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-6978
+        // Remove after update to Calcite 1.40.
+        register(SqlStdOperatorTable.COALESCE.getName(), IgniteSqlCallRewriteTable::coalesceRewriter);
     }
 
     /** Registers rewriter for SQL operator. */
@@ -69,12 +73,12 @@ public class IgniteSqlCallRewriteTable {
     SqlNode rewrite(SqlValidator validator, SqlCall call) {
         BiFunction<SqlValidator, SqlCall, SqlCall> rewriter = map.get(call.getOperator().getName());
 
-        return rewriter == null ? builtInRewrite(validator, call) : rewriter.apply(validator, call);
+        return rewriter == null ? call.getOperator().rewriteCall(validator, call) : rewriter.apply(validator, call);
     }
 
     /** */
-    private SqlNode builtInRewrite(SqlValidator validator, SqlCall call) {
-        return containsSubquery(call) ? call : call.getOperator().rewriteCall(validator, call);
+    private static SqlCall coalesceRewriter(SqlValidator validator, SqlCall call) {
+        return containsSubquery(call) ? call : (SqlCall)call.getOperator().rewriteCall(validator, call);
     }
 
     /** Rewrites NVL call to CASE WHEN call. */
