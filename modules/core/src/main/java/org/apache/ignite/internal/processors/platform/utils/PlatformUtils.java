@@ -51,7 +51,6 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -71,6 +70,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.service.LazyServiceConfiguration;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1145,14 +1145,14 @@ public class PlatformUtils {
         }
 
         // Schemas.
-        Collection<BinarySchema> schemas = meta.schemas();
+        Collection<T2<Integer, int[]>> schemas = BinaryUtils.schemasAndFieldsIds(meta);
 
         writer.writeInt(schemas.size());
 
-        for (BinarySchema schema : schemas) {
-            writer.writeInt(schema.schemaId());
+        for (T2<Integer, int[]> schema : schemas) {
+            writer.writeInt(schema.get1());
 
-            int[] ids = schema.fieldIds();
+            int[] ids = schema.get2();
             writer.writeInt(ids.length);
 
             for (int id : ids) {
@@ -1216,7 +1216,7 @@ public class PlatformUtils {
         // Read schemas
         int schemaCnt = reader.readInt();
 
-        List<BinarySchema> schemas = null;
+        List<T2<Integer, List<Integer>>> schemas = null;
 
         if (schemaCnt > 0) {
             schemas = new ArrayList<>(schemaCnt);
@@ -1229,11 +1229,11 @@ public class PlatformUtils {
                 for (int j = 0; j < fieldCnt; j++)
                     fieldIds.add(reader.readInt());
 
-                schemas.add(new BinarySchema(id, fieldIds));
+                schemas.add(new T2<>(id, fieldIds));
             }
         }
 
-        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
+        return BinaryUtils.binaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
     }
 
     /**

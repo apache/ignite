@@ -23,16 +23,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -243,18 +241,10 @@ public class NodeFileTree extends SharedFileTree {
     private final File nodeStorage;
 
     /**
-     * Key is the name of data region({@link DataRegionConfiguration#getName()}), value is node storage for this data region.
-     * @see DataRegionConfiguration#setStoragePath(String)
+     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePathes()}, may be relative. Value is storage.
+     * @see DataStorageConfiguration#getExtraStoragePathes()
      */
-    protected final Map<String, File> drStorages;
-
-    /**
-     * Name of the default data region.
-     * @see DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME
-     * @see DataStorageConfiguration#setDefaultDataRegionConfiguration(DataRegionConfiguration)
-     * @see DataRegionConfiguration#setName(String)
-     */
-    private final String dfltDrName;
+    protected final Map<String, File> extraStorages;
 
     /** Path to the checkpoint directory. */
     private final File checkpoint;
@@ -294,8 +284,7 @@ public class NodeFileTree extends SharedFileTree {
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-        drStorages = Collections.emptyMap();
+        extraStorages = Collections.emptyMap();
     }
 
     /**
@@ -312,7 +301,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        this(cfg, resolveRoot(cfg), folderName);
+        this(cfg, resolveRoot(cfg), folderName, false);
     }
 
     /**
@@ -322,6 +311,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Ignite configuration to get parameter from.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param isSnapshot {@code True} if tree relfects snapshot structure.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -329,7 +319,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName) {
+    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName, boolean isSnapshot) {
         super(root, cfg.getSnapshotPath());
 
         A.notNull(folderName, "Node directory");
@@ -341,14 +331,14 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
+            // Snapshots MUST use root relative node storage path.
+            nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
-            dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
         }
         else {
             nodeStorage = rootRelative(DB_DIR);
@@ -356,12 +346,11 @@ public class NodeFileTree extends SharedFileTree {
             wal = rootRelative(DFLT_WAL_PATH);
             walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-            dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         }
 
-        drStorages = dataRegionStorages(
+        extraStorages = extraStorages(
             dsCfg,
-            (drName, drStoragePath) -> resolveDirectory(Path.of(drStoragePath, DB_DIR).toString())
+            storagePath -> resolveDirectory(Path.of(storagePath, DB_DIR).toString())
         );
     }
 
@@ -370,9 +359,14 @@ public class NodeFileTree extends SharedFileTree {
         return nodeStorage;
     }
 
-    /** @return Storages for data regions. */
-    public Map<String, File> dataRegionStorages() {
-        return drStorages;
+    /** @return Extra storages. */
+    public Map<String, File> extraStorages() {
+        return extraStorages;
+    }
+
+    /** @return All storages directories. */
+    public Stream<File> allStorages() {
+        return Stream.concat(Stream.of(nodeStorage), extraStorages.values().stream());
     }
 
     /** @return Folder name. */
@@ -450,7 +444,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Path to the directories for temp snapshot files. */
     public List<File> snapshotsTempRoots() {
-        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream())
+        return allStorages()
             .map(this::snapshotTempRoot)
             .collect(Collectors.toList());
     }
@@ -496,7 +490,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(dataRegionStorage(ccfg.getDataRegionName()), ccfg.getGroupName() != null
+        return new File(cacheStorage(ccfg.getStoragePath()), ccfg.getGroupName() != null
             ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
             : CACHE_DIR_PREFIX + ccfg.getName());
     }
@@ -573,12 +567,13 @@ public class NodeFileTree extends SharedFileTree {
      * Temporary cache storage and partitions are created while snapshot restoring.
      * Moving to regular cache storage when finished.
      *
-     * @param drName Data region name.
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
+     * @see CacheConfiguration#getStoragePath()
      */
-    public File tmpCacheStorage(@Nullable String drName, String cacheDirName) {
-        return new File(dataRegionStorage(drName), TMP_CACHE_DIR_PREFIX + cacheDirName);
+    public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
+        return new File(cacheStorage(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
@@ -619,13 +614,14 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * Temporary cache partitions are created while snapshot restoring.
      *
-     * @param drName Data region name.
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
      * @return Path to the temp partition file.
+     * @see CacheConfiguration#getStoragePath()
      */
-    public File tmpPartition(@Nullable String drName, String cacheDirName, int partId) {
-        return new File(tmpCacheStorage(drName, cacheDirName), partitionFileName(partId));
+    public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
+        return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
     }
 
     /** */
@@ -772,42 +768,28 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param drName Data region name.
-     * @return Data region storage.
+     * @param storagePath Value from config.
+     * @return File storage.
+     * @see CacheConfiguration#getStoragePath()
      */
-    private File dataRegionStorage(@Nullable String drName) {
-        return drStorages.getOrDefault(drName == null ? dfltDrName : drName, nodeStorage);
+    private File cacheStorage(@Nullable String storagePath) {
+        return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
     }
 
     /**
-     * Key is data region name.
-     * Value is data region storage.
+     * Key is storage path from config, may be relative.
+     * Value is actual storage path.
      *
      * @param dsCfg Data storage configuration.
-     * @return Data regions storages.
-     * @see DataRegionConfiguration#setStoragePath(String)
+     * @return Node storages.
+     * @see DataStorageConfiguration#setExtraStoragePathes(String...)
      */
-    private Map<String, File> dataRegionStorages(@Nullable DataStorageConfiguration dsCfg, BiFunction<String, String, File> resolver) {
-        if (dsCfg == null)
+    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
+        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePathes()))
             return Collections.emptyMap();
 
-        Map<String, File> customDsStorages = new HashMap<>();
-
-        if (dsCfg.getDataRegionConfigurations() != null) {
-            for (DataRegionConfiguration drCfg : dsCfg.getDataRegionConfigurations()) {
-                if (drCfg.getStoragePath() == null)
-                    continue;
-
-                customDsStorages.put(drCfg.getName(), resolver.apply(drCfg.getName(), drCfg.getStoragePath()));
-            }
-        }
-
-        DataRegionConfiguration dfltDr = dsCfg.getDefaultDataRegionConfiguration();
-
-        if (dfltDr.getStoragePath() != null)
-            customDsStorages.put(dfltDr.getName(), resolver.apply(dfltDr.getName(), dfltDr.getStoragePath()));
-
-        return customDsStorages;
+        return Arrays.stream(dsCfg.getExtraStoragePathes())
+            .collect(Collectors.toMap(Function.identity(), resolver));
     }
 
     /**
@@ -848,15 +830,15 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param filter Dir file filter.
-     * @return All files from all {@link #drStorages} matching the filter.
+     * @return All files from all {@link #extraStorages} and {@link #nodeStorage} matching the filter.
      */
     private Stream<File> filesInStorages(FileFilter filter) {
-        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream()).flatMap(drStorage -> {
-            File[] drStorageFiles = drStorage.listFiles(filter);
+        return allStorages().flatMap(storage -> {
+            File[] storageFiles = storage.listFiles(filter);
 
-            return drStorageFiles == null
+            return storageFiles == null
                 ? Stream.empty()
-                : Arrays.stream(drStorageFiles);
+                : Arrays.stream(storageFiles);
         });
     }
 
