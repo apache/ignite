@@ -41,7 +41,6 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
@@ -142,7 +141,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                     Path stateDir = ft.walCdc().toPath().resolve(STATE_DIR);
 
                     if (stateDir.toFile().exists()) {
-                        File walState = stateDir.resolve(WAL_STATE_FILE_NAME).toFile();
+                        File walState = NodeFileTree.walStateFilePath(stateDir).toFile();
 
                         if (walState.exists() && !walState.delete()) {
                             throw new IgniteException("Failed to delete wal state file [file=" +

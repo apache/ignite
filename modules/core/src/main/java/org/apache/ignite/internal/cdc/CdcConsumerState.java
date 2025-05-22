@@ -38,13 +38,12 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer.POINTER_SIZE;
 
 /**
@@ -59,26 +58,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * @see CdcMain
  */
 public class CdcConsumerState {
-    /** */
-    public static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
-
-    /** */
-    public static final String TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
-
-    /** */
-    public static final String MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
-
-    /** */
-    public static final String CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
-
-    /**
-     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
-     * <ul>
-     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
-     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
-     * </ul>
-     */
-    public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
 
     /** Log. */
     private final IgniteLogger log;
@@ -104,7 +83,7 @@ public class CdcConsumerState {
     /** Cache state file. */
     private final Path caches;
 
-    /** Mappings types state file. */
+    /** Mappings types cache state file. */
     private final Path tmpCaches;
 
     /** CDC manager mode state file. */
@@ -118,16 +97,16 @@ public class CdcConsumerState {
      */
     public CdcConsumerState(IgniteLogger log, Path stateDir) {
         this.log = log.getLogger(CdcConsumerState.class);
-        walPtr = stateDir.resolve(WAL_STATE_FILE_NAME);
-        tmpWalPtr = stateDir.resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
-        types = stateDir.resolve(TYPES_STATE_FILE_NAME);
-        tmpTypes = stateDir.resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
-        mappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME);
-        tmpMappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
-        caches = stateDir.resolve(CACHES_STATE_FILE_NAME);
-        tmpCaches = stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
-        cdcMode = stateDir.resolve(CDC_MODE_FILE_NAME);
-        tmpCdcMode = stateDir.resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+        walPtr = NodeFileTree.walStateFilePath(stateDir);
+        tmpWalPtr = NodeFileTree.tempWalStateFilePath(stateDir);
+        types = NodeFileTree.typesStateFilePath(stateDir);
+        tmpTypes = NodeFileTree.tempTypesStateFilePath(stateDir);
+        mappings = NodeFileTree.mappingsStateFilePath(stateDir);
+        tmpMappings = NodeFileTree.tempMappingsStateFilePath(stateDir);
+        caches = NodeFileTree.cachesStateFilePath(stateDir);
+        tmpCaches = NodeFileTree.tempCachesStateFilePath(stateDir);
+        cdcMode = NodeFileTree.cdcModeStateFilePath(stateDir);
+        tmpCdcMode = NodeFileTree.tempCdcModeStateFilePath(stateDir);
     }
 
     /**

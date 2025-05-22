@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.cdc.CdcConsumerState.CDC_MODE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CDC_MODE_FILE_NAME;
 
 /**
  * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.

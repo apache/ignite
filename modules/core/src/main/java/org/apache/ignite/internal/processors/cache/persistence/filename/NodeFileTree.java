@@ -33,6 +33,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.cdc.CdcManager;
+import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -196,6 +199,15 @@ public class NodeFileTree extends SharedFileTree {
     /** File extension of temp zipped WAL segment. */
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
+    /**
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
+     * <ul>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
+     * </ul>
+     */
+    public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
+
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
@@ -230,6 +242,18 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+
+    /** WAL state file name. */
+    private static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
+
+    /** Types state file name. */
+    private static final String TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
+
+    /** Mappings state file name. */
+    private static final String MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
+
+    /** Caches state file name. */
+    private static final String CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -877,6 +901,86 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int typeId(String fileName) {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return WAL state file path.
+     */
+    public static Path walStateFilePath(Path stateDir) {
+        return stateDir.resolve(WAL_STATE_FILE_NAME);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Temp WAL state file path.
+     */
+    public static Path tempWalStateFilePath(Path stateDir) {
+        return stateDir.resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Types state file path.
+     */
+    public static Path typesStateFilePath(Path stateDir) {
+        return stateDir.resolve(TYPES_STATE_FILE_NAME);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Temp types state file path.
+     */
+    public static Path tempTypesStateFilePath(Path stateDir) {
+        return stateDir.resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Mappings state file path.
+     */
+    public static Path mappingsStateFilePath(Path stateDir) {
+        return stateDir.resolve(MAPPINGS_STATE_FILE_NAME);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Temp mappings state file path.
+     */
+    public static Path tempMappingsStateFilePath(Path stateDir) {
+        return stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Caches state file path.
+     */
+    public static Path cachesStateFilePath(Path stateDir) {
+        return stateDir.resolve(CACHES_STATE_FILE_NAME);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Temp caches state file path.
+     */
+    public static Path tempCachesStateFilePath(Path stateDir) {
+        return stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return CDC manager mode state file path.
+     */
+    public static Path cdcModeStateFilePath(Path stateDir) {
+        return stateDir.resolve(CDC_MODE_FILE_NAME);
+    }
+
+    /**
+     * @param stateDir State directory.
+     * @return Temp CDC manager mode state file path.
+     */
+    public static Path tempCdcModeStateFilePath(Path stateDir) {
+        return stateDir.resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
     }
 
     /** {@inheritDoc} */
