@@ -111,12 +111,12 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(1_000);
+        cfg.setFailureDetectionTimeout(4_000);
+        cfg.setClientFailureDetectionTimeout(4_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
                 .setForceClientToServerConnections(forceClientToSrvConnections)
-                .setIdleConnectionTimeout(1000)
         );
 
         if (ccfg != null) {
@@ -227,11 +227,11 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             grid(3).context().io().sendIoTest(clientNode, new byte[10], false);
         });
 
-        doSleep(2000L); // Client failover timeout is 8 seconds.
+        doSleep(2000L); // Client failover timeout is 4 seconds.
 
         stopGrid(0);
 
-        fut.get(8000L);
+        fut.get(4000L);
 
         UUID newId = grid(1).localNode().id();
         UUID newRouterNode = ((TcpDiscoveryNode)grid(1).localNode()).clientRouterNodeId();
