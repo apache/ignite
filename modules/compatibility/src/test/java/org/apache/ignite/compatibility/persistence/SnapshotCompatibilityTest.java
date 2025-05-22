@@ -40,7 +40,6 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -52,8 +51,26 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest {
     /** */
+    @Parameterized.Parameter
+    public boolean customConsId;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean customSnpDir;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public boolean testCacheGrp;
+
+    /** */
     @Parameterized.Parameter(3)
     public int oldNodesCnt;
+
+    /** */
+    private final CacheGroupInfo cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
+
+    /** */
+    private final SnapshotPathResolver snpPathResolver = new SnapshotPathResolver(customSnpDir);
 
     /** */
     @Parameterized.Parameters(name = "customConsId={0}, customSnpDir={1}, testCacheGrp={2}, oldNodesCnt={3}")
@@ -157,7 +174,7 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
 
                 new DumpReader(new DumpReaderConfiguration(
                     CACHE_DUMP_NAME,
-                    snpDir(U.defaultWorkDirectory(), false),
+                    snpPathResolver.snpDir(false),
                     node.configuration(),
                     consumer
                 ), log).run();
@@ -169,8 +186,8 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
                 assertTrue(cacheGrpInfo.cacheNames().containsAll(foundCacheNames));
                 assertEquals(cacheGrpInfo.cacheNames().size(), foundCacheNames.size());
             }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+            catch (IgniteCheckedException ex) {
+                throw new RuntimeException(ex);
             }
         });
     }
@@ -181,7 +198,13 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
             startGrid(
                 i,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(i), snpDir(U.defaultWorkDirectory(), true), true, cacheGrpInfo),
+                new ConfigurationClosure(
+                    incSnp,
+                    consId(customConsId, i),
+                    snpPathResolver.snpDir(true),
+                    true,
+                    cacheGrpInfo
+                ),
                 i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
             );
         }
@@ -193,7 +216,13 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(incSnp, consId(1), snpDir(U.defaultWorkDirectory(), false), false, cacheGrpInfo).apply(cfg);
+        new ConfigurationClosure(
+            incSnp,
+            consId(customConsId, 1),
+            snpPathResolver.snpDir(false),
+            false,
+            cacheGrpInfo
+        ).apply(cfg);
 
         IgniteEx node = startGrid(cfg);
 

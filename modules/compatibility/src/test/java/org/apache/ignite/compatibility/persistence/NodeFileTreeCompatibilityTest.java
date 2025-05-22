@@ -59,8 +59,41 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
     public static final String CACHE_PREFIX = "cache";
 
     /** */
+    @Parameter
+    public boolean customConsId;
+
+    /** */
+    @Parameter(1)
+    public boolean customSnpDir;
+
+    /** */
+    @Parameter(2)
+    public boolean testCacheGrp;
+
+    /** */
     @Parameter(3)
     public int nodesCnt;
+
+    /** */
+    private final String oldWorkDir;
+
+    {
+        try {
+            oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    private final SnapshotPathResolver oldSnpPathResolver = new SnapshotPathResolver(customSnpDir, oldWorkDir);
+
+    /** */
+    private final SnapshotPathResolver curSnpPathResolver = new SnapshotPathResolver(customSnpDir);
+
+    /** */
+    private final CacheGroupInfo cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
 
     /** */
     @Parameters(name = "customConsId={0}, customSnpDir={1}, testCacheGrp={2}, nodesCnt={3}")
@@ -79,8 +112,8 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
         doNodeFileTreeTest(true, false, () -> {
             try {
                 assertEquals(
-                    scanFileTree(snpPath(OLD_WORK_DIR, CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
-                    scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
+                    scanSnp(oldSnpPathResolver.snpPath(SNAPSHOT_NAME, false)),
+                    scanSnp(curSnpPathResolver.snpPath(SNAPSHOT_NAME, false))
                 );
             }
             catch (IgniteCheckedException ex) {
@@ -92,11 +125,11 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
     /** */
     @Test
     public void testNodeFileTreeForCacheDump() throws Exception {
-        doNodeFileTreeTest(true, false, () -> {
+        doNodeFileTreeTest(false, true, () -> {
             try {
                 assertEquals(
-                    scanSnp(snpPath(OLD_WORK_DIR, SNAPSHOT_NAME, false)),
-                    scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME, false))
+                    scanFileTree(oldSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
+                    scanFileTree(curSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
                 );
             }
             catch (IgniteCheckedException ex) {
@@ -112,7 +145,14 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
                 startGrid(
                     i,
                     OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(incSnp, consId(i), snpDir(OLD_WORK_DIR, true), true, cacheGrpInfo, OLD_WORK_DIR),
+                    new ConfigurationClosure(
+                        incSnp,
+                        consId(customConsId, i),
+                        oldSnpPathResolver.snpDir(true),
+                        true,
+                        cacheGrpInfo,
+                        oldWorkDir
+                    ),
                     i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo) : null
                 );
             }
@@ -125,19 +165,25 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
                 curNodes.add(
                     startGrid(
                         i,
-                        new ConfigurationClosure(incSnp, consId(i), snpDir(OLD_WORK_DIR, true), true, cacheGrpInfo)::apply
+                        new ConfigurationClosure(
+                            incSnp,
+                            consId(customConsId, i),
+                            curSnpPathResolver.snpDir(true),
+                            true,
+                            cacheGrpInfo
+                        )::apply
                     )
                 );
             }
 
             new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpInfo).apply(curNodes.get(0));
 
-            assertEquals(scanFileTree(OLD_WORK_DIR, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
+            assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
 
             fileTreeChecker.run();
         }
         finally {
-            FileUtils.deleteDirectory(new File(OLD_WORK_DIR));
+            FileUtils.deleteDirectory(new File(oldWorkDir));
         }
     }
 

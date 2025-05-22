@@ -18,7 +18,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.junit.runners.Parameterized.Parameter;
 
 /** */
 public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenceCompatibilityAbstractTest {
@@ -27,18 +26,6 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
         Arrays.asList(IgniteReleasedVersion.values()),
         Comparator.comparing(IgniteReleasedVersion::version)
     ).toString();
-
-    /** */
-    public static final String OLD_WORK_DIR;
-
-    static {
-        try {
-            OLD_WORK_DIR = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /** */
     public static final String SNAPSHOT_NAME = "test_snapshot";
@@ -53,33 +40,45 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     public static final int ENTRIES_CNT_FOR_INCREMENT = 100;
 
     /** */
-    @Parameter
-    public boolean customConsId;
-
-    /** */
-    @Parameter(1)
-    public boolean customSnpDir;
-
-    /** */
-    @Parameter(2)
-    public boolean testCacheGrp;
-
-    /** */
-    protected final CacheGroupInfo cacheGrpInfo = new CacheGroupInfo("test-cache", testCacheGrp ? 2 : 1);
-
-    /** */
-    public String snpDir(String workDirPath, boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(workDirPath, customSnpDir ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
-    }
-
-    /** */
-    public String snpPath(String workDirPath, String snpName, boolean delIfExist) throws IgniteCheckedException {
-        return Paths.get(snpDir(workDirPath, delIfExist), snpName).toString();
-    }
-
-    /** */
-    public String consId(int nodeIdx) {
+    public static String consId(boolean customConsId, int nodeIdx) {
         return customConsId ? "node-" + nodeIdx : null;
+    }
+
+    /** */
+    public static class SnapshotPathResolver {
+        /** */
+        private final boolean customSnpDir;
+
+        /** */
+        private final String workDirPath;
+
+        /** */
+        public SnapshotPathResolver(boolean customSnpDir) {
+            this.customSnpDir = customSnpDir;
+
+            try {
+                workDirPath = U.defaultWorkDirectory();
+            }
+            catch (IgniteCheckedException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        /** */
+        public SnapshotPathResolver(boolean customSnpDir, String workDirPath) {
+            this.customSnpDir = customSnpDir;
+            this.workDirPath = workDirPath;
+        }
+
+        /** */
+        public String snpDir(boolean delIfExist) throws IgniteCheckedException {
+            return U.resolveWorkDirectory(workDirPath, customSnpDir ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
+        }
+
+        /** */
+        public String snpPath(String snpName, boolean delIfExist) throws IgniteCheckedException {
+            return Paths.get(snpDir(delIfExist), snpName).toString();
+        }
     }
 
     /**
