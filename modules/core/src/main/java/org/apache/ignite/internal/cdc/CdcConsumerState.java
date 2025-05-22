@@ -77,13 +77,13 @@ public class CdcConsumerState {
     /** Mappings state file. */
     private final Path mappings;
 
-    /** Mappings types state file. */
+    /** Temp mappings state file. */
     private final Path tmpMappings;
 
     /** Cache state file. */
     private final Path caches;
 
-    /** Mappings types cache state file. */
+    /** Temp cache state file. */
     private final Path tmpCaches;
 
     /** CDC manager mode state file. */
