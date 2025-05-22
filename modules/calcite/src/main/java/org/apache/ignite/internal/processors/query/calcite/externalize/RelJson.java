@@ -394,12 +394,11 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY) {
                     RelDataType elementType = toType(typeFactory, map.get("elementType"));
-                    boolean nullableArr = (boolean)map.get("nullable");
 
                     type = typeFactory.createArrayType(elementType, -1);
 
-                    if (nullableArr)
-                        type = typeFactory.createTypeWithNullability(type, nullableArr);
+                    if (Boolean.TRUE == map.get("nullable"))
+                        type = typeFactory.createTypeWithNullability(type, true);
                 }
                 else if (sqlTypeName == SqlTypeName.MAP)
                     type = typeFactory.createMapType(
