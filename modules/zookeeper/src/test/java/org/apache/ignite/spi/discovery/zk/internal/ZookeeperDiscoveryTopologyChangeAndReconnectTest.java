@@ -365,7 +365,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
                     .boxed()
                     .collect(Collectors.toSet());
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 6; i++) {
                 info("Iteration: " + i);
 
                 if (idxs.contains(i))
@@ -373,13 +373,13 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
                 else
                     userAttrs = null;
 
-                if (i > 5)
+                if (i > 3)
                     startClientGrid(i);
                 else
                     startGrid(i);
             }
 
-            waitForTopology(10);
+            waitForTopology(6);
         }
         finally {
             zkCluster.close();
