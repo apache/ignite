@@ -27,6 +27,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -50,6 +51,20 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
         // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
 
+        // Following functions don't have an implementor and not rewritten on validation when subquery is used as
+        // parameter. Make another attempt to rewrite it, after subqueries are translated to relational operators.
+        registerOp(SqlStdOperatorTable.NULLIF, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.YEAR, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.QUARTER, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.MONTH, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.WEEK, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.DAYOFYEAR, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.DAYOFMONTH, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.DAYOFWEEK, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.HOUR, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.MINUTE, this::convertRewrittable);
+        registerOp(SqlStdOperatorTable.SECOND, this::convertRewrittable);
+
         addAlias(IgniteOwnSqlOperatorTable.LENGTH, SqlStdOperatorTable.CHAR_LENGTH);
     }
 
@@ -59,6 +74,13 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
         SqlRexConvertlet res = super.get(call);
 
         return res == null ? StandardConvertletTable.INSTANCE.get(call) : res;
+    }
+
+    /** */
+    private RexNode convertRewrittable(SqlRexContext cx, SqlCall call) {
+        SqlNode newCall = call.getOperator().rewriteCall(cx.getValidator(), call);
+
+        return cx.convertExpression(newCall);
     }
 
     /** Convertlet that handles the {@code TIMESTAMPDIFF} function. */
