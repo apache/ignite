@@ -396,11 +396,6 @@ class RelJson {
                     RelDataType elementType = toType(typeFactory, map.get("elementType"));
 
                     type = typeFactory.createArrayType(elementType, -1);
-
-                    // Compares call and argument types later in Aggreatge(), Aggregate#typeMatchesInferred() assuming
-                    // that ARRAY is nullable.
-                    if (elementType.isNullable())
-                        type = typeFactory.createTypeWithNullability(type, elementType.isNullable());
                 }
                 else if (sqlTypeName == SqlTypeName.MAP)
                     type = typeFactory.createMapType(

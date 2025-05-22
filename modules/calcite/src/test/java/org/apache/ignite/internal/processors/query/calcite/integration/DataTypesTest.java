@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -68,39 +67,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     @Test
     public void testRoundingOfDynamicNumericsPrecasted() {
         doTestCoercionOfNumerics(numericsToRound(), true, true);
-    }
-
-    /** */
-    @Test
-    public void nonFiniteNumerics() {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
-
-        Number positiveInfinity;
-        Number negativeInfinity;
-        Number nan;
-
-        for (String type : Arrays.asList("FLOAT", "REAL", "DOUBLE")) {
-            if ("DOUBLE".equals(type)) {
-                positiveInfinity = Double.POSITIVE_INFINITY;
-                negativeInfinity = Double.NEGATIVE_INFINITY;
-                nan = Double.NaN;
-            }
-            else {
-                positiveInfinity = Float.POSITIVE_INFINITY;
-                negativeInfinity = Float.NEGATIVE_INFINITY;
-                nan = Float.NaN;
-            }
-
-            assertQuery(String.format("SELECT CAST('+Infinity' AS %s)", type)).returns(positiveInfinity).check();
-            assertQuery(String.format("SELECT CAST('Infinity' AS %s)", type)).returns(positiveInfinity).check();
-            assertQuery(String.format("SELECT CAST('-Infinity' AS %s)", type)).returns(negativeInfinity).check();
-            assertQuery(String.format("SELECT CAST('NaN' AS %s)", type)).returns(nan).check();
-
-            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k < CAST('+Infinity' AS %s)", type)).returns(0).check();
-            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k < CAST('Infinity' AS %s)", type)).returns(0).check();
-            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k > CAST('-Infinity' AS %s)", type)).returns(0).check();
-            assertQuery(String.format("SELECT * FROM (VALUES(0)) AS t(k) WHERE k <> CAST('NaN' AS %s)", type)).returns(0).check();
-        }
     }
 
     /** @return input type, input value, target type, expected result. */

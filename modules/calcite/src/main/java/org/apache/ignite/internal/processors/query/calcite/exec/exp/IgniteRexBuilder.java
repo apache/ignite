@@ -58,14 +58,20 @@ public class IgniteRexBuilder extends RexBuilder {
                 return super.makeLiteral(bd, type, type.getSqlTypeName());
             }
 
-            if (TypeUtils.hasScale(type) && SqlTypeUtil.isNumeric(type)) {
-                // Keeps scaled values for literals like DECIMAL (converted to DECIMAL(32676, 0)) like in Postgres.
-                if (SqlTypeName.DECIMAL == type.getSqlTypeName() && bd.scale() > 0
+            if (SqlTypeUtil.isNumeric(type)) {
+                boolean dfltDecimal = SqlTypeName.DECIMAL == type.getSqlTypeName() && bd.scale() > 0
                     && typeFactory.getTypeSystem().getDefaultScale(SqlTypeName.DECIMAL) == type.getScale()
-                    && typeFactory.getTypeSystem().getDefaultPrecision(SqlTypeName.DECIMAL) == type.getPrecision())
-                    type = typeFactory.createSqlType(SqlTypeName.DECIMAL, bd.precision() + bd.scale(), bd.scale());
+                    && typeFactory.getTypeSystem().getDefaultPrecision(SqlTypeName.DECIMAL) == type.getPrecision();
 
-                return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
+                // Keeps scaled values for literals like DECIMAL (converted to DECIMAL(32676, 0)) like in Postgres.
+                if (dfltDecimal) {
+                    int precision = Math.max(bd.precision(), bd.scale());
+
+                    type = typeFactory.createSqlType(SqlTypeName.DECIMAL, precision, bd.scale());
+                }
+
+                if (TypeUtils.hasScale(type) || dfltDecimal)
+                    return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
             }
 
             return super.makeLiteral(bd, type, typeName);

@@ -10,7 +10,7 @@ PRAGMA enable_verification
 query I
 SELECT typeof('0.1'::DECIMAL);
 ----
-DECIMAL(2, 1)
+DECIMAL(1, 1)
 
 # test basic string conversions
 query II
