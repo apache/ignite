@@ -171,12 +171,16 @@ public class TpchHelper {
                                   BiFunction<Ignite, String, GridMapEntry<?, ?>> entryGen) {
         ignite.log().info("Filling table: " + table + " ...");
 
+        long[] cnt = new long[1];
+
         try (IgniteDataStreamer<Object, Object> ds = ignite.dataStreamer(table)) {
             data.forEach(line -> {
                 try {
                     GridMapEntry<?, ?> entry = entryGen.apply(ignite, line);
 
                     ds.addData(entry.getKey(), entry.getValue());
+
+                    ++cnt[0];
                 }
                 catch (Exception e) {
                     ignite.log().error(e.getMessage(), e);
@@ -184,7 +188,7 @@ public class TpchHelper {
             });
         }
 
-        ignite.log().info("Table: " + table + " is filled");
+        ignite.log().info("Table: " + table + " is filled, rows count: " + cnt[0]);
     }
 
     /**

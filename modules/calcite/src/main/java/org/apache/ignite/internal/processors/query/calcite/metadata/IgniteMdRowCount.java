@@ -95,15 +95,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         if (F.isEmpty(leftKeys) || F.isEmpty(rightKeys))
             return left * right * selectivity;
 
-        double leftDistinct = Util.first(
-            mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
-        double rightDistinct = Util.first(
-            mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
-
-        double leftCardinality = leftDistinct / left;
-        double rightCardinality = rightDistinct / right;
-
-        double rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
+        double rowsCnt = left * right * selectivity;
 
         JoinRelType type = rel.getJoinType();
 
