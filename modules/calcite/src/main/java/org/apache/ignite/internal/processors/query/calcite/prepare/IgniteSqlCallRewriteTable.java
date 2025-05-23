@@ -60,7 +60,6 @@ public class IgniteSqlCallRewriteTable {
         register(SqlLibraryOperators.DECODE.getName(), IgniteSqlCallRewriteTable::decodeRewriter);
 
         // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-6978
-        // Remove after update to Calcite 1.40.
         register(SqlStdOperatorTable.COALESCE.getName(), IgniteSqlCallRewriteTable::coalesceRewriter);
     }
 

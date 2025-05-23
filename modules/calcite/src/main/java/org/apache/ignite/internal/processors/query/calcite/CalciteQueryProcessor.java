@@ -175,7 +175,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 .withConformance(IgniteSqlConformance.INSTANCE))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-6978
-            // Remove this property after update to Calcite 1.40.
             .withCallRewrite(false)
             .withIdentifierExpansion(true)
             .withDefaultNullCollation(NullCollation.LOW)
