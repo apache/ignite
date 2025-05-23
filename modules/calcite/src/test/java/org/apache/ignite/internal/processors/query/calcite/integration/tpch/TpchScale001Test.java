@@ -28,7 +28,7 @@ public class TpchScale001Test extends AbstractTpchTest {
     /** TODO: IGNITE-25209 - remove test 17 after fixing. */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Integer> params() {
-        return KNOWS_TESTS.stream().filter(t -> t != 17).collect(Collectors.toList());
+        return USED_TESTS.stream().filter(t -> t != 17).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
