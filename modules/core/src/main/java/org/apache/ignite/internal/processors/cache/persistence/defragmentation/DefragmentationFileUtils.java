@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Defragme
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -54,11 +55,20 @@ public class DefragmentationFileUtils {
      * Performs cleanup of work dir before initializing file page stores.
      * Will finish batch renaming if defragmentation was completed or delete garbage if it wasn't.
      *
-     * @param workDir Cache group working directory.
+     * @param ft Node file tree.
+     * @param isMetastorage {@code True} if creating directory for metastorage, {@code false} otherwise.
+     * @param ccfg Cache configuration.
      * @param log Logger to write messages.
      * @throws IgniteCheckedException If {@link IOException} occurred.
      */
-    public static void beforeInitPageStores(File workDir, IgniteLogger log) throws IgniteCheckedException {
+    public static void beforeInitPageStores(
+        NodeFileTree ft,
+        boolean isMetastorage,
+        @Nullable CacheConfiguration<?, ?> ccfg,
+        IgniteLogger log
+    ) throws IgniteCheckedException {
+        File workDir = isMetastorage ? ft.metaStorage() : ft.cacheStorage(ccfg);
+
         try {
             batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 

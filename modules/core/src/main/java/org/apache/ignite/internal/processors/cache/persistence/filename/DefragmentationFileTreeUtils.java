@@ -103,12 +103,13 @@ public class DefragmentationFileTreeUtils {
      * Return file named {@code index-dfrg.bin.tmp} in given folder. It will be used for storing defragmented index
      * partition during the process.
      *
-     * @param workDir Cache group working directory.
+     * @param ft Node file tree.
+     * @param ccfg Cache configuration.
      * @return File.
      *
      * @see #defragmentedIndexFile(File)
      */
-    public static File defragmentedIndexTmpFile(NodeFileTree ft, CacheConfiguration<?, ? > ccfg) {
+    public static File defragmentedIndexTmpFile(NodeFileTree ft, CacheConfiguration<?, ?> ccfg) {
         return new File(ft.cacheStorage(ccfg), DFRG_INDEX_TMP_FILE_NAME);
     }
 

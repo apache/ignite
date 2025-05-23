@@ -269,11 +269,9 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        File cacheWorkDir = ft.cacheStorage(ccfg);
+        FilePageStoreManager.checkAndInitCacheWorkDir(ft, false, ccfg, log);
 
-        FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
-
-        assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
+        assert ft.cacheStorage(ccfg).exists() : "Work directory does not exist: " + ft.cacheStorage(ccfg);
 
         File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
