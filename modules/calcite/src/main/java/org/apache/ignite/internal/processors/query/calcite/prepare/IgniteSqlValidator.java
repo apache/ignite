@@ -425,10 +425,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
-        if (!SqlKind.AGGREGATE.contains(aggFunction.kind))
-            throw newValidationError(call,
-                IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
-
         switch (aggFunction.kind) {
             case COUNT:
                 if (call.operandCount() > 1)
@@ -448,6 +444,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case BIT_AND:
             case BIT_OR:
             case BIT_XOR:
+            case ROW_NUMBER:
+            case DENSE_RANK:
+            case RANK:
+            case PERCENT_RANK:
+            case CUME_DIST:
+            case LAG:
+            case LEAD:
+            case FIRST_VALUE:
+            case LAST_VALUE:
+            case NTILE:
+            case NTH_VALUE:
                 return;
             default:
                 throw newValidationError(call,

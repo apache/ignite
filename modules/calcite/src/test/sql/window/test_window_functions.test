@@ -1,0 +1,558 @@
+# name: test/sql/window/test_window_functions.test
+# description: Test window functions
+# group: [window]
+
+# sample data
+statement ok
+CREATE TABLE empsalary(depname VARCHAR, empno BIGINT, salary INT, enroll_date DATE);
+
+statement ok
+INSERT INTO empsalary VALUES ('develop', 10, 5200, '2007-08-01'), ('sales', 1, 5000, '2006-10-01'), ('person', 5, 3500, '2007-12-10'), ('sales', 4, 4800, '2007-08-08'), ('person', 2, 3900, '2006-12-23'), ('develop', 7, 4200, '2008-01-01'), ('develop', 9, 4500, '2008-01-01'), ('sales', 3, 4800, '2007-08-01'), ('develop', 8, 6000, '2006-10-01'), ('develop', 11, 5200, '2007-08-15');
+
+statement ok
+CREATE TABLE numbers (id INTEGER, val1 INTEGER, val2 INTEGER, val3 INTEGER, val4 INTEGER);
+
+statement ok
+INSERT INTO numbers VALUES (0, 0, 0, 0, 0), (1, 1, 3, 1, 91), (2, 0, 0, 0, 20), (3, 0, 2, 0, 50), (4, 0, 0, 4, 64), (5, 1, 1, 9, 9), (6, 1, 1, 7, 57), (7, 1, 1, 1, 1), (8, 1, 1, 1, 21), (9, 1, 3, 3, 43), (10, 0, 2, 4, 14);
+
+# sum with partition by
+query IITI
+SELECT depname, empno, salary, sum(salary) OVER (PARTITION BY depname) FROM empsalary ORDER BY depname, salary, empno;
+----
+develop	7	4200	25100
+develop	9	4500	25100
+develop	10	5200	25100
+develop	11	5200	25100
+develop	8	6000	25100
+person	5	3500	7400
+person	2	3900	7400
+sales	3	4800	14600
+sales	4	4800	14600
+sales	1	5000	14600
+
+# rank function with partition and order by
+query IITI rowsort
+SELECT depname, empno, salary, rank() OVER (PARTITION BY depname ORDER BY salary) FROM empsalary
+----
+develop	7	4200	1
+develop	9	4500	2
+develop	10	5200	3
+develop	11	5200	3
+develop	8	6000	5
+person	5	3500	1
+person	2	3900	2
+sales	3	4800	1
+sales	4	4800	1
+sales	1	5000	3
+
+# window with group by
+query IIII rowsort
+SELECT val2, val3, SUM(SUM(val2)) OVER (PARTITION BY val2), AVG(val3) FROM numbers GROUP BY val2, val3;
+----
+0	4	0	4
+0	0	0	0
+1	9	4	9
+1	7	4	7
+1	1	4	1
+2	4	4	4
+2	0	4	0
+3	3	6	3
+3	1	6	1
+
+# empty windows specification
+query I
+SELECT COUNT(*) OVER () FROM numbers WHERE id < 10;
+----
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+
+# cumulative aggregate
+query III
+SELECT SUM(val2) OVER (PARTITION BY val3 ORDER BY id) AS sum_1, val3, val2 FROM numbers WHERE id < 10;
+----
+0	0	0
+0	0	0
+2	0	2
+3	1	3
+4	1	1
+5	1	1
+3	3	3
+0	4	0
+1	7	1
+1	9	1
+
+# row number
+query I
+SELECT ROW_NUMBER() OVER (ORDER BY id) FROM numbers WHERE id < 10;
+----
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+# rank
+query III
+SELECT RANK() OVER (PARTITION BY val2 ORDER BY val3) AS rank_1, val3, val2 FROM numbers WHERE id < 10;
+----
+1	0	0
+1	0	0
+3	4	0
+1	1	1
+1	1	1
+3	7	1
+4	9	1
+1	0	2
+1	1	3
+2	3	3
+
+# dense_rank
+query III
+SELECT DENSE_RANK() OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+1	0	0
+1	0	0
+2	4	0
+1	1	1
+1	1	1
+2	7	1
+3	9	1
+1	0	2
+1	1	3
+2	3	3
+
+# percent_rank
+query RII
+SELECT PERCENT_RANK() OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+0	0	0
+0	0	0
+1	4	0
+0	1	1
+0	1	1
+0.6666666666666666	7	1
+1	9	1
+0	0	2
+0	1	3
+1	3	3
+
+# cume_dist
+query RII
+SELECT CUME_DIST() OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+0.6666666666666666	0	0
+0.6666666666666666	0	0
+1	4	0
+0.5	1	1
+0.5	1	1
+0.75	7	1
+1	9	1
+1	0	2
+0.5	1	3
+1	3	3
+
+# lag
+query IIIII
+SELECT LAG(val3) OVER (PARTITION BY val2 ORDER BY val3), LAG(val3, val2) OVER (PARTITION BY val2 ORDER BY val3), LAG(val3, val2, -1) OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+NULL	0	0	0	0
+0	0	0	0	0
+0	4	4	4	0
+NULL	NULL	-1	1	1
+1	1	1	1	1
+1	1	1	7	1
+7	7	7	9	1
+NULL	NULL	-1	0	2
+NULL	NULL	-1	1	3
+1	NULL	-1	3	3
+
+# lead
+query IIIII
+SELECT LEAD(val3) OVER (PARTITION BY val2 ORDER BY val3), LEAD(val3, val2) OVER (PARTITION BY val2 ORDER BY val3), LEAD(val3, val2, -1) OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+0	0	0	0	0
+4	0	0	0	0
+NULL	4	4	4	0
+1	1	1	1	1
+7	7	7	1	1
+9	9	9	7	1
+NULL	NULL	-1	9	1
+NULL	NULL	-1	0	2
+3	NULL	-1	1	3
+NULL	NULL	-1	3	3
+
+# first value
+query III
+SELECT FIRST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+0	0	0
+0	0	0
+0	4	0
+1	1	1
+1	1	1
+1	7	1
+1	9	1
+0	0	2
+1	1	3
+1	3	3
+
+# last value
+query III
+SELECT LAST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3), val3, val2 FROM numbers WHERE id < 10;
+----
+0	0	0
+0	0	0
+4	4	0
+1	1	1
+1	1	1
+7	7	1
+9	9	1
+0	0	2
+1	1	3
+3	3	3
+
+# ntile
+query TI
+SELECT depname, NTILE(4) OVER (ORDER BY depname) FROM empsalary;
+----
+develop	1
+develop	1
+develop	1
+develop	2
+develop	2
+person	2
+person	3
+sales	3
+sales	4
+sales	4
+
+# nth_value
+query TT
+SELECT depname, NTH_VALUE(depname, 6) OVER (ORDER BY depname) FROM empsalary;
+----
+develop	NULL
+develop	NULL
+develop	NULL
+develop	NULL
+develop	NULL
+person	person
+person	person
+sales	person
+sales	person
+sales	person
+
+# query with different windows evaluation.
+query III rowsort
+SELECT * FROM (
+    SELECT
+        COUNT(*) OVER (PARTITION BY val2 ORDER BY val3) + SUM(val4) OVER (PARTITION BY val1 ORDER BY val3) AS total,
+        COUNT(*) OVER (PARTITION BY val2 ORDER BY val3) AS val2count, SUM(val4) OVER (PARTITION BY val1 ORDER BY val3) AS val1sum
+    FROM numbers
+) sub WHERE total = val2count + val1sum;
+----
+72	2	70
+72	2	70
+151	3	148
+115	2	113
+115	2	113
+216	3	213
+226	4	222
+71	1	70
+150	2	148
+114	1	113
+158	2	156
+
+# non-default frame specifications
+query IIII rowsort
+SELECT val2, val3,
+       SUM(val3) OVER (PARTITION BY val2 ORDER BY val3),
+       LAST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss
+----
+0	0	0	0
+0	4	4	4
+1	1	1	1
+1	7	8	7
+1	9	17	9
+2	0	0	0
+2	4	4	4
+3	1	1	1
+3	3	4	3
+
+query IIII rowsort
+SELECT val2, val3,
+       SUM(val3) over (PARTITION BY val2 ORDER BY val3 RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
+       LAST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3 RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss
+----
+0	0	0	0
+0	4	4	4
+1	1	1	1
+1	7	8	7
+1	9	17	9
+2	0	0	0
+2	4	4	4
+3	1	1	1
+3	3	4	3
+
+query IIII rowsort
+SELECT val2, val3,
+       SUM(val3) over (PARTITION BY val2 ORDER BY val3 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING),
+       LAST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss
+----
+0	0	4	4
+0	4	4	4
+1	1	17	9
+1	7	17	9
+1	9	17	9
+2	0	4	4
+2	4	4	4
+3	1	4	3
+3	3	4	3
+
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2, val3
+----
+0	0	29	3
+0	4	29	3
+1	1	25	3
+1	7	25	3
+1	9	25	3
+2	0	8	3
+2	4	8	3
+3	1	4	3
+3	3	4	3
+
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 RANGE BETWEEN 4 PRECEDING AND 2 FOLLOWING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 RANGE BETWEEN 4 PRECEDING AND 2 FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2, val3
+----
+0	0	25	4
+0	4	25	4
+1	1	29	3
+1	7	29	3
+1	9	29	3
+2	0	29	3
+2	4	29	3
+3	1	29	3
+3	3	29	3
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 DESC RANGE BETWEEN 4 PRECEDING AND 2 FOLLOWING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 DESC RANGE BETWEEN 4 PRECEDING AND 2 FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2 DESC, val3 DESC
+----
+3	3	25	1
+3	1	25	1
+2	4	29	0
+2	0	29	0
+1	9	29	0
+1	7	29	0
+1	1	29	0
+0	4	29	0
+0	0	29	0
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2, val3
+----
+0	0	NULL	NULL
+0	4	NULL	NULL
+1	1	NULL	NULL
+1	7	NULL	NULL
+1	9	NULL	NULL
+2	0	4	4
+2	4	4	4
+3	1	21	9
+3	3	21	9
+
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 DESC RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 DESC RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss  ORDER BY val2 DESC, val3 DESC
+----
+3	3	NULL	NULL
+3	1	NULL	NULL
+2	4	NULL	NULL
+2	0	NULL	NULL
+1	9	4	1
+1	7	4	1
+1	1	4	1
+0	4	8	0
+0	0	8	0
+
+query IIII rowsort
+SELECT val2, val3,
+       SUM(val3) over (PARTITION BY val2 ORDER BY val3 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
+       LAST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss
+----
+0	0	0	0
+0	4	4	4
+1	1	1	1
+1	7	8	7
+1	9	17	9
+2	0	0	0
+2	4	4	4
+3	1	1	1
+3	3	4	3
+
+query IIII rowsort
+SELECT val2, val3,
+       SUM(val3) over (PARTITION BY val2 ORDER BY val3 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING),
+       LAST_VALUE(val3) OVER (PARTITION BY val2 ORDER BY val3 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss
+----
+0	0	4	4
+0	4	4	4
+1	1	17	9
+1	7	17	9
+1	9	17	9
+2	0	4	4
+2	4	4	4
+3	1	4	3
+3	3	4	3
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2, val3
+----
+0	0	29	3
+0	4	29	3
+1	1	25	3
+1	7	24	3
+1	9	17	3
+2	0	8	3
+2	4	8	3
+3	1	4	3
+3	3	3	3
+
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 ROWS BETWEEN 4 PRECEDING AND 2 FOLLOWING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 ROWS BETWEEN 4 PRECEDING AND 2 FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2, val3
+----
+0	0	5	1
+0	4	12	7
+1	1	21	9
+1	7	21	0
+1	9	25	4
+2	0	26	1
+2	4	25	3
+3	1	24	3
+3	3	17	3
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 DESC ROWS BETWEEN 4 PRECEDING AND 2 FOLLOWING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 DESC ROWS BETWEEN 4 PRECEDING AND 2 FOLLOWING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2 DESC, val3 DESC
+----
+3	3	8	4
+3	1	8	0
+2	4	17	9
+2	0	24	7
+1	9	25	1
+1	7	26	4
+1	1	25	0
+0	4	21	0
+0	0	21	0
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss ORDER BY val2, val3
+----
+0	0	NULL	NULL
+0	4	NULL	NULL
+1	1	0	0
+1	7	4	4
+1	9	5	1
+2	0	12	7
+2	4	17	9
+3	1	16	0
+3	3	13	4
+
+query IIII
+SELECT val2, val3,
+       SUM(val3) OVER (ORDER BY val2 DESC ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING),
+       LAST_VALUE(val3) OVER (ORDER BY val2 DESC ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING)
+FROM (SELECT DISTINCT val3, val2 FROM numbers) ss  ORDER BY val2 DESC, val3 DESC
+----
+3	3	NULL	NULL
+3	1	NULL	NULL
+2	4	3	3
+2	0	4	1
+1	9	8	4
+1	7	5	0
+1	1	13	9
+0	4	16	7
+0	0	17	1
+
+# date time interval bounds
+query TI
+SELECT *
+FROM (
+    SELECT
+        depname,
+        SUM(salary) OVER (PARTITION BY depname ORDER BY enroll_date RANGE BETWEEN INTERVAL 730 DAYS PRECEDING AND INTERVAL 365 DAYS FOLLOWING) val
+    FROM empsalary) s
+ORDER BY s.depname, s.val
+----
+develop	16400
+develop	25100
+develop	25100
+develop	25100
+develop	25100
+person	7400
+person	7400
+sales	14600
+sales	14600
+sales	14600
+
+# window in correlated subquery
+query II
+SELECT id, (SELECT row_number() OVER (ORDER BY id)) FROM numbers i1 ORDER BY id;
+----
+0	1
+1	1
+2	1
+3	1
+4	1
+5	1
+6	1
+7	1
+8	1
+9	1
+10	1

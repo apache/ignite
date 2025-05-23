@@ -27,11 +27,13 @@ import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 
 /**
@@ -43,6 +45,14 @@ public interface ExpressionFactory<Row> {
         AggregateType type,
         List<AggregateCall> calls,
         RelDataType rowType
+    );
+
+    /** */
+    Supplier<WindowPartition<Row>> windowFrameFactory(
+        Window.Group group,
+        List<AggregateCall> calls,
+        RelDataType rowType,
+        boolean streaming
     );
 
     /**
