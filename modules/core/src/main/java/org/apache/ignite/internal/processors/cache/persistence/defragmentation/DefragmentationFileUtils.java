@@ -23,9 +23,11 @@ import java.nio.file.Files;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -87,22 +89,27 @@ public class DefragmentationFileUtils {
     /**
      * Checks whether cache group defragmentation completed or not. Completes it if all that's left is renaming.
      *
-     * @param workDir Cache group working directory.
-     * @param grpId Cache group Id of cache group belonging to the given working directory.
+     * @param ft Node file tree.
+     * @param gctx Group context.
      * @param log Logger to write messages.
      * @return {@code true} if given cache group is already defragmented.
      * @throws IgniteException If {@link IOException} occurred.
      *
      * @see DefragmentationFileTreeUtils#defragmentationCompletionMarkerFile(File)
      */
-    public static boolean skipAlreadyDefragmentedCacheGroup(File workDir, int grpId, IgniteLogger log) throws IgniteException {
+    public static boolean skipAlreadyDefragmentedCacheGroup(
+        NodeFileTree ft,
+        CacheGroupContext gctx,
+        IgniteLogger log
+    ) throws IgniteException {
+        File workDir = ft.cacheStorage(gctx.config());
         File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
 
         if (completionMarkerFile.exists()) {
             if (log.isInfoEnabled()) {
                 log.info(S.toString(
                     "Skipping already defragmented page group",
-                    "grpId", grpId, false,
+                    "grpId", gctx.groupId(), false,
                     "markerFileName", completionMarkerFile.getName(), false,
                     "workDir", workDir.getAbsolutePath(), false
                 ));

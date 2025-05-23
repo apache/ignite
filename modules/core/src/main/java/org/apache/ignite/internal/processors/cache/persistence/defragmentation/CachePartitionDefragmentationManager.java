@@ -300,7 +300,7 @@ public class CachePartitionDefragmentationManager {
 
                 List<CacheDataStore> oldCacheDataStores = oldStores.get(grpId);
 
-                if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log)) {
+                if (skipAlreadyDefragmentedCacheGroup(ft, oldGrpCtx, log)) {
                     status.onCacheGroupSkipped(oldGrpCtx, oldCacheDataStores.size());
 
                     continue;
