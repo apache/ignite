@@ -55,6 +55,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl.JavaType;
@@ -66,10 +67,8 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexFieldCollation;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVariable;
-import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.runtime.SqlFunctions;
@@ -273,8 +272,8 @@ class RelJson {
             return toJson((Enum)value);
         else if (value instanceof RexNode)
             return toJson((RexNode)value);
-        else if (value instanceof RexWindow)
-            return toJson((RexWindow)value);
+        else if (value instanceof Window.Group)
+            return toJson((Window.Group)value);
         else if (value instanceof RexFieldCollation)
             return toJson((RexFieldCollation)value);
         else if (value instanceof RexWindowBound)
@@ -447,49 +446,30 @@ class RelJson {
                 List operands = (List)map.get("operands");
                 List<RexNode> rexOperands = toRexList(relInput, operands);
                 Object jsonType = map.get("type");
-                Map window = (Map)map.get("window");
-                if (window != null) {
-                    SqlAggFunction operator = (SqlAggFunction)toOp(opMap);
-                    RelDataType type = toType(typeFactory, jsonType);
-                    List<RexNode> partitionKeys = new ArrayList<>();
-                    if (window.containsKey("partition"))
-                        partitionKeys = toRexList(relInput, (List)window.get("partition"));
-                    List<RexFieldCollation> orderKeys = new ArrayList<>();
-                    if (window.containsKey("order"))
-                        orderKeys = toRexFieldCollationList(relInput, (List)window.get("order"));
-                    RexWindowBound lowerBound;
-                    RexWindowBound upperBound;
-                    boolean physical;
-                    if (window.get("rows-lower") != null) {
-                        lowerBound = toRexWindowBound(relInput, (Map)window.get("rows-lower"));
-                        upperBound = toRexWindowBound(relInput, (Map)window.get("rows-upper"));
-                        physical = true;
-                    }
-                    else if (window.get("range-lower") != null) {
-                        lowerBound = toRexWindowBound(relInput, (Map)window.get("range-lower"));
-                        upperBound = toRexWindowBound(relInput, (Map)window.get("range-upper"));
-                        physical = false;
-                    }
-                    else {
-                        // No ROWS or RANGE clause
-                        lowerBound = null;
-                        upperBound = null;
-                        physical = false;
-                    }
-                    boolean distinct = (Boolean)map.get("distinct");
-                    return rexBuilder.makeOver(type, operator, rexOperands, partitionKeys,
-                        ImmutableList.copyOf(orderKeys), lowerBound, upperBound, physical,
-                        true, false, distinct, false);
+
+                SqlOperator operator = toOp(opMap);
+                RelDataType type;
+                if (jsonType != null)
+                    type = toType(typeFactory, jsonType);
+                else
+                    type = rexBuilder.deriveReturnType(operator, rexOperands);
+
+                if (map.containsKey("winAggregate")) {
+                    Map<String, Object> winAggregate = (Map<String, Object>)map.get("winAggregate");
+                    Integer ordinal = (Integer)winAggregate.get("ordinal");
+                    Boolean distinct = (Boolean)winAggregate.get("distinct");
+                    Boolean ignoreNulls = (Boolean)winAggregate.get("ignoreNulls");
+                    return new Window.RexWinAggCall(
+                        (SqlAggFunction) operator,
+                        type,
+                        rexOperands,
+                        ordinal,
+                        distinct,
+                        ignoreNulls
+                    );
                 }
-                else {
-                    SqlOperator operator = toOp(opMap);
-                    RelDataType type;
-                    if (jsonType != null)
-                        type = toType(typeFactory, jsonType);
-                    else
-                        type = rexBuilder.deriveReturnType(operator, rexOperands);
-                    return rexBuilder.makeCall(type, operator, rexOperands);
-                }
+
+                return rexBuilder.makeCall(type, operator, rexOperands);
             }
             Integer input = (Integer)map.get("input");
             if (input != null) {
@@ -726,6 +706,48 @@ class RelJson {
     }
 
     /** */
+    Window.Group toWindowGroup(RelInput input, Map<String, Object> group) {
+        if (group == null)
+            return null;
+
+        List<Window.RexWinAggCall> aggCalls = Commons.transform((List<Map<String, Object>>) group.get("calls"),
+            it -> (Window.RexWinAggCall) toRex(input, it));
+        ImmutableBitSet partition = group.get("partition") == null
+            ? ImmutableBitSet.of()
+            : ImmutableBitSet.of((Iterable<Integer>)group.get("partition"));
+        RelCollation order = group.get("order") == null
+            ? RelCollations.EMPTY
+            : toCollation((List<Map<String, Object>>) group.get("order"));
+        RexWindowBound lowerBound;
+        RexWindowBound upperBound;
+        boolean physical;
+        if (group.get("rows-lower") != null) {
+            lowerBound = toRexWindowBound(input, (Map)group.get("rows-lower"));
+            upperBound = toRexWindowBound(input, (Map)group.get("rows-upper"));
+            physical = true;
+        }
+        else if (group.get("range-lower") != null) {
+            lowerBound = toRexWindowBound(input, (Map)group.get("range-lower"));
+            upperBound = toRexWindowBound(input, (Map)group.get("range-upper"));
+            physical = false;
+        }
+        else {
+            // No ROWS or RANGE clause
+            lowerBound = null;
+            upperBound = null;
+            physical = false;
+        }
+        return new Window.Group(
+            partition,
+            physical,
+            lowerBound,
+            upperBound,
+            order,
+            aggCalls
+        );
+    }
+
+    /** */
     private Object toJson(Enum<?> enum0) {
         String key = enum0.getDeclaringClass().getSimpleName() + "#" + enum0.name();
 
@@ -885,10 +907,12 @@ class RelJson {
                             map.put("dynamic", op.isDynamicFunction());
                         }
 
-                    if (call instanceof RexOver) {
-                        RexOver over = (RexOver)call;
-                        map.put("distinct", over.isDistinct());
-                        map.put("window", toJson(over.getWindow()));
+                    if (call instanceof Window.RexWinAggCall) {
+                        Map<String, Object> winAggregate = map();
+                        winAggregate.put("ordinal", ((Window.RexWinAggCall)call).ordinal);
+                        winAggregate.put("distinct", ((Window.RexWinAggCall)call).distinct);
+                        winAggregate.put("ignoreNulls", ((Window.RexWinAggCall)call).ignoreNulls);
+                        map.put("winAggregate", winAggregate);
                     }
 
                     return map;
@@ -898,27 +922,28 @@ class RelJson {
     }
 
     /** */
-    private Object toJson(RexWindow window) {
+    private Object toJson(Window.Group group) {
         Map<String, Object> map = map();
-        if (!window.partitionKeys.isEmpty())
-            map.put("partition", toJson(window.partitionKeys));
-        if (!window.orderKeys.isEmpty())
-            map.put("order", toJson(window.orderKeys));
-        if (window.getLowerBound() == null) {
+        map.put("calls", toJson(group.aggCalls));
+        if (!group.keys.isEmpty())
+            map.put("partition", toJson(group.keys));
+        if (!group.orderKeys.getKeys().isEmpty())
+            map.put("order", toJson(group.orderKeys));
+        if (group.lowerBound == null) {
             // No ROWS or RANGE clause
         }
-        else if (window.getUpperBound() == null)
-            if (window.isRows())
-                map.put("rows-lower", toJson(window.getLowerBound()));
+        else if (group.upperBound == null)
+            if (group.isRows)
+                map.put("rows-lower", toJson(group.lowerBound));
             else
-                map.put("range-lower", toJson(window.getLowerBound()));
-        else if (window.isRows()) {
-            map.put("rows-lower", toJson(window.getLowerBound()));
-            map.put("rows-upper", toJson(window.getUpperBound()));
+                map.put("range-lower", toJson(group.lowerBound));
+        else if (group.isRows) {
+            map.put("rows-lower", toJson(group.lowerBound));
+            map.put("rows-upper", toJson(group.upperBound));
         }
         else {
-            map.put("range-lower", toJson(window.getLowerBound()));
-            map.put("range-upper", toJson(window.getUpperBound()));
+            map.put("range-lower", toJson(group.lowerBound));
+            map.put("range-upper", toJson(group.upperBound));
         }
         return map;
     }

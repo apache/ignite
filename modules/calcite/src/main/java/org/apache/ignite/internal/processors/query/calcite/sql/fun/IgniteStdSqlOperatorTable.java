@@ -320,5 +320,18 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.BIT_AND);
         register(SqlStdOperatorTable.BIT_OR);
         register(SqlStdOperatorTable.BIT_XOR);
+
+        // Window specific operations
+        register(SqlStdOperatorTable.ROW_NUMBER);
+        register(SqlStdOperatorTable.DENSE_RANK);
+        register(SqlStdOperatorTable.RANK);
+        register(SqlStdOperatorTable.PERCENT_RANK);
+        register(SqlStdOperatorTable.CUME_DIST);
+        register(SqlStdOperatorTable.LAG);
+        register(SqlStdOperatorTable.LEAD);
+        register(SqlStdOperatorTable.FIRST_VALUE);
+        register(SqlStdOperatorTable.LAST_VALUE);
+        register(SqlStdOperatorTable.NTILE);
+        register(SqlStdOperatorTable.NTH_VALUE);
     }
 }
