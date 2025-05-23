@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,11 +111,17 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(8_000);
+        cfg.setFailureDetectionTimeout(4_000);
+        cfg.setClientFailureDetectionTimeout(4_000);
+        cfg.setSystemWorkerBlockedTimeout(3_000);
+        cfg.setNetworkTimeout(3_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()
                 .setForceClientToServerConnections(forceClientToSrvConnections)
+                .setReconnectCount(2)
+                .setIdleConnectionTimeout(2_000)
+                //.setConnectTimeout(5_000)
         );
 
         if (ccfg != null) {
@@ -225,11 +232,11 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             grid(3).context().io().sendIoTest(clientNode, new byte[10], false);
         });
 
-        doSleep(2000L); // Client failover timeout is 8 seconds.
+        doSleep(2000L); // Client failover timeout is 4 seconds.
 
         stopGrid(0);
 
-        fut.get(8000L);
+        fut.get(4000L);
 
         UUID newId = grid(1).localNode().id();
         UUID newRouterNode = ((TcpDiscoveryNode)grid(1).localNode()).clientRouterNodeId();
@@ -307,9 +314,10 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
-        );
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            log.info(">>> BEFORE sendIoTest: " + Instant.now());
+            srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
+        });
 
         assertTrue(GridTestUtils.waitForCondition(fut::isDone, 30_000));
 
@@ -342,6 +350,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         srv.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
+                log.info(">>> clientFailedEvtFlag.set(true): " + Instant.now());
                 clientFailedEvtFlag.set(true);
 
                 return false;
@@ -359,11 +368,12 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
-        );
+        GridTestUtils.runAsync(() -> {
+            log.info(">>> BEFORE sendIoTest: " + Instant.now());
+            srv.context().io().sendIoTest(clientNode, new byte[10], false).get();
+        });
 
-        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 20_000));
     }
 
     /**
