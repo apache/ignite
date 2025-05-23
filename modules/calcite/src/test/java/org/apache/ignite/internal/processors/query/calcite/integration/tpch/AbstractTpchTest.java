@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     /** */
-    protected static final Collection<Integer> KNOWS_TESTS = F.asList(5, 16, 19, 20);
+    protected static final Collection<Integer> USED_TESTS = F.asList(5, 16, 19, 20);
 
     /** Query ID. */
     @Parameterized.Parameter
@@ -40,7 +40,7 @@ public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Integer> params() {
-        return KNOWS_TESTS;
+        return USED_TESTS;
     }
 
     /** {@inheritDoc} */

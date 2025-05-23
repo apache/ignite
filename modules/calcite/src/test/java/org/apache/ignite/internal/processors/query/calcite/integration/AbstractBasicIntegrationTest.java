@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -241,18 +240,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        long t = System.nanoTime();
-
         List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
-        }
-        finally {
-            t = System.nanoTime() - t;
-
-            if (log.isInfoEnabled())
-                log.info("The query took " + U.nanosToMillis(t) + " millis.");
         }
     }
 
