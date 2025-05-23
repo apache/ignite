@@ -74,9 +74,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     /** */
     protected boolean inLoop;
 
-    /** */
-    protected boolean end;
-
     /**
      * Flag indicating that at least one of the inputs has exchange underneath. In this case we can't prematurely end
      * downstream if one of the inputs is drained, we need to wait for both inputs, since async message from remote
@@ -105,8 +102,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         requested = rowsCnt;
 
-        end = false;
-
         if (!inLoop)
             context().execute(this::doJoin, this::onError);
     }
@@ -123,7 +118,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         requested = 0;
         waitingLeft = 0;
         waitingRight = 0;
-        end = false;
 
         left = null;
         right = null;
@@ -248,11 +242,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     protected void checkJoinFinished(boolean anyInput) throws Exception {
-        if (!end && (!distributed
+        if (requested > 0 && (!distributed
             || (anyInput && (waitingLeft == NOT_WAITING || waitingRight == NOT_WAITING))
             || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING))
         ) {
-            end = true;
             requested = 0;
             downstream().end();
         }
@@ -405,8 +398,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
 
-            if ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
-                || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null)
+            if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
+                || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null))
             )
                 checkJoinFinished(true);
         }
@@ -560,7 +553,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
 
-            if (waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 checkJoinFinished();
         }
     }
@@ -725,7 +718,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
 
-            if (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null)
+            if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null)
                 checkJoinFinished();
         }
     }
@@ -929,7 +922,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
 
-            if (waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null
             )
                 checkJoinFinished(true);
@@ -941,12 +934,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         if (waitingLeft == 0 && requested > 0 && leftInBuf.size() <= HALF_BUF_SIZE)
             leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
 
-        if (waitingRight == 0 && requested > 0) {
-            int rightSize = rightMaterialization == null ? rightInBuf.size() : rightInBuf.size() + rightMaterialization.size();
-
-            if (rightSize <= HALF_BUF_SIZE)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE - rightSize);
-        }
+        if (waitingRight == 0 && requested > 0 && rightInBuf.size() <= HALF_BUF_SIZE)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightInBuf.size());
     }
 
     /** */
@@ -999,8 +988,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
 
-            if ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
-                || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty()))
+            if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
+                || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty())))
             )
                 checkJoinFinished(true);
         }
@@ -1059,7 +1048,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
 
-            if (waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 checkJoinFinished();
         }
     }

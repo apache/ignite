@@ -57,9 +57,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
     protected int waitingRight;
 
     /** */
-    protected boolean end;
-
-    /** */
     protected final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
 
     /** */
@@ -88,8 +85,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         requested = rowsCnt;
 
-        end = false;
-
         if (!inLoop)
             context().execute(this::doJoin, this::onError);
     }
@@ -106,7 +101,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         requested = 0;
         waitingLeft = 0;
         waitingRight = 0;
-        end = false;
 
         rightMaterialized.clear();
         leftInBuf.clear();
@@ -303,8 +297,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             tryToRequestInputs();
 
-            if (!end && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                end = true;
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
                 downstream().end();
             }
@@ -390,8 +383,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             tryToRequestInputs();
 
-            if (!end && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                end = true;
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
                 downstream().end();
             }
@@ -504,9 +496,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             tryToRequestInputs();
 
-            if (!end && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
-                end = true;
                 requested = 0;
                 downstream().end();
             }
@@ -643,9 +634,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             tryToRequestInputs();
 
-            if (!end && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
-                end = true;
                 requested = 0;
                 downstream().end();
             }
@@ -692,8 +682,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             tryToRequestInputs();
 
-            if (!end && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                end = true;
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 downstream().end();
                 requested = 0;
             }
@@ -744,8 +733,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             tryToRequestInputs();
 
-            if (!end && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                end = true;
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
                 downstream().end();
             }
