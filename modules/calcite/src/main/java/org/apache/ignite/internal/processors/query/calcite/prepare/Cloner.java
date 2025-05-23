@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchang
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -263,6 +264,11 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteUncollect rel) {
+        return rel.clone(cluster, F.asList(visit((IgniteRel)rel.getInput())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteWindow rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel)rel.getInput())));
     }
 
