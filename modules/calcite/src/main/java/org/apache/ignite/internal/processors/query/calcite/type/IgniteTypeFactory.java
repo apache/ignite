@@ -269,7 +269,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
             for (RelDataType type : types) {
                 if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
-                    return type;
+                    return createTypeWithNullability(type, res.isNullable());
             }
         }
 

@@ -45,6 +45,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -378,6 +380,10 @@ public class TraitUtils {
             @Override public List<SearchBounds> getSearchBounds(String tag) {
                 return ((RelInputEx)input).getSearchBounds(tag);
             }
+
+            @Override public Window.Group getWindowGroup(String tag) {
+                return ((RelInputEx)input).getWindowGroup(tag);
+            }
         };
     }
 
@@ -487,6 +493,24 @@ public class TraitUtils {
         return RelCollations.of(
             keys.stream().map(TraitUtils::createFieldCollation).collect(Collectors.toList())
         );
+    }
+
+    /**
+     * Merges provided collation is sinle one.
+     *
+     * @param collation0 First collation
+     * @param collation1 Second collation
+     * @return New collation
+     */
+    public static RelCollation mergeCollations(RelCollation collation0, RelCollation collation1) {
+        ImmutableBitSet keys = ImmutableBitSet.of(collation0.getKeys());
+        List<RelFieldCollation> fields = U.arrayList(collation0.getFieldCollations());
+        for (RelFieldCollation it : collation1.getFieldCollations()) {
+            if (!keys.get(it.getFieldIndex())) {
+                fields.add(it);
+            }
+        }
+        return RelCollations.of(fields);
     }
 
     /**
