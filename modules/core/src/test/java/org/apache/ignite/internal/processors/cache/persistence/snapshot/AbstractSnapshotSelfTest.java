@@ -311,7 +311,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
 
-            File dir = kctx.pdsFolderResolver().fileTree().cacheStorage(ccfg);
+            File dir = kctx.pdsFolderResolver().fileTree().cacheStorages(ccfg)[0];
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
@@ -335,27 +335,29 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /**
      * Calculate CRC for all partition files of specified cache.
      *
-     * @param cacheDir Cache directory to iterate over partition files.
+     * @param cacheDirs Cache directories to iterate over partition files.
      * @return The map of [fileName, checksum].
      */
-    public static Map<String, Integer> calculateCRC32Partitions(File cacheDir) {
-        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
-
+    public static Map<String, Integer> calculateCRC32Partitions(File... cacheDirs) {
         Map<String, Integer> result = new HashMap<>();
 
-        try {
-            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> NodeFileTree.partitionFile(p.toFile()) && NodeFileTree.binFile(p.toFile()))
-            ) {
-                for (Path path : partFiles)
-                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
-            }
+        for (File cacheDir : cacheDirs) {
+            assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
 
-            return result;
+            try {
+                try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+                    p -> NodeFileTree.partitionFile(p.toFile()) && NodeFileTree.binFile(p.toFile()))
+                ) {
+                    for (Path path : partFiles)
+                        result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+                }
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
         }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
+
+        return result;
     }
 
     /**

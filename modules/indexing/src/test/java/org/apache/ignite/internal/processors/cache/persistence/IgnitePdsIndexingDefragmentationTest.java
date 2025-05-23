@@ -140,7 +140,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             newIdxFileLen <= oldIdxFileLen
         );
 
-        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(ft.cacheStorage(dfltCacheCfg));
+        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(ft.cacheStorages(dfltCacheCfg)[0]);
 
         assertTrue("Completion marker file must exists", completionMarkerFile.exists());
 

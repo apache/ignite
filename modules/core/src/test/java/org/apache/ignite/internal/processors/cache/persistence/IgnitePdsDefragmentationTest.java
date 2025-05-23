@@ -233,7 +233,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        File workDir = ft.cacheStorage(ccfg);
+        File workDir = ft.cacheStorages(ccfg)[0];
 
         long[] oldPartLen = partitionSizes(ft, ccfg);
 
@@ -461,7 +461,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration());
+        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorages(ig.cachex(DEFAULT_CACHE_NAME).configuration())[0];
 
         stopGrid(0);
 
@@ -564,7 +564,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-        String grpDirName = ft.cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration()).getName();
+        String grpDirName = ft.cacheStorages(ig.cachex(DEFAULT_CACHE_NAME).configuration())[0].getName();
 
         stopGrid(0);
 

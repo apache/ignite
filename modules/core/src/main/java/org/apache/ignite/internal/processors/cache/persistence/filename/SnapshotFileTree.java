@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.oneOf;
+
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
  * During creation, full snapshot, creates the same file tree as regular node.
@@ -179,7 +181,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Cache partition delta file.
      */
     public File partDeltaFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(tmpFt.cacheStorage(ccfg), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+        return new File(oneOf(tmpFt.cacheStorages(ccfg), part), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -237,7 +239,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Path to the dump partition file;
      */
     public File dumpPartition(CacheConfiguration<?, ?> ccfg, int part, boolean compress) {
-        return new File(cacheStorage(ccfg), dumpPartFileName(part, compress));
+        return new File(oneOf(cacheStorages(ccfg), part), dumpPartFileName(part, compress));
     }
 
     /**
@@ -278,7 +280,6 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     private static String partExtension(boolean dump, boolean compressed) {
         return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
-
     }
 
     /**

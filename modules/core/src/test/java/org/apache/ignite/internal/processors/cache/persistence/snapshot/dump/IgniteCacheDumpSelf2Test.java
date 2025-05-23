@@ -493,7 +493,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             NodeFileTree sft = sfts.get(0);
 
-            File cacheDumpDir = sft.cacheStorage(cache.getConfiguration(CacheConfiguration.class));
+            File cacheDumpDir = sft.cacheStorages(cache.getConfiguration(CacheConfiguration.class))[0];
 
             assertTrue(cacheDumpDir.exists());
 
@@ -813,13 +813,15 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         SnapshotFileTree zipFt = snapshotFileTree(ign, zipDump);
 
         Map<Integer, Long> rawSizes = Arrays
-            .stream(rawFt.cacheStorage(ccfg).listFiles())
+            .stream(rawFt.cacheStorages(ccfg))
+            .flatMap(cs -> Arrays.stream(cs.listFiles()))
             .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, false)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         Map<Integer, Long> zipSizes = Arrays
-            .stream(zipFt.cacheStorage(ccfg).listFiles())
+            .stream(zipFt.cacheStorages(ccfg))
+            .flatMap(cs -> Arrays.stream(cs.listFiles()))
             .filter(f -> !NodeFileTree.cacheConfigFile(f))
             .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, true)))
             .collect(Collectors.toMap(NodeFileTree::partId, File::length));

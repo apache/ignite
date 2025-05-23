@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility methods for {@link NodeFileTree}.
@@ -59,6 +61,20 @@ public class FileTreeUtils {
 
         for (File tmpDrStorage : tmpFt.extraStorages().values())
             removeTmpDir(tmpDrStorage.getParentFile(), err, log);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param part Partition.
+     * @return Storage path from config for partition.
+     */
+    public static @Nullable String partitionStorage(CacheConfiguration<?, ?> ccfg, int part) {
+        String[] csp = ccfg.getStoragePath();
+
+        if (csp == null)
+            return null;
+
+        return csp[part % csp.length];
     }
 
     /**
@@ -99,5 +115,14 @@ public class FileTreeUtils {
                 "DataStorageConfiguration#storagePath, DataRegionConfiguration#storagePath properties). " +
                 "Current persistence store directory is: [" + dir.getAbsolutePath() + "]");
         }
+    }
+
+    /**
+     * @param storages Storages to select from.
+     * @param part Partition.
+     * @return Storage for partition.
+     */
+    static File oneOf(File[] storages, int part) {
+        return storages[(part + 1) % storages.length];
     }
 }

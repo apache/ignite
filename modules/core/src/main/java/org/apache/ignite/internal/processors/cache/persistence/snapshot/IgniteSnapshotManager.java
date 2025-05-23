@@ -2821,36 +2821,37 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Encrypted cache groups not supported [groupId=" + grpId + ']');
             }
 
-            File snpCacheDir = sft.cacheStorage(gctx.config());
-
-            if (!snpCacheDir.exists()) {
-                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                    "Cache group directory not found [groupId=" + grpId + ']');
-            }
-
-            for (File snpDataFile : NodeFileTree.existingCacheConfigFiles(snpCacheDir)) {
-                StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
-                    snpDataFile,
-                    cctx.kernalContext().marshallerContext().jdkMarshaller(),
-                    cctx.kernalContext().config()
-                );
-
-                byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
-
-                File nodeDataFile = ft.cacheConfigurationFile(snpCacheData.config());
-
-                if (!nodeDataFile.exists()) {
+            for (File snpCacheDir : sft.cacheStorages(gctx.config())) {
+                if (!snpCacheDir.exists()) {
                     throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                        "Cache destroyed [cacheId=" + snpCacheData.cacheId() +
-                        ", cacheName=" + snpCacheData.config().getName() + ']');
+                        "Cache group directory not found [groupId=" + grpId + ']');
                 }
 
-                byte[] nodeCacheDataBytes = Files.readAllBytes(nodeDataFile.toPath());
-
-                if (!Arrays.equals(snpCacheDataBytes, nodeCacheDataBytes)) {
-                    throw new IgniteCheckedException(
-                        cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
+                for (File snpDataFile : NodeFileTree.existingCacheConfigFiles(snpCacheDir)) {
+                    StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
+                        snpDataFile,
+                        cctx.kernalContext().marshallerContext().jdkMarshaller(),
+                        cctx.kernalContext().config()
                     );
+
+                    byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
+
+                    File nodeDataFile = ft.cacheConfigurationFile(snpCacheData.config());
+
+                    if (!nodeDataFile.exists()) {
+                        throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                            "Cache destroyed [cacheId=" + snpCacheData.cacheId() +
+                            ", cacheName=" + snpCacheData.config().getName() + ']');
+                    }
+
+                    byte[] nodeCacheDataBytes = Files.readAllBytes(nodeDataFile.toPath());
+
+                    if (!Arrays.equals(snpCacheDataBytes, nodeCacheDataBytes)) {
+                        throw new IgniteCheckedException(
+                            cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
+                        );
+                    }
+
                 }
             }
         }
@@ -3842,7 +3843,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
             try {
-                File cacheDir = sft.cacheStorage(ccfg);
+                File cacheDir = sft.cacheStorages(ccfg)[0];
 
                 U.mkdirs(cacheDir);
 
