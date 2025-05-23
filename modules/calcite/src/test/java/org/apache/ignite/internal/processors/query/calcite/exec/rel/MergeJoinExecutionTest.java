@@ -19,14 +19,20 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -118,6 +124,67 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             {3, "Alexey"}
         });
     }
+
+    /** */
+    @Test
+    public void testJoinBuffers() throws Exception {
+        int size = IN_BUFFER_SIZE * 2 + IN_BUFFER_SIZE / 2;
+        int intersect = IN_BUFFER_SIZE / 10;
+
+        int leftTo = size + intersect;
+        int rightFrom = size;
+        int rightTo = size * 2;
+
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        Iterator<Object[]> leftIter = IntStream.range(0, leftTo).boxed().map(i -> new Object[] {i}).iterator();
+        Iterator<Object[]> rightIter = IntStream.range(rightFrom, rightTo).boxed().map(i -> new Object[] {i}).iterator();
+
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class);
+        ScanNode<Object[]> leftNode = new ScanNode<>(ctx, leftType, () -> leftIter);
+
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class);
+        ScanNode<Object[]> rightNode = new ScanNode<>(ctx, rightType, () -> rightIter);
+
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class);
+
+        MergeJoinNode<Object[]> join = MergeJoinNode.create(ctx, outType, leftType, rightType, INNER,
+            Comparator.comparingInt(r -> (Integer)r[0]), true);
+
+        join.register(F.asList(leftNode, rightNode));
+
+        List<Object[]> res = new ArrayList<>();
+        AtomicBoolean finished = new AtomicBoolean();
+
+        join.onRegister(new Downstream<>() {
+            @Override public void push(Object[] objects) {
+                res.add(objects);
+            }
+
+            @Override public void end() {
+                finished.set(true);
+            }
+
+            @Override public void onError(Throwable e) {
+                // No-op.
+            }
+        });
+
+        join.request(intersect * 2);
+
+        assertTrue(GridTestUtils.waitForCondition(finished::get, getTestTimeout()));
+
+        assertEquals(intersect, res.size());
+
+        for (int i = size; i < size + intersect; ++i) {
+            assertEquals(i, res.get(i - size)[0]);
+            assertEquals(i, res.get(i - size)[1]);
+        }
+
+        assertTrue(join.leftInBuf.size() <= IN_BUFFER_SIZE);
+        assertTrue(join.rightInBuf.size() <= IN_BUFFER_SIZE);
+    }
+
 
     /** */
     @Test
