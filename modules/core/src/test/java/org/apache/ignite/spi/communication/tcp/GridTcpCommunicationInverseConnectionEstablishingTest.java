@@ -113,7 +113,8 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         cfg.setFailureDetectionTimeout(4_000);
         cfg.setClientFailureDetectionTimeout(4_000);
-        cfg.setSystemWorkerBlockedTimeout(3000);
+        cfg.setSystemWorkerBlockedTimeout(3_000);
+        cfg.setNetworkTimeout(3_000);
 
         cfg.setCommunicationSpi(
             new TestCommunicationSpi()

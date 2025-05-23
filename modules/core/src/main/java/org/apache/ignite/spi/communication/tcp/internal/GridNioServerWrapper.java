@@ -358,7 +358,11 @@ public class GridNioServerWrapper {
             }
         }
 
+        log.info(">>> BEFORE nodeAddresses");
+
         Collection<InetSocketAddress> addrs = nodeAddresses(node, cfg.filterReachableAddresses(), attrs, locNodeSupplier);
+
+        log.info(">>> AFTER nodeAddresses");
 
         GridNioSession ses = null;
         IgniteCheckedException errs = null;
