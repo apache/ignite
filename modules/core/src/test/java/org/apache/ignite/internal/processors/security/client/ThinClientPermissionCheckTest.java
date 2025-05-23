@@ -400,15 +400,11 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             }
         };
 
-        Runnable withUserAttrsCheck = () -> {
+        Runnable withUserAttrsCanConnect = () -> {
             userAttrs = F.asMap(MANAGEMENT_CLIENT_ATTR, "true");
 
-            try {
-                // Trying to connect as CLIENT with "management client" flag must fail, because of security.
-                // CLIENT has no ADMIN_OPS permission.
-                assertThrows(log, () -> startClient(CLIENT), ClientAuthenticationException.class, "ADMIN_OPS permission required");
-
-                adminCanConnect.run();
+            try (IgniteClient cli = startClient(CLIENT)) {
+                assertNotNull("Cache query from CLIENT", cli.cacheNames());
             }
             finally {
                 userAttrs = null;
@@ -418,8 +414,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         Runnable checkDflt = () -> {
             cliCanConnect.run();
             adminCanConnect.run();
-
-            withUserAttrsCheck.run();
+            withUserAttrsCanConnect.run();
         };
 
         checkDflt.run();
@@ -434,7 +429,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             // Trying to connect without specifying "management client" flag must fail.
             assertThrows(log, () -> startClient(ADMIN), ClientAuthenticationException.class, CONN_DISABLED_BY_ADMIN_ERR_MSG);
 
-            withUserAttrsCheck.run();
+            // Trying to connect as CLIENT with "management client" flag must fail, because of security.
+            // CLIENT has no ADMIN_OPS permission.
+            assertThrows(log, withUserAttrsCanConnect::run, IgniteException.class, "ADMIN_OPS permission required");
         }
         finally {
             grid(0).context().distributedMetastorage().write(toMetaStorageKey(THIN_CONN_ENABLED_PROP), true);
